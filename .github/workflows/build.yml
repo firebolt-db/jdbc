@@ -1,0 +1,37 @@
+name: Build
+
+on:
+  workflow_call:
+  push:
+    branches: [ master ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.project-version.outputs.PROJECT_VERSION }}
+      jar-name: firebolt-jdbc-v2-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Prepare java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '8'
+          server-id: repsy
+          server-username: REPSY_USER # Env variable name for user (defined on deploy step)
+          server-password: REPSY_PASSWORD # Env variable name for password
+      - name: Build with Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: build -x test
+      - name: Get project version
+        id: project-version
+        run: |
+          export PROJECT_VERSION=$(./gradlew printVersion | grep -A1 '> Configure project :'| grep -v "> Configure project :")
+          echo ::set-output name=PROJECT_VERSION::"$(echo $PROJECT_VERSION)"
+      - name: Upload jar artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: firebolt-jdbc-v2-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
+          path: build/libs/firebolt-jdbc-v2-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
