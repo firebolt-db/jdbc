@@ -1,0 +1,41 @@
+name: Code coverage
+
+on:
+  workflow_call:
+  push:
+    branches: [ master ]
+jobs:
+  code-coverage:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.project-version.outputs.PROJECT_VERSION }}
+      jar-name: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
+      code-coverage: ${{ steps.jacoco.outputs.coverage }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Prepare java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '8'
+          server-id: repsy
+          server-username: REPSY_USER # Env variable name for user (defined on deploy step)
+          server-password: REPSY_PASSWORD # Env variable name for password
+      - name: Build with Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: build -x test
+      - name: Generate Jacoco Test Report
+        run: ./gradlew jacocoTestReport
+      - name: Check test coverage and generate JaCoCo Badge
+        id: jacoco
+        uses: cicirello/jacoco-badge-generator@v2
+        with:
+          generate-branches-badge: false
+          generate-coverage-badge: false
+          jacoco-csv-file: build/reports/jacoco/test/jacocoTestReport.csv
+          fail-if-coverage-less-than: 80
+      - name: Log coverage percentage
+        run: |
+          echo "coverage = ${{ steps.jacoco.outputs.coverage }}"
