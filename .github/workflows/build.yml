@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.project-version.outputs.PROJECT_VERSION }}
-      jar-name: firebolt-jdbc-v2-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
+      jar-name: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -21,10 +21,10 @@ jobs:
           server-id: repsy
           server-username: REPSY_USER # Env variable name for user (defined on deploy step)
           server-password: REPSY_PASSWORD # Env variable name for password
-      - name: Build with Gradle
+      - name: Build and test
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: build -x test
+          arguments: build
       - name: Get project version
         id: project-version
         run: |
@@ -33,5 +33,5 @@ jobs:
       - name: Upload jar artifact
         uses: actions/upload-artifact@v2
         with:
-          name: firebolt-jdbc-v2-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
-          path: build/libs/firebolt-jdbc-v2-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
+          name: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
+          path: build/libs/firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar

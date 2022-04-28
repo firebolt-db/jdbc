@@ -73,17 +73,12 @@ public class FireboltConnectionImpl implements Connection {
 
     @Override
     public void close() throws SQLException {
-        try {
-            HttpClientConfig.getInstance().close();
-            this.closed = true;
-        } catch (IOException e) {
-            throw new RuntimeException("Could not close http client", e);
-        }
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public Statement createStatement() throws SQLException {
-        return null;
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
@@ -157,7 +152,7 @@ public class FireboltConnectionImpl implements Connection {
 
     @Override
     public void setTransactionIsolation(int level) throws SQLException {
-
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override

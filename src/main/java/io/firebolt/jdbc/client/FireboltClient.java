@@ -25,11 +25,8 @@ public abstract class FireboltClient {
     private final String headerUserAgentValue;
 
     protected FireboltClient() {
-        Optional<String> version = ProjectVersionUtil.getProjectVersion();
-        if (!version.isPresent()) {
-            log.warn("Could not fetch project version from version.properties. The User-Agent header will not contain the version of the driver.");
-        }
-        this.headerUserAgentValue = String.format("fireboltJdbcDriver%s", version.map(s -> "/" + s).orElse(StringUtils.EMPTY));
+        String version = ProjectVersionUtil.getProjectVersion();
+        this.headerUserAgentValue = String.format("fireboltJdbcDriver/%s", version);
     }
 
     protected <T> T getResource(String uri, String identifier, String accessToken, CloseableHttpClient httpClient, ObjectMapper objectMapper, Class<T> valueType) throws IOException {
@@ -37,9 +34,8 @@ public abstract class FireboltClient {
         try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
             int statusCode = Optional.ofNullable(response.getStatusLine()).map(StatusLine::getStatusCode).orElse(-1);
             String responseStr = EntityUtils.toString(response.getEntity());
-            log.debug("GET {} - Http status code : {}, response : {}", uri, statusCode, responseStr);
-
-            if (HttpURLConnection.HTTP_OK != statusCode) {
+            log.debug("GET {} - Http status code : {}", uri, statusCode);
+            if (!(statusCode >= 200 && statusCode <= 299)) {
                 if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
                     throw new IOException(String.format("Could not find resource with identifier %s, uri: %s, response: %s", identifier, uri, responseStr));
                 }
@@ -47,13 +43,6 @@ public abstract class FireboltClient {
             }
             return objectMapper.readValue(responseStr, valueType);
         }
-    }
-
-    protected String createUri(String account, String prefix, String suffix) {
-        if (StringUtils.isNotEmpty(account))
-            return prefix + "s/" + account + suffix;
-        else
-            return prefix + suffix;
     }
 
     private HttpGet createGetRequest(String uri, String accessToken) {

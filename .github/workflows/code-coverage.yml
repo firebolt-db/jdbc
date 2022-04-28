@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.project-version.outputs.PROJECT_VERSION }}
-      jar-name: firebolt-jdbc-v2-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
+      jar-name: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
       code-coverage: ${{ steps.jacoco.outputs.coverage }}
     steps:
       - name: Check out code

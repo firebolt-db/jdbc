@@ -30,7 +30,6 @@ public enum FireboltSessionProperty {
     MAX_TOTAL("maxTotal", 10000, Integer.class, "Maximum total connections"),
     VALIDATE_AFTER_INACTIVITY_MILLIS("validateAfterInactivityMillis", 3 * 1000, Integer.class, "Defines period of inactivity in milliseconds after which persistent connections must be re-validated prior to being leased to the consumer. Non-positive value passed to this method disables connection validation. "),
     USE_OBJECTS_IN_ARRAYS("useObjectsInArrays", false, Boolean.class, "Whether arrays of objects (Object[]) should be used instead of primitive arrays. False by default"),
-    USE_SERVER_TIME_ZONE("useServerTimeZone", true, Boolean.class, "Whether to use timezone from server. On connection init select timezone() will be executed"),
     USE_CONNECTION_POOL("useConnectionPool", 0, Integer.class, "use connection pool for valid connections"),
     COMPRESS("compress", 1, Integer.class, "Whether to compress transferred data or not. Compressed by default"),
     DECOMPRESS("decompress", false, Boolean.class, "whether to decompress transferred data or not. Disabled by default"),

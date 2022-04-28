@@ -40,12 +40,12 @@ public class FireboltDriver implements Driver {
 
     @Override
     public int getMajorVersion() {
-        throw new UnsupportedOperationException();
+        return ProjectVersionUtil.getMajorVersion();
     }
 
     @Override
     public int getMinorVersion() {
-        throw new UnsupportedOperationException();
+        return ProjectVersionUtil.getMinorVersion();
     }
 
     @Override

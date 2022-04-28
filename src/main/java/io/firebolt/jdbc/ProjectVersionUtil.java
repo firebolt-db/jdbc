@@ -2,6 +2,8 @@ package io.firebolt.jdbc;
 
 
 import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.RegExUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -25,7 +27,18 @@ public class ProjectVersionUtil {
         }
     }
 
-    public static Optional<String> getProjectVersion() {
-        return Optional.ofNullable(version);
+    public static int getMajorVersion() {
+        return Optional.ofNullable(version).map(v -> StringUtils.split(v, ".")[0]).filter(StringUtils::isNumeric)
+                .map(Integer::parseInt).orElseThrow(() -> new RuntimeException("Invalid driver version: could not parse major version"));
+    }
+
+
+    public int getMinorVersion() {
+        return Optional.ofNullable(version).map(v -> StringUtils.split(v, ".")[1])
+                .map(minorVersion -> RegExUtils.replaceAll(minorVersion, "[^0-9]", "")) //Remove all non-numeric characters
+                .map(Integer::parseInt).orElseThrow(() -> new RuntimeException("Invalid driver version: could not parse major version"));
+    }
+    public static String getProjectVersion() {
+        return version;
     }
 }

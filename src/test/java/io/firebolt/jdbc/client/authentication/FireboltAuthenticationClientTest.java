@@ -44,7 +44,7 @@ class FireboltAuthenticationClientTest {
     @BeforeAll
     static void init() {
         mockedProjectVersionUtil = mockStatic(ProjectVersionUtil.class);
-        mockedProjectVersionUtil.when(ProjectVersionUtil::getProjectVersion).thenReturn(Optional.of("1.0-TEST"));
+        mockedProjectVersionUtil.when(ProjectVersionUtil::getProjectVersion).thenReturn("1.0-TEST");
     }
 
     @AfterAll
@@ -98,5 +98,15 @@ class FireboltAuthenticationClientTest {
 
         assertThrows(IOException.class, () -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
 
+    }
+    @Test
+    void shouldThrowExceptionWhenStatusCodeIsForbidden() throws Exception {
+        CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+        when(response.getStatusLine()).thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_FORBIDDEN, "FORBIDDEN"));
+        HttpEntity entity = mock(HttpEntity.class);
+        when(response.getEntity()).thenReturn(entity);
+        when(httpClient.execute(any())).thenReturn(response);
+
+        assertThrows(IOException.class, () -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
     }
 }

@@ -16,7 +16,10 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicStatusLine;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -55,7 +58,7 @@ class FireboltAccountClientTest {
     @BeforeAll
     static void init() {
         mockedProjectVersionUtil = mockStatic(ProjectVersionUtil.class);
-        mockedProjectVersionUtil.when(ProjectVersionUtil::getProjectVersion).thenReturn(Optional.of("1.0-TEST"));
+        mockedProjectVersionUtil.when(ProjectVersionUtil::getProjectVersion).thenReturn("1.0-TEST");
     }
 
     @AfterAll
@@ -121,7 +124,7 @@ class FireboltAccountClientTest {
         when(response.getEntity()).thenReturn(entity);
         when(httpClient.execute(any())).thenReturn(response);
 
-        String dbAddress = fireboltAccountClient.getDbAddress(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
+        String dbAddress = fireboltAccountClient.getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
         HttpGet expectedHttpGet = new HttpGet(String.format("https://host/core/v1/accounts/%s/engines:getURLByDatabaseName?databaseName=%s", ACCOUNT_ID, DB_NAME));
         Map<String, String> expectedHeader = ImmutableMap.of("User-Agent", "fireboltJdbcDriver/1.0-TEST", "Authorization", "Bearer " + ACCESS_TOKEN);
 
@@ -161,7 +164,6 @@ class FireboltAccountClientTest {
         HttpEntity entity = mock(HttpEntity.class);
         when(response.getEntity()).thenReturn(entity);
         when(httpClient.execute(any())).thenReturn(response);
-
         assertThrows(IOException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN));
 
     }

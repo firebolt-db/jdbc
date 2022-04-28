@@ -17,8 +17,10 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.util.Optional;
+
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 
 
 @Slf4j
@@ -42,9 +44,12 @@ public class FireboltAuthenticationClient extends FireboltClient {
             String responseStr = EntityUtils.toString(response.getEntity());
             log.debug("POST {} - Http status code : {}, response : {}", connectUrl, statusCode, responseStr);
 
-            if (HttpURLConnection.HTTP_OK != statusCode) {
-                if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
-                    throw new IOException(String.format("Could not get connection tokens (error 404), response: %s", responseStr));
+            if (!(statusCode >= 200 && statusCode <= 299)) {
+                if (statusCode == HTTP_NOT_FOUND) {
+                    throw new IOException(String.format("Could not get connection tokens (error %d), response: %s", HTTP_NOT_FOUND, responseStr));
+                }
+                if (statusCode == HTTP_FORBIDDEN) {
+                    throw new IOException(String.format("Authentication failed (error %d), please verify your credentials. Response: %s", HTTP_FORBIDDEN, responseStr));
                 }
                 throw new IOException(String.format("Failed to connect to Firebolt. status code: %d, Response: %s", statusCode, responseStr));
             }

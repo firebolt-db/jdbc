@@ -36,7 +36,7 @@ class FireboltEngineServiceTest {
         fireboltEngineService.getEngineAddress(HOST, DB_NAME, null, ACCOUNT, ACCESS_TOKEN);
 
         verify(fireboltAccountClient).getAccountId(HOST, ACCOUNT, ACCESS_TOKEN);
-        verify(fireboltAccountClient).getDbAddress(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
+        verify(fireboltAccountClient).getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
         verifyNoMoreInteractions(fireboltAccountClient);
     }
 

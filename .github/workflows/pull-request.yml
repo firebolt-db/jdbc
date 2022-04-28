@@ -9,7 +9,5 @@ on:
 jobs:
   build:
     uses: ./.github/workflows/build.yml
-  unit-tests:
-    uses: ./.github/workflows/unit-tests.yml
   code-coverage:
     uses: ./.github/workflows/code-coverage.yml

@@ -15,7 +15,7 @@ public class FireboltEngineService {
         if (StringUtils.isNotEmpty(account))
             accountId = fireboltAccountClient.getAccountId(host, account, accessToken).orElse(null);
         if (StringUtils.isEmpty(engineName))
-            return fireboltAccountClient.getDbAddress(host, accountId, dbName, accessToken);
+            return fireboltAccountClient.getDbDefaultEngineAddress(host, accountId, dbName, accessToken);
         String engineID = fireboltAccountClient.getEngineId(host, accountId, engineName, accessToken);
         return fireboltAccountClient.getEngineAddress(host, accountId, engineName, engineID, accessToken);
     }
