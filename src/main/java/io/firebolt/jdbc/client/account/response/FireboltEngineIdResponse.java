@@ -7,13 +7,13 @@ import lombok.Value;
 @Value
 @Builder
 public class FireboltEngineIdResponse {
-    @JsonProperty("engine_id")
-    Engine engine;
+  @JsonProperty("engine_id")
+  Engine engine;
 
-    @Value
-    @Builder
-    public static class Engine {
-        @JsonProperty("engine_id")
-        String engineId;
-    }
+  @Value
+  @Builder
+  public static class Engine {
+    @JsonProperty("engine_id")
+    String engineId;
+  }
 }

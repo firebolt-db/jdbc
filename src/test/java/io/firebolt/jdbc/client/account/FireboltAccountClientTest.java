@@ -39,149 +39,206 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class FireboltAccountClientTest {
 
-    private final static String ACCESS_TOKEN = "token";
-    private final static String HOST = "https://host";
-    private final static String ACCOUNT = "account";
-    private final static String ACCOUNT_ID = "account_id";
-    private final static String DB_NAME = "dbName";
-    private final static String ENGINE_NAME = "engineName";
-    private static MockedStatic<ProjectVersionUtil> mockedProjectVersionUtil;
-    @Spy
-    private final ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    private final ObjectMapper mapper = new ObjectMapper();
-    @Captor
-    ArgumentCaptor<HttpGet> httpGetArgumentCaptor;
-    @Mock
-    private CloseableHttpClient httpClient;
-    private FireboltAccountClient fireboltAccountClient;
+  private static final String ACCESS_TOKEN = "token";
+  private static final String HOST = "https://host";
+  private static final String ACCOUNT = "account";
+  private static final String ACCOUNT_ID = "account_id";
+  private static final String DB_NAME = "dbName";
+  private static final String ENGINE_NAME = "engineName";
+  private static MockedStatic<ProjectVersionUtil> mockedProjectVersionUtil;
 
-    @BeforeAll
-    static void init() {
-        mockedProjectVersionUtil = mockStatic(ProjectVersionUtil.class);
-        mockedProjectVersionUtil.when(ProjectVersionUtil::getProjectVersion).thenReturn("1.0-TEST");
-    }
+  @Spy
+  private final ObjectMapper objectMapper =
+      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-    @AfterAll
-    public static void close() {
-        mockedProjectVersionUtil.close();
-    }
+  private final ObjectMapper mapper = new ObjectMapper();
+  @Captor ArgumentCaptor<HttpGet> httpGetArgumentCaptor;
+  @Mock private CloseableHttpClient httpClient;
+  private FireboltAccountClient fireboltAccountClient;
 
-    @BeforeEach
-    void setUp() {
-        fireboltAccountClient = new FireboltAccountClient(httpClient, objectMapper);
-    }
+  @BeforeAll
+  static void init() {
+    mockedProjectVersionUtil = mockStatic(ProjectVersionUtil.class);
+    mockedProjectVersionUtil.when(ProjectVersionUtil::getProjectVersion).thenReturn("1.0-TEST");
+  }
 
-    @Test
-    void shouldGetAccountId() throws Exception {
-        CloseableHttpResponse response = mock(CloseableHttpResponse.class);
-        when(response.getStatusLine()).thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, "OK"));
-        HttpEntity entity = mock(HttpEntity.class);
-        when(entity.getContent()).thenReturn(new ByteArrayInputStream(mapper.writeValueAsBytes(FireboltAccountResponse.builder().accountId("12345").build())));
-        when(response.getEntity()).thenReturn(entity);
-        when(httpClient.execute(any())).thenReturn(response);
+  @AfterAll
+  public static void close() {
+    mockedProjectVersionUtil.close();
+  }
 
+  @BeforeEach
+  void setUp() {
+    fireboltAccountClient = new FireboltAccountClient(httpClient, objectMapper);
+  }
 
-        Optional<String> accountId = fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN);
+  @Test
+  void shouldGetAccountId() throws Exception {
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+    when(response.getStatusLine())
+        .thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, "OK"));
+    HttpEntity entity = mock(HttpEntity.class);
+    when(entity.getContent())
+        .thenReturn(
+            new ByteArrayInputStream(
+                mapper.writeValueAsBytes(
+                    FireboltAccountResponse.builder().accountId("12345").build())));
+    when(response.getEntity()).thenReturn(entity);
+    when(httpClient.execute(any())).thenReturn(response);
 
-        HttpGet expectedHttpGet = new HttpGet("https://host/iam/v2/accounts:getIdByName?accountName=" + ACCOUNT);
-        Map<String, String> expectedHeader = ImmutableMap.of("User-Agent", "fireboltJdbcDriver/1.0-TEST", "Authorization", "Bearer " + ACCESS_TOKEN);
+    Optional<String> accountId = fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN);
 
-        verify(httpClient).execute(httpGetArgumentCaptor.capture());
-        verify(objectMapper).readValue("{\"account_id\":\"12345\"}", FireboltAccountResponse.class);
-        HttpGet actualHttpGet = httpGetArgumentCaptor.getValue();
-        assertEquals(expectedHttpGet.getURI(), httpGetArgumentCaptor.getValue().getURI());
-        assertEquals(expectedHeader, headersToMap(actualHttpGet));
-        assertEquals("12345", accountId.get());
-    }
+    HttpGet expectedHttpGet =
+        new HttpGet("https://host/iam/v2/accounts:getIdByName?accountName=" + ACCOUNT);
+    Map<String, String> expectedHeader =
+        ImmutableMap.of(
+            "User-Agent", "fireboltJdbcDriver/1.0-TEST", "Authorization", "Bearer " + ACCESS_TOKEN);
 
-    @Test
-    void shouldGetEngineEndpoint() throws Exception {
-        CloseableHttpResponse response = mock(CloseableHttpResponse.class);
-        HttpEntity entity = mock(HttpEntity.class);
-        when(response.getStatusLine()).thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, "OK"));
-        when(entity.getContent()).thenReturn(new ByteArrayInputStream(mapper.writeValueAsBytes(FireboltEngineResponse.builder().engine(FireboltEngineResponse.Engine.builder().endpoint("http://engineEndpoint").build()).build())));
-        when(response.getEntity()).thenReturn(entity);
-        when(httpClient.execute(any())).thenReturn(response);
+    verify(httpClient).execute(httpGetArgumentCaptor.capture());
+    verify(objectMapper).readValue("{\"account_id\":\"12345\"}", FireboltAccountResponse.class);
+    HttpGet actualHttpGet = httpGetArgumentCaptor.getValue();
+    assertEquals(expectedHttpGet.getURI(), httpGetArgumentCaptor.getValue().getURI());
+    assertEquals(expectedHeader, headersToMap(actualHttpGet));
+    assertEquals("12345", accountId.get());
+  }
 
-        String engineAddress = fireboltAccountClient.getEngineAddress(HOST, ENGINE_NAME, DB_NAME, ACCOUNT_ID, ACCESS_TOKEN);
-        HttpGet expectedHttpGet = new HttpGet("https://host/core/v1/accounts/engineName/engines/" + ACCOUNT_ID);
-        Map<String, String> expectedHeader = ImmutableMap.of("User-Agent", "fireboltJdbcDriver/1.0-TEST", "Authorization", "Bearer " + ACCESS_TOKEN);
+  @Test
+  void shouldGetEngineEndpoint() throws Exception {
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+    HttpEntity entity = mock(HttpEntity.class);
+    when(response.getStatusLine())
+        .thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, "OK"));
+    when(entity.getContent())
+        .thenReturn(
+            new ByteArrayInputStream(
+                mapper.writeValueAsBytes(
+                    FireboltEngineResponse.builder()
+                        .engine(
+                            FireboltEngineResponse.Engine.builder()
+                                .endpoint("http://engineEndpoint")
+                                .build())
+                        .build())));
+    when(response.getEntity()).thenReturn(entity);
+    when(httpClient.execute(any())).thenReturn(response);
 
-        verify(httpClient).execute(httpGetArgumentCaptor.capture());
-        verify(objectMapper).readValue("{\"engine\":{\"endpoint\":\"http://engineEndpoint\"}}", FireboltEngineResponse.class);
-        HttpGet actualHttpGet = httpGetArgumentCaptor.getValue();
-        assertEquals(expectedHttpGet.getURI(), httpGetArgumentCaptor.getValue().getURI());
-        assertEquals(expectedHeader, headersToMap(actualHttpGet));
-        assertEquals("http://engineEndpoint", engineAddress);
-    }
+    String engineAddress =
+        fireboltAccountClient.getEngineAddress(
+            HOST, ENGINE_NAME, DB_NAME, ACCOUNT_ID, ACCESS_TOKEN);
+    HttpGet expectedHttpGet =
+        new HttpGet("https://host/core/v1/accounts/engineName/engines/" + ACCOUNT_ID);
+    Map<String, String> expectedHeader =
+        ImmutableMap.of(
+            "User-Agent", "fireboltJdbcDriver/1.0-TEST", "Authorization", "Bearer " + ACCESS_TOKEN);
 
-    @Test
-    void shouldGetDbAddress() throws Exception {
-        CloseableHttpResponse response = mock(CloseableHttpResponse.class);
-        HttpEntity entity = mock(HttpEntity.class);
-        when(response.getStatusLine()).thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, "OK"));
-        when(entity.getContent()).thenReturn(new ByteArrayInputStream(mapper.writeValueAsBytes(FireboltDatabaseResponse.builder().engineUrl("http://dbAddress").build())));
-        when(response.getEntity()).thenReturn(entity);
-        when(httpClient.execute(any())).thenReturn(response);
+    verify(httpClient).execute(httpGetArgumentCaptor.capture());
+    verify(objectMapper)
+        .readValue(
+            "{\"engine\":{\"endpoint\":\"http://engineEndpoint\"}}", FireboltEngineResponse.class);
+    HttpGet actualHttpGet = httpGetArgumentCaptor.getValue();
+    assertEquals(expectedHttpGet.getURI(), httpGetArgumentCaptor.getValue().getURI());
+    assertEquals(expectedHeader, headersToMap(actualHttpGet));
+    assertEquals("http://engineEndpoint", engineAddress);
+  }
 
-        String dbAddress = fireboltAccountClient.getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
-        HttpGet expectedHttpGet = new HttpGet(String.format("https://host/core/v1/accounts/%s/engines:getURLByDatabaseName?databaseName=%s", ACCOUNT_ID, DB_NAME));
-        Map<String, String> expectedHeader = ImmutableMap.of("User-Agent", "fireboltJdbcDriver/1.0-TEST", "Authorization", "Bearer " + ACCESS_TOKEN);
+  @Test
+  void shouldGetDbAddress() throws Exception {
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+    HttpEntity entity = mock(HttpEntity.class);
+    when(response.getStatusLine())
+        .thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, "OK"));
+    when(entity.getContent())
+        .thenReturn(
+            new ByteArrayInputStream(
+                mapper.writeValueAsBytes(
+                    FireboltDatabaseResponse.builder().engineUrl("http://dbAddress").build())));
+    when(response.getEntity()).thenReturn(entity);
+    when(httpClient.execute(any())).thenReturn(response);
 
-        verify(httpClient).execute(httpGetArgumentCaptor.capture());
-        verify(objectMapper).readValue("{\"engine_url\":\"http://dbAddress\"}", FireboltDatabaseResponse.class);
-        HttpGet actualHttpGet = httpGetArgumentCaptor.getValue();
-        assertEquals(expectedHttpGet.getURI(), httpGetArgumentCaptor.getValue().getURI());
-        assertEquals(expectedHeader, headersToMap(actualHttpGet));
-        assertEquals("http://dbAddress", dbAddress);
-    }
+    String dbAddress =
+        fireboltAccountClient.getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
+    HttpGet expectedHttpGet =
+        new HttpGet(
+            String.format(
+                "https://host/core/v1/accounts/%s/engines:getURLByDatabaseName?databaseName=%s",
+                ACCOUNT_ID, DB_NAME));
+    Map<String, String> expectedHeader =
+        ImmutableMap.of(
+            "User-Agent", "fireboltJdbcDriver/1.0-TEST", "Authorization", "Bearer " + ACCESS_TOKEN);
 
-    @Test
-    void shouldGetEngineId() throws Exception {
-        CloseableHttpResponse response = mock(CloseableHttpResponse.class);
-        HttpEntity entity = mock(HttpEntity.class);
-        when(response.getStatusLine()).thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, "OK"));
-        when(entity.getContent()).thenReturn(new ByteArrayInputStream(mapper.writeValueAsBytes(FireboltEngineIdResponse.builder().engine(FireboltEngineIdResponse.Engine.builder().engineId("13").build()).build())));
-        when(response.getEntity()).thenReturn(entity);
-        when(httpClient.execute(any())).thenReturn(response);
+    verify(httpClient).execute(httpGetArgumentCaptor.capture());
+    verify(objectMapper)
+        .readValue("{\"engine_url\":\"http://dbAddress\"}", FireboltDatabaseResponse.class);
+    HttpGet actualHttpGet = httpGetArgumentCaptor.getValue();
+    assertEquals(expectedHttpGet.getURI(), httpGetArgumentCaptor.getValue().getURI());
+    assertEquals(expectedHeader, headersToMap(actualHttpGet));
+    assertEquals("http://dbAddress", dbAddress);
+  }
 
-        String engineId = fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN);
-        HttpGet expectedHttpGet = new HttpGet(String.format("https://host/core/v1/accounts/%s/engines:getIdByName?engine_name=%s", ACCOUNT_ID, ENGINE_NAME));
-        Map<String, String> expectedHeader = ImmutableMap.of("User-Agent", "fireboltJdbcDriver/1.0-TEST", "Authorization", "Bearer " + ACCESS_TOKEN);
+  @Test
+  void shouldGetEngineId() throws Exception {
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+    HttpEntity entity = mock(HttpEntity.class);
+    when(response.getStatusLine())
+        .thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, "OK"));
+    when(entity.getContent())
+        .thenReturn(
+            new ByteArrayInputStream(
+                mapper.writeValueAsBytes(
+                    FireboltEngineIdResponse.builder()
+                        .engine(FireboltEngineIdResponse.Engine.builder().engineId("13").build())
+                        .build())));
+    when(response.getEntity()).thenReturn(entity);
+    when(httpClient.execute(any())).thenReturn(response);
 
-        verify(httpClient).execute(httpGetArgumentCaptor.capture());
-        verify(objectMapper).readValue("{\"engine_id\":{\"engine_id\":\"13\"}}", FireboltEngineIdResponse.class);
-        HttpGet actualHttpGet = httpGetArgumentCaptor.getValue();
-        assertEquals(expectedHttpGet.getURI(), httpGetArgumentCaptor.getValue().getURI());
-        assertEquals(expectedHeader, headersToMap(actualHttpGet));
-        assertEquals("13", engineId);
-    }
+    String engineId =
+        fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN);
+    HttpGet expectedHttpGet =
+        new HttpGet(
+            String.format(
+                "https://host/core/v1/accounts/%s/engines:getIdByName?engine_name=%s",
+                ACCOUNT_ID, ENGINE_NAME));
+    Map<String, String> expectedHeader =
+        ImmutableMap.of(
+            "User-Agent", "fireboltJdbcDriver/1.0-TEST", "Authorization", "Bearer " + ACCESS_TOKEN);
 
-    @Test
-    void shouldThrowExceptionWhenStatusCodeIsNotFound() throws Exception {
-        CloseableHttpResponse response = mock(CloseableHttpResponse.class);
-        when(response.getStatusLine()).thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_NOT_FOUND, "NOT FOUND"));
-        HttpEntity entity = mock(HttpEntity.class);
-        when(response.getEntity()).thenReturn(entity);
-        when(httpClient.execute(any())).thenReturn(response);
-        assertThrows(IOException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN));
+    verify(httpClient).execute(httpGetArgumentCaptor.capture());
+    verify(objectMapper)
+        .readValue("{\"engine_id\":{\"engine_id\":\"13\"}}", FireboltEngineIdResponse.class);
+    HttpGet actualHttpGet = httpGetArgumentCaptor.getValue();
+    assertEquals(expectedHttpGet.getURI(), httpGetArgumentCaptor.getValue().getURI());
+    assertEquals(expectedHeader, headersToMap(actualHttpGet));
+    assertEquals("13", engineId);
+  }
 
-    }
+  @Test
+  void shouldThrowExceptionWhenStatusCodeIsNotFound() throws Exception {
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+    when(response.getStatusLine())
+        .thenReturn(
+            new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_NOT_FOUND, "NOT FOUND"));
+    HttpEntity entity = mock(HttpEntity.class);
+    when(response.getEntity()).thenReturn(entity);
+    when(httpClient.execute(any())).thenReturn(response);
+    assertThrows(
+        IOException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN));
+  }
 
-    @Test
-    void shouldThrowExceptionWhenStatusCodeIsNotOk() throws Exception {
-        CloseableHttpResponse response = mock(CloseableHttpResponse.class);
-        when(response.getStatusLine()).thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_BAD_GATEWAY, "Bad Gateway"));
-        HttpEntity entity = mock(HttpEntity.class);
-        when(response.getEntity()).thenReturn(entity);
-        when(httpClient.execute(any())).thenReturn(response);
+  @Test
+  void shouldThrowExceptionWhenStatusCodeIsNotOk() throws Exception {
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+    when(response.getStatusLine())
+        .thenReturn(
+            new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_BAD_GATEWAY, "Bad Gateway"));
+    HttpEntity entity = mock(HttpEntity.class);
+    when(response.getEntity()).thenReturn(entity);
+    when(httpClient.execute(any())).thenReturn(response);
 
-        assertThrows(IOException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN));
+    assertThrows(
+        IOException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN));
+  }
 
-    }
-
-    private Map<String, String> headersToMap(HttpGet httpGet) {
-        return Arrays.stream(httpGet.getAllHeaders()).collect(Collectors.toMap(Header::getName, Header::getValue));
-    }
-
+  private Map<String, String> headersToMap(HttpGet httpGet) {
+    return Arrays.stream(httpGet.getAllHeaders())
+        .collect(Collectors.toMap(Header::getName, Header::getValue));
+  }
 }

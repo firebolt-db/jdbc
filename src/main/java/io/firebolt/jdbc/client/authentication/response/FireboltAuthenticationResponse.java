@@ -10,10 +10,12 @@ import lombok.Value;
 @Builder
 public class FireboltAuthenticationResponse {
 
-    @JsonProperty("access_token")
-    String accessToken;
-    @JsonProperty("refresh_token")
-    String refreshToken;
-    @JsonProperty("expires_in")
-    long expiresIn;
+  @JsonProperty("access_token")
+  String accessToken;
+
+  @JsonProperty("refresh_token")
+  String refreshToken;
+
+  @JsonProperty("expires_in")
+  long expiresIn;
 }

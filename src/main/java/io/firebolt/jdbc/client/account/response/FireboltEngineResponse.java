@@ -6,11 +6,11 @@ import lombok.Value;
 @Value
 @Builder
 public class FireboltEngineResponse {
-    Engine engine;
+  Engine engine;
 
-    @Value
-    @Builder
-    public static class Engine {
-        String endpoint;
-    }
+  @Value
+  @Builder
+  public static class Engine {
+    String endpoint;
+  }
 }

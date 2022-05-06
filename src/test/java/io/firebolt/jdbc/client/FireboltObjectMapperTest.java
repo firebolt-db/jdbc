@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 class FireboltObjectMapperTest {
 
-    @Test
-    void shouldGetInstance() {
-        assertInstanceOf(ObjectMapper.class, FireboltObjectMapper.getInstance());
-    }
+  @Test
+  void shouldGetInstance() {
+    assertInstanceOf(ObjectMapper.class, FireboltObjectMapper.getInstance());
+  }
 }

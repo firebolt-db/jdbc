@@ -18,23 +18,26 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class FireboltConnectionImplTest {
 
-    private final FireboltConnectionTokens fireboltConnectionTokens = FireboltConnectionTokens.builder().build();
-    @Mock
-    private FireboltAuthenticationService fireboltAuthenticationService;
-    @Mock
-    private FireboltEngineService fireboltEngineService;
+  private final FireboltConnectionTokens fireboltConnectionTokens =
+      FireboltConnectionTokens.builder().build();
+  @Mock private FireboltAuthenticationService fireboltAuthenticationService;
+  @Mock private FireboltEngineService fireboltEngineService;
 
-    @Test
-    void shouldInitConnection() throws IOException, NoSuchAlgorithmException {
-        String uri = "jdbc:firebolt://firebolt.io/db";
-        Properties connectionProperties = new Properties();
-        connectionProperties.put("user", "user");
-        connectionProperties.put("password", "pa$$word");
+  @Test
+  void shouldInitConnection() throws IOException, NoSuchAlgorithmException {
+    String uri = "jdbc:firebolt://firebolt.io/db";
+    Properties connectionProperties = new Properties();
+    connectionProperties.put("user", "user");
+    connectionProperties.put("password", "pa$$word");
 
-        when(fireboltAuthenticationService.getConnectionTokens("https://firebolt.io", "user", "pa$$word")).thenReturn(fireboltConnectionTokens);
-        FireboltConnectionImpl fireboltConnection = new FireboltConnectionImpl(uri, connectionProperties, fireboltAuthenticationService, fireboltEngineService);
-        verify(fireboltAuthenticationService).getConnectionTokens("https://firebolt.io", "user", "pa$$word");
-        assertNotNull(fireboltConnection);
-    }
-
+    when(fireboltAuthenticationService.getConnectionTokens(
+            "https://firebolt.io", "user", "pa$$word"))
+        .thenReturn(fireboltConnectionTokens);
+    FireboltConnectionImpl fireboltConnection =
+        new FireboltConnectionImpl(
+            uri, connectionProperties, fireboltAuthenticationService, fireboltEngineService);
+    verify(fireboltAuthenticationService)
+        .getConnectionTokens("https://firebolt.io", "user", "pa$$word");
+    assertNotNull(fireboltConnection);
+  }
 }

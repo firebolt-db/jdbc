@@ -6,7 +6,7 @@ import lombok.Value;
 @Value
 @Builder
 public class FireboltConnectionTokens {
-    String accessToken;
-    String refreshToken;
-    long expiresInSeconds;
+  String accessToken;
+  String refreshToken;
+  long expiresInSeconds;
 }

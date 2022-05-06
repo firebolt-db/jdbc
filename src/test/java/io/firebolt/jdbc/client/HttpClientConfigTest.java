@@ -12,22 +12,26 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 class HttpClientConfigTest {
 
-    @BeforeEach
-    public void resetSingleton() throws SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
-        Field instance = HttpClientConfig.class.getDeclaredField("client");
-        instance.setAccessible(true);
-        instance.set(null, null);
-    }
+  @BeforeEach
+  public void resetSingleton()
+      throws SecurityException, NoSuchFieldException, IllegalArgumentException,
+          IllegalAccessException {
+    Field instance = HttpClientConfig.class.getDeclaredField("client");
+    instance.setAccessible(true);
+    instance.set(null, null);
+  }
 
-    @Test
-    void shouldInitHttpClient() throws Exception {
-        try (CloseableHttpClient client = HttpClientConfig.init(FireboltProperties.builder().defaultMaxPerRoute(1).maxTotal(1).build())) {
-            assertNotNull(client);
-        }
+  @Test
+  void shouldInitHttpClient() throws Exception {
+    try (CloseableHttpClient client =
+        HttpClientConfig.init(
+            FireboltProperties.builder().defaultMaxPerRoute(1).maxTotal(1).build())) {
+      assertNotNull(client);
     }
+  }
 
-    @Test
-    void shouldBeNullIfClientWasNotInitialized() {
-        assertNull(HttpClientConfig.getInstance());
-    }
+  @Test
+  void shouldBeNullIfClientWasNotInitialized() {
+    assertNull(HttpClientConfig.getInstance());
+  }
 }

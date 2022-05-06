@@ -7,6 +7,6 @@ import lombok.Value;
 @Value
 @Builder
 public class FireboltAccountResponse {
-    @JsonProperty("account_id")
-    String accountId;
+  @JsonProperty("account_id")
+  String accountId;
 }
