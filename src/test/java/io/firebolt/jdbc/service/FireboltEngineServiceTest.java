@@ -31,7 +31,7 @@ class FireboltEngineServiceTest {
     when(fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN))
         .thenReturn(Optional.of(ACCOUNT_ID));
 
-    fireboltEngineService.getEngineAddress(HOST, DB_NAME, null, ACCOUNT, ACCESS_TOKEN);
+    fireboltEngineService.getEngineHost(HOST, DB_NAME, null, ACCOUNT, ACCESS_TOKEN);
 
     verify(fireboltAccountClient).getAccountId(HOST, ACCOUNT, ACCESS_TOKEN);
     verify(fireboltAccountClient)
@@ -46,7 +46,7 @@ class FireboltEngineServiceTest {
     when(fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN))
         .thenReturn(ENGINE_ID);
 
-    fireboltEngineService.getEngineAddress(HOST, DB_NAME, ENGINE_NAME, ACCOUNT, ACCESS_TOKEN);
+    fireboltEngineService.getEngineHost(HOST, DB_NAME, ENGINE_NAME, ACCOUNT, ACCESS_TOKEN);
 
     verify(fireboltAccountClient).getAccountId(HOST, ACCOUNT, ACCESS_TOKEN);
     verify(fireboltAccountClient).getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN);

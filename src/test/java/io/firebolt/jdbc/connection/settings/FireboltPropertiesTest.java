@@ -1,16 +1,15 @@
 package io.firebolt.jdbc.connection.settings;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Properties;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
-class PropertiesToFireboltPropertiesTransformerTest {
-
-  private final PropertiesToFireboltPropertiesTransformer transformer =
-      new PropertiesToFireboltPropertiesTransformer();
+class FireboltPropertiesTest {
 
   @Test
   void shouldHaveDefaultPropertiesWhenOnlyTheRequiredFieldsAreSpecified() {
@@ -21,15 +20,13 @@ class PropertiesToFireboltPropertiesTransformerTest {
             .sslMode("strict")
             .usePathAsDb(true)
             .path("/")
-            .port(443) // 443 by default as SSL is enabled by default
-            .database("default") // detabase is "default" by default when the path is "/"
+            .port(443)
             .compress(1)
             .useConnectionPool(0)
             .user(null)
             .password(null)
-            .host("https://host") // host is appended with https:// because SSL is enabled
+            .host("host")
             .ssl(true)
-            .customProperties(new Properties())
             .account(null)
             .engine(null)
             .defaultMaxPerRoute(500)
@@ -42,39 +39,37 @@ class PropertiesToFireboltPropertiesTransformerTest {
             .connectionTimeout(2147483647)
             .keepAliveTimeout(2147483647)
             .apacheBufferSize(65536)
+            .additionalProperties(new ArrayList<>())
             .build();
 
     Properties properties = new Properties();
-    properties.put("host", "host"); // host is mandatory
-    assertEquals(
-        expectedDefaultProperties,
-        new PropertiesToFireboltPropertiesTransformer().apply(properties));
+    properties.put("host", "host");
+    assertEquals(expectedDefaultProperties, FireboltProperties.of(properties));
   }
 
   @Test
   void shouldHaveAllTheSpecifiedCustomProperties() {
     Properties properties = new Properties();
-    properties.put("bufferSize", "51");
-    properties.put("socketTimeout", "20");
+    properties.put("buffer_size", "51");
+    properties.put("socket_timeout", "20");
     properties.put("ssl", "true");
     properties.put("port", "13");
     properties.put("host", "myDummyHost");
     properties.put("database", "myDb");
     properties.put("sslRootCert", "root_cert");
-    properties.put("sslMode", "none");
-    properties.put("usePathAsDb", "false");
+    properties.put("sslmode", "none");
+    properties.put("use_path_as_db", "false");
     properties.put("path", "/example");
-    properties.put("checkForRedirects", "true");
+    properties.put("check_for_redirects", "true");
     properties.put("someCustomProperties", "custom_value");
+    properties.put("max_retries", "3");
     properties.put("compress", "0");
-
-    Properties customProperties = new Properties();
-    customProperties.put("someCustomProperties", "custom_value");
 
     FireboltProperties expectedDefaultProperties =
         FireboltProperties.builder()
             .bufferSize(51)
             .sslRootCertificate("root_cert")
+            .maxRetries(3)
             .sslMode("none")
             .usePathAsDb(false)
             .path("/example")
@@ -84,23 +79,24 @@ class PropertiesToFireboltPropertiesTransformerTest {
             .useConnectionPool(0)
             .user(null)
             .password(null)
-            .host("https://myDummyHost")
+            .host("myDummyHost")
             .ssl(true)
-            .customProperties(customProperties)
             .account(null)
             .engine(null)
             .defaultMaxPerRoute(500)
             .timeToLiveMillis(60000)
             .validateAfterInactivityMillis(3000)
             .maxTotal(10000)
-            .maxRetries(3)
             .outputFormat(null)
             .socketTimeout(20)
             .connectionTimeout(2147483647)
             .keepAliveTimeout(2147483647)
             .apacheBufferSize(65536)
+            .additionalProperties(
+                Collections.singletonList(
+                    new ImmutablePair<>("someCustomProperties", "custom_value")))
             .build();
-    assertEquals(expectedDefaultProperties, transformer.apply(properties));
+    assertEquals(expectedDefaultProperties, FireboltProperties.of(properties));
   }
 
   @Test
@@ -110,31 +106,31 @@ class PropertiesToFireboltPropertiesTransformerTest {
     properties.put("path", "/example");
     properties.put("host", "host");
 
-    assertEquals("example", transformer.apply(properties).getDatabase());
+    assertEquals("example", FireboltProperties.of(properties).getDatabase());
   }
 
   @Test
-  void shouldUseDefaultDbWhenDatabaseNameIsEmpty() {
+  void dbShouldBeNullWhenNoneProvided() {
     Properties properties = new Properties();
     properties.put("usePathAsDb", "false");
     properties.put("host", "host");
 
-    assertEquals("default", transformer.apply(properties).getDatabase());
+    assertNull(FireboltProperties.of(properties).getDatabase());
   }
 
   @Test
   void shouldThrowExceptionWhenHostIsNotProvided() {
     Properties properties = new Properties();
-    assertThrows(IllegalArgumentException.class, () -> transformer.apply(properties));
+    assertThrows(IllegalArgumentException.class, () -> FireboltProperties.of(properties));
   }
 
   @Test
   void shouldThrowExceptionWhenDbPathFormatIsInvalid() {
     Properties properties = new Properties();
     properties.put("usePathAsDb", "true");
-    properties.put("path", "");
+    properties.put("path", "INVALID_FORMAT");
     properties.put("host", "host");
 
-    assertThrows(IllegalArgumentException.class, () -> transformer.apply(properties));
+    assertThrows(IllegalArgumentException.class, () -> FireboltProperties.of(properties));
   }
 }
