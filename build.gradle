@@ -45,8 +45,15 @@ jacocoTestReport {
         classDirectories.setFrom(files(classDirectories.files.collect {
             fileTree(dir: it, exclude: [
                     "io/firebolt/jdbc/client/config/**",
+                    "io/firebolt/jdbc/FireboltDriver.class",
                     "io/firebolt/jdbc/connection/settings/FireboltProperties.class",
-                    "io/firebolt/jdbc/FireboltDriver.class"
+                    "io/firebolt/jdbc/resultset/array/AbstractArray.class",
+                    "io/firebolt/jdbc/resultset/AbstractResultSet.class",
+                    "io/firebolt/jdbc/resultset/array/AbstractArray.class",
+                    "io/firebolt/jdbc/statement/AbstractStatement.class",
+                    "io/firebolt/jdbc/connection/databasemetadata/FireboltDatabaseMetadata.class",
+                    "io/firebolt/jdbc/connection/FireboltDatabaseMetadata.class",
+                    "io/firebolt/jdbc/connection/AbstractConnection.class",
             ])
         }))
     }

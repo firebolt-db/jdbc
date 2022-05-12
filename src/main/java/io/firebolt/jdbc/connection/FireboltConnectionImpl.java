@@ -5,11 +5,13 @@ import io.firebolt.jdbc.client.FireboltObjectMapper;
 import io.firebolt.jdbc.client.HttpClientConfig;
 import io.firebolt.jdbc.client.account.FireboltAccountClient;
 import io.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
+import io.firebolt.jdbc.client.query.QueryClientImpl;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
-import io.firebolt.jdbc.connection.settings.PropertiesToFireboltPropertiesTransformer;
-import io.firebolt.jdbc.connection.settings.PropertyUtil;
+import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.service.FireboltAuthenticationService;
 import io.firebolt.jdbc.service.FireboltEngineService;
+import io.firebolt.jdbc.service.FireboltQueryService;
+import io.firebolt.jdbc.statement.FireboltStatementImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.impl.client.CloseableHttpClient;
 
@@ -18,19 +20,22 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
-import java.sql.*;
-import java.util.Collections;
-import java.util.Map;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
 @Slf4j
-public class FireboltConnectionImpl implements Connection {
+public class FireboltConnectionImpl extends AbstractConnection {
 
   private final FireboltAuthenticationService fireboltAuthenticationService;
   private final FireboltEngineService fireboltEngineService;
+  private final FireboltProperties loginProperties;
   boolean closed = true;
-  private FireboltProperties fireboltProperties;
+  private FireboltProperties sessionProperties;
+  private String httpConnectionUrl;
 
   public FireboltConnectionImpl(
       String url,
@@ -39,22 +44,18 @@ public class FireboltConnectionImpl implements Connection {
       FireboltEngineService fireboltEngineService) {
     this.fireboltAuthenticationService = fireboltAuthenticationService;
     this.fireboltEngineService = fireboltEngineService;
-    this.initConnection(url, connectionSettings, null);
-    closed = false;
+    this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
   }
 
   public FireboltConnectionImpl(String url, Properties connectionSettings) {
     ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
-    this.fireboltProperties =
-        PropertyUtil.extractFireboltProperties(
-            url, connectionSettings, new PropertiesToFireboltPropertiesTransformer());
-    CloseableHttpClient httpClient = getHttpClient(fireboltProperties);
-    fireboltAuthenticationService =
+    this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
+    CloseableHttpClient httpClient = getHttpClient(loginProperties);
+    this.fireboltAuthenticationService =
         new FireboltAuthenticationService(
             new FireboltAuthenticationClient(httpClient, objectMapper));
-    fireboltEngineService =
+    this.fireboltEngineService =
         new FireboltEngineService(new FireboltAccountClient(httpClient, objectMapper));
-    this.initConnection(url, connectionSettings, fireboltProperties);
   }
 
   private static synchronized CloseableHttpClient getHttpClient(
@@ -72,76 +73,47 @@ public class FireboltConnectionImpl implements Connection {
     }
   }
 
-  private void initConnection(
-      String url, Properties connectionSettings, FireboltProperties fireboltProperties) {
-    fireboltProperties =
-        fireboltProperties == null
-            ? PropertyUtil.extractFireboltProperties(
-                url, connectionSettings, new PropertiesToFireboltPropertiesTransformer())
-            : fireboltProperties;
-    log.info("Connecting to {}", url);
-    try {
-      FireboltConnectionTokens tokens =
-          fireboltAuthenticationService.getConnectionTokens(
-              fireboltProperties.getHost(),
-              fireboltProperties.getUser(),
-              fireboltProperties.getPassword());
-      String engineAddress =
-          fireboltEngineService.getEngineAddress(
-              fireboltProperties.getHost(),
-              fireboltProperties.getDatabase(),
-              fireboltProperties.getEngine(),
-              fireboltProperties.getAccount(),
-              tokens.getAccessToken());
-      log.info("Engine address: {}", engineAddress);
-    } catch (Exception e) {
-      throw new RuntimeException("Could not connect", e);
-    }
-  }
+  public synchronized FireboltConnectionImpl connect() throws FireboltException {
+    if (closed) {
+      try {
+        httpConnectionUrl = getHttpConnectionUrl(loginProperties);
+        FireboltConnectionTokens tokens =
+            fireboltAuthenticationService.getConnectionTokens(
+                httpConnectionUrl, loginProperties.getUser(), loginProperties.getPassword());
+        String engineHost =
+            fireboltEngineService.getEngineHost(
+                httpConnectionUrl,
+                loginProperties.getDatabase(),
+                loginProperties.getEngine(),
+                loginProperties.getAccount(),
+                tokens.getAccessToken());
 
-  @Override
-  public void close() throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
+        this.sessionProperties = loginProperties.toBuilder().host(engineHost).build();
+        closed = false;
+      } catch (Exception e) {
+        throw new FireboltException("Could not connect", e);
+      }
+    }
+    return this;
   }
 
   @Override
   public Statement createStatement() throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
-  @Override
-  public PreparedStatement prepareStatement(String sql) throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
-  @Override
-  public CallableStatement prepareCall(String sql) throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
-  @Override
-  public String nativeSQL(String sql) throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
+    FireboltConnectionTokens connectionTokens =
+        fireboltAuthenticationService.getConnectionTokens(
+            httpConnectionUrl, sessionProperties.getUser(), sessionProperties.getPassword());
+    return FireboltStatementImpl.builder()
+        .fireboltQueryService(
+            new FireboltQueryService(new QueryClientImpl(HttpClientConfig.getInstance())))
+        .sessionProperties(sessionProperties)
+        .connectionTokens(connectionTokens)
+        .fireboltConnectionImpl(this)
+        .build();
   }
 
   @Override
   public boolean getAutoCommit() throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
-  @Override
-  public void setAutoCommit(boolean autoCommit) throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
-  @Override
-  public void commit() throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
-  @Override
-  public void rollback() throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
+    return false;
   }
 
   @Override
@@ -151,25 +123,12 @@ public class FireboltConnectionImpl implements Connection {
 
   @Override
   public DatabaseMetaData getMetaData() throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
+    return null;
   }
-
-  @Override
-  public boolean isReadOnly() throws SQLException {
-    return false;
-  }
-
-  @Override
-  public void setReadOnly(boolean readOnly) throws SQLException {}
 
   @Override
   public String getCatalog() throws SQLException {
-    return fireboltProperties.getDatabase();
-  }
-
-  @Override
-  public void setCatalog(String catalog) throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
+    return sessionProperties.getDatabase();
   }
 
   @Override
@@ -178,164 +137,13 @@ public class FireboltConnectionImpl implements Connection {
   }
 
   @Override
-  public void setTransactionIsolation(int level) throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
-  @Override
-  public SQLWarning getWarnings() throws SQLException {
-    return null;
-  }
-
-  @Override
-  public void clearWarnings() throws SQLException {}
-
-  @Override
-  public Statement createStatement(int resultSetType, int resultSetConcurrency)
-      throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
-  @Override
-  public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency)
-      throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
-  @Override
-  public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency)
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public Map<String, Class<?>> getTypeMap() throws SQLException {
-    return Collections.emptyMap();
-  }
-
-  @Override
-  public void setTypeMap(Map<String, Class<?>> map) throws SQLException {}
-
-  @Override
-  public int getHoldability() throws SQLException {
-    return 0;
-  }
-
-  @Override
-  public void setHoldability(int holdability) throws SQLException {}
-
-  @Override
-  public Savepoint setSavepoint() throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public Savepoint setSavepoint(String name) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public void rollback(Savepoint savepoint) throws SQLException {}
-
-  @Override
-  public void releaseSavepoint(Savepoint savepoint) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public Statement createStatement(
-      int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
-  @Override
-  public PreparedStatement prepareStatement(
-      String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability)
-      throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
-  @Override
-  public CallableStatement prepareCall(
-      String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability)
-      throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public Clob createClob() throws SQLException {
-    return null;
-  }
-
-  @Override
-  public Blob createBlob() throws SQLException {
-    return null;
-  }
-
-  @Override
-  public NClob createNClob() throws SQLException {
-    return null;
-  }
-
-  @Override
-  public SQLXML createSQLXML() throws SQLException {
-    return null;
-  }
-
-  @Override
-  public boolean isValid(int timeout) throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
-  @Override
-  public void setClientInfo(String name, String value) throws SQLClientInfoException {}
-
-  @Override
-  public String getClientInfo(String name) throws SQLException {
-    return null;
-  }
-
-  @Override
-  public Properties getClientInfo() throws SQLException {
-    return null;
-  }
-
-  @Override
-  public void setClientInfo(Properties properties) throws SQLClientInfoException {}
-
-  @Override
-  public Array createArrayOf(String typeName, Object[] elements) throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
-  @Override
-  public Struct createStruct(String typeName, Object[] attributes) throws SQLException {
-    return null;
-  }
-
-  @Override
   public String getSchema() throws SQLException {
-    return fireboltProperties.getDatabase();
+    return sessionProperties.getDatabase();
   }
 
   @Override
   public void setSchema(String schema) throws SQLException {
-    fireboltProperties = fireboltProperties.toBuilder().database(schema).build();
+    sessionProperties = sessionProperties.toBuilder().database(schema).build();
   }
 
   @Override
@@ -343,26 +151,15 @@ public class FireboltConnectionImpl implements Connection {
     this.close();
   }
 
-  @Override
-  public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
-    throw new UnsupportedOperationException("Not supported yet.");
+  private FireboltProperties extractFireboltProperties(
+      String jdbcUri, Properties connectionProperties) {
+    Properties propertiesFromUrl = FireboltJdbcUrlUtil.extractProperties(jdbcUri);
+    return FireboltProperties.of(propertiesFromUrl, connectionProperties);
   }
 
-  @Override
-  public int getNetworkTimeout() throws SQLException {
-    return 0;
-  }
-
-  @Override
-  public <T> T unwrap(Class<T> iface) throws SQLException {
-    if (iface.isAssignableFrom(getClass())) {
-      return iface.cast(this);
-    }
-    throw new SQLException("Cannot unwrap to " + iface.getName());
-  }
-
-  @Override
-  public boolean isWrapperFor(Class<?> iface) throws SQLException {
-    return iface.isAssignableFrom(getClass());
+  private String getHttpConnectionUrl(FireboltProperties newSessionProperties) {
+    return Boolean.TRUE.equals(newSessionProperties.getSsl())
+        ? "https://" + newSessionProperties.getHost()
+        : "htto://" + newSessionProperties.getHost();
   }
 }
