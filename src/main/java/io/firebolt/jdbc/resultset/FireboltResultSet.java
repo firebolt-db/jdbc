@@ -155,7 +155,7 @@ public class FireboltResultSet extends AbstractResultSet {
   public Array getArray(int columnIndex) throws SQLException {
     String value = getValueAtColumn(columnIndex);
     return BaseType.ARRAY.transform(
-        value, this.resultSetMetaData.getColumn(columnIndex).getArrayType());
+        value, this.resultSetMetaData.getColumn(columnIndex).getArrayBaseDataType());
   }
 
   @Override
@@ -244,10 +244,10 @@ public class FireboltResultSet extends AbstractResultSet {
     }
 
     FireboltColumn columnInfo = this.columns.get(columnIndex - 1);
-    FireboltDataType columnType = columnInfo.getFireboltDataType();
+    FireboltDataType columnType = columnInfo.getDataType();
 
     return Optional.of(columnType)
-        .map(type -> type.getBaseType().transform(value, columnInfo.getArrayType()))
+        .map(type -> type.getBaseType().transform(value, columnInfo.getArrayBaseDataType()))
         .orElse(null);
   }
 

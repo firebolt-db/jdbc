@@ -50,7 +50,7 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 
   @Override
   public boolean isSigned(int column) throws SQLException {
-    return getColumn(column).getFireboltDataType().isSigned();
+    return getColumn(column).getDataType().isSigned();
   }
 
   @Override
@@ -95,7 +95,7 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 
   @Override
   public int getColumnType(int column) throws SQLException {
-    return getColumn(column).getFireboltDataType().getSqlType();
+    return getColumn(column).getDataType().getSqlType();
   }
 
   @Override
@@ -120,7 +120,7 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 
   @Override
   public String getColumnClassName(int column) throws SQLException {
-    return getColumn(column).getFireboltDataType().getBaseType().getType().getCanonicalName();
+    return getColumn(column).getDataType().getBaseType().getType().getCanonicalName();
   }
 
   @Override

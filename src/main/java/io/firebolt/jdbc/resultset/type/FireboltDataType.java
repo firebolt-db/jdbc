@@ -5,11 +5,7 @@ import java.sql.Types;
 /** Supported data types. */
 public enum FireboltDataType {
   U_INT_8(Types.TINYINT, "UInt8", BaseType.LONG, false, 3, 0),
-  U_INT_16(Types.SMALLINT, "UInt16", BaseType.LONG, false, 5, 0),
-  U_INT_32(Types.INTEGER, "UInt32", BaseType.LONG, false, 10, 0),
-  U_INT_64(Types.BIGINT, "UInt64", BaseType.BIG_INTEGER, false, 19, 0),
   INT_8(Types.TINYINT, "Int8", BaseType.INTEGER, true, 4, 0),
-  INT_16(Types.SMALLINT, "Int16", BaseType.INTEGER, true, 6, 0),
   INT_32(Types.INTEGER, "Int32", BaseType.BIG_INTEGER, true, 11, 0, "INTEGER", "INT"),
   INT_64(Types.BIGINT, "Int64", BaseType.BIG_INTEGER, true, 20, 0, "BIGINT"),
   FLOAT_32(Types.FLOAT, "Float32", BaseType.FLOAT, true, 8, 8, "FLOAT"),
@@ -22,7 +18,8 @@ public enum FireboltDataType {
   NOTHING(Types.NULL, "Nothing", BaseType.NULL, false, 0, 0),
   UNKNOWN(Types.OTHER, "Unknown", BaseType.OTHER, false, 0, 0),
   DECIMAL(Types.DECIMAL, "Decimal", BaseType.DECIMAL, true, 0, 0, "DEC"),
-  ARRAY(Types.ARRAY, "Array", BaseType.ARRAY, false, 0, 0);
+  ARRAY(Types.ARRAY, "Array", BaseType.ARRAY, false, 0, 0),
+  TUPLE(Types.OTHER, "Tuple",  BaseType.STRING, false, 0, 0);
 
   private final int sqlType;
 

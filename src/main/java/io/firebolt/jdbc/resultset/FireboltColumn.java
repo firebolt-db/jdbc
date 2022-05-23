@@ -3,6 +3,7 @@ package io.firebolt.jdbc.resultset;
 import io.firebolt.jdbc.resultset.type.FireboltDataType;
 import lombok.Builder;
 import lombok.Getter;
+import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -14,25 +15,28 @@ import static io.firebolt.jdbc.resultset.type.FireboltDataType.NULLABLE_TYPE;
 @Builder
 @Getter
 public final class FireboltColumn {
-
   private final String columnType;
   private final String columnName;
-  private FireboltDataType fireboltDataType;
-  private boolean nullable;
-
-  private FireboltDataType arrayType;
-  private int arrayDepth;
-
-  private int precision;
-  private int scale;
+  private final FireboltDataType dataType;
+  private final boolean nullable;
+  private final FireboltDataType arrayBaseDataType;
+  private final int arrayDepth;
+  private final int precision;
+  private final int scale;
+  private Pair<FireboltColumn, FireboltColumn> columnsTuple;
 
   public static FireboltColumn of(String columnType, String columnName) {
     int currentIndex = 0;
     int arrayDepth = 0;
     boolean isNullable = false;
     FireboltDataType arrayType = null;
+    Pair<FireboltColumn, FireboltColumn> tuple = null;
     Optional<Pair<Optional<Integer>, Optional<Integer>>> scaleAndPrecisionPair;
     FireboltDataType fireboltType;
+
+    if (columnType.startsWith(FireboltDataType.TUPLE.getName())) {
+      tuple = getColumnsTuple(columnType, columnName);
+    }
 
     while (columnType.startsWith(FireboltDataType.ARRAY.getName(), currentIndex)) {
       arrayDepth++;
@@ -76,11 +80,22 @@ public final class FireboltColumn {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .orElse(dataType.getDefaultPrecision()))
-        .arrayType(arrayType)
-        .fireboltDataType(fireboltType)
+        .arrayBaseDataType(arrayType)
+        .dataType(fireboltType)
         .nullable(isNullable)
         .arrayDepth(arrayDepth)
+        .columnsTuple(tuple)
         .build();
+  }
+
+  private static Pair<FireboltColumn, FireboltColumn> getColumnsTuple(String columnType, String columnName) {
+    String types =
+        RegExUtils.replaceFirst(columnType, FireboltDataType.TUPLE.getName() + "\\(", "");
+    types = StringUtils.substring(types, 0, types.length() - 1); //remove last parenthesis
+
+    FireboltColumn leftColumnType = FireboltColumn.of(types.split(",")[0].trim(), columnName);
+    FireboltColumn rightColumnType = FireboltColumn.of(types.split(",")[1].trim(), columnName);
+    return new ImmutablePair<>(leftColumnType, rightColumnType);
   }
 
   private static boolean reachedEndOfTypeName(int typeNameEndIndex, int type) {
@@ -125,11 +140,17 @@ public final class FireboltColumn {
   }
 
   public String getCompactTypeName() {
-    if (!nullable) {
-      return columnType;
+    if (this.columnsTuple != null) {
+      return String.format(
+              "Tuple(%s, %s)",
+          this.columnsTuple.getLeft().getCompactTypeName(), this.columnsTuple.getRight().getCompactTypeName());
     } else {
-      String trimmedType = StringUtils.remove(columnType, NULLABLE_TYPE + "(");
-      return StringUtils.removeEnd(trimmedType, ")");
+      if (!nullable) {
+        return columnType;
+      } else {
+        String trimmedType = StringUtils.remove(columnType, NULLABLE_TYPE + "(");
+        return StringUtils.removeEnd(trimmedType, ")");
+      }
     }
   }
 }
