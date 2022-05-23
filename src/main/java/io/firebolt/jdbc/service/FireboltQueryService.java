@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.service;
 
+import com.google.common.base.CharMatcher;
 import io.firebolt.jdbc.client.query.QueryClient;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
@@ -24,7 +25,7 @@ public class FireboltQueryService {
   }
 
   public Optional<Pair<String, String>> extractAdditionalProperties(String sql) {
-    sql = sql.toLowerCase().trim();
+    sql = sql.trim();
     int i = 0;
     while (i < sql.length()) {
       String nextTwoChars = sql.substring(i, Math.min(i + 2, sql.length()));
@@ -36,7 +37,7 @@ public class FireboltQueryService {
           i = Math.max(i, sql.indexOf("*/", i));
           break;
         default:
-          String trimmedQuery = sql.substring(i).trim().toLowerCase();
+          String trimmedQuery = sql.substring(i).trim();
           if (StringUtils.startsWithIgnoreCase(trimmedQuery, SET_PREFIX)) {
             return extractPropertyPair(sql, trimmedQuery);
           }
@@ -50,8 +51,14 @@ public class FireboltQueryService {
   private Optional<Pair<String, String>> extractPropertyPair(String sql, String query) {
     String setQuery = StringUtils.stripStart(query, SET_PREFIX);
     String[] values = StringUtils.split(setQuery, "=");
-    if (values.length == 2) {
-      return Optional.of(Pair.of(values[0], values[1]));
+    if (values.length <= 2) {
+      String paramValue;
+      if (values.length == 2) {
+        paramValue = CharMatcher.is('\'').trimFrom(values[1].trim());
+      } else {
+        paramValue = StringUtils.EMPTY;
+      }
+      return Optional.of(Pair.of(values[0], paramValue.trim()));
     } else {
       throw new IllegalArgumentException(
           "Cannot parse the additional properties provided in the query: " + sql);

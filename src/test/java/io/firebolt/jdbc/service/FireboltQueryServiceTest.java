@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.service;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
 
@@ -20,12 +21,52 @@ class FireboltQueryServiceTest {
   }
 
   @Test
-  void shouldExtractAdditionalWithEmptyProperties() {
+  void shouldTrimSpacesWhenExtractingAdditionalProperties() {
     FireboltQueryService fireboltQueryService = new FireboltQueryService(null);
 
-    String query = "set my_custom_char=' '";
+    String query = "set my_custom_query= 1 ";
     assertEquals(
-        Optional.of(new ImmutablePair<>("my_custom_char", "' '")),
+            Optional.of(new ImmutablePair<>("my_custom_query", "1")),
+            fireboltQueryService.extractAdditionalProperties(query));
+  }
+
+  @Test
+  void shouldReturnEmptyPropertyWhenExtractingPropertiesWithOnlySpacesAndQuotes() {
+    FireboltQueryService fireboltQueryService = new FireboltQueryService(null);
+
+    String query = "set my_custom_char='  '";
+    assertEquals(
+        Optional.of(new ImmutablePair<>("my_custom_char", StringUtils.EMPTY)),
         fireboltQueryService.extractAdditionalProperties(query));
+  }
+
+  @Test
+  void shouldReturnEmptyPropertyWhenExtractingAdditionalPropertiesWithASpace() {
+    FireboltQueryService fireboltQueryService = new FireboltQueryService(null);
+
+    String query = "set my_custom_char= ";
+    assertEquals(
+            Optional.of(new ImmutablePair<>("my_custom_char", StringUtils.EMPTY)),
+            fireboltQueryService.extractAdditionalProperties(query));
+  }
+
+  @Test
+  void shouldReturnEmptyPropertyWhenExtractingAdditionalPropertiesWithEmpty() {
+    FireboltQueryService fireboltQueryService = new FireboltQueryService(null);
+
+    String query = "set my_custom_char=";
+    assertEquals(
+            Optional.of(new ImmutablePair<>("my_custom_char", StringUtils.EMPTY)),
+            fireboltQueryService.extractAdditionalProperties(query));
+  }
+
+  @Test
+  void shouldKeepCapitalLettersWhenExtractingProperties() {
+    FireboltQueryService fireboltQueryService = new FireboltQueryService(null);
+
+    String query = "set my_custom_char=     myValue1  ";
+    assertEquals(
+            Optional.of(new ImmutablePair<>("my_custom_char", "myValue1")),
+            fireboltQueryService.extractAdditionalProperties(query));
   }
 }
