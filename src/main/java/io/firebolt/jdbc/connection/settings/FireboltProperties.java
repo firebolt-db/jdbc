@@ -84,7 +84,7 @@ public class FireboltProperties {
     int keepAliveTimeout =
         getSetting(mergedProperties, FireboltSessionProperty.KEEP_ALIVE_TIMEOUT_MILLIS);
     String host = getHost(mergedProperties, ssl);
-    Integer port = getPort(mergedProperties, ssl);
+    Integer port = getPort(ssl);
     String database = getDatabase(mergedProperties, path);
     List<Pair<String, String>> additionalProperties = getFireboltCustomProperties(mergedProperties);
 
@@ -130,12 +130,8 @@ public class FireboltProperties {
   }
 
   @NotNull
-  private static Integer getPort(Properties properties, boolean ssl) {
-    Integer port = getSetting(properties, FireboltSessionProperty.PORT);
-    if (port == null) {
-      port = ssl ? FIREBOLT_SSL_PROXY_PORT : FIREBOLT_NO_SSL_PROXY_PORT;
-    }
-    return port;
+  private static Integer getPort(boolean ssl) {
+    return ssl ? FIREBOLT_SSL_PROXY_PORT : FIREBOLT_NO_SSL_PROXY_PORT;
   }
 
   private static String getDatabase(Properties properties, String path)

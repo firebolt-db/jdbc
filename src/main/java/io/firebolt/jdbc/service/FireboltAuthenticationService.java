@@ -23,8 +23,8 @@ public class FireboltAuthenticationService {
 
   public FireboltConnectionTokens getConnectionTokens(String host, String user, String password) {
     try {
-      synchronized (FireboltAuthenticationService.class) {
-        ConnectParams connectionParams = new ConnectParams(host, user, password);
+      ConnectParams connectionParams = new ConnectParams(host, user, password);
+      synchronized (this) {
         FireboltConnectionTokens foundToken = tokensMap.get(connectionParams);
         if (foundToken != null) {
           log.debug("Using the token of {} from the cache", user);

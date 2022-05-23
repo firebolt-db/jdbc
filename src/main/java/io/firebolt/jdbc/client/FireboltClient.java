@@ -63,9 +63,9 @@ public abstract class FireboltClient {
   }
 
   protected void validateResponse(String uri, CloseableHttpResponse response) throws IOException {
-    int statusCode =
+    int statusCode = 
         Optional.ofNullable(response.getStatusLine()).map(StatusLine::getStatusCode).orElse(-1);
-    if (!(statusCode >= 200 && statusCode <= 299)) {
+    if (!isCallSuccessful(statusCode)) {
       if (statusCode == HTTP_UNAVAILABLE) {
         throw new IOException(
             String.format(
@@ -77,5 +77,9 @@ public abstract class FireboltClient {
               "Failed to query Firebolt with uri %s. Status code: %d, Error message: %s",
               uri, statusCode, EntityUtils.toString(response.getEntity())));
     }
+  }
+
+  private boolean isCallSuccessful(int statusCode) {
+    return statusCode >= 200 && statusCode <= 299; // Call is considered successful when the status code is 2XX
   }
 }

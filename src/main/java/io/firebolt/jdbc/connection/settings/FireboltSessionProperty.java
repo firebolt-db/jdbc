@@ -74,7 +74,6 @@ public enum FireboltSessionProperty {
   PASSWORD("password", null, String.class, "user password - null by default"),
   USER("user", null, String.class, "user name - null by default"),
   HOST("host", null, String.class, "Firebolt host - null by default"),
-  PORT("port", null, Integer.class, "port - null by default"),
   ENGINE("engine", null, String.class, "engine - null by default"),
   ACCOUNT("account", null, String.class, "account - null by default"),
   OUTPUT_FORMAT("output_format", null, String.class, "Format of the query results");
