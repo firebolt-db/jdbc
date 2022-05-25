@@ -15,7 +15,7 @@ public class FireboltArray extends AbstractArray {
 
   @Override
   public String getBaseTypeName() {
-    return type.getName();
+    return type.getInternalName();
   }
 
   @Override

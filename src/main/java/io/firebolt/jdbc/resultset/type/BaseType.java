@@ -12,11 +12,13 @@ import java.sql.Timestamp;
 import java.util.Date;
 import java.util.function.BiFunction;
 
+/**
+ * This class contains the java types the Firebolt datatypes are mapped to
+ */
 @Slf4j
 public enum BaseType {
   LONG(Long.class, (value, subType) -> Long.valueOf(value)),
   INTEGER(Integer.class, (value, subType) -> Integer.parseInt(value)),
-  BIG_INTEGER(BigInteger.class, (value, subType) -> new BigInteger(value)),
   STRING(
       String.class,
       (value, subType) -> StringUtils.equals(value, "\\N") ? null : String.valueOf(value)),

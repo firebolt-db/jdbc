@@ -13,9 +13,10 @@ class SqlDateUtilTest {
   @Test
   void shouldTransformTimestampWithNanos() {
     String timeWithNanoSeconds = "2022-05-23 12:57:13:173456789";
+    Timestamp expectedTimestamp = new Timestamp(1653307033173L);
+    expectedTimestamp.setNanos(173456789);
     assertEquals(
-        new Timestamp(1653307033173L),
-        SqlDateUtil.transformToTimestampFunction.apply(timeWithNanoSeconds));
+        expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(timeWithNanoSeconds));
   }
 
   @Test

@@ -62,13 +62,13 @@ class FireboltResultSetTest {
   @Test
   void shouldReadAllTheData() throws SQLException, IOException {
     resultSet.next();
-    assertEquals(new BigInteger("1"), resultSet.getObject(1));
+    assertEquals(1L, resultSet.getObject(1));
     String[][][] firstArray = {{{"1", "2"}, {"3", "4"}}};
     assertArrayEquals(
         firstArray, ((String[][][]) ((FireboltArray) resultSet.getObject(2)).getArray()));
 
     resultSet.next();
-    assertEquals(new BigInteger("2"), resultSet.getObject(1));
+    assertEquals(2L, resultSet.getObject(1));
     String[][][] secondArray = {{{"1", "2"}, {"3", "4"}}, {{"5", "6"}, {"7", "8"}}};
     assertArrayEquals(
         secondArray, ((String[][][]) ((FireboltArray) resultSet.getObject(2)).getArray()));

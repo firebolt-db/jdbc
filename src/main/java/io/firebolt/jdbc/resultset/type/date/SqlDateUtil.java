@@ -50,13 +50,34 @@ public class SqlDateUtil {
 
   private static Timestamp getTimestampFromString(String value) throws ParseException {
     if (isDateTimeWithNanos(value)) {
-      String dateTimeValueWithMillis =
-          StringUtils.substring(value, 0, DATE_TIME_WITH_MILLIS_PATTERN.length());
-      return new Timestamp(
-          (new Date(DATE_TIME_FORMAT_WITH_MILLIS.parse(dateTimeValueWithMillis).getTime())
-              .getTime()));
+      return getTimestampWithNanos(value);
     } else {
       return new Timestamp((new Date(DATE_TIME_FORMAT.parse(value).getTime()).getTime()));
+    }
+  }
+
+  /*
+  SimpleDateFormat does not support nanoseconds, so we need to extract the nanos and then set the timestamp
+   */
+  private static Timestamp getTimestampWithNanos(String value) throws ParseException {
+    String dateTimeWithoutNanos = StringUtils.substring(value, 0, DATE_TIME_PATTERN.length());
+    Timestamp timestamp =
+        new Timestamp((new Date(DATE_TIME_FORMAT.parse(dateTimeWithoutNanos).getTime()).getTime()));
+    int nanos = extractNanos(value, dateTimeWithoutNanos);
+    timestamp.setNanos(nanos);
+    return timestamp;
+  }
+
+  private static int extractNanos(String dateTimeWithNanos, String dateTimeWithoutNanos) {
+    if (dateTimeWithNanos.length() != dateTimeWithoutNanos.length()) {
+      StringBuilder nanosPart =
+          new StringBuilder(dateTimeWithNanos.substring(dateTimeWithoutNanos.length() + 1));
+      while (nanosPart.length() < 9) {
+        nanosPart.append("0");
+      }
+      return Integer.parseInt(nanosPart.toString());
+    } else {
+      return 0;
     }
   }
 

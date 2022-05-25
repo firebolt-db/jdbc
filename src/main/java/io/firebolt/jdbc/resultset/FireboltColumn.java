@@ -10,7 +10,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Optional;
 
-import static io.firebolt.jdbc.resultset.type.FireboltDataType.NULLABLE_TYPE;
+import static io.firebolt.jdbc.resultset.type.FireboltDataType.*;
 
 @Builder
 @Getter
@@ -34,13 +34,13 @@ public final class FireboltColumn {
     Optional<Pair<Optional<Integer>, Optional<Integer>>> scaleAndPrecisionPair;
     FireboltDataType fireboltType;
 
-    if (columnType.startsWith(FireboltDataType.TUPLE.getName())) {
+    if (columnType.startsWith(FireboltDataType.TUPLE.getInternalName())) {
       tuple = getColumnsTuple(columnType, columnName);
     }
 
-    while (columnType.startsWith(FireboltDataType.ARRAY.getName(), currentIndex)) {
+    while (columnType.startsWith(FireboltDataType.ARRAY.getInternalName(), currentIndex)) {
       arrayDepth++;
-      currentIndex += FireboltDataType.ARRAY.getName().length() + 1;
+      currentIndex += FireboltDataType.ARRAY.getInternalName().length() + 1;
     }
 
     if (columnType.startsWith(NULLABLE_TYPE, currentIndex)) {
@@ -90,7 +90,7 @@ public final class FireboltColumn {
 
   private static Pair<FireboltColumn, FireboltColumn> getColumnsTuple(String columnType, String columnName) {
     String types =
-        RegExUtils.replaceFirst(columnType, FireboltDataType.TUPLE.getName() + "\\(", "");
+        RegExUtils.replaceFirst(columnType, FireboltDataType.TUPLE.getInternalName() + "\\(", "");
     types = StringUtils.substring(types, 0, types.length() - 1); //remove last parenthesis
 
     FireboltColumn leftColumnType = FireboltColumn.of(types.split(",")[0].trim(), columnName);
@@ -140,13 +140,25 @@ public final class FireboltColumn {
   }
 
   public String getCompactTypeName() {
+    if (this.dataType.equals(ARRAY)) {
+      StringBuilder type = new StringBuilder();
+      for (int i =0; i < arrayDepth ; i++) {
+        type.append(ARRAY.getDisplayName());
+        type.append("(");
+      }
+      type.append(this.getArrayBaseDataType().getDisplayName());
+      for (int i =0; i < arrayDepth ; i++) {
+        type.append(")");
+      }
+      return type.toString();
+    }
+
     if (this.columnsTuple != null) {
-      return String.format(
-              "Tuple(%s, %s)",
+      return String.format("%s(%s, %s)",TUPLE.getDisplayName(),
           this.columnsTuple.getLeft().getCompactTypeName(), this.columnsTuple.getRight().getCompactTypeName());
     } else {
       if (!nullable) {
-        return columnType;
+        return dataType.getDisplayName();
       } else {
         String trimmedType = StringUtils.remove(columnType, NULLABLE_TYPE + "(");
         return StringUtils.removeEnd(trimmedType, ")");

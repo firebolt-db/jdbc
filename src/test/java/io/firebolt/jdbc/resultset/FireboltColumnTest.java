@@ -27,7 +27,7 @@ class FireboltColumnTest {
     assertEquals(type, column.getColumnType());
     assertEquals(FireboltDataType.ARRAY, column.getDataType());
     assertEquals(FireboltDataType.STRING, column.getArrayBaseDataType());
-    assertEquals("Array(Array(String))", column.getCompactTypeName());
+    assertEquals("ARRAY(ARRAY(STRING))", column.getCompactTypeName());
   }
 
   @Test
@@ -39,7 +39,7 @@ class FireboltColumnTest {
     assertEquals(type, column.getColumnType());
     assertEquals(FireboltDataType.ARRAY, column.getDataType());
     assertEquals(FireboltDataType.INT_32, column.getArrayBaseDataType());
-    assertEquals("Array(Array(integer))", column.getCompactTypeName());
+    assertEquals("ARRAY(ARRAY(INTEGER))", column.getCompactTypeName());
   }
 
   @Test
@@ -64,17 +64,28 @@ class FireboltColumnTest {
     assertEquals(type, column.getColumnType());
     assertEquals(FireboltDataType.ARRAY, column.getDataType());
     assertEquals(FireboltDataType.FLOAT_64, column.getArrayBaseDataType());
-    assertEquals("Array(Array(double)", column.getCompactTypeName());
+    assertEquals("ARRAY(ARRAY(DOUBLE))", column.getCompactTypeName());
   }
 
   @Test
   void shouldCreateColumDataForTuple() {
-    String type = "Tuple(Array(int), Array(Nullable(long)))";
+    String type = "Tuple(Array(int), Array(Nullable(INT_64)))";
     String name = "my_tuple";
     FireboltColumn column = FireboltColumn.of(type, name);
     assertEquals(name, column.getColumnName());
     assertEquals(type, column.getColumnType());
     assertEquals(FireboltDataType.TUPLE, column.getDataType());
-    assertEquals("Tuple(Array(int), Array(long))", column.getCompactTypeName());
+    assertEquals("TUPLE(ARRAY(INTEGER), ARRAY(BIGINT))", column.getCompactTypeName());
+  }
+
+  @Test
+  void shouldCreateColumDataForBoolean() {
+    String type = "Nullable(String)";
+    String name = "name";
+    FireboltColumn column = FireboltColumn.of(type, name);
+    assertEquals(name, column.getColumnName());
+    assertEquals(type, column.getColumnType());
+    assertEquals(FireboltDataType.STRING, column.getDataType());
+    assertEquals("String", column.getCompactTypeName());
   }
 }
