@@ -7,12 +7,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.util.Optional;
+
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
+import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 
 @Getter
 @Slf4j
@@ -38,22 +41,8 @@ public abstract class FireboltClient {
       throws IOException {
     HttpGet httpGet = createGetRequest(uri, accessToken);
     try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-      int statusCode =
-          Optional.ofNullable(response.getStatusLine()).map(StatusLine::getStatusCode).orElse(-1);
+      this.validateResponse(uri, response);
       String responseStr = EntityUtils.toString(response.getEntity());
-      log.debug("GET {} - Http status code : {}", uri, statusCode);
-      if (!(statusCode >= 200 && statusCode <= 299)) {
-        if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
-          throw new IOException(
-              String.format(
-                  "Could not find resource with identifier %s, uri: %s, response: %s",
-                  identifier, uri, responseStr));
-        }
-        throw new IOException(
-            String.format(
-                "Failed to connect to Firebolt. status code: %d, Response: %s",
-                statusCode, responseStr));
-      }
       return objectMapper.readValue(responseStr, valueType);
     }
   }
@@ -63,5 +52,34 @@ public abstract class FireboltClient {
     httpGet.addHeader(HEADER_USER_AGENT, this.getHeaderUserAgentValue());
     httpGet.addHeader(HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken);
     return httpGet;
+  }
+
+  protected HttpPost createPostRequest(String uri, String accessToken) {
+    HttpPost httpPost = new HttpPost(uri);
+    httpPost.addHeader(HEADER_USER_AGENT, this.getHeaderUserAgentValue());
+    httpPost.addHeader(
+        HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken);
+    return httpPost;
+  }
+
+  protected void validateResponse(String uri, CloseableHttpResponse response) throws IOException {
+    int statusCode = 
+        Optional.ofNullable(response.getStatusLine()).map(StatusLine::getStatusCode).orElse(-1);
+    if (!isCallSuccessful(statusCode)) {
+      if (statusCode == HTTP_UNAVAILABLE) {
+        throw new IOException(
+            String.format(
+                "Could not query Firebolt with uri %s. The engine is NOT running. Status code : %d",
+                uri, HTTP_FORBIDDEN));
+      }
+      throw new IOException(
+          String.format(
+              "Failed to query Firebolt with uri %s. Status code: %d, Error message: %s",
+              uri, statusCode, EntityUtils.toString(response.getEntity())));
+    }
+  }
+
+  private boolean isCallSuccessful(int statusCode) {
+    return statusCode >= 200 && statusCode <= 299; // Call is considered successful when the status code is 2XX
   }
 }

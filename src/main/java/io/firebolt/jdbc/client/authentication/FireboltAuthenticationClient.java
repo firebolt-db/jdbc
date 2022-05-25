@@ -9,7 +9,6 @@ import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -17,10 +16,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
-import java.util.Optional;
-
-import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
-import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -40,30 +35,8 @@ public class FireboltAuthenticationClient extends FireboltClient {
     post.setEntity(new StringEntity(createLoginRequest(user, password)));
 
     try (CloseableHttpResponse response = httpClient.execute(post)) {
-      int statusCode =
-          Optional.ofNullable(response.getStatusLine()).map(StatusLine::getStatusCode).orElse(-1);
+      this.validateResponse(connectUrl, response);
       String responseStr = EntityUtils.toString(response.getEntity());
-      log.debug(
-          "POST {} - Http status code : {}, response : {}", connectUrl, statusCode, responseStr);
-
-      if (!(statusCode >= 200 && statusCode <= 299)) {
-        if (statusCode == HTTP_NOT_FOUND) {
-          throw new IOException(
-              String.format(
-                  "Could not get connection tokens (error %d), response: %s",
-                  HTTP_NOT_FOUND, responseStr));
-        }
-        if (statusCode == HTTP_FORBIDDEN) {
-          throw new IOException(
-              String.format(
-                  "Authentication failed (error %d), please verify your credentials. Response: %s",
-                  HTTP_FORBIDDEN, responseStr));
-        }
-        throw new IOException(
-            String.format(
-                "Failed to connect to Firebolt. status code: %d, Response: %s",
-                statusCode, responseStr));
-      }
       FireboltAuthenticationResponse authenticationResponse =
           objectMapper.readValue(responseStr, FireboltAuthenticationResponse.class);
       FireboltConnectionTokens authenticationTokens =
@@ -72,7 +45,7 @@ public class FireboltAuthenticationClient extends FireboltClient {
               .refreshToken(authenticationResponse.getRefreshToken())
               .expiresInSeconds(authenticationResponse.getExpiresIn())
               .build();
-      log.info("Http connection created");
+      log.info("Successfully fetched connection tokens");
       logToken(authenticationResponse);
       return authenticationTokens;
     }

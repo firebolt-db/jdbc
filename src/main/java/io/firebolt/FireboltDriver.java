@@ -1,5 +1,6 @@
-package io.firebolt.jdbc;
+package io.firebolt;
 
+import io.firebolt.jdbc.ProjectVersionUtil;
 import io.firebolt.jdbc.connection.FireboltConnectionImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -25,7 +26,7 @@ public class FireboltDriver implements Driver {
 
   @Override
   public Connection connect(String url, Properties connectionSettings) throws SQLException {
-    return new FireboltConnectionImpl(url, connectionSettings);
+    return new FireboltConnectionImpl(url, connectionSettings).connect();
   }
 
   @Override

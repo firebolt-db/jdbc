@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.connection;
 
+import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.service.FireboltAuthenticationService;
 import io.firebolt.jdbc.service.FireboltEngineService;
 import org.junit.jupiter.api.Test;
@@ -7,8 +8,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -24,20 +23,22 @@ class FireboltConnectionImplTest {
   @Mock private FireboltEngineService fireboltEngineService;
 
   @Test
-  void shouldInitConnection() throws IOException, NoSuchAlgorithmException {
+  void shouldInitConnection() throws FireboltException {
     String uri = "jdbc:firebolt://firebolt.io/db";
     Properties connectionProperties = new Properties();
     connectionProperties.put("user", "user");
     connectionProperties.put("password", "pa$$word");
+    connectionProperties.put("host", "firebolt.io");
 
     when(fireboltAuthenticationService.getConnectionTokens(
             "https://firebolt.io", "user", "pa$$word"))
         .thenReturn(fireboltConnectionTokens);
-    FireboltConnectionImpl fireboltConnection =
+    FireboltConnectionImpl fireboltConnectionImpl =
         new FireboltConnectionImpl(
-            uri, connectionProperties, fireboltAuthenticationService, fireboltEngineService);
+                uri, connectionProperties, fireboltAuthenticationService, fireboltEngineService)
+            .connect();
     verify(fireboltAuthenticationService)
         .getConnectionTokens("https://firebolt.io", "user", "pa$$word");
-    assertNotNull(fireboltConnection);
+    assertNotNull(fireboltConnectionImpl);
   }
 }

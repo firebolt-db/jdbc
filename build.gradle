@@ -45,8 +45,9 @@ jacocoTestReport {
         classDirectories.setFrom(files(classDirectories.files.collect {
             fileTree(dir: it, exclude: [
                     "io/firebolt/jdbc/client/config/**",
+                    "io/firebolt/jdbc/FireboltDriver.class",
                     "io/firebolt/jdbc/connection/settings/FireboltProperties.class",
-                    "io/firebolt/jdbc/FireboltDriver.class"
+                    "io/firebolt/jdbc/**/Abstract*.class"
             ])
         }))
     }

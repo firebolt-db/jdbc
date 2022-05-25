@@ -10,7 +10,7 @@ import java.io.IOException;
 public class FireboltEngineService {
   private final FireboltAccountClient fireboltAccountClient;
 
-  public String getEngineAddress(
+  public String getEngineHost(
       String host, String dbName, String engineName, String account, String accessToken)
       throws IOException {
     String accountId = null;

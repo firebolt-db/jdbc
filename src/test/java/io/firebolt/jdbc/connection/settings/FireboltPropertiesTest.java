@@ -1,16 +1,17 @@
 package io.firebolt.jdbc.connection.settings;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class PropertiesToFireboltPropertiesTransformerTest {
-
-  private final PropertiesToFireboltPropertiesTransformer transformer =
-      new PropertiesToFireboltPropertiesTransformer();
+class FireboltPropertiesTest {
 
   @Test
   void shouldHaveDefaultPropertiesWhenOnlyTheRequiredFieldsAreSpecified() {
@@ -28,7 +29,7 @@ class PropertiesToFireboltPropertiesTransformerTest {
             .password(null)
             .host("https://host") // host is appended with https:// because SSL is enabled
             .ssl(true)
-            .customProperties(new Properties())
+            .additionalProperties(new ArrayList<>())
             .account(null)
             .engine(null)
             .maxConnectionsPerRoute(500)
@@ -46,9 +47,7 @@ class PropertiesToFireboltPropertiesTransformerTest {
     Properties properties = new Properties();
     properties.put("host", "host");
     properties.put("database", "db");
-    assertEquals(
-        expectedDefaultProperties,
-        new PropertiesToFireboltPropertiesTransformer().apply(properties));
+    assertEquals(expectedDefaultProperties, FireboltProperties.of(properties));
   }
 
   @Test
@@ -66,8 +65,8 @@ class PropertiesToFireboltPropertiesTransformerTest {
     properties.put("someCustomProperties", "custom_value");
     properties.put("compress", "0");
 
-    Properties customProperties = new Properties();
-    customProperties.put("someCustomProperties", "custom_value");
+    List<Pair<String, String>> customProperties = new ArrayList<>();
+    customProperties.add(new ImmutablePair<>("someCustomProperties", "custom_value"));
 
     FireboltProperties expectedDefaultProperties =
         FireboltProperties.builder()
@@ -83,7 +82,7 @@ class PropertiesToFireboltPropertiesTransformerTest {
             .password(null)
             .host("https://myDummyHost")
             .ssl(true)
-            .customProperties(customProperties)
+            .additionalProperties(customProperties)
             .account(null)
             .engine(null)
             .maxConnectionsPerRoute(500)
@@ -97,7 +96,7 @@ class PropertiesToFireboltPropertiesTransformerTest {
             .keepAliveTimeoutMillis(Integer.MAX_VALUE)
             .clientBufferSize(65536)
             .build();
-    assertEquals(expectedDefaultProperties, transformer.apply(properties));
+    assertEquals(expectedDefaultProperties, FireboltProperties.of(properties));
   }
 
   @Test
@@ -106,7 +105,7 @@ class PropertiesToFireboltPropertiesTransformerTest {
     properties.put("path", "/example");
     properties.put("host", "host");
 
-    assertEquals("example", transformer.apply(properties).getDatabase());
+    assertEquals("example", FireboltProperties.of(properties).getDatabase());
   }
 
   @Test
@@ -114,13 +113,13 @@ class PropertiesToFireboltPropertiesTransformerTest {
     Properties properties = new Properties();
     properties.put("host", "host");
 
-    assertThrows(IllegalArgumentException.class, () -> transformer.apply(properties));
+    assertThrows(IllegalArgumentException.class, () -> FireboltProperties.of(properties));
   }
 
   @Test
   void shouldThrowExceptionWhenHostIsNotProvided() {
     Properties properties = new Properties();
-    assertThrows(IllegalArgumentException.class, () -> transformer.apply(properties));
+    assertThrows(IllegalArgumentException.class, () -> FireboltProperties.of(properties));
   }
 
   @Test
@@ -129,6 +128,6 @@ class PropertiesToFireboltPropertiesTransformerTest {
     properties.put("path", "");
     properties.put("host", "host");
 
-    assertThrows(IllegalArgumentException.class, () -> transformer.apply(properties));
+    assertThrows(IllegalArgumentException.class, () -> FireboltProperties.of(properties));
   }
 }

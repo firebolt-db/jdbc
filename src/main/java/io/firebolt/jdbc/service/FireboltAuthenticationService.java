@@ -9,7 +9,6 @@ import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
 import org.apache.commons.codec.binary.Hex;
 
-import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeUnit;
@@ -22,25 +21,28 @@ public class FireboltAuthenticationService {
       ExpiringMap.builder().variableExpiration().build();
   private final FireboltAuthenticationClient fireboltAuthenticationClient;
 
-  public FireboltConnectionTokens getConnectionTokens(String host, String user, String password)
-      throws IOException, NoSuchAlgorithmException {
-    synchronized (FireboltAuthenticationService.class) {
+  public FireboltConnectionTokens getConnectionTokens(String host, String user, String password) {
+    try {
       ConnectParams connectionParams = new ConnectParams(host, user, password);
-      FireboltConnectionTokens foundToken = tokensMap.get(connectionParams);
-      if (foundToken != null) {
-        log.debug("Using the token of {} from the cache", user);
-        return foundToken;
-      } else {
-        FireboltConnectionTokens fireboltConnectionTokens =
-            fireboltAuthenticationClient.postConnectionTokens(host, user, password);
-        tokensMap.put(
-            connectionParams,
-            fireboltConnectionTokens,
-            ExpirationPolicy.CREATED,
-            fireboltConnectionTokens.getExpiresInSeconds(),
-            TimeUnit.SECONDS);
-        return fireboltConnectionTokens;
+      synchronized (this) {
+        FireboltConnectionTokens foundToken = tokensMap.get(connectionParams);
+        if (foundToken != null) {
+          log.debug("Using the token of {} from the cache", user);
+          return foundToken;
+        } else {
+          FireboltConnectionTokens fireboltConnectionTokens =
+              fireboltAuthenticationClient.postConnectionTokens(host, user, password);
+          tokensMap.put(
+              connectionParams,
+              fireboltConnectionTokens,
+              ExpirationPolicy.CREATED,
+              fireboltConnectionTokens.getExpiresInSeconds(),
+              TimeUnit.SECONDS);
+          return fireboltConnectionTokens;
+        }
       }
+    } catch (Exception e) {
+      throw new RuntimeException("Could not get connection tokens", e);
     }
   }
 
