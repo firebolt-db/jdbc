@@ -60,4 +60,30 @@ class SqlDateUtilTest {
     String timeWithNanoSeconds = "20225-05-hey";
     assertNull(SqlDateUtil.transformToDateFunction.apply(timeWithNanoSeconds));
   }
+
+  @Test
+  void shouldTransformTimestampWithNanosToString() {
+    String expectedTimeWithNanosString = "'2022-05-23 12:57:13:173456789'";
+    Timestamp timestamp = new Timestamp(1653307033173L);
+    timestamp.setNanos(173456789);
+    assertEquals(
+        expectedTimeWithNanosString, SqlDateUtil.transformFromTimestampFunction.apply(timestamp));
+  }
+
+  @Test
+  void shouldTransformTimestampWithSomeNanosToString() {
+    String expectedTimeWithNanosString = "'2022-05-23 12:57:13:173456'";
+    Timestamp timestamp = new Timestamp(1653307033173L);
+    timestamp.setNanos(173456);
+    assertEquals(
+        expectedTimeWithNanosString, SqlDateUtil.transformFromTimestampFunction.apply(timestamp));
+  }
+
+  @Test
+  void shouldTransformTimestampWithoutNanosToString() {
+    String expectedTimeWithNanosString = "'2022-05-23 12:57:13'";
+    Timestamp timestamp = new Timestamp(1653307033000L);
+    assertEquals(
+        expectedTimeWithNanosString, SqlDateUtil.transformFromTimestampFunction.apply(timestamp));
+  }
 }
