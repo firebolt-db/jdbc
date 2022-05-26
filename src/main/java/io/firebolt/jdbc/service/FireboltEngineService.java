@@ -3,6 +3,7 @@ package io.firebolt.jdbc.service;
 import io.firebolt.jdbc.client.account.FireboltAccountClient;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.core5.http.ParseException;
 
 import java.io.IOException;
 
@@ -12,7 +13,7 @@ public class FireboltEngineService {
 
   public String getEngineHost(
       String host, String dbName, String engineName, String account, String accessToken)
-      throws IOException {
+          throws IOException, ParseException {
     String accountId = null;
     if (StringUtils.isNotEmpty(account))
       accountId = fireboltAccountClient.getAccountId(host, account, accessToken).orElse(null);

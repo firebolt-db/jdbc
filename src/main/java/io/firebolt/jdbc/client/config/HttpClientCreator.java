@@ -4,25 +4,33 @@ import io.firebolt.jdbc.client.ssl.InsecureTrustManager;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HeaderElement;
-import org.apache.http.HeaderElementIterator;
-import org.apache.http.HeaderIterator;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.config.ConnectionConfig;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.conn.ConnectionKeepAliveStrategy;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.DefaultConnectionReuseStrategy;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.message.BasicHeaderElementIterator;
-import org.apache.http.protocol.HTTP;
+import org.apache.hc.client5.http.ConnectionKeepAliveStrategy;
+import org.apache.hc.client5.http.HttpRequestRetryStrategy;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.DefaultHttpRequestRetryStrategy;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.ManagedHttpClientConnectionFactory;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.io.ManagedHttpClientConnection;
+import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
+import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.DefaultHostnameVerifier;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.core5.http.HeaderElement;
+import org.apache.hc.core5.http.HeaderElements;
+import org.apache.hc.core5.http.URIScheme;
+import org.apache.hc.core5.http.config.Http1Config;
+import org.apache.hc.core5.http.config.Registry;
+import org.apache.hc.core5.http.config.RegistryBuilder;
+import org.apache.hc.core5.http.impl.DefaultConnectionReuseStrategy;
+import org.apache.hc.core5.http.io.HttpConnectionFactory;
+import org.apache.hc.core5.http.io.SocketConfig;
+import org.apache.hc.core5.http.message.MessageSupport;
+import org.apache.hc.core5.util.TimeValue;
+import org.apache.hc.core5.util.Timeout;
 
 import javax.net.ssl.*;
 import java.io.FileInputStream;
@@ -33,7 +41,10 @@ import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
+
+import static java.lang.Boolean.TRUE;
 
 /** Class to configure the http client using the session settings */
 @UtilityClass
@@ -44,93 +55,96 @@ public class HttpClientCreator {
   private static final String TLS_PROTOCOL = "TLS";
   private static final String JKS_KEYSTORE_TYPE = "JKS";
   private static final String CERTIFICATE_TYPE_X_509 = "X.509";
+  private static final String STANDARD_COOKIE_SPEC = "standard";
 
   public static CloseableHttpClient createClient(FireboltProperties properties)
       throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException,
           KeyManagementException {
+
     return HttpClientBuilder.create()
-        .setDefaultConnectionConfig(getDefaultConnectionConfig(properties))
+        .setConnectionManager(getConnectionManager(properties))
         .setDefaultRequestConfig(getDefaultRequestConfig(properties))
         .setConnectionReuseStrategy(new DefaultConnectionReuseStrategy())
-        .setConnectionManager(getConnectionManager(properties))
         .setKeepAliveStrategy(createKeepAliveStrategy(properties))
-        .setRetryHandler(new DefaultHttpRequestRetryHandler(properties.getMaxRetries(), false))
+        .setRetryStrategy(createRetryStrategy(properties))
         .disableContentCompression()
         .disableRedirectHandling()
         .build();
   }
 
-  private static ConnectionConfig getDefaultConnectionConfig(FireboltProperties properties) {
-    return ConnectionConfig.custom().setBufferSize(properties.getClientBufferSize()).build();
+  private static HttpRequestRetryStrategy createRetryStrategy(FireboltProperties properties) {
+    return new DefaultHttpRequestRetryStrategy(
+        properties.getMaxRetries(), TimeValue.ofMilliseconds(500));
   }
 
   private static ConnectionKeepAliveStrategy createKeepAliveStrategy(
       FireboltProperties fireboltProperties) {
     return (httpResponse, httpContext) -> {
-      HeaderIterator headerIterator = httpResponse.headerIterator(HTTP.CONN_KEEP_ALIVE);
-      HeaderElementIterator elementIterator = new BasicHeaderElementIterator(headerIterator);
-
-      while (elementIterator.hasNext()) {
-        HeaderElement element = elementIterator.nextElement();
-        String param = element.getName();
-        String value = element.getValue();
+      final Iterator<HeaderElement> it =
+          MessageSupport.iterate(httpResponse, HeaderElements.KEEP_ALIVE);
+      while (it.hasNext()) {
+        final HeaderElement he = it.next();
+        final String param = he.getName();
+        final String value = he.getValue();
         if (value != null && param.equalsIgnoreCase("timeout")) {
-          return Long.parseLong(value) * 1000;
+          try {
+            return TimeValue.ofSeconds(Long.parseLong(value));
+          } catch (final NumberFormatException ignore) {
+          }
         }
       }
-
-      return fireboltProperties.getKeepAliveTimeoutMillis();
+      return TimeValue.ofMilliseconds(fireboltProperties.getKeepAliveTimeoutMillis());
     };
   }
 
   private static RequestConfig getDefaultRequestConfig(FireboltProperties fireboltProperties) {
     return RequestConfig.custom()
-        .setConnectTimeout(fireboltProperties.getConnectionTimeoutMillis())
-        .setConnectionRequestTimeout(fireboltProperties.getConnectionTimeoutMillis())
-        .setCookieSpec(CookieSpecs.STANDARD)
-        .setSocketTimeout(fireboltProperties.getSocketTimeoutMillis())
+        .setConnectTimeout(
+            Timeout.of(fireboltProperties.getConnectionTimeoutMillis(), TimeUnit.MILLISECONDS))
+        .setCookieSpec(STANDARD_COOKIE_SPEC)
         .build();
-  }
-
-  private static ConnectionConfig getConnectionConfig(FireboltProperties fireboltProperties) {
-    return getDefaultConnectionConfig(fireboltProperties);
   }
 
   private static PoolingHttpClientConnectionManager getConnectionManager(
       FireboltProperties fireboltProperties)
-      throws CertificateException, NoSuchAlgorithmException, KeyStoreException,
-          KeyManagementException, IOException {
+      throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException,
+          KeyManagementException {
+    Http1Config customHttpConfig =
+        Http1Config.custom().setBufferSize(fireboltProperties.getBufferSize()).build();
 
-    RegistryBuilder<ConnectionSocketFactory> registry =
-        RegistryBuilder.<ConnectionSocketFactory>create()
-            .register("http", PlainConnectionSocketFactory.getSocketFactory());
+    HttpConnectionFactory<ManagedHttpClientConnection> connectionFactory =
+        ManagedHttpClientConnectionFactory.builder().http1Config(customHttpConfig).build();
 
-    if (Boolean.TRUE.equals(fireboltProperties.getSsl())) {
-      HostnameVerifier verifier = getHostnameVerifier(fireboltProperties);
-      registry.register(
-          "https", new SSLConnectionSocketFactory(getSSLContext(fireboltProperties), verifier));
-    }
+    HostnameVerifier verifier = getHostnameVerifier(fireboltProperties);
+    SSLConnectionSocketFactory sslConnectionSocketFactory =
+        TRUE.equals(fireboltProperties.getSsl())
+            ? new SSLConnectionSocketFactory(getSSLContext(fireboltProperties), verifier)
+            : null;
 
-    PoolingHttpClientConnectionManager connectionManager =
-        new PoolingHttpClientConnectionManager(
-            registry.build(),
-            null,
-            null,
-            new DnsResolverByIpVersionPriority(),
-            fireboltProperties.getTimeToLiveMillis(),
-            TimeUnit.MILLISECONDS);
+    return PoolingHttpClientConnectionManagerBuilder.create()
+        .setSSLSocketFactory(sslConnectionSocketFactory)
+        .setDnsResolver(new DnsResolverByIpVersionPriority())
+        .setConnectionFactory(connectionFactory)
+        .setMaxConnPerRoute(fireboltProperties.getMaxConnectionsPerRoute())
+        .setMaxConnTotal(fireboltProperties.getMaxConnectionsTotal())
+        .setConnectionTimeToLive(TimeValue.ofMilliseconds(fireboltProperties.getTimeToLiveMillis()))
+        .setDefaultSocketConfig(
+            SocketConfig.custom()
+                .setSoTimeout(Timeout.ofMilliseconds(fireboltProperties.getSocketTimeoutMillis()))
+                .build())
+        .build();
+  }
 
-    connectionManager.setValidateAfterInactivity(
-        fireboltProperties.getValidateAfterInactivityMillis());
-    connectionManager.setDefaultMaxPerRoute(fireboltProperties.getMaxConnectionsPerRoute());
-    connectionManager.setMaxTotal(fireboltProperties.getMaxConnectionsTotal());
-    connectionManager.setDefaultConnectionConfig(getConnectionConfig(fireboltProperties));
-    return connectionManager;
+  private static Registry<ConnectionSocketFactory> getDefaultRegistry() {
+    return RegistryBuilder.<ConnectionSocketFactory>create()
+        .register(URIScheme.HTTP.id, PlainConnectionSocketFactory.getSocketFactory())
+        .register(URIScheme.HTTPS.id, SSLConnectionSocketFactory.getSocketFactory())
+        .build();
   }
 
   private static HostnameVerifier getHostnameVerifier(FireboltProperties fireboltProperties) {
     return SSL_STRICT_MODE.equals(fireboltProperties.getSslMode())
-        ? SSLConnectionSocketFactory.getDefaultHostnameVerifier()
+        ? new DefaultHostnameVerifier()
         : NoopHostnameVerifier.INSTANCE;
   }
 
