@@ -1,6 +1,7 @@
 package io.firebolt.jdbc.resultset;
 
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
 
@@ -10,6 +11,7 @@ import java.util.List;
 
 @Value
 @Builder
+@EqualsAndHashCode
 public class FireboltResultSetMetaData implements ResultSetMetaData {
 
   List<FireboltColumn> columns;

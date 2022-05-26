@@ -15,8 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.InputStream;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,7 +36,7 @@ class FireboltStatementImplTest {
     try (MockedConstruction<FireboltResultSet> mocked =
         Mockito.mockConstruction(FireboltResultSet.class)) {
       FireboltProperties fireboltProperties =
-          FireboltProperties.builder().additionalProperties(new ArrayList<>()).build();
+          FireboltProperties.builder().additionalProperties(new HashMap<>()).build();
       FireboltConnectionTokens fireboltConnectionTokens =
           FireboltConnectionTokens.builder().accessToken("token").build();
       FireboltStatementImpl fireboltStatement =
@@ -45,7 +44,6 @@ class FireboltStatementImplTest {
               .fireboltQueryService(fireboltQueryService)
               .sessionProperties(fireboltProperties)
               .connectionTokens(fireboltConnectionTokens)
-              .fireboltConnectionImpl(fireboltConnectionImpl)
               .build();
 
       when(fireboltQueryService.executeQuery(
@@ -64,7 +62,7 @@ class FireboltStatementImplTest {
     try (MockedConstruction<FireboltResultSet> mocked =
         Mockito.mockConstruction(FireboltResultSet.class)) {
       FireboltProperties fireboltProperties =
-          FireboltProperties.builder().additionalProperties(new ArrayList<>()).build();
+          FireboltProperties.builder().additionalProperties(new HashMap<>()).build();
       FireboltConnectionTokens fireboltConnectionTokens =
           FireboltConnectionTokens.builder().accessToken("token").build();
       FireboltStatementImpl fireboltStatement =
@@ -72,7 +70,6 @@ class FireboltStatementImplTest {
               .fireboltQueryService(fireboltQueryService)
               .sessionProperties(fireboltProperties)
               .connectionTokens(fireboltConnectionTokens)
-              .fireboltConnectionImpl(fireboltConnectionImpl)
               .build();
 
       when(fireboltQueryService.extractAdditionalProperties(("set custom_1 = 1")))
@@ -81,7 +78,9 @@ class FireboltStatementImplTest {
       verifyNoMoreInteractions(fireboltQueryService);
       assertEquals(
           fireboltProperties.getAdditionalProperties(),
-          Arrays.asList(new ImmutablePair<>("custom_1", "1")));
+              new HashMap<String, String>() {{
+                put("custom_1", "1");
+              }});
       assertEquals(0, mocked.constructed().size());
     }
   }
