@@ -1,7 +1,7 @@
 package io.firebolt.jdbc.client;
 
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

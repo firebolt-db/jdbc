@@ -1,8 +1,8 @@
 package io.firebolt.jdbc.client.config;
 
 import lombok.NoArgsConstructor;
-import org.apache.http.conn.DnsResolver;
-import org.apache.http.impl.conn.SystemDefaultDnsResolver;
+import org.apache.hc.client5.http.DnsResolver;
+import org.apache.hc.client5.http.SystemDefaultDnsResolver;
 
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -27,5 +27,15 @@ public class DnsResolverByIpVersionPriority implements DnsResolver {
               return address2IPV6 - address1IPV6;
             })
         .toArray(InetAddress[]::new);
+  }
+
+  @Override
+  public String resolveCanonicalHostname(String host) throws UnknownHostException {
+    InetAddress ip = this.resolve(host)[0];
+    final String canonicalServer = ip.getCanonicalHostName();
+    if (ip.getHostAddress().contentEquals(canonicalServer)) {
+      return host;
+    }
+    return canonicalServer;
   }
 }
