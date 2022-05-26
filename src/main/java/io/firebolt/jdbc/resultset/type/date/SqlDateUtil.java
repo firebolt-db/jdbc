@@ -4,6 +4,7 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -35,6 +36,23 @@ public class SqlDateUtil {
           return null;
         }
       };
+
+  public static final Function<Date, String> transformFromDateFunction =
+      value -> {
+        if (value == null) {
+          return null;
+        }
+        return String.format("'%s'", DATE_FORMAT.format(value));
+      };
+
+  public static final Function<Time, String> transformFromTimeFunction =
+      value -> {
+        if (value == null) {
+          return null;
+        }
+        return String.format("'%s'", DATE_TIME_FORMAT.format(value));
+      };
+
   public static final Function<String, Timestamp> transformToTimestampFunction =
       value -> {
         if (value == null) {
@@ -89,4 +107,20 @@ public class SqlDateUtil {
       return false;
     }
   }
+
+  public static final Function<Timestamp, String> transformFromTimestampFunction =
+      value -> {
+        if (value == null) {
+          return null;
+        }
+        if (value.getNanos() > 0) {
+          long nanos = value.getNanos();
+          value.setNanos(0);
+          StringBuilder dateWithoutNanos =
+              new StringBuilder(String.format("'%s", DATE_TIME_FORMAT.format(value)));
+          return dateWithoutNanos.append(":").append(nanos).append("'").toString();
+        } else {
+          return String.format("'%s'", DATE_TIME_FORMAT.format(value));
+        }
+      };
 }
