@@ -2,6 +2,7 @@ package io.firebolt.jdbc.service;
 
 import io.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import io.firebolt.jdbc.connection.FireboltConnectionTokens;
+import org.apache.hc.core5.http.ParseException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +34,7 @@ class FireboltAuthenticationServiceTest {
   }
 
   @Test
-  void shouldGetConnectionToken() throws IOException, NoSuchAlgorithmException {
+  void shouldGetConnectionToken() throws IOException, ParseException {
     FireboltConnectionTokens tokens =
         FireboltConnectionTokens.builder()
             .expiresInSeconds(52)
@@ -49,7 +50,7 @@ class FireboltAuthenticationServiceTest {
 
   @Test
   void shouldCallClientOnlyOnceWhenServiceCalledTwiceForTheSameHost()
-      throws IOException, NoSuchAlgorithmException {
+      throws IOException, ParseException {
     FireboltConnectionTokens tokens =
         FireboltConnectionTokens.builder()
             .expiresInSeconds(52)
@@ -66,7 +67,7 @@ class FireboltAuthenticationServiceTest {
 
   @Test
   void shouldCallClientAgainWhenTokenIsExpired()
-      throws IOException, NoSuchAlgorithmException, InterruptedException {
+      throws IOException, NoSuchAlgorithmException, InterruptedException, ParseException {
     FireboltConnectionTokens tokens =
         FireboltConnectionTokens.builder()
             .expiresInSeconds(1)

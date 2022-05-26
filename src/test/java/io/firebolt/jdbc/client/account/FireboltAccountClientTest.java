@@ -8,14 +8,12 @@ import io.firebolt.jdbc.client.account.response.FireboltAccountResponse;
 import io.firebolt.jdbc.client.account.response.FireboltDatabaseResponse;
 import io.firebolt.jdbc.client.account.response.FireboltEngineIdResponse;
 import io.firebolt.jdbc.client.account.response.FireboltEngineResponse;
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpStatus;
-import org.apache.http.HttpVersion;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.message.BasicStatusLine;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,8 +73,7 @@ class FireboltAccountClientTest {
   @Test
   void shouldGetAccountId() throws Exception {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
-    when(response.getStatusLine())
-        .thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, "OK"));
+    when(response.getCode()).thenReturn(HttpStatus.SC_OK);
     HttpEntity entity = mock(HttpEntity.class);
     when(entity.getContent())
         .thenReturn(
@@ -97,7 +94,7 @@ class FireboltAccountClientTest {
     verify(httpClient).execute(httpGetArgumentCaptor.capture());
     verify(objectMapper).readValue("{\"account_id\":\"12345\"}", FireboltAccountResponse.class);
     HttpGet actualHttpGet = httpGetArgumentCaptor.getValue();
-    assertEquals(expectedHttpGet.getURI(), httpGetArgumentCaptor.getValue().getURI());
+    assertEquals(expectedHttpGet.getUri(), httpGetArgumentCaptor.getValue().getUri());
     assertEquals(expectedHeader, headersToMap(actualHttpGet));
     assertEquals("12345", accountId.get());
   }
@@ -106,8 +103,7 @@ class FireboltAccountClientTest {
   void shouldGetEngineEndpoint() throws Exception {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
     HttpEntity entity = mock(HttpEntity.class);
-    when(response.getStatusLine())
-        .thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, "OK"));
+    when(response.getCode()).thenReturn(HttpStatus.SC_OK);
     when(entity.getContent())
         .thenReturn(
             new ByteArrayInputStream(
@@ -135,7 +131,7 @@ class FireboltAccountClientTest {
         .readValue(
             "{\"engine\":{\"endpoint\":\"http://engineEndpoint\"}}", FireboltEngineResponse.class);
     HttpGet actualHttpGet = httpGetArgumentCaptor.getValue();
-    assertEquals(expectedHttpGet.getURI(), httpGetArgumentCaptor.getValue().getURI());
+    assertEquals(expectedHttpGet.getUri(), httpGetArgumentCaptor.getValue().getUri());
     assertEquals(expectedHeader, headersToMap(actualHttpGet));
     assertEquals("http://engineEndpoint", engineAddress);
   }
@@ -144,8 +140,7 @@ class FireboltAccountClientTest {
   void shouldGetDbAddress() throws Exception {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
     HttpEntity entity = mock(HttpEntity.class);
-    when(response.getStatusLine())
-        .thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, "OK"));
+    when(response.getCode()).thenReturn(HttpStatus.SC_OK);
     when(entity.getContent())
         .thenReturn(
             new ByteArrayInputStream(
@@ -169,7 +164,7 @@ class FireboltAccountClientTest {
     verify(objectMapper)
         .readValue("{\"engine_url\":\"http://dbAddress\"}", FireboltDatabaseResponse.class);
     HttpGet actualHttpGet = httpGetArgumentCaptor.getValue();
-    assertEquals(expectedHttpGet.getURI(), httpGetArgumentCaptor.getValue().getURI());
+    assertEquals(expectedHttpGet.getUri(), httpGetArgumentCaptor.getValue().getUri());
     assertEquals(expectedHeader, headersToMap(actualHttpGet));
     assertEquals("http://dbAddress", dbAddress);
   }
@@ -178,8 +173,7 @@ class FireboltAccountClientTest {
   void shouldGetEngineId() throws Exception {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
     HttpEntity entity = mock(HttpEntity.class);
-    when(response.getStatusLine())
-        .thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, "OK"));
+    when(response.getCode()).thenReturn(HttpStatus.SC_OK);
     when(entity.getContent())
         .thenReturn(
             new ByteArrayInputStream(
@@ -205,7 +199,7 @@ class FireboltAccountClientTest {
     verify(objectMapper)
         .readValue("{\"engine_id\":{\"engine_id\":\"13\"}}", FireboltEngineIdResponse.class);
     HttpGet actualHttpGet = httpGetArgumentCaptor.getValue();
-    assertEquals(expectedHttpGet.getURI(), httpGetArgumentCaptor.getValue().getURI());
+    assertEquals(expectedHttpGet.getUri(), httpGetArgumentCaptor.getValue().getUri());
     assertEquals(expectedHeader, headersToMap(actualHttpGet));
     assertEquals("13", engineId);
   }
@@ -213,9 +207,7 @@ class FireboltAccountClientTest {
   @Test
   void shouldThrowExceptionWhenStatusCodeIsNotFound() throws Exception {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
-    when(response.getStatusLine())
-        .thenReturn(
-            new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_NOT_FOUND, "NOT FOUND"));
+    when(response.getCode()).thenReturn(HttpStatus.SC_NOT_FOUND);
     HttpEntity entity = mock(HttpEntity.class);
     when(response.getEntity()).thenReturn(entity);
     when(httpClient.execute(any())).thenReturn(response);
@@ -226,9 +218,7 @@ class FireboltAccountClientTest {
   @Test
   void shouldThrowExceptionWhenStatusCodeIsNotOk() throws Exception {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
-    when(response.getStatusLine())
-        .thenReturn(
-            new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_BAD_GATEWAY, "Bad Gateway"));
+    when(response.getCode()).thenReturn(HttpStatus.SC_BAD_GATEWAY);
     HttpEntity entity = mock(HttpEntity.class);
     when(response.getEntity()).thenReturn(entity);
     when(httpClient.execute(any())).thenReturn(response);
@@ -238,7 +228,7 @@ class FireboltAccountClientTest {
   }
 
   private Map<String, String> headersToMap(HttpGet httpGet) {
-    return Arrays.stream(httpGet.getAllHeaders())
+    return Arrays.stream(httpGet.getHeaders())
         .collect(Collectors.toMap(Header::getName, Header::getValue));
   }
 }
