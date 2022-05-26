@@ -9,11 +9,12 @@ import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 
 import java.io.IOException;
 
@@ -27,7 +28,7 @@ public class FireboltAuthenticationClient extends FireboltClient {
   private final ObjectMapper objectMapper;
 
   public FireboltConnectionTokens postConnectionTokens(String host, String user, String password)
-      throws IOException {
+          throws IOException, ParseException {
     String connectUrl = String.format(AUTH_URL, host);
     log.debug("Creating connection with url {}", connectUrl);
     HttpPost post = new HttpPost(connectUrl);

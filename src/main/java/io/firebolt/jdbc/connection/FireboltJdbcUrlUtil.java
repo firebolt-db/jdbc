@@ -3,10 +3,8 @@ package io.firebolt.jdbc.connection;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.client.utils.URIBuilder;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Optional;
 import java.util.Properties;
 
