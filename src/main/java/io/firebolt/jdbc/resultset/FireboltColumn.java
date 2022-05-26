@@ -8,6 +8,8 @@ import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
@@ -28,6 +30,7 @@ public final class FireboltColumn {
   private Pair<FireboltColumn, FireboltColumn> columnsTuple;
 
   public static FireboltColumn of(String columnType, String columnName) {
+    String typeInUpperCase = StringUtils.upperCase(columnType);
     int currentIndex = 0;
     int arrayDepth = 0;
     boolean isNullable = false;
@@ -35,23 +38,23 @@ public final class FireboltColumn {
     Pair<FireboltColumn, FireboltColumn> tuple = null;
     Optional<Pair<Optional<Integer>, Optional<Integer>>> scaleAndPrecisionPair;
     FireboltDataType fireboltType;
-
-    if (columnType.startsWith(FireboltDataType.TUPLE.getInternalName())) {
-      tuple = getColumnsTuple(columnType, columnName);
+    if (typeInUpperCase.startsWith(FireboltDataType.TUPLE.getInternalName().toUpperCase())) {
+      tuple = getColumnsTuple(typeInUpperCase, columnName);
     }
 
-    while (columnType.startsWith(FireboltDataType.ARRAY.getInternalName(), currentIndex)) {
+    while (typeInUpperCase.startsWith(
+        FireboltDataType.ARRAY.getInternalName().toUpperCase(), currentIndex)) {
       arrayDepth++;
       currentIndex += FireboltDataType.ARRAY.getInternalName().length() + 1;
     }
 
-    if (columnType.startsWith(NULLABLE_TYPE, currentIndex)) {
+    if (typeInUpperCase.startsWith(NULLABLE_TYPE, currentIndex)) {
       isNullable = true;
       currentIndex += NULLABLE_TYPE.length() + 1;
     }
-    int typeEndIndex = getTypeEndPosition(columnType, currentIndex);
+    int typeEndIndex = getTypeEndPosition(typeInUpperCase, currentIndex);
     FireboltDataType dataType =
-        FireboltDataType.ofType(columnType.substring(currentIndex, typeEndIndex));
+        FireboltDataType.ofType(typeInUpperCase.substring(currentIndex, typeEndIndex));
     if (arrayDepth > 0) {
       arrayType = dataType;
       fireboltType = FireboltDataType.ARRAY;
@@ -59,9 +62,9 @@ public final class FireboltColumn {
       fireboltType = dataType;
     }
 
-    if (!reachedEndOfTypeName(typeEndIndex, columnType.length())
-        || columnType.startsWith("(", typeEndIndex)) {
-      String[] arguments = splitArguments(columnType, typeEndIndex);
+    if (!reachedEndOfTypeName(typeEndIndex, typeInUpperCase.length())
+        || typeInUpperCase.startsWith("(", typeEndIndex)) {
+      String[] arguments = splitArguments(typeInUpperCase, typeEndIndex);
       scaleAndPrecisionPair = Optional.of(getsCaleAndPrecision(arguments, dataType));
     } else {
       scaleAndPrecisionPair = Optional.empty();
@@ -69,7 +72,7 @@ public final class FireboltColumn {
 
     return FireboltColumn.builder()
         .columnName(columnName)
-        .columnType(columnType)
+        .columnType(typeInUpperCase)
         .scale(
             scaleAndPrecisionPair
                 .map(Pair::getLeft)
@@ -90,10 +93,12 @@ public final class FireboltColumn {
         .build();
   }
 
-  private static Pair<FireboltColumn, FireboltColumn> getColumnsTuple(String columnType, String columnName) {
+  private static Pair<FireboltColumn, FireboltColumn> getColumnsTuple(
+      String columnType, String columnName) {
     String types =
-        RegExUtils.replaceFirst(columnType, FireboltDataType.TUPLE.getInternalName() + "\\(", "");
-    types = StringUtils.substring(types, 0, types.length() - 1); //remove last parenthesis
+        RegExUtils.replaceFirst(
+            columnType, FireboltDataType.TUPLE.getInternalName().toUpperCase() + "\\(", "");
+    types = StringUtils.substring(types, 0, types.length() - 1); // remove last parenthesis
 
     FireboltColumn leftColumnType = FireboltColumn.of(types.split(",")[0].trim(), columnName);
     FireboltColumn rightColumnType = FireboltColumn.of(types.split(",")[1].trim(), columnName);
@@ -144,27 +149,42 @@ public final class FireboltColumn {
   public String getCompactTypeName() {
     if (this.dataType.equals(ARRAY)) {
       StringBuilder type = new StringBuilder();
-      for (int i =0; i < arrayDepth ; i++) {
+      for (int i = 0; i < arrayDepth; i++) {
         type.append(ARRAY.getDisplayName());
         type.append("(");
       }
       type.append(this.getArrayBaseDataType().getDisplayName());
-      for (int i =0; i < arrayDepth ; i++) {
+      for (int i = 0; i < arrayDepth; i++) {
         type.append(")");
       }
       return type.toString();
     }
 
     if (this.columnsTuple != null) {
-      return String.format("%s(%s, %s)",TUPLE.getDisplayName(),
-          this.columnsTuple.getLeft().getCompactTypeName(), this.columnsTuple.getRight().getCompactTypeName());
+      return String.format(
+          "%s(%s, %s)",
+          TUPLE.getDisplayName(),
+          this.columnsTuple.getLeft().getCompactTypeName(),
+          this.columnsTuple.getRight().getCompactTypeName());
     } else {
-      if (!nullable) {
-        return dataType.getDisplayName();
-      } else {
-        String trimmedType = StringUtils.remove(columnType, NULLABLE_TYPE + "(");
-        return StringUtils.removeEnd(trimmedType, ")");
-      }
+      Optional<String> params = getTypeArguments(columnType);
+      return dataType.getDisplayName() + params.orElse("");
     }
+  }
+
+  @NotNull
+  private Optional<String> getTypeArguments(String type) {
+    return Optional.ofNullable(getTypeWithoutNullableKeyword(type))
+        .filter(t -> t.contains("("))
+        .map(t -> t.substring(t.indexOf("(")));
+  }
+
+  @Nullable
+  private String getTypeWithoutNullableKeyword(String columnType) {
+    return Optional.ofNullable(columnType)
+        .filter(t -> this.nullable)
+        .map(type -> StringUtils.remove(type, NULLABLE_TYPE + "("))
+        .map(type -> StringUtils.removeEnd(type, ")"))
+        .orElse(columnType);
   }
 }

@@ -13,9 +13,9 @@ class FireboltColumnTest {
     String name = "name";
     FireboltColumn column = FireboltColumn.of(type, name);
     assertEquals(name, column.getColumnName());
-    assertEquals(type, column.getColumnType());
+    assertEquals(type.toUpperCase(), column.getColumnType());
     assertEquals(FireboltDataType.STRING, column.getDataType());
-    assertEquals("String", column.getCompactTypeName());
+    assertEquals("STRING", column.getCompactTypeName());
   }
 
   @Test
@@ -24,7 +24,7 @@ class FireboltColumnTest {
     String name = "name";
     FireboltColumn column = FireboltColumn.of(type, name);
     assertEquals(name, column.getColumnName());
-    assertEquals(type, column.getColumnType());
+    assertEquals(type.toUpperCase(), column.getColumnType());
     assertEquals(FireboltDataType.ARRAY, column.getDataType());
     assertEquals(FireboltDataType.STRING, column.getArrayBaseDataType());
     assertEquals("ARRAY(ARRAY(STRING))", column.getCompactTypeName());
@@ -36,7 +36,7 @@ class FireboltColumnTest {
     String name = "age";
     FireboltColumn column = FireboltColumn.of(type, name);
     assertEquals(name, column.getColumnName());
-    assertEquals(type, column.getColumnType());
+    assertEquals(type.toUpperCase(), column.getColumnType());
     assertEquals(FireboltDataType.ARRAY, column.getDataType());
     assertEquals(FireboltDataType.INT_32, column.getArrayBaseDataType());
     assertEquals("ARRAY(ARRAY(INTEGER))", column.getCompactTypeName());
@@ -48,11 +48,11 @@ class FireboltColumnTest {
     String name = "name";
     FireboltColumn column = FireboltColumn.of(type, name);
     assertEquals(name, column.getColumnName());
-    assertEquals(type, column.getColumnType());
+    assertEquals(type.toUpperCase(), column.getColumnType());
     assertEquals(FireboltDataType.DECIMAL, column.getDataType());
     assertEquals(1, column.getPrecision());
     assertEquals(2, column.getScale());
-    assertEquals("Decimal(1,2)", column.getCompactTypeName());
+    assertEquals("DECIMAL(1,2)", column.getCompactTypeName());
   }
 
   @Test
@@ -61,7 +61,7 @@ class FireboltColumnTest {
     String name = "weight";
     FireboltColumn column = FireboltColumn.of(type, name);
     assertEquals(name, column.getColumnName());
-    assertEquals(type, column.getColumnType());
+    assertEquals(type.toUpperCase(), column.getColumnType());
     assertEquals(FireboltDataType.ARRAY, column.getDataType());
     assertEquals(FireboltDataType.FLOAT_64, column.getArrayBaseDataType());
     assertEquals("ARRAY(ARRAY(DOUBLE))", column.getCompactTypeName());
@@ -73,7 +73,7 @@ class FireboltColumnTest {
     String name = "my_tuple";
     FireboltColumn column = FireboltColumn.of(type, name);
     assertEquals(name, column.getColumnName());
-    assertEquals(type, column.getColumnType());
+    assertEquals(type.toUpperCase(), column.getColumnType());
     assertEquals(FireboltDataType.TUPLE, column.getDataType());
     assertEquals("TUPLE(ARRAY(INTEGER), ARRAY(BIGINT))", column.getCompactTypeName());
   }
@@ -84,8 +84,19 @@ class FireboltColumnTest {
     String name = "name";
     FireboltColumn column = FireboltColumn.of(type, name);
     assertEquals(name, column.getColumnName());
-    assertEquals(type, column.getColumnType());
+    assertEquals(type.toUpperCase(), column.getColumnType());
     assertEquals(FireboltDataType.STRING, column.getDataType());
-    assertEquals("String", column.getCompactTypeName());
+    assertEquals("STRING", column.getCompactTypeName());
+  }
+
+  @Test
+  void shouldGetCompactTextForArrayOfArrayOfArrayOfText() {
+    String type = "ARRAY(ARRAY(ARRAY(TEXT)))";
+    String name = "name";
+    FireboltColumn column = FireboltColumn.of(type, name);
+    assertEquals(name, column.getColumnName());
+    assertEquals(type.toUpperCase(), column.getColumnType());
+    assertEquals(FireboltDataType.ARRAY, column.getDataType());
+    assertEquals("ARRAY(ARRAY(ARRAY(STRING)))", column.getCompactTypeName());
   }
 }
