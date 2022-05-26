@@ -6,6 +6,7 @@ import io.firebolt.jdbc.client.HttpClientConfig;
 import io.firebolt.jdbc.client.account.FireboltAccountClient;
 import io.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import io.firebolt.jdbc.client.query.QueryClientImpl;
+import io.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.service.FireboltAuthenticationService;
@@ -35,7 +36,7 @@ public class FireboltConnectionImpl extends AbstractConnection {
   private final FireboltProperties loginProperties;
   boolean closed = true;
   private FireboltProperties sessionProperties;
-  private String httpConnectionUrl;
+  private final String httpConnectionUrl;
 
   public FireboltConnectionImpl(
       String url,
@@ -45,11 +46,13 @@ public class FireboltConnectionImpl extends AbstractConnection {
     this.fireboltAuthenticationService = fireboltAuthenticationService;
     this.fireboltEngineService = fireboltEngineService;
     this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
+    this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
   }
 
   public FireboltConnectionImpl(String url, Properties connectionSettings) {
     ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
     this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
+    this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
     CloseableHttpClient httpClient = getHttpClient(loginProperties);
     this.fireboltAuthenticationService =
         new FireboltAuthenticationService(
@@ -76,7 +79,6 @@ public class FireboltConnectionImpl extends AbstractConnection {
   public synchronized FireboltConnectionImpl connect() throws FireboltException {
     if (closed) {
       try {
-        httpConnectionUrl = getHttpConnectionUrl(loginProperties);
         FireboltConnectionTokens tokens =
             fireboltAuthenticationService.getConnectionTokens(
                 httpConnectionUrl, loginProperties.getUser(), loginProperties.getPassword());
@@ -97,6 +99,10 @@ public class FireboltConnectionImpl extends AbstractConnection {
     return this;
   }
 
+  public FireboltProperties getSessionProperties() {
+    return this.sessionProperties;
+  }
+
   @Override
   public Statement createStatement() throws SQLException {
     FireboltConnectionTokens connectionTokens =
@@ -107,8 +113,19 @@ public class FireboltConnectionImpl extends AbstractConnection {
             new FireboltQueryService(new QueryClientImpl(HttpClientConfig.getInstance())))
         .sessionProperties(sessionProperties)
         .connectionTokens(connectionTokens)
-        .fireboltConnectionImpl(this)
         .build();
+  }
+
+  public Statement createStatementWithTemporaryProperties(FireboltProperties tmpProperties) {
+    FireboltConnectionTokens connectionTokens =
+            fireboltAuthenticationService.getConnectionTokens(
+                    httpConnectionUrl, tmpProperties.getUser(), tmpProperties.getPassword());
+    return FireboltStatementImpl.builder()
+            .fireboltQueryService(
+                    new FireboltQueryService(new QueryClientImpl(HttpClientConfig.getInstance())))
+            .sessionProperties(tmpProperties)
+            .connectionTokens(connectionTokens)
+            .build();
   }
 
   @Override
@@ -123,7 +140,7 @@ public class FireboltConnectionImpl extends AbstractConnection {
 
   @Override
   public DatabaseMetaData getMetaData() throws SQLException {
-    return null;
+    return new FireboltDatabaseMetadata(this.httpConnectionUrl, this);
   }
 
   @Override
@@ -161,5 +178,10 @@ public class FireboltConnectionImpl extends AbstractConnection {
     return Boolean.TRUE.equals(newSessionProperties.getSsl())
         ? "https://" + newSessionProperties.getHost()
         : "htto://" + newSessionProperties.getHost();
+  }
+
+  @Override
+  public void setCatalog(String db) throws SQLException {
+    //TODO
   }
 }

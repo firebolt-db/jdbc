@@ -42,7 +42,7 @@ public class FireboltJdbcUrlUtil {
     }
     Optional.ofNullable(uri.getPath()).ifPresent(path -> uriProperties.put("path", path));
     Optional.ofNullable(uri.getHost()).ifPresent(host -> uriProperties.put("host", host));
-    Optional.of(uri.getPort()).ifPresent(port -> uriProperties.put("port", port));
+    Optional.of(uri.getPort()).filter(p -> !p.equals(-1)).ifPresent(port -> uriProperties.put("port", port));
     return uriProperties;
   }
 }

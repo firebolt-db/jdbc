@@ -76,7 +76,8 @@ public enum FireboltSessionProperty {
   HOST("host", null, String.class, "Firebolt host - null by default"),
   ENGINE("engine", null, String.class, "engine - null by default"),
   ACCOUNT("account", null, String.class, "account - null by default"),
-  OUTPUT_FORMAT("output_format", null, String.class, "Format of the query results");
+  OUTPUT_FORMAT("output_format", null, String.class, "Format of the query results"),
+  RESULT_OVERFLOW_MODE ("result_overflow_mode", null, String.class, "Action to do when the result exceed a limit. Throw -> Throw an exception, Break -> Same as LIMIT");
 
   private final String key;
   private final Object defaultValue;

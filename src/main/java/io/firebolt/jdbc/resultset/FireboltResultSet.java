@@ -2,12 +2,11 @@ package io.firebolt.jdbc.resultset;
 
 import io.firebolt.jdbc.resultset.type.BaseType;
 import io.firebolt.jdbc.resultset.type.FireboltDataType;
+import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +16,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+@Slf4j
+@EqualsAndHashCode(callSuper = true)
 public class FireboltResultSet extends AbstractResultSet {
   private final BufferedReader reader;
   private final Map<String, Integer> columnNameToColumnNumber;
@@ -28,11 +29,27 @@ public class FireboltResultSet extends AbstractResultSet {
   private int splitPos = -1;
   private String[] arr;
   private boolean isClosed = false;
-  private boolean reachedEnd = false;
 
-  public FireboltResultSet(InputStream is, String tableName, String dbName, int bufferSize)
+  private FireboltResultSet() {
+    reader = // empty InputStream
+        new BufferedReader(
+            new InputStreamReader(new ByteArrayInputStream("".getBytes()), StandardCharsets.UTF_8));
+    resultSetMetaData = FireboltResultSetMetaData.builder().build();
+    columnNameToColumnNumber = new HashMap<>();
+    currentLine = null;
+    columns = new ArrayList<>();
+  }
+
+  public FireboltResultSet(InputStream is) throws SQLException {
+    this(is, null, null, null);
+  }
+
+  public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize)
       throws SQLException {
-    this.reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8), bufferSize);
+    this.reader =
+        bufferSize != null
+            ? new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8), bufferSize)
+            : new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
     try {
       this.next();
       String[] fields = toStringArray(currentLine);
@@ -45,6 +62,10 @@ public class FireboltResultSet extends AbstractResultSet {
     }
   }
 
+  public static FireboltResultSet empty() {
+    return new FireboltResultSet();
+  }
+
   @Override
   public boolean next() throws SQLException {
     checkStreamNotClosed();
@@ -55,8 +76,8 @@ public class FireboltResultSet extends AbstractResultSet {
     } catch (IOException e) {
       throw new SQLException("Error reading result from stream", e);
     }
-    reachedEnd = currentLine == null;
-    return !reachedEnd;
+
+    return currentLine != null;
   }
 
   @Override
@@ -264,7 +285,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public boolean isAfterLast() throws SQLException {
-    return reachedEnd;
+    return !hasNext() && currentLine == null;
   }
 
   private boolean hasNext() {
@@ -279,8 +300,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public boolean isLast() throws SQLException {
-    checkStreamNotClosed();
-    return !hasNext() && !reachedEnd;
+    return !hasNext() && currentLine != null;
   }
 
   @Override
@@ -311,7 +331,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   private String[] toStringArray(String stringToSplit) {
     if (pos != splitPos) {
-      arr = StringUtils.split(stringToSplit, '\t');
+      arr = StringUtils.splitPreserveAllTokens(stringToSplit, '\t');
       splitPos = pos;
     }
     return arr;

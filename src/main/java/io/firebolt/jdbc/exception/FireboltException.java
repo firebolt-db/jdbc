@@ -7,4 +7,8 @@ public class FireboltException extends SQLException {
   public FireboltException(String errorMessage, Throwable err) {
     super(errorMessage, err);
   }
+
+  public FireboltException(String errorMessage) {
+    super(errorMessage);
+  }
 }
