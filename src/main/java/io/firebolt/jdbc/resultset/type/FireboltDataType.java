@@ -20,7 +20,7 @@ public enum FireboltDataType {
       "Int16",
       "UInt16",
       "UInt32"),
-  INT_64(Types.BIGINT, "Int64", "BIGINT", BaseType.LONG, true, false, 20, 0, "BIGINT"),
+  INT_64(Types.BIGINT, "Int64", "BIGINT", BaseType.LONG, true, false, 20, 0, "BIGINT", "LONG"),
   FLOAT_32(Types.FLOAT, "Float32", "FLOAT", BaseType.FLOAT, true, false, 8, 8, "FLOAT"),
   FLOAT_64(Types.DOUBLE, "Float64", "DOUBLE", BaseType.DOUBLE, true, false, 17, 17, "DOUBLE"),
   STRING(Types.VARCHAR, "String", "STRING", BaseType.STRING, false, true, 0, 0, "VARCHAR", "TEXT"),
@@ -66,7 +66,7 @@ public enum FireboltDataType {
   private final int defaultScale;
   private final String[] aliases;
 
-  public static final String NULLABLE_TYPE = "Nullable";
+  public static final String NULLABLE_TYPE = "NULLABLE";
 
   FireboltDataType(
       int sqlType,
