@@ -1,18 +1,17 @@
 package io.firebolt.jdbc.resultset;
 
+import io.firebolt.jdbc.exception.FireboltException;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.apache.commons.lang3.StringUtils;
 
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.List;
 
 @Value
 @Builder
-@EqualsAndHashCode
-public class FireboltResultSetMetaData implements ResultSetMetaData {
+@EqualsAndHashCode(callSuper = false)
+public class FireboltResultSetMetaData extends AbstractResultSetMetaData {
 
   List<FireboltColumn> columns;
 
@@ -26,26 +25,6 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
   }
 
   @Override
-  public boolean isAutoIncrement(int column) throws SQLException {
-    return false;
-  }
-
-  @Override
-  public boolean isCaseSensitive(int column) throws SQLException {
-    return true;
-  }
-
-  @Override
-  public boolean isSearchable(int column) throws SQLException {
-    return true;
-  }
-
-  @Override
-  public boolean isCurrency(int column) throws SQLException {
-    return false;
-  }
-
-  @Override
   public int isNullable(int column) throws SQLException {
     return getColumn(column).isNullable() ? columnNullable : columnNoNulls;
   }
@@ -56,11 +35,6 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
   }
 
   @Override
-  public int getColumnDisplaySize(int column) throws SQLException {
-    return 80;
-  }
-
-  @Override
   public String getColumnLabel(int column) throws SQLException {
     return getColumnName(column);
   }
@@ -68,11 +42,6 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
   @Override
   public String getColumnName(int column) throws SQLException {
     return getColumn(column).getColumnName();
-  }
-
-  @Override
-  public String getSchemaName(int column) throws SQLException {
-    return StringUtils.EMPTY;
   }
 
   @Override
@@ -106,40 +75,25 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
   }
 
   @Override
-  public boolean isReadOnly(int column) throws SQLException {
-    return true;
-  }
-
-  @Override
-  public boolean isWritable(int column) throws SQLException {
-    return false;
-  }
-
-  @Override
-  public boolean isDefinitelyWritable(int column) throws SQLException {
-    return false;
-  }
-
-  @Override
   public String getColumnClassName(int column) throws SQLException {
     return getColumn(column).getDataType().getBaseType().getType().getCanonicalName();
   }
 
-  @Override
-  @SuppressWarnings("unchecked")
-  public <T> T unwrap(Class<T> iface) throws SQLException {
-    if (isWrapperFor(iface)) {
-      return (T) this;
-    }
-    throw new SQLException("Unable to unwrap to " + iface);
-  }
-
-  @Override
-  public boolean isWrapperFor(Class<?> iface) throws SQLException {
-    return iface != null && iface.isAssignableFrom(getClass());
-  }
-
   public FireboltColumn getColumn(int column) {
     return this.columns.get(column - 1);
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public <T> T unwrap(Class<T> interfaceName) throws SQLException {
+    if (isWrapperFor(interfaceName)) {
+      return (T) this;
+    }
+    throw new FireboltException("Unable unwrap to " + interfaceName);
+  }
+
+  @Override
+  public boolean isWrapperFor(Class<?> interfaceName) throws SQLException {
+    return interfaceName != null && interfaceName.isAssignableFrom(getClass());
   }
 }

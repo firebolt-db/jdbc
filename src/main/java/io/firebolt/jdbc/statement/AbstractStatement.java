@@ -72,10 +72,6 @@ public abstract class AbstractStatement implements Statement {
     throw new UnsupportedOperationException();
   }
 
-  @Override
-  public boolean execute(String sql) throws SQLException {
-    return false;
-  }
 
   @Override
   public ResultSet getResultSet() throws SQLException {
