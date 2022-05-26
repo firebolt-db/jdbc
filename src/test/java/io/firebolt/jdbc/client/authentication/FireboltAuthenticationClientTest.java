@@ -4,13 +4,12 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.firebolt.jdbc.ProjectVersionUtil;
 import io.firebolt.jdbc.client.authentication.response.FireboltAuthenticationResponse;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpStatus;
-import org.apache.http.HttpVersion;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.message.BasicStatusLine;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.ParseException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,12 +59,11 @@ class FireboltAuthenticationClientTest {
   }
 
   @Test
-  void shouldPostConnectionTokens() throws IOException {
+  void shouldPostConnectionTokens() throws IOException, ParseException {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
     HttpEntity entity = mock(HttpEntity.class);
     when(response.getEntity()).thenReturn(entity);
-    when(response.getStatusLine())
-        .thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, "OK"));
+    when(response.getCode()).thenReturn(HttpStatus.SC_OK);
     when(httpClient.execute(any())).thenReturn(response);
     InputStream tokensResponse =
         new ByteArrayInputStream(
@@ -82,8 +80,8 @@ class FireboltAuthenticationClientTest {
 
     verify(httpClient).execute(httpPostArgumentCaptor.capture());
     HttpPost actualPost = httpPostArgumentCaptor.getValue();
-    assertEquals("User-Agent", actualPost.getAllHeaders()[0].getName());
-    assertEquals("fireboltJdbcDriver/1.0-TEST", actualPost.getAllHeaders()[0].getValue());
+    assertEquals("User-Agent", actualPost.getHeaders()[0].getName());
+    assertEquals("fireboltJdbcDriver/1.0-TEST", actualPost.getHeaders()[0].getValue());
     verify(objectMapper)
         .readValue(
             "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1}",
@@ -93,9 +91,7 @@ class FireboltAuthenticationClientTest {
   @Test
   void shouldThrowExceptionWhenStatusCodeIsNotFound() throws Exception {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
-    when(response.getStatusLine())
-        .thenReturn(
-            new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_NOT_FOUND, "NOT FOUND"));
+    when(response.getCode()).thenReturn(HttpStatus.SC_NOT_FOUND);
     HttpEntity entity = mock(HttpEntity.class);
     when(response.getEntity()).thenReturn(entity);
     when(httpClient.execute(any())).thenReturn(response);
@@ -108,9 +104,7 @@ class FireboltAuthenticationClientTest {
   @Test
   void shouldThrowExceptionWhenStatusCodeIsNotOk() throws Exception {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
-    when(response.getStatusLine())
-        .thenReturn(
-            new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_BAD_GATEWAY, "Bad Gateway"));
+    when(response.getCode()).thenReturn(HttpStatus.SC_BAD_GATEWAY);
     HttpEntity entity = mock(HttpEntity.class);
     when(response.getEntity()).thenReturn(entity);
     when(httpClient.execute(any())).thenReturn(response);
@@ -123,9 +117,7 @@ class FireboltAuthenticationClientTest {
   @Test
   void shouldThrowExceptionWhenStatusCodeIsForbidden() throws Exception {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
-    when(response.getStatusLine())
-        .thenReturn(
-            new BasicStatusLine(HttpVersion.HTTP_1_1, HttpStatus.SC_FORBIDDEN, "FORBIDDEN"));
+    when(response.getCode()).thenReturn(HttpStatus.SC_FORBIDDEN);
     HttpEntity entity = mock(HttpEntity.class);
     when(response.getEntity()).thenReturn(entity);
     when(httpClient.execute(any())).thenReturn(response);
