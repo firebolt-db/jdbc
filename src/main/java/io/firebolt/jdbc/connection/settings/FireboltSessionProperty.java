@@ -62,7 +62,7 @@ public enum FireboltSessionProperty {
       "Defines period of inactivity in milliseconds after which persistent connections must be re-validated prior to being leased to the consumer. Non-positive value disables connection validation. "),
   COMPRESS(
       "compress",
-      1,
+      0,
       Integer.class,
       "Whether to compress transferred data or not. Compressed by default"),
   DECOMPRESS(
