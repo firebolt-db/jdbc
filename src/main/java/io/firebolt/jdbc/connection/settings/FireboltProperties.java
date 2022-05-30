@@ -190,6 +190,10 @@ public class FireboltProperties {
     return mergedProperties;
   }
 
+  public boolean isAggressiveCancelEnabled() {
+    return "1".equals(this.additionalProperties.get("aggressive_cancel"));
+  }
+
   public void addProperty(String key, String value) {
     additionalProperties.put(key, value);
   }
