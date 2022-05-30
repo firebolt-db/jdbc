@@ -4,6 +4,7 @@ import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.service.FireboltQueryService;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +18,7 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Timestamp;
+import java.util.TimeZone;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
@@ -32,8 +34,13 @@ class FireboltPreparedStatementTest {
 
   @Mock FireboltConnectionTokens connectionTokens;
 
+  @BeforeAll
+  public static void beforeAll(){
+    TimeZone.setDefault(TimeZone.getTimeZone("Europe/London"));
+  }
+
   @BeforeEach
-  void init() throws FireboltException {
+  void beforeEach() throws FireboltException {
     lenient().when(connectionTokens.getAccessToken()).thenReturn("ACCESS");
     lenient()
         .when(fireboltQueryService.executeQuery(any(), any(), any(), any()))
