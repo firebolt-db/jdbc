@@ -12,11 +12,6 @@ import java.util.concurrent.Executor;
 public abstract class AbstractConnection implements Connection {
 
   @Override
-  public void close() throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet.");
-  }
-
-  @Override
   public CallableStatement prepareCall(String sql) throws SQLException {
     throw new UnsupportedOperationException("Feature not supported yet.");
   }

@@ -95,7 +95,7 @@ class FireboltAccountClientTest {
     verify(objectMapper).readValue("{\"account_id\":\"12345\"}", FireboltAccountResponse.class);
     HttpGet actualHttpGet = httpGetArgumentCaptor.getValue();
     assertEquals(expectedHttpGet.getUri(), httpGetArgumentCaptor.getValue().getUri());
-    assertEquals(expectedHeader, headersToMap(actualHttpGet));
+    assertEquals(expectedHeader, extractHeadersMap(actualHttpGet));
     assertEquals("12345", accountId.get());
   }
 
@@ -132,7 +132,7 @@ class FireboltAccountClientTest {
             "{\"engine\":{\"endpoint\":\"http://engineEndpoint\"}}", FireboltEngineResponse.class);
     HttpGet actualHttpGet = httpGetArgumentCaptor.getValue();
     assertEquals(expectedHttpGet.getUri(), httpGetArgumentCaptor.getValue().getUri());
-    assertEquals(expectedHeader, headersToMap(actualHttpGet));
+    assertEquals(expectedHeader, extractHeadersMap(actualHttpGet));
     assertEquals("http://engineEndpoint", engineAddress);
   }
 
@@ -165,7 +165,7 @@ class FireboltAccountClientTest {
         .readValue("{\"engine_url\":\"http://dbAddress\"}", FireboltDatabaseResponse.class);
     HttpGet actualHttpGet = httpGetArgumentCaptor.getValue();
     assertEquals(expectedHttpGet.getUri(), httpGetArgumentCaptor.getValue().getUri());
-    assertEquals(expectedHeader, headersToMap(actualHttpGet));
+    assertEquals(expectedHeader, extractHeadersMap(actualHttpGet));
     assertEquals("http://dbAddress", dbAddress);
   }
 
@@ -200,7 +200,7 @@ class FireboltAccountClientTest {
         .readValue("{\"engine_id\":{\"engine_id\":\"13\"}}", FireboltEngineIdResponse.class);
     HttpGet actualHttpGet = httpGetArgumentCaptor.getValue();
     assertEquals(expectedHttpGet.getUri(), httpGetArgumentCaptor.getValue().getUri());
-    assertEquals(expectedHeader, headersToMap(actualHttpGet));
+    assertEquals(expectedHeader, extractHeadersMap(actualHttpGet));
     assertEquals("13", engineId);
   }
 
@@ -227,7 +227,7 @@ class FireboltAccountClientTest {
         IOException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN));
   }
 
-  private Map<String, String> headersToMap(HttpGet httpGet) {
+  private Map<String, String> extractHeadersMap(HttpGet httpGet) {
     return Arrays.stream(httpGet.getHeaders())
         .collect(Collectors.toMap(Header::getName, Header::getValue));
   }
