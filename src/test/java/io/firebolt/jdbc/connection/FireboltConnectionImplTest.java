@@ -14,13 +14,13 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Properties;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltConnectionImplTest {
@@ -83,5 +83,23 @@ class FireboltConnectionImplTest {
     verify(fireboltQueryService)
         .executeQuery(
             eq("INSERT INTO cars(sales, name) VALUES (500, 'Ford')"), any(), any(), any());
+  }
+
+  @Test
+  void shouldCloseAllStatementsOnClose() throws SQLException {
+    FireboltConnectionImpl fireboltConnectionImpl =
+            new FireboltConnectionImpl(
+                    URL,
+                    connectionProperties,
+                    fireboltAuthenticationService,
+                    fireboltEngineService,
+                    fireboltQueryService)
+                    .connect();
+    Statement statement = fireboltConnectionImpl.createStatement();
+    Statement preparedStatement = fireboltConnectionImpl.prepareStatement("test");
+    fireboltConnectionImpl.close();
+    assertTrue(statement.isClosed());
+    assertTrue(preparedStatement.isClosed());
+    assertTrue(fireboltConnectionImpl.isClosed());
   }
 }
