@@ -23,6 +23,8 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
@@ -33,20 +35,24 @@ public class FireboltConnectionImpl extends AbstractConnection {
   private final FireboltEngineService fireboltEngineService;
   private final FireboltQueryService fireboltQueryService;
   private final FireboltProperties loginProperties;
-  boolean closed = true;
+  private boolean closed = true;
   private FireboltProperties sessionProperties;
   private final String httpConnectionUrl;
+
+  private final List<Statement> statements;
 
   public FireboltConnectionImpl(
       String url,
       Properties connectionSettings,
       FireboltAuthenticationService fireboltAuthenticationService,
-      FireboltEngineService fireboltEngineService, FireboltQueryService fireboltQueryService) {
+      FireboltEngineService fireboltEngineService,
+      FireboltQueryService fireboltQueryService) {
     this.fireboltAuthenticationService = fireboltAuthenticationService;
     this.fireboltEngineService = fireboltEngineService;
     this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
     this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
     this.fireboltQueryService = fireboltQueryService;
+    this.statements = new ArrayList<>();
   }
 
   public FireboltConnectionImpl(String url, Properties connectionSettings) {
@@ -60,6 +66,7 @@ public class FireboltConnectionImpl extends AbstractConnection {
     this.fireboltEngineService =
         new FireboltEngineService(new FireboltAccountClient(httpClient, objectMapper));
     this.fireboltQueryService = new FireboltQueryService(new QueryClientImpl(httpClient));
+    this.statements = new ArrayList<>();
   }
 
   private static synchronized CloseableHttpClient getHttpClient(
@@ -106,27 +113,34 @@ public class FireboltConnectionImpl extends AbstractConnection {
 
   @Override
   public Statement createStatement() throws SQLException {
+    checkConnectionIsNotClose();
     FireboltConnectionTokens connectionTokens =
         fireboltAuthenticationService.getConnectionTokens(
             httpConnectionUrl, sessionProperties.getUser(), sessionProperties.getPassword());
-    return FireboltStatementImpl.builder()
-        .fireboltQueryService(
-            new FireboltQueryService(new QueryClientImpl(HttpClientConfig.getInstance())))
-        .sessionProperties(sessionProperties)
-        .connectionTokens(connectionTokens)
-        .build();
+    FireboltStatementImpl fireboltStatement =
+        FireboltStatementImpl.builder()
+            .fireboltQueryService(fireboltQueryService)
+            .sessionProperties(sessionProperties)
+            .connectionTokens(connectionTokens)
+            .build();
+    this.statements.add(fireboltStatement);
+    return fireboltStatement;
   }
 
-  public Statement createStatementWithTemporaryProperties(FireboltProperties tmpProperties) {
+  public Statement createStatementWithTemporaryProperties(FireboltProperties tmpProperties)
+      throws SQLException {
+    checkConnectionIsNotClose();
     FireboltConnectionTokens connectionTokens =
         fireboltAuthenticationService.getConnectionTokens(
             httpConnectionUrl, tmpProperties.getUser(), tmpProperties.getPassword());
-    return FireboltStatementImpl.builder()
-        .fireboltQueryService(
-            new FireboltQueryService(new QueryClientImpl(HttpClientConfig.getInstance())))
-        .sessionProperties(tmpProperties)
-        .connectionTokens(connectionTokens)
-        .build();
+    FireboltStatementImpl fireboltStatement =
+        FireboltStatementImpl.builder()
+            .fireboltQueryService(fireboltQueryService)
+            .sessionProperties(tmpProperties)
+            .connectionTokens(connectionTokens)
+            .build();
+    this.statements.add(fireboltStatement);
+    return fireboltStatement;
   }
 
   @Override
@@ -169,6 +183,18 @@ public class FireboltConnectionImpl extends AbstractConnection {
     this.close();
   }
 
+  @Override
+  public void close() throws SQLException {
+    for (Statement statement : this.statements) {
+      try {
+        statement.close();
+      } catch (Exception e) {
+        log.warn("Could not close statement", e);
+      }
+    }
+    this.closed = true;
+  }
+
   private FireboltProperties extractFireboltProperties(
       String jdbcUri, Properties connectionProperties) {
     Properties propertiesFromUrl = FireboltJdbcUrlUtil.extractProperties(jdbcUri);
@@ -182,13 +208,10 @@ public class FireboltConnectionImpl extends AbstractConnection {
   }
 
   @Override
-  public void setCatalog(String db) throws SQLException {
-    // no-op
-  }
-  @Override
   public PreparedStatement prepareStatement(
       String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability)
       throws SQLException {
+    checkConnectionIsNotClose();
     if (resultSetType != ResultSet.TYPE_FORWARD_ONLY) {
       throw new SQLFeatureNotSupportedException();
     }
@@ -197,39 +220,59 @@ public class FireboltConnectionImpl extends AbstractConnection {
 
   @Override
   public PreparedStatement prepareStatement(String sql) throws SQLException {
+    checkConnectionIsNotClose();
     return this.createPreparedStatement(sql);
   }
 
   @Override
   public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency)
       throws SQLException {
+    checkConnectionIsNotClose();
     return this.prepareStatement(sql);
   }
 
   @Override
   public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException {
+    checkConnectionIsNotClose();
     throw new SQLFeatureNotSupportedException();
   }
 
   @Override
   public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException {
+    checkConnectionIsNotClose();
     throw new SQLFeatureNotSupportedException();
   }
 
   @Override
   public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException {
+    checkConnectionIsNotClose();
     throw new SQLFeatureNotSupportedException();
   }
 
-  private PreparedStatement createPreparedStatement(String sql) {
+  private PreparedStatement createPreparedStatement(String sql) throws SQLException {
+    checkConnectionIsNotClose();
     FireboltConnectionTokens connectionTokens =
-            fireboltAuthenticationService.getConnectionTokens(
-                    httpConnectionUrl, sessionProperties.getUser(), sessionProperties.getPassword());
-    return FireboltPreparedStatement.statementBuilder()
+        fireboltAuthenticationService.getConnectionTokens(
+            httpConnectionUrl, sessionProperties.getUser(), sessionProperties.getPassword());
+    PreparedStatement statement =
+        FireboltPreparedStatement.statementBuilder()
             .fireboltQueryService(fireboltQueryService)
             .sessionProperties(this.getSessionProperties())
             .connectionTokens(connectionTokens)
             .sql(sql)
             .build();
+    this.statements.add(statement);
+    return statement;
+  }
+
+  @Override
+  public void setCatalog(String catalog) throws SQLException {
+    // no-op
+  }
+
+  private void checkConnectionIsNotClose() throws SQLException {
+    if (isClosed()) {
+      throw new SQLException("Cannot proceed: connection closed");
+    }
   }
 }
