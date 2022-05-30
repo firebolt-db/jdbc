@@ -53,11 +53,6 @@ public abstract class AbstractStatement implements Statement {
   }
 
   @Override
-  public void cancel() throws SQLException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public SQLWarning getWarnings() throws SQLException {
     return null;
   }
