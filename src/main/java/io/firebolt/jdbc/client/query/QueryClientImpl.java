@@ -19,13 +19,14 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @RequiredArgsConstructor
 @Slf4j
 public class QueryClientImpl extends FireboltClient implements QueryClient {
   private final CloseableHttpClient httpClient;
+
+  private final Map<String, HttpPost> runningQueries = new HashMap<>();
 
   public InputStream postSqlQuery(
       String sql, String queryId, String accessToken, FireboltProperties fireboltProperties)
@@ -36,6 +37,7 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
       String uri = this.buildQueryUri(fireboltProperties, queryParameters).toString();
       requestEntity = new StringEntity(sql, StandardCharsets.UTF_8);
       HttpPost post = this.createPostRequest(uri, accessToken);
+      runningQueries.put(queryId, post);
       post.setEntity(requestEntity);
 
       CloseableHttpResponse response = httpClient.execute(post);
@@ -44,7 +46,37 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
     } catch (Exception e) {
       EntityUtils.consumeQuietly(requestEntity);
       throw new FireboltException(
-          String.format("Error executing query %s, error %s", sql, e.getMessage()), e);
+          String.format("Error executing query %s. Error: %s", sql, e.getMessage()), e);
+    } finally {
+      runningQueries.remove(queryId);
+    }
+  }
+
+  public void postCancelSqlQuery(String queryId, FireboltProperties fireboltProperties)
+      throws FireboltException {
+    try {
+      abortCallWithQueryId(queryId);
+
+      BasicNameValuePair queryIdParam = new BasicNameValuePair("query_id", queryId);
+      String uri =
+          this.buildCancelUri(fireboltProperties, Collections.singletonList(queryIdParam))
+              .toString();
+      HttpPost post = new HttpPost(uri);
+      CloseableHttpResponse response = httpClient.execute(post);
+      validateResponse(uri, response);
+    } catch (Exception e) {
+      throw new FireboltException(
+          String.format("Could not cancel query %s, error %s", queryId, e.getMessage()), e);
+    }
+  }
+
+  private void abortCallWithQueryId(String queryId) {
+    try {
+      if (runningQueries.containsKey(queryId)) {
+        runningQueries.get(queryId).abort();
+      }
+    } catch (Exception e) {
+      log.error("Could not abort running query with id {}", queryId);
     }
   }
 
@@ -73,6 +105,19 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
         .setHost(fireboltProperties.getHost())
         .setPort(fireboltProperties.getPort())
         .setPath("/")
+        .setParameters(queryParameters)
+        .build();
+  }
+
+  private URI buildCancelUri(
+      FireboltProperties fireboltProperties, List<NameValuePair> queryParameters)
+      throws URISyntaxException {
+
+    return new URIBuilder()
+        .setScheme(Boolean.TRUE.equals(fireboltProperties.getSsl()) ? "https" : "http")
+        .setHost(fireboltProperties.getHost())
+        .setPort(fireboltProperties.getPort())
+        .setPath("/cancel")
         .setParameters(queryParameters)
         .build();
   }

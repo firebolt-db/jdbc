@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.firebolt.jdbc.ProjectVersionUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -12,6 +14,8 @@ import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
@@ -47,16 +51,15 @@ public abstract class FireboltClient {
 
   private HttpGet createGetRequest(String uri, String accessToken) {
     HttpGet httpGet = new HttpGet(uri);
-    httpGet.addHeader(HEADER_USER_AGENT, this.getHeaderUserAgentValue());
-    httpGet.addHeader(HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken);
+    this.createHeaders(accessToken)
+        .forEach(header -> httpGet.addHeader(header.getLeft(), header.getRight()));
     return httpGet;
   }
 
   protected HttpPost createPostRequest(String uri, String accessToken) {
     HttpPost httpPost = new HttpPost(uri);
-    httpPost.addHeader(HEADER_USER_AGENT, this.getHeaderUserAgentValue());
-    httpPost.addHeader(
-        HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken);
+    this.createHeaders(accessToken)
+        .forEach(header -> httpPost.addHeader(header.getLeft(), header.getRight()));
     return httpPost;
   }
 
@@ -87,5 +90,14 @@ public abstract class FireboltClient {
   private boolean isCallSuccessful(int statusCode) {
     return statusCode >= 200
         && statusCode <= 299; // Call is considered successful when the status code is 2XX
+  }
+
+  private List<Pair<String, String>> createHeaders(String accessToken) {
+    List<Pair<String, String>> headers = new ArrayList<>();
+    headers.add(new ImmutablePair<>(HEADER_USER_AGENT, this.getHeaderUserAgentValue()));
+    headers.add(
+        new ImmutablePair<>(
+            HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken));
+    return headers;
   }
 }

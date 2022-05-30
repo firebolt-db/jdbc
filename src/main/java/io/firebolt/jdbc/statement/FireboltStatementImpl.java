@@ -8,6 +8,7 @@ import io.firebolt.jdbc.resultset.FireboltResultSet;
 import io.firebolt.jdbc.service.FireboltQueryService;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.InputStream;
@@ -20,9 +21,13 @@ import java.util.UUID;
 @Slf4j
 public class FireboltStatementImpl extends AbstractStatement {
 
+  private static final String KILL_QUERY_SQL =
+      "KILL QUERY ON CLUSTER sql_cluster WHERE initial_query_id='%s'";
   private final FireboltQueryService fireboltQueryService;
-  private final FireboltProperties sessionProperties;
+  private FireboltProperties sessionProperties;
   private final FireboltConnectionTokens connectionTokens;
+
+  private String queryId;
 
   private boolean closeOnCompletion;
   int currentUpdateCount;
@@ -53,13 +58,13 @@ public class FireboltStatementImpl extends AbstractStatement {
       this.sessionProperties.addProperty(additionalProperties.get());
       return null;
     } else {
-      String queryId = UUID.randomUUID().toString();
+      this.queryId = UUID.randomUUID().toString();
       InputStream inputStream =
           fireboltQueryService.executeQuery(
               sql, queryId, connectionTokens.getAccessToken(), sessionProperties);
 
       if (QueryUtil.isSelect(sql)) {
-        currentUpdateCount = -1; // Always -1 when the result is a return a ResultSet
+        currentUpdateCount = -1; // Always -1 when returning a ResultSet
         resultSet =
             new FireboltResultSet(
                 inputStream,
@@ -72,10 +77,35 @@ public class FireboltStatementImpl extends AbstractStatement {
           inputStream.close();
           return null;
         } catch (Exception e) {
-          throw new FireboltException("Error closing inputstream during update with query " + sql);
+          throw new FireboltException(
+              String.format("Error closing InputStream with query: %s", sql), e);
         }
       }
       return resultSet;
+    }
+  }
+
+  @Override
+  public void cancel() throws SQLException {
+    log.debug("Cancelling query with id {}", queryId);
+    if (this.queryId == null || isClosed()) {
+      log.warn("Cannot cancel query as there is no query running");
+    } else if ("localhost".equals(this.sessionProperties.getHost())
+        || StringUtils.isEmpty(this.sessionProperties.getDatabase())
+        || this.sessionProperties.isAggressiveCancelEnabled()) {
+      cancelBySqlQuery();
+    } else {
+      fireboltQueryService.cancelQuery(this.queryId, this.sessionProperties);
+    }
+    log.debug("Query with id {} was cancelled", queryId);
+  }
+
+  private void cancelBySqlQuery() throws SQLException {
+    FireboltProperties cachedProperties = FireboltProperties.copy(this.sessionProperties);
+    this.sessionProperties.addProperty("use_standard_sql", "1");
+    try (ResultSet rs = this.executeQuery(String.format(KILL_QUERY_SQL, queryId))) {
+    } finally {
+      this.sessionProperties = cachedProperties;
     }
   }
 
@@ -104,11 +134,11 @@ public class FireboltStatementImpl extends AbstractStatement {
 
   @Override
   public void close() throws SQLException {
-    if (resultSet != null) {
+    if (resultSet != null && !resultSet.isClosed()) {
       resultSet.close();
       resultSet = null;
     }
-    isClosed = true;
+    this.isClosed = true;
   }
 
   @Override
