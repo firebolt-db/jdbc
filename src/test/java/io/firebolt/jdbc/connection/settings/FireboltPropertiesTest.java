@@ -6,8 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 class FireboltPropertiesTest {
 
@@ -21,7 +20,7 @@ class FireboltPropertiesTest {
             .sslMode("strict")
             .path("/")
             .port(443) // 443 by default as SSL is enabled by default
-            .compress(1)
+            .compress(0)
             .enableConnectionPool(0)
             .user(null)
             .password(null)
@@ -126,5 +125,17 @@ class FireboltPropertiesTest {
     properties.put("host", "host");
 
     assertThrows(IllegalArgumentException.class, () -> FireboltProperties.of(properties));
+  }
+
+  @Test
+  void shouldHaveAggressiveCancelBeDisabledByDefault() {
+    assertFalse(FireboltProperties.builder().build().isAggressiveCancelEnabled());
+  }
+
+  @Test
+  void shouldHaveAggressiveCancelEnabledWhenPropertyWasSet() {
+    FireboltProperties fireboltProperties = FireboltProperties.builder().build();
+    fireboltProperties.addProperty("aggressive_cancel", "1");
+    assertTrue(fireboltProperties.isAggressiveCancelEnabled());
   }
 }
