@@ -192,7 +192,7 @@ public class FireboltResultSet extends AbstractResultSet {
   @Override
   public boolean getBoolean(int columnIndex) throws SQLException {
     String value = this.getValueAtColumn(columnIndex);
-    return BaseType.BOOLEAN.transform(value);
+    return "1".equals(value);
   }
 
   @Override
