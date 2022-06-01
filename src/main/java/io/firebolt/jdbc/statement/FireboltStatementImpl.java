@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.InputStream;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -37,21 +38,30 @@ public class FireboltStatementImpl extends AbstractStatement {
 
   private ResultSet resultSet;
 
+  private Connection connection;
+
   @Builder
   public FireboltStatementImpl(
       FireboltQueryService fireboltQueryService,
       FireboltProperties sessionProperties,
-      FireboltConnectionTokens connectionTokens) {
+      FireboltConnectionTokens connectionTokens,
+      Connection connection) {
     this.fireboltQueryService = fireboltQueryService;
     this.sessionProperties = sessionProperties;
     this.connectionTokens = connectionTokens;
     this.closeOnCompletion = true;
     this.currentUpdateCount = -1;
     this.isClosed = false;
+    this.connection = connection;
+    log.debug("Created statement!");
   }
 
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
+    log.info("The executed query is: {}", sql);
+    if(resultSet != null) {
+      log.debug("There is already a rs for the statement !");
+    }
     Optional<Pair<String, String>> additionalProperties =
         QueryUtil.extractAdditionalProperties(sql);
     if (additionalProperties.isPresent()) {
@@ -69,7 +79,7 @@ public class FireboltStatementImpl extends AbstractStatement {
             new FireboltResultSet(
                 inputStream,
                 QueryUtil.extractTableNameFromSelect(sql).orElse("unknown"),
-                QueryUtil.extractDBNameFromSelect(sql).orElse(sessionProperties.getDatabase()),
+                QueryUtil.extractDBNameFromSelect(sql).orElse(sessionProperties.getDatabase() != null ? sessionProperties.getDatabase() : "unknown"),
                 sessionProperties.getBufferSize());
       } else {
         currentUpdateCount = 0;
@@ -101,6 +111,7 @@ public class FireboltStatementImpl extends AbstractStatement {
   }
 
   private void cancelBySqlQuery() throws SQLException {
+    log.debug("cancelling query");
     FireboltProperties cachedProperties = FireboltProperties.copy(this.sessionProperties);
     this.sessionProperties.addProperty("use_standard_sql", "1");
     try (ResultSet rs = this.executeQuery(String.format(KILL_QUERY_SQL, queryId))) {
@@ -120,6 +131,18 @@ public class FireboltStatementImpl extends AbstractStatement {
   }
 
   @Override
+  public Connection getConnection() throws SQLException {
+    log.debug("Getting connection from statement");
+    return this.connection;
+  }
+
+  @Override
+  public boolean getMoreResults(int current) throws SQLException {
+    log.debug("Getting more results: false");
+    return false;
+  }
+
+  @Override
   public int getMaxRows() throws SQLException {
     return maxRows;
   }
@@ -134,16 +157,18 @@ public class FireboltStatementImpl extends AbstractStatement {
 
   @Override
   public void close() throws SQLException {
+    log.debug("Closing statement");
     if (resultSet != null && !resultSet.isClosed()) {
       resultSet.close();
       resultSet = null;
     }
     this.isClosed = true;
+    log.debug("Statement closed");
   }
 
   @Override
   public boolean isClosed() throws SQLException {
-    return isClosed;
+    return this.isClosed;
   }
 
   @Override
@@ -153,7 +178,10 @@ public class FireboltStatementImpl extends AbstractStatement {
 
   @Override
   public boolean getMoreResults() throws SQLException {
-    this.close();
+    if (resultSet != null && !resultSet.isClosed()) {
+      resultSet.close();
+      resultSet = null;
+    }
     currentUpdateCount = -1;
     return false;
   }

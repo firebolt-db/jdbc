@@ -12,11 +12,6 @@ import java.util.concurrent.Executor;
 public abstract class AbstractConnection implements Connection {
 
   @Override
-  public CallableStatement prepareCall(String sql) throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet.");
-  }
-
-  @Override
   public String nativeSQL(String sql) throws SQLException {
     throw new UnsupportedOperationException("Feature not supported yet.");
   }
@@ -36,7 +31,7 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public void rollback() throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet.");
+    //no-op
   }
 
   @Override
@@ -84,11 +79,13 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public Map<String, Class<?>> getTypeMap() throws SQLException {
-    return Collections.emptyMap();
+    throw new SQLFeatureNotSupportedException();
   }
 
   @Override
-  public void setTypeMap(Map<String, Class<?>> map) throws SQLException {}
+  public void setTypeMap(Map<String, Class<?>> map) throws SQLException {
+    throw new SQLFeatureNotSupportedException();
+  }
 
   @Override
   public int getHoldability() throws SQLException {
@@ -114,12 +111,6 @@ public abstract class AbstractConnection implements Connection {
   @Override
   public void releaseSavepoint(Savepoint savepoint) throws SQLException {
     throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public Statement createStatement(
-      int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet.");
   }
 
 
@@ -151,10 +142,7 @@ public abstract class AbstractConnection implements Connection {
     return null;
   }
 
-  @Override
-  public boolean isValid(int timeout) throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet.");
-  }
+
 
   @Override
   public void setClientInfo(String name, String value) throws SQLClientInfoException {}
