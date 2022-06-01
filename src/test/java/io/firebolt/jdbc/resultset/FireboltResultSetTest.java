@@ -3,6 +3,7 @@ package io.firebolt.jdbc.resultset;
 import io.firebolt.jdbc.resultset.type.array.FireboltArray;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.TimeZone;
 
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,7 +26,12 @@ class FireboltResultSetTest {
 
   InputStream inputStream;
   ResultSet resultSet;
-  
+
+  @BeforeAll
+  public static void beforeAll() {
+    TimeZone.setDefault(TimeZone.getTimeZone("Europe/London"));
+  }
+
   @AfterEach
   void closeStream() {
     try {

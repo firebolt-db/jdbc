@@ -4,7 +4,7 @@ import java.sql.Types;
 
 /** Supported data types. */
 public enum FireboltDataType {
-  U_INT_8(Types.TINYINT, "UInt8", "BOOLEAN", BaseType.BOOLEAN, false, false, 3, 0, "BOOLEAN"),
+  U_INT_8(Types.TINYINT, "UInt8", "LONG", BaseType.LONG, false, false, 3, 0, "BOOLEAN"),
   INT_32(
       Types.INTEGER,
       "Int32",

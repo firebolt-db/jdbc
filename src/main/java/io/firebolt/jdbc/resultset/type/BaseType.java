@@ -30,7 +30,7 @@ public enum BaseType {
   NULL(Object.class, (value, subType) -> null),
   OTHER(String.class, (value, subType) -> "Unknown"),
   DECIMAL(BigDecimal.class, (value, subType) -> new BigDecimal(value)),
-  BOOLEAN(Boolean.class, (value, subType) -> "1".equals(value)),
+  BOOLEAN(Boolean.class, (value, subType) -> "1".equals(value) ? 1 : 0),
   ARRAY(Array.class, SqlArrayUtil.transformToSqlArrayFunction::apply);
 
   private final Class<?> type;
