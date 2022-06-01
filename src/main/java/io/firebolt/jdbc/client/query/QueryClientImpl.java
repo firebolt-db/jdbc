@@ -39,7 +39,7 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
       HttpPost post = this.createPostRequest(uri, accessToken);
       runningQueries.put(queryId, post);
       post.setEntity(requestEntity);
-
+      log.debug("Posting query to URI: {}", uri);
       CloseableHttpResponse response = httpClient.execute(post);
       validateResponse(uri, response);
       return response.getEntity().getContent();

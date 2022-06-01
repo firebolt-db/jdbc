@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,7 +23,6 @@ class FireboltAuthenticationServiceTest {
   private static final String USER = "usr";
   private static final String PASSWORD = "PA§§WORD";
 
-  private static final String HOST = "HOST";
 
   @Mock private FireboltAuthenticationClient fireboltAuthenticationClient;
 
@@ -35,50 +35,53 @@ class FireboltAuthenticationServiceTest {
 
   @Test
   void shouldGetConnectionToken() throws IOException, ParseException {
+    String randomHost = UUID.randomUUID().toString();
     FireboltConnectionTokens tokens =
         FireboltConnectionTokens.builder()
             .expiresInSeconds(52)
             .refreshToken("refresh")
             .accessToken("access")
             .build();
-    when(fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD))
+    when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD))
         .thenReturn(tokens);
 
-    assertEquals(tokens, fireboltAuthenticationService.getConnectionTokens(HOST, USER, PASSWORD));
-    verify(fireboltAuthenticationClient).postConnectionTokens(HOST, USER, PASSWORD);
+    assertEquals(tokens, fireboltAuthenticationService.getConnectionTokens(randomHost, USER, PASSWORD));
+    verify(fireboltAuthenticationClient).postConnectionTokens(randomHost, USER, PASSWORD);
   }
 
   @Test
   void shouldCallClientOnlyOnceWhenServiceCalledTwiceForTheSameHost()
       throws IOException, ParseException {
+    String randomHost = UUID.randomUUID().toString();
     FireboltConnectionTokens tokens =
         FireboltConnectionTokens.builder()
             .expiresInSeconds(52)
             .refreshToken("refresh")
             .accessToken("access")
             .build();
-    when(fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD))
+    when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD))
         .thenReturn(tokens);
 
-    fireboltAuthenticationService.getConnectionTokens(HOST, USER, PASSWORD);
-    assertEquals(tokens, fireboltAuthenticationService.getConnectionTokens(HOST, USER, PASSWORD));
-    verify(fireboltAuthenticationClient).postConnectionTokens(HOST, USER, PASSWORD);
+    fireboltAuthenticationService.getConnectionTokens(randomHost, USER, PASSWORD);
+    assertEquals(tokens, fireboltAuthenticationService.getConnectionTokens(randomHost, USER, PASSWORD));
+    verify(fireboltAuthenticationClient).postConnectionTokens(randomHost, USER, PASSWORD);
   }
 
   @Test
   void shouldCallClientAgainWhenTokenIsExpired()
       throws IOException, NoSuchAlgorithmException, InterruptedException, ParseException {
+    String randomHost = UUID.randomUUID().toString();
     FireboltConnectionTokens tokens =
         FireboltConnectionTokens.builder()
             .expiresInSeconds(1)
             .refreshToken("refresh")
             .accessToken("access")
             .build();
-    when(fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD))
+    when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD))
         .thenReturn(tokens);
-    fireboltAuthenticationService.getConnectionTokens(HOST, USER, PASSWORD);
+    fireboltAuthenticationService.getConnectionTokens(randomHost, USER, PASSWORD);
     TimeUnit.MILLISECONDS.sleep(1100);
-    assertEquals(tokens, fireboltAuthenticationService.getConnectionTokens(HOST, USER, PASSWORD));
-    verify(fireboltAuthenticationClient, times(2)).postConnectionTokens(HOST, USER, PASSWORD);
+    assertEquals(tokens, fireboltAuthenticationService.getConnectionTokens(randomHost, USER, PASSWORD));
+    verify(fireboltAuthenticationClient, times(2)).postConnectionTokens(randomHost, USER, PASSWORD);
   }
 }

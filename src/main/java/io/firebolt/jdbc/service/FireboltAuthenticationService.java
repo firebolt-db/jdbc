@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class FireboltAuthenticationService {
 
-  private final ExpiringMap<ConnectParams, FireboltConnectionTokens> tokensMap =
+  private static final ExpiringMap<ConnectParams, FireboltConnectionTokens> tokensMap =
       ExpiringMap.builder().variableExpiration().build();
   private final FireboltAuthenticationClient fireboltAuthenticationClient;
 
