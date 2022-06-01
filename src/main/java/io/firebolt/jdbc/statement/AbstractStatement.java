@@ -69,19 +69,10 @@ public abstract class AbstractStatement implements Statement {
 
 
   @Override
-  public ResultSet getResultSet() throws SQLException {
-    return null;
-  }
-
-  @Override
   public int getUpdateCount() throws SQLException {
     return 0;
   }
 
-  @Override
-  public boolean getMoreResults() throws SQLException {
-    return false;
-  }
 
   @Override
   public int getFetchDirection() throws SQLException {
@@ -90,7 +81,7 @@ public abstract class AbstractStatement implements Statement {
 
   @Override
   public void setFetchDirection(int direction) throws SQLException {
-    throw new UnsupportedOperationException();
+    // no-op
   }
 
   @Override
@@ -128,15 +119,6 @@ public abstract class AbstractStatement implements Statement {
     return new int[0];
   }
 
-  @Override
-  public Connection getConnection() throws SQLException {
-    return null;
-  }
-
-  @Override
-  public boolean getMoreResults(int current) throws SQLException {
-    return false;
-  }
 
   @Override
   public ResultSet getGeneratedKeys() throws SQLException {

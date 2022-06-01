@@ -137,7 +137,7 @@ public class FireboltResultSet extends AbstractResultSet {
         this.reader.close();
         this.isClosed = true;
       } catch (IOException e) {
-        throw new SQLException("Could not close data stream", e);
+        throw new SQLException("Could not close data stream when closing ResultSet", e);
       }
     }
   }

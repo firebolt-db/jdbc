@@ -17,8 +17,8 @@ public abstract class AbstractPreparedStatement extends FireboltStatementImpl
   protected AbstractPreparedStatement(
       FireboltQueryService fireboltQueryService,
       FireboltProperties sessionProperties,
-      FireboltConnectionTokens connectionTokens) {
-    super(fireboltQueryService, sessionProperties, connectionTokens);
+      FireboltConnectionTokens connectionTokens, Connection connection) {
+    super(fireboltQueryService, sessionProperties, connectionTokens, connection);
   }
 
   @Override

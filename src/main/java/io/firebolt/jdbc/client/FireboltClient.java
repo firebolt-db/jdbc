@@ -46,6 +46,9 @@ public abstract class FireboltClient {
       this.validateResponse(uri, response);
       String responseStr = EntityUtils.toString(response.getEntity());
       return objectMapper.readValue(responseStr, valueType);
+    } catch (Exception e) {
+      EntityUtils.consumeQuietly(httpGet.getEntity());
+      throw e;
     }
   }
 
@@ -69,14 +72,14 @@ public abstract class FireboltClient {
       if (statusCode == HTTP_UNAVAILABLE) {
         throw new IOException(
             String.format(
-                "Could not query Firebolt with uri %s. The engine is NOT running. Status code : %d",
+                "Could not query Firebolt at %s. The engine is not running. Status code: %d",
                 uri, HTTP_FORBIDDEN));
       }
       String errorResponseMessage;
       try {
         errorResponseMessage =
             String.format(
-                "Failed to query Firebolt with uri %s. Status code: %d, Error message: %s",
+                "Failed to query Firebolt at %s. Status code: %d, Error message: %s",
                 uri, statusCode, EntityUtils.toString(response.getEntity()));
       } catch (ParseException e) {
         log.warn("Could not parse response containing the error message from Firebolt", e);
