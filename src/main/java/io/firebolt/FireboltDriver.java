@@ -27,7 +27,7 @@ public class FireboltDriver implements Driver {
 
   @Override
   public Connection connect(String url, Properties connectionSettings) throws SQLException {
-    return new FireboltConnectionImpl(url, connectionSettings).connect();
+    return new FireboltConnectionImpl(url, connectionSettings);
   }
 
   @Override

@@ -28,7 +28,7 @@ public class QueryUtil {
 
   public Optional<Pair<String, String>> extractAdditionalProperties(String sql) {
     String cleanQuery = removeCommentsAndTrimQuery(sql);
-    if (cleanQuery.startsWith(SET_PREFIX)) {
+    if (cleanQuery.toLowerCase().startsWith(SET_PREFIX)) {
       return extractPropertyPair(sql, cleanQuery);
     } else {
       return Optional.empty();

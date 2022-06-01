@@ -54,8 +54,7 @@ class FireboltConnectionImplTest {
                 connectionProperties,
                 fireboltAuthenticationService,
                 fireboltEngineService,
-                fireboltQueryService)
-            .connect();
+                fireboltQueryService);
     verify(fireboltAuthenticationService)
         .getConnectionTokens("https://firebolt.io", "user", "pa$$word");
     assertNotNull(fireboltConnectionImpl);
@@ -71,8 +70,7 @@ class FireboltConnectionImplTest {
                 connectionProperties,
                 fireboltAuthenticationService,
                 fireboltEngineService,
-                fireboltQueryService)
-            .connect();
+                fireboltQueryService);
     PreparedStatement statement =
         fireboltConnectionImpl.prepareStatement("INSERT INTO cars(sales, name) VALUES (?, ?)");
     statement.setObject(1, 500);
@@ -93,8 +91,7 @@ class FireboltConnectionImplTest {
                     connectionProperties,
                     fireboltAuthenticationService,
                     fireboltEngineService,
-                    fireboltQueryService)
-                    .connect();
+                    fireboltQueryService);
     Statement statement = fireboltConnectionImpl.createStatement();
     Statement preparedStatement = fireboltConnectionImpl.prepareStatement("test");
     fireboltConnectionImpl.close();
