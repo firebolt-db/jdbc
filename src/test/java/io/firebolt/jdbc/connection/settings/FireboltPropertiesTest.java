@@ -39,6 +39,9 @@ class FireboltPropertiesTest {
             .connectionTimeoutMillis(0)
             .keepAliveTimeoutMillis(Integer.MAX_VALUE)
             .clientBufferSize(65536)
+            .tcpKeepInterval(30)
+            .tcpKeepIdle(60)
+            .tcpKeepCount(10)
             .build();
 
     Properties properties = new Properties();
@@ -91,6 +94,9 @@ class FireboltPropertiesTest {
             .connectionTimeoutMillis(0)
             .keepAliveTimeoutMillis(Integer.MAX_VALUE)
             .clientBufferSize(65536)
+            .tcpKeepInterval(30)
+            .tcpKeepIdle(60)
+            .tcpKeepCount(10)
             .build();
     assertEquals(expectedDefaultProperties, FireboltProperties.of(properties));
   }
