@@ -60,6 +60,22 @@ public enum FireboltSessionProperty {
       3 * 1000,
       Integer.class,
       "Defines period of inactivity in milliseconds after which persistent connections must be re-validated prior to being leased to the consumer. Non-positive value disables connection validation. "),
+
+  TCP_KEEP_IDLE(
+      "tcp_keep_idle",
+      60,
+      Integer.class,
+      "TCP option that defines the number of seconds of idle time before keep-alive initiates a probe. TCP probes a connection that has been idle for some amount of time. If the remote system does not respond to a keep-alive probe, TCP retransmits the probe after some amount of time."),
+  TCP_KEEP_COUNT(
+      "tcp_keep_count",
+      10,
+      Integer.class,
+      "TCP option that defines the maximum number of keep-alive probes to be sent. TCP probes a connection that has been idle for some amount of time. If the remote system does not respond to a keep-alive probe, TCP retransmits the probe a certain number of times before a connection is considered to be broken."),
+  TCP_KEEP_INTERVAL(
+      "tcp_keep_interval",
+      30,
+      Integer.class,
+      "TCP option that defines the number of seconds to wait before retransmitting a keep-alive probe. TCP probes a connection that has been idle for some amount of time. If the remote system does not respond to a keep-alive probe, TCP retransmits the probe after some amount of time."),
   COMPRESS(
       "compress",
       0,
@@ -76,7 +92,11 @@ public enum FireboltSessionProperty {
   HOST("host", null, String.class, "Firebolt host - null by default"),
   ENGINE("engine", null, String.class, "engine - null by default"),
   ACCOUNT("account", null, String.class, "account - null by default"),
-  RESULT_OVERFLOW_MODE ("result_overflow_mode", null, String.class, "Action to do when the result exceed a limit. Throw -> Throw an exception, Break -> Same as LIMIT");
+  RESULT_OVERFLOW_MODE(
+      "result_overflow_mode",
+      null,
+      String.class,
+      "Action to do when the result exceed a limit. Throw -> Throw an exception, Break -> Same as LIMIT");
 
   private final String key;
   private final Object defaultValue;

@@ -1,0 +1,32 @@
+name: Run test scenario
+
+on:
+  push:
+    branches: [ feature/test-timeout ]
+
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Prepare java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '8'
+          server-id: repsy
+          server-username: REPSY_USER # Env variable name for user (defined on deploy step)
+          server-password: REPSY_PASSWORD # Env variable name for password
+
+      - name: Build
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: build -x test
+
+      - name: Run timeout test
+        run: ./gradlew test --tests FireboltTimeoutTest.whenTestThenDoNotTimeout -Ddb=Tutorial_11_04 -Dapi=api.dev.firebolt.io -Dpassword="${{ secrets.FIREBOLT_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_USERNAME }}"
