@@ -49,6 +49,9 @@ public class FireboltProperties {
   String password;
   String engine;
   String account;
+  Integer tcpKeepIdle;
+  Integer tcpKeepCount;
+  Integer tcpKeepInterval;
   @Builder.Default Map<String, String> additionalProperties = new HashMap<>();
 
   public static FireboltProperties of(Properties... properties) {
@@ -82,6 +85,11 @@ public class FireboltProperties {
         getSetting(mergedProperties, FireboltSessionProperty.CONNECTION_TIMEOUT_MILLIS);
     int keepAliveTimeout =
         getSetting(mergedProperties, FireboltSessionProperty.KEEP_ALIVE_TIMEOUT_MILLIS);
+
+    int tcpKeepInterval = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_INTERVAL);
+    int tcpKeepIdle = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_IDLE);
+    int tcpKeepCount = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_COUNT);
+
     String host = getHost(mergedProperties);
     Integer port = getPort(ssl);
     String database = getDatabase(mergedProperties, path);
@@ -115,6 +123,9 @@ public class FireboltProperties {
         .socketTimeoutMillis(socketTimeout)
         .connectionTimeoutMillis(connectionTimeout)
         .keepAliveTimeoutMillis(keepAliveTimeout)
+        .tcpKeepInterval(tcpKeepInterval)
+        .tcpKeepCount(tcpKeepCount)
+        .tcpKeepIdle(tcpKeepIdle)
         .build();
   }
 
