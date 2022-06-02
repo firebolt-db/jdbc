@@ -120,7 +120,11 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
   @Override
   public String getSQLKeywords() throws SQLException {
-    return "GLOBAL,ARRAY";
+    // Firebolt reserved words minus SQL:2003 keywords
+    return "BOOL,CONCAT,COPY,DATABASE,DATETIME,DOUBLECOLON,DOW,"
+        + "DOY,EMPTY_IDENTIFIER,EPOCH,EXPLAIN,EXTRACT,FIRST,GENERATE,ILIKE,ISNULL,"
+        + "JOIN_TYPE,LIMIT,LIMIT_DISTINCT,LONG,NEXT,OFFSET,PRIMARY,QUARTER,SAMPLE,SHOW,TEXT,"
+        + "TOP,TRIM,TRUNCATE,UNKNOWN_CHAR,UNTERMINATED_STRING,WEEK";
   }
 
   @Override

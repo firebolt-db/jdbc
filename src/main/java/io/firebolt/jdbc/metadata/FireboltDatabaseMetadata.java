@@ -77,7 +77,7 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 
   @Override
   public String getDriverName() throws SQLException {
-    return "io.firebolt.firebolt-jdbc";
+    return "Firebolt JDBC Driver";
   }
 
   @Override
