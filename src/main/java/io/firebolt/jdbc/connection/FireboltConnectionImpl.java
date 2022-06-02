@@ -182,6 +182,6 @@ public class FireboltConnectionImpl extends AbstractConnection {
 
   @Override
   public void setCatalog(String db) throws SQLException {
-    //TODO
+    // no-op
   }
 }
