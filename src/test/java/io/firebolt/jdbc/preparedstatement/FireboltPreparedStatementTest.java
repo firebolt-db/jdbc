@@ -35,7 +35,7 @@ class FireboltPreparedStatementTest {
   @Mock FireboltConnectionTokens connectionTokens;
 
   @BeforeAll
-  public static void beforeAll(){
+  public static void beforeAll() {
     TimeZone.setDefault(TimeZone.getTimeZone("Europe/London"));
   }
 
