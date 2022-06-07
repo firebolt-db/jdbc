@@ -35,12 +35,13 @@ class FireboltPreparedStatementTest {
   @Mock FireboltConnectionTokens connectionTokens;
 
   @BeforeAll
-  public static void beforeAll(){
+  public static void beforeAll() {
     TimeZone.setDefault(TimeZone.getTimeZone("Europe/London"));
   }
 
   @BeforeEach
   void beforeEach() throws FireboltException {
+    lenient().when(properties.getBufferSize()).thenReturn(10);
     lenient().when(connectionTokens.getAccessToken()).thenReturn("ACCESS");
     lenient()
         .when(fireboltQueryService.executeQuery(any(), any(), any(), any()))
@@ -123,6 +124,46 @@ class FireboltPreparedStatementTest {
         IllegalArgumentException.class, statementWithUndefinedParamWithComma::executeQuery);
     assertThrows(
         IllegalArgumentException.class, statementWithUndefinedParamWithParenthesis::executeQuery);
+  }
+
+  @Test
+  void shouldExecuteWithSpecialCharactersInQuery() throws SQLException {
+    String sql =
+        "INSERT INTO cars (model ,sales, make) VALUES (?,?,'(?:^|[^\\\\p{L}\\\\p{N}])(?i)(phone)(?:[^\\\\p{L}\\\\p{N}]|$)')";
+    FireboltPreparedStatement statement =
+        FireboltPreparedStatement.statementBuilder()
+            .fireboltQueryService(fireboltQueryService)
+            .sql(sql)
+            .connectionTokens(connectionTokens)
+            .sessionProperties(properties)
+            .build();
+
+    statement.setObject(1, "?");
+    statement.setObject(2, " ?");
+
+    String expectedSql =
+        "INSERT INTO cars (model ,sales, make) VALUES ('?',' ?','(?:^|[^\\\\p{L}\\\\p{N}])(?i)(phone)(?:[^\\\\p{L}\\\\p{N}]|$)')";
+
+    statement.execute();
+    verify(fireboltQueryService)
+        .executeQuery(eq(expectedSql), anyString(), anyString(), eq(this.properties));
+  }
+
+  @Test
+  void shouldThrowExceptionWhenTooManyParametersAreProvided() throws SQLException {
+    String sql =
+        "INSERT INTO cars (model ,sales, make) VALUES (?, '(?:^|[^\\\\p{L}\\\\p{N}])(?i)(phone)(?:[^\\\\p{L}\\\\p{N}]|$)')";
+    FireboltPreparedStatement statement =
+        FireboltPreparedStatement.statementBuilder()
+            .fireboltQueryService(fireboltQueryService)
+            .sql(sql)
+            .connectionTokens(connectionTokens)
+            .sessionProperties(properties)
+            .build();
+
+    statement.setObject(1, "A");
+
+    assertThrows(FireboltException.class, () -> statement.setObject(2, "B"));
   }
 
   @Test
@@ -324,7 +365,7 @@ class FireboltPreparedStatementTest {
             anyString(),
             eq(this.properties));
   }
-  
+
   @Test
   void shouldThrowExceptionWhenTryingToAddBatchForSelectQuery() throws SQLException {
     FireboltPreparedStatement statement =

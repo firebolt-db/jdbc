@@ -35,7 +35,7 @@ public class QueryUtil {
     }
   }
 
-  private String removeCommentsAndTrimQuery(String sql) {
+  public String removeCommentsAndTrimQuery(String sql) {
     return RegExUtils.replaceAll(sql, ALL_COMMENTS_REGEX, "")
         .trim(); // Replace substrings that starts with -- and ends with \n OR /* and ends with */
   }
