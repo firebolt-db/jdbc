@@ -4,6 +4,7 @@ import io.firebolt.jdbc.resultset.type.BaseType;
 import io.firebolt.jdbc.resultset.type.FireboltDataType;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
@@ -340,7 +341,7 @@ public class FireboltResultSet extends AbstractResultSet {
   private List<FireboltColumn> getColumns(String[] columnNames, String columnTypes) {
     String[] types = toStringArray(columnTypes);
     return IntStream.range(0, types.length)
-        .mapToObj(i -> FireboltColumn.of(types[i], columnNames[i]))
+        .mapToObj(i -> FireboltColumn.of(types[i], StringEscapeUtils.unescapeJava(columnNames[i])))
         .collect(Collectors.toList());
   }
 
