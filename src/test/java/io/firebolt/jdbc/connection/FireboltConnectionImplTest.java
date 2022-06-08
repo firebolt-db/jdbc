@@ -1,6 +1,5 @@
 package io.firebolt.jdbc.connection;
 
-import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.service.FireboltAuthenticationService;
 import io.firebolt.jdbc.service.FireboltEngineService;
 import io.firebolt.jdbc.service.FireboltQueryService;
@@ -21,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltConnectionImplTest {
@@ -31,34 +31,53 @@ class FireboltConnectionImplTest {
   @Mock private FireboltEngineService fireboltEngineService;
 
   @Mock private FireboltQueryService fireboltQueryService;
-  private Properties connectionProperties;
+  private Properties connectionProperties = new Properties();
 
-  private static final String URL = "jdbc:firebolt://firebolt.io/db";
+  private static final String URL = "jdbc:firebolt://api.dev.firebolt.io/db";
+  private static final String LOCAL_URL =
+      "jdbc:firebolt://localhost:8123/local_dev_db?ssl=false&max_query_size=10000000&use_standard_sql=1&mask_internal_errors=0&firebolt_enable_beta_functions=1&firebolt_case_insensitive_identifiers=1&rest_api_pull_timeout_sec=3600&rest_api_pull_interval_millisec=5000&rest_api_retry_times=10";
 
   @BeforeEach
   void init() {
     connectionProperties = new Properties();
     connectionProperties.put("user", "user");
     connectionProperties.put("password", "pa$$word");
-    connectionProperties.put("host", "firebolt.io");
-    when(fireboltAuthenticationService.getConnectionTokens(
-            "https://firebolt.io", "user", "pa$$word"))
+    lenient()
+        .when(
+            fireboltAuthenticationService.getConnectionTokens(
+                "https://api.dev.firebolt.io:443", "user", "pa$$word"))
         .thenReturn(fireboltConnectionTokens);
   }
 
   @Test
-  void shouldInitConnection() throws FireboltException {
+  void shouldInitConnection() throws SQLException {
     FireboltConnectionImpl fireboltConnectionImpl =
         new FireboltConnectionImpl(
-                URL,
-                connectionProperties,
-                fireboltAuthenticationService,
-                fireboltEngineService,
-                fireboltQueryService);
+            URL,
+            connectionProperties,
+            fireboltAuthenticationService,
+            fireboltEngineService,
+            fireboltQueryService);
     verify(fireboltAuthenticationService)
-        .getConnectionTokens("https://firebolt.io", "user", "pa$$word");
-    assertNotNull(fireboltConnectionImpl);
+        .getConnectionTokens("https://api.dev.firebolt.io:443", "user", "pa$$word");
+    assertFalse(fireboltConnectionImpl.isClosed());
   }
+
+  @Test
+  void shouldNotFetchTokenNorEngineHostForLocalFirebolt() throws SQLException {
+    FireboltConnectionImpl fireboltConnectionImpl =
+        new FireboltConnectionImpl(
+            LOCAL_URL,
+            connectionProperties,
+            fireboltAuthenticationService,
+            fireboltEngineService,
+            fireboltQueryService);
+    verifyNoInteractions(fireboltAuthenticationService);
+    verifyNoInteractions(fireboltEngineService);
+    assertFalse(fireboltConnectionImpl.isClosed());
+  }
+
+
 
   @Test
   void shouldPrepareStatement() throws SQLException, IOException {
@@ -66,11 +85,11 @@ class FireboltConnectionImplTest {
         .thenReturn(new ByteArrayInputStream("".getBytes()));
     FireboltConnectionImpl fireboltConnectionImpl =
         new FireboltConnectionImpl(
-                URL,
-                connectionProperties,
-                fireboltAuthenticationService,
-                fireboltEngineService,
-                fireboltQueryService);
+            URL,
+            connectionProperties,
+            fireboltAuthenticationService,
+            fireboltEngineService,
+            fireboltQueryService);
     PreparedStatement statement =
         fireboltConnectionImpl.prepareStatement("INSERT INTO cars(sales, name) VALUES (?, ?)");
     statement.setObject(1, 500);
@@ -86,12 +105,12 @@ class FireboltConnectionImplTest {
   @Test
   void shouldCloseAllStatementsOnClose() throws SQLException {
     FireboltConnectionImpl fireboltConnectionImpl =
-            new FireboltConnectionImpl(
-                    URL,
-                    connectionProperties,
-                    fireboltAuthenticationService,
-                    fireboltEngineService,
-                    fireboltQueryService);
+        new FireboltConnectionImpl(
+            URL,
+            connectionProperties,
+            fireboltAuthenticationService,
+            fireboltEngineService,
+            fireboltQueryService);
     Statement statement = fireboltConnectionImpl.createStatement();
     Statement preparedStatement = fireboltConnectionImpl.prepareStatement("test");
     fireboltConnectionImpl.close();

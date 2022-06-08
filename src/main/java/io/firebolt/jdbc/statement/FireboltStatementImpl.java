@@ -26,7 +26,7 @@ public class FireboltStatementImpl extends AbstractStatement {
       "KILL QUERY ON CLUSTER sql_cluster WHERE initial_query_id='%s'";
   private final FireboltQueryService fireboltQueryService;
   private FireboltProperties sessionProperties;
-  private final FireboltConnectionTokens connectionTokens;
+  private final String accessToken;
 
   private String queryId;
 
@@ -44,11 +44,11 @@ public class FireboltStatementImpl extends AbstractStatement {
   public FireboltStatementImpl(
       FireboltQueryService fireboltQueryService,
       FireboltProperties sessionProperties,
-      FireboltConnectionTokens connectionTokens,
+      String accessToken,
       Connection connection) {
     this.fireboltQueryService = fireboltQueryService;
     this.sessionProperties = sessionProperties;
-    this.connectionTokens = connectionTokens;
+    this.accessToken = accessToken;
     this.closeOnCompletion = true;
     this.currentUpdateCount = -1;
     this.isClosed = false;
@@ -71,7 +71,7 @@ public class FireboltStatementImpl extends AbstractStatement {
       this.queryId = UUID.randomUUID().toString();
       InputStream inputStream =
           fireboltQueryService.executeQuery(
-              sql, queryId, connectionTokens.getAccessToken(), sessionProperties);
+              sql, queryId, accessToken, sessionProperties);
 
       if (QueryUtil.isSelect(sql)) {
         currentUpdateCount = -1; // Always -1 when returning a ResultSet

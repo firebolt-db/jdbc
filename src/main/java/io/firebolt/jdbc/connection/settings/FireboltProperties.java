@@ -2,6 +2,7 @@ package io.firebolt.jdbc.connection.settings;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
@@ -13,6 +14,7 @@ import java.util.stream.Collectors;
 
 @Value
 @Builder(toBuilder = true)
+@Slf4j
 public class FireboltProperties {
 
   private static final Pattern DB_PATH_PATTERN = Pattern.compile("/([a-zA-Z0-9_*\\-]+)");
@@ -90,7 +92,7 @@ public class FireboltProperties {
     int tcpKeepCount = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_COUNT);
 
     String host = getHost(mergedProperties);
-    Integer port = getPort(ssl);
+    Integer port = getPort(mergedProperties, ssl);
     String database = getDatabase(mergedProperties, path);
     Map<String, String> additionalProperties = getFireboltCustomProperties(mergedProperties);
 
@@ -137,8 +139,12 @@ public class FireboltProperties {
   }
 
   @NotNull
-  private static Integer getPort(boolean ssl) {
-    return ssl ? FIREBOLT_SSL_PROXY_PORT : FIREBOLT_NO_SSL_PROXY_PORT;
+  private static Integer getPort(Properties properties, boolean ssl) {
+    Integer port = getSetting(properties, FireboltSessionProperty.PORT);
+    if (port == null) {
+      port = ssl ? FIREBOLT_SSL_PROXY_PORT : FIREBOLT_NO_SSL_PROXY_PORT;
+    }
+    return port;
   }
 
   private static String getDatabase(Properties properties, String path)

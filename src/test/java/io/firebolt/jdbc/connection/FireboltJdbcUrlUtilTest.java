@@ -17,7 +17,7 @@ class FireboltJdbcUrlUtilTest {
     Properties expectedProperties = new Properties();
     expectedProperties.put("path", "/Tutorial_11_05");
     expectedProperties.put("host", "api.dev.firebolt.io");
-    expectedProperties.put("port", 123);
+    expectedProperties.put("port", "123");
     expectedProperties.put("use_standard_sql", "0");
     expectedProperties.put("account", "firebolt");
 

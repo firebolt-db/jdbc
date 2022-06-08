@@ -1,6 +1,5 @@
 package io.firebolt.jdbc.statement;
 
-import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.resultset.FireboltResultSet;
 import io.firebolt.jdbc.service.FireboltQueryService;
@@ -37,13 +36,11 @@ class FireboltStatementImplTest {
         Mockito.mockConstruction(FireboltResultSet.class)) {
       FireboltProperties fireboltProperties =
           FireboltProperties.builder().additionalProperties(new HashMap<>()).build();
-      FireboltConnectionTokens fireboltConnectionTokens =
-          FireboltConnectionTokens.builder().accessToken("token").build();
       FireboltStatementImpl fireboltStatement =
           FireboltStatementImpl.builder()
               .fireboltQueryService(fireboltQueryService)
               .sessionProperties(fireboltProperties)
-              .connectionTokens(fireboltConnectionTokens)
+              .accessToken("token")
               .build();
 
       when(fireboltQueryService.executeQuery(
@@ -64,13 +61,11 @@ class FireboltStatementImplTest {
         Mockito.mockConstruction(FireboltResultSet.class)) {
       FireboltProperties fireboltProperties =
           FireboltProperties.builder().additionalProperties(new HashMap<>()).build();
-      FireboltConnectionTokens fireboltConnectionTokens =
-          FireboltConnectionTokens.builder().accessToken("token").build();
+
       FireboltStatementImpl fireboltStatement =
           FireboltStatementImpl.builder()
               .fireboltQueryService(fireboltQueryService)
-              .sessionProperties(fireboltProperties)
-              .connectionTokens(fireboltConnectionTokens)
+              .sessionProperties(fireboltProperties).accessToken("token")
               .build();
 
       fireboltStatement.executeQuery("set custom_1 = 1");
@@ -95,14 +90,11 @@ class FireboltStatementImplTest {
           FireboltProperties.builder().database("db").additionalProperties(new HashMap<>()).build();
       fireboltProperties.addProperty("aggressive_cancel", "1");
 
-      FireboltConnectionTokens fireboltConnectionTokens =
-          FireboltConnectionTokens.builder().accessToken("token").build();
-
       FireboltStatementImpl fireboltStatement =
           FireboltStatementImpl.builder()
               .fireboltQueryService(fireboltQueryService)
               .sessionProperties(fireboltProperties)
-              .connectionTokens(fireboltConnectionTokens)
+              .accessToken("token")
               .build();
 
       when(fireboltQueryService.executeQuery(any(), any(), any(), any()))
@@ -138,14 +130,12 @@ class FireboltStatementImplTest {
           FireboltProperties.builder().database("db").additionalProperties(new HashMap<>()).build();
       fireboltProperties.addProperty("aggressive_cancel", "0");
 
-      FireboltConnectionTokens fireboltConnectionTokens =
-          FireboltConnectionTokens.builder().accessToken("token").build();
 
       FireboltStatementImpl fireboltStatement =
           FireboltStatementImpl.builder()
               .fireboltQueryService(fireboltQueryService)
               .sessionProperties(fireboltProperties)
-              .connectionTokens(fireboltConnectionTokens)
+              .accessToken("token")
               .build();
 
       when(fireboltQueryService.executeQuery(any(), any(), any(), any()))
@@ -162,13 +152,11 @@ class FireboltStatementImplTest {
         Mockito.mockConstruction(FireboltResultSet.class)) {
       FireboltProperties fireboltProperties =
           FireboltProperties.builder().additionalProperties(new HashMap<>()).build();
-      FireboltConnectionTokens fireboltConnectionTokens =
-          FireboltConnectionTokens.builder().accessToken("token").build();
       FireboltStatementImpl fireboltStatement =
           FireboltStatementImpl.builder()
               .fireboltQueryService(fireboltQueryService)
               .sessionProperties(fireboltProperties)
-              .connectionTokens(fireboltConnectionTokens)
+              .accessToken("token")
               .build();
 
       when(fireboltQueryService.executeQuery(any(), any(), any(), any()))

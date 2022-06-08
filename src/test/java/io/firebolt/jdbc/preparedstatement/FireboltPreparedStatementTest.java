@@ -1,6 +1,5 @@
 package io.firebolt.jdbc.preparedstatement;
 
-import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.service.FireboltQueryService;
@@ -32,7 +31,7 @@ class FireboltPreparedStatementTest {
 
   @Mock private FireboltProperties properties;
 
-  @Mock FireboltConnectionTokens connectionTokens;
+  private final String ACCESS_TOKEN = "ACCESS";
 
   @BeforeAll
   public static void beforeAll() {
@@ -42,7 +41,6 @@ class FireboltPreparedStatementTest {
   @BeforeEach
   void beforeEach() throws FireboltException {
     lenient().when(properties.getBufferSize()).thenReturn(10);
-    lenient().when(connectionTokens.getAccessToken()).thenReturn("ACCESS");
     lenient()
         .when(fireboltQueryService.executeQuery(any(), any(), any(), any()))
         .thenReturn(Mockito.mock(InputStream.class));
@@ -54,7 +52,7 @@ class FireboltPreparedStatementTest {
         FireboltPreparedStatement.statementBuilder()
             .fireboltQueryService(fireboltQueryService)
             .sql("INSERT INTO cars (sales, make) VALUES (?,?)")
-            .connectionTokens(connectionTokens)
+            .accessToken(ACCESS_TOKEN)
             .sessionProperties(properties)
             .build();
 
@@ -75,7 +73,7 @@ class FireboltPreparedStatementTest {
         FireboltPreparedStatement.statementBuilder()
             .fireboltQueryService(fireboltQueryService)
             .sql("INSERT INTO cars (sales, make) VALUES (?,?)")
-            .connectionTokens(connectionTokens)
+            .accessToken(ACCESS_TOKEN)
             .sessionProperties(properties)
             .build();
 
@@ -134,7 +132,7 @@ class FireboltPreparedStatementTest {
         FireboltPreparedStatement.statementBuilder()
             .fireboltQueryService(fireboltQueryService)
             .sql(sql)
-            .connectionTokens(connectionTokens)
+            .accessToken(ACCESS_TOKEN)
             .sessionProperties(properties)
             .build();
 
@@ -157,7 +155,7 @@ class FireboltPreparedStatementTest {
         FireboltPreparedStatement.statementBuilder()
             .fireboltQueryService(fireboltQueryService)
             .sql(sql)
-            .connectionTokens(connectionTokens)
+            .accessToken(ACCESS_TOKEN)
             .sessionProperties(properties)
             .build();
 
@@ -379,7 +377,7 @@ class FireboltPreparedStatementTest {
     return FireboltPreparedStatement.statementBuilder()
         .fireboltQueryService(fireboltQueryService)
         .sql(sql)
-        .connectionTokens(connectionTokens)
+        .accessToken(ACCESS_TOKEN)
         .sessionProperties(properties)
         .build();
   }
