@@ -4,6 +4,7 @@ import io.firebolt.jdbc.resultset.type.FireboltDataType;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -18,6 +19,7 @@ import static io.firebolt.jdbc.resultset.type.FireboltDataType.*;
 @Builder
 @Getter
 @EqualsAndHashCode
+@Slf4j
 public final class FireboltColumn {
   private final String columnType;
   private final String columnName;
@@ -30,6 +32,7 @@ public final class FireboltColumn {
   private Pair<FireboltColumn, FireboltColumn> columnsTuple;
 
   public static FireboltColumn of(String columnType, String columnName) {
+    log.debug("Creating column info for column: {} of type: {}", columnName, columnType);
     String typeInUpperCase = StringUtils.upperCase(columnType);
     int currentIndex = 0;
     int arrayDepth = 0;
