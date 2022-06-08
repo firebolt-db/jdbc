@@ -1,6 +1,5 @@
 package io.firebolt.jdbc.preparedstatement;
 
-import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.service.FireboltQueryService;
 import io.firebolt.jdbc.statement.FireboltStatementImpl;
@@ -17,8 +16,8 @@ public abstract class AbstractPreparedStatement extends FireboltStatementImpl
   protected AbstractPreparedStatement(
       FireboltQueryService fireboltQueryService,
       FireboltProperties sessionProperties,
-      FireboltConnectionTokens connectionTokens, Connection connection) {
-    super(fireboltQueryService, sessionProperties, connectionTokens, connection);
+      String accessToken, Connection connection) {
+    super(fireboltQueryService, sessionProperties, accessToken, connection);
   }
 
   @Override

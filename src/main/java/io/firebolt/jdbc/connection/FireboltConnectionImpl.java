@@ -15,6 +15,7 @@ import io.firebolt.jdbc.service.FireboltEngineService;
 import io.firebolt.jdbc.service.FireboltQueryService;
 import io.firebolt.jdbc.statement.FireboltStatementImpl;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
 import java.io.IOException;
@@ -25,6 +26,7 @@ import java.security.cert.CertificateException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
@@ -40,6 +42,8 @@ public class FireboltConnectionImpl extends AbstractConnection {
   private final String httpConnectionUrl;
 
   private final List<Statement> statements;
+
+  private static final String LOCALHOST = "localhost";
 
   public FireboltConnectionImpl(
       String url,
@@ -90,24 +94,33 @@ public class FireboltConnectionImpl extends AbstractConnection {
 
   private FireboltConnectionImpl connect() throws FireboltException {
     try {
-      FireboltConnectionTokens tokens =
-          fireboltAuthenticationService.getConnectionTokens(
-              httpConnectionUrl, loginProperties.getUser(), loginProperties.getPassword());
-      String engineHost =
-          fireboltEngineService.getEngineHost(
-              httpConnectionUrl,
-              loginProperties.getDatabase(),
-              loginProperties.getEngine(),
-              loginProperties.getAccount(),
-              tokens.getAccessToken());
-
-      this.sessionProperties = loginProperties.toBuilder().host(engineHost).build();
+      if (!StringUtils.equalsIgnoreCase(LOCALHOST, loginProperties.getHost())) {
+        Optional<FireboltConnectionTokens> fireboltConnectionTokens = this.getConnectionTokens();
+          String engineHost =
+              fireboltEngineService.getEngineHost(
+                  httpConnectionUrl,
+                  loginProperties.getDatabase(),
+                  loginProperties.getEngine(),
+                  loginProperties.getAccount(), fireboltConnectionTokens.map(FireboltConnectionTokens::getAccessToken).orElse(null));
+          this.sessionProperties = loginProperties.toBuilder().host(engineHost).build();
+        } else {
+          this.sessionProperties = loginProperties;
+        }
       closed = false;
       log.debug("Connection opened");
     } catch (Exception e) {
       throw new FireboltException("Could not connect", e);
     }
     return this;
+  }
+
+  private Optional<FireboltConnectionTokens> getConnectionTokens() {
+    if (!StringUtils.equalsIgnoreCase(LOCALHOST, loginProperties.getHost())) {
+      return Optional.of(
+          fireboltAuthenticationService.getConnectionTokens(
+              httpConnectionUrl, loginProperties.getUser(), loginProperties.getPassword()));
+    }
+    return Optional.empty();
   }
 
   public FireboltProperties getSessionProperties() {
@@ -117,14 +130,12 @@ public class FireboltConnectionImpl extends AbstractConnection {
   @Override
   public Statement createStatement() throws SQLException {
     checkConnectionIsNotClose();
-    FireboltConnectionTokens connectionTokens =
-        fireboltAuthenticationService.getConnectionTokens(
-            httpConnectionUrl, sessionProperties.getUser(), sessionProperties.getPassword());
+    Optional<FireboltConnectionTokens> connectionTokens = this.getConnectionTokens();
     FireboltStatementImpl fireboltStatement =
         FireboltStatementImpl.builder()
             .fireboltQueryService(fireboltQueryService)
             .sessionProperties(sessionProperties)
-            .connectionTokens(connectionTokens)
+            .accessToken(connectionTokens.map(FireboltConnectionTokens::getAccessToken).orElse(null))
             .build();
     this.statements.add(fireboltStatement);
     return fireboltStatement;
@@ -140,14 +151,12 @@ public class FireboltConnectionImpl extends AbstractConnection {
   public Statement createStatementWithTemporaryProperties(FireboltProperties tmpProperties)
       throws SQLException {
     checkConnectionIsNotClose();
-    FireboltConnectionTokens connectionTokens =
-        fireboltAuthenticationService.getConnectionTokens(
-            httpConnectionUrl, tmpProperties.getUser(), tmpProperties.getPassword());
+    Optional<FireboltConnectionTokens> connectionTokens = this.getConnectionTokens();
     FireboltStatementImpl fireboltStatement =
         FireboltStatementImpl.builder()
             .fireboltQueryService(fireboltQueryService)
             .sessionProperties(tmpProperties)
-            .connectionTokens(connectionTokens)
+            .accessToken(connectionTokens.map(FireboltConnectionTokens::getAccessToken).orElse(null))
             .build();
     this.addStatement(fireboltStatement);
     return fireboltStatement;
@@ -220,9 +229,10 @@ public class FireboltConnectionImpl extends AbstractConnection {
   }
 
   private String getHttpConnectionUrl(FireboltProperties newSessionProperties) {
+    String hostAndPort = newSessionProperties.getHost() + ":" + newSessionProperties.getPort();
     return Boolean.TRUE.equals(newSessionProperties.getSsl())
-        ? "https://" + newSessionProperties.getHost()
-        : "htto://" + newSessionProperties.getHost();
+        ? "https://" + hostAndPort
+        : "http://" + hostAndPort;
   }
 
   @Override
@@ -275,14 +285,12 @@ public class FireboltConnectionImpl extends AbstractConnection {
 
   private PreparedStatement createPreparedStatement(String sql) throws SQLException {
     checkConnectionIsNotClose();
-    FireboltConnectionTokens connectionTokens =
-        fireboltAuthenticationService.getConnectionTokens(
-            httpConnectionUrl, sessionProperties.getUser(), sessionProperties.getPassword());
+    Optional<FireboltConnectionTokens> connectionTokens = this.getConnectionTokens();
     PreparedStatement statement =
         FireboltPreparedStatement.statementBuilder()
             .fireboltQueryService(fireboltQueryService)
             .sessionProperties(this.getSessionProperties())
-            .connectionTokens(connectionTokens)
+            .accessToken(connectionTokens.map(FireboltConnectionTokens::getAccessToken).orElse(null))
             .sql(sql)
             .build();
     this.addStatement(statement);

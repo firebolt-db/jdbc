@@ -20,7 +20,7 @@ public class PropertyUtil {
         properties.put(key, propertiesFromUrl.get(key.toString()));
       }
     } catch (Exception ex) {
-      log.error("Could not extract properties from url {}", url);
+      log.error("Could not extract properties from url {}", url, ex);
     }
     List<DriverPropertyInfo> result = new ArrayList<>(mapProperties(FireboltSessionProperty.values(), properties));
     return result.toArray(new DriverPropertyInfo[0]);
