@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.connection;
 
+import io.firebolt.jdbc.connection.settings.FireboltSessionProperty;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -38,9 +39,9 @@ public class FireboltJdbcUrlUtil {
         }
       }
     }
-    Optional.ofNullable(uri.getPath()).ifPresent(path -> uriProperties.put("path", path));
-    Optional.ofNullable(uri.getHost()).ifPresent(host -> uriProperties.put("host", host));
-    Optional.of(uri.getPort()).filter(p -> !p.equals(-1)).ifPresent(port -> uriProperties.put("port", port));
+    Optional.ofNullable(uri.getPath()).ifPresent(path -> uriProperties.put(FireboltSessionProperty.PATH.getKey(), path));
+    Optional.ofNullable(uri.getHost()).ifPresent(host -> uriProperties.put(FireboltSessionProperty.HOST.getKey(), host));
+    Optional.of(uri.getPort()).filter(p -> !p.equals(-1)).ifPresent(port -> uriProperties.put(FireboltSessionProperty.PORT.getKey(), String.valueOf(port)));
     return uriProperties;
   }
 }
