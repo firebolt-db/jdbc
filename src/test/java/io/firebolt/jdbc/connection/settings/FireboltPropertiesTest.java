@@ -111,6 +111,16 @@ class FireboltPropertiesTest {
   }
 
   @Test
+  void shouldUseCustomPortWhenProvided() {
+    Properties properties = new Properties();
+    properties.put("path", "/example");
+    properties.put("host", "host");
+    properties.put("port", "999");
+
+    assertEquals(999, FireboltProperties.of(properties).getPort());
+  }
+
+  @Test
   void shouldThrowExceptionWhenNoDbProvided() {
     Properties properties = new Properties();
     properties.put("host", "host");

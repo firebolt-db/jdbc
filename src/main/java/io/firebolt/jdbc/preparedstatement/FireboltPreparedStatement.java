@@ -30,10 +30,10 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
   public FireboltPreparedStatement(
       FireboltQueryService fireboltQueryService,
       FireboltProperties sessionProperties,
-      FireboltConnectionTokens connectionTokens,
+      String accessToken,
       String sql,
       Connection connection) {
-    super(fireboltQueryService, sessionProperties, connectionTokens, connection);
+    super(fireboltQueryService, sessionProperties, accessToken, connection);
     this.sql = sql;
     this.currentParams = new HashMap<>();
     this.totalParams = getTotalParams(sql);

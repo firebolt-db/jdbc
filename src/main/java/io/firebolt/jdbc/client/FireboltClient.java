@@ -16,6 +16,7 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
@@ -98,9 +99,13 @@ public abstract class FireboltClient {
   private List<Pair<String, String>> createHeaders(String accessToken) {
     List<Pair<String, String>> headers = new ArrayList<>();
     headers.add(new ImmutablePair<>(HEADER_USER_AGENT, this.getHeaderUserAgentValue()));
-    headers.add(
-        new ImmutablePair<>(
-            HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken));
+    Optional.ofNullable(accessToken)
+        .ifPresent(
+            token ->
+                headers.add(
+                    new ImmutablePair<>(
+                        HEADER_AUTHORIZATION,
+                        HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken)));
     return headers;
   }
 }

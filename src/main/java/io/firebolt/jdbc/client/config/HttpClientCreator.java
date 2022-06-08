@@ -64,7 +64,6 @@ public class HttpClientCreator {
         .setKeepAliveStrategy(createKeepAliveStrategy(properties))
         .setRetryStrategy(createRetryStrategy(properties))
         .disableContentCompression()
-        .disableRedirectHandling()
         .build();
   }
 

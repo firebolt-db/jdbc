@@ -8,9 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.StringUtils;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
@@ -22,7 +24,7 @@ public class FireboltAuthenticationService {
   private final FireboltAuthenticationClient fireboltAuthenticationClient;
 
   public FireboltConnectionTokens getConnectionTokens(String host, String user, String password) {
-    try {
+      try {
       ConnectParams connectionParams = new ConnectParams(host, user, password);
       synchronized (this) {
         FireboltConnectionTokens foundToken = tokensMap.get(connectionParams);
@@ -55,8 +57,8 @@ public class FireboltAuthenticationService {
         throws NoSuchAlgorithmException {
       this.fireboltHost = fireboltHost;
       MessageDigest md5Instance = MessageDigest.getInstance("MD5");
-      md5Instance.update(user.getBytes());
-      md5Instance.update(password.getBytes());
+      Optional.ofNullable(user).map(String::getBytes).ifPresent(md5Instance::update);
+      Optional.ofNullable(password).map(String::getBytes).ifPresent(md5Instance::update);
       this.credentialsHash = new String(Hex.encodeHex(md5Instance.digest()));
     }
   }
