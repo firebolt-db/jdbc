@@ -71,6 +71,7 @@ public class QueryUtil {
 
   private static Optional<String> extractDBAndTableNameFromSelect(String sql) {
     if (isSelect(sql)) {
+      log.debug("Extracting DB and Table name for SELECT: {}", sql);
       String cleanQuery = removeCommentsAndTrimQuery(sql);
       String withoutQuotes = StringUtils.replace(cleanQuery, "'", "").trim();
       if (StringUtils.startsWithIgnoreCase(withoutQuotes, "select")) {
@@ -87,7 +88,7 @@ public class QueryUtil {
         return Optional.of("information_schema.unknown"); // Depends on the information requested - so putting unknown as a placeholder
       }
     }
-    log.warn("Could not find table name for query {}", sql);
+    log.debug("Could not find table name for query {}. This may happen when there is no table.", sql);
     return Optional.empty();
   }
 }
