@@ -81,7 +81,6 @@ public class FireboltProperties {
     int maxRetries = getSetting(mergedProperties, FireboltSessionProperty.MAX_RETRIES);
     int bufferSize = getSetting(mergedProperties, FireboltSessionProperty.BUFFER_SIZE);
     int clientBufferSize = getSetting(mergedProperties, FireboltSessionProperty.CLIENT_BUFFER_SIZE);
-    String outputFormat = getSetting(mergedProperties, FireboltSessionProperty.OUTPUT_FORMAT);
     int socketTimeout = getSetting(mergedProperties, FireboltSessionProperty.SOCKET_TIMEOUT_MILLIS);
     int connectionTimeout =
         getSetting(mergedProperties, FireboltSessionProperty.CONNECTION_TIMEOUT_MILLIS);
@@ -121,7 +120,6 @@ public class FireboltProperties {
         .maxRetries(maxRetries)
         .clientBufferSize(clientBufferSize)
         .bufferSize(bufferSize)
-        .outputFormat(outputFormat)
         .socketTimeoutMillis(socketTimeout)
         .connectionTimeoutMillis(connectionTimeout)
         .keepAliveTimeoutMillis(keepAliveTimeout)
