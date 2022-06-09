@@ -1,9 +1,11 @@
 package io.firebolt.jdbc.resultset;
 
+import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.type.BaseType;
 import io.firebolt.jdbc.resultset.type.FireboltDataType;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -47,6 +49,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize)
       throws SQLException {
+    log.debug("Creating resultSet...");
     this.reader =
         bufferSize != null
             ? new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8), bufferSize)
@@ -57,10 +60,13 @@ public class FireboltResultSet extends AbstractResultSet {
       this.columnNameToColumnNumber = getColumnNamesToIndexes(fields);
       this.next();
       this.columns = getColumns(fields, currentLine);
-      resultSetMetaData = new FireboltResultSetMetaData(columns, tableName, dbName);
-    } catch (SQLException e) {
-      throw new SQLException("Cannot read response from DB: error while creating ResultSet", e);
+      resultSetMetaData = FireboltResultSetMetaData.builder().columns(columns).tableName(tableName).dbName(dbName).build();
+      log.debug("ResultSetMetaData created");
+    } catch (Exception e) {
+      log.error("Could not create ResultSet: "+ ExceptionUtils.getStackTrace(e), e);
+      throw new FireboltException("Cannot read response from DB: error while creating ResultSet", e);
     }
+    log.debug("ResultSet created");
   }
 
   public static FireboltResultSet empty() {

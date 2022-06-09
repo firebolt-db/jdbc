@@ -81,7 +81,7 @@ class FireboltConnectionImplTest {
 
   @Test
   void shouldPrepareStatement() throws SQLException, IOException {
-    when(fireboltQueryService.executeQuery(any(), any(), any(), any()))
+    when(fireboltQueryService.executeQuery(any(), anyBoolean(), any(), any(), any()))
         .thenReturn(new ByteArrayInputStream("".getBytes()));
     FireboltConnectionImpl fireboltConnectionImpl =
         new FireboltConnectionImpl(
@@ -99,7 +99,7 @@ class FireboltConnectionImplTest {
     assertNotNull(statement);
     verify(fireboltQueryService)
         .executeQuery(
-            eq("INSERT INTO cars(sales, name) VALUES (500, 'Ford')"), any(), any(), any());
+            eq("INSERT INTO cars(sales, name) VALUES (500, 'Ford')"), eq(false), any(), any(), any());
   }
 
   @Test
