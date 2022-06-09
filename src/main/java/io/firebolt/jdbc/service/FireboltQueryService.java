@@ -17,7 +17,7 @@ public class FireboltQueryService {
   public InputStream executeQuery(
       String sql, boolean isSelect, String queryId, String accessToken, FireboltProperties properties)
       throws FireboltException {
-    log.debug("Executing SQL: {}", sql);
+    log.debug("Posting query with id: {}", queryId);
     return queryClient.postSqlQuery(sql, isSelect, queryId, accessToken, properties);
   }
 

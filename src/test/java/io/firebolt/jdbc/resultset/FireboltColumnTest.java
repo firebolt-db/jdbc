@@ -79,6 +79,17 @@ class FireboltColumnTest {
   }
 
   @Test
+  void shouldCreateColumDataForTupleWithOnlyOneArgument() {
+    String type = "Tuple(Date)";
+    String name = "TUPLE(CAST('2019-02-03' AS timestamp))";
+    FireboltColumn column = FireboltColumn.of(type, name);
+    assertEquals(name, column.getColumnName());
+    assertEquals(type.toUpperCase(), column.getColumnType());
+    assertEquals(FireboltDataType.TUPLE, column.getDataType());
+    assertEquals("TUPLE(DATE)", column.getCompactTypeName());
+  }
+
+  @Test
   void shouldCreateColumDataForBoolean() {
     String type = "Nullable(String)";
     String name = "name";

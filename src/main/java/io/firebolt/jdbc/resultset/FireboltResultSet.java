@@ -5,9 +5,9 @@ import io.firebolt.jdbc.resultset.type.BaseType;
 import io.firebolt.jdbc.resultset.type.FireboltDataType;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.text.StringEscapeUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
 import java.math.BigDecimal;
@@ -28,10 +28,10 @@ public class FireboltResultSet extends AbstractResultSet {
   private final FireboltResultSetMetaData resultSetMetaData;
   boolean wasNull = false;
   private String currentLine;
-  private int pos = 0;
-  private int splitPos = -1;
-  private String[] arr;
+  private int currentRow = 0;
+  private int lastSplittedRow = -1;
   private boolean isClosed = false;
+  private String[] arr = new String[0];
 
   private FireboltResultSet() {
     reader = // empty InputStream
@@ -50,6 +50,7 @@ public class FireboltResultSet extends AbstractResultSet {
   public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize)
       throws SQLException {
     log.debug("Creating resultSet...");
+    is = debug(is);
     this.reader =
         bufferSize != null
             ? new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8), bufferSize)
@@ -58,15 +59,37 @@ public class FireboltResultSet extends AbstractResultSet {
       this.next();
       String[] fields = toStringArray(currentLine);
       this.columnNameToColumnNumber = getColumnNamesToIndexes(fields);
-      this.next();
-      this.columns = getColumns(fields, currentLine);
-      resultSetMetaData = FireboltResultSetMetaData.builder().columns(columns).tableName(tableName).dbName(dbName).build();
+      if (this.next()) {
+        this.columns = getColumns(fields, currentLine);
+      } else {
+        this.columns = new ArrayList<>();
+      }
+      resultSetMetaData =
+          FireboltResultSetMetaData.builder()
+              .columns(this.columns)
+              .tableName(tableName)
+              .dbName(dbName)
+              .build();
       log.debug("ResultSetMetaData created");
     } catch (Exception e) {
-      log.error("Could not create ResultSet: "+ ExceptionUtils.getStackTrace(e), e);
-      throw new FireboltException("Cannot read response from DB: error while creating ResultSet", e);
+      log.error("Could not create ResultSet: " + ExceptionUtils.getStackTrace(e), e);
+      throw new FireboltException(
+          "Cannot read response from DB: error while creating ResultSet "
+              + ExceptionUtils.getStackTrace(e),
+          e);
     }
     log.debug("ResultSet created");
+  }
+
+  private InputStream debug(InputStream is) {
+    String text =
+        new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
+            .lines()
+            .collect(Collectors.joining("\n"));
+    log.debug("======================================");
+    log.debug(text);
+    log.debug("======================================");
+    return new ByteArrayInputStream(text.getBytes());
   }
 
   public static FireboltResultSet empty() {
@@ -79,7 +102,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
     try {
       currentLine = reader.readLine();
-      pos++;
+      currentRow++;
     } catch (IOException e) {
       throw new SQLException("Error reading result from stream", e);
     }
@@ -249,9 +272,8 @@ public class FireboltResultSet extends AbstractResultSet {
     return new Time(ts.getTime());
   }
 
-  @Override
   public int getRow() {
-    return pos;
+    return currentRow;
   }
 
   @Override
@@ -287,7 +309,7 @@ public class FireboltResultSet extends AbstractResultSet {
   @Override
   public boolean isBeforeFirst() throws SQLException {
     checkStreamNotClosed();
-    return pos < 3 || !hasNext();
+    return currentRow < 3 || !hasNext();
   }
 
   @Override
@@ -302,7 +324,7 @@ public class FireboltResultSet extends AbstractResultSet {
   @Override
   public boolean isFirst() throws SQLException {
     checkStreamNotClosed();
-    return pos == 3;
+    return currentRow == 3;
   }
 
   @Override
@@ -337,15 +359,24 @@ public class FireboltResultSet extends AbstractResultSet {
   }
 
   private String[] toStringArray(String stringToSplit) {
-    if (pos != splitPos) {
-      arr = StringUtils.splitPreserveAllTokens(stringToSplit, '\t');
-      splitPos = pos;
+    if (currentRow != lastSplittedRow) {
+      if (StringUtils.isNotEmpty(stringToSplit)) {
+        arr = StringUtils.splitPreserveAllTokens(stringToSplit, '\t');
+      } else {
+        arr = new String[0];
+      }
+      lastSplittedRow = currentRow;
     }
     return arr;
   }
 
   private List<FireboltColumn> getColumns(String[] columnNames, String columnTypes) {
+    log.info("Column names {}", (Object) columnNames);
+    log.info("Column types {}", columnTypes);
     String[] types = toStringArray(columnTypes);
+
+    log.info(
+        "column types length: {} columnName length: {}", columnTypes.length(), columnNames.length);
     return IntStream.range(0, types.length)
         .mapToObj(i -> FireboltColumn.of(types[i], StringEscapeUtils.unescapeJava(columnNames[i])))
         .collect(Collectors.toList());
@@ -366,8 +397,10 @@ public class FireboltResultSet extends AbstractResultSet {
 
   private Map<String, Integer> getColumnNamesToIndexes(String[] fields) {
     Map<String, Integer> columnNameToFieldIndex = new HashMap<>();
-    for (int i = 0; i < fields.length; i++) {
-      columnNameToFieldIndex.put(fields[i], i + 1);
+    if (fields != null) {
+      for (int i = 0; i < fields.length; i++) {
+        columnNameToFieldIndex.put(fields[i], i + 1);
+      }
     }
     return columnNameToFieldIndex;
   }
