@@ -7,8 +7,7 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.TimeZone;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 class SqlDateUtilTest {
 
@@ -50,15 +49,15 @@ class SqlDateUtilTest {
   }
 
   @Test
-  void shouldReturnNullWhenTheStringCannotBeParsedToATimestamp() {
+  void shouldThrowExceptionWhenTheStringCannotBeParsedToATimestamp() {
     String timeWithNanoSeconds = "20225-05-hey";
-    assertNull(SqlDateUtil.transformToTimestampFunction.apply(timeWithNanoSeconds));
+    assertThrows(IllegalArgumentException.class, () -> SqlDateUtil.transformToTimestampFunction.apply(timeWithNanoSeconds));
   }
 
   @Test
-  void shouldReturnNullWhenTheStringCannotBeParsedToADate() {
+  void shouldThrowExceptionWhenTheStringCannotBeParsedToADate() {
     String timeWithNanoSeconds = "20225-05-hey";
-    assertNull(SqlDateUtil.transformToDateFunction.apply(timeWithNanoSeconds));
+    assertThrows(IllegalArgumentException.class, () -> SqlDateUtil.transformToDateFunction.apply(timeWithNanoSeconds));
   }
 
   @Test

@@ -26,14 +26,14 @@ public class SqlDateUtil {
       new SimpleDateFormat(DATE_TIME_WITH_MILLIS_PATTERN);
   public static final Function<String, Date> transformToDateFunction =
       value -> {
-        if (value == null) {
+        if (StringUtils.isEmpty(value)) {
           return null;
         }
         try {
           return new java.sql.Date(DATE_FORMAT.parse(value).getTime());
         } catch (ParseException e) {
-          log.error(String.format("Could not parse date from String: %s", value), e);
-          return null;
+          throw new IllegalArgumentException(
+              String.format("Could not parse date from String %s", value), e);
         }
       };
 
@@ -55,14 +55,14 @@ public class SqlDateUtil {
 
   public static final Function<String, Timestamp> transformToTimestampFunction =
       value -> {
-        if (value == null) {
+        if (StringUtils.isEmpty(value)) {
           return null;
         }
         try {
           return getTimestampFromString(value);
         } catch (ParseException e) {
-          log.error(String.format("Could not parse timestamp from String: %s", value), e);
-          return null;
+          throw new IllegalArgumentException(
+              String.format("Could not timestamp from String %s", value), e);
         }
       };
 
