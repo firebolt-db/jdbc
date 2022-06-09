@@ -21,13 +21,19 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.BiPredicate;
 
 @RequiredArgsConstructor
 @Slf4j
 public class QueryClientImpl extends FireboltClient implements QueryClient {
+  private static final String TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT =
+      "TabSeparatedWithNamesAndTypes";
   private final CloseableHttpClient httpClient;
 
   private final Map<String, HttpPost> runningQueries = new HashMap<>();
+
+  private final BiPredicate<Boolean, String> notFireboltCustomPropertyWithLocalDb =
+      (isLocal, paramKey) -> !(isLocal && StringUtils.startsWithIgnoreCase(paramKey, "firebolt"));
 
   public InputStream postSqlQuery(
       String sql,
@@ -45,9 +51,10 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
       HttpPost post = this.createPostRequest(uri, accessToken);
       runningQueries.put(queryId, post);
       post.setEntity(requestEntity);
-      log.debug("Posting query to URI: {}", uri);
+      log.debug("Posting query with id {} to URI: {}", queryId, uri);
       CloseableHttpResponse response = httpClient.execute(post);
       validateResponse(uri, response);
+      log.debug("Query with id {} was successfully posted", queryId);
       return response.getEntity().getContent();
     } catch (Exception e) {
       EntityUtils.consumeQuietly(requestEntity);
@@ -89,19 +96,34 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
   private List<NameValuePair> getQueryParameters(
       FireboltProperties fireboltProperties, String queryId, boolean isSelect) {
     List<NameValuePair> queryParams = new ArrayList<>();
+    boolean isLocalDb = StringUtils.equalsIgnoreCase("localhost", fireboltProperties.getHost());
 
-    fireboltProperties
-        .getAdditionalProperties()
-        .forEach((k, v) -> queryParams.add(new BasicNameValuePair(k, v)));
+    fireboltProperties.getAdditionalProperties().entrySet().stream()
+        .filter(entry -> notFireboltCustomPropertyWithLocalDb.test(isLocalDb, entry.getKey()))
+        .forEach(
+            entry -> queryParams.add(new BasicNameValuePair(entry.getKey(), entry.getValue())));
 
-    if (isSelect && !StringUtils.equalsIgnoreCase("localhost", fireboltProperties.getHost())) {
-      queryParams.add(new BasicNameValuePair("output_format", "TabSeparatedWithNamesAndTypes"));
-    }
+    getResponseFormatQueryParam(isSelect, isLocalDb).ifPresent(queryParams::add);
+
     queryParams.add(new BasicNameValuePair("database", fireboltProperties.getDatabase()));
     queryParams.add(new BasicNameValuePair("query_id", queryId));
     queryParams.add(
         new BasicNameValuePair("compress", String.format("%d", fireboltProperties.getCompress())));
     return queryParams;
+  }
+
+  private Optional<BasicNameValuePair> getResponseFormatQueryParam(
+      boolean isSelect, boolean isLocalDb) {
+    if (isSelect) {
+      if (isLocalDb) {
+        return Optional.of(
+            new BasicNameValuePair("default_format", TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT));
+      } else {
+        return Optional.of(
+            new BasicNameValuePair("output_format", TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT));
+      }
+    }
+    return Optional.empty();
   }
 
   private URI buildQueryUri(

@@ -7,6 +7,7 @@ import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.type.JavaTypeToStringConverter;
 import io.firebolt.jdbc.service.FireboltQueryService;
 import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.net.URL;
@@ -16,10 +17,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class FireboltPreparedStatement extends AbstractPreparedStatement {
 
   private final String sql;
-  List<Map<Integer, String>> rows;
+  private final List<Map<Integer, String>> rows;
   private Map<Integer, String> currentParams;
 
   private final int totalParams;
@@ -34,19 +36,23 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
       String sql,
       Connection connection) {
     super(fireboltQueryService, sessionProperties, accessToken, connection);
+    log.debug("Populating PreparedStatement object for SQL: {}", sql);
     this.sql = sql;
     this.currentParams = new HashMap<>();
     this.totalParams = getTotalParams(sql);
     this.rows = new ArrayList<>();
+    log.debug("Prepared statement initialized for SQL: {}", sql);
+
   }
 
   private int getTotalParams(String sql) {
+    log.debug("Getting totalParams for SQL: {}", sql);
     int totalQuestionMarks = 0;
     String tmpSql = QueryUtil.removeCommentsAndTrimQuery(sql);
     int currentPos = 0;
     char currentChar = tmpSql.charAt(currentPos);
     boolean isBetweenQuotes = currentChar == '\'';
-    while (currentPos < sql.length() - 1) {
+    while (currentPos < tmpSql.length() - 1) {
       currentPos++;
       currentChar = tmpSql.charAt(currentPos);
       if (currentChar == '\'') {
@@ -56,6 +62,7 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
         totalQuestionMarks++;
       }
     }
+    log.debug("Got totalParams for SQL: {}", sql);
     return totalQuestionMarks;
   }
 
@@ -65,6 +72,8 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
   }
 
   private String prepareSQL(Map<Integer, String> params) {
+    log.debug("Preparing SQL for query: {}", sql);
+
     String tmpSql = QueryUtil.removeCommentsAndTrimQuery(this.sql);
     if (!params.keySet().isEmpty()) {
       tmpSql = replaceQuestionMarksWithParams(params, tmpSql);
@@ -72,6 +81,7 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
     if (params.size() < this.totalParams) {
       throw new IllegalArgumentException("Some parameters are still undefined :" + tmpSql);
     } else {
+      log.debug("Prepared SQL for query: {}", sql);
       return tmpSql;
     }
   }
@@ -250,6 +260,7 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
 
   @Override
   public int[] executeBatch() throws SQLException {
+    log.debug("Executing batch for query: {}", sql);
     List<String> inserts = new ArrayList<>();
     int[] result = new int[this.rows.size()];
     for (Map<Integer, String> row : rows) {
