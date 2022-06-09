@@ -98,14 +98,26 @@ public final class FireboltColumn {
 
   private static Pair<FireboltColumn, FireboltColumn> getColumnsTuple(
       String columnType, String columnName) {
+    String[] types = getTupleTypes(columnType);
+    FireboltColumn leftColumnType = null;
+    FireboltColumn rightColumnType = null;
+
+    if (types.length > 0) {
+      leftColumnType = FireboltColumn.of(types[0].trim(), columnName);
+      if (types.length > 1) {
+        rightColumnType = FireboltColumn.of(types[1].trim(), columnName);
+      }
+    }
+    return new ImmutablePair<>(leftColumnType, rightColumnType);
+  }
+
+  @NotNull
+  private static String[] getTupleTypes(String columnType) {
     String types =
         RegExUtils.replaceFirst(
             columnType, FireboltDataType.TUPLE.getInternalName().toUpperCase() + "\\(", "");
     types = StringUtils.substring(types, 0, types.length() - 1); // remove last parenthesis
-
-    FireboltColumn leftColumnType = FireboltColumn.of(types.split(",")[0].trim(), columnName);
-    FireboltColumn rightColumnType = FireboltColumn.of(types.split(",")[1].trim(), columnName);
-    return new ImmutablePair<>(leftColumnType, rightColumnType);
+    return StringUtils.split(types, ",");
   }
 
   private static boolean reachedEndOfTypeName(int typeNameEndIndex, int type) {
@@ -164,11 +176,22 @@ public final class FireboltColumn {
     }
 
     if (this.columnsTuple != null) {
-      return String.format(
-          "%s(%s, %s)",
-          TUPLE.getDisplayName(),
-          this.columnsTuple.getLeft().getCompactTypeName(),
-          this.columnsTuple.getRight().getCompactTypeName());
+      if(this.columnsTuple.getRight() != null) {
+        return String.format(
+                "%s(%s, %s)",
+                TUPLE.getDisplayName(),
+                this.columnsTuple.getLeft().getCompactTypeName(),
+                this.columnsTuple.getRight().getCompactTypeName());
+      } else if (this.columnsTuple.getLeft() != null) {
+        return String.format(
+                "%s(%s)",
+                TUPLE.getDisplayName(),
+                this.columnsTuple.getLeft().getCompactTypeName());
+      } else {
+        return String.format(
+                "%s",
+                TUPLE.getDisplayName());
+      }
     } else {
       Optional<String> params = getTypeArguments(columnType);
       return dataType.getDisplayName() + params.orElse("");

@@ -1,7 +1,6 @@
 package io.firebolt.jdbc.statement;
 
 import io.firebolt.QueryUtil;
-import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.FireboltResultSet;
@@ -58,22 +57,27 @@ public class FireboltStatementImpl extends AbstractStatement {
 
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
-    log.info("The executed query is: {}", sql);
-    if(resultSet != null) {
-      log.debug("There is already a rs for the statement !");
+    this.queryId = UUID.randomUUID().toString();
+    log.debug("Executing query with id {} : {}", this.queryId, sql);
+    if (resultSet != null && !this.resultSet.isClosed()) {
+      log.info("There was already an opened ResultSet for the statement object. Closing the ResultSet...");
+      this.resultSet.close();
+      this.resultSet = null;
+      log.info("ResultSet closed");
     }
     Optional<Pair<String, String>> additionalProperties =
         QueryUtil.extractAdditionalProperties(sql);
     if (additionalProperties.isPresent()) {
+      log.debug("The query {} contains additional properties", this.queryId);
       this.sessionProperties.addProperty(additionalProperties.get());
       return null;
     } else {
-      this.queryId = UUID.randomUUID().toString();
+      log.debug("Checking if query with id {} is a SELECT", this.queryId);
       boolean isSelect = QueryUtil.isSelect(sql);
+      log.debug("Query with id {}} a SELECT: {}", this.queryId, isSelect);
       InputStream inputStream =
           fireboltQueryService.executeQuery(
               sql, isSelect, queryId, accessToken, sessionProperties);
-
       if (isSelect) {
         currentUpdateCount = -1; // Always -1 when returning a ResultSet
         resultSet =
