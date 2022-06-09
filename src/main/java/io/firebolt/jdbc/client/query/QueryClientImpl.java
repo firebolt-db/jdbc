@@ -5,6 +5,7 @@ import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -29,11 +30,16 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
   private final Map<String, HttpPost> runningQueries = new HashMap<>();
 
   public InputStream postSqlQuery(
-      String sql, String queryId, String accessToken, FireboltProperties fireboltProperties)
+      String sql,
+      boolean isSelect,
+      String queryId,
+      String accessToken,
+      FireboltProperties fireboltProperties)
       throws FireboltException {
     HttpEntity requestEntity = null;
     try {
-      List<NameValuePair> queryParameters = this.getQueryParameters(fireboltProperties, queryId);
+      List<NameValuePair> queryParameters =
+          this.getQueryParameters(fireboltProperties, queryId, isSelect);
       String uri = this.buildQueryUri(fireboltProperties, queryParameters).toString();
       requestEntity = new StringEntity(sql, StandardCharsets.UTF_8);
       HttpPost post = this.createPostRequest(uri, accessToken);
@@ -81,14 +87,16 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
   }
 
   private List<NameValuePair> getQueryParameters(
-      FireboltProperties fireboltProperties, String queryId) {
+      FireboltProperties fireboltProperties, String queryId, boolean isSelect) {
     List<NameValuePair> queryParams = new ArrayList<>();
 
     fireboltProperties
         .getAdditionalProperties()
         .forEach((k, v) -> queryParams.add(new BasicNameValuePair(k, v)));
 
-    queryParams.add(new BasicNameValuePair("output_format", "TabSeparatedWithNamesAndTypes"));
+    if (isSelect && !StringUtils.equalsIgnoreCase("localhost", fireboltProperties.getHost())) {
+      queryParams.add(new BasicNameValuePair("output_format", "TabSeparatedWithNamesAndTypes"));
+    }
     queryParams.add(new BasicNameValuePair("database", fireboltProperties.getDatabase()));
     queryParams.add(new BasicNameValuePair("query_id", queryId));
     queryParams.add(

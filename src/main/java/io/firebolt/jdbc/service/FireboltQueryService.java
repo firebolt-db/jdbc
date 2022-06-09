@@ -15,10 +15,10 @@ public class FireboltQueryService {
   private final QueryClient queryClient;
 
   public InputStream executeQuery(
-      String sql, String queryId, String accessToken, FireboltProperties properties)
+      String sql, boolean isSelect, String queryId, String accessToken, FireboltProperties properties)
       throws FireboltException {
     log.debug("Executing SQL: {}", sql);
-    return queryClient.postSqlQuery(sql, queryId, accessToken, properties);
+    return queryClient.postSqlQuery(sql, isSelect, queryId, accessToken, properties);
   }
 
   public void cancelQuery(String queryId, FireboltProperties properties) throws FireboltException {

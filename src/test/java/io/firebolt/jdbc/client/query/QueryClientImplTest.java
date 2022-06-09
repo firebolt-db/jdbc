@@ -48,7 +48,7 @@ class QueryClientImplTest {
     when(response.getEntity()).thenReturn(httpEntity);
     when(closeableHttpClient.execute(any())).thenReturn(response);
 
-    queryClient.postSqlQuery("show databases", "123456", accessToken, fireboltProperties);
+    queryClient.postSqlQuery("show databases", true, "123456", accessToken, fireboltProperties);
 
     verify(closeableHttpClient).execute(httpPostArgumentCaptor.capture());
     HttpPost actualHttpPost = httpPostArgumentCaptor.getValue();
