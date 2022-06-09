@@ -93,7 +93,6 @@ public enum FireboltSessionProperty {
   PORT("port", null, Integer.class, "Firebolt port - null by default"),
   ENGINE("engine", null, String.class, "engine - null by default"),
   ACCOUNT("account", null, String.class, "account - null by default"),
-  OUTPUT_FORMAT("output_format", null, String.class, "Format of the query results"),
   RESULT_OVERFLOW_MODE(
       "result_overflow_mode",
       null,

@@ -69,11 +69,12 @@ public class FireboltStatementImpl extends AbstractStatement {
       return null;
     } else {
       this.queryId = UUID.randomUUID().toString();
+      boolean isSelect = QueryUtil.isSelect(sql);
       InputStream inputStream =
           fireboltQueryService.executeQuery(
-              sql, queryId, accessToken, sessionProperties);
+              sql, isSelect, queryId, accessToken, sessionProperties);
 
-      if (QueryUtil.isSelect(sql)) {
+      if (isSelect) {
         currentUpdateCount = -1; // Always -1 when returning a ResultSet
         resultSet =
             new FireboltResultSet(
@@ -204,6 +205,7 @@ public class FireboltStatementImpl extends AbstractStatement {
   @Override
   public boolean execute(String sql) throws SQLException {
     this.executeQuery(sql);
+    log.debug("Query {} executed with success", sql);
     return QueryUtil.isSelect(sql);
   }
 }
