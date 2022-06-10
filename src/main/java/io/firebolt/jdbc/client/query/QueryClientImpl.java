@@ -32,8 +32,6 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
 
   private final Map<String, HttpPost> runningQueries = new HashMap<>();
 
-  private final BiPredicate<Boolean, String> notFireboltCustomPropertyWithLocalDb =
-      (isLocal, paramKey) -> !(isLocal && StringUtils.startsWithIgnoreCase(paramKey, "firebolt"));
 
   public InputStream postSqlQuery(
       String sql,
@@ -97,12 +95,6 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
       FireboltProperties fireboltProperties, String queryId, boolean isSelect) {
     List<NameValuePair> queryParams = new ArrayList<>();
     boolean isLocalDb = StringUtils.equalsIgnoreCase("localhost", fireboltProperties.getHost());
-
-    fireboltProperties.getAdditionalProperties().entrySet().stream()
-        .filter(entry -> notFireboltCustomPropertyWithLocalDb.test(isLocalDb, entry.getKey()))
-        .forEach(
-            entry -> queryParams.add(new BasicNameValuePair(entry.getKey(), entry.getValue())));
-
     getResponseFormatQueryParam(isSelect, isLocalDb).ifPresent(queryParams::add);
 
     queryParams.add(new BasicNameValuePair("database", fireboltProperties.getDatabase()));

@@ -112,7 +112,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public String getString(int columnIndex) throws SQLException {
-    return this.getValueAtColumn(columnIndex);
+    return BaseType.STRING.transform(this.getValueAtColumn(columnIndex));
   }
 
   @Override
@@ -122,27 +122,32 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public int getInt(int columnIndex) throws SQLException {
-    return Integer.parseInt(getValueAtColumn(columnIndex));
+    Integer value = BaseType.INTEGER.transform(getValueAtColumn(columnIndex));;
+    return value == null ? 0 : value;
   }
 
   @Override
   public int getInt(String columnName) throws SQLException {
-    return Integer.parseInt(getValueAtColumn(getColumnIndex(columnName)));
+    return this.getInt(getColumnIndex(columnName));
   }
 
   @Override
   public long getLong(int colNum) throws SQLException {
-    return Long.parseLong(getValueAtColumn(colNum));
+    Long value = BaseType.LONG.transform(getValueAtColumn(colNum));;
+    return value == null ? 0 : value;
   }
 
   @Override
   public long getLong(String column) throws SQLException {
-    return getLong(getColumnIndex(column));
+    return this.getLong(getColumnIndex(column));
   }
 
   @Override
   public byte getByte(int columnIndex) throws SQLException {
-    return Optional.ofNullable(getValueAtColumn(columnIndex)).map(Byte::parseByte).orElse((byte) 0);
+    return Optional.ofNullable(getValueAtColumn(columnIndex))
+        .map(v -> BaseType.isNull(v) ? null : v)
+        .map(Byte::parseByte)
+        .orElse((byte) 0);
   }
 
   @Override
@@ -152,7 +157,10 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public byte[] getBytes(int colNum) throws SQLException {
-    return Optional.ofNullable(getValueAtColumn(colNum)).map(String::getBytes).orElse(null);
+    return Optional.ofNullable(getValueAtColumn(colNum))
+        .map(v -> BaseType.isNull(v) ? null : v)
+        .map(String::getBytes)
+        .orElse(null);
   }
 
   @Override
@@ -289,13 +297,12 @@ public class FireboltResultSet extends AbstractResultSet {
   @Override
   public Object getObject(int columnIndex) throws SQLException {
     String value = getValueAtColumn(columnIndex);
-    if (null == value) {
+    if (BaseType.isNull(value)) {
       return null;
     }
 
     FireboltColumn columnInfo = this.columns.get(columnIndex - 1);
     FireboltDataType columnType = columnInfo.getDataType();
-
     return Optional.of(columnType)
         .map(type -> type.getBaseType().transform(value, columnInfo.getArrayBaseDataType()))
         .orElse(null);
@@ -385,8 +392,6 @@ public class FireboltResultSet extends AbstractResultSet {
   private String getValueAtColumn(int columnIndex) throws SQLException {
     checkStreamNotClosed();
     String value = toStringArray(currentLine)[getColumnIndex(columnIndex)];
-    value = BaseType.STRING.transform(value);
-    wasNull = null == value;
     return value;
   }
 
