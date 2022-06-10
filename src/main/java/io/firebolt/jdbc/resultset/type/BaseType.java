@@ -6,18 +6,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.Array;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.function.BiFunction;
 
-/**
- * This class contains the java types the Firebolt datatypes are mapped to
- */
+/** This class contains the java types the Firebolt datatypes are mapped to */
 @Slf4j
 public enum BaseType {
-  LONG(Long.class, (value, subType) -> Long.valueOf(value)),
+  LONG(Long.class, (value, subType) -> Long.parseLong(value)),
   INTEGER(Integer.class, (value, subType) -> Integer.parseInt(value)),
   STRING(
       String.class,
@@ -33,6 +30,7 @@ public enum BaseType {
   BOOLEAN(Boolean.class, (value, subType) -> !"0".equals(value)),
   ARRAY(Array.class, SqlArrayUtil.transformToSqlArrayFunction::apply);
 
+  public static final String NULL_VALUE = "\\N";
   private final Class<?> type;
   private final BiFunction<String, FireboltDataType, Object> transformFunction;
 
@@ -46,6 +44,10 @@ public enum BaseType {
   }
 
   public <T> T transform(String value, FireboltDataType subType) {
+    validateObjectNotNull(value);
+    if (isNull(value)) {
+      return null;
+    }
     return (T) transformFunction.apply(value, subType);
   }
 
@@ -53,7 +55,17 @@ public enum BaseType {
     return this.transform(value, null);
   }
 
+  public static boolean isNull(String value) {
+    return StringUtils.equalsIgnoreCase(value, NULL_VALUE);
+  }
+
   private static boolean isNan(String value) {
     return StringUtils.equalsIgnoreCase(value, "nan");
+  }
+
+  private static void validateObjectNotNull(String value) {
+    if (value == null) {
+      throw new NumberFormatException("The value cannot be null");
+    }
   }
 }
