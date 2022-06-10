@@ -52,51 +52,62 @@ public class FireboltStatementImpl extends AbstractStatement {
     this.currentUpdateCount = -1;
     this.isClosed = false;
     this.connection = connection;
-    log.debug("Created statement!");
+    log.debug("Created Statement");
   }
 
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
     this.queryId = UUID.randomUUID().toString();
-    log.debug("Executing query with id {} : {}", this.queryId, sql);
-    if (resultSet != null && !this.resultSet.isClosed()) {
-      log.info("There was already an opened ResultSet for the statement object. Closing the ResultSet...");
-      this.resultSet.close();
-      this.resultSet = null;
-      log.info("ResultSet closed");
-    }
-    Optional<Pair<String, String>> additionalProperties =
-        QueryUtil.extractAdditionalProperties(sql);
-    if (additionalProperties.isPresent()) {
-      log.debug("The query {} contains additional properties", this.queryId);
-      this.sessionProperties.addProperty(additionalProperties.get());
-      return null;
-    } else {
-      log.debug("Checking if query with id {} is a SELECT", this.queryId);
-      boolean isSelect = QueryUtil.isSelect(sql);
-      log.debug("Query with id {}} a SELECT: {}", this.queryId, isSelect);
-      InputStream inputStream =
-          fireboltQueryService.executeQuery(
-              sql, isSelect, queryId, accessToken, sessionProperties);
-      if (isSelect) {
-        currentUpdateCount = -1; // Always -1 when returning a ResultSet
-        resultSet =
-            new FireboltResultSet(
-                inputStream,
-                QueryUtil.extractTableNameFromSelect(sql).orElse("unknown"),
-                QueryUtil.extractDBNameFromSelect(sql).orElse(sessionProperties.getDatabase() != null ? sessionProperties.getDatabase() : "unknown"),
-                sessionProperties.getBufferSize());
-      } else {
-        currentUpdateCount = 0;
-        try {
-          inputStream.close();
-          return null;
-        } catch (Exception e) {
-          throw new FireboltException(
-              String.format("Error closing InputStream with query: %s", sql), e);
-        }
+    try {
+      log.debug("Executing query with id {} : {}", this.queryId, sql);
+      if (resultSet != null && !this.resultSet.isClosed()) {
+        this.resultSet.close();
+        this.resultSet = null;
+        log.info(
+            "There was already an opened ResultSet for the statement object. The ResultSet is now closed.");
       }
-      return resultSet;
+      Optional<Pair<String, String>> additionalProperties =
+          QueryUtil.extractAdditionalProperties(sql);
+      if (additionalProperties.isPresent()) {
+        this.sessionProperties.addProperty(additionalProperties.get());
+        log.debug("The property from the query {} was stored", this.queryId);
+      } else {
+        boolean isSelect = QueryUtil.isSelect(sql);
+        log.debug("Query with id {} is a SELECT: {}", this.queryId, isSelect);
+        InputStream inputStream =
+            fireboltQueryService.executeQuery(
+                sql, isSelect, queryId, accessToken, sessionProperties);
+        if (isSelect) {
+          currentUpdateCount = -1; // Always -1 when returning a ResultSet
+          resultSet =
+              new FireboltResultSet(
+                  inputStream,
+                  QueryUtil.extractTableNameFromSelect(sql).orElse("unknown"),
+                  QueryUtil.extractDBNameFromSelect(sql)
+                      .orElse(
+                          sessionProperties.getDatabase() != null
+                              ? sessionProperties.getDatabase()
+                              : "unknown"),
+                  sessionProperties.getBufferSize());
+        } else {
+          currentUpdateCount = 0;
+          closeStream(sql, inputStream);
+        }
+        log.debug("Query with id {} was executed with Success", this.queryId);
+      }
+    } catch (Exception ex) {
+      log.error("Could not execute query with id {}", this.queryId, ex);
+      throw ex;
+    }
+    return resultSet;
+  }
+
+  private void closeStream(String sql, InputStream inputStream) throws FireboltException {
+    try {
+      inputStream.close();
+    } catch (Exception e) {
+      throw new FireboltException(
+          String.format("Error closing InputStream with query: %s", sql), e);
     }
   }
 
@@ -209,7 +220,6 @@ public class FireboltStatementImpl extends AbstractStatement {
   @Override
   public boolean execute(String sql) throws SQLException {
     this.executeQuery(sql);
-    log.debug("Query {} executed with success", sql);
     return QueryUtil.isSelect(sql);
   }
 }
