@@ -4,7 +4,12 @@ import io.firebolt.QueryUtil;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -89,5 +94,20 @@ class QueryUtilTest {
   void shouldThrowAnExceptionWhenTheSetCannotBeParsed() {
     String query = "set x=";
     assertThrows(IllegalArgumentException.class, () -> QueryUtil.extractAdditionalProperties(query));
+  }
+
+  @Test
+  void shouldCleanComplexQuery() {
+    String sql = getSqlFromFile("/statement/query-with-comment.sql");
+    String expectedCleanQuery = getSqlFromFile("/statement/query-with-comment-cleaned.sql");
+
+    assertEquals(expectedCleanQuery, QueryUtil.cleanQuery(sql));
+  }
+
+  private static String getSqlFromFile(String path) {
+    InputStream is = QueryUtilTest.class.getResourceAsStream(path);
+    return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
+            .lines()
+            .collect(Collectors.joining("\n"));
   }
 }

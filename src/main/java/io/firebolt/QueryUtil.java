@@ -37,10 +37,10 @@ public class QueryUtil {
   }
 
   public String cleanQuery(String sql) {
-    return cleanQueryAndCountUnquotedWordOccurrences(sql, null).getLeft();
+    return cleanQueryAndCountKeyWordOccurrences(sql, null).getLeft();
   }
 
-  public Pair<String, Integer> cleanQueryAndCountUnquotedWordOccurrences(String sql, String searchedWord) {
+  public Pair<String, Integer> cleanQueryAndCountKeyWordOccurrences(String sql, String keyword) {
     int searchedWordCount = 0;
     StringBuilder result = new StringBuilder();
     sql = sql.trim();
@@ -48,17 +48,28 @@ public class QueryUtil {
     char currentChar = sql.charAt(currentIndex);
     boolean isCurrentSubstringBetweenQuotes = currentChar == 39; // 39 is the ASCII for '
     int substringStart = 0;
+    boolean isInSingleLineComment = false;
+    boolean isInMultipleLinesComment = false;
+    char previousChar;
     while (currentIndex < sql.length() - 1) {
       currentIndex++;
+      previousChar = currentChar;
       currentChar = sql.charAt(currentIndex);
-      if (39 == currentChar) {
+      isInSingleLineComment =
+          isInSingleLineComment(
+              currentChar, previousChar, isCurrentSubstringBetweenQuotes, isInSingleLineComment);
+      isInMultipleLinesComment =
+          isInMultipleLinesComment(
+              currentChar, previousChar, isCurrentSubstringBetweenQuotes, isInMultipleLinesComment);
+      if ((39 == currentChar
+          || (currentIndex == sql.length() - 1)
+              && !(isInSingleLineComment || isInMultipleLinesComment))) {
         if (isCurrentSubstringBetweenQuotes) {
           String subString = StringUtils.substring(sql, substringStart, currentIndex + 1);
           result.append(subString);
         } else {
           Pair<String, Integer> cleanSubstring =
-              cleanQueryPartAndCountWordOccurrences(
-                  sql, substringStart, currentIndex + 1, searchedWord);
+              cleanQueryPartAndCountWordOccurrences(sql, substringStart, currentIndex + 1, keyword);
           result.append(cleanSubstring.getLeft());
           searchedWordCount += cleanSubstring.getRight();
         }
@@ -66,14 +77,51 @@ public class QueryUtil {
         isCurrentSubstringBetweenQuotes = !isCurrentSubstringBetweenQuotes;
       }
     }
-    if (substringStart < sql.length()) {
-      Pair<String, Integer> cleanSubstring =
-          cleanQueryPartAndCountWordOccurrences(
-              sql, substringStart, sql.length() + 1, searchedWord);
-      result.append(cleanSubstring.getLeft());
-      searchedWordCount += cleanSubstring.getRight();
-    }
     return new ImmutablePair<>(result.toString().trim(), searchedWordCount);
+  }
+
+  private static boolean isInMultipleLinesComment(
+      char currentChar,
+      char previousChar,
+      boolean isCurrentSubstringBetweenQuotes,
+      boolean isInMultipleLinesComment) {
+    if (!isCurrentSubstringBetweenQuotes && ((previousChar == '/' && currentChar == '*'))) {
+      return true;
+    } else if ((previousChar == '*' && currentChar == '/')) {
+      return false;
+    }
+    return isInMultipleLinesComment;
+  }
+
+  public static Optional<String> extractDBNameFromSelect(String sql) {
+    return extractDBAndTableNameFromSelect(sql)
+        .filter(dbNameAndTable -> dbNameAndTable.contains("."))
+        .map(dbNameAndTable -> dbNameAndTable.substring(0, dbNameAndTable.indexOf(".")));
+  }
+
+  public static Optional<String> extractTableNameFromSelect(String sql) {
+    return extractDBAndTableNameFromSelect(sql)
+        .map(
+            dbNameAndTable -> {
+              if (dbNameAndTable.contains(".")) {
+                return dbNameAndTable.substring(dbNameAndTable.indexOf(".") + 1);
+              } else {
+                return dbNameAndTable;
+              }
+            });
+  }
+
+  private boolean isInSingleLineComment(
+      char currentChar,
+      char previousChar,
+      boolean isCurrentSubstringBetweenQuotes,
+      boolean isInSingleLineComment) {
+    if (!isCurrentSubstringBetweenQuotes && ((previousChar == '-' && currentChar == '-'))) {
+      return true;
+    } else if (currentChar == '\n') {
+      return false;
+    }
+    return isInSingleLineComment;
   }
 
   private Pair<String, Integer> cleanQueryPartAndCountWordOccurrences(
@@ -100,24 +148,6 @@ public class QueryUtil {
       throw new IllegalArgumentException(
           "Cannot parse the additional properties provided in the query: " + sql);
     }
-  }
-
-  public static Optional<String> extractDBNameFromSelect(String sql) {
-    return extractDBAndTableNameFromSelect(sql)
-        .filter(dbNameAndTable -> dbNameAndTable.contains("."))
-        .map(dbNameAndTable -> dbNameAndTable.substring(0, dbNameAndTable.indexOf(".")));
-  }
-
-  public static Optional<String> extractTableNameFromSelect(String sql) {
-    return extractDBAndTableNameFromSelect(sql)
-        .map(
-            dbNameAndTable -> {
-              if (dbNameAndTable.contains(".")) {
-                return dbNameAndTable.substring(dbNameAndTable.indexOf(".") + 1);
-              } else {
-                return dbNameAndTable;
-              }
-            });
   }
 
   private static Optional<String> extractDBAndTableNameFromSelect(String sql) {

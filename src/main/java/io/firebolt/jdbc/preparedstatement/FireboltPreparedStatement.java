@@ -7,6 +7,7 @@ import io.firebolt.jdbc.resultset.type.JavaTypeToStringConverter;
 import io.firebolt.jdbc.service.FireboltQueryService;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.math.BigDecimal;
 import java.net.URL;
@@ -20,6 +21,7 @@ import java.util.Map;
 public class FireboltPreparedStatement extends AbstractPreparedStatement {
 
   private final String sql;
+  private final String cleanSql;
   private final List<Map<Integer, String>> rows;
   private Map<Integer, String> currentParams;
 
@@ -37,15 +39,13 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
     super(fireboltQueryService, sessionProperties, accessToken, connection);
     log.debug("Populating PreparedStatement object for SQL: {}", sql);
     this.sql = sql;
+    Pair<String, Integer> cleanQueryWithParamCount =
+        QueryUtil.cleanQueryAndCountKeyWordOccurrences(sql, "?");
+    this.cleanSql = cleanQueryWithParamCount.getLeft();
+    this.totalParams = cleanQueryWithParamCount.getRight();
     this.currentParams = new HashMap<>();
-    this.totalParams = getTotalParams(sql);
     this.rows = new ArrayList<>();
-    log.debug("Prepared statement initialized for SQL: {}", sql);
-  }
-
-  private int getTotalParams(String sql) {
-    log.debug("Getting totalParams for SQL: {}", sql);
-    return QueryUtil.cleanQueryAndCountUnquotedWordOccurrences(sql, "?").getRight();
+    log.debug("PreparedStatement initialized for SQL: {}", this.cleanSql);
   }
 
   @Override
@@ -54,16 +54,16 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
   }
 
   private String prepareSQL(Map<Integer, String> params) {
-    log.debug("Preparing SQL for query: {}", sql);
+    log.debug("Preparing SQL for query: {}", cleanSql);
+    String tmpSql = cleanSql;
 
-    String tmpSql = QueryUtil.cleanQuery(this.sql);
     if (!params.keySet().isEmpty()) {
       tmpSql = replaceQuestionMarksWithParams(params, tmpSql);
     }
     if (params.size() < this.totalParams) {
       throw new IllegalArgumentException("Some parameters are still undefined :" + tmpSql);
     } else {
-      log.debug("Prepared SQL for query: {}", sql);
+      log.debug("Prepared SQL for query: {}, result: {}", sql, tmpSql);
       return tmpSql;
     }
   }
