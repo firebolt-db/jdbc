@@ -22,8 +22,8 @@ public enum BaseType {
   STRING(
       String.class,
       (value, subType) -> StringUtils.equals(value, "\\N") ? null : String.valueOf(value)),
-  FLOAT(Float.class, (value, subType) -> Float.valueOf(value)),
-  DOUBLE(Double.class, (value, subType) -> Double.valueOf(value)),
+  FLOAT(Float.class, (value, subType) -> isNan(value) ? Float.NaN : Float.parseFloat(value)),
+  DOUBLE(Double.class, (value, subType) -> isNan(value) ? Double.NaN : Double.parseDouble(value)),
   DATE(Date.class, (value, subType) -> SqlDateUtil.transformToDateFunction.apply(value)),
   TIMESTAMP(
       Timestamp.class, (value, subType) -> SqlDateUtil.transformToTimestampFunction.apply(value)),
@@ -51,5 +51,9 @@ public enum BaseType {
 
   public <T> T transform(String value) {
     return this.transform(value, null);
+  }
+
+  private static boolean isNan(String value) {
+    return StringUtils.equalsIgnoreCase(value, "nan");
   }
 }
