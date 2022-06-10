@@ -1,7 +1,6 @@
 package io.firebolt.jdbc.preparedstatement;
 
 import io.firebolt.QueryUtil;
-import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.type.JavaTypeToStringConverter;
@@ -42,28 +41,11 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
     this.totalParams = getTotalParams(sql);
     this.rows = new ArrayList<>();
     log.debug("Prepared statement initialized for SQL: {}", sql);
-
   }
 
   private int getTotalParams(String sql) {
     log.debug("Getting totalParams for SQL: {}", sql);
-    int totalQuestionMarks = 0;
-    String tmpSql = QueryUtil.removeCommentsAndTrimQuery(sql);
-    int currentPos = 0;
-    char currentChar = tmpSql.charAt(currentPos);
-    boolean isBetweenQuotes = currentChar == '\'';
-    while (currentPos < tmpSql.length() - 1) {
-      currentPos++;
-      currentChar = tmpSql.charAt(currentPos);
-      if (currentChar == '\'') {
-        isBetweenQuotes = !isBetweenQuotes;
-      }
-      if (currentChar == '?' && !isBetweenQuotes) {
-        totalQuestionMarks++;
-      }
-    }
-    log.debug("Got totalParams for SQL: {}", sql);
-    return totalQuestionMarks;
+    return QueryUtil.cleanQueryAndCountUnquotedWordOccurrences(sql, "?").getRight();
   }
 
   @Override
@@ -74,7 +56,7 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
   private String prepareSQL(Map<Integer, String> params) {
     log.debug("Preparing SQL for query: {}", sql);
 
-    String tmpSql = QueryUtil.removeCommentsAndTrimQuery(this.sql);
+    String tmpSql = QueryUtil.cleanQuery(this.sql);
     if (!params.keySet().isEmpty()) {
       tmpSql = replaceQuestionMarksWithParams(params, tmpSql);
     }
