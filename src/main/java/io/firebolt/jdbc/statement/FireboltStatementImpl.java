@@ -57,6 +57,10 @@ public class FireboltStatementImpl extends AbstractStatement {
 
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
+    return this.executeQuery(sql, this.sessionProperties);
+  }
+
+  public ResultSet executeQuery(String sql, FireboltProperties properties) throws SQLException {
     this.queryId = UUID.randomUUID().toString();
     try {
       log.debug("Executing query with id {} : {}", this.queryId, sql);
@@ -69,14 +73,13 @@ public class FireboltStatementImpl extends AbstractStatement {
       Optional<Pair<String, String>> additionalProperties =
           QueryUtil.extractAdditionalProperties(sql);
       if (additionalProperties.isPresent()) {
-        this.sessionProperties.addProperty(additionalProperties.get());
+        properties.addProperty(additionalProperties.get());
         log.debug("The property from the query {} was stored", this.queryId);
       } else {
         boolean isSelect = QueryUtil.isSelect(sql);
         log.debug("Query with id {} is a SELECT: {}", this.queryId, isSelect);
         InputStream inputStream =
-            fireboltQueryService.executeQuery(
-                sql, isSelect, queryId, accessToken, sessionProperties);
+            fireboltQueryService.executeQuery(sql, isSelect, queryId, accessToken, properties);
         if (isSelect) {
           currentUpdateCount = -1; // Always -1 when returning a ResultSet
           resultSet =
@@ -85,10 +88,8 @@ public class FireboltStatementImpl extends AbstractStatement {
                   QueryUtil.extractTableNameFromSelect(sql).orElse("unknown"),
                   QueryUtil.extractDBNameFromSelect(sql)
                       .orElse(
-                          sessionProperties.getDatabase() != null
-                              ? sessionProperties.getDatabase()
-                              : "unknown"),
-                  sessionProperties.getBufferSize());
+                          properties.getDatabase() != null ? properties.getDatabase() : "unknown"),
+                  properties.getBufferSize());
         } else {
           currentUpdateCount = 0;
           closeStream(sql, inputStream);
@@ -128,11 +129,9 @@ public class FireboltStatementImpl extends AbstractStatement {
 
   private void cancelBySqlQuery() throws SQLException {
     log.debug("cancelling query");
-    FireboltProperties cachedProperties = FireboltProperties.copy(this.sessionProperties);
-    this.sessionProperties.addProperty("use_standard_sql", "1");
-    try (ResultSet rs = this.executeQuery(String.format(KILL_QUERY_SQL, queryId))) {
-    } finally {
-      this.sessionProperties = cachedProperties;
+    FireboltProperties temporaryProperties = FireboltProperties.copy(this.sessionProperties);
+    temporaryProperties.addProperty("use_standard_sql", "0");
+    try (ResultSet rs = this.executeQuery(String.format(KILL_QUERY_SQL, queryId), temporaryProperties)) {
     }
   }
 
