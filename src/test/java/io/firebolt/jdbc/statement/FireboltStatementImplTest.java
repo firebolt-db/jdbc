@@ -117,7 +117,7 @@ class FireboltStatementImplTest {
               + "'",
           sqlArgumentCaptor.getAllValues().get(1));
       assertEquals(
-          "1",
+          "0",
           fireboltPropertiesArgumentCaptor
               .getValue()
               .getAdditionalProperties()
