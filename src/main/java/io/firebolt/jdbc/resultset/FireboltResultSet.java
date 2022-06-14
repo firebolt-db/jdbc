@@ -3,6 +3,7 @@ package io.firebolt.jdbc.resultset;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.type.BaseType;
 import io.firebolt.jdbc.resultset.type.FireboltDataType;
+import io.firebolt.jdbc.resultset.type.array.FireboltArray;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -47,14 +48,15 @@ public class FireboltResultSet extends AbstractResultSet {
     this(is, null, null, null);
   }
 
-  public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize)
+  public FireboltResultSet(
+      InputStream is, String tableName, String dbName, Integer bufferSize)
       throws SQLException {
     log.debug("Creating resultSet...");
     is = debug(is);
-    this.reader =
-        bufferSize != null
-            ? new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8), bufferSize)
-            : new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+      this.reader =
+          bufferSize != null
+              ? new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8), bufferSize)
+              : new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
     try {
       this.next();
       String[] fields = toStringArray(currentLine);
@@ -122,7 +124,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public int getInt(int columnIndex) throws SQLException {
-    Integer value = BaseType.INTEGER.transform(getValueAtColumn(columnIndex));;
+    Integer value = BaseType.INTEGER.transform(getValueAtColumn(columnIndex));
     return value == null ? 0 : value;
   }
 
@@ -133,7 +135,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public long getLong(int colNum) throws SQLException {
-    Long value = BaseType.LONG.transform(getValueAtColumn(colNum));;
+    Long value = BaseType.LONG.transform(getValueAtColumn(colNum));
     return value == null ? 0 : value;
   }
 
@@ -213,8 +215,7 @@ public class FireboltResultSet extends AbstractResultSet {
   @Override
   public Array getArray(int columnIndex) throws SQLException {
     String value = getValueAtColumn(columnIndex);
-    return BaseType.ARRAY.transform(
-        value, this.resultSetMetaData.getColumn(columnIndex).getArrayBaseDataType());
+    return BaseType.ARRAY.transform(value, this.resultSetMetaData.getColumn(columnIndex));
   }
 
   @Override
@@ -303,9 +304,15 @@ public class FireboltResultSet extends AbstractResultSet {
 
     FireboltColumn columnInfo = this.columns.get(columnIndex - 1);
     FireboltDataType columnType = columnInfo.getDataType();
-    return Optional.of(columnType)
-        .map(type -> type.getBaseType().transform(value, columnInfo.getArrayBaseDataType()))
-        .orElse(null);
+    Object object =
+        Optional.of(columnType)
+            .map(type -> type.getBaseType().transform(value, columnInfo))
+            .orElse(null);
+    if (columnType == FireboltDataType.ARRAY && object != null) {
+      return ((FireboltArray) object).getArray();
+    } else {
+      return object;
+    }
   }
 
   @Override

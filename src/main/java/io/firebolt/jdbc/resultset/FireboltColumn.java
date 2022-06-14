@@ -10,7 +10,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
@@ -60,6 +59,10 @@ public final class FireboltColumn {
         FireboltDataType.ofType(typeInUpperCase.substring(currentIndex, typeEndIndex));
     if (arrayDepth > 0) {
       arrayType = dataType;
+      if (arrayType == TUPLE) {
+        String tmp = columnType.substring(currentIndex, columnType.length() - arrayDepth);
+        tuple = getColumnsTuple(tmp.toUpperCase(), columnName);
+      }
       fireboltType = FireboltDataType.ARRAY;
     } else {
       fireboltType = dataType;
@@ -95,6 +98,9 @@ public final class FireboltColumn {
         .columnsTuple(tuple)
         .build();
   }
+  public static FireboltColumn of(String columnType) {
+    return of(columnType, null);
+  }
 
   private static Pair<FireboltColumn, FireboltColumn> getColumnsTuple(
       String columnType, String columnName) {
@@ -116,8 +122,8 @@ public final class FireboltColumn {
     String types =
         RegExUtils.replaceFirst(
             columnType, FireboltDataType.TUPLE.getInternalName().toUpperCase() + "\\(", "");
-    types = StringUtils.substring(types, 0, types.length() - 1); // remove last parenthesis
-    return StringUtils.split(types, ",");
+    types = StringUtils.substring(types, 0, types.length() - 1);
+    return types.split(",(?![^()]*\\))"); // Regex to split on comma and ignoring comma that are between parenthesis
   }
 
   private static boolean reachedEndOfTypeName(int typeNameEndIndex, int type) {
@@ -162,55 +168,67 @@ public final class FireboltColumn {
   }
 
   public String getCompactTypeName() {
-    if (this.dataType.equals(ARRAY)) {
-      StringBuilder type = new StringBuilder();
-      for (int i = 0; i < arrayDepth; i++) {
-        type.append(ARRAY.getDisplayName());
-        type.append("(");
-      }
-      type.append(this.getArrayBaseDataType().getDisplayName());
-      for (int i = 0; i < arrayDepth; i++) {
-        type.append(")");
-      }
-      return type.toString();
-    }
-
-    if (this.columnsTuple != null) {
-      if(this.columnsTuple.getRight() != null) {
-        return String.format(
-                "%s(%s, %s)",
-                TUPLE.getDisplayName(),
-                this.columnsTuple.getLeft().getCompactTypeName(),
-                this.columnsTuple.getRight().getCompactTypeName());
-      } else if (this.columnsTuple.getLeft() != null) {
-        return String.format(
-                "%s(%s)",
-                TUPLE.getDisplayName(),
-                this.columnsTuple.getLeft().getCompactTypeName());
-      } else {
-        return String.format(
-                "%s",
-                TUPLE.getDisplayName());
-      }
+    if (this.isArray()) {
+      return getArrayCompactTypeName();
+    } else if (this.isTuple()) {
+      return getTupleCompactTypeName(this.columnsTuple);
     } else {
       Optional<String> params = getTypeArguments(columnType);
       return dataType.getDisplayName() + params.orElse("");
     }
   }
 
-  @NotNull
+  private String getArrayCompactTypeName() {
+    StringBuilder type = new StringBuilder();
+    for (int i = 0; i < arrayDepth; i++) {
+      type.append(ARRAY.getDisplayName());
+      type.append("(");
+    }
+    if (this.getArrayBaseDataType() != TUPLE) {
+      type.append(this.getArrayBaseDataType().getDisplayName());
+    } else {
+      type.append(this.getTupleCompactTypeName(this.getColumnsTuple()));
+    }
+    for (int i = 0; i < arrayDepth; i++) {
+      type.append(")");
+    }
+    return type.toString();
+  }
+
+  private String getTupleCompactTypeName(Pair<FireboltColumn, FireboltColumn> columnsTuple) {
+    if (columnsTuple.getRight() != null) {
+      return String.format(
+          "%s(%s, %s)",
+          TUPLE.getDisplayName(),
+          columnsTuple.getLeft().getCompactTypeName(),
+          columnsTuple.getRight().getCompactTypeName());
+    } else if (columnsTuple.getLeft() != null) {
+      return String.format(
+          "%s(%s)", TUPLE.getDisplayName(), columnsTuple.getLeft().getCompactTypeName());
+    } else {
+      return String.format("%s", TUPLE.getDisplayName());
+    }
+  }
+
   private Optional<String> getTypeArguments(String type) {
     return Optional.ofNullable(getTypeWithoutNullableKeyword(type))
         .filter(t -> t.contains("("))
         .map(t -> t.substring(t.indexOf("(")));
   }
 
-  @Nullable
   private String getTypeWithoutNullableKeyword(String columnType) {
     return Optional.ofNullable(columnType)
         .filter(t -> this.nullable)
         .map(type -> StringUtils.remove(type, NULLABLE_TYPE + "("))
         .map(type -> StringUtils.removeEnd(type, ")"))
         .orElse(columnType);
+  }
+
+  private boolean isArray() {
+    return this.dataType.equals(ARRAY);
+  }
+
+  private boolean isTuple() {
+    return this.dataType.equals(TUPLE);
   }
 }
