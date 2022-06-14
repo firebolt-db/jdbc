@@ -1,12 +1,15 @@
 package io.firebolt.jdbc.resultset.type.array;
 
 import com.google.common.base.CharMatcher;
+import io.firebolt.jdbc.resultset.FireboltColumn;
 import io.firebolt.jdbc.resultset.type.FireboltDataType;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -16,56 +19,90 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SqlArrayUtil {
 
-  private static final String SEPARATOR_COMMA = ",";
-
-  public static final BiFunction<String, FireboltDataType, java.sql.Array>
+  public static final BiFunction<String, FireboltColumn, java.sql.Array>
       transformToSqlArrayFunction =
-          (value, fireboltComplexDataType) -> {
+          (value, fireboltColumn) -> {
+            log.debug("Transformer array with value {} and type {}", value, fireboltColumn);
             int dimensions = 0;
             for (int x = 0; x < value.length(); x++)
               if (value.charAt(x) == '[') dimensions++;
               else break;
             value = value.substring(dimensions, value.length() - dimensions);
-            Object arr = createArray(value, dimensions, fireboltComplexDataType);
-            return FireboltArray.builder().array(arr).type(fireboltComplexDataType).build();
+            Object arr = createArray(value, dimensions, fireboltColumn);
+            log.info("Arr {}", arr);
+            return FireboltArray.builder()
+                .array(arr)
+                .type(fireboltColumn.getArrayBaseDataType())
+                .build();
           };
 
-  private static Object createArray(String str, int dimension, FireboltDataType arraySubType) {
+  private static Object createArray(
+      String arrayContent, int dimension, FireboltColumn fireboltColumn) {
     if (dimension == 1) {
-      return extractArrayFromOneDimensionalArray(str, arraySubType);
+      return extractArrayFromOneDimensionalArray(arrayContent, fireboltColumn);
     } else {
-      return extractArrayFromMultiDimensionalArray(str, dimension, arraySubType);
+      return extractArrayFromMultiDimensionalArray(arrayContent, dimension, fireboltColumn);
     }
   }
 
   @NotNull
   private static Object extractArrayFromMultiDimensionalArray(
-      String str, int dimension, FireboltDataType arraySubType) {
+      String str, int dimension, FireboltColumn fireboltColumn) {
     String[] s = str.split(getArraySeparator(dimension));
     int[] lengths = new int[dimension];
     lengths[0] = s.length;
-    Object currentArray = Array.newInstance(arraySubType.getBaseType().getType(), lengths);
+    Object currentArray =
+        Array.newInstance(fireboltColumn.getArrayBaseDataType().getBaseType().getType(), lengths);
 
     for (int x = 0; x < s.length; x++)
-      Array.set(currentArray, x, createArray(s[x], dimension - 1, arraySubType));
+      Array.set(currentArray, x, createArray(s[x], dimension - 1, fireboltColumn));
 
     return currentArray;
   }
 
   private static Object extractArrayFromOneDimensionalArray(
-      String str, FireboltDataType arraySubType) {
-    List<String> values =
-        Arrays.stream(str.split(SEPARATOR_COMMA))
+      String arrayContent, FireboltColumn fireboltColumn) {
+    List<String> elements =
+        splitArrayContent(arrayContent, fireboltColumn.getArrayBaseDataType()).stream()
+            .filter(StringUtils::isNotEmpty)
             .map(SqlArrayUtil::removeQuotes)
             .collect(Collectors.toList());
-    Object currentArray = Array.newInstance(arraySubType.getBaseType().getType(), values.size());
-    for (int x = 0; x < values.size(); x++)
-      Array.set(currentArray, x, arraySubType.getBaseType().transform(values.get(x), null));
-    return currentArray;
+    FireboltDataType arrayBaseType = fireboltColumn.getArrayBaseDataType();
+    if (arrayBaseType != FireboltDataType.TUPLE) {
+      Object currentArray =
+          Array.newInstance(arrayBaseType.getBaseType().getType(), elements.size());
+      for (int i = 0; i < elements.size(); i++)
+        Array.set(currentArray, i, arrayBaseType.getBaseType().transform(elements.get(i), null));
+      return currentArray;
+    } else {
+      return getArrayForTuple(fireboltColumn, elements);
+    }
+  }
+
+  @NotNull
+  private static Object[] getArrayForTuple(FireboltColumn fireboltColumn, List<String> tuples) {
+    List<FireboltDataType> types =
+        Arrays.asList(
+            fireboltColumn.getColumnsTuple().getLeft().getDataType(),
+            fireboltColumn.getColumnsTuple().getRight().getDataType());
+
+    List<Object[]> list = new ArrayList<>();
+    for (String tupleContent : tuples) {
+      List<Object> subList = new ArrayList<>();
+      List<String> tupleValues =
+          splitArrayContent(removeParenthesis(tupleContent), FireboltDataType.STRING);
+      for (int j = 0; j < 2; j++) {
+        subList.add(types.get(j % 2).getBaseType().transform(removeQuotes(tupleValues.get(j))));
+      }
+      list.add(subList.toArray());
+    }
+    Object[] array = new Object[list.size()];
+    list.toArray(array);
+    return array;
   }
 
   private static String getArraySeparator(int dimension) {
-    StringBuilder stringBuilder = new StringBuilder(SEPARATOR_COMMA);
+    StringBuilder stringBuilder = new StringBuilder(",");
     for (int x = 1; x < dimension; x++) {
       stringBuilder.insert(0, ']');
       stringBuilder.append("\\[");
@@ -77,9 +114,39 @@ public class SqlArrayUtil {
     return CharMatcher.is('\'').trimFrom(s);
   }
 
-  public static String arrayToString(Object object)
-  {
-    throw new UnsupportedOperationException();
+  private static String removeParenthesis(String s) {
+    return s.substring(1, s.length() - 1);
   }
 
+  private static List<String> splitArrayContent(String arrayContent, FireboltDataType baseType) {
+    int index = -1;
+    int subStringStart = 0;
+    int parenthesisDepth = 0; // Needed for tuples
+    boolean isCurrentSubstringBetweenQuotes = false;
+    List<String> elements = new ArrayList<>();
+    while (index < arrayContent.length() - 1) {
+      index++;
+      char currentChar = arrayContent.charAt(index);
+      if (currentChar == 39) {
+        isCurrentSubstringBetweenQuotes = !isCurrentSubstringBetweenQuotes;
+      }
+      if (!isCurrentSubstringBetweenQuotes && baseType == FireboltDataType.TUPLE) {
+        if (currentChar == '(') {
+          parenthesisDepth++;
+        } else if (currentChar == ')') {
+          parenthesisDepth--;
+        }
+      }
+      if ((parenthesisDepth == 0 && currentChar == ',' && !isCurrentSubstringBetweenQuotes)) {
+        elements.add(arrayContent.substring(subStringStart, index));
+        subStringStart = index + 1;
+      }
+    }
+    elements.add(arrayContent.substring(subStringStart));
+    return elements;
+  }
+
+  public static String arrayToString(Object object) {
+    throw new UnsupportedOperationException();
+  }
 }
