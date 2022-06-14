@@ -1,6 +1,5 @@
 package io.firebolt.jdbc.resultset;
 
-import io.firebolt.jdbc.resultset.type.array.FireboltArray;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -9,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -60,7 +58,8 @@ class FireboltResultSetTest {
   @Test
   void shouldNotBeLastAtLastLine() throws SQLException, IOException {
     inputStream = getInputStreamWithArray();
-    resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
+    resultSet =
+        new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
     resultSet.next();
     assertTrue(resultSet.isLast());
@@ -73,14 +72,12 @@ class FireboltResultSetTest {
     resultSet.next();
     assertEquals(1L, resultSet.getObject(1));
     String[][][] firstArray = {{{"1", "2"}, {"3", "4"}}};
-    assertArrayEquals(
-        firstArray, ((String[][][]) ((FireboltArray) resultSet.getObject(2)).getArray()));
+    assertArrayEquals(firstArray, ((String[][][]) resultSet.getObject(2)));
 
     resultSet.next();
     assertEquals(2L, resultSet.getObject(1));
     String[][][] secondArray = {{{"1", "2"}, {"3", "4"}}, {{"5", "6"}, {"7", "8"}}};
-    assertArrayEquals(
-        secondArray, ((String[][][]) ((FireboltArray) resultSet.getObject(2)).getArray()));
+    assertArrayEquals(secondArray, ((String[][][]) resultSet.getObject(2)));
   }
 
   @Test
@@ -366,7 +363,7 @@ class FireboltResultSetTest {
   }
 
   private InputStream getInputStreamWithEmpty() {
-    return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-empty-example");
+    return FireboltResultSetTest.class.getResourceAsStream(
+        "/responses/firebolt-response-with-empty-example");
   }
-
 }

@@ -21,6 +21,7 @@ public enum FireboltDataType {
       "UInt16",
       "UInt32"),
   INT_64(Types.BIGINT, "Int64", "BIGINT", BaseType.LONG, true, false, 20, 0, "BIGINT", "LONG"),
+  U_INT_64(Types.BIGINT, "UInt64", "BIGINT", BaseType.BIG_INTEGER, false, false, 20, 0), //Although not supported, this type is still coming from Firebolt and needs to be handled for now
   FLOAT_32(Types.FLOAT, "Float32", "FLOAT", BaseType.FLOAT, true, false, 8, 8, "FLOAT"),
   FLOAT_64(Types.DOUBLE, "Float64", "DOUBLE", BaseType.DOUBLE, true, false, 17, 17, "DOUBLE"),
   STRING(Types.VARCHAR, "String", "STRING", BaseType.STRING, false, true, 0, 0, "VARCHAR", "TEXT"),
@@ -50,7 +51,7 @@ public enum FireboltDataType {
   UNKNOWN(Types.OTHER, "Unknown", "UNKNOWN", BaseType.OTHER, false, false, 0, 0),
   DECIMAL(Types.DECIMAL, "Decimal", "DECIMAL", BaseType.DECIMAL, true, false, 0, 0, "DEC"),
   ARRAY(Types.ARRAY, "Array", "ARRAY", BaseType.ARRAY, false, true, 0, 0),
-  TUPLE(Types.OTHER, "Tuple", "TUPLE", BaseType.STRING, false, true, 0, 0);
+  TUPLE(Types.OTHER, "Tuple", "TUPLE", BaseType.OBJECT, false, true, 0, 0);
 
   private final int sqlType;
 

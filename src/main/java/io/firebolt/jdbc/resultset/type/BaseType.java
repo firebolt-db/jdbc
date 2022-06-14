@@ -1,11 +1,13 @@
 package io.firebolt.jdbc.resultset.type;
 
+import io.firebolt.jdbc.resultset.FireboltColumn;
 import io.firebolt.jdbc.resultset.type.array.SqlArrayUtil;
 import io.firebolt.jdbc.resultset.type.date.SqlDateUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Array;
 import java.sql.Timestamp;
 import java.util.Date;
@@ -16,9 +18,8 @@ import java.util.function.BiFunction;
 public enum BaseType {
   LONG(Long.class, (value, subType) -> Long.parseLong(value)),
   INTEGER(Integer.class, (value, subType) -> Integer.parseInt(value)),
-  STRING(
-      String.class,
-      (value, subType) -> StringUtils.equals(value, "\\N") ? null : String.valueOf(value)),
+  BIG_INTEGER(BigInteger.class, (value, subType) -> new BigInteger(value)),
+  STRING(String.class, (value, subType) -> String.valueOf(value)),
   FLOAT(Float.class, (value, subType) -> isNan(value) ? Float.NaN : Float.parseFloat(value)),
   DOUBLE(Double.class, (value, subType) -> isNan(value) ? Double.NaN : Double.parseDouble(value)),
   DATE(Date.class, (value, subType) -> SqlDateUtil.transformToDateFunction.apply(value)),
@@ -26,15 +27,16 @@ public enum BaseType {
       Timestamp.class, (value, subType) -> SqlDateUtil.transformToTimestampFunction.apply(value)),
   NULL(Object.class, (value, subType) -> null),
   OTHER(String.class, (value, subType) -> "Unknown"),
+  OBJECT(Object.class, (value, subType) -> value),
   DECIMAL(BigDecimal.class, (value, subType) -> new BigDecimal(value)),
   BOOLEAN(Boolean.class, (value, subType) -> !"0".equals(value)),
   ARRAY(Array.class, SqlArrayUtil.transformToSqlArrayFunction::apply);
 
   public static final String NULL_VALUE = "\\N";
   private final Class<?> type;
-  private final BiFunction<String, FireboltDataType, Object> transformFunction;
+  private final BiFunction<String, FireboltColumn, Object> transformFunction;
 
-  BaseType(Class<?> type, BiFunction<String, FireboltDataType, Object> transformFunction) {
+  BaseType(Class<?> type, BiFunction<String, FireboltColumn, Object> transformFunction) {
     this.type = type;
     this.transformFunction = transformFunction;
   }
@@ -43,12 +45,12 @@ public enum BaseType {
     return type;
   }
 
-  public <T> T transform(String value, FireboltDataType subType) {
+  public <T> T transform(String value, FireboltColumn column) {
     validateObjectNotNull(value);
     if (isNull(value)) {
       return null;
     }
-    return (T) transformFunction.apply(value, subType);
+    return (T) transformFunction.apply(value, column);
   }
 
   public <T> T transform(String value) {
