@@ -48,15 +48,14 @@ public class FireboltResultSet extends AbstractResultSet {
     this(is, null, null, null);
   }
 
-  public FireboltResultSet(
-      InputStream is, String tableName, String dbName, Integer bufferSize)
+  public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize)
       throws SQLException {
     log.debug("Creating resultSet...");
-    //is = debug(is);
-      this.reader =
-          bufferSize != null
-              ? new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8), bufferSize)
-              : new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+    // is = debug(is);
+    this.reader =
+        bufferSize != null
+            ? new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8), bufferSize)
+            : new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
     try {
       this.next();
       String[] fields = toStringArray(currentLine);
@@ -376,6 +375,8 @@ public class FireboltResultSet extends AbstractResultSet {
     if (currentRow != lastSplittedRow) {
       if (StringUtils.isNotEmpty(stringToSplit)) {
         arr = StringUtils.splitPreserveAllTokens(stringToSplit, '\t');
+      } else if (StringUtils.equals(stringToSplit, "")) {
+        arr = new String[] {""};
       } else {
         arr = new String[0];
       }
