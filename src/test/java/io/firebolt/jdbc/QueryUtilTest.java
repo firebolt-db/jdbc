@@ -41,9 +41,15 @@ class QueryUtilTest {
   }
 
   @Test
-  void shouldFindThatQueryIsSelect() {
+  void shouldFindThatShowQueryIsASelect() {
     String query = "/* Some random command*/ SHOW DATABASES";
     assertTrue(QueryUtil.isSelect(query));
+  }
+
+  @Test
+  void shouldFindThatWithQueryIsASelect() {
+    String sql = getSqlFromFile("/queries/query-with-keyword-with.sql");
+    assertTrue(QueryUtil.isSelect(sql));
   }
 
   @Test
@@ -99,8 +105,8 @@ class QueryUtilTest {
 
   @Test
   void shouldCleanQueryWithComments() {
-    String sql = getSqlFromFile("/statement/query-with-comment.sql");
-    String expectedCleanQuery = getSqlFromFile("/statement/query-with-comment-cleaned.sql");
+    String sql = getSqlFromFile("/queries/query-with-comment.sql");
+    String expectedCleanQuery = getSqlFromFile("/queries/query-with-comment-cleaned.sql");
     Pair<String, Integer> cleanQueryWithCount =  QueryUtil.cleanQueryAndCountKeyWordOccurrences(sql, "?");
     assertEquals(expectedCleanQuery, cleanQueryWithCount.getLeft());
     assertEquals(1, cleanQueryWithCount.getRight());

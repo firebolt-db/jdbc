@@ -22,7 +22,7 @@ public class QueryUtil {
   private static final String SET_PREFIX = "set";
   private static final Pattern SET_WITH_SPACE_REGEX = Pattern.compile(SET_PREFIX + " ", Pattern.CASE_INSENSITIVE);
   private static final String[] SELECT_KEYWORDS =
-      new String[] {"show", "select", "describe", "exists", "explain"};
+      new String[] {"show", "select", "describe", "exists", "explain", "with"};
 
   public static boolean isSelect(String sql) {
     String cleanQuery = cleanQuery(sql);
