@@ -140,7 +140,7 @@ public class QueryUtil {
   }
 
   private Optional<Pair<String, String>> extractPropertyPair(String sql, String query) {
-    String setQuery = StringUtils.stripStart(query, SET_PREFIX + " ");
+    String setQuery = RegExUtils.removeFirst(query, SET_PREFIX + " ");
     String[] values = StringUtils.split(setQuery, "=");
     if (values.length == 2) {
       return Optional.of(Pair.of(values[0].trim(), values[1].trim()));
