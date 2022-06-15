@@ -2,6 +2,7 @@ package io.firebolt.jdbc;
 
 import io.firebolt.QueryUtil;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
@@ -97,11 +98,12 @@ class QueryUtilTest {
   }
 
   @Test
-  void shouldCleanComplexQuery() {
+  void shouldCleanQueryWithComments() {
     String sql = getSqlFromFile("/statement/query-with-comment.sql");
     String expectedCleanQuery = getSqlFromFile("/statement/query-with-comment-cleaned.sql");
-
-    assertEquals(expectedCleanQuery, QueryUtil.cleanQuery(sql));
+    Pair<String, Integer> cleanQueryWithCount =  QueryUtil.cleanQueryAndCountKeyWordOccurrences(sql, "?");
+    assertEquals(expectedCleanQuery, cleanQueryWithCount.getLeft());
+    assertEquals(1, cleanQueryWithCount.getRight());
   }
 
   private static String getSqlFromFile(String path) {

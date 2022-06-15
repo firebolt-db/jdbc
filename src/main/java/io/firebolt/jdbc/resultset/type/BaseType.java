@@ -20,8 +20,28 @@ public enum BaseType {
   INTEGER(Integer.class, (value, subType) -> Integer.parseInt(value)),
   BIG_INTEGER(BigInteger.class, (value, subType) -> new BigInteger(value)),
   STRING(String.class, (value, subType) -> String.valueOf(value)),
-  FLOAT(Float.class, (value, subType) -> isNan(value) ? Float.NaN : Float.parseFloat(value)),
-  DOUBLE(Double.class, (value, subType) -> isNan(value) ? Double.NaN : Double.parseDouble(value)),
+  FLOAT(Float.class, (value, subType) -> {
+    if(isNan(value)) {
+      return Float.NaN;
+    } else if (isPositiveInf(value)) {
+      return Float.POSITIVE_INFINITY;
+    } else if (isNegativeInf(value)) {
+      return Float.NEGATIVE_INFINITY;
+    } else {
+      return Float.parseFloat(value);
+    }
+  }),
+  DOUBLE(Double.class, (value, subType) -> {
+    if(isNan(value)) {
+      return Double.NaN;
+    } else if (isPositiveInf(value)) {
+      return Double.POSITIVE_INFINITY;
+    } else if (isNegativeInf(value)) {
+      return Double.NEGATIVE_INFINITY;
+    } else {
+      return Double.parseDouble(value);
+    }
+  }),
   DATE(Date.class, (value, subType) -> SqlDateUtil.transformToDateFunction.apply(value)),
   TIMESTAMP(
       Timestamp.class, (value, subType) -> SqlDateUtil.transformToTimestampFunction.apply(value)),
@@ -31,6 +51,15 @@ public enum BaseType {
   DECIMAL(BigDecimal.class, (value, subType) -> new BigDecimal(value)),
   BOOLEAN(Boolean.class, (value, subType) -> !"0".equals(value)),
   ARRAY(Array.class, SqlArrayUtil.transformToSqlArrayFunction::apply);
+
+  private static boolean isPositiveInf(String value) {
+    return StringUtils.equalsAnyIgnoreCase(value, "+inf", "inf");
+  }
+
+  private static boolean isNegativeInf(String value) {
+    return StringUtils.equals(value, "-inf");
+
+  }
 
   public static final String NULL_VALUE = "\\N";
   private final Class<?> type;
