@@ -26,7 +26,7 @@ class QueryUtilTest {
 
   @Test
   void shouldExtractAdditionalPropertiesWithComments() {
-    String query = "/* */" + "set my_custom_query=1";
+    String query = "/* */" + " SeT my_custom_query=1";
     assertEquals(
         Optional.of(new ImmutablePair<>("my_custom_query", "1")),
         QueryUtil.extractAdditionalProperties(query));

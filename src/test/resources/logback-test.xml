@@ -7,8 +7,11 @@
         </encoder>
     </appender>
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${user.home}/.firebolt/logs/%d{yyyy-MM-dd}/firebolt-jdbc.log</fileNamePattern>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${user.home}/.firebolt/logs/%d{yyyy-MM-dd}/firebolt-jdbc-test.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>40GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>

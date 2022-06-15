@@ -21,7 +21,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.function.BiPredicate;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -31,7 +30,6 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
   private final CloseableHttpClient httpClient;
 
   private final Map<String, HttpPost> runningQueries = new HashMap<>();
-
 
   public InputStream postSqlQuery(
       String sql,
@@ -95,6 +93,11 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
       FireboltProperties fireboltProperties, String queryId, boolean isSelect) {
     List<NameValuePair> queryParams = new ArrayList<>();
     boolean isLocalDb = StringUtils.equalsIgnoreCase("localhost", fireboltProperties.getHost());
+
+    fireboltProperties
+        .getAdditionalProperties()
+        .forEach((key, value) -> queryParams.add(new BasicNameValuePair(key, value)));
+
     getResponseFormatQueryParam(isSelect, isLocalDb).ifPresent(queryParams::add);
 
     queryParams.add(new BasicNameValuePair("database", fireboltProperties.getDatabase()));

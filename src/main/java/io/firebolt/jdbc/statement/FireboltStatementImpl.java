@@ -82,11 +82,15 @@ public class FireboltStatementImpl extends AbstractStatement {
             fireboltQueryService.executeQuery(sql, isSelect, queryId, accessToken, properties);
         if (isSelect) {
           currentUpdateCount = -1; // Always -1 when returning a ResultSet
+          Pair<Optional<String>, Optional<String>> dbNameAndTableNamePair =
+              QueryUtil.extractDbNameAndTableNamePairFromQuery(sql);
+
           resultSet =
               new FireboltResultSet(
                   inputStream,
-                  QueryUtil.extractTableNameFromSelect(sql).orElse("unknown"),
-                  QueryUtil.extractDBNameFromSelect(sql)
+                  dbNameAndTableNamePair.getRight().orElse("unknown"),
+                  dbNameAndTableNamePair
+                      .getRight()
                       .orElse(
                           properties.getDatabase() != null ? properties.getDatabase() : "unknown"),
                   properties.getBufferSize());
@@ -131,8 +135,8 @@ public class FireboltStatementImpl extends AbstractStatement {
     log.debug("cancelling query");
     FireboltProperties temporaryProperties = FireboltProperties.copy(this.sessionProperties);
     temporaryProperties.addProperty("use_standard_sql", "0");
-    try (ResultSet rs = this.executeQuery(String.format(KILL_QUERY_SQL, queryId), temporaryProperties)) {
-    }
+    try (ResultSet rs =
+        this.executeQuery(String.format(KILL_QUERY_SQL, queryId), temporaryProperties)) {}
   }
 
   @Override
