@@ -8,6 +8,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 @UtilityClass
 @Slf4j
@@ -19,6 +20,7 @@ public class QueryUtil {
       SINGLE_LINE_COMMENTS_REGEX + "|" + MULTI_LINE_COMMENTS_REGEX;
 
   private static final String SET_PREFIX = "set";
+  private static final Pattern SET_WITH_SPACE_REGEX = Pattern.compile(SET_PREFIX + " ", Pattern.CASE_INSENSITIVE);
   private static final String[] SELECT_KEYWORDS =
       new String[] {"show", "select", "describe", "exists", "explain"};
 
@@ -61,9 +63,8 @@ public class QueryUtil {
       isInMultipleLinesComment =
           isInMultipleLinesComment(
               currentChar, previousChar, isCurrentSubstringBetweenQuotes, isInMultipleLinesComment);
-      if (('\'' == currentChar
-          || (currentIndex == sql.length() - 1)
-              && !(isInSingleLineComment || isInMultipleLinesComment))) {
+      if (('\'' == currentChar || (currentIndex == sql.length() - 1))
+              && !(isInSingleLineComment || isInMultipleLinesComment)) {
         if (isCurrentSubstringBetweenQuotes) {
           String subString = StringUtils.substring(sql, substringStart, currentIndex + 1);
           result.append(subString);
@@ -93,14 +94,53 @@ public class QueryUtil {
     return isInMultipleLinesComment;
   }
 
+  public static Pair<Optional<String>, Optional<String>> extractDbNameAndTableNamePairFromQuery(
+      String sql) {
+    Optional<String> from = Optional.empty();
+    if (isSelect(sql)) {
+      log.debug("Extracting DB and Table name for SELECT: {}", sql);
+      String cleanQuery = cleanQuery(sql);
+      String withoutQuotes = StringUtils.replace(cleanQuery, "'", "").trim();
+      if (StringUtils.startsWithIgnoreCase(withoutQuotes, "select")) {
+        int fromIndex = StringUtils.indexOfIgnoreCase(withoutQuotes, "from");
+        if (fromIndex != -1) {
+          from =
+              Optional.of(
+                  withoutQuotes.substring(fromIndex + "from".length()).trim().split(" ")[0]);
+        }
+      } else if (StringUtils.startsWithIgnoreCase(withoutQuotes, "DESCRIBE")) {
+        from = Optional.of("information_schema.tables");
+      } else if (StringUtils.startsWithIgnoreCase(withoutQuotes, "SHOW")) {
+        from =
+            Optional.of(
+                "information_schema.unknown"); // Depends on the information requested - so putting
+        // unknown as a placeholder
+      } else {
+        log.debug(
+            "Could not find table name for query {}. This may happen when there is no table.", sql);
+      }
+    }
+    return new ImmutablePair<>(
+        extractDBNameFromFromPartOfTheQuery(from.orElse(null)),
+        extractTableNameFromFromPartOfTheQuery(from.orElse(null)));
+  }
+
   public static Optional<String> extractDBNameFromSelect(String sql) {
-    return extractDBAndTableNameFromSelect(sql)
+    return extractDbNameAndTableNamePairFromQuery(sql).getLeft();
+  }
+
+  public static Optional<String> extractTableNameFromSelect(String sql) {
+    return extractDbNameAndTableNamePairFromQuery(sql).getRight();
+  }
+
+  private static Optional<String> extractDBNameFromFromPartOfTheQuery(String from) {
+    return Optional.ofNullable(from)
         .filter(dbNameAndTable -> dbNameAndTable.contains("."))
         .map(dbNameAndTable -> dbNameAndTable.substring(0, dbNameAndTable.indexOf(".")));
   }
 
-  public static Optional<String> extractTableNameFromSelect(String sql) {
-    return extractDBAndTableNameFromSelect(sql)
+  private static Optional<String> extractTableNameFromFromPartOfTheQuery(String from) {
+    return Optional.ofNullable(from)
         .map(
             dbNameAndTable -> {
               if (dbNameAndTable.contains(".")) {
@@ -140,7 +180,7 @@ public class QueryUtil {
   }
 
   private Optional<Pair<String, String>> extractPropertyPair(String sql, String query) {
-    String setQuery = RegExUtils.removeFirst(query, SET_PREFIX + " ");
+    String setQuery = RegExUtils.removeFirst(query, SET_WITH_SPACE_REGEX);
     String[] values = StringUtils.split(setQuery, "=");
     if (values.length == 2) {
       return Optional.of(Pair.of(values[0].trim(), values[1].trim()));
@@ -148,31 +188,5 @@ public class QueryUtil {
       throw new IllegalArgumentException(
           "Cannot parse the additional properties provided in the query: " + sql);
     }
-  }
-
-  private static Optional<String> extractDBAndTableNameFromSelect(String sql) {
-    if (isSelect(sql)) {
-      log.debug("Extracting DB and Table name for SELECT: {}", sql);
-      String cleanQuery = cleanQuery(sql);
-      String withoutQuotes = StringUtils.replace(cleanQuery, "'", "").trim();
-      if (StringUtils.startsWithIgnoreCase(withoutQuotes, "select")) {
-        int fromIndex = StringUtils.indexOfIgnoreCase(withoutQuotes, "from");
-        if (fromIndex != -1) {
-          return Optional.of(
-              withoutQuotes.substring(fromIndex + "from".length()).trim().split(" ")[0]);
-        }
-      }
-      if (StringUtils.startsWithIgnoreCase(withoutQuotes, "DESCRIBE")) {
-        return Optional.of("information_schema.tables");
-      }
-      if (StringUtils.startsWithIgnoreCase(withoutQuotes, "SHOW")) {
-        return Optional.of(
-            "information_schema.unknown"); // Depends on the information requested - so putting
-        // unknown as a placeholder
-      }
-    }
-    log.debug(
-        "Could not find table name for query {}. This may happen when there is no table.", sql);
-    return Optional.empty();
   }
 }
