@@ -112,6 +112,15 @@ class QueryUtilTest {
     assertEquals(1, cleanQueryWithCount.getRight());
   }
 
+  @Test
+  void shouldCleanQueryWithSingleLineComment() {
+    String sql = getSqlFromFile("/queries/query-with-comment.sql");
+    String expectedCleanQuery = getSqlFromFile("/queries/query-with-comment-cleaned.sql");
+    Pair<String, Integer> cleanQueryWithCount =  QueryUtil.cleanQueryAndCountKeyWordOccurrences(sql, "?");
+    assertEquals(expectedCleanQuery, cleanQueryWithCount.getLeft());
+    assertEquals(1, cleanQueryWithCount.getRight());
+  }
+
   private static String getSqlFromFile(String path) {
     InputStream is = QueryUtilTest.class.getResourceAsStream(path);
     return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))

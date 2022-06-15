@@ -5,4 +5,7 @@ select query.server_date_utc,
                 WHEN LENGTH(partner_id) > ? THEN partner_id
                 ELSE alternate_partner_id END as float) AS partner_id,
 
+
+
+
 WHERE x;

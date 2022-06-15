@@ -16,11 +16,10 @@ public class QueryUtil {
 
   private static final String SINGLE_LINE_COMMENTS_REGEX = "--[^\n]*\n";
   private static final String MULTI_LINE_COMMENTS_REGEX = "/\\*[^/\\*]*\\*/";
-  private static final String ALL_COMMENTS_REGEX =
-      SINGLE_LINE_COMMENTS_REGEX + "|" + MULTI_LINE_COMMENTS_REGEX;
 
   private static final String SET_PREFIX = "set";
-  private static final Pattern SET_WITH_SPACE_REGEX = Pattern.compile(SET_PREFIX + " ", Pattern.CASE_INSENSITIVE);
+  private static final Pattern SET_WITH_SPACE_REGEX =
+      Pattern.compile(SET_PREFIX + " ", Pattern.CASE_INSENSITIVE);
   private static final String[] SELECT_KEYWORDS =
       new String[] {"show", "select", "describe", "exists", "explain", "with"};
 
@@ -176,7 +175,12 @@ public class QueryUtil {
   }
 
   private String removeCommentsFromSubstring(String subString) {
-    return RegExUtils.replaceAll(subString, ALL_COMMENTS_REGEX, "");
+    subString = RegExUtils.replaceAll(subString, MULTI_LINE_COMMENTS_REGEX, "");
+    return RegExUtils.replaceAll(
+        subString,
+        SINGLE_LINE_COMMENTS_REGEX,
+        "\n"); // Escape to next line to avoid words being merged when comments are added at the end
+               // of the line
   }
 
   private Optional<Pair<String, String>> extractPropertyPair(String sql, String query) {
