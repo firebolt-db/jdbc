@@ -256,10 +256,10 @@ class FireboltResultSetTest {
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
 
-    assertTrue(resultSet.getBoolean(1));
+    assertTrue(resultSet.getBoolean(6));
     assertTrue(resultSet.getBoolean("is_online"));
     resultSet.next();
-    assertFalse(resultSet.getBoolean(1));
+    assertFalse(resultSet.getBoolean(6));
     assertFalse(resultSet.getBoolean("is_online"));
   }
 
