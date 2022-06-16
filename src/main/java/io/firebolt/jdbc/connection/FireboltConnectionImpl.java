@@ -93,7 +93,6 @@ public class FireboltConnectionImpl extends AbstractConnection {
   }
 
   private FireboltConnectionImpl connect() throws FireboltException {
-    try {
       if (!StringUtils.equalsIgnoreCase(LOCALHOST, loginProperties.getHost())) {
         Optional<FireboltConnectionTokens> fireboltConnectionTokens = this.getConnectionTokens();
           String engineHost =
@@ -108,9 +107,7 @@ public class FireboltConnectionImpl extends AbstractConnection {
         }
       closed = false;
       log.debug("Connection opened");
-    } catch (Exception e) {
-      throw new FireboltException("Could not connect", e);
-    }
+
     return this;
   }
 

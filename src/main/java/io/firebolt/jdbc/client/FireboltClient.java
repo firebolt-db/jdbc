@@ -2,6 +2,7 @@ package io.firebolt.jdbc.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.firebolt.jdbc.ProjectVersionUtil;
+import io.firebolt.jdbc.exception.FireboltException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -15,6 +16,7 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,14 +39,15 @@ public abstract class FireboltClient {
 
   protected <T> T getResource(
       String uri,
+      String host,
       String accessToken,
       CloseableHttpClient httpClient,
       ObjectMapper objectMapper,
       Class<T> valueType)
-      throws IOException, ParseException {
+      throws IOException, ParseException, FireboltException {
     HttpGet httpGet = createGetRequest(uri, accessToken);
     try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-      this.validateResponse(uri, response);
+      this.validateResponse(host, response);
       String responseStr = EntityUtils.toString(response.getEntity());
       return objectMapper.readValue(responseStr, valueType);
     } catch (Exception e) {
@@ -67,27 +70,32 @@ public abstract class FireboltClient {
     return httpPost;
   }
 
-  protected void validateResponse(String uri, CloseableHttpResponse response) throws IOException {
+  protected void validateResponse(String host, CloseableHttpResponse response)
+      throws FireboltException {
     int statusCode = response.getCode();
     if (!isCallSuccessful(statusCode)) {
       if (statusCode == HTTP_UNAVAILABLE) {
-        throw new IOException(
+        throw new FireboltException(
             String.format(
                 "Could not query Firebolt at %s. The engine is not running. Status code: %d",
-                uri, HTTP_FORBIDDEN));
+                host, HTTP_FORBIDDEN));
       }
       String errorResponseMessage;
       try {
+        response.getEntity();
         errorResponseMessage =
             String.format(
-                "Failed to query Firebolt at %s. Status code: %d, Error message: %s",
-                uri, statusCode, EntityUtils.toString(response.getEntity()));
-      } catch (ParseException e) {
+                "Failed to query Firebolt at %s. Error message: %s%ninternal error:%n%s",
+                host, EntityUtils.toString(response.getEntity()), this.getInternalErrorWithHeadersText(response));
+
+        throw new FireboltException(errorResponseMessage);
+      } catch (ParseException | IOException e) {
         log.warn("Could not parse response containing the error message from Firebolt", e);
         errorResponseMessage =
-            String.format("Failed to query Firebolt with uri %s. Status code: %d", uri, statusCode);
+            String.format(
+                "Failed to query Firebolt at %s. %ninternal error:%n%s", host, this.getInternalErrorWithHeadersText(response));
+        throw new FireboltException(errorResponseMessage, e);
       }
-      throw new IOException(errorResponseMessage);
     }
   }
 
@@ -107,5 +115,12 @@ public abstract class FireboltClient {
                         HEADER_AUTHORIZATION,
                         HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken)));
     return headers;
+  }
+
+  private String getInternalErrorWithHeadersText(CloseableHttpResponse response) {
+    StringBuilder stringBuilder = new StringBuilder(response.toString());
+    stringBuilder.append("\n");
+    stringBuilder.append(Arrays.toString(response.getHeaders()));
+    return stringBuilder.toString();
   }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.firebolt.jdbc.ProjectVersionUtil;
 import io.firebolt.jdbc.client.authentication.response.FireboltAuthenticationResponse;
+import io.firebolt.jdbc.exception.FireboltException;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -59,7 +60,7 @@ class FireboltAuthenticationClientTest {
   }
 
   @Test
-  void shouldPostConnectionTokens() throws IOException, ParseException {
+  void shouldPostConnectionTokens() throws IOException, ParseException, FireboltException {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
     HttpEntity entity = mock(HttpEntity.class);
     when(response.getEntity()).thenReturn(entity);
@@ -97,7 +98,7 @@ class FireboltAuthenticationClientTest {
     when(httpClient.execute(any())).thenReturn(response);
 
     assertThrows(
-        IOException.class,
+        FireboltException.class,
         () -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
   }
 
@@ -110,7 +111,7 @@ class FireboltAuthenticationClientTest {
     when(httpClient.execute(any())).thenReturn(response);
 
     assertThrows(
-        IOException.class,
+        FireboltException.class,
         () -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
   }
 
@@ -123,7 +124,7 @@ class FireboltAuthenticationClientTest {
     when(httpClient.execute(any())).thenReturn(response);
 
     assertThrows(
-        IOException.class,
+        FireboltException.class,
         () -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
   }
 }

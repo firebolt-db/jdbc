@@ -75,9 +75,7 @@ public class FireboltResultSet extends AbstractResultSet {
     } catch (Exception e) {
       log.error("Could not create ResultSet: " + ExceptionUtils.getStackTrace(e), e);
       throw new FireboltException(
-          "Cannot read response from DB: error while creating ResultSet "
-              + ExceptionUtils.getStackTrace(e),
-          e);
+          "Cannot read response from DB: error while creating ResultSet ", e);
     }
     log.debug("ResultSet created");
   }

@@ -6,6 +6,7 @@ import io.firebolt.jdbc.client.account.response.FireboltAccountResponse;
 import io.firebolt.jdbc.client.account.response.FireboltDatabaseResponse;
 import io.firebolt.jdbc.client.account.response.FireboltEngineIdResponse;
 import io.firebolt.jdbc.client.account.response.FireboltEngineResponse;
+import io.firebolt.jdbc.exception.FireboltException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -41,26 +42,26 @@ public class FireboltAccountClient extends FireboltClient {
   private final ObjectMapper objectMapper;
 
   public Optional<String> getAccountId(String host, String account, String accessToken)
-      throws IOException, ParseException {
+      throws IOException, ParseException, FireboltException {
     String uri = String.format(GET_ACCOUNT_ID_URI, host, account);
     return Optional.ofNullable(
-            getResource(uri, accessToken, httpClient, objectMapper, FireboltAccountResponse.class))
+            getResource(uri, host, accessToken, httpClient, objectMapper, FireboltAccountResponse.class))
         .map(FireboltAccountResponse::getAccountId);
   }
 
   public String getEngineAddress(
       String host, String accountId, String engineName, String engineID, String accessToken)
-      throws IOException, ParseException {
+      throws IOException, ParseException, FireboltException {
     String uri =
         createAccountUri(accountId, host, URI_SUFFIX_ACCOUNT_ENGINE_INFO_BY_ENGINE_ID + engineID);
     FireboltEngineResponse response =
-        getResource(uri, accessToken, httpClient, objectMapper, FireboltEngineResponse.class);
+        getResource(uri, host, accessToken, httpClient, objectMapper, FireboltEngineResponse.class);
     return Optional.ofNullable(response)
         .map(FireboltEngineResponse::getEngine)
         .map(FireboltEngineResponse.Engine::getEndpoint)
         .orElseThrow(
             () ->
-                new IOException(
+                new FireboltException(
                     ERROR_NO_RUNNING_ENGINE_PREFIX
                         + host
                         + " attached to "
@@ -70,15 +71,15 @@ public class FireboltAccountClient extends FireboltClient {
 
   public String getDbDefaultEngineAddress(
       String host, String accountId, String dbName, String accessToken)
-      throws IOException, ParseException {
+      throws IOException, ParseException, FireboltException {
     String uri = createAccountUri(accountId, host, URI_SUFFIX_DATABASE_INFO_URL + dbName);
     FireboltDatabaseResponse response =
-        getResource(uri, accessToken, httpClient, objectMapper, FireboltDatabaseResponse.class);
+        getResource(uri, host, accessToken, httpClient, objectMapper, FireboltDatabaseResponse.class);
     return Optional.ofNullable(response)
         .map(FireboltDatabaseResponse::getEngineUrl)
         .orElseThrow(
             () ->
-                new IOException(
+                new FireboltException(
                     ERROR_NO_RUNNING_ENGINE_PREFIX
                         + host
                         + " attached to "
@@ -87,18 +88,18 @@ public class FireboltAccountClient extends FireboltClient {
   }
 
   public String getEngineId(String host, String accountId, String engineName, String accessToken)
-      throws IOException, ParseException {
+          throws IOException, ParseException, FireboltException {
     String uri =
         createAccountUri(
             accountId, host, URI_SUFFIX_ENGINE_AND_ACCOUNT_ID_BY_ENGINE_NAME + engineName);
     FireboltEngineIdResponse response =
-        getResource(uri, accessToken, httpClient, objectMapper, FireboltEngineIdResponse.class);
+        getResource(uri, host, accessToken, httpClient, objectMapper, FireboltEngineIdResponse.class);
     return Optional.ofNullable(response)
         .map(FireboltEngineIdResponse::getEngine)
         .map(FireboltEngineIdResponse.Engine::getEngineId)
         .orElseThrow(
             () ->
-                new IOException(
+                new FireboltException(
                     ERROR_NO_RUNNING_ENGINE_PREFIX
                         + host
                         + " with the name "

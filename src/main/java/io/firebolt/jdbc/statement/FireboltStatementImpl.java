@@ -111,8 +111,7 @@ public class FireboltStatementImpl extends AbstractStatement {
     try {
       inputStream.close();
     } catch (Exception e) {
-      throw new FireboltException(
-          String.format("Error closing InputStream with query: %s", sql), e);
+      throw new FireboltException(String.format("Error closing InputStream with query: %s", sql), e);
     }
   }
 

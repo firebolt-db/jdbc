@@ -4,11 +4,11 @@ import java.sql.SQLException;
 
 public class FireboltException extends SQLException {
 
-  public FireboltException(String errorMessage, Throwable err) {
-    super(errorMessage, err);
+  public FireboltException(String message) {
+    super(message);
   }
 
-  public FireboltException(String errorMessage) {
-    super(errorMessage);
+  public FireboltException(String message, Throwable cause) {
+    super(message, cause);
   }
 }

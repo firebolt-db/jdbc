@@ -8,6 +8,7 @@ import io.firebolt.jdbc.client.account.response.FireboltAccountResponse;
 import io.firebolt.jdbc.client.account.response.FireboltDatabaseResponse;
 import io.firebolt.jdbc.client.account.response.FireboltEngineIdResponse;
 import io.firebolt.jdbc.client.account.response.FireboltEngineResponse;
+import io.firebolt.jdbc.exception.FireboltException;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -212,7 +213,7 @@ class FireboltAccountClientTest {
     when(response.getEntity()).thenReturn(entity);
     when(httpClient.execute(any())).thenReturn(response);
     assertThrows(
-        IOException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN));
+        FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN));
   }
 
   @Test
@@ -224,7 +225,7 @@ class FireboltAccountClientTest {
     when(httpClient.execute(any())).thenReturn(response);
 
     assertThrows(
-        IOException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN));
+        FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN));
   }
 
   private Map<String, String> extractHeadersMap(HttpGet httpGet) {

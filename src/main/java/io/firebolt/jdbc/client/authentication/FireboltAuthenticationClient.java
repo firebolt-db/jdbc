@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableMap;
 import io.firebolt.jdbc.client.FireboltClient;
 import io.firebolt.jdbc.client.authentication.response.FireboltAuthenticationResponse;
 import io.firebolt.jdbc.connection.FireboltConnectionTokens;
+import io.firebolt.jdbc.exception.FireboltException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -28,7 +29,7 @@ public class FireboltAuthenticationClient extends FireboltClient {
   private final ObjectMapper objectMapper;
 
   public FireboltConnectionTokens postConnectionTokens(String host, String user, String password)
-          throws IOException, ParseException {
+          throws IOException, ParseException, FireboltException {
     String connectUrl = String.format(AUTH_URL, host);
     log.debug("Creating connection with url {}", connectUrl);
     HttpPost post = new HttpPost(connectUrl);
@@ -36,7 +37,7 @@ public class FireboltAuthenticationClient extends FireboltClient {
     post.setEntity(new StringEntity(createLoginRequest(user, password)));
 
     try (CloseableHttpResponse response = httpClient.execute(post)) {
-      this.validateResponse(connectUrl, response);
+      this.validateResponse(host, response);
       String responseStr = EntityUtils.toString(response.getEntity());
       FireboltAuthenticationResponse authenticationResponse =
           objectMapper.readValue(responseStr, FireboltAuthenticationResponse.class);
