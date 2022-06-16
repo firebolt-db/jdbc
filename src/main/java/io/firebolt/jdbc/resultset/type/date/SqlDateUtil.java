@@ -118,7 +118,7 @@ public class SqlDateUtil {
           value.setNanos(0);
           StringBuilder dateWithoutNanos =
               new StringBuilder(String.format("'%s", DATE_TIME_FORMAT.format(value)));
-          return dateWithoutNanos.append(":").append(nanos).append("'").toString();
+          return dateWithoutNanos.append(":").append(String.format("%09d", nanos)).append("'").toString();
         } else {
           return String.format("'%s'", DATE_TIME_FORMAT.format(value));
         }

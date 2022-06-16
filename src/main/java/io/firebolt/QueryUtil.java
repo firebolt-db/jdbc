@@ -12,7 +12,7 @@ import java.util.Optional;
 @Slf4j
 public class QueryUtil {
 
-  private static final String SINGLE_LINE_COMMENTS_REGEX = "--[^\n]*\\\n";
+  private static final String SINGLE_LINE_COMMENTS_REGEX = "--[^\n]*\n";
   private static final String MULTI_LINE_COMMENTS_REGEX = "/\\*[^/\\*]*\\*/";
   private static final String ALL_COMMENTS_REGEX =
       SINGLE_LINE_COMMENTS_REGEX + "|" + MULTI_LINE_COMMENTS_REGEX;
