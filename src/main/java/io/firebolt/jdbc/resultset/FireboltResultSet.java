@@ -51,7 +51,7 @@ public class FireboltResultSet extends AbstractResultSet {
   public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize)
       throws SQLException {
     log.debug("Creating resultSet...");
-    // is = debug(is);
+    is = debug(is);
     this.reader =
         bufferSize != null
             ? new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8), bufferSize)

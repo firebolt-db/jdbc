@@ -5,6 +5,7 @@ import io.firebolt.jdbc.resultset.type.array.SqlArrayUtil;
 import io.firebolt.jdbc.resultset.type.date.SqlDateUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -19,29 +20,33 @@ public enum BaseType {
   LONG(Long.class, (value, subType) -> Long.parseLong(value)),
   INTEGER(Integer.class, (value, subType) -> Integer.parseInt(value)),
   BIG_INTEGER(BigInteger.class, (value, subType) -> new BigInteger(value)),
-  STRING(String.class, (value, subType) -> String.valueOf(value)),
-  FLOAT(Float.class, (value, subType) -> {
-    if(isNan(value)) {
-      return Float.NaN;
-    } else if (isPositiveInf(value)) {
-      return Float.POSITIVE_INFINITY;
-    } else if (isNegativeInf(value)) {
-      return Float.NEGATIVE_INFINITY;
-    } else {
-      return Float.parseFloat(value);
-    }
-  }),
-  DOUBLE(Double.class, (value, subType) -> {
-    if(isNan(value)) {
-      return Double.NaN;
-    } else if (isPositiveInf(value)) {
-      return Double.POSITIVE_INFINITY;
-    } else if (isNegativeInf(value)) {
-      return Double.NEGATIVE_INFINITY;
-    } else {
-      return Double.parseDouble(value);
-    }
-  }),
+  STRING(String.class, (value, subType) -> StringEscapeUtils.unescapeJava(value)),
+  FLOAT(
+      Float.class,
+      (value, subType) -> {
+        if (isNan(value)) {
+          return Float.NaN;
+        } else if (isPositiveInf(value)) {
+          return Float.POSITIVE_INFINITY;
+        } else if (isNegativeInf(value)) {
+          return Float.NEGATIVE_INFINITY;
+        } else {
+          return Float.parseFloat(value);
+        }
+      }),
+  DOUBLE(
+      Double.class,
+      (value, subType) -> {
+        if (isNan(value)) {
+          return Double.NaN;
+        } else if (isPositiveInf(value)) {
+          return Double.POSITIVE_INFINITY;
+        } else if (isNegativeInf(value)) {
+          return Double.NEGATIVE_INFINITY;
+        } else {
+          return Double.parseDouble(value);
+        }
+      }),
   DATE(Date.class, (value, subType) -> SqlDateUtil.transformToDateFunction.apply(value)),
   TIMESTAMP(
       Timestamp.class, (value, subType) -> SqlDateUtil.transformToTimestampFunction.apply(value)),
@@ -58,7 +63,6 @@ public enum BaseType {
 
   private static boolean isNegativeInf(String value) {
     return StringUtils.equals(value, "-inf");
-
   }
 
   public static final String NULL_VALUE = "\\N";

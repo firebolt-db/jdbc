@@ -58,8 +58,7 @@ class FireboltResultSetTest {
   @Test
   void shouldNotBeLastAtLastLine() throws SQLException, IOException {
     inputStream = getInputStreamWithArray();
-    resultSet =
-        new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
+    resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
     resultSet.next();
     assertTrue(resultSet.isLast());
@@ -162,8 +161,8 @@ class FireboltResultSetTest {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
-    assertEquals("Taylor\\'s Prime Steak House", resultSet.getString(3));
-    assertEquals("Taylor\\'s Prime Steak House", resultSet.getString("name"));
+    assertEquals("Taylor's Prime Steak House", resultSet.getString(3));
+    assertEquals("Taylor's Prime Steak House", resultSet.getString("name"));
   }
 
   @Test
@@ -286,6 +285,17 @@ class FireboltResultSetTest {
   }
 
   @Test
+  void shouldReturnUnescapedString() throws SQLException {
+    String expected =
+        "[0] [Aggregate] GroupBy: [] Aggregates: [COUNT(DISTINCT FB_NODE_2.a1), APPROX_COUNT_DISTINCT(FB_NODE_2.a1)] @ FB_NODE_1\n \\_[1] [StoredTable] Name: 'ft', used 1/1 column(s) FACT @ FB_NODE_2\n";
+    inputStream = getInputStreamWitExplain();
+    resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
+    resultSet.next();
+    assertEquals(expected, resultSet.getString(1));
+    assertEquals(expected, resultSet.getObject(1));
+  }
+
+  @Test
   void shouldThrowException() throws SQLException, IOException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "empty_test", "empty_test", 65535);
@@ -364,6 +374,11 @@ class FireboltResultSetTest {
 
   private InputStream getInputStreamWithEmpty() {
     return FireboltResultSetTest.class.getResourceAsStream(
-        "/responses/firebolt-response-with-empty-example");
+        "/responses/firebolt-response-with-empty");
+  }
+
+  private InputStream getInputStreamWitExplain() {
+    return FireboltResultSetTest.class.getResourceAsStream(
+        "/responses/firebolt-response-with-escape-characters");
   }
 }
