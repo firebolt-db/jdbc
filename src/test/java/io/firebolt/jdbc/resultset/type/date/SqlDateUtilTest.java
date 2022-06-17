@@ -11,11 +11,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SqlDateUtilTest {
 
-  @BeforeAll
-  public static void beforeAll() {
-    TimeZone.setDefault(TimeZone.getTimeZone("Europe/London"));
-  }
-
   @Test
   void shouldTransformTimestampWithNanos() {
     String timeWithNanoSeconds = "2022-05-23 12:57:13:173456789";

@@ -25,11 +25,6 @@ class FireboltResultSetTest {
   InputStream inputStream;
   ResultSet resultSet;
 
-  @BeforeAll
-  public static void beforeAll() {
-    TimeZone.setDefault(TimeZone.getTimeZone("Europe/London"));
-  }
-
   @AfterEach
   void closeStream() {
     try {

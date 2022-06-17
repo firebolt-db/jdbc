@@ -33,10 +33,6 @@ class FireboltPreparedStatementTest {
 
   private final String ACCESS_TOKEN = "ACCESS";
 
-  @BeforeAll
-  public static void beforeAll() {
-    TimeZone.setDefault(TimeZone.getTimeZone("Europe/London"));
-  }
 
   @BeforeEach
   void beforeEach() throws FireboltException {

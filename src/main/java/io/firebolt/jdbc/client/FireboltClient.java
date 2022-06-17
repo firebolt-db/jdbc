@@ -85,7 +85,7 @@ public abstract class FireboltClient {
         response.getEntity();
         errorResponseMessage =
             String.format(
-                "Failed to query Firebolt at %s. Error message: %s%ninternal error:%n%s",
+                "Failed to query Firebolt at %s. Error message:%n%s%ninternal error:%n%s",
                 host, EntityUtils.toString(response.getEntity()), this.getInternalErrorWithHeadersText(response));
 
         throw new FireboltException(errorResponseMessage);
