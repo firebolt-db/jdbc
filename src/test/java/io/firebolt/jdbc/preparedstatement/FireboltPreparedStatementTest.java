@@ -3,10 +3,10 @@ package io.firebolt.jdbc.preparedstatement;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.service.FireboltQueryService;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junitpioneer.jupiter.DefaultTimeZone;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -17,7 +17,6 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Timestamp;
-import java.util.TimeZone;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
@@ -312,6 +311,7 @@ class FireboltPreparedStatementTest {
   }
 
   @Test
+  @DefaultTimeZone("Europe/London")
   void shouldSetDate() throws SQLException {
     FireboltPreparedStatement statement =
         createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
@@ -329,6 +329,7 @@ class FireboltPreparedStatementTest {
   }
 
   @Test
+  @DefaultTimeZone("Europe/London")
   void shouldSetTimeStamp() throws SQLException {
     FireboltPreparedStatement statement =
         createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
@@ -346,6 +347,7 @@ class FireboltPreparedStatementTest {
   }
 
   @Test
+  @DefaultTimeZone("Europe/London")
   void shouldSetAllObjects() throws SQLException {
     FireboltPreparedStatement statement =
         createStatementWithSql(

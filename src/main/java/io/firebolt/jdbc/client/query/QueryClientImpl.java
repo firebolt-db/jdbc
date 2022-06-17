@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.client.query;
 
+import io.firebolt.QueryUtil;
 import io.firebolt.jdbc.client.FireboltClient;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
@@ -39,11 +40,12 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
       FireboltProperties fireboltProperties)
       throws FireboltException {
     HttpEntity requestEntity = null;
+    String formattedQuery = formatQuery(sql);
     try {
       List<NameValuePair> queryParameters =
           this.getQueryParameters(fireboltProperties, queryId, isSelect);
       String uri = this.buildQueryUri(fireboltProperties, queryParameters).toString();
-      requestEntity = new StringEntity(sql, StandardCharsets.UTF_8);
+      requestEntity = new StringEntity(formattedQuery, StandardCharsets.UTF_8);
       HttpPost post = this.createPostRequest(uri, accessToken);
       runningQueries.put(queryId, post);
       post.setEntity(requestEntity);
@@ -57,10 +59,18 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
       throw e;
     } catch (Exception e) {
       EntityUtils.consumeQuietly(requestEntity);
-      throw new FireboltException(String.format("Error executing query %s", sql), e);
+      throw new FireboltException(String.format("Error executing query %s", formattedQuery), e);
     } finally {
       runningQueries.remove(queryId);
     }
+  }
+
+  private String formatQuery(String sql) {
+    String cleaned = QueryUtil.cleanQuery(sql);
+    if (!cleaned.endsWith(";")) {
+      cleaned += ";";
+    }
+    return cleaned;
   }
 
   public void postCancelSqlQuery(String queryId, FireboltProperties fireboltProperties)

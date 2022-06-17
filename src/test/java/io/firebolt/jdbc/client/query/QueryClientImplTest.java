@@ -66,7 +66,7 @@ class QueryClientImplTest {
         "http://firebolt1:80/?output_format=TabSeparatedWithNamesAndTypes&database=db1&query_id=123456&compress=1",
         actualHttpPost.getUri().toString());
     assertEquals(expectedHeaders, extractHeadersMap(actualHttpPost));
-    assertEquals("show databases", actualQuery);
+    assertEquals("show databases;", actualQuery);
   }
 
   @Test
