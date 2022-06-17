@@ -51,7 +51,7 @@ public class FireboltResultSet extends AbstractResultSet {
   public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize)
       throws SQLException {
     log.debug("Creating resultSet...");
-    is = debug(is);
+    //is = debug(is);
     this.reader =
         bufferSize != null
             ? new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8), bufferSize)
@@ -80,15 +80,28 @@ public class FireboltResultSet extends AbstractResultSet {
     log.debug("ResultSet created");
   }
 
-  private InputStream debug(InputStream is) {
-    String text =
-        new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
-            .lines()
-            .collect(Collectors.joining("\n"));
-    log.debug("======================================");
-    log.debug(text);
-    log.debug("======================================");
-    return new ByteArrayInputStream(text.getBytes());
+  private InputStream debug(InputStream is)  {
+    try {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      byte[] buffer = new byte[1024];
+      int len;
+      while ((len = is.read(buffer)) > -1) {
+        baos.write(buffer, 0, len);
+      }
+      baos.flush();
+      InputStream streamToLog = new ByteArrayInputStream(baos.toByteArray());
+      String text =
+              new BufferedReader(new InputStreamReader(streamToLog, StandardCharsets.UTF_8))
+                      .lines()
+                      .collect(Collectors.joining("\n"));
+      log.debug("======================================");
+      log.debug(text);
+      log.debug("======================================");
+      return new ByteArrayInputStream(baos.toByteArray());
+    } catch (Exception ex) {
+      log.debug("Could not log stream received", ex);
+      return is;
+    }
   }
 
   public static FireboltResultSet empty() {
