@@ -25,6 +25,7 @@ public class QueryUtil {
 
   public static boolean isSelect(String sql) {
     String cleanQuery = cleanQuery(sql);
+    cleanQuery = cleanQuery.replace("(", "");
     return StringUtils.startsWithAny(cleanQuery.toLowerCase(), SELECT_KEYWORDS);
   }
 

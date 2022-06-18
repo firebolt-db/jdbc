@@ -146,7 +146,8 @@ public final class FireboltColumn {
     switch (dataType) {
       case DATE_TIME_64:
         if (arguments.length >= 1) {
-          precision = Integer.parseInt(arguments[0]);
+          scale = Integer.parseInt(arguments[0]);
+          precision = dataType.getDefaultPrecision() + scale;
         }
         break;
       case DECIMAL:

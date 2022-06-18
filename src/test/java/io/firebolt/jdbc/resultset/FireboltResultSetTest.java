@@ -1,21 +1,19 @@
 package io.firebolt.jdbc.resultset;
 
+import io.firebolt.jdbc.exception.FireboltException;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.DefaultTimeZone;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.TimeZone;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,7 +32,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldReturnMetadata() throws SQLException, IOException {
+  void shouldReturnMetadata() throws SQLException {
     // This only tests that Metadata is available with the resultSet.
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
@@ -44,14 +42,14 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldNotBeLastWhenThereIsMoreData() throws SQLException, IOException {
+  void shouldNotBeLastWhenThereIsMoreData() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     assertFalse(resultSet.isLast());
   }
 
   @Test
-  void shouldNotBeLastAtLastLine() throws SQLException, IOException {
+  void shouldNotBeLastAtLastLine() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
@@ -60,7 +58,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldReadAllTheData() throws SQLException, IOException {
+  void shouldReadAllTheData() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
@@ -70,12 +68,12 @@ class FireboltResultSetTest {
 
     resultSet.next();
     assertEquals(2L, resultSet.getObject(1));
-    String[][][] secondArray = {{{"1", "2"}, {"3", "4"}}, {{"5", "6"}, {"7", "8"}}};
+    String[][][] secondArray = {{{"1", "2"}, {"3", "4"}}, {{"5", "6"}, {"7", "8", null}}};
     assertArrayEquals(secondArray, ((String[][][]) resultSet.getObject(2)));
   }
 
   @Test
-  void shouldBeBeforeFirstIfFirstRowNotRead() throws SQLException, IOException {
+  void shouldBeBeforeFirstIfFirstRowNotRead() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     assertTrue(resultSet.isBeforeFirst());
@@ -84,7 +82,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldGetBigDecimal() throws SQLException, IOException {
+  void shouldGetBigDecimal() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
@@ -93,7 +91,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldGetBigDecimalWithScale() throws SQLException, IOException {
+  void shouldGetBigDecimalWithScale() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
@@ -104,7 +102,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldBeFirstWhenNextRecordIsTheFirstToRead() throws SQLException, IOException {
+  void shouldBeFirstWhenNextRecordIsTheFirstToRead() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
@@ -112,7 +110,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldBeAfterReadingTheLast() throws SQLException, IOException {
+  void shouldBeAfterReadingTheLast() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     while (resultSet.next()) {
@@ -123,7 +121,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldReturnFalseWhenCallingWasNullAfterRead() throws SQLException, IOException {
+  void shouldReturnFalseWhenCallingWasNullAfterRead() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
@@ -132,7 +130,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldReturnFalseWhenCallingWasNullBeforeAnyRead() throws SQLException, IOException {
+  void shouldReturnFalseWhenCallingWasNullBeforeAnyRead() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
@@ -140,7 +138,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldReturnInt() throws SQLException, IOException {
+  void shouldReturnInt() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
@@ -152,7 +150,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldReturnString() throws SQLException, IOException {
+  void shouldReturnString() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
@@ -161,14 +159,14 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldReturnTypeForward() throws SQLException, IOException {
+  void shouldReturnTypeForward() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     assertEquals(TYPE_FORWARD_ONLY, resultSet.getType());
   }
 
   @Test
-  void shouldReturnBytes() throws SQLException, IOException {
+  void shouldReturnBytes() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
@@ -179,7 +177,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldReturnNullWhenValueIsNull() throws SQLException, IOException {
+  void shouldReturnNullWhenValueIsNull() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
@@ -188,7 +186,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldReturnByte() throws SQLException, IOException {
+  void shouldReturnByte() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
@@ -197,7 +195,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldReturn0ByteWhenValueIsNull() throws SQLException, IOException {
+  void shouldReturn0ByteWhenValueIsNull() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
@@ -206,7 +204,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldReturnNullWhenValueStringIsNull() throws SQLException, IOException {
+  void shouldReturnNullWhenValueStringIsNull() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
@@ -216,18 +214,19 @@ class FireboltResultSetTest {
   }
 
   @Test
+  @DefaultTimeZone("Europe/Paris")
   void shouldReturnDate() throws SQLException, ParseException {
-    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    java.util.Date parsedDate = dateFormat.parse("2022-05-10");
+    Date expectedDate = Date.valueOf(LocalDate.of(2022, 5, 10));
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
 
-    assertEquals(parsedDate, resultSet.getDate(5));
-    assertEquals(parsedDate, resultSet.getDate("a_date"));
+    assertEquals(expectedDate, resultSet.getDate(5));
+    assertEquals(expectedDate, resultSet.getDate("a_date"));
   }
 
   @Test
+  @DefaultTimeZone("Europe/Paris")
   void shouldReturnTimeStamp() throws SQLException, ParseException {
     SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
     java.util.Date parsedDate = dateFormat.parse("2022-05-10 13:01:02");
@@ -255,22 +254,17 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldReturnTime() throws SQLException, IOException, ParseException {
-    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-    java.util.Date parsedDate = dateFormat.parse("2022-05-10 13:01:02");
-    Timestamp timestamp = new Timestamp(parsedDate.getTime());
-    Time time = new Time(timestamp.getTime());
-
+  void shouldReturnTime() throws SQLException {
+    Time expectedTime = Time.valueOf(LocalTime.of(13, 1, 2));
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
-
-    assertEquals(time, resultSet.getTime(4));
-    assertEquals(time, resultSet.getTime("a_timestamp"));
+    assertEquals(expectedTime, resultSet.getTime(4));
+    assertEquals(expectedTime, resultSet.getTime("a_timestamp"));
   }
 
   @Test
-  void shouldGetArray() throws SQLException, IOException {
+  void shouldGetArray() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
@@ -291,7 +285,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldThrowException() throws SQLException, IOException {
+  void shouldThrowException() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "empty_test", "empty_test", 65535);
     resultSet.next();
@@ -301,7 +295,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldThrowExceptionWhenCheckingWasNullAfterClose() throws SQLException, IOException {
+  void shouldThrowExceptionWhenCheckingWasNullAfterClose() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.close();
@@ -309,7 +303,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldThrowExceptionWhenGettingValueAfterClose() throws SQLException, IOException {
+  void shouldThrowExceptionWhenGettingValueAfterClose() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.close();
@@ -317,8 +311,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldThrowSQLExceptionWhenGettingValueWithInvalidColumnIndex()
-      throws SQLException, IOException {
+  void shouldThrowSQLExceptionWhenGettingValueWithInvalidColumnIndex() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.close();
@@ -326,7 +319,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldCloseStream() throws SQLException, IOException {
+  void shouldCloseStream() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     assertFalse(resultSet.isClosed());
@@ -335,7 +328,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldNotThrowExceptionWhenClosingTwice() throws SQLException, IOException {
+  void shouldNotThrowExceptionWhenClosingTwice() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.close();
@@ -348,7 +341,7 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldThrowExceptionWhenColumnDoesNotExist() throws SQLException, IOException {
+  void shouldThrowExceptionWhenColumnDoesNotExist() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     assertThrows(SQLException.class, () -> resultSet.getObject(50));
@@ -363,6 +356,16 @@ class FireboltResultSetTest {
     assertEquals(StringUtils.EMPTY, resultSet.getObject("city"));
   }
 
+  @Test
+  void shouldThrowExceptionWhenThereIsAnExceptionInTheResponse() throws SQLException {
+    inputStream = getInputStreamWithException();
+    resultSet = new FireboltResultSet(inputStream, "table_with_empty", "db_with_emtpy", 65535);
+    resultSet.next();
+    resultSet.next();
+    resultSet.next();
+    assertThrows(FireboltException.class, () -> resultSet.getObject(1));
+  }
+
   private InputStream getInputStreamWithArray() {
     return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-example");
   }
@@ -370,6 +373,11 @@ class FireboltResultSetTest {
   private InputStream getInputStreamWithEmpty() {
     return FireboltResultSetTest.class.getResourceAsStream(
         "/responses/firebolt-response-with-empty");
+  }
+
+  private InputStream getInputStreamWithException() {
+    return FireboltResultSetTest.class.getResourceAsStream(
+            "/responses/firebolt-response-with-db-exception");
   }
 
   private InputStream getInputStreamWitExplain() {

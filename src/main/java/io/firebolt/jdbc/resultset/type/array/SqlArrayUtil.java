@@ -1,6 +1,7 @@
 package io.firebolt.jdbc.resultset.type.array;
 
 import com.google.common.base.CharMatcher;
+import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.FireboltColumn;
 import io.firebolt.jdbc.resultset.type.FireboltDataType;
 import lombok.experimental.UtilityClass;
@@ -19,25 +20,23 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SqlArrayUtil {
 
-  public static final BiFunction<String, FireboltColumn, java.sql.Array>
-      transformToSqlArrayFunction =
-          (value, fireboltColumn) -> {
-            log.debug("Transformer array with value {} and type {}", value, fireboltColumn);
-            int dimensions = 0;
-            for (int x = 0; x < value.length(); x++)
-              if (value.charAt(x) == '[') dimensions++;
-              else break;
-            value = value.substring(dimensions, value.length() - dimensions);
-            Object arr = createArray(value, dimensions, fireboltColumn);
-            log.info("Arr {}", arr);
-            return FireboltArray.builder()
-                .array(arr)
-                .type(fireboltColumn.getArrayBaseDataType())
-                .build();
-          };
+  public static FireboltArray transformToSqlArrayFunction(String value, FireboltColumn fireboltColumn) throws FireboltException {
+    log.debug("Transformer array with value {} and type {}", value, fireboltColumn);
+    int dimensions = 0;
+    for (int x = 0; x < value.length(); x++)
+      if (value.charAt(x) == '[') dimensions++;
+      else break;
+    value = value.substring(dimensions, value.length() - dimensions);
+    Object arr = createArray(value, dimensions, fireboltColumn);
+    log.info("Arr {}", arr);
+    return FireboltArray.builder()
+            .array(arr)
+            .type(fireboltColumn.getArrayBaseDataType())
+            .build();
+  }
 
   private static Object createArray(
-      String arrayContent, int dimension, FireboltColumn fireboltColumn) {
+      String arrayContent, int dimension, FireboltColumn fireboltColumn) throws FireboltException {
     if (dimension == 1) {
       return extractArrayFromOneDimensionalArray(arrayContent, fireboltColumn);
     } else {
@@ -47,7 +46,7 @@ public class SqlArrayUtil {
 
   @NotNull
   private static Object extractArrayFromMultiDimensionalArray(
-      String str, int dimension, FireboltColumn fireboltColumn) {
+      String str, int dimension, FireboltColumn fireboltColumn) throws FireboltException {
     String[] s = str.split(getArraySeparator(dimension));
     int[] lengths = new int[dimension];
     lengths[0] = s.length;
@@ -61,11 +60,11 @@ public class SqlArrayUtil {
   }
 
   private static Object extractArrayFromOneDimensionalArray(
-      String arrayContent, FireboltColumn fireboltColumn) {
+      String arrayContent, FireboltColumn fireboltColumn) throws FireboltException {
     List<String> elements =
         splitArrayContent(arrayContent, fireboltColumn.getArrayBaseDataType()).stream()
             .filter(StringUtils::isNotEmpty)
-            .map(SqlArrayUtil::removeQuotes)
+            .map(SqlArrayUtil::removeQuotesAndTransformNull)
             .collect(Collectors.toList());
     FireboltDataType arrayBaseType = fireboltColumn.getArrayBaseDataType();
     if (arrayBaseType != FireboltDataType.TUPLE) {
@@ -80,7 +79,7 @@ public class SqlArrayUtil {
   }
 
   @NotNull
-  private static Object[] getArrayForTuple(FireboltColumn fireboltColumn, List<String> tuples) {
+  private static Object[] getArrayForTuple(FireboltColumn fireboltColumn, List<String> tuples) throws FireboltException {
     List<FireboltDataType> types =
         Arrays.asList(
             fireboltColumn.getColumnsTuple().getLeft().getDataType(),
@@ -92,7 +91,7 @@ public class SqlArrayUtil {
       List<String> tupleValues =
           splitArrayContent(removeParenthesis(tupleContent), FireboltDataType.STRING);
       for (int j = 0; j < 2; j++) {
-        subList.add(types.get(j % 2).getBaseType().transform(removeQuotes(tupleValues.get(j))));
+        subList.add(types.get(j % 2).getBaseType().transform(removeQuotesAndTransformNull(tupleValues.get(j))));
       }
       list.add(subList.toArray());
     }
@@ -110,7 +109,10 @@ public class SqlArrayUtil {
     return stringBuilder.toString();
   }
 
-  private static String removeQuotes(String s) {
+  private static String removeQuotesAndTransformNull(String s) {
+    if (StringUtils.equals(s, "NULL")) {
+      return "\\N";
+    }
     return CharMatcher.is('\'').trimFrom(s);
   }
 

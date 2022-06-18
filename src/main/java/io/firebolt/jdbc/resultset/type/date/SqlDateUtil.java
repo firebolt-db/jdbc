@@ -4,37 +4,36 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
 import java.util.function.Function;
 
 @UtilityClass
 @Slf4j
 public class SqlDateUtil {
-  private static final String DATE_PATTERN = "yyyy-MM-dd";
-  private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(DATE_PATTERN);
 
-  private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
+  DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+  DateTimeFormatter dateTimeFormatter =
+      new DateTimeFormatterBuilder()
+          .appendPattern("yyyy-MM-dd HH:mm:ss")
+          .appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true)
+          .toFormatter();
 
-  private final SimpleDateFormat DATE_TIME_FORMAT = new SimpleDateFormat(DATE_TIME_PATTERN);
-  private static final String DATE_TIME_WITH_MILLIS_PATTERN = "yyyy-MM-dd HH:mm:ss:SSS";
-
-  private final SimpleDateFormat DATE_TIME_FORMAT_WITH_MILLIS =
-      new SimpleDateFormat(DATE_TIME_WITH_MILLIS_PATTERN);
   public static final Function<String, Date> transformToDateFunction =
       value -> {
         if (StringUtils.isEmpty(value)) {
           return null;
         }
-        try {
-          return new java.sql.Date(DATE_FORMAT.parse(value).getTime());
-        } catch (ParseException e) {
-          throw new IllegalArgumentException(
-              String.format("Could not parse date from String %s", value), e);
-        }
+          Date date = Date.valueOf(LocalDate.from(dateFormatter.parse(value)));
+          log.debug("Converted date from {} to {}", value, date);
+          return date;
       };
 
   public static final Function<Date, String> transformFromDateFunction =
@@ -42,7 +41,7 @@ public class SqlDateUtil {
         if (value == null) {
           return null;
         }
-        return String.format("'%s'", DATE_FORMAT.format(value));
+        return String.format("'%s'", dateFormatter.format(value.toLocalDate()));
       };
 
   public static final Function<Time, String> transformFromTimeFunction =
@@ -50,77 +49,35 @@ public class SqlDateUtil {
         if (value == null) {
           return null;
         }
-        return String.format("'%s'", DATE_TIME_FORMAT.format(value));
+        return String.format("'%s'", dateTimeFormatter.format(value.toLocalTime()));
       };
 
-  public static final Function<String, Timestamp> transformToTimestampFunction =
+  public static final Function<String, java.sql.Timestamp> transformToTimestampFunction =
       value -> {
         if (StringUtils.isEmpty(value)) {
           return null;
         }
-        try {
-          return getTimestampFromString(value);
-        } catch (ParseException e) {
-          throw new IllegalArgumentException(
-              String.format("Could not timestamp from String %s", value), e);
-        }
+        Timestamp ts =
+            java.sql.Timestamp.valueOf(LocalDateTime.from(dateTimeFormatter.parse(value)));
+        log.debug("Converted timestamp from {} to {}", value, ts);
+        return ts;
       };
 
-  private static Timestamp getTimestampFromString(String value) throws ParseException {
-    if (isDateTimeWithNanos(value)) {
-      return getTimestampWithNanos(value);
-    } else {
-      return new Timestamp((new Date(DATE_TIME_FORMAT.parse(value).getTime()).getTime()));
-    }
-  }
-
-  /*
-  SimpleDateFormat does not support nanoseconds, so we need to extract the nanos and then set the timestamp
-   */
-  private static Timestamp getTimestampWithNanos(String value) throws ParseException {
-    String dateTimeWithoutNanos = StringUtils.substring(value, 0, DATE_TIME_PATTERN.length());
-    Timestamp timestamp =
-        new Timestamp((new Date(DATE_TIME_FORMAT.parse(dateTimeWithoutNanos).getTime()).getTime()));
-    int nanos = extractNanos(value, dateTimeWithoutNanos);
-    timestamp.setNanos(nanos);
-    return timestamp;
-  }
-
-  private static int extractNanos(String dateTimeWithNanos, String dateTimeWithoutNanos) {
-    if (dateTimeWithNanos.length() != dateTimeWithoutNanos.length()) {
-      StringBuilder nanosPart =
-          new StringBuilder(dateTimeWithNanos.substring(dateTimeWithoutNanos.length() + 1));
-      while (nanosPart.length() < 9) {
-        nanosPart.append("0");
-      }
-      return Integer.parseInt(nanosPart.toString());
-    } else {
-      return 0;
-    }
-  }
-
-  private static boolean isDateTimeWithNanos(String value) {
-    try {
-      new Timestamp((new Date(DATE_TIME_FORMAT_WITH_MILLIS.parse(value).getTime()).getTime()));
-      return true;
-    } catch (ParseException ex) {
-      return false;
-    }
-  }
+  public static final Function<String, Time> transformToTimeFunction =
+      value -> {
+        if (StringUtils.isEmpty(value)) {
+          return null;
+        }
+        Time time = Time.valueOf(LocalTime.from(dateTimeFormatter.parse(value)));
+        log.debug("Converted time from {} to {}", value, time);
+        return time;
+      };
 
   public static final Function<Timestamp, String> transformFromTimestampFunction =
       value -> {
         if (value == null) {
           return null;
         }
-        if (value.getNanos() > 0) {
-          long nanos = value.getNanos();
-          value.setNanos(0);
-          StringBuilder dateWithoutNanos =
-              new StringBuilder(String.format("'%s", DATE_TIME_FORMAT.format(value)));
-          return dateWithoutNanos.append(":").append(String.format("%09d", nanos)).append("'").toString();
-        } else {
-          return String.format("'%s'", DATE_TIME_FORMAT.format(value));
-        }
+        return String.format("'%s'", dateTimeFormatter.format(value.toLocalDateTime()));
       };
 }

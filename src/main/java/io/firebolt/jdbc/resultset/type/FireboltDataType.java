@@ -4,11 +4,20 @@ import java.sql.Types;
 
 /** Supported data types. */
 public enum FireboltDataType {
-  U_INT_8(Types.TINYINT, "UInt8", "LONG", BaseType.LONG, false, false, 3, 0, "BOOLEAN"),
+  U_INT_8(
+      Types.TINYINT,
+      "UInt8",
+      BaseType.INTEGER.name(),
+      BaseType.INTEGER,
+      false,
+      false,
+      3,
+      0,
+      "BOOLEAN"),
   INT_32(
       Types.INTEGER,
       "Int32",
-      "INTEGER",
+      BaseType.INTEGER.name(),
       BaseType.INTEGER,
       true,
       false,
@@ -19,24 +28,46 @@ public enum FireboltDataType {
       "Int8",
       "Int16",
       "UInt16",
-      "UInt32"),
-  INT_64(Types.BIGINT, "Int64", "BIGINT", BaseType.LONG, true, false, 20, 0, "BIGINT", "LONG"),
-  U_INT_64(Types.BIGINT, "UInt64", "BIGINT", BaseType.BIG_INTEGER, false, false, 20, 0), //Although not supported, this type is still coming from Firebolt and needs to be handled for now
-  FLOAT_32(Types.FLOAT, "Float32", "FLOAT", BaseType.FLOAT, true, false, 8, 8, "FLOAT"),
-  FLOAT_64(Types.DOUBLE, "Float64", "DOUBLE", BaseType.DOUBLE, true, false, 17, 17, "DOUBLE"),
-  STRING(Types.VARCHAR, "String", "STRING", BaseType.STRING, false, true, 0, 0, "VARCHAR", "TEXT"),
-  DATE(Types.DATE, "Date", "DATE", BaseType.DATE, false, false, 10, 0),
+      "UInt32",
+      "UInt8"),
+  INT_64(Types.BIGINT, "Int64", "BIGINT", BaseType.LONG, true, false, 20, 0, "LONG"),
+  U_INT_64(
+      Types.BIGINT,
+      "UInt64",
+      "BIGINT",
+      BaseType.BIG_INTEGER,
+      false,
+      false,
+      20,
+      0), // Although not supported, this type is still coming from Firebolt and needs to be handled
+  // for now
+  FLOAT_32(
+      Types.FLOAT, "Float32", BaseType.FLOAT.name(), BaseType.FLOAT, true, false, 8, 8, "FLOAT"),
+  FLOAT_64(
+      Types.DOUBLE,
+      "Float64",
+      BaseType.DOUBLE.name(),
+      BaseType.DOUBLE,
+      true,
+      false,
+      17,
+      17,
+      BaseType.DOUBLE.name()),
+  STRING(
+      Types.VARCHAR,
+      "String",
+      BaseType.STRING.name(),
+      BaseType.STRING,
+      false,
+      true,
+      0,
+      0,
+      "VARCHAR",
+      "TEXT"),
+  DATE(Types.DATE, "Date", BaseType.DATE.name(), BaseType.DATE, false, false, 10, 0),
   DATE_32(Types.DATE, "Date32", "DATE_EXT", BaseType.DATE, false, false, 10, 0, "DATE_EXT"),
   DATE_TIME_64(
-      Types.TIMESTAMP,
-      "DateTime64",
-      "TIMESTAMP_EXT",
-      BaseType.TIMESTAMP,
-      false,
-      false,
-      6,
-      0,
-      "TIMESTAMP_EXT"),
+      Types.TIMESTAMP, "DateTime64", "TIMESTAMP_EXT", BaseType.TIMESTAMP, false, false, 19, 0),
   DATE_TIME(
       Types.TIMESTAMP,
       "DateTime",
@@ -47,10 +78,19 @@ public enum FireboltDataType {
       19,
       0,
       "TIMESTAMP"),
-  NOTHING(Types.NULL, "Nothing", null, BaseType.NULL, false, false, 0, 0),
+  NOTHING(Types.NULL, "Nothing", BaseType.NULL.name(), BaseType.NULL, false, false, 0, 0),
   UNKNOWN(Types.OTHER, "Unknown", "UNKNOWN", BaseType.OTHER, false, false, 0, 0),
-  DECIMAL(Types.DECIMAL, "Decimal", "DECIMAL", BaseType.DECIMAL, true, false, 0, 0, "DEC"),
-  ARRAY(Types.ARRAY, "Array", "ARRAY", BaseType.ARRAY, false, true, 0, 0),
+  DECIMAL(
+      Types.DECIMAL,
+      "Decimal",
+      BaseType.DECIMAL.name(),
+      BaseType.DECIMAL,
+      true,
+      false,
+      0,
+      0,
+      "DEC"),
+  ARRAY(Types.ARRAY, "Array", BaseType.ARRAY.name(), BaseType.ARRAY, false, true, 0, 0),
   TUPLE(Types.OTHER, "Tuple", "TUPLE", BaseType.OBJECT, false, true, 0, 0);
 
   private final int sqlType;

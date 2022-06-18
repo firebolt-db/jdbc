@@ -1,0 +1,5 @@
+a * a	b * b
+Decimal(9, 4)	Decimal(9, 6)
+8262.8100	1.210000
+1.0000	120.780100
+Received from node1.node.consul:9000. DB::Exception: Decimal math overflow: while executing 'FUNCTION multiply(b : 1, b :: 1) -> multiply(b, b) Decimal(9, 6) : 0'.

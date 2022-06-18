@@ -283,12 +283,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public Time getTime(int columnIndex) throws SQLException {
-    Timestamp ts = getTimestamp(columnIndex);
-    if (ts == null) {
-      return null;
-    }
-
-    return new Time(ts.getTime());
+    return BaseType.TIME.transform(this.getValueAtColumn(columnIndex));
   }
 
   public int getRow() {
@@ -314,10 +309,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
     FireboltColumn columnInfo = this.columns.get(columnIndex - 1);
     FireboltDataType columnType = columnInfo.getDataType();
-    Object object =
-        Optional.of(columnType)
-            .map(type -> type.getBaseType().transform(value, columnInfo))
-            .orElse(null);
+    Object object = columnType.getBaseType().transform(value, columnInfo);
     if (columnType == FireboltDataType.ARRAY && object != null) {
       return ((FireboltArray) object).getArray();
     } else {

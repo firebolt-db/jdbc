@@ -142,7 +142,7 @@ class FireboltColumnTest {
     assertEquals(name, column.getColumnName());
     assertEquals(type.toUpperCase(), column.getColumnType());
     assertEquals(FireboltDataType.ARRAY, column.getDataType());
-    assertEquals("ARRAY(TUPLE(LONG, STRING))", column.getCompactTypeName());
+    assertEquals("ARRAY(TUPLE(INTEGER, STRING))", column.getCompactTypeName());
   }
 
 
@@ -154,7 +154,7 @@ class FireboltColumnTest {
     assertEquals(name, column.getColumnName());
     assertEquals(type.toUpperCase(), column.getColumnType());
     assertEquals(FireboltDataType.ARRAY, column.getDataType());
-    assertEquals("ARRAY(ARRAY(TUPLE(LONG, STRING)))", column.getCompactTypeName());
+    assertEquals("ARRAY(ARRAY(TUPLE(INTEGER, STRING)))", column.getCompactTypeName());
   }
 
   @Test
@@ -165,7 +165,7 @@ class FireboltColumnTest {
     assertEquals(name, column.getColumnName());
     assertEquals(type.toUpperCase(), column.getColumnType());
     assertEquals(FireboltDataType.ARRAY, column.getDataType());
-    assertEquals("ARRAY(TUPLE(ARRAY(TUPLE(LONG, STRING)), ARRAY(TUPLE(LONG, STRING))))", column.getCompactTypeName());
+    assertEquals("ARRAY(TUPLE(ARRAY(TUPLE(INTEGER, STRING)), ARRAY(TUPLE(INTEGER, STRING))))", column.getCompactTypeName());
   }
 
 }

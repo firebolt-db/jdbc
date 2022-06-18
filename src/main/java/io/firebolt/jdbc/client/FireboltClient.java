@@ -85,15 +85,15 @@ public abstract class FireboltClient {
         response.getEntity();
         errorResponseMessage =
             String.format(
-                "Failed to query Firebolt at %s. Error message:%n%s%ninternal error:%n%s",
-                host, EntityUtils.toString(response.getEntity()), this.getInternalErrorWithHeadersText(response));
+                "Server failed to execute query with the following error:%n%s%ninternal error:%n%s",
+                EntityUtils.toString(response.getEntity()), this.getInternalErrorWithHeadersText(response));
 
         throw new FireboltException(errorResponseMessage);
       } catch (ParseException | IOException e) {
         log.warn("Could not parse response containing the error message from Firebolt", e);
         errorResponseMessage =
             String.format(
-                "Failed to query Firebolt at %s. %ninternal error:%n%s", host, this.getInternalErrorWithHeadersText(response));
+                "Server failed to execute query%ninternal error:%n%s", this.getInternalErrorWithHeadersText(response));
         throw new FireboltException(errorResponseMessage, e);
       }
     }

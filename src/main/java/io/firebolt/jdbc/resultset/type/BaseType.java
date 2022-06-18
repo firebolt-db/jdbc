@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.resultset.type;
 
+import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.FireboltColumn;
 import io.firebolt.jdbc.resultset.type.array.SqlArrayUtil;
 import io.firebolt.jdbc.resultset.type.date.SqlDateUtil;
@@ -10,9 +11,9 @@ import org.apache.commons.text.StringEscapeUtils;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Array;
+import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.Date;
-import java.util.function.BiFunction;
 
 /** This class contains the java types the Firebolt datatypes are mapped to */
 @Slf4j
@@ -50,6 +51,7 @@ public enum BaseType {
   DATE(Date.class, (value, subType) -> SqlDateUtil.transformToDateFunction.apply(value)),
   TIMESTAMP(
       Timestamp.class, (value, subType) -> SqlDateUtil.transformToTimestampFunction.apply(value)),
+  TIME(Time.class, (value, subType) -> SqlDateUtil.transformToTimeFunction.apply(value)),
   NULL(Object.class, (value, subType) -> null),
   OTHER(String.class, (value, subType) -> "Unknown"),
   OBJECT(Object.class, (value, subType) -> value),
@@ -67,9 +69,9 @@ public enum BaseType {
 
   public static final String NULL_VALUE = "\\N";
   private final Class<?> type;
-  private final BiFunction<String, FireboltColumn, Object> transformFunction;
+  private final CheckedBiFunction<String, FireboltColumn, Object> transformFunction;
 
-  BaseType(Class<?> type, BiFunction<String, FireboltColumn, Object> transformFunction) {
+  BaseType(Class<?> type, CheckedBiFunction<String, FireboltColumn, Object> transformFunction) {
     this.type = type;
     this.transformFunction = transformFunction;
   }
@@ -78,15 +80,26 @@ public enum BaseType {
     return type;
   }
 
-  public <T> T transform(String value, FireboltColumn column) {
+  private static void validateThatValueDoesNotContainException(String value)
+      throws FireboltException {
+    if (StringUtils.contains(value, "DB::Exception")) {
+      String errorResponseMessage =
+          String.format("Server failed to execute query with the following error:%n%s", value);
+      throw new FireboltException(errorResponseMessage);
+    }
+  }
+
+  public <T> T transform(String value, FireboltColumn column) throws FireboltException {
     validateObjectNotNull(value);
     if (isNull(value)) {
       return null;
+    } else if (this.getType() != String.class) {
+      validateThatValueDoesNotContainException(value);
     }
     return (T) transformFunction.apply(value, column);
   }
 
-  public <T> T transform(String value) {
+  public <T> T transform(String value) throws FireboltException {
     return this.transform(value, null);
   }
 
