@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.statement;
 
+import io.firebolt.jdbc.connection.FireboltConnectionImpl;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.resultset.FireboltResultSet;
 import io.firebolt.jdbc.service.FireboltQueryService;
@@ -156,10 +157,12 @@ class FireboltStatementImplTest {
         Mockito.mockConstruction(FireboltResultSet.class)) {
       FireboltProperties fireboltProperties =
           FireboltProperties.builder().additionalProperties(new HashMap<>()).build();
+      FireboltConnectionImpl connection = mock(FireboltConnectionImpl.class);
       FireboltStatementImpl fireboltStatement =
           FireboltStatementImpl.builder()
               .fireboltQueryService(fireboltQueryService)
               .sessionProperties(fireboltProperties)
+              .connection(connection)
               .accessToken("token")
               .build();
 
@@ -169,6 +172,7 @@ class FireboltStatementImplTest {
       fireboltStatement.executeQuery("show database");
       fireboltStatement.close();
       verify(mockedResultSet.constructed().get(0)).close();
+      verify(connection).removeClosedStatement(fireboltStatement);
     }
   }
 }

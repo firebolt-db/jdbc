@@ -69,7 +69,7 @@ class FireboltColumnTest {
 
   @Test
   void shouldCreateColumDataForTupleOfArray() {
-    String type = "Tuple(Array(int), Array(Nullable(INT_64)))";
+    String type = "Tuple(Array(int), Array(Nullable(Int64)))";
     String name = "my_tuple";
     FireboltColumn column = FireboltColumn.of(type, name);
     assertEquals(name, column.getColumnName());

@@ -41,7 +41,7 @@ public class FireboltConnectionImpl extends AbstractConnection {
   private FireboltProperties sessionProperties;
   private final String httpConnectionUrl;
 
-  private final List<Statement> statements;
+  private final List<FireboltStatementImpl> statements;
 
   private static final String LOCALHOST = "localhost";
 
@@ -133,13 +133,14 @@ public class FireboltConnectionImpl extends AbstractConnection {
             .fireboltQueryService(fireboltQueryService)
             .sessionProperties(sessionProperties)
             .accessToken(connectionTokens.map(FireboltConnectionTokens::getAccessToken).orElse(null))
+            .connection(this)
             .build();
     this.statements.add(fireboltStatement);
     return fireboltStatement;
   }
 
-  private void addStatement(Statement statement) throws SQLException {
-    synchronized (this) {
+  private void addStatement(FireboltStatementImpl statement) throws SQLException {
+    synchronized (statements) {
       checkConnectionIsNotClose();
       this.statements.add(statement);
     }
@@ -203,18 +204,18 @@ public class FireboltConnectionImpl extends AbstractConnection {
   @Override
   public void close() throws SQLException {
     log.debug("Closing connection");
-    synchronized (this) {
+    synchronized (statements) {
       if (!this.isClosed()) {
-        for (Statement statement : this.statements) {
+        for (FireboltStatementImpl statement : this.statements) {
           try {
-            statement.close();
+            statement.close(false);
           } catch (Exception e) {
             log.warn("Could not close statement", e);
           }
         }
-        this.statements.clear();
-        closed = true;
       }
+      statements.clear();
+      closed = true;
     }
     log.debug("Connection closed");
   }
@@ -283,12 +284,13 @@ public class FireboltConnectionImpl extends AbstractConnection {
   private PreparedStatement createPreparedStatement(String sql) throws SQLException {
     checkConnectionIsNotClose();
     Optional<FireboltConnectionTokens> connectionTokens = this.getConnectionTokens();
-    PreparedStatement statement =
+    FireboltPreparedStatement statement =
         FireboltPreparedStatement.statementBuilder()
             .fireboltQueryService(fireboltQueryService)
             .sessionProperties(this.getSessionProperties())
             .accessToken(connectionTokens.map(FireboltConnectionTokens::getAccessToken).orElse(null))
             .sql(sql)
+            .connection(this)
             .build();
     this.addStatement(statement);
     return statement;
@@ -330,6 +332,13 @@ public class FireboltConnectionImpl extends AbstractConnection {
   private void checkConnectionIsNotClose() throws SQLException {
     if (isClosed()) {
       throw new SQLException("Cannot proceed: connection closed");
+    }
+  }
+  public void removeClosedStatement(FireboltStatementImpl fireboltStatement) {
+    synchronized (statements) {
+      if (statements.contains(fireboltStatement)) {
+        this.statements.remove(fireboltStatement);
+      }
     }
   }
 }

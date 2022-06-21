@@ -1,6 +1,10 @@
 package io.firebolt.jdbc.resultset.type;
 
 import java.sql.Types;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 /** Supported data types. */
 public enum FireboltDataType {
@@ -28,8 +32,7 @@ public enum FireboltDataType {
       "Int8",
       "Int16",
       "UInt16",
-      "UInt32",
-      "UInt8"),
+      "UInt32"),
   INT_64(Types.BIGINT, "Int64", "BIGINT", BaseType.LONG, true, false, 20, 0, "LONG"),
   U_INT_64(
       Types.BIGINT,
@@ -109,6 +112,17 @@ public enum FireboltDataType {
 
   public static final String NULLABLE_TYPE = "NULLABLE";
 
+  private static Map<String, FireboltDataType> typeNameOrAliasToType;
+
+  static {
+    typeNameOrAliasToType = new HashMap<>();
+    for (FireboltDataType dataType : values()) {
+      typeNameOrAliasToType.put(dataType.internalName.toUpperCase(), dataType);
+      Arrays.stream(dataType.aliases)
+          .forEach(alias -> typeNameOrAliasToType.put(alias.toUpperCase(), dataType));
+    }
+  }
+
   FireboltDataType(
       int sqlType,
       String internalName,
@@ -131,24 +145,8 @@ public enum FireboltDataType {
   }
 
   public static FireboltDataType ofType(String type) {
-    String s = type.trim();
-    try {
-      for (FireboltDataType dataType : values()) {
-        if (s.equalsIgnoreCase(dataType.internalName)) {
-          return dataType;
-        }
-      }
-      return FireboltDataType.valueOf(type);
-    } catch (IllegalArgumentException e) {
-      for (FireboltDataType dataType : values()) {
-        for (String alias : dataType.aliases) {
-          if (s.equalsIgnoreCase(alias)) {
-            return dataType;
-          }
-        }
-      }
-    }
-    return FireboltDataType.UNKNOWN;
+    String formattedType = type.trim().toUpperCase();
+    return Optional.ofNullable(typeNameOrAliasToType.get(formattedType)).orElse(UNKNOWN);
   }
 
   public int getSqlType() {

@@ -1,6 +1,7 @@
 package io.firebolt.jdbc.statement;
 
 import io.firebolt.QueryUtil;
+import io.firebolt.jdbc.connection.FireboltConnectionImpl;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.FireboltResultSet;
@@ -37,14 +38,14 @@ public class FireboltStatementImpl extends AbstractStatement {
 
   private ResultSet resultSet;
 
-  private Connection connection;
+  private FireboltConnectionImpl connection;
 
   @Builder
   public FireboltStatementImpl(
       FireboltQueryService fireboltQueryService,
       FireboltProperties sessionProperties,
       String accessToken,
-      Connection connection) {
+      FireboltConnectionImpl connection) {
     this.fireboltQueryService = fireboltQueryService;
     this.sessionProperties = sessionProperties;
     this.accessToken = accessToken;
@@ -175,13 +176,21 @@ public class FireboltStatementImpl extends AbstractStatement {
 
   @Override
   public void close() throws SQLException {
-    log.debug("Closing statement");
-    if (resultSet != null && !resultSet.isClosed()) {
-      resultSet.close();
-      resultSet = null;
+    close(true);
+  }
+
+  public synchronized void close(boolean removeFromConnection) throws SQLException {
+    if (!this.isClosed) {
+      this.isClosed = true;
+      if (resultSet != null && !resultSet.isClosed()) {
+        resultSet.close();
+        resultSet = null;
+      }
+      log.debug("Statement closed");
+      if (removeFromConnection) {
+        connection.removeClosedStatement(this);
+      }
     }
-    this.isClosed = true;
-    log.debug("Statement closed");
   }
 
   @Override
