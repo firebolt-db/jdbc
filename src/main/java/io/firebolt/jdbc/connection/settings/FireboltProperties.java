@@ -3,7 +3,6 @@ package io.firebolt.jdbc.connection.settings;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 
@@ -50,7 +49,7 @@ public class FireboltProperties {
   String password;
   String engine;
   String account;
-  @Builder.Default List<Pair<String, String>> additionalProperties = new ArrayList<>();
+  @Builder.Default Map<String, String> additionalProperties = new HashMap<>();
 
   public static FireboltProperties of(Properties... properties) {
     Properties mergedProperties = mergeProperties(properties);
@@ -83,10 +82,10 @@ public class FireboltProperties {
         getSetting(mergedProperties, FireboltSessionProperty.CONNECTION_TIMEOUT_MILLIS);
     int keepAliveTimeout =
         getSetting(mergedProperties, FireboltSessionProperty.KEEP_ALIVE_TIMEOUT_MILLIS);
-    String host = getHost(mergedProperties, ssl);
+    String host = getHost(mergedProperties);
     Integer port = getPort(ssl);
     String database = getDatabase(mergedProperties, path);
-    List<Pair<String, String>> additionalProperties = getFireboltCustomProperties(mergedProperties);
+    Map<String, String> additionalProperties = getFireboltCustomProperties(mergedProperties);
 
     return FireboltProperties.builder()
         .ssl(ssl)
@@ -119,14 +118,13 @@ public class FireboltProperties {
         .build();
   }
 
-  private static String getHost(Properties properties, boolean ssl) {
+  private static String getHost(Properties properties) {
     String host = getSetting(properties, FireboltSessionProperty.HOST);
     if (StringUtils.isEmpty(host)) {
       throw new IllegalArgumentException("Invalid host: The host is missing or empty");
     } else {
-      host = ssl ? String.format("https://%s", host) : String.format("http://%s", host);
+      return host;
     }
-    return host;
   }
 
   @NotNull
@@ -154,11 +152,11 @@ public class FireboltProperties {
     }
   }
 
-  private static List<Pair<String, String>> getFireboltCustomProperties(Properties properties) {
+  private static Map<String, String> getFireboltCustomProperties(Properties properties) {
     return properties.entrySet().stream()
         .filter(entry -> !sessionPropertyKeys.contains(entry.getKey()))
-        .map(entry -> new ImmutablePair<>((String) entry.getKey(), (String) entry.getValue()))
-        .collect(Collectors.toList());
+        .collect(
+            Collectors.toMap(e -> (String) e.getKey(), e -> e.getValue().toString(), (x, y) -> y));
   }
 
   private static <T> T getSetting(Properties info, FireboltSessionProperty param) {
@@ -192,7 +190,17 @@ public class FireboltProperties {
     return mergedProperties;
   }
 
+  public void addProperty(String key, String value) {
+    additionalProperties.put(key, value);
+  }
+
   public void addProperty(Pair<String, String> property) {
-    additionalProperties.add(property);
+    this.addProperty(property.getLeft(), property.getRight());
+  }
+
+  public static FireboltProperties copy(FireboltProperties properties) {
+    return properties.toBuilder()
+        .additionalProperties(new HashMap<>(properties.getAdditionalProperties()))
+        .build();
   }
 }

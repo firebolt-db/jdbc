@@ -1,11 +1,9 @@
 package io.firebolt.jdbc.connection.settings;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,9 +25,9 @@ class FireboltPropertiesTest {
             .enableConnectionPool(0)
             .user(null)
             .password(null)
-            .host("https://host") // host is appended with https:// because SSL is enabled
+            .host("host")
             .ssl(true)
-            .additionalProperties(new ArrayList<>())
+            .additionalProperties(new HashMap<>())
             .account(null)
             .engine(null)
             .maxConnectionsPerRoute(500)
@@ -56,17 +54,16 @@ class FireboltPropertiesTest {
     properties.put("buffer_size", "51");
     properties.put("socket_timeout_millis", "20");
     properties.put("ssl", "true");
-    properties.put("port", "13");
     properties.put("host", "myDummyHost");
     properties.put("database", "myDb");
     properties.put("ssl_certificate_path", "root_cert");
     properties.put("ssl_mode", "none");
     properties.put("path", "/example");
     properties.put("someCustomProperties", "custom_value");
-    properties.put("compress", "0");
+    properties.put("compress", "1");
 
-    List<Pair<String, String>> customProperties = new ArrayList<>();
-    customProperties.add(new ImmutablePair<>("someCustomProperties", "custom_value"));
+    Map<String, String> customProperties = new HashMap<>();
+    customProperties.put("someCustomProperties", "custom_value");
 
     FireboltProperties expectedDefaultProperties =
         FireboltProperties.builder()
@@ -74,13 +71,13 @@ class FireboltPropertiesTest {
             .sslCertificatePath("root_cert")
             .sslMode("none")
             .path("/example")
-            .port(13)
             .database("myDb")
-            .compress(0)
+            .compress(1)
+            .port(443)
             .enableConnectionPool(0)
             .user(null)
             .password(null)
-            .host("https://myDummyHost")
+            .host("myDummyHost")
             .ssl(true)
             .additionalProperties(customProperties)
             .account(null)
