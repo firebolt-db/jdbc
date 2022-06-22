@@ -61,7 +61,7 @@ public class QueryUtil {
       isInMultipleLinesComment =
           isInMultipleLinesComment(
               currentChar, previousChar, isCurrentSubstringBetweenQuotes, isInMultipleLinesComment);
-      if ((39 == currentChar
+      if ((39 == currentChar // 39 is the ASCII for '
           || (currentIndex == sql.length() - 1)
               && !(isInSingleLineComment || isInMultipleLinesComment))) {
         if (isCurrentSubstringBetweenQuotes) {
