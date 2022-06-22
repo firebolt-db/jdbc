@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.statement;
 
+import io.firebolt.QueryUtil;
 import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
@@ -12,29 +13,42 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.io.InputStream;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
-@Builder
 public class FireboltStatementImpl extends AbstractStatement {
-  
+
   private final FireboltQueryService fireboltQueryService;
   private final FireboltProperties sessionProperties;
   private final FireboltConnectionTokens connectionTokens;
 
-  @Builder.Default private boolean closeOnCompletion = true;
-  @Builder.Default int currentUpdateCount = -1;
+  private boolean closeOnCompletion;
+  int currentUpdateCount;
 
   int maxRows;
-  @Builder.Default boolean isClosed = false;
+  boolean isClosed;
 
   private ResultSet resultSet;
+
+  @Builder
+  public FireboltStatementImpl(
+      FireboltQueryService fireboltQueryService,
+      FireboltProperties sessionProperties,
+      FireboltConnectionTokens connectionTokens) {
+    this.fireboltQueryService = fireboltQueryService;
+    this.sessionProperties = sessionProperties;
+    this.connectionTokens = connectionTokens;
+    this.closeOnCompletion = true;
+    this.currentUpdateCount = -1;
+    this.isClosed = false;
+  }
 
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
     Optional<Pair<String, String>> additionalProperties =
-        fireboltQueryService.extractAdditionalProperties(sql);
+        QueryUtil.extractAdditionalProperties(sql);
     if (additionalProperties.isPresent()) {
       this.sessionProperties.addProperty(additionalProperties.get());
       return null;
@@ -43,16 +57,32 @@ public class FireboltStatementImpl extends AbstractStatement {
       InputStream inputStream =
           fireboltQueryService.executeQuery(
               sql, queryId, connectionTokens.getAccessToken(), sessionProperties);
-      resultSet =
-          new FireboltResultSet(
-              inputStream,
-              fireboltQueryService.extractTableName(sql),
-              fireboltQueryService.extractDBName(sql).orElse(sessionProperties.getDatabase()),
-              sessionProperties.getBufferSize());
+
+      if (QueryUtil.isSelect(sql)) {
+        currentUpdateCount = -1; // Always -1 when the result is a return a ResultSet
+        resultSet =
+            new FireboltResultSet(
+                inputStream,
+                QueryUtil.extractTableNameFromSelect(sql).orElse("unknown"),
+                QueryUtil.extractDBNameFromSelect(sql).orElse(sessionProperties.getDatabase()),
+                sessionProperties.getBufferSize());
+      } else {
+        currentUpdateCount = 0;
+        try {
+          inputStream.close();
+          return null;
+        } catch (Exception e) {
+          throw new FireboltException("Error closing inputstream during update with query " + sql);
+        }
+      }
       return resultSet;
     }
   }
 
+  @Override
+  public int executeUpdate(String sql) throws SQLException {
+    throw new SQLFeatureNotSupportedException();
+  }
 
   @Override
   public void setFetchSize(int rows) throws SQLException {
@@ -111,5 +141,11 @@ public class FireboltStatementImpl extends AbstractStatement {
   @Override
   public boolean isCloseOnCompletion() throws SQLException {
     return closeOnCompletion;
+  }
+
+  @Override
+  public boolean execute(String sql) throws SQLException {
+    this.executeQuery(sql);
+    return QueryUtil.isSelect(sql);
   }
 }
