@@ -1,14 +1,21 @@
 package io.firebolt.jdbc.resultset.type.date;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.util.TimeZone;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class SqlDateUtilTest {
+
+  @BeforeAll
+  public static void beforeAll() {
+    TimeZone.setDefault(TimeZone.getTimeZone("Europe/London"));
+  }
 
   @Test
   void shouldTransformTimestampWithNanos() {

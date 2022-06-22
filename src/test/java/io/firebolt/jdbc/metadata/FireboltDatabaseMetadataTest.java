@@ -167,7 +167,7 @@ class FireboltDatabaseMetadataTest {
                 Collections.singletonList(
                     Arrays.asList(
                         DEFAULT_CATALOG_VALUE,
-                        "Tutorial_11_04", // db name
+                        null, // schema
                         "D2_TIMESTAMP", // table name
                         "id", // column name
                         Types.INTEGER, // sql data type
@@ -231,7 +231,7 @@ class FireboltDatabaseMetadataTest {
     rows.add(
         Arrays.asList(
             "default",
-            "Tutorial_11_04",
+            null,
             "ex_lineitem",
             "TABLE",
             null,
@@ -246,7 +246,7 @@ class FireboltDatabaseMetadataTest {
     rows.add(
         Arrays.asList(
             "default",
-            "Tutorial_11_04",
+            null,
             "test_1",
             "TABLE",
             null,

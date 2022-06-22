@@ -134,7 +134,7 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
         row =
             Arrays.asList(
                 columnDescription.getString("table_catalog"),
-                columnDescription.getString("table_schema"), // db name
+                "\\N", // schema
                 columnDescription.getString("table_name"), // table name
                 columnDescription.getString("column_name"), // column name
                 String.valueOf(columnInfo.getDataType().getSqlType()), // sql data type
@@ -220,7 +220,7 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
       while (tables.next()) {
         List<String> row = new ArrayList<>();
         row.add(tables.getString(1));
-        row.add(tables.getString(2)); // changed
+        row.add("\\N"); // changed
         row.add(tables.getString(3));
         String tableType = isView ? "VIEW" : "TABLE";
         row.add(tableType);
