@@ -46,7 +46,7 @@ public class QueryUtil {
     sql = sql.trim();
     int currentIndex = 0;
     char currentChar = sql.charAt(currentIndex);
-    boolean isCurrentSubstringBetweenQuotes = currentChar == 39; // 39 is the ASCII for '
+    boolean isCurrentSubstringBetweenQuotes = currentChar == '\'';
     int substringStart = 0;
     boolean isInSingleLineComment = false;
     boolean isInMultipleLinesComment = false;
@@ -61,7 +61,7 @@ public class QueryUtil {
       isInMultipleLinesComment =
           isInMultipleLinesComment(
               currentChar, previousChar, isCurrentSubstringBetweenQuotes, isInMultipleLinesComment);
-      if ((39 == currentChar // 39 is the ASCII for '
+      if (('\'' == currentChar
           || (currentIndex == sql.length() - 1)
               && !(isInSingleLineComment || isInMultipleLinesComment))) {
         if (isCurrentSubstringBetweenQuotes) {
