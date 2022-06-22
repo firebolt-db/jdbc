@@ -13,7 +13,7 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public String nativeSQL(String sql) throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet.");
+    throw new UnsupportedOperationException("Feature not supported yet." + new Throwable().getStackTrace()[0].getMethodName());
   }
 
   @Override
@@ -26,7 +26,7 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public void commit() throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet.");
+    throw new UnsupportedOperationException("Feature not supported yet." + new Throwable().getStackTrace()[0].getMethodName());
   }
 
   @Override
@@ -44,7 +44,7 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public void setCatalog(String catalog) throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet.");
+    throw new UnsupportedOperationException("Feature not supported yet." + new Throwable().getStackTrace()[0].getMethodName());
   }
 
   @Override
@@ -54,7 +54,7 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public void setTransactionIsolation(int level) throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet.");
+    throw new UnsupportedOperationException("Feature not supported yet." + new Throwable().getStackTrace()[0].getMethodName());
   }
 
   @Override
@@ -64,12 +64,6 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public void clearWarnings() throws SQLException {}
-
-  @Override
-  public Statement createStatement(int resultSetType, int resultSetConcurrency)
-      throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet.");
-  }
 
   @Override
   public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency)
@@ -162,7 +156,7 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public Array createArrayOf(String typeName, Object[] elements) throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet.");
+    throw new UnsupportedOperationException("Feature not supported yet." + new Throwable().getStackTrace()[0].getMethodName());
   }
 
   @Override
@@ -177,7 +171,7 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet.");
+    throw new UnsupportedOperationException("Feature not supported yet." + new Throwable().getStackTrace()[0].getMethodName());
   }
 
   @Override

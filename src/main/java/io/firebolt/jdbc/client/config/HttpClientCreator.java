@@ -110,7 +110,6 @@ public class HttpClientCreator {
     HttpConnectionFactory<ManagedHttpClientConnection> connectionFactory =
         ManagedHttpClientConnectionFactory.builder().http1Config(customHttpConfig).build();
 
-
     HostnameVerifier verifier = getHostnameVerifier(fireboltProperties);
     SSLConnectionSocketFactory sslConnectionSocketFactory =
         TRUE.equals(fireboltProperties.getSsl())
@@ -122,18 +121,21 @@ public class HttpClientCreator {
         .dnsResolver(new DnsResolverByIpVersionPriority())
         .connectionFactory(connectionFactory)
         .maxConnPerRoute(fireboltProperties.getMaxConnectionsPerRoute())
-        .validateAfterInactivity(TimeValue.ofMinutes(1))
+        .validateAfterInactivity(
+            TimeValue.ofMilliseconds(fireboltProperties.getValidateAfterInactivityMillis()))
         .maxConnTotal(fireboltProperties.getMaxConnectionsTotal())
         .timeToLive(TimeValue.ofMilliseconds(fireboltProperties.getTimeToLiveMillis()))
         .defaultSocketConfig(
             SocketConfig.custom()
                 .setSoKeepAlive(true)
-                    .setSoReuseAddress(true)
-                    .setTcpNoDelay(true)
+                .setSoReuseAddress(true)
+                .setTcpNoDelay(true)
                 .setSoLinger(TimeValue.ofMilliseconds(Integer.MAX_VALUE))
                 .setSoTimeout(Timeout.ofMilliseconds(fireboltProperties.getSocketTimeoutMillis()))
-                .build()).fireboltProperties(fireboltProperties)
-        .build().create();
+                .build())
+        .fireboltProperties(fireboltProperties)
+        .build()
+        .create();
   }
 
   private static HostnameVerifier getHostnameVerifier(FireboltProperties fireboltProperties) {

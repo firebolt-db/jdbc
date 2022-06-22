@@ -186,6 +186,11 @@ public class FireboltConnectionImpl extends AbstractConnection {
   }
 
   @Override
+  public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
+    return createStatement(resultSetType, resultSetConcurrency, ResultSet.CLOSE_CURSORS_AT_COMMIT);
+  }
+
+  @Override
   public String getSchema() throws SQLException {
     return sessionProperties.getDatabase();
   }
