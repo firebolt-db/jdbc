@@ -76,4 +76,10 @@ public class SqlArrayUtil {
   private static String removeQuotes(String s) {
     return CharMatcher.is('\'').trimFrom(s);
   }
+
+  public static String arrayToString(Object object)
+  {
+    throw new UnsupportedOperationException();
+  }
+
 }
