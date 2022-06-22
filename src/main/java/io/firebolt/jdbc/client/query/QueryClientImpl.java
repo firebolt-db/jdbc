@@ -42,9 +42,9 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
       validateResponse(uri, response);
       return response.getEntity().getContent();
     } catch (Exception e) {
-      log.error("Error executing query {}", sql, e);
       EntityUtils.consumeQuietly(requestEntity);
-      throw new FireboltException(String.format("Error executing query %s", sql), e);
+      throw new FireboltException(
+          String.format("Error executing query %s, error %s", sql, e.getMessage()), e);
     }
   }
 
@@ -54,7 +54,7 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
 
     fireboltProperties
         .getAdditionalProperties()
-        .forEach(p -> queryParams.add(new BasicNameValuePair(p.getKey(), p.getValue())));
+        .forEach((k, v) -> queryParams.add(new BasicNameValuePair(k, v)));
 
     queryParams.add(new BasicNameValuePair("output_format", "TabSeparatedWithNamesAndTypes"));
     queryParams.add(new BasicNameValuePair("database", fireboltProperties.getDatabase()));

@@ -1,0 +1,4 @@
+table_catalog	table_schema	table_name	table_type
+STRING	STRING	STRING	STRING
+default	Tutorial_11_04	ex_lineitem	DIMENSION
+default	Tutorial_11_04	test_1	FACT

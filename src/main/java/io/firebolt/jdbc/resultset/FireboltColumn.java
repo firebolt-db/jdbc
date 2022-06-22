@@ -2,6 +2,7 @@ package io.firebolt.jdbc.resultset;
 
 import io.firebolt.jdbc.resultset.type.FireboltDataType;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -14,6 +15,7 @@ import static io.firebolt.jdbc.resultset.type.FireboltDataType.*;
 
 @Builder
 @Getter
+@EqualsAndHashCode
 public final class FireboltColumn {
   private final String columnType;
   private final String columnName;

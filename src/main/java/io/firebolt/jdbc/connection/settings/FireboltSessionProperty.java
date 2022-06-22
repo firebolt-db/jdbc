@@ -82,4 +82,10 @@ public enum FireboltSessionProperty {
   private final Object defaultValue;
   private final Class<?> clazz;
   private final String description;
+
+  public String[] getPossibleValues() {
+    return Boolean.class.equals(clazz) || Boolean.TYPE.equals(clazz)
+        ? new String[] {"true", "false"}
+        : null;
+  }
 }
