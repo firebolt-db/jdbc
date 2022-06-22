@@ -1,14 +1,21 @@
 package io.firebolt.jdbc.resultset.type.date;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.util.TimeZone;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class SqlDateUtilTest {
+
+  @BeforeAll
+  public static void beforeAll() {
+    TimeZone.setDefault(TimeZone.getTimeZone("Europe/London"));
+  }
 
   @Test
   void shouldTransformTimestampWithNanos() {
@@ -52,5 +59,31 @@ class SqlDateUtilTest {
   void shouldReturnNullWhenTheStringCannotBeParsedToADate() {
     String timeWithNanoSeconds = "20225-05-hey";
     assertNull(SqlDateUtil.transformToDateFunction.apply(timeWithNanoSeconds));
+  }
+
+  @Test
+  void shouldTransformTimestampWithNanosToString() {
+    String expectedTimeWithNanosString = "'2022-05-23 12:57:13:017345678'";
+    Timestamp timestamp = new Timestamp(1653307033173L);
+    timestamp.setNanos(17345678);
+    assertEquals(
+        expectedTimeWithNanosString, SqlDateUtil.transformFromTimestampFunction.apply(timestamp));
+  }
+
+  @Test
+  void shouldTransformTimestampWithSomeNanosToString() {
+    String expectedTimeWithNanosString = "'2022-05-23 12:57:13:173456'";
+    Timestamp timestamp = new Timestamp(1653307033173L);
+    timestamp.setNanos(173456);
+    assertEquals(
+        expectedTimeWithNanosString, SqlDateUtil.transformFromTimestampFunction.apply(timestamp));
+  }
+
+  @Test
+  void shouldTransformTimestampWithoutNanosToString() {
+    String expectedTimeWithNanosString = "'2022-05-23 12:57:13'";
+    Timestamp timestamp = new Timestamp(1653307033000L);
+    assertEquals(
+        expectedTimeWithNanosString, SqlDateUtil.transformFromTimestampFunction.apply(timestamp));
   }
 }

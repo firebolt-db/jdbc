@@ -1,6 +1,7 @@
 package io.firebolt;
 
 import io.firebolt.jdbc.ProjectVersionUtil;
+import io.firebolt.jdbc.PropertyUtil;
 import io.firebolt.jdbc.connection.FireboltConnectionImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -30,13 +31,13 @@ public class FireboltDriver implements Driver {
   }
 
   @Override
-  public boolean acceptsURL(String url) throws SQLException {
+  public boolean acceptsURL(String url) {
     return StringUtils.isNotEmpty(url) && url.startsWith(JDBC_FIREBOLT_PREFIX);
   }
 
   @Override
   public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
-    throw new UnsupportedOperationException();
+    return PropertyUtil.getPropertyInfo(url, info);
   }
 
   @Override
