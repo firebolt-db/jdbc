@@ -4,12 +4,12 @@ import io.firebolt.jdbc.resultset.type.FireboltDataType;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
@@ -117,7 +117,7 @@ public final class FireboltColumn {
     return new ImmutablePair<>(leftColumnType, rightColumnType);
   }
 
-  @NotNull
+  @NonNull
   private static String[] getTupleTypes(String columnType) {
     String types =
         RegExUtils.replaceFirst(

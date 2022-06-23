@@ -320,7 +320,7 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
           ((FireboltConnectionImpl) this.getConnection()).getSessionProperties();
       FireboltProperties tmpProperties = FireboltProperties.copy(properties);
       tmpProperties.addProperty("use_standard_sql", "1");
-      return connection.createStatementWithTemporaryProperties(tmpProperties);
+      return connection.createStatement(tmpProperties);
     } else {
       return connection.createStatement();
     }

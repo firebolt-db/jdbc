@@ -1,11 +1,11 @@
 package io.firebolt.jdbc.connection.settings;
 
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -138,7 +138,7 @@ public class FireboltProperties {
     }
   }
 
-  @NotNull
+  @NonNull
   private static Integer getPort(Properties properties, boolean ssl) {
     Integer port = getSetting(properties, FireboltSessionProperty.PORT);
     if (port == null) {
@@ -209,7 +209,7 @@ public class FireboltProperties {
     return "1".equals(this.additionalProperties.get("aggressive_cancel"));
   }
 
-  public void addProperty(String key, String value) {
+  public void addProperty(@NonNull String key, String value) {
     additionalProperties.put(key, value);
   }
 

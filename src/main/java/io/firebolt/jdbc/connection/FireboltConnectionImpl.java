@@ -14,8 +14,10 @@ import io.firebolt.jdbc.service.FireboltAuthenticationService;
 import io.firebolt.jdbc.service.FireboltEngineService;
 import io.firebolt.jdbc.service.FireboltQueryService;
 import io.firebolt.jdbc.statement.FireboltStatementImpl;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
 import java.io.IOException;
@@ -46,7 +48,7 @@ public class FireboltConnectionImpl extends AbstractConnection {
   private static final String LOCALHOST = "localhost";
 
   public FireboltConnectionImpl(
-      String url,
+      @NonNull String url,
       Properties connectionSettings,
       FireboltAuthenticationService fireboltAuthenticationService,
       FireboltEngineService fireboltEngineService,
@@ -93,20 +95,21 @@ public class FireboltConnectionImpl extends AbstractConnection {
   }
 
   private FireboltConnectionImpl connect() throws FireboltException {
-      if (!StringUtils.equalsIgnoreCase(LOCALHOST, loginProperties.getHost())) {
-        Optional<FireboltConnectionTokens> fireboltConnectionTokens = this.getConnectionTokens();
-          String engineHost =
-              fireboltEngineService.getEngineHost(
-                  httpConnectionUrl,
-                  loginProperties.getDatabase(),
-                  loginProperties.getEngine(),
-                  loginProperties.getAccount(), fireboltConnectionTokens.map(FireboltConnectionTokens::getAccessToken).orElse(null));
-          this.sessionProperties = loginProperties.toBuilder().host(engineHost).build();
-        } else {
-          this.sessionProperties = loginProperties;
-        }
-      closed = false;
-      log.debug("Connection opened");
+    if (!StringUtils.equalsIgnoreCase(LOCALHOST, loginProperties.getHost())) {
+      Optional<FireboltConnectionTokens> fireboltConnectionTokens = this.getConnectionTokens();
+      String engineHost =
+          fireboltEngineService.getEngineHost(
+              httpConnectionUrl,
+              loginProperties.getDatabase(),
+              loginProperties.getEngine(),
+              loginProperties.getAccount(),
+              fireboltConnectionTokens.map(FireboltConnectionTokens::getAccessToken).orElse(null));
+      this.sessionProperties = loginProperties.toBuilder().host(engineHost).build();
+    } else {
+      this.sessionProperties = loginProperties;
+    }
+    closed = false;
+    log.debug("Connection opened");
 
     return this;
   }
@@ -126,16 +129,21 @@ public class FireboltConnectionImpl extends AbstractConnection {
 
   @Override
   public Statement createStatement() throws SQLException {
+    return this.createStatement(this.getSessionProperties());
+  }
+
+  public Statement createStatement(FireboltProperties tmpProperties) throws SQLException {
     checkConnectionIsNotClose();
     Optional<FireboltConnectionTokens> connectionTokens = this.getConnectionTokens();
     FireboltStatementImpl fireboltStatement =
         FireboltStatementImpl.builder()
             .fireboltQueryService(fireboltQueryService)
-            .sessionProperties(sessionProperties)
-            .accessToken(connectionTokens.map(FireboltConnectionTokens::getAccessToken).orElse(null))
+            .sessionProperties(tmpProperties)
             .connection(this)
+            .accessToken(
+                connectionTokens.map(FireboltConnectionTokens::getAccessToken).orElse(null))
             .build();
-    this.statements.add(fireboltStatement);
+    this.addStatement(fireboltStatement);
     return fireboltStatement;
   }
 
@@ -144,20 +152,6 @@ public class FireboltConnectionImpl extends AbstractConnection {
       checkConnectionIsNotClose();
       this.statements.add(statement);
     }
-  }
-
-  public Statement createStatementWithTemporaryProperties(FireboltProperties tmpProperties)
-      throws SQLException {
-    checkConnectionIsNotClose();
-    Optional<FireboltConnectionTokens> connectionTokens = this.getConnectionTokens();
-    FireboltStatementImpl fireboltStatement =
-        FireboltStatementImpl.builder()
-            .fireboltQueryService(fireboltQueryService)
-            .sessionProperties(tmpProperties)
-            .accessToken(connectionTokens.map(FireboltConnectionTokens::getAccessToken).orElse(null))
-            .build();
-    this.addStatement(fireboltStatement);
-    return fireboltStatement;
   }
 
   @Override
@@ -186,7 +180,8 @@ public class FireboltConnectionImpl extends AbstractConnection {
   }
 
   @Override
-  public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
+  public Statement createStatement(int resultSetType, int resultSetConcurrency)
+      throws SQLException {
     return createStatement(resultSetType, resultSetConcurrency, ResultSet.CLOSE_CURSORS_AT_COMMIT);
   }
 
@@ -257,8 +252,7 @@ public class FireboltConnectionImpl extends AbstractConnection {
 
   @Override
   public CallableStatement prepareCall(String sql) throws SQLException {
-    log.warn("Could not call %s", new Throwable().getStackTrace()[0].getMethodName());
-    return null;
+    throw new SQLFeatureNotSupportedException();
   }
 
   @Override
@@ -293,7 +287,8 @@ public class FireboltConnectionImpl extends AbstractConnection {
         FireboltPreparedStatement.statementBuilder()
             .fireboltQueryService(fireboltQueryService)
             .sessionProperties(this.getSessionProperties())
-            .accessToken(connectionTokens.map(FireboltConnectionTokens::getAccessToken).orElse(null))
+            .accessToken(
+                connectionTokens.map(FireboltConnectionTokens::getAccessToken).orElse(null))
             .sql(sql)
             .connection(this)
             .build();
@@ -317,20 +312,27 @@ public class FireboltConnectionImpl extends AbstractConnection {
     return createStatement();
   }
 
-  @Override
   public boolean isValid(int timeout) throws SQLException {
     if (timeout < 0) {
-      throw new SQLException("Timeout value cannot be less 0");
+      throw new SQLException("Timeout value cannot be less than 0");
     }
     if (isClosed()) {
       return false;
     }
-    try (Statement s = createStatement()) {
-      s.execute("SELECT 1");
+    try {
+      validateConnection(this.getSessionProperties());
       return true;
     } catch (Exception e) {
-      log.warn("Connection is not valid", e);
       return false;
+    }
+  }
+
+  public void validateConnection(FireboltProperties fireboltProperties) throws SQLException {
+    try (Statement s = createStatement(fireboltProperties)) {
+      s.execute("SELECT 1");
+    } catch (Exception e) {
+      log.warn("Connection is not valid", e);
+      throw e;
     }
   }
 
@@ -339,11 +341,25 @@ public class FireboltConnectionImpl extends AbstractConnection {
       throw new SQLException("Cannot proceed: connection closed");
     }
   }
+
   public void removeClosedStatement(FireboltStatementImpl fireboltStatement) {
     synchronized (statements) {
       if (statements.contains(fireboltStatement)) {
         this.statements.remove(fireboltStatement);
       }
+    }
+  }
+
+  public synchronized void addProperty(Pair<String, String> property) throws FireboltException {
+    try {
+      FireboltProperties tmpProperties = FireboltProperties.copy(this.sessionProperties);
+      tmpProperties.addProperty(property);
+      validateConnection(tmpProperties);
+      this.sessionProperties = tmpProperties;
+    } catch (Exception e) {
+      throw new FireboltException(
+          String.format("Could not set property %s=%s", property.getLeft(), property.getRight()),
+          e);
     }
   }
 }

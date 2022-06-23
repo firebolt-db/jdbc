@@ -1,8 +1,8 @@
 package io.firebolt.jdbc.metadata;
 
 import io.firebolt.jdbc.Query;
+import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,7 +72,7 @@ public class MetadataUtil {
     return queryBuilder.conditions(conditions).build().toSql();
   }
 
-  @NotNull
+  @NonNull
   private List<String> getConditionsForTablesAndViews(String catalog, String schema, String tableName) {
     List<String> conditions = new ArrayList<>();
     Optional.ofNullable(schema)

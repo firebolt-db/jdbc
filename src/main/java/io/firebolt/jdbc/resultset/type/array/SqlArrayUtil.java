@@ -4,16 +4,15 @@ import com.google.common.base.CharMatcher;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.FireboltColumn;
 import io.firebolt.jdbc.resultset.type.FireboltDataType;
+import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 @UtilityClass
@@ -44,7 +43,7 @@ public class SqlArrayUtil {
     }
   }
 
-  @NotNull
+  @NonNull
   private static Object extractArrayFromMultiDimensionalArray(
       String str, int dimension, FireboltColumn fireboltColumn) throws FireboltException {
     String[] s = str.split(getArraySeparator(dimension));
@@ -78,7 +77,6 @@ public class SqlArrayUtil {
     }
   }
 
-  @NotNull
   private static Object[] getArrayForTuple(FireboltColumn fireboltColumn, List<String> tuples) throws FireboltException {
     List<FireboltDataType> types =
         Arrays.asList(

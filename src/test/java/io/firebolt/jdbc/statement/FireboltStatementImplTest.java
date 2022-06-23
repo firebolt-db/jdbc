@@ -4,6 +4,7 @@ import io.firebolt.jdbc.connection.FireboltConnectionImpl;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.resultset.FireboltResultSet;
 import io.firebolt.jdbc.service.FireboltQueryService;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -62,6 +63,7 @@ class FireboltStatementImplTest {
   void shouldExtractAdditionalProperties() throws SQLException {
     try (MockedConstruction<FireboltResultSet> mockedResultSet =
         Mockito.mockConstruction(FireboltResultSet.class)) {
+      FireboltConnectionImpl connection = mock(FireboltConnectionImpl.class);
       FireboltProperties fireboltProperties =
           FireboltProperties.builder().additionalProperties(new HashMap<>()).build();
 
@@ -70,17 +72,12 @@ class FireboltStatementImplTest {
               .fireboltQueryService(fireboltQueryService)
               .sessionProperties(fireboltProperties)
               .accessToken("token")
+              .connection(connection)
               .build();
 
       fireboltStatement.executeQuery("set custom_1 = 1");
       verifyNoMoreInteractions(fireboltQueryService);
-      assertEquals(
-          new HashMap<String, String>() {
-            {
-              put("custom_1", "1");
-            }
-          },
-          fireboltProperties.getAdditionalProperties());
+      verify(connection).addProperty(new ImmutablePair<>("custom_1", "1"));
       assertEquals(0, mockedResultSet.constructed().size());
     }
   }

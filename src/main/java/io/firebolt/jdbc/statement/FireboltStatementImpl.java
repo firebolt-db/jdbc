@@ -74,7 +74,7 @@ public class FireboltStatementImpl extends AbstractStatement {
       Optional<Pair<String, String>> additionalProperties =
           QueryUtil.extractAdditionalProperties(sql);
       if (additionalProperties.isPresent()) {
-        properties.addProperty(additionalProperties.get());
+        this.connection.addProperty(additionalProperties.get());
         log.debug("The property from the query {} was stored", this.queryId);
       } else {
         boolean isSelect = QueryUtil.isSelect(sql);

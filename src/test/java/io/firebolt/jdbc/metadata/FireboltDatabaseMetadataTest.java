@@ -40,7 +40,7 @@ class FireboltDatabaseMetadataTest {
   @BeforeEach
   void init() throws SQLException {
     lenient()
-        .when(fireboltConnection.createStatementWithTemporaryProperties(any()))
+        .when(fireboltConnection.createStatement(any()))
         .thenReturn(statement);
     lenient().when(fireboltConnection.createStatement()).thenReturn(statement);
     lenient()
