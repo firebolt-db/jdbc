@@ -17,15 +17,13 @@ public class MetadataUtil {
   public String getSchemasQuery(String catalog, String schemaPattern) {
     Query.QueryBuilder queryBuilder = Query.builder();
     queryBuilder.select(
-        String.format("schema_name AS %s, catalog_name AS %s", TABLE_SCHEM, TABLE_CATALOG));
+        String.format("'public' AS %s, catalog_name AS %s", TABLE_SCHEM, TABLE_CATALOG));
 
     queryBuilder.from("information_schema.databases");
 
     List<String> conditions = new ArrayList<>();
     Optional.ofNullable(catalog)
         .ifPresent(c -> conditions.add(String.format("catalog_name = '%s'", c)));
-    Optional.ofNullable(schemaPattern)
-        .ifPresent(pattern -> conditions.add(String.format("schema_name LIKE '%s'", pattern)));
     return queryBuilder.conditions(conditions).build().toSql();
   }
 

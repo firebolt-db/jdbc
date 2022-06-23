@@ -220,7 +220,7 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
       while (tables.next()) {
         List<String> row = new ArrayList<>();
         row.add(tables.getString(1));
-        row.add("\\N"); // changed
+        row.add(tables.getString(2));
         row.add(tables.getString(3));
         String tableType = isView ? "VIEW" : "TABLE";
         row.add(tableType);

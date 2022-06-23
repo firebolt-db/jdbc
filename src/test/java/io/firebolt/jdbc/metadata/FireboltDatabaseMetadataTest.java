@@ -39,9 +39,7 @@ class FireboltDatabaseMetadataTest {
 
   @BeforeEach
   void init() throws SQLException {
-    lenient()
-        .when(fireboltConnection.createStatement(any()))
-        .thenReturn(statement);
+    lenient().when(fireboltConnection.createStatement(any())).thenReturn(statement);
     lenient().when(fireboltConnection.createStatement()).thenReturn(statement);
     lenient()
         .when(fireboltConnection.getSessionProperties())
@@ -109,7 +107,7 @@ class FireboltDatabaseMetadataTest {
   @Test
   void shouldGetSchemas() throws SQLException {
     String expectedSql =
-        "SELECT schema_name AS TABLE_SCHEM, catalog_name AS TABLE_CATALOG FROM information_schema.databases";
+        "SELECT 'public' AS TABLE_SCHEM, catalog_name AS TABLE_CATALOG FROM information_schema.databases";
     when(statement.executeQuery(expectedSql))
         .thenReturn(new FireboltResultSet(getInputStreamForGetSchemas()));
     ResultSet resultSet = fireboltDatabaseMetadata.getSchemas();
@@ -231,7 +229,7 @@ class FireboltDatabaseMetadataTest {
     rows.add(
         Arrays.asList(
             "default",
-            null,
+            "public",
             "ex_lineitem",
             "TABLE",
             null,
@@ -245,18 +243,7 @@ class FireboltDatabaseMetadataTest {
             null));
     rows.add(
         Arrays.asList(
-            "default",
-            null,
-            "test_1",
-            "TABLE",
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
+            "default", "public", "test_1", "TABLE", null, null, null, null, null, null, null, null,
             null));
 
     ResultSet expectedResultSet =

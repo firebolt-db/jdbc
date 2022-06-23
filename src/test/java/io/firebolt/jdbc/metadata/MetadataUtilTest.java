@@ -9,14 +9,14 @@ class MetadataUtilTest {
   @Test
   void shouldGetSchemasQueryWhenGettingQueryWithoutArguments() {
     assertEquals(
-        "SELECT schema_name AS TABLE_SCHEM, catalog_name AS TABLE_CATALOG FROM information_schema.databases",
+        "SELECT 'public' AS TABLE_SCHEM, catalog_name AS TABLE_CATALOG FROM information_schema.databases",
         MetadataUtil.getSchemasQuery(null, null));
   }
 
   @Test
   void shouldGetSchemasQueryWhenGettingQueryWithArguments() {
     assertEquals(
-        "SELECT schema_name AS TABLE_SCHEM, catalog_name AS TABLE_CATALOG FROM information_schema.databases WHERE catalog_name = 'catalog' AND schema_name LIKE 'schema%'",
+        "SELECT 'public' AS TABLE_SCHEM, catalog_name AS TABLE_CATALOG FROM information_schema.databases WHERE catalog_name = 'catalog'",
         MetadataUtil.getSchemasQuery("catalog", "schema%"));
   }
 
