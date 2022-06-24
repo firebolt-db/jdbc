@@ -2,13 +2,13 @@ package io.firebolt.jdbc.service;
 
 import io.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import io.firebolt.jdbc.connection.FireboltConnectionTokens;
+import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.StringUtils;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -23,17 +23,17 @@ public class FireboltAuthenticationService {
       ExpiringMap.builder().variableExpiration().build();
   private final FireboltAuthenticationClient fireboltAuthenticationClient;
 
-  public FireboltConnectionTokens getConnectionTokens(String host, String user, String password) {
+  public FireboltConnectionTokens getConnectionTokens(String host, FireboltProperties loginProperties) {
       try {
-      ConnectParams connectionParams = new ConnectParams(host, user, password);
+      ConnectParams connectionParams = new ConnectParams(host, loginProperties.getUser(), loginProperties.getPassword());
       synchronized (this) {
         FireboltConnectionTokens foundToken = tokensMap.get(connectionParams);
         if (foundToken != null) {
-          log.debug("Using the token of {} from the cache", user);
+          log.debug("Using the token of {} from the cache",host);
           return foundToken;
         } else {
           FireboltConnectionTokens fireboltConnectionTokens =
-              fireboltAuthenticationClient.postConnectionTokens(host, user, password);
+              fireboltAuthenticationClient.postConnectionTokens(host, loginProperties.getUser(), loginProperties.getPassword(), loginProperties.isCompress());
           tokensMap.put(
               connectionParams,
               fireboltConnectionTokens,

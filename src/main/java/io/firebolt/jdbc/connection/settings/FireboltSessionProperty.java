@@ -3,6 +3,9 @@ package io.firebolt.jdbc.connection.settings;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 @RequiredArgsConstructor
 @Getter
 public enum FireboltSessionProperty {
@@ -78,14 +81,9 @@ public enum FireboltSessionProperty {
       "TCP option that defines the number of seconds to wait before retransmitting a keep-alive probe. TCP probes a connection that has been idle for some amount of time. If the remote system does not respond to a keep-alive probe, TCP retransmits the probe after some amount of time."),
   COMPRESS(
       "compress",
-      0,
+      1,
       Integer.class,
       "Whether to compress transferred data or not. Compressed by default"),
-  DECOMPRESS(
-      "decompress",
-      false,
-      Boolean.class,
-      "whether to decompress transferred data or not. Disabled by default"),
   DATABASE("database", null, String.class, "default database name"),
   PASSWORD("password", null, String.class, "user password - null by default"),
   USER("user", null, String.class, "user name - null by default"),
@@ -108,5 +106,9 @@ public enum FireboltSessionProperty {
     return Boolean.class.equals(clazz) || Boolean.TYPE.equals(clazz)
         ? new String[] {"true", "false"}
         : null;
+  }
+
+  public static Optional<FireboltSessionProperty> of(String key) {
+    return Arrays.stream(values()).filter(v -> v.key.equals(key)).findAny();
   }
 }

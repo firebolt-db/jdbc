@@ -28,7 +28,7 @@ public class FireboltAuthenticationClient extends FireboltClient {
   private final CloseableHttpClient httpClient;
   private final ObjectMapper objectMapper;
 
-  public FireboltConnectionTokens postConnectionTokens(String host, String user, String password)
+  public FireboltConnectionTokens postConnectionTokens(String host, String user, String password, boolean isCompress)
           throws IOException, ParseException, FireboltException {
     String connectUrl = String.format(AUTH_URL, host);
     log.debug("Creating connection with url {}", connectUrl);
@@ -37,7 +37,7 @@ public class FireboltAuthenticationClient extends FireboltClient {
     post.setEntity(new StringEntity(createLoginRequest(user, password)));
 
     try (CloseableHttpResponse response = httpClient.execute(post)) {
-      this.validateResponse(host, response);
+      this.validateResponse(host, response, isCompress);
       String responseStr = EntityUtils.toString(response.getEntity());
       FireboltAuthenticationResponse authenticationResponse =
           objectMapper.readValue(responseStr, FireboltAuthenticationResponse.class);

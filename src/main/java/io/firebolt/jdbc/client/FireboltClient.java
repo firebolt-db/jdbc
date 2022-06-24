@@ -3,6 +3,7 @@ package io.firebolt.jdbc.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.firebolt.jdbc.ProjectVersionUtil;
 import io.firebolt.jdbc.exception.FireboltException;
+import io.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -11,14 +12,17 @@ import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
@@ -43,11 +47,12 @@ public abstract class FireboltClient {
       String accessToken,
       CloseableHttpClient httpClient,
       ObjectMapper objectMapper,
-      Class<T> valueType)
+      Class<T> valueType,
+      boolean isCompress)
       throws IOException, ParseException, FireboltException {
     HttpGet httpGet = createGetRequest(uri, accessToken);
     try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-      this.validateResponse(host, response);
+      this.validateResponse(host, response, isCompress);
       String responseStr = EntityUtils.toString(response.getEntity());
       return objectMapper.readValue(responseStr, valueType);
     } catch (Exception e) {
@@ -70,7 +75,7 @@ public abstract class FireboltClient {
     return httpPost;
   }
 
-  protected void validateResponse(String host, CloseableHttpResponse response)
+  protected void validateResponse(String host, CloseableHttpResponse response, Boolean isCompress)
       throws FireboltException {
     int statusCode = response.getCode();
     if (!isCallSuccessful(statusCode)) {
@@ -82,20 +87,35 @@ public abstract class FireboltClient {
       }
       String errorResponseMessage;
       try {
-        response.getEntity();
+        String errorFromResponse = extractErrorMessage(response.getEntity(), isCompress);
         errorResponseMessage =
             String.format(
                 "Server failed to execute query with the following error:%n%s%ninternal error:%n%s",
-                EntityUtils.toString(response.getEntity()), this.getInternalErrorWithHeadersText(response));
+                errorFromResponse, this.getInternalErrorWithHeadersText(response));
 
         throw new FireboltException(errorResponseMessage);
       } catch (ParseException | IOException e) {
         log.warn("Could not parse response containing the error message from Firebolt", e);
         errorResponseMessage =
             String.format(
-                "Server failed to execute query%ninternal error:%n%s", this.getInternalErrorWithHeadersText(response));
+                "Server failed to execute query%ninternal error:%n%s",
+                this.getInternalErrorWithHeadersText(response));
         throw new FireboltException(errorResponseMessage, e);
       }
+    }
+  }
+
+  private String extractErrorMessage(HttpEntity entity, boolean isCompress)
+      throws IOException, ParseException {
+    if (isCompress) {
+      InputStream is =
+          new LZ4InputStream(new ByteArrayInputStream(EntityUtils.toByteArray(entity)));
+      return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
+              .lines()
+              .collect(Collectors.joining("\n"))
+          + "\n";
+    } else {
+      return EntityUtils.toString(entity);
     }
   }
 

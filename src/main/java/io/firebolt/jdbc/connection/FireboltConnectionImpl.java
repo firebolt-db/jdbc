@@ -100,9 +100,7 @@ public class FireboltConnectionImpl extends AbstractConnection {
       String engineHost =
           fireboltEngineService.getEngineHost(
               httpConnectionUrl,
-              loginProperties.getDatabase(),
-              loginProperties.getEngine(),
-              loginProperties.getAccount(),
+              loginProperties,
               fireboltConnectionTokens.map(FireboltConnectionTokens::getAccessToken).orElse(null));
       this.sessionProperties = loginProperties.toBuilder().host(engineHost).build();
     } else {
@@ -117,8 +115,7 @@ public class FireboltConnectionImpl extends AbstractConnection {
   private Optional<FireboltConnectionTokens> getConnectionTokens() {
     if (!StringUtils.equalsIgnoreCase(LOCALHOST, loginProperties.getHost())) {
       return Optional.of(
-          fireboltAuthenticationService.getConnectionTokens(
-              httpConnectionUrl, loginProperties.getUser(), loginProperties.getPassword()));
+          fireboltAuthenticationService.getConnectionTokens(httpConnectionUrl, loginProperties));
     }
     return Optional.empty();
   }

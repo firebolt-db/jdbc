@@ -51,7 +51,7 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
       post.setEntity(requestEntity);
       log.debug("Posting query with id {} to URI: {}", queryId, uri);
       CloseableHttpResponse response = httpClient.execute(post);
-      validateResponse(fireboltProperties.getHost(), response);
+      validateResponse(fireboltProperties.getHost(), response, fireboltProperties.isCompress());
       log.debug("Query with id {} was successfully posted", queryId);
       return response.getEntity().getContent();
     } catch (FireboltException e) {
@@ -84,7 +84,7 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
               .toString();
       HttpPost post = new HttpPost(uri);
       CloseableHttpResponse response = httpClient.execute(post);
-      validateResponse(fireboltProperties.getHost(), response);
+      validateResponse(fireboltProperties.getHost(), response, fireboltProperties.isCompress());
     } catch (Exception e) {
       throw new FireboltException(
           String.format("Could not cancel query: %s at %s", queryId, fireboltProperties.getHost()),

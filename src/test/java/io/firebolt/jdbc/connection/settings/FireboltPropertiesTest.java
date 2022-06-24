@@ -20,7 +20,7 @@ class FireboltPropertiesTest {
             .sslMode("strict")
             .path("/")
             .port(443) // 443 by default as SSL is enabled by default
-            .compress(0)
+            .compress(1)
             .enableConnectionPool(0)
             .user(null)
             .password(null)

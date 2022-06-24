@@ -1,6 +1,7 @@
 package io.firebolt.jdbc.resultset;
 
 import io.firebolt.jdbc.exception.FireboltException;
+import io.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import io.firebolt.jdbc.resultset.type.BaseType;
 import io.firebolt.jdbc.resultset.type.FireboltDataType;
 import io.firebolt.jdbc.resultset.type.array.FireboltArray;
@@ -45,17 +46,22 @@ public class FireboltResultSet extends AbstractResultSet {
   }
 
   public FireboltResultSet(InputStream is) throws SQLException {
-    this(is, null, null, null);
+    this(is, null, null, null, false);
   }
 
   public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize)
       throws SQLException {
+    this(is, tableName, dbName, bufferSize, false);
+  }
+
+  public FireboltResultSet(
+      InputStream is, String tableName, String dbName, Integer bufferSize, boolean isCompressed)
+      throws SQLException {
     log.debug("Creating resultSet...");
-    //is = debug(is);
-    this.reader =
-        bufferSize != null
-            ? new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8), bufferSize)
-            : new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+    // is = debug(is);
+
+    this.reader = createStreamReader(is, bufferSize, isCompressed);
+
     try {
       this.next();
       String[] fields = toStringArray(currentLine);
@@ -80,7 +86,20 @@ public class FireboltResultSet extends AbstractResultSet {
     log.debug("ResultSet created");
   }
 
-  private InputStream debug(InputStream is)  {
+  private BufferedReader createStreamReader(InputStream is, Integer bufferSize, boolean isCompressed) {
+    if (isCompressed) {
+      return bufferSize != null
+          ? new BufferedReader(
+              new InputStreamReader(new LZ4InputStream(is), StandardCharsets.UTF_8), bufferSize)
+          : new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+    } else {
+      return bufferSize != null
+          ? new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8), bufferSize)
+          : new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+    }
+  }
+
+  private InputStream debug(InputStream is) {
     try {
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       byte[] buffer = new byte[1024];
@@ -91,9 +110,9 @@ public class FireboltResultSet extends AbstractResultSet {
       baos.flush();
       InputStream streamToLog = new ByteArrayInputStream(baos.toByteArray());
       String text =
-              new BufferedReader(new InputStreamReader(streamToLog, StandardCharsets.UTF_8))
-                      .lines()
-                      .collect(Collectors.joining("\n"));
+          new BufferedReader(new InputStreamReader(streamToLog, StandardCharsets.UTF_8))
+              .lines()
+              .collect(Collectors.joining("\n"));
       log.debug("======================================");
       log.debug(text);
       log.debug("======================================");

@@ -50,10 +50,11 @@ class FireboltConnectionImplTest {
     connectionProperties = new Properties();
     connectionProperties.put("user", "user");
     connectionProperties.put("password", "pa$$word");
+    connectionProperties.put("compress", "1");
     lenient()
         .when(
             fireboltAuthenticationService.getConnectionTokens(
-                "https://api.dev.firebolt.io:443", "user", "pa$$word"))
+                eq("https://api.dev.firebolt.io:443"), any()))
         .thenReturn(fireboltConnectionTokens);
   }
 
@@ -67,7 +68,7 @@ class FireboltConnectionImplTest {
             fireboltEngineService,
             fireboltQueryService);
     verify(fireboltAuthenticationService)
-        .getConnectionTokens("https://api.dev.firebolt.io:443", "user", "pa$$word");
+        .getConnectionTokens(eq("https://api.dev.firebolt.io:443"), any());
     assertFalse(fireboltConnectionImpl.isClosed());
   }
 

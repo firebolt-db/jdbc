@@ -44,6 +44,7 @@ class FireboltAccountClientTest {
   private static final String ACCOUNT_ID = "account_id";
   private static final String DB_NAME = "dbName";
   private static final String ENGINE_NAME = "engineName";
+  private static final Boolean IS_COMPRESS = false;
   private static MockedStatic<ProjectVersionUtil> mockedProjectVersionUtil;
 
   @Spy
@@ -84,7 +85,7 @@ class FireboltAccountClientTest {
     when(response.getEntity()).thenReturn(entity);
     when(httpClient.execute(any())).thenReturn(response);
 
-    Optional<String> accountId = fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN);
+    Optional<String> accountId = fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN, IS_COMPRESS);
 
     HttpGet expectedHttpGet =
         new HttpGet("https://host/iam/v2/accounts:getIdByName?accountName=" + ACCOUNT);
@@ -120,7 +121,7 @@ class FireboltAccountClientTest {
 
     String engineAddress =
         fireboltAccountClient.getEngineAddress(
-            HOST, ENGINE_NAME, DB_NAME, ACCOUNT_ID, ACCESS_TOKEN);
+            HOST, ENGINE_NAME, DB_NAME, ACCOUNT_ID, ACCESS_TOKEN, IS_COMPRESS);
     HttpGet expectedHttpGet =
         new HttpGet("https://host/core/v1/accounts/engineName/engines/" + ACCOUNT_ID);
     Map<String, String> expectedHeader =
@@ -151,7 +152,7 @@ class FireboltAccountClientTest {
     when(httpClient.execute(any())).thenReturn(response);
 
     String dbAddress =
-        fireboltAccountClient.getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
+        fireboltAccountClient.getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN, IS_COMPRESS);
     HttpGet expectedHttpGet =
         new HttpGet(
             String.format(
@@ -186,7 +187,7 @@ class FireboltAccountClientTest {
     when(httpClient.execute(any())).thenReturn(response);
 
     String engineId =
-        fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN);
+        fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN, IS_COMPRESS);
     HttpGet expectedHttpGet =
         new HttpGet(
             String.format(
@@ -213,7 +214,7 @@ class FireboltAccountClientTest {
     when(response.getEntity()).thenReturn(entity);
     when(httpClient.execute(any())).thenReturn(response);
     assertThrows(
-        FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN));
+        FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN, IS_COMPRESS));
   }
 
   @Test
@@ -225,7 +226,7 @@ class FireboltAccountClientTest {
     when(httpClient.execute(any())).thenReturn(response);
 
     assertThrows(
-        FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN));
+        FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN, IS_COMPRESS));
   }
 
   private Map<String, String> extractHeadersMap(HttpGet httpGet) {
