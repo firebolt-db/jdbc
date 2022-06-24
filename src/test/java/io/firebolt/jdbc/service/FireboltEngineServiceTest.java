@@ -1,6 +1,7 @@
 package io.firebolt.jdbc.service;
 
 import io.firebolt.jdbc.client.account.FireboltAccountClient;
+import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,11 +17,11 @@ class FireboltEngineServiceTest {
 
   private static final String ACCESS_TOKEN = "token";
   private static final String HOST = "https://host";
-  private static final String ACCOUNT = "account";
   private static final String ACCOUNT_ID = "account_id";
   private static final String DB_NAME = "dbName";
   private static final String ENGINE_NAME = "engineName";
   private static final String ENGINE_ID = "engineId";
+  private static final Boolean IS_COMPRESS = false;
 
   @Mock private FireboltAccountClient fireboltAccountClient;
 
@@ -28,30 +29,33 @@ class FireboltEngineServiceTest {
 
   @Test
   void shouldGetDbAddressWhenEngineNameIsNullOrEmpty() throws Exception {
-    when(fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN))
+    FireboltProperties properties = FireboltProperties.builder().host(HOST).account(ACCOUNT_ID).database(DB_NAME).compress(0).build();
+    
+    when(fireboltAccountClient.getAccountId(properties.getHost(), properties.getAccount(), ACCESS_TOKEN, properties.isCompress()))
         .thenReturn(Optional.of(ACCOUNT_ID));
 
-    fireboltEngineService.getEngineHost(HOST, DB_NAME, null, ACCOUNT, ACCESS_TOKEN);
+    fireboltEngineService.getEngineHost(HOST, properties, ACCESS_TOKEN);
 
-    verify(fireboltAccountClient).getAccountId(HOST, ACCOUNT, ACCESS_TOKEN);
+    verify(fireboltAccountClient).getAccountId(properties.getHost(), properties.getAccount(), ACCESS_TOKEN, properties.isCompress());
     verify(fireboltAccountClient)
-        .getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
+        .getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN, IS_COMPRESS);
     verifyNoMoreInteractions(fireboltAccountClient);
   }
 
   @Test
-  void shouldGetEngineAddressWhenEngineNameIsNotNullOrEmpty() throws Exception {
-    when(fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN))
+  void shouldGetEngineAddressWhenEngineNameIsPresent() throws Exception {
+    FireboltProperties properties = FireboltProperties.builder().host(HOST).account(ACCOUNT_ID).database(DB_NAME).engine(ENGINE_NAME).compress(0).build();
+    when(fireboltAccountClient.getAccountId(properties.getHost(), properties.getAccount(), ACCESS_TOKEN, properties.isCompress()))
         .thenReturn(Optional.of(ACCOUNT_ID));
-    when(fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN))
+    when(fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN, IS_COMPRESS))
         .thenReturn(ENGINE_ID);
 
-    fireboltEngineService.getEngineHost(HOST, DB_NAME, ENGINE_NAME, ACCOUNT, ACCESS_TOKEN);
+    fireboltEngineService.getEngineHost(HOST, properties, ACCESS_TOKEN);
 
-    verify(fireboltAccountClient).getAccountId(HOST, ACCOUNT, ACCESS_TOKEN);
-    verify(fireboltAccountClient).getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN);
+    verify(fireboltAccountClient).getAccountId(properties.getHost(), ACCOUNT_ID, ACCESS_TOKEN, properties.isCompress());
+    verify(fireboltAccountClient).getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN, IS_COMPRESS);
     verify(fireboltAccountClient)
-        .getEngineAddress(HOST, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN);
+        .getEngineAddress(HOST, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN, IS_COMPRESS);
     verifyNoMoreInteractions(fireboltAccountClient);
   }
 }

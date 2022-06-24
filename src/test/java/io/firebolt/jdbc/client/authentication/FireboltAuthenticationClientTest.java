@@ -33,6 +33,8 @@ class FireboltAuthenticationClientTest {
   private static final String HOST = "https://host";
   private static final String USER = "usr";
   private static final String PASSWORD = "PA§§WORD";
+
+  private static final Boolean IS_COMPRESS = false;
   private static MockedStatic<ProjectVersionUtil> mockedProjectVersionUtil;
 
   @Spy
@@ -77,7 +79,7 @@ class FireboltAuthenticationClientTest {
                         .build()));
     when(entity.getContent()).thenReturn(tokensResponse);
 
-    fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD);
+    fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD, IS_COMPRESS);
 
     verify(httpClient).execute(httpPostArgumentCaptor.capture());
     HttpPost actualPost = httpPostArgumentCaptor.getValue();
@@ -99,7 +101,7 @@ class FireboltAuthenticationClientTest {
 
     assertThrows(
         FireboltException.class,
-        () -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
+        () -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD, IS_COMPRESS));
   }
 
   @Test
@@ -112,7 +114,7 @@ class FireboltAuthenticationClientTest {
 
     assertThrows(
         FireboltException.class,
-        () -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
+        () -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD, IS_COMPRESS));
   }
 
   @Test
@@ -125,6 +127,6 @@ class FireboltAuthenticationClientTest {
 
     assertThrows(
         FireboltException.class,
-        () -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
+        () -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD, IS_COMPRESS));
   }
 }

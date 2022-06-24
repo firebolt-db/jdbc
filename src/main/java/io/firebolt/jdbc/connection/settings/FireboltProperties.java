@@ -44,7 +44,6 @@ public class FireboltProperties {
   String sslCertificatePath;
   String sslMode;
   Integer compress;
-  boolean decompress;
   Integer enableConnectionPool;
   String outputFormat;
   String user;
@@ -63,7 +62,6 @@ public class FireboltProperties {
         getSetting(mergedProperties, FireboltSessionProperty.SSL_CERTIFICATE_PATH);
     String sslMode = getSetting(mergedProperties, FireboltSessionProperty.SSL_MODE);
     Integer compress = getSetting(mergedProperties, FireboltSessionProperty.COMPRESS);
-    boolean decompress = getSetting(mergedProperties, FireboltSessionProperty.DECOMPRESS);
     Integer useConnectionPool =
         getSetting(mergedProperties, FireboltSessionProperty.ENABLE_CONNECTION_POOL);
     String user = getSetting(mergedProperties, FireboltSessionProperty.USER);
@@ -104,7 +102,6 @@ public class FireboltProperties {
         .port(port)
         .database(database)
         .compress(compress)
-        .decompress(decompress)
         .enableConnectionPool(useConnectionPool)
         .user(user)
         .password(password)
@@ -207,6 +204,20 @@ public class FireboltProperties {
 
   public boolean isAggressiveCancelEnabled() {
     return "1".equals(this.additionalProperties.get("aggressive_cancel"));
+  }
+
+  public Integer getCompress() {
+    /* The compress field might be set at startup or by query (eg: SET compress=1), which
+    will add the compress field in the additionalProperties map, so we need to check both. */
+    Optional<String> compressFromAdditionalProperties =
+        Optional.ofNullable(
+            this.getAdditionalProperties().get(FireboltSessionProperty.COMPRESS.getKey()));
+
+    return compressFromAdditionalProperties.map(Integer::parseInt).orElse(compress);
+  }
+
+  public Boolean isCompress() {
+    return Optional.ofNullable(getCompress()).map(value -> 0 != value).orElse(false);
   }
 
   public void addProperty(@NonNull String key, String value) {
