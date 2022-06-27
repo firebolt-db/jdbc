@@ -57,7 +57,7 @@ public enum BaseType {
   OBJECT(Object.class, (value, subType) -> value),
   DECIMAL(BigDecimal.class, (value, subType) -> new BigDecimal(value)),
   BOOLEAN(Boolean.class, (value, subType) -> !"0".equals(value)),
-  ARRAY(Array.class, SqlArrayUtil.transformToSqlArrayFunction::apply);
+  ARRAY(Array.class, SqlArrayUtil::transformToSqlArray);
 
   private static boolean isPositiveInf(String value) {
     return StringUtils.equalsAnyIgnoreCase(value, "+inf", "inf");
