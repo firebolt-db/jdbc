@@ -93,7 +93,7 @@ class FireboltDatabaseMetadataTest {
 
   @Test
   void shouldReturnDriverName() throws SQLException {
-    assertEquals("io.firebolt.firebolt-jdbc", fireboltDatabaseMetadata.getDriverName());
+    assertEquals("Firebolt JDBC Driver", fireboltDatabaseMetadata.getDriverName());
   }
 
   @Test
