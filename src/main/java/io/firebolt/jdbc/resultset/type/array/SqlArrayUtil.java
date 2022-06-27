@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SqlArrayUtil {
 
-  public static FireboltArray transformToSqlArrayFunction(String value, FireboltColumn fireboltColumn) throws FireboltException {
+  public static FireboltArray transformToSqlArray(String value, FireboltColumn fireboltColumn) throws FireboltException {
     log.debug("Transformer array with value {} and type {}", value, fireboltColumn);
     int dimensions = 0;
     for (int x = 0; x < value.length(); x++)
