@@ -33,7 +33,7 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
       FireboltConnectionTokens connectionTokens,
       String sql,
       Connection connection) {
-    super(fireboltQueryService, sessionProperties, connectionTokens);
+    super(fireboltQueryService, sessionProperties, connectionTokens, connection);
     this.sql = sql;
     this.currentParams = new HashMap<>();
     this.totalParams = getTotalParams(sql);
