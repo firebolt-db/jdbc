@@ -353,6 +353,8 @@ public class FireboltConnectionImpl extends AbstractConnection {
       tmpProperties.addProperty(property);
       validateConnection(tmpProperties);
       this.sessionProperties = tmpProperties;
+    } catch (FireboltException e) {
+      throw e;
     } catch (Exception e) {
       throw new FireboltException(
           String.format("Could not set property %s=%s", property.getLeft(), property.getRight()),
