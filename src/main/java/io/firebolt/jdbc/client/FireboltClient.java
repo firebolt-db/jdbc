@@ -1,7 +1,6 @@
 package io.firebolt.jdbc.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.firebolt.jdbc.ProjectVersionUtil;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import lombok.Getter;
@@ -36,9 +35,9 @@ public abstract class FireboltClient {
   public static final String HEADER_USER_AGENT = "User-Agent";
   private final String headerUserAgentValue;
 
-  protected FireboltClient() {
-    String version = ProjectVersionUtil.getProjectVersion();
-    this.headerUserAgentValue = String.format("fireboltJdbcDriver/%s", version);
+  protected FireboltClient(String customConnectors) {
+    this.headerUserAgentValue =
+            UsageTrackerUtil.getUserAgentString(customConnectors != null ? customConnectors : "");
   }
 
   protected <T> T getResource(

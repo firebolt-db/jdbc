@@ -24,7 +24,6 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -60,6 +59,9 @@ class FireboltAccountClientTest {
   static void init() {
     mockedProjectVersionUtil = mockStatic(ProjectVersionUtil.class);
     mockedProjectVersionUtil.when(ProjectVersionUtil::getProjectVersion).thenReturn("1.0-TEST");
+    System.setProperty("java.version", "8.0.1");
+    System.setProperty("os.version", "10.1");
+    System.setProperty("os.name", "MacosX");
   }
 
   @AfterAll
@@ -69,7 +71,7 @@ class FireboltAccountClientTest {
 
   @BeforeEach
   void setUp() {
-    fireboltAccountClient = new FireboltAccountClient(httpClient, objectMapper);
+    fireboltAccountClient = new FireboltAccountClient(httpClient, objectMapper, "ConnA:1.0.9");
   }
 
   @Test
@@ -85,13 +87,17 @@ class FireboltAccountClientTest {
     when(response.getEntity()).thenReturn(entity);
     when(httpClient.execute(any())).thenReturn(response);
 
-    Optional<String> accountId = fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN, IS_COMPRESS);
+    Optional<String> accountId =
+        fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN, IS_COMPRESS);
 
     HttpGet expectedHttpGet =
         new HttpGet("https://host/iam/v2/accounts:getIdByName?accountName=" + ACCOUNT);
     Map<String, String> expectedHeader =
         ImmutableMap.of(
-            "User-Agent", "fireboltJdbcDriver/1.0-TEST", "Authorization", "Bearer " + ACCESS_TOKEN);
+            "User-Agent",
+            "JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
+            "Authorization",
+            "Bearer " + ACCESS_TOKEN);
 
     verify(httpClient).execute(httpGetArgumentCaptor.capture());
     verify(objectMapper).readValue("{\"account_id\":\"12345\"}", FireboltAccountResponse.class);
@@ -126,7 +132,10 @@ class FireboltAccountClientTest {
         new HttpGet("https://host/core/v1/accounts/engineName/engines/" + ACCOUNT_ID);
     Map<String, String> expectedHeader =
         ImmutableMap.of(
-            "User-Agent", "fireboltJdbcDriver/1.0-TEST", "Authorization", "Bearer " + ACCESS_TOKEN);
+            "User-Agent",
+            "JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
+            "Authorization",
+            "Bearer " + ACCESS_TOKEN);
 
     verify(httpClient).execute(httpGetArgumentCaptor.capture());
     verify(objectMapper)
@@ -152,7 +161,8 @@ class FireboltAccountClientTest {
     when(httpClient.execute(any())).thenReturn(response);
 
     String dbAddress =
-        fireboltAccountClient.getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN, IS_COMPRESS);
+        fireboltAccountClient.getDbDefaultEngineAddress(
+            HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN, IS_COMPRESS);
     HttpGet expectedHttpGet =
         new HttpGet(
             String.format(
@@ -160,7 +170,10 @@ class FireboltAccountClientTest {
                 ACCOUNT_ID, DB_NAME));
     Map<String, String> expectedHeader =
         ImmutableMap.of(
-            "User-Agent", "fireboltJdbcDriver/1.0-TEST", "Authorization", "Bearer " + ACCESS_TOKEN);
+            "User-Agent",
+            "JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
+            "Authorization",
+            "Bearer " + ACCESS_TOKEN);
 
     verify(httpClient).execute(httpGetArgumentCaptor.capture());
     verify(objectMapper)
@@ -195,7 +208,10 @@ class FireboltAccountClientTest {
                 ACCOUNT_ID, ENGINE_NAME));
     Map<String, String> expectedHeader =
         ImmutableMap.of(
-            "User-Agent", "fireboltJdbcDriver/1.0-TEST", "Authorization", "Bearer " + ACCESS_TOKEN);
+            "User-Agent",
+            "JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
+            "Authorization",
+            "Bearer " + ACCESS_TOKEN);
 
     verify(httpClient).execute(httpGetArgumentCaptor.capture());
     verify(objectMapper)
@@ -214,7 +230,8 @@ class FireboltAccountClientTest {
     when(response.getEntity()).thenReturn(entity);
     when(httpClient.execute(any())).thenReturn(response);
     assertThrows(
-        FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN, IS_COMPRESS));
+        FireboltException.class,
+        () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN, IS_COMPRESS));
   }
 
   @Test
@@ -226,7 +243,8 @@ class FireboltAccountClientTest {
     when(httpClient.execute(any())).thenReturn(response);
 
     assertThrows(
-        FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN, IS_COMPRESS));
+        FireboltException.class,
+        () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN, IS_COMPRESS));
   }
 
   private Map<String, String> extractHeadersMap(HttpGet httpGet) {

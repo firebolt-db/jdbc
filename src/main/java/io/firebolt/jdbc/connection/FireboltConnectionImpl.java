@@ -57,6 +57,7 @@ public class FireboltConnectionImpl extends AbstractConnection {
     this.fireboltAuthenticationService = fireboltAuthenticationService;
     this.fireboltEngineService = fireboltEngineService;
     this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
+    loginProperties.getAdditionalProperties().remove("connector_versions");
     this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
     this.fireboltQueryService = fireboltQueryService;
     this.statements = new ArrayList<>();
@@ -67,14 +68,18 @@ public class FireboltConnectionImpl extends AbstractConnection {
       throws FireboltException {
     ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
     this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
+    String connectorVersions =
+        loginProperties.getAdditionalProperties().remove("connector_versions");
     this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
     CloseableHttpClient httpClient = getHttpClient(loginProperties);
     this.fireboltAuthenticationService =
         new FireboltAuthenticationService(
-            new FireboltAuthenticationClient(httpClient, objectMapper));
+            new FireboltAuthenticationClient(httpClient, objectMapper, connectorVersions));
     this.fireboltEngineService =
-        new FireboltEngineService(new FireboltAccountClient(httpClient, objectMapper));
-    this.fireboltQueryService = new FireboltQueryService(new QueryClientImpl(httpClient));
+        new FireboltEngineService(
+            new FireboltAccountClient(httpClient, objectMapper, connectorVersions));
+    this.fireboltQueryService =
+        new FireboltQueryService(new QueryClientImpl(httpClient, connectorVersions));
     this.statements = new ArrayList<>();
     this.connect();
   }

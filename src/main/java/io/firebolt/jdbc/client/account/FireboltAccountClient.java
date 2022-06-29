@@ -16,7 +16,6 @@ import org.apache.hc.core5.http.ParseException;
 import java.io.IOException;
 import java.util.Optional;
 
-@RequiredArgsConstructor
 @Slf4j
 public class FireboltAccountClient extends FireboltClient {
 
@@ -41,21 +40,48 @@ public class FireboltAccountClient extends FireboltClient {
   private final CloseableHttpClient httpClient;
   private final ObjectMapper objectMapper;
 
-  public Optional<String> getAccountId(String host, String account, String accessToken, boolean isCompress)
+  public FireboltAccountClient(
+      CloseableHttpClient httpClient, ObjectMapper objectMapper, String customConnectors) {
+    super(customConnectors);
+    this.httpClient = httpClient;
+    this.objectMapper = objectMapper;
+  }
+
+  public Optional<String> getAccountId(
+      String host, String account, String accessToken, boolean isCompress)
       throws IOException, ParseException, FireboltException {
     String uri = String.format(GET_ACCOUNT_ID_URI, host, account);
     return Optional.ofNullable(
-            getResource(uri, host, accessToken, httpClient, objectMapper, FireboltAccountResponse.class, isCompress))
+            getResource(
+                uri,
+                host,
+                accessToken,
+                httpClient,
+                objectMapper,
+                FireboltAccountResponse.class,
+                isCompress))
         .map(FireboltAccountResponse::getAccountId);
   }
 
   public String getEngineAddress(
-      String host, String accountId, String engineName, String engineID, String accessToken, boolean isCompress)
+      String host,
+      String accountId,
+      String engineName,
+      String engineID,
+      String accessToken,
+      boolean isCompress)
       throws IOException, ParseException, FireboltException {
     String uri =
         createAccountUri(accountId, host, URI_SUFFIX_ACCOUNT_ENGINE_INFO_BY_ENGINE_ID + engineID);
     FireboltEngineResponse response =
-        getResource(uri, host, accessToken, httpClient, objectMapper, FireboltEngineResponse.class, isCompress);
+        getResource(
+            uri,
+            host,
+            accessToken,
+            httpClient,
+            objectMapper,
+            FireboltEngineResponse.class,
+            isCompress);
     return Optional.ofNullable(response)
         .map(FireboltEngineResponse::getEngine)
         .map(FireboltEngineResponse.Engine::getEndpoint)
@@ -74,7 +100,14 @@ public class FireboltAccountClient extends FireboltClient {
       throws IOException, ParseException, FireboltException {
     String uri = createAccountUri(accountId, host, URI_SUFFIX_DATABASE_INFO_URL + dbName);
     FireboltDatabaseResponse response =
-        getResource(uri, host, accessToken, httpClient, objectMapper, FireboltDatabaseResponse.class, isCompress);
+        getResource(
+            uri,
+            host,
+            accessToken,
+            httpClient,
+            objectMapper,
+            FireboltDatabaseResponse.class,
+            isCompress);
     return Optional.ofNullable(response)
         .map(FireboltDatabaseResponse::getEngineUrl)
         .orElseThrow(
@@ -87,13 +120,21 @@ public class FireboltAccountClient extends FireboltClient {
                         + ERROR_NO_RUNNING_ENGINE_SUFFIX));
   }
 
-  public String getEngineId(String host, String accountId, String engineName, String accessToken, boolean isCompress)
-          throws IOException, ParseException, FireboltException {
+  public String getEngineId(
+      String host, String accountId, String engineName, String accessToken, boolean isCompress)
+      throws IOException, ParseException, FireboltException {
     String uri =
         createAccountUri(
             accountId, host, URI_SUFFIX_ENGINE_AND_ACCOUNT_ID_BY_ENGINE_NAME + engineName);
     FireboltEngineIdResponse response =
-        getResource(uri, host, accessToken, httpClient, objectMapper, FireboltEngineIdResponse.class, isCompress);
+        getResource(
+            uri,
+            host,
+            accessToken,
+            httpClient,
+            objectMapper,
+            FireboltEngineIdResponse.class,
+            isCompress);
     return Optional.ofNullable(response)
         .map(FireboltEngineIdResponse::getEngine)
         .map(FireboltEngineIdResponse.Engine::getEngineId)

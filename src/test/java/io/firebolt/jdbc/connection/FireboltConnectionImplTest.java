@@ -181,4 +181,33 @@ class FireboltConnectionImplTest {
         "1",
         fireboltConnectionImpl.getSessionProperties().getAdditionalProperties().get("custom_1"));
   }
+
+  @Test
+  void shouldExtractConnectorOverrides() throws SQLException {
+    when(fireboltQueryService.executeQuery(any(), anyBoolean(), any(), any(), any()))
+        .thenReturn(new ByteArrayInputStream("".getBytes()));
+    connectionProperties.put("connector_versions", "ConnA:1.0.9,ConnB:2.8.0");
+
+    FireboltConnectionImpl fireboltConnectionImpl =
+        new FireboltConnectionImpl(
+            URL,
+            connectionProperties,
+            fireboltAuthenticationService,
+            fireboltEngineService,
+            fireboltQueryService);
+
+    PreparedStatement statement = fireboltConnectionImpl.prepareStatement("SELECT 1");
+    statement.execute();
+
+    verify(fireboltQueryService)
+        .executeQuery(
+            eq("SELECT 1"), anyBoolean(), any(), any(), propertiesArgumentCaptor.capture());
+    assertNull(
+        propertiesArgumentCaptor.getValue().getAdditionalProperties().get("connector_versions"));
+    assertNull(
+        fireboltConnectionImpl
+            .getSessionProperties()
+            .getAdditionalProperties()
+            .get("connector_versions"));
+  }
 }

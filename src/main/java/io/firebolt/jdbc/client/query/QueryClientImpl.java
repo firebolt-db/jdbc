@@ -23,7 +23,6 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-@RequiredArgsConstructor
 @Slf4j
 public class QueryClientImpl extends FireboltClient implements QueryClient {
   private static final String TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT =
@@ -31,6 +30,11 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
   private final CloseableHttpClient httpClient;
 
   private final Map<String, HttpPost> runningQueries = new HashMap<>();
+
+  public QueryClientImpl(CloseableHttpClient httpClient, String customConnectors) {
+    super(customConnectors);
+    this.httpClient = httpClient;
+  }
 
   public InputStream postSqlQuery(
       String sql,
