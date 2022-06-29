@@ -1,6 +1,6 @@
 package io.firebolt.jdbc.metadata;
 
-import io.firebolt.jdbc.connection.FireboltConnectionImpl;
+import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.resultset.FireboltColumn;
 import io.firebolt.jdbc.resultset.type.FireboltDataType;
@@ -24,9 +24,9 @@ import static java.sql.Types.VARCHAR;
 public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 
   private final String url;
-  private final FireboltConnectionImpl connection;
+  private final FireboltConnection connection;
 
-  public FireboltDatabaseMetadata(String url, FireboltConnectionImpl connection) {
+  public FireboltDatabaseMetadata(String url, FireboltConnection connection) {
     this.url = url;
     this.connection = connection;
   }
@@ -311,13 +311,13 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 
   private Statement createStatementWithRequiredPropertiesToQuerySystem() throws SQLException {
     String useStandardSql =
-        ((FireboltConnectionImpl) this.getConnection())
+        ((FireboltConnection) this.getConnection())
             .getSessionProperties()
             .getAdditionalProperties()
             .get("use_standard_sql");
     if ("0".equals(useStandardSql)) {
       FireboltProperties properties =
-          ((FireboltConnectionImpl) this.getConnection()).getSessionProperties();
+          ((FireboltConnection) this.getConnection()).getSessionProperties();
       FireboltProperties tmpProperties = FireboltProperties.copy(properties);
       tmpProperties.addProperty("use_standard_sql", "1");
       return connection.createStatement(tmpProperties);

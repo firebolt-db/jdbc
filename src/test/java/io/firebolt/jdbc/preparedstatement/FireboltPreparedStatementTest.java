@@ -30,14 +30,11 @@ class FireboltPreparedStatementTest {
 
   @Mock private FireboltProperties properties;
 
-  private final String ACCESS_TOKEN = "ACCESS";
-
-
   @BeforeEach
   void beforeEach() throws FireboltException {
     lenient().when(properties.getBufferSize()).thenReturn(10);
     lenient()
-        .when(fireboltQueryService.executeQuery(any(), anyBoolean(), any(), any(), any()))
+        .when(fireboltQueryService.executeQuery(any(), anyBoolean(), any(), any()))
         .thenReturn(Mockito.mock(InputStream.class));
   }
 
@@ -47,7 +44,6 @@ class FireboltPreparedStatementTest {
         FireboltPreparedStatement.statementBuilder()
             .fireboltQueryService(fireboltQueryService)
             .sql("INSERT INTO cars (sales, make) VALUES (?,?)")
-            .accessToken(ACCESS_TOKEN)
             .sessionProperties(properties)
             .build();
 
@@ -59,7 +55,6 @@ class FireboltPreparedStatementTest {
             eq("INSERT INTO cars (sales, make) VALUES (500,'Ford')"),
             anyBoolean(),
             anyString(),
-            anyString(),
             eq(this.properties));
   }
 
@@ -69,7 +64,6 @@ class FireboltPreparedStatementTest {
         FireboltPreparedStatement.statementBuilder()
             .fireboltQueryService(fireboltQueryService)
             .sql("INSERT INTO cars (sales, make) VALUES (?,?)")
-            .accessToken(ACCESS_TOKEN)
             .sessionProperties(properties)
             .build();
 
@@ -85,14 +79,12 @@ class FireboltPreparedStatementTest {
             eq("INSERT INTO cars (sales, make) VALUES (150,'Ford')"),
             anyBoolean(),
             anyString(),
-            anyString(),
             eq(this.properties));
 
     verify(fireboltQueryService)
         .executeQuery(
             eq("INSERT INTO cars (sales, make) VALUES (300,'Tesla')"),
             anyBoolean(),
-            anyString(),
             anyString(),
             eq(this.properties));
   }
@@ -130,7 +122,6 @@ class FireboltPreparedStatementTest {
         FireboltPreparedStatement.statementBuilder()
             .fireboltQueryService(fireboltQueryService)
             .sql(sql)
-            .accessToken(ACCESS_TOKEN)
             .sessionProperties(properties)
             .build();
 
@@ -142,7 +133,7 @@ class FireboltPreparedStatementTest {
 
     statement.execute();
     verify(fireboltQueryService)
-        .executeQuery(eq(expectedSql), anyBoolean(), anyString(), anyString(), eq(this.properties));
+        .executeQuery(eq(expectedSql), anyBoolean(), anyString(), eq(this.properties));
   }
 
   @Test
@@ -153,7 +144,6 @@ class FireboltPreparedStatementTest {
         FireboltPreparedStatement.statementBuilder()
             .fireboltQueryService(fireboltQueryService)
             .sql(sql)
-            .accessToken(ACCESS_TOKEN)
             .sessionProperties(properties)
             .build();
 
@@ -189,7 +179,6 @@ class FireboltPreparedStatementTest {
             eq("INSERT INTO cars (sales, make) VALUES (\\N,\\N)"),
             anyBoolean(),
             anyString(),
-            anyString(),
             eq(this.properties));
   }
 
@@ -205,7 +194,6 @@ class FireboltPreparedStatementTest {
         .executeQuery(
             eq("INSERT INTO cars(available) VALUES (1)"),
             anyBoolean(),
-            anyString(),
             anyString(),
             eq(this.properties));
   }
@@ -238,7 +226,6 @@ class FireboltPreparedStatementTest {
             eq("INSERT INTO cars(price) VALUES (50)"),
             anyBoolean(),
             anyString(),
-            anyString(),
             eq(this.properties));
   }
 
@@ -254,7 +241,6 @@ class FireboltPreparedStatementTest {
         .executeQuery(
             eq("INSERT INTO cars(price) VALUES (50)"),
             anyBoolean(),
-            anyString(),
             anyString(),
             eq(this.properties));
   }
@@ -272,7 +258,6 @@ class FireboltPreparedStatementTest {
             eq("INSERT INTO cars(price) VALUES (5.5)"),
             anyBoolean(),
             anyString(),
-            anyString(),
             eq(this.properties));
   }
 
@@ -289,7 +274,6 @@ class FireboltPreparedStatementTest {
             eq("INSERT INTO cars(price) VALUES (5.5)"),
             anyBoolean(),
             anyString(),
-            anyString(),
             eq(this.properties));
   }
 
@@ -305,7 +289,6 @@ class FireboltPreparedStatementTest {
         .executeQuery(
             eq("INSERT INTO cars(price) VALUES (555555555555.55555555)"),
             anyBoolean(),
-            anyString(),
             anyString(),
             eq(this.properties));
   }
@@ -324,7 +307,6 @@ class FireboltPreparedStatementTest {
             eq("INSERT INTO cars(release_date) VALUES ('2019-07-31')"),
             anyBoolean(),
             anyString(),
-            anyString(),
             eq(this.properties));
   }
 
@@ -341,7 +323,6 @@ class FireboltPreparedStatementTest {
         .executeQuery(
             eq("INSERT INTO cars(release_date) VALUES ('2019-07-31 12:15:13')"),
             anyBoolean(),
-            anyString(),
             anyString(),
             eq(this.properties));
   }
@@ -371,7 +352,6 @@ class FireboltPreparedStatementTest {
                 "INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,\\N,1,5)"),
             anyBoolean(),
             anyString(),
-            anyString(),
             eq(this.properties));
   }
 
@@ -388,7 +368,6 @@ class FireboltPreparedStatementTest {
     return FireboltPreparedStatement.statementBuilder()
         .fireboltQueryService(fireboltQueryService)
         .sql(sql)
-        .accessToken(ACCESS_TOKEN)
         .sessionProperties(properties)
         .build();
   }
