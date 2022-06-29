@@ -1,7 +1,7 @@
 package io.firebolt.jdbc.statement;
 
 import io.firebolt.QueryUtil;
-import io.firebolt.jdbc.connection.FireboltConnectionImpl;
+import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.FireboltResultSet;
@@ -26,8 +26,6 @@ public class FireboltStatementImpl extends AbstractStatement {
       "KILL QUERY ON CLUSTER sql_cluster WHERE initial_query_id='%s'";
   private final FireboltQueryService fireboltQueryService;
   private FireboltProperties sessionProperties;
-  private final String accessToken;
-
   private String queryId;
 
   private boolean closeOnCompletion;
@@ -38,17 +36,15 @@ public class FireboltStatementImpl extends AbstractStatement {
 
   private ResultSet resultSet;
 
-  private FireboltConnectionImpl connection;
+  private FireboltConnection connection;
 
   @Builder
   public FireboltStatementImpl(
       FireboltQueryService fireboltQueryService,
       FireboltProperties sessionProperties,
-      String accessToken,
-      FireboltConnectionImpl connection) {
+      FireboltConnection connection) {
     this.fireboltQueryService = fireboltQueryService;
     this.sessionProperties = sessionProperties;
-    this.accessToken = accessToken;
     this.closeOnCompletion = true;
     this.currentUpdateCount = -1;
     this.isClosed = false;
@@ -80,7 +76,7 @@ public class FireboltStatementImpl extends AbstractStatement {
         boolean isSelect = QueryUtil.isSelect(sql);
         log.debug("Query with id {} is a SELECT: {}", this.queryId, isSelect);
         InputStream inputStream =
-            fireboltQueryService.executeQuery(sql, isSelect, queryId, accessToken, properties);
+            fireboltQueryService.executeQuery(sql, isSelect, queryId, properties);
         if (isSelect) {
           currentUpdateCount = -1; // Always -1 when returning a ResultSet
           Pair<Optional<String>, Optional<String>> dbNameAndTableNamePair =
@@ -112,7 +108,8 @@ public class FireboltStatementImpl extends AbstractStatement {
     try {
       inputStream.close();
     } catch (Exception e) {
-      throw new FireboltException(String.format("Error closing InputStream with query: %s", sql), e);
+      throw new FireboltException(
+          String.format("Error closing InputStream with query: %s", sql), e);
     }
   }
 

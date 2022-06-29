@@ -10,7 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 public class FireboltEngineService {
   private final FireboltAccountClient fireboltAccountClient;
 
-  public String getEngineHost(String host, FireboltProperties loginProperties, String accessToken)
+  public String getEngineHost(String host, FireboltProperties loginProperties)
       throws FireboltException {
     String accountId = null;
     try {
@@ -18,17 +18,17 @@ public class FireboltEngineService {
         accountId =
             fireboltAccountClient
                 .getAccountId(
-                    host, loginProperties.getAccount(), accessToken, loginProperties.isCompress())
+                    host, loginProperties.getAccount(), loginProperties.isCompress())
                 .orElse(null);
       }
       if (StringUtils.isEmpty(loginProperties.getEngine()))
         return fireboltAccountClient.getDbDefaultEngineAddress(
-            host, accountId, loginProperties.getDatabase(), accessToken, loginProperties.isCompress());
+            host, accountId, loginProperties.getDatabase(), loginProperties.isCompress());
       String engineID =
           fireboltAccountClient.getEngineId(
-              host, accountId, loginProperties.getEngine(), accessToken, loginProperties.isCompress());
+              host, accountId, loginProperties.getEngine(), loginProperties.isCompress());
       return fireboltAccountClient.getEngineAddress(
-          host, accountId, loginProperties.getEngine(), engineID, accessToken, loginProperties.isCompress());
+          host, accountId, loginProperties.getEngine(), engineID, loginProperties.isCompress());
     } catch (Exception e) {
       throw new FireboltException(String.format("Could not get engine host at %s", host), e);
     }

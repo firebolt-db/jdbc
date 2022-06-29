@@ -1,6 +1,6 @@
 package io.firebolt.jdbc.metadata;
 
-import io.firebolt.jdbc.connection.FireboltConnectionImpl;
+import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.metadata.FireboltDatabaseMetadataResult.Column;
 import io.firebolt.jdbc.resultset.FireboltResultSet;
@@ -31,7 +31,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class FireboltDatabaseMetadataTest {
 
-  @Mock private FireboltConnectionImpl fireboltConnection;
+  @Mock private FireboltConnection fireboltConnection;
 
   @Mock private FireboltStatementImpl statement;
 

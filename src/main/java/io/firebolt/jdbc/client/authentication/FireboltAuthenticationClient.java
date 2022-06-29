@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.firebolt.jdbc.client.FireboltClient;
 import io.firebolt.jdbc.client.authentication.response.FireboltAuthenticationResponse;
+import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import io.firebolt.jdbc.exception.FireboltException;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class FireboltAuthenticationClient extends FireboltClient {
   private static final String AUTH_URL = "%s/auth/v1/login";
   private final CloseableHttpClient httpClient;
   private final ObjectMapper objectMapper;
+  private final FireboltConnection connection;
 
   public FireboltConnectionTokens postConnectionTokens(String host, String user, String password, boolean isCompress)
           throws IOException, ParseException, FireboltException {
@@ -71,5 +73,10 @@ public class FireboltAuthenticationClient extends FireboltClient {
       throws JsonProcessingException {
     return new ObjectMapper()
         .writeValueAsString(ImmutableMap.of(USERNAME, username, PASSWORD, password));
+  }
+
+  @Override
+  protected FireboltConnection getConnection() {
+    return this.connection;
   }
 }

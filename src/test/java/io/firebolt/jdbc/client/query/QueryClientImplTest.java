@@ -1,5 +1,7 @@
 package io.firebolt.jdbc.client.query;
 
+import io.firebolt.jdbc.connection.FireboltConnection;
+import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
@@ -22,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,15 +43,16 @@ class QueryClientImplTest {
       throws FireboltException, IOException, URISyntaxException {
     FireboltProperties fireboltProperties =
         FireboltProperties.builder().database("db1").compress(1).host("firebolt1").port(80).build();
-    String accessToken = "token";
-    QueryClient queryClient = new QueryClientImpl(closeableHttpClient);
+    FireboltConnection connection = mock(FireboltConnection.class);
+    when(connection.getConnectionTokens()).thenReturn(Optional.of(FireboltConnectionTokens.builder().accessToken("token").build()));
+    QueryClient queryClient = new QueryClientImpl(closeableHttpClient, connection);
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
     HttpEntity httpEntity = mock(HttpEntity.class);
     when(response.getCode()).thenReturn(200);
     when(response.getEntity()).thenReturn(httpEntity);
     when(closeableHttpClient.execute(any())).thenReturn(response);
 
-    queryClient.postSqlQuery("show databases", true, "123456", accessToken, fireboltProperties);
+    queryClient.postSqlQuery("show databases", true, "123456", fireboltProperties);
 
     verify(closeableHttpClient).execute(httpPostArgumentCaptor.capture());
     HttpPost actualHttpPost = httpPostArgumentCaptor.getValue();
@@ -73,7 +77,7 @@ class QueryClientImplTest {
   void shouldCancelSqlQuery() throws FireboltException, IOException, URISyntaxException {
     FireboltProperties fireboltProperties =
         FireboltProperties.builder().database("db1").compress(1).host("firebolt1").port(80).build();
-    QueryClient queryClient = new QueryClientImpl(closeableHttpClient);
+    QueryClient queryClient = new QueryClientImpl(closeableHttpClient, mock(FireboltConnection.class));
 
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
     when(response.getCode()).thenReturn(200);

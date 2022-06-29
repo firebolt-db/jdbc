@@ -2,6 +2,8 @@ package io.firebolt.jdbc.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.firebolt.jdbc.ProjectVersionUtil;
+import io.firebolt.jdbc.connection.FireboltConnection;
+import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import lombok.Getter;
@@ -24,8 +26,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
-import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
+import static io.firebolt.jdbc.exception.ExceptionType.EXPIRED_TOKEN;
+import static java.net.HttpURLConnection.*;
 
 @Getter
 @Slf4j
@@ -44,13 +46,18 @@ public abstract class FireboltClient {
   protected <T> T getResource(
       String uri,
       String host,
-      String accessToken,
       CloseableHttpClient httpClient,
       ObjectMapper objectMapper,
       Class<T> valueType,
       boolean isCompress)
       throws IOException, ParseException, FireboltException {
-    HttpGet httpGet = createGetRequest(uri, accessToken);
+    HttpGet httpGet =
+        createGetRequest(
+            uri,
+            this.getConnection()
+                .getConnectionTokens()
+                .map(FireboltConnectionTokens::getAccessToken)
+                .orElse(null));
     try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
       this.validateResponse(host, response, isCompress);
       String responseStr = EntityUtils.toString(response.getEntity());
@@ -84,6 +91,12 @@ public abstract class FireboltClient {
             String.format(
                 "Could not query Firebolt at %s. The engine is not running. Status code: %d",
                 host, HTTP_FORBIDDEN));
+      } else if (statusCode == HTTP_UNAUTHORIZED) {
+        this.getConnection().removeExpiredTokens();
+        throw new FireboltException(
+            String.format(
+                "Could not query Firebolt at %s. The token is expired and has been cleared", host),
+            EXPIRED_TOKEN);
       }
       String errorResponseMessage;
       try {
@@ -143,4 +156,6 @@ public abstract class FireboltClient {
     stringBuilder.append(Arrays.toString(response.getHeaders()));
     return stringBuilder.toString();
   }
+
+  protected abstract FireboltConnection getConnection();
 }

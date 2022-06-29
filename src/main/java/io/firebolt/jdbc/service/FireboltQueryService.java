@@ -15,9 +15,9 @@ public class FireboltQueryService {
   private final QueryClient queryClient;
 
   public InputStream executeQuery(
-      String sql, boolean isSelect, String queryId, String accessToken, FireboltProperties properties)
+      String sql, boolean isSelect, String queryId, FireboltProperties properties)
       throws FireboltException {
-    return queryClient.postSqlQuery(sql, isSelect, queryId, accessToken, properties);
+    return queryClient.postSqlQuery(sql, isSelect, queryId, properties);
   }
 
   public void cancelQuery(String queryId, FireboltProperties properties) throws FireboltException {

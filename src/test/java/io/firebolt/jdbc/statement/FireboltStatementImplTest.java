@@ -1,6 +1,6 @@
 package io.firebolt.jdbc.statement;
 
-import io.firebolt.jdbc.connection.FireboltConnectionImpl;
+import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.resultset.FireboltResultSet;
 import io.firebolt.jdbc.service.FireboltQueryService;
@@ -43,17 +43,16 @@ class FireboltStatementImplTest {
           FireboltStatementImpl.builder()
               .fireboltQueryService(fireboltQueryService)
               .sessionProperties(fireboltProperties)
-              .accessToken("token")
               .build();
 
       when(fireboltQueryService.executeQuery(
-              eq("show database"), anyBoolean(), anyString(), eq("token"), eq(fireboltProperties)))
+              eq("show database"), anyBoolean(), anyString(), eq(fireboltProperties)))
           .thenReturn(mock(InputStream.class));
       fireboltStatement.executeQuery("show database");
       assertTrue(fireboltProperties.getAdditionalProperties().isEmpty());
       verify(fireboltQueryService)
           .executeQuery(
-              eq("show database"), anyBoolean(), anyString(), eq("token"), eq(fireboltProperties));
+              eq("show database"), anyBoolean(), anyString(), eq(fireboltProperties));
       assertEquals(1, mocked.constructed().size());
       assertEquals(-1, fireboltStatement.getUpdateCount());
     }
@@ -63,7 +62,7 @@ class FireboltStatementImplTest {
   void shouldExtractAdditionalProperties() throws SQLException {
     try (MockedConstruction<FireboltResultSet> mockedResultSet =
         Mockito.mockConstruction(FireboltResultSet.class)) {
-      FireboltConnectionImpl connection = mock(FireboltConnectionImpl.class);
+      FireboltConnection connection = mock(FireboltConnection.class);
       FireboltProperties fireboltProperties =
           FireboltProperties.builder().additionalProperties(new HashMap<>()).build();
 
@@ -71,7 +70,6 @@ class FireboltStatementImplTest {
           FireboltStatementImpl.builder()
               .fireboltQueryService(fireboltQueryService)
               .sessionProperties(fireboltProperties)
-              .accessToken("token")
               .connection(connection)
               .build();
 
@@ -95,10 +93,9 @@ class FireboltStatementImplTest {
           FireboltStatementImpl.builder()
               .fireboltQueryService(fireboltQueryService)
               .sessionProperties(fireboltProperties)
-              .accessToken("token")
               .build();
 
-      when(fireboltQueryService.executeQuery(any(), anyBoolean(), any(), any(), any()))
+      when(fireboltQueryService.executeQuery(any(), anyBoolean(), any(), any()))
           .thenReturn(mock(InputStream.class));
       fireboltStatement.executeQuery("SHOW DATABASE"); // call once to create queryId
       fireboltStatement.cancel();
@@ -107,7 +104,6 @@ class FireboltStatementImplTest {
               sqlArgumentCaptor.capture(),
               booleanArgumentCaptor.capture(),
               queryIdArgumentCaptor.capture(),
-              any(),
               fireboltPropertiesArgumentCaptor.capture());
       assertEquals(
           "KILL QUERY ON CLUSTER sql_cluster WHERE initial_query_id='"
@@ -137,10 +133,9 @@ class FireboltStatementImplTest {
           FireboltStatementImpl.builder()
               .fireboltQueryService(fireboltQueryService)
               .sessionProperties(fireboltProperties)
-              .accessToken("token")
               .build();
 
-      when(fireboltQueryService.executeQuery(any(), anyBoolean(), any(), any(), any()))
+      when(fireboltQueryService.executeQuery(any(), anyBoolean(), any(), any()))
           .thenReturn(mock(InputStream.class));
       fireboltStatement.executeQuery("SHOW DATABASE"); // call once to create queryId
       fireboltStatement.cancel();
@@ -154,16 +149,15 @@ class FireboltStatementImplTest {
         Mockito.mockConstruction(FireboltResultSet.class)) {
       FireboltProperties fireboltProperties =
           FireboltProperties.builder().additionalProperties(new HashMap<>()).build();
-      FireboltConnectionImpl connection = mock(FireboltConnectionImpl.class);
+      FireboltConnection connection = mock(FireboltConnection.class);
       FireboltStatementImpl fireboltStatement =
           FireboltStatementImpl.builder()
               .fireboltQueryService(fireboltQueryService)
               .sessionProperties(fireboltProperties)
               .connection(connection)
-              .accessToken("token")
               .build();
 
-      when(fireboltQueryService.executeQuery(any(), anyBoolean(), any(), any(), any()))
+      when(fireboltQueryService.executeQuery(any(), anyBoolean(), any(), any()))
           .thenReturn(mock(InputStream.class));
 
       fireboltStatement.executeQuery("show database");

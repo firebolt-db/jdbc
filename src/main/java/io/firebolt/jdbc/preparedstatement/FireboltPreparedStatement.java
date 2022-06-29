@@ -1,7 +1,7 @@
 package io.firebolt.jdbc.preparedstatement;
 
 import io.firebolt.QueryUtil;
-import io.firebolt.jdbc.connection.FireboltConnectionImpl;
+import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.type.JavaTypeToStringConverter;
@@ -34,10 +34,9 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
   public FireboltPreparedStatement(
       FireboltQueryService fireboltQueryService,
       FireboltProperties sessionProperties,
-      String accessToken,
       String sql,
-      FireboltConnectionImpl connection) {
-    super(fireboltQueryService, sessionProperties, accessToken, connection);
+      FireboltConnection connection) {
+    super(fireboltQueryService, sessionProperties, connection);
     log.debug("Populating PreparedStatement object for SQL: {}", sql);
     this.sql = sql;
     Pair<String, Integer> cleanQueryWithParamCount =

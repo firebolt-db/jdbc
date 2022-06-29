@@ -6,6 +6,7 @@ import io.firebolt.jdbc.client.account.response.FireboltAccountResponse;
 import io.firebolt.jdbc.client.account.response.FireboltDatabaseResponse;
 import io.firebolt.jdbc.client.account.response.FireboltEngineIdResponse;
 import io.firebolt.jdbc.client.account.response.FireboltEngineResponse;
+import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.exception.FireboltException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,21 +42,23 @@ public class FireboltAccountClient extends FireboltClient {
   private final CloseableHttpClient httpClient;
   private final ObjectMapper objectMapper;
 
-  public Optional<String> getAccountId(String host, String account, String accessToken, boolean isCompress)
+  private final FireboltConnection fireboltConnection;
+
+  public Optional<String> getAccountId(String host, String account, boolean isCompress)
       throws IOException, ParseException, FireboltException {
     String uri = String.format(GET_ACCOUNT_ID_URI, host, account);
     return Optional.ofNullable(
-            getResource(uri, host, accessToken, httpClient, objectMapper, FireboltAccountResponse.class, isCompress))
+            getResource(uri, host, httpClient, objectMapper, FireboltAccountResponse.class, isCompress))
         .map(FireboltAccountResponse::getAccountId);
   }
 
   public String getEngineAddress(
-      String host, String accountId, String engineName, String engineID, String accessToken, boolean isCompress)
+      String host, String accountId, String engineName, String engineID, boolean isCompress)
       throws IOException, ParseException, FireboltException {
     String uri =
         createAccountUri(accountId, host, URI_SUFFIX_ACCOUNT_ENGINE_INFO_BY_ENGINE_ID + engineID);
     FireboltEngineResponse response =
-        getResource(uri, host, accessToken, httpClient, objectMapper, FireboltEngineResponse.class, isCompress);
+        getResource(uri, host, httpClient, objectMapper, FireboltEngineResponse.class, isCompress);
     return Optional.ofNullable(response)
         .map(FireboltEngineResponse::getEngine)
         .map(FireboltEngineResponse.Engine::getEndpoint)
@@ -70,11 +73,11 @@ public class FireboltAccountClient extends FireboltClient {
   }
 
   public String getDbDefaultEngineAddress(
-      String host, String accountId, String dbName, String accessToken, boolean isCompress)
+      String host, String accountId, String dbName, boolean isCompress)
       throws IOException, ParseException, FireboltException {
     String uri = createAccountUri(accountId, host, URI_SUFFIX_DATABASE_INFO_URL + dbName);
     FireboltDatabaseResponse response =
-        getResource(uri, host, accessToken, httpClient, objectMapper, FireboltDatabaseResponse.class, isCompress);
+        getResource(uri, host, httpClient, objectMapper, FireboltDatabaseResponse.class, isCompress);
     return Optional.ofNullable(response)
         .map(FireboltDatabaseResponse::getEngineUrl)
         .orElseThrow(
@@ -87,13 +90,13 @@ public class FireboltAccountClient extends FireboltClient {
                         + ERROR_NO_RUNNING_ENGINE_SUFFIX));
   }
 
-  public String getEngineId(String host, String accountId, String engineName, String accessToken, boolean isCompress)
+  public String getEngineId(String host, String accountId, String engineName, boolean isCompress)
           throws IOException, ParseException, FireboltException {
     String uri =
         createAccountUri(
             accountId, host, URI_SUFFIX_ENGINE_AND_ACCOUNT_ID_BY_ENGINE_NAME + engineName);
     FireboltEngineIdResponse response =
-        getResource(uri, host, accessToken, httpClient, objectMapper, FireboltEngineIdResponse.class, isCompress);
+        getResource(uri, host, httpClient, objectMapper, FireboltEngineIdResponse.class, isCompress);
     return Optional.ofNullable(response)
         .map(FireboltEngineIdResponse::getEngine)
         .map(FireboltEngineIdResponse.Engine::getEngineId)
@@ -111,5 +114,10 @@ public class FireboltAccountClient extends FireboltClient {
     if (StringUtils.isNotEmpty(account))
       return String.format(URI_PREFIX_WITH_ACCOUNT_RESOURCE, host, account, suffix);
     else return String.format(URI_PREFIX_WITHOUT_ACCOUNT_RESOURCE, host, suffix);
+  }
+
+  @Override
+  protected FireboltConnection getConnection() {
+    return this.fireboltConnection;
   }
 }

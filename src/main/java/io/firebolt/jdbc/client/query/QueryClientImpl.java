@@ -2,6 +2,8 @@ package io.firebolt.jdbc.client.query;
 
 import io.firebolt.QueryUtil;
 import io.firebolt.jdbc.client.FireboltClient;
+import io.firebolt.jdbc.connection.FireboltConnection;
+import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
 import lombok.RequiredArgsConstructor;
@@ -30,13 +32,14 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
       "TabSeparatedWithNamesAndTypes";
   private final CloseableHttpClient httpClient;
 
+  private final FireboltConnection connection;
+
   private final Map<String, HttpPost> runningQueries = new HashMap<>();
 
   public InputStream postSqlQuery(
       String sql,
       boolean isSelect,
       String queryId,
-      String accessToken,
       FireboltProperties fireboltProperties)
       throws FireboltException {
     HttpEntity requestEntity = null;
@@ -46,7 +49,7 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
           this.getQueryParameters(fireboltProperties, queryId, isSelect);
       String uri = this.buildQueryUri(fireboltProperties, queryParameters).toString();
       requestEntity = new StringEntity(formattedQuery, StandardCharsets.UTF_8);
-      HttpPost post = this.createPostRequest(uri, accessToken);
+      HttpPost post = this.createPostRequest(uri, connection.getConnectionTokens().map(FireboltConnectionTokens::getAccessToken).orElse(null));
       runningQueries.put(queryId, post);
       post.setEntity(requestEntity);
       log.debug("Posting query with id {} to URI: {}", queryId, uri);
@@ -158,5 +161,10 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
         .setPath("/cancel")
         .setParameters(queryParameters)
         .build();
+  }
+
+  @Override
+  protected FireboltConnection getConnection() {
+    return this.connection;
   }
 }

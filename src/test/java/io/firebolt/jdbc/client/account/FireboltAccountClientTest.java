@@ -8,6 +8,8 @@ import io.firebolt.jdbc.client.account.response.FireboltAccountResponse;
 import io.firebolt.jdbc.client.account.response.FireboltDatabaseResponse;
 import io.firebolt.jdbc.client.account.response.FireboltEngineIdResponse;
 import io.firebolt.jdbc.client.account.response.FireboltEngineResponse;
+import io.firebolt.jdbc.connection.FireboltConnection;
+import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import io.firebolt.jdbc.exception.FireboltException;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -24,7 +26,6 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -56,6 +57,9 @@ class FireboltAccountClientTest {
   @Mock private CloseableHttpClient httpClient;
   private FireboltAccountClient fireboltAccountClient;
 
+  @Mock
+  private FireboltConnection fireboltConnection;
+
   @BeforeAll
   static void init() {
     mockedProjectVersionUtil = mockStatic(ProjectVersionUtil.class);
@@ -69,7 +73,9 @@ class FireboltAccountClientTest {
 
   @BeforeEach
   void setUp() {
-    fireboltAccountClient = new FireboltAccountClient(httpClient, objectMapper);
+    when(fireboltConnection.getConnectionTokens()).thenReturn(Optional.empty());
+    when(fireboltConnection.getConnectionTokens()).thenReturn(Optional.of(FireboltConnectionTokens.builder().accessToken(ACCESS_TOKEN).build()));
+    fireboltAccountClient = new FireboltAccountClient(httpClient, objectMapper, fireboltConnection);
   }
 
   @Test
@@ -85,7 +91,7 @@ class FireboltAccountClientTest {
     when(response.getEntity()).thenReturn(entity);
     when(httpClient.execute(any())).thenReturn(response);
 
-    Optional<String> accountId = fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN, IS_COMPRESS);
+    Optional<String> accountId = fireboltAccountClient.getAccountId(HOST, ACCOUNT, IS_COMPRESS);
 
     HttpGet expectedHttpGet =
         new HttpGet("https://host/iam/v2/accounts:getIdByName?accountName=" + ACCOUNT);
@@ -121,7 +127,7 @@ class FireboltAccountClientTest {
 
     String engineAddress =
         fireboltAccountClient.getEngineAddress(
-            HOST, ENGINE_NAME, DB_NAME, ACCOUNT_ID, ACCESS_TOKEN, IS_COMPRESS);
+            HOST, ENGINE_NAME, DB_NAME, ACCOUNT_ID, IS_COMPRESS);
     HttpGet expectedHttpGet =
         new HttpGet("https://host/core/v1/accounts/engineName/engines/" + ACCOUNT_ID);
     Map<String, String> expectedHeader =
@@ -152,7 +158,7 @@ class FireboltAccountClientTest {
     when(httpClient.execute(any())).thenReturn(response);
 
     String dbAddress =
-        fireboltAccountClient.getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN, IS_COMPRESS);
+        fireboltAccountClient.getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME, IS_COMPRESS);
     HttpGet expectedHttpGet =
         new HttpGet(
             String.format(
@@ -187,7 +193,7 @@ class FireboltAccountClientTest {
     when(httpClient.execute(any())).thenReturn(response);
 
     String engineId =
-        fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN, IS_COMPRESS);
+        fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, IS_COMPRESS);
     HttpGet expectedHttpGet =
         new HttpGet(
             String.format(
@@ -214,7 +220,7 @@ class FireboltAccountClientTest {
     when(response.getEntity()).thenReturn(entity);
     when(httpClient.execute(any())).thenReturn(response);
     assertThrows(
-        FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN, IS_COMPRESS));
+        FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, IS_COMPRESS));
   }
 
   @Test
@@ -226,7 +232,7 @@ class FireboltAccountClientTest {
     when(httpClient.execute(any())).thenReturn(response);
 
     assertThrows(
-        FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN, IS_COMPRESS));
+        FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, IS_COMPRESS));
   }
 
   private Map<String, String> extractHeadersMap(HttpGet httpGet) {

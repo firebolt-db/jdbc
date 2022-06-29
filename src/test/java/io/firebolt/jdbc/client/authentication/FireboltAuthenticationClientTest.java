@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.firebolt.jdbc.ProjectVersionUtil;
 import io.firebolt.jdbc.client.authentication.response.FireboltAuthenticationResponse;
+import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.exception.FireboltException;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -45,6 +46,9 @@ class FireboltAuthenticationClientTest {
   @Mock private CloseableHttpClient httpClient;
   private FireboltAuthenticationClient fireboltAuthenticationClient;
 
+  @Mock
+  private FireboltConnection connection;
+
   @BeforeAll
   static void init() {
     mockedProjectVersionUtil = mockStatic(ProjectVersionUtil.class);
@@ -58,7 +62,7 @@ class FireboltAuthenticationClientTest {
 
   @BeforeEach
   void setUp() {
-    fireboltAuthenticationClient = new FireboltAuthenticationClient(httpClient, objectMapper);
+    fireboltAuthenticationClient = new FireboltAuthenticationClient(httpClient, objectMapper, connection);
   }
 
   @Test
