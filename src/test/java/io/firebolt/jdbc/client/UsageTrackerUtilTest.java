@@ -5,25 +5,18 @@ import io.firebolt.jdbc.ProjectVersionUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({UsageTrackerUtil.class, Class.class})
 public class UsageTrackerUtilTest {
 
   private static MockedStatic<ProjectVersionUtil> mockedProjectVersionUtil;
@@ -195,7 +188,7 @@ public class UsageTrackerUtilTest {
             })) {
       clients = UsageTrackerUtil.getClients(stack);
       assertFalse(clients.isEmpty());
-      assertThat(clients, is(expected));
+      assertEquals(expected, clients);
     }
   }
 }
