@@ -3,15 +3,14 @@ package io.firebolt.jdbc.client;
 import com.google.common.collect.ImmutableMap;
 import io.firebolt.jdbc.ProjectVersionUtil;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @UtilityClass
 public class UsageTrackerUtil {
-
-  private static final org.slf4j.Logger log =
-      org.slf4j.LoggerFactory.getLogger(UsageTrackerUtil.class);
 
   private static final Map<String, String> CLIENT_MAP =
       ImmutableMap.of(
@@ -69,8 +68,8 @@ public class UsageTrackerUtil {
   public static String getUserAgentString(String userConnectors) {
     Map<String, String> detected_connectors = getClients(Thread.currentThread().getStackTrace());
     overrideClients(detected_connectors, userConnectors);
-    String version = System.getProperty("java.version");
-    String system_ver = System.getProperty("os.version");
+    String javaVersion = System.getProperty("java.version");
+    String systemVersion = System.getProperty("os.version");
 
     String os = System.getProperty("os.name").toLowerCase();
     if (os.indexOf("win") >= 0) {
@@ -90,11 +89,11 @@ public class UsageTrackerUtil {
     return "JDBC/"
         + ProjectVersionUtil.getProjectVersion()
         + " (Java "
-        + version
+        + javaVersion
         + "; "
         + os
         + " "
-        + system_ver
+        + systemVersion
         + "; )"
         + " "
         + connectorString.toString().trim();
