@@ -88,9 +88,9 @@ public class FireboltStatementImpl extends AbstractStatement {
                   dbNameAndTableNamePair.getRight().orElse("unknown"),
                   dbNameAndTableNamePair
                       .getRight()
-                      .orElse(
-                          properties.getDatabase() != null ? properties.getDatabase() : "unknown"),
-                  properties.getBufferSize(), properties.isCompress());
+                      .orElse(properties.getDatabase()),
+                  properties.getBufferSize(),
+                  properties.isCompress());
         } else {
           currentUpdateCount = 0;
           closeStream(sql, inputStream);
