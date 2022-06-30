@@ -101,7 +101,7 @@ class SqlArrayUtilTest {
   }
 
   @Test
-  void shouldTransformArrayOfTuplesWithSpetialCharacters() throws SQLException {
+  void shouldTransformArrayOfTuplesWithSpecialCharacters() throws SQLException {
     String value = "[(1,'a'),(2,'b'),(3,'[c]')]";
     Object[][] expectedArray = new Object[][] {{1,"a"}, {2,"b"}, {3,"[c]"}};
     FireboltArray expectedFireboltArray =

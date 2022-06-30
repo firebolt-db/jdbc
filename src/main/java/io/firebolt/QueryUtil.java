@@ -52,7 +52,9 @@ public class QueryUtil {
     int substringStart = 0;
     boolean isInSingleLineComment = false;
     boolean isInMultipleLinesComment = false;
+    boolean isInComment;
     char previousChar;
+    Integer latestCommentPos = null;
     while (currentIndex < sql.length() - 1) {
       currentIndex++;
       previousChar = currentChar;
@@ -63,22 +65,32 @@ public class QueryUtil {
       isInMultipleLinesComment =
           isInMultipleLinesComment(
               currentChar, previousChar, isCurrentSubstringBetweenQuotes, isInMultipleLinesComment);
-      if (('\'' == currentChar || (currentIndex == sql.length() - 1))
-              && !(isInSingleLineComment || isInMultipleLinesComment)) {
+      isInComment = isInSingleLineComment || isInMultipleLinesComment;
+      if (latestCommentPos == null && isInComment) {
+        latestCommentPos = currentIndex - 1;
+      }
+
+      if (('\'' == currentChar && !isInComment) || reachedEnd(sql, currentIndex)) {
         if (isCurrentSubstringBetweenQuotes) {
           String subString = StringUtils.substring(sql, substringStart, currentIndex + 1);
           result.append(subString);
         } else {
+          int subStringEnd = isInComment ? latestCommentPos : currentIndex + 1;
           Pair<String, Integer> cleanSubstring =
-              cleanQueryPartAndCountWordOccurrences(sql, substringStart, currentIndex + 1, keyword);
+              cleanQueryPartAndCountWordOccurrences(sql, substringStart, subStringEnd, keyword);
           result.append(cleanSubstring.getLeft());
           searchedWordCount += cleanSubstring.getRight();
         }
         substringStart = currentIndex + 1;
         isCurrentSubstringBetweenQuotes = !isCurrentSubstringBetweenQuotes;
+        latestCommentPos = null;
       }
     }
     return new ImmutablePair<>(result.toString().trim(), searchedWordCount);
+  }
+
+  private boolean reachedEnd(String sql, int currentIndex) {
+    return currentIndex == sql.length() - 1;
   }
 
   private static boolean isInMultipleLinesComment(
@@ -86,7 +98,7 @@ public class QueryUtil {
       char previousChar,
       boolean isCurrentSubstringBetweenQuotes,
       boolean isInMultipleLinesComment) {
-    if (!isCurrentSubstringBetweenQuotes && ((previousChar == '/' && currentChar == '*'))) {
+    if (!isCurrentSubstringBetweenQuotes && (previousChar == '/' && currentChar == '*')) {
       return true;
     } else if ((previousChar == '*' && currentChar == '/')) {
       return false;
@@ -109,45 +121,41 @@ public class QueryUtil {
                   withoutQuotes.substring(fromIndex + "from".length()).trim().split(" ")[0]);
         }
       } else if (StringUtils.startsWithIgnoreCase(withoutQuotes, "DESCRIBE")) {
-        from = Optional.of("information_schema.tables");
+        from = Optional.of("tables");
       } else if (StringUtils.startsWithIgnoreCase(withoutQuotes, "SHOW")) {
-        from =
-            Optional.of(
-                "information_schema.unknown"); // Depends on the information requested - so putting
-        // unknown as a placeholder
+        from = Optional.empty(); // Depends on the information requested
       } else {
         log.debug(
             "Could not find table name for query {}. This may happen when there is no table.", sql);
       }
     }
     return new ImmutablePair<>(
-        extractDBNameFromFromPartOfTheQuery(from.orElse(null)),
+        extractDbNameFromFromPartOfTheQuery(from.orElse(null)),
         extractTableNameFromFromPartOfTheQuery(from.orElse(null)));
-  }
-
-  public static Optional<String> extractDBNameFromSelect(String sql) {
-    return extractDbNameAndTableNamePairFromQuery(sql).getLeft();
-  }
-
-  public static Optional<String> extractTableNameFromSelect(String sql) {
-    return extractDbNameAndTableNamePairFromQuery(sql).getRight();
-  }
-
-  private static Optional<String> extractDBNameFromFromPartOfTheQuery(String from) {
-    return Optional.ofNullable(from)
-        .filter(dbNameAndTable -> dbNameAndTable.contains("."))
-        .map(dbNameAndTable -> dbNameAndTable.substring(0, dbNameAndTable.indexOf(".")));
   }
 
   private static Optional<String> extractTableNameFromFromPartOfTheQuery(String from) {
     return Optional.ofNullable(from)
+        .map(s -> s.replace("\"", ""))
         .map(
-            dbNameAndTable -> {
-              if (dbNameAndTable.contains(".")) {
-                return dbNameAndTable.substring(dbNameAndTable.indexOf(".") + 1);
+            fromPartOfTheQuery -> {
+              if (StringUtils.contains(fromPartOfTheQuery, ".")) {
+                int indexOfTableName = StringUtils.lastIndexOf(fromPartOfTheQuery, ".");
+                return fromPartOfTheQuery.substring(indexOfTableName + 1);
               } else {
-                return dbNameAndTable;
+                return fromPartOfTheQuery;
               }
+            });
+  }
+
+  private static Optional<String> extractDbNameFromFromPartOfTheQuery(String from) {
+    return Optional.ofNullable(from)
+        .map(s -> s.replace("\"", ""))
+        .filter(s -> StringUtils.countMatches(s, ".") == 2)
+        .map(
+            fromPartOfTheQuery -> {
+              int dbNameEndPos = StringUtils.indexOf(fromPartOfTheQuery, ".");
+              return fromPartOfTheQuery.substring(0, dbNameEndPos);
             });
   }
 
@@ -181,7 +189,7 @@ public class QueryUtil {
         subString,
         SINGLE_LINE_COMMENTS_REGEX,
         "\n"); // Escape to next line to avoid words being merged when comments are added at the end
-               // of the line
+    // of the line
   }
 
   private Optional<Pair<String, String>> extractPropertyPair(String sql, String query) {

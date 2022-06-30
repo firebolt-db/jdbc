@@ -31,31 +31,31 @@ class FireboltEngineServiceTest {
   void shouldGetDbAddressWhenEngineNameIsNullOrEmpty() throws Exception {
     FireboltProperties properties = FireboltProperties.builder().host(HOST).account(ACCOUNT_ID).database(DB_NAME).compress(0).build();
     
-    when(fireboltAccountClient.getAccountId(properties.getHost(), properties.getAccount(), ACCESS_TOKEN, properties.isCompress()))
+    when(fireboltAccountClient.getAccountId(properties.getHost(), properties.getAccount(), properties.isCompress()))
         .thenReturn(Optional.of(ACCOUNT_ID));
 
-    fireboltEngineService.getEngineHost(HOST, properties, ACCESS_TOKEN);
+    fireboltEngineService.getEngineHost(HOST, properties);
 
-    verify(fireboltAccountClient).getAccountId(properties.getHost(), properties.getAccount(), ACCESS_TOKEN, properties.isCompress());
+    verify(fireboltAccountClient).getAccountId(properties.getHost(), properties.getAccount(), properties.isCompress());
     verify(fireboltAccountClient)
-        .getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN, IS_COMPRESS);
+        .getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME, IS_COMPRESS);
     verifyNoMoreInteractions(fireboltAccountClient);
   }
 
   @Test
   void shouldGetEngineAddressWhenEngineNameIsPresent() throws Exception {
     FireboltProperties properties = FireboltProperties.builder().host(HOST).account(ACCOUNT_ID).database(DB_NAME).engine(ENGINE_NAME).compress(0).build();
-    when(fireboltAccountClient.getAccountId(properties.getHost(), properties.getAccount(), ACCESS_TOKEN, properties.isCompress()))
+    when(fireboltAccountClient.getAccountId(properties.getHost(), properties.getAccount(), properties.isCompress()))
         .thenReturn(Optional.of(ACCOUNT_ID));
-    when(fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN, IS_COMPRESS))
+    when(fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, IS_COMPRESS))
         .thenReturn(ENGINE_ID);
 
-    fireboltEngineService.getEngineHost(HOST, properties, ACCESS_TOKEN);
+    fireboltEngineService.getEngineHost(HOST, properties);
 
-    verify(fireboltAccountClient).getAccountId(properties.getHost(), ACCOUNT_ID, ACCESS_TOKEN, properties.isCompress());
-    verify(fireboltAccountClient).getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN, IS_COMPRESS);
+    verify(fireboltAccountClient).getAccountId(properties.getHost(), ACCOUNT_ID, properties.isCompress());
+    verify(fireboltAccountClient).getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, IS_COMPRESS);
     verify(fireboltAccountClient)
-        .getEngineAddress(HOST, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN, IS_COMPRESS);
+        .getEngineAddress(HOST, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID, IS_COMPRESS);
     verifyNoMoreInteractions(fireboltAccountClient);
   }
 }

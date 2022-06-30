@@ -1,10 +1,10 @@
 package io.firebolt.jdbc.preparedstatement;
 
 import io.firebolt.QueryUtil;
-import io.firebolt.jdbc.connection.FireboltConnectionImpl;
+import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
-import io.firebolt.jdbc.resultset.type.JavaTypeToStringConverter;
+import io.firebolt.jdbc.resultset.type.JavaTypeToFireboltSQLString;
 import io.firebolt.jdbc.service.FireboltQueryService;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
@@ -34,10 +34,9 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
   public FireboltPreparedStatement(
       FireboltQueryService fireboltQueryService,
       FireboltProperties sessionProperties,
-      String accessToken,
       String sql,
-      FireboltConnectionImpl connection) {
-    super(fireboltQueryService, sessionProperties, accessToken, connection);
+      FireboltConnection connection) {
+    super(fireboltQueryService, sessionProperties, connection);
     log.debug("Populating PreparedStatement object for SQL: {}", sql);
     this.sql = sql;
     Pair<String, Integer> cleanQueryWithParamCount =
@@ -108,7 +107,7 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
   public void setBoolean(int parameterIndex, boolean x) throws SQLException {
     this.currentParams.put(
         parameterIndex,
-        JavaTypeToStringConverter.BOOLEAN.getTransformToJavaTypeFunction().apply(x));
+        JavaTypeToFireboltSQLString.BOOLEAN.transform(x));
   }
 
   @Override
@@ -119,44 +118,44 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
   @Override
   public void setShort(int parameterIndex, short x) throws SQLException {
     this.currentParams.put(
-        parameterIndex, JavaTypeToStringConverter.SHORT.getTransformToJavaTypeFunction().apply(x));
+        parameterIndex, JavaTypeToFireboltSQLString.SHORT.transform(x));
   }
 
   @Override
   public void setInt(int parameterIndex, int x) throws SQLException {
     this.currentParams.put(
         parameterIndex,
-        JavaTypeToStringConverter.INTEGER.getTransformToJavaTypeFunction().apply(x));
+        JavaTypeToFireboltSQLString.INTEGER.transform(x));
   }
 
   @Override
   public void setLong(int parameterIndex, long x) throws SQLException {
     this.currentParams.put(
-        parameterIndex, JavaTypeToStringConverter.LONG.getTransformToJavaTypeFunction().apply(x));
+        parameterIndex, JavaTypeToFireboltSQLString.LONG.transform(x));
   }
 
   @Override
   public void setFloat(int parameterIndex, float x) throws SQLException {
     this.currentParams.put(
-        parameterIndex, JavaTypeToStringConverter.FLOAT.getTransformToJavaTypeFunction().apply(x));
+        parameterIndex, JavaTypeToFireboltSQLString.FLOAT.transform(x));
   }
 
   @Override
   public void setDouble(int parameterIndex, double x) throws SQLException {
     this.currentParams.put(
-        parameterIndex, JavaTypeToStringConverter.DOUBLE.getTransformToJavaTypeFunction().apply(x));
+        parameterIndex, JavaTypeToFireboltSQLString.DOUBLE.transform(x));
   }
 
   @Override
   public void setBigDecimal(int parameterIndex, BigDecimal x) throws SQLException {
     this.currentParams.put(
         parameterIndex,
-        JavaTypeToStringConverter.BIG_DECIMAL.getTransformToJavaTypeFunction().apply(x));
+        JavaTypeToFireboltSQLString.BIG_DECIMAL.transform(x));
   }
 
   @Override
   public void setString(int parameterIndex, String x) throws SQLException {
-    this.currentParams.put(parameterIndex, x);
+    this.currentParams.put(parameterIndex, JavaTypeToFireboltSQLString.STRING.transform(x));
   }
 
   @Override
@@ -167,7 +166,7 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
   @Override
   public void setDate(int parameterIndex, Date x) throws SQLException {
     this.currentParams.put(
-        parameterIndex, JavaTypeToStringConverter.DATE.getTransformToJavaTypeFunction().apply(x));
+        parameterIndex, JavaTypeToFireboltSQLString.DATE.transform(x));
   }
 
   @Override
@@ -179,7 +178,7 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
   public void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {
     this.currentParams.put(
         parameterIndex,
-        JavaTypeToStringConverter.TIMESTAMP.getTransformToJavaTypeFunction().apply(x));
+        JavaTypeToFireboltSQLString.TIMESTAMP.transform(x));
   }
 
   @Override
@@ -197,7 +196,7 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
   @Override
   public void setObject(int parameterIndex, Object x) throws SQLException {
     this.validateParamIndex(parameterIndex);
-    currentParams.put(parameterIndex, JavaTypeToStringConverter.toString(x));
+    currentParams.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x));
   }
 
   @Override
@@ -239,6 +238,11 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
   @Override
   public void setNString(int parameterIndex, String value) throws SQLException {
     this.setString(parameterIndex, value);
+  }
+
+  @Override
+  public void setArray(int parameterIndex, Array x) throws SQLException {
+    setString(parameterIndex, x.toString());
   }
 
   @Override

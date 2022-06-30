@@ -4,12 +4,14 @@ import com.google.common.base.CharMatcher;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.FireboltColumn;
 import io.firebolt.jdbc.resultset.type.FireboltDataType;
+import io.firebolt.jdbc.resultset.type.JavaTypeToFireboltSQLString;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Array;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -19,7 +21,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SqlArrayUtil {
 
-  public static FireboltArray transformToSqlArray(String value, FireboltColumn fireboltColumn) throws FireboltException {
+  public static FireboltArray transformToSqlArray(String value, FireboltColumn fireboltColumn)
+      throws FireboltException {
     log.debug("Transformer array with value {} and type {}", value, fireboltColumn);
     int dimensions = 0;
     for (int x = 0; x < value.length(); x++)
@@ -28,10 +31,7 @@ public class SqlArrayUtil {
     value = value.substring(dimensions, value.length() - dimensions);
     Object arr = createArray(value, dimensions, fireboltColumn);
     log.info("Arr {}", arr);
-    return FireboltArray.builder()
-            .array(arr)
-            .type(fireboltColumn.getArrayBaseDataType())
-            .build();
+    return FireboltArray.builder().array(arr).type(fireboltColumn.getArrayBaseDataType()).build();
   }
 
   private static Object createArray(
@@ -77,7 +77,8 @@ public class SqlArrayUtil {
     }
   }
 
-  private static Object[] getArrayForTuple(FireboltColumn fireboltColumn, List<String> tuples) throws FireboltException {
+  private static Object[] getArrayForTuple(FireboltColumn fireboltColumn, List<String> tuples)
+      throws FireboltException {
     List<FireboltDataType> types =
         Arrays.asList(
             fireboltColumn.getColumnsTuple().getLeft().getDataType(),
@@ -89,7 +90,11 @@ public class SqlArrayUtil {
       List<String> tupleValues =
           splitArrayContent(removeParenthesis(tupleContent), FireboltDataType.STRING);
       for (int j = 0; j < 2; j++) {
-        subList.add(types.get(j % 2).getBaseType().transform(removeQuotesAndTransformNull(tupleValues.get(j))));
+        subList.add(
+            types
+                .get(j % 2)
+                .getBaseType()
+                .transform(removeQuotesAndTransformNull(tupleValues.get(j))));
       }
       list.add(subList.toArray());
     }
@@ -146,7 +151,32 @@ public class SqlArrayUtil {
     return elements;
   }
 
-  public static String arrayToString(Object object) {
-    throw new UnsupportedOperationException();
+  public static String arrayToString(Object o) throws SQLException {
+    Object[] arr;
+    if (o instanceof java.sql.Array) {
+      o = ((java.sql.Array) o).getArray();
+    }
+
+    if (o.getClass().getComponentType().isPrimitive()) {
+      arr = toObjectArray(o);
+    } else {
+      arr = (Object[]) o;
+    }
+    return toString(arr);
+  }
+
+  private static String toString(Object[] arr) throws FireboltException {
+    List<String> values = new ArrayList<>();
+    for (Object element : arr) {
+      values.add(JavaTypeToFireboltSQLString.transformAny(element));
+    }
+    return "[" + String.join(",", values) + "]";
+  }
+
+  private static Object[] toObjectArray(Object array) {
+    int length = Array.getLength(array);
+    Object[] ret = new Object[length];
+    for (int i = 0; i < length; i++) ret[i] = Array.get(array, i);
+    return ret;
   }
 }

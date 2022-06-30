@@ -48,6 +48,16 @@ public class FireboltAuthenticationService {
     }
   }
 
+  public void removeConnectionTokens(String host, FireboltProperties loginProperties) {
+    try {
+      log.debug("Removing connection token for host {}", host);
+      ConnectParams connectionParams = new ConnectParams(host, loginProperties.getUser(), loginProperties.getPassword());
+      tokensMap.remove(connectionParams);
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException("Could not remove connection tokens", e);
+    }
+  }
+
   @EqualsAndHashCode
   private static class ConnectParams {
     public final String fireboltHost;

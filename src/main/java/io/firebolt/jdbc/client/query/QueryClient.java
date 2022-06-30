@@ -8,7 +8,7 @@ import java.io.InputStream;
 public interface QueryClient {
 
   InputStream postSqlQuery(
-      String sql, boolean isSelect, String queryId, String accessToken, FireboltProperties fireboltProperties)
+      String sql, boolean isSelect, String queryId, FireboltProperties fireboltProperties)
       throws FireboltException;
 
   void postCancelSqlQuery(String queryId, FireboltProperties fireboltProperties)
