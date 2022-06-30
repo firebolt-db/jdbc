@@ -22,7 +22,7 @@ public class SqlDateUtil {
   DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   DateTimeFormatter dateTimeFormatter =
       new DateTimeFormatterBuilder()
-          .appendPattern("yyyy-MM-dd HH:mm:ss")
+          .appendPattern("yyyy-MM-dd [HH:mm:ss]")
           .appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true)
           .toFormatter();
 
@@ -31,27 +31,10 @@ public class SqlDateUtil {
         if (StringUtils.isEmpty(value)) {
           return null;
         }
-          Date date = Date.valueOf(LocalDate.from(dateFormatter.parse(value)));
-          log.debug("Converted date from {} to {}", value, date);
-          return date;
+        Date date = Date.valueOf(LocalDate.from(dateFormatter.parse(value)));
+        log.debug("Converted date from {} to {}", value, date);
+        return date;
       };
-
-  public static final Function<Date, String> transformFromDateFunction =
-      value -> {
-        if (value == null) {
-          return null;
-        }
-        return String.format("'%s'", dateFormatter.format(value.toLocalDate()));
-      };
-
-  public static final Function<Time, String> transformFromTimeFunction =
-      value -> {
-        if (value == null) {
-          return null;
-        }
-        return String.format("'%s'", dateTimeFormatter.format(value.toLocalTime()));
-      };
-
   public static final Function<String, java.sql.Timestamp> transformToTimestampFunction =
       value -> {
         if (StringUtils.isEmpty(value)) {
@@ -73,11 +56,9 @@ public class SqlDateUtil {
         return time;
       };
 
-  public static final Function<Timestamp, String> transformFromTimestampFunction =
-      value -> {
-        if (value == null) {
-          return null;
-        }
-        return String.format("'%s'", dateTimeFormatter.format(value.toLocalDateTime()));
-      };
+  public static final Function<Date, String> transformFromDateToSQLStringFunction =
+      value -> String.format("'%s'", dateFormatter.format(value.toLocalDate()));
+
+  public static final Function<Timestamp, String> transformFromTimestampToSQLStringFunction =
+      value -> String.format("'%s'", dateTimeFormatter.format(value.toLocalDateTime()));
 }
