@@ -49,6 +49,9 @@ class FireboltAuthenticationClientTest {
   static void init() {
     mockedProjectVersionUtil = mockStatic(ProjectVersionUtil.class);
     mockedProjectVersionUtil.when(ProjectVersionUtil::getProjectVersion).thenReturn("1.0-TEST");
+    System.setProperty("java.version", "8.0.1");
+    System.setProperty("os.version", "10.1");
+    System.setProperty("os.name", "MacosX");
   }
 
   @AfterAll
@@ -58,7 +61,8 @@ class FireboltAuthenticationClientTest {
 
   @BeforeEach
   void setUp() {
-    fireboltAuthenticationClient = new FireboltAuthenticationClient(httpClient, objectMapper);
+    fireboltAuthenticationClient =
+        new FireboltAuthenticationClient(httpClient, objectMapper, "ConnA:1.0.9");
   }
 
   @Test
@@ -84,7 +88,9 @@ class FireboltAuthenticationClientTest {
     verify(httpClient).execute(httpPostArgumentCaptor.capture());
     HttpPost actualPost = httpPostArgumentCaptor.getValue();
     assertEquals("User-Agent", actualPost.getHeaders()[0].getName());
-    assertEquals("fireboltJdbcDriver/1.0-TEST", actualPost.getHeaders()[0].getValue());
+    assertEquals(
+        "JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
+        actualPost.getHeaders()[0].getValue());
     verify(objectMapper)
         .readValue(
             "{\"access_token\":\"a\",\"refresh_token\":\"r\",\"expires_in\":1}",

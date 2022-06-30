@@ -20,7 +20,6 @@ import org.apache.hc.core5.http.io.entity.StringEntity;
 import java.io.IOException;
 
 @Slf4j
-@RequiredArgsConstructor
 public class FireboltAuthenticationClient extends FireboltClient {
   private static final String USERNAME = "username";
   private static final String PASSWORD = "password";
@@ -28,8 +27,16 @@ public class FireboltAuthenticationClient extends FireboltClient {
   private final CloseableHttpClient httpClient;
   private final ObjectMapper objectMapper;
 
-  public FireboltConnectionTokens postConnectionTokens(String host, String user, String password, boolean isCompress)
-          throws IOException, ParseException, FireboltException {
+  public FireboltAuthenticationClient(
+      CloseableHttpClient httpClient, ObjectMapper objectMapper, String customConnectors) {
+    super(customConnectors);
+    this.httpClient = httpClient;
+    this.objectMapper = objectMapper;
+  }
+
+  public FireboltConnectionTokens postConnectionTokens(
+      String host, String user, String password, boolean isCompress)
+      throws IOException, ParseException, FireboltException {
     String connectUrl = String.format(AUTH_URL, host);
     log.debug("Creating connection with url {}", connectUrl);
     HttpPost post = new HttpPost(connectUrl);
