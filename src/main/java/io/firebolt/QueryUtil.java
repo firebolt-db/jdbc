@@ -71,7 +71,7 @@ public class QueryUtil {
 
   private static Optional<String> extractDBAndTableNameFromSelect(String sql) {
     if (isSelect(sql)) {
-      log.debug("Extracting DB and Table name for SELECT: {}", sql);
+      log.debug("Extracting DB and Table name from statement: {}", sql);
       String cleanQuery = removeCommentsAndTrimQuery(sql);
       String withoutQuotes = StringUtils.replace(cleanQuery, "'", "").trim();
       if (StringUtils.startsWithIgnoreCase(withoutQuotes, "select")) {
