@@ -74,7 +74,7 @@ class FireboltAccountClientTest {
   }
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws FireboltException {
     when(fireboltConnection.getConnectionTokens()).thenReturn(Optional.empty());
     when(fireboltConnection.getConnectionTokens())
         .thenReturn(

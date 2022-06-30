@@ -3,7 +3,6 @@ package io.firebolt.jdbc.connection;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.*;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
@@ -11,9 +10,11 @@ import java.util.concurrent.Executor;
 @Slf4j
 public abstract class AbstractConnection implements Connection {
 
+  private static final String FEATURE_NOT_SUPPORTED_YET = "Feature not supported yet. Method: %s";
+
   @Override
   public String nativeSQL(String sql) throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet." + new Throwable().getStackTrace()[0].getMethodName());
+    throw new UnsupportedOperationException(String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
   }
 
   @Override
@@ -26,7 +27,7 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public void commit() throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet." + new Throwable().getStackTrace()[0].getMethodName());
+    throw new UnsupportedOperationException(String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
   }
 
   @Override
@@ -44,7 +45,7 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public void setCatalog(String catalog) throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet." + new Throwable().getStackTrace()[0].getMethodName());
+    throw new UnsupportedOperationException(String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
   }
 
   @Override
@@ -54,7 +55,7 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public void setTransactionIsolation(int level) throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet." + new Throwable().getStackTrace()[0].getMethodName());
+    throw new UnsupportedOperationException(String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
   }
 
   @Override
@@ -156,7 +157,7 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public Array createArrayOf(String typeName, Object[] elements) throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet." + new Throwable().getStackTrace()[0].getMethodName());
+    throw new UnsupportedOperationException(String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
   }
 
   @Override
@@ -171,7 +172,7 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
-    throw new UnsupportedOperationException("Feature not supported yet." + new Throwable().getStackTrace()[0].getMethodName());
+    throw new UnsupportedOperationException(String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
   }
 
   @Override

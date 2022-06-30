@@ -34,10 +34,6 @@ public class FireboltHttpConnectionOperator extends DefaultHttpClientConnectionO
 
   static final String SOCKET_FACTORY_REGISTRY = "http.socket-factory-registry";
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(
-          org.apache.hc.client5.http.impl.io.DefaultHttpClientConnectionOperator.class);
-
   private final Lookup<ConnectionSocketFactory> socketFactoryRegistry;
   private final SchemePortResolver schemePortResolver;
   private final DnsResolver dnsResolver;

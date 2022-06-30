@@ -84,7 +84,7 @@ public class FireboltConnection extends AbstractConnection {
   }
 
   private static synchronized CloseableHttpClient getHttpClient(
-      FireboltProperties fireboltProperties) {
+      FireboltProperties fireboltProperties) throws FireboltException {
     try {
       return HttpClientConfig.getInstance() == null
           ? HttpClientConfig.init(fireboltProperties)
@@ -94,7 +94,7 @@ public class FireboltConnection extends AbstractConnection {
         | KeyStoreException
         | KeyManagementException
         | IOException e) {
-      throw new RuntimeException("Could not instantiate http client", e);
+      throw new FireboltException("Could not instantiate http client", e);
     }
   }
 
@@ -123,11 +123,11 @@ public class FireboltConnection extends AbstractConnection {
     return this;
   }
 
-  public void removeExpiredTokens() {
+  public void removeExpiredTokens() throws FireboltException{
     fireboltAuthenticationService.removeConnectionTokens(httpConnectionUrl, loginProperties);
   }
 
-  public Optional<FireboltConnectionTokens> getConnectionTokens() {
+  public Optional<FireboltConnectionTokens> getConnectionTokens() throws FireboltException{
     if (!StringUtils.equalsIgnoreCase(LOCALHOST, loginProperties.getHost())) {
       return Optional.of(
           fireboltAuthenticationService.getConnectionTokens(httpConnectionUrl, loginProperties));

@@ -47,7 +47,7 @@ class FireboltConnectionTest {
       "jdbc:firebolt://localhost:8123/local_dev_db?ssl=false&max_query_size=10000000&use_standard_sql=1&mask_internal_errors=0&firebolt_enable_beta_functions=1&firebolt_case_insensitive_identifiers=1&rest_api_pull_timeout_sec=3600&rest_api_pull_interval_millisec=5000&rest_api_retry_times=10";
 
   @BeforeEach
-  void init() {
+  void init() throws FireboltException {
     connectionProperties = new Properties();
     connectionProperties.put("user", "user");
     connectionProperties.put("password", "pa$$word");

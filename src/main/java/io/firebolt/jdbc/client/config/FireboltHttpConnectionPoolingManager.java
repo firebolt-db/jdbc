@@ -1,8 +1,6 @@
 package io.firebolt.jdbc.client.config;
 
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
-import lombok.Builder;
-import lombok.Getter;
 import org.apache.hc.client5.http.DnsResolver;
 import org.apache.hc.client5.http.SchemePortResolver;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;

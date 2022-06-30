@@ -3,6 +3,7 @@ package io.firebolt.jdbc.service;
 import io.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
+import io.firebolt.jdbc.exception.FireboltException;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +24,7 @@ public class FireboltAuthenticationService {
       ExpiringMap.builder().variableExpiration().build();
   private final FireboltAuthenticationClient fireboltAuthenticationClient;
 
-  public FireboltConnectionTokens getConnectionTokens(String host, FireboltProperties loginProperties) {
+  public FireboltConnectionTokens getConnectionTokens(String host, FireboltProperties loginProperties) throws FireboltException{
       try {
       ConnectParams connectionParams = new ConnectParams(host, loginProperties.getUser(), loginProperties.getPassword());
       synchronized (this) {
@@ -44,17 +45,17 @@ public class FireboltAuthenticationService {
         }
       }
     } catch (Exception e) {
-      throw new RuntimeException("Could not get connection tokens", e);
+      throw new FireboltException("Could not get connection tokens", e);
     }
   }
 
-  public void removeConnectionTokens(String host, FireboltProperties loginProperties) {
+  public void removeConnectionTokens(String host, FireboltProperties loginProperties) throws FireboltException {
     try {
       log.debug("Removing connection token for host {}", host);
       ConnectParams connectionParams = new ConnectParams(host, loginProperties.getUser(), loginProperties.getPassword());
       tokensMap.remove(connectionParams);
     } catch (NoSuchAlgorithmException e) {
-      throw new RuntimeException("Could not remove connection tokens", e);
+      throw new FireboltException("Could not remove connection tokens", e);
     }
   }
 

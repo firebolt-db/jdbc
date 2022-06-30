@@ -305,6 +305,7 @@ public class FireboltResultSet extends AbstractResultSet {
     return BaseType.TIME.transform(this.getValueAtColumn(columnIndex));
   }
 
+  @Override
   public int getRow() {
     return currentRow;
   }
@@ -421,8 +422,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   private String getValueAtColumn(int columnIndex) throws SQLException {
     checkStreamNotClosed();
-    String value = toStringArray(currentLine)[getColumnIndex(columnIndex)];
-    return value;
+    return toStringArray(currentLine)[getColumnIndex(columnIndex)];
   }
 
   private int getColumnIndex(int colNum) throws SQLException {

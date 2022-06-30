@@ -21,6 +21,7 @@ OF THE COMPANY YANDEX LLC.
  *  - Imports
  *  - Package name
  *  - Formatting
+ *  - Remove unnecessary type casts
  *
  */
 package io.firebolt.jdbc.resultset.compress;
@@ -49,11 +50,11 @@ public class BlockChecksum {
     ByteBuffer buffer =
         ByteBuffer.allocate(compressedSizeWithHeader)
             .order(ByteOrder.LITTLE_ENDIAN)
-            .put((byte) magic)
+            .put(magic)
             .putInt(compressedSizeWithHeader)
             .putInt(uncompressedSize)
             .put(data, 0, length);
-    ((Buffer) buffer).flip();
+    buffer.flip();
     return calculate(buffer.array());
   }
 
