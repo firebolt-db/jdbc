@@ -184,12 +184,12 @@ class FireboltConnectionImplTest {
 
   @Test
   void shouldExtractConnectorOverrides() throws SQLException {
-    when(fireboltQueryService.executeQuery(any(), anyBoolean(), any(), any(), any()))
+    when(fireboltQueryService.executeQuery(any(), anyBoolean(), any(), any()))
         .thenReturn(new ByteArrayInputStream("".getBytes()));
     connectionProperties.put("connector_versions", "ConnA:1.0.9,ConnB:2.8.0");
 
-    FireboltConnectionImpl fireboltConnectionImpl =
-        new FireboltConnectionImpl(
+    FireboltConnection fireboltConnectionImpl =
+        new FireboltConnection(
             URL,
             connectionProperties,
             fireboltAuthenticationService,
@@ -201,7 +201,7 @@ class FireboltConnectionImplTest {
 
     verify(fireboltQueryService)
         .executeQuery(
-            eq("SELECT 1"), anyBoolean(), any(), any(), propertiesArgumentCaptor.capture());
+            eq("SELECT 1"), anyBoolean(), any(), propertiesArgumentCaptor.capture());
     assertNull(
         propertiesArgumentCaptor.getValue().getAdditionalProperties().get("connector_versions"));
     assertNull(
