@@ -107,7 +107,7 @@ class FireboltDatabaseMetadataTest {
   @Test
   void shouldGetSchemas() throws SQLException {
     String expectedSql =
-        "SELECT 'public' AS TABLE_SCHEM, catalog_name AS TABLE_CATALOG FROM information_schema.databases";
+        "SELECT null AS TABLE_SCHEM, catalog_name AS TABLE_CATALOG FROM information_schema.databases";
     when(statement.executeQuery(expectedSql))
         .thenReturn(new FireboltResultSet(getInputStreamForGetSchemas()));
     ResultSet resultSet = fireboltDatabaseMetadata.getSchemas();
@@ -131,7 +131,7 @@ class FireboltDatabaseMetadataTest {
   @Test
   void shouldGetColumns() throws SQLException {
     String expectedQuery =
-        "SELECT table_catalog, table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns WHERE table_name LIKE 'c' AND column_name LIKE 'd' AND table_schema LIKE 'b'";
+        "SELECT table_catalog, table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns WHERE table_name LIKE 'c' AND column_name LIKE 'd'";
 
     ResultSet expectedResultSet =
         FireboltDatabaseMetadataResult.builder()
@@ -211,10 +211,10 @@ class FireboltDatabaseMetadataTest {
   @Test
   void shouldGetTables() throws SQLException {
     String expectedSqlForTables =
-        "SELECT table_catalog, table_schema, table_name, table_type FROM information_schema.tables WHERE table_schema LIKE 'def%' AND table_name LIKE 'tab%' AND table_catalog LIKE 'catalog' order by table_schema, table_name";
+        "SELECT table_catalog, table_schema, table_name, table_type FROM information_schema.tables WHERE table_name LIKE 'tab%' AND table_catalog LIKE 'catalog' order by table_schema, table_name";
 
     String expectedSqlForViews =
-        "SELECT table_catalog, table_schema, table_name FROM information_schema.views WHERE table_schema LIKE 'def%' AND table_name LIKE 'tab%' AND table_catalog LIKE 'catalog' order by table_schema, table_name";
+        "SELECT table_catalog, table_schema, table_name FROM information_schema.views WHERE table_name LIKE 'tab%' AND table_catalog LIKE 'catalog' order by table_schema, table_name";
 
     when(statement.executeQuery(expectedSqlForTables))
         .thenReturn(new FireboltResultSet(getInputStreamForGetTables()));
@@ -229,7 +229,7 @@ class FireboltDatabaseMetadataTest {
     rows.add(
         Arrays.asList(
             "default",
-            "public",
+            null,
             "ex_lineitem",
             "TABLE",
             null,
@@ -243,7 +243,7 @@ class FireboltDatabaseMetadataTest {
             null));
     rows.add(
         Arrays.asList(
-            "default", "public", "test_1", "TABLE", null, null, null, null, null, null, null, null,
+            "default", null, "test_1", "TABLE", null, null, null, null, null, null, null, null,
             null));
 
     ResultSet expectedResultSet =

@@ -17,7 +17,7 @@ public class MetadataUtil {
   public String getSchemasQuery(String catalog, String schemaPattern) {
     Query.QueryBuilder queryBuilder = Query.builder();
     queryBuilder.select(
-        String.format("'public' AS %s, catalog_name AS %s", TABLE_SCHEM, TABLE_CATALOG));
+        String.format("null AS %s, catalog_name AS %s", TABLE_SCHEM, TABLE_CATALOG));
 
     queryBuilder.from("information_schema.databases");
 
@@ -40,8 +40,8 @@ public class MetadataUtil {
         .ifPresent(pattern -> conditions.add(String.format("table_name LIKE '%s'", pattern)));
     Optional.ofNullable(columnNamePattern)
         .ifPresent(pattern -> conditions.add(String.format("column_name LIKE '%s'", pattern)));
-    Optional.ofNullable(schemaPattern)
-        .ifPresent(pattern -> conditions.add(String.format("table_schema LIKE '%s'", pattern)));
+//    Optional.ofNullable(schemaPattern)
+//        .ifPresent(pattern -> conditions.add(String.format("table_schema LIKE '%s'", pattern))); Schemas are not supported
     return queryBuilder.conditions(conditions).build().toSql();
   }
 
@@ -73,8 +73,8 @@ public class MetadataUtil {
   @NonNull
   private List<String> getConditionsForTablesAndViews(String catalog, String schema, String tableName) {
     List<String> conditions = new ArrayList<>();
-    Optional.ofNullable(schema)
-        .ifPresent(pattern -> conditions.add(String.format("table_schema LIKE '%s'", pattern)));
+//    Optional.ofNullable(schema)
+//        .ifPresent(pattern -> conditions.add(String.format("table_schema LIKE '%s'", pattern)));
 
     Optional.ofNullable(tableName)
         .ifPresent(pattern -> conditions.add(String.format("table_name LIKE '%s'", pattern)));

@@ -35,6 +35,7 @@ public class FireboltResultSet extends AbstractResultSet {
   private boolean isClosed = false;
   private String[] arr = new String[0];
 
+  private static final String FEATURE_NOT_SUPPORTED_YET = "Feature not supported yet. Method: %s";
   private FireboltResultSet() {
     reader = // empty InputStream
         new BufferedReader(
@@ -376,12 +377,14 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public void setFetchDirection(int direction) throws SQLException {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(
+        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
   }
 
   @Override
   public void setFetchSize(int rows) throws SQLException {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(
+        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
   }
 
   @Override

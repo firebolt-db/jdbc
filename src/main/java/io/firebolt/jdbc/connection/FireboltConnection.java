@@ -1,6 +1,7 @@
 package io.firebolt.jdbc.connection;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.firebolt.jdbc.LoggerUtil;
 import io.firebolt.jdbc.client.FireboltObjectMapper;
 import io.firebolt.jdbc.client.HttpClientConfig;
 import io.firebolt.jdbc.client.account.FireboltAccountClient;

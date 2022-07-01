@@ -9,21 +9,21 @@ class MetadataUtilTest {
   @Test
   void shouldGetSchemasQueryWhenGettingQueryWithoutArguments() {
     assertEquals(
-        "SELECT 'public' AS TABLE_SCHEM, catalog_name AS TABLE_CATALOG FROM information_schema.databases",
+        "SELECT null AS TABLE_SCHEM, catalog_name AS TABLE_CATALOG FROM information_schema.databases",
         MetadataUtil.getSchemasQuery(null, null));
   }
 
   @Test
   void shouldGetSchemasQueryWhenGettingQueryWithArguments() {
     assertEquals(
-        "SELECT 'public' AS TABLE_SCHEM, catalog_name AS TABLE_CATALOG FROM information_schema.databases WHERE catalog_name = 'catalog'",
+        "SELECT null AS TABLE_SCHEM, catalog_name AS TABLE_CATALOG FROM information_schema.databases WHERE catalog_name = 'catalog'",
         MetadataUtil.getSchemasQuery("catalog", "schema%"));
   }
 
   @Test
   void shouldGetTablesQueryWhenGettingQueryWithArguments() {
     assertEquals(
-        "SELECT table_catalog, table_schema, table_name, table_type FROM information_schema.tables WHERE table_schema LIKE 'db' AND table_name LIKE 'tableName' AND table_catalog LIKE 'catalog' order by table_schema, table_name",
+        "SELECT table_catalog, table_schema, table_name, table_type FROM information_schema.tables WHERE table_name LIKE 'tableName' AND table_catalog LIKE 'catalog' order by table_schema, table_name",
         MetadataUtil.getTablesQuery("catalog", "db", "tableName"));
   }
 
@@ -37,7 +37,7 @@ class MetadataUtilTest {
   @Test
   void shouldGetViewsQueryWhenGettingQueryWithArguments() {
     assertEquals(
-        "SELECT table_catalog, table_schema, table_name FROM information_schema.views WHERE table_schema LIKE 'db' AND table_name LIKE 'tableName' AND table_catalog LIKE 'catalog' order by table_schema, table_name",
+        "SELECT table_catalog, table_schema, table_name FROM information_schema.views WHERE table_name LIKE 'tableName' AND table_catalog LIKE 'catalog' order by table_schema, table_name",
         MetadataUtil.getViewsQuery("catalog", "db", "tableName"));
   }
 
@@ -51,7 +51,7 @@ class MetadataUtilTest {
   @Test
   void shouldGetColumnsQueryWhenGettingQueryWithArguments() {
     assertEquals(
-        "SELECT table_catalog, table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns WHERE table_name LIKE 'tableName' AND column_name LIKE 'col%' AND table_schema LIKE 'schema'",
+        "SELECT table_catalog, table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns WHERE table_name LIKE 'tableName' AND column_name LIKE 'col%'",
         MetadataUtil.getColumnsQuery("schema", "tableName", "col%"));
   }
 

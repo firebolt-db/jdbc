@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.connection;
 
+import io.firebolt.jdbc.LoggerUtil;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.ExceptionType;
 import io.firebolt.jdbc.exception.FireboltException;
@@ -11,9 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayInputStream;
@@ -121,10 +120,7 @@ class FireboltConnectionTest {
     assertNotNull(statement);
     verify(fireboltQueryService)
         .executeQuery(
-            eq("INSERT INTO cars(sales, name) VALUES (500, 'Ford')"),
-            eq(false),
-            any(),
-            any());
+            eq("INSERT INTO cars(sales, name) VALUES (500, 'Ford')"), eq(false), any(), any());
   }
 
   @Test
@@ -161,13 +157,11 @@ class FireboltConnectionTest {
         () -> fireboltConnection.addProperty(new ImmutablePair<>("custom_1", "1")));
 
     verify(fireboltQueryService)
-        .executeQuery(
-            eq("SELECT 1"), anyBoolean(), any(), propertiesArgumentCaptor.capture());
+        .executeQuery(eq("SELECT 1"), anyBoolean(), any(), propertiesArgumentCaptor.capture());
     assertEquals(
         "1", propertiesArgumentCaptor.getValue().getAdditionalProperties().get("custom_1"));
 
-    assertNull(
-        fireboltConnection.getSessionProperties().getAdditionalProperties().get("custom_1"));
+    assertNull(fireboltConnection.getSessionProperties().getAdditionalProperties().get("custom_1"));
   }
 
   @Test
@@ -187,13 +181,11 @@ class FireboltConnectionTest {
     fireboltConnection.addProperty(newProperties);
 
     verify(fireboltQueryService)
-        .executeQuery(
-            eq("SELECT 1"), anyBoolean(), any(), propertiesArgumentCaptor.capture());
+        .executeQuery(eq("SELECT 1"), anyBoolean(), any(), propertiesArgumentCaptor.capture());
     assertEquals(
         "1", propertiesArgumentCaptor.getValue().getAdditionalProperties().get("custom_1"));
     assertEquals(
-        "1",
-        fireboltConnection.getSessionProperties().getAdditionalProperties().get("custom_1"));
+        "1", fireboltConnection.getSessionProperties().getAdditionalProperties().get("custom_1"));
   }
 
   @Test
@@ -214,8 +206,7 @@ class FireboltConnectionTest {
     statement.execute();
 
     verify(fireboltQueryService)
-        .executeQuery(
-            eq("SELECT 1"), anyBoolean(), any(), propertiesArgumentCaptor.capture());
+        .executeQuery(eq("SELECT 1"), anyBoolean(), any(), propertiesArgumentCaptor.capture());
     assertNull(
         propertiesArgumentCaptor.getValue().getAdditionalProperties().get("connector_versions"));
     assertNull(
@@ -224,4 +215,5 @@ class FireboltConnectionTest {
             .getAdditionalProperties()
             .get("connector_versions"));
   }
+  
 }

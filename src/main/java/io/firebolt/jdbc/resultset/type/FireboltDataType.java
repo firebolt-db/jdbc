@@ -70,7 +70,7 @@ public enum FireboltDataType {
   DATE(Types.DATE, "Date", BaseType.DATE.name(), BaseType.DATE, false, false, 10, 0),
   DATE_32(Types.DATE, "Date32", "DATE_EXT", BaseType.DATE, false, false, 10, 0, "DATE_EXT"),
   DATE_TIME_64(
-      Types.TIMESTAMP, "DateTime64", "TIMESTAMP_EXT", BaseType.TIMESTAMP, false, false, 19, 0),
+      Types.TIMESTAMP, "DateTime64", "TIMESTAMP_EXT", BaseType.TIMESTAMP, false, false, 19, 0, "TIMESTAMP_EXT"),
   DATE_TIME(
       Types.TIMESTAMP,
       "DateTime",

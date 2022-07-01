@@ -45,7 +45,6 @@ public class FireboltProperties {
   String sslMode;
   Integer compress;
   Integer enableConnectionPool;
-  String outputFormat;
   String user;
   String password;
   String engine;
@@ -88,6 +87,7 @@ public class FireboltProperties {
     int tcpKeepInterval = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_INTERVAL);
     int tcpKeepIdle = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_IDLE);
     int tcpKeepCount = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_COUNT);
+    String logLevel = getSetting(mergedProperties, FireboltSessionProperty.LOG_LEVEL);
 
     String host = getHost(mergedProperties);
     Integer port = getPort(mergedProperties, ssl);

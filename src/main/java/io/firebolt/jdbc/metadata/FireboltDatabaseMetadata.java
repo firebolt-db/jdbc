@@ -46,7 +46,7 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
   public ResultSet getTableTypes() throws SQLException {
     return FireboltDatabaseMetadataResult.builder()
         .columns(Collections.singletonList(Column.builder().name(TABLE_TYPE).type(STRING).build()))
-        .rows(Collections.singletonList(Arrays.asList("TABLE", "VIEW")))
+        .rows(Arrays.asList(Arrays.asList("TABLE"), Arrays.asList("VIEW")))
         .build()
         .toResultSet();
   }
@@ -220,7 +220,7 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
       while (tables.next()) {
         List<String> row = new ArrayList<>();
         row.add(tables.getString(1));
-        row.add(tables.getString(2));
+        row.add("\\N");
         row.add(tables.getString(3));
         String tableType = isView ? "VIEW" : "TABLE";
         row.add(tableType);

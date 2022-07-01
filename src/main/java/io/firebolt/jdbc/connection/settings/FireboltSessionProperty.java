@@ -57,7 +57,7 @@ public enum FireboltSessionProperty {
   MAX_CONNECTIONS_TOTAL("max_connections_total", 10000, Integer.class, "Maximum total connections"),
 
   ENABLE_CONNECTION_POOL(
-      "enable_connection_pool", 0, Integer.class, "use connection pool for valid connections"),
+      "use_connection_pool", 0, Integer.class, "use connection pool for valid connections"),
   VALIDATE_AFTER_INACTIVITY_MILLIS(
       "validate_after_inactivity_millis",
       3 * 1000,
@@ -95,7 +95,10 @@ public enum FireboltSessionProperty {
       "result_overflow_mode",
       null,
       String.class,
-      "Action to do when the result exceed a limit. Throw -> Throw an exception, Break -> Same as LIMIT");
+      "Action to do when the result exceed a limit. Throw -> Throw an exception, Break -> Same as LIMIT"),
+
+  LOG_LEVEL(
+          "log_level", null, String.class, "Override log level. Supported values: ALL, TRACE, DEBUG, INFO, WARN, ERROR, OFF");
 
   private final String key;
   private final Object defaultValue;
