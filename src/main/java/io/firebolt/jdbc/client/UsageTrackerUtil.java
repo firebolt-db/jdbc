@@ -77,12 +77,12 @@ public class UsageTrackerUtil {
   }
 
   public static String getUserAgentString(String userDrivers, String userClients) {
-    Map<String, String> detected_drivers =
+    Map<String, String> detectedDrivers =
         getClients(Thread.currentThread().getStackTrace(), DRIVER_MAP);
-    Map<String, String> detected_clients =
+    Map<String, String> detectedClients =
         getClients(Thread.currentThread().getStackTrace(), CLIENT_MAP);
-    overrideClients(detected_drivers, userDrivers);
-    overrideClients(detected_clients, userClients);
+    overrideClients(detectedDrivers, userDrivers);
+    overrideClients(detectedClients, userClients);
     String javaVersion = System.getProperty("java.version");
     String systemVersion = System.getProperty("os.version");
 
@@ -97,7 +97,7 @@ public class UsageTrackerUtil {
     }
 
     String result =
-        mapToString(detected_clients)
+        mapToString(detectedClients)
             + " JDBC/"
             + ProjectVersionUtil.getProjectVersion()
             + " (Java "
@@ -108,7 +108,7 @@ public class UsageTrackerUtil {
             + systemVersion
             + "; )"
             + " "
-            + mapToString(detected_drivers);
+            + mapToString(detectedDrivers);
     return result.trim();
   }
 }
