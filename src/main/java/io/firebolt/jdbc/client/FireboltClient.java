@@ -41,11 +41,14 @@ public abstract class FireboltClient {
 
   private final FireboltConnection connection;
 
-  protected FireboltClient(CloseableHttpClient httpClient, FireboltConnection connection, String customConnectors) {
+  protected FireboltClient(CloseableHttpClient httpClient, FireboltConnection connection,
+                           String customDrivers,
+                           String customClients) {
     this.httpClient = httpClient;
     this.connection = connection;
     this.headerUserAgentValue =
-            UsageTrackerUtil.getUserAgentString(customConnectors != null ? customConnectors : "");
+        UsageTrackerUtil.getUserAgentString(
+            customDrivers != null ? customDrivers : "", customClients != null ? customClients : "");
   }
 
   protected <T> T getResource(

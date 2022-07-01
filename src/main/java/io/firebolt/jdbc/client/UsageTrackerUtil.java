@@ -12,12 +12,14 @@ import java.util.Map;
 @UtilityClass
 public class UsageTrackerUtil {
 
-  private static final Map<String, String> CLIENT_MAP =
+  public static final Map<String, String> CLIENT_MAP =
       ImmutableMap.of(
           "Tableau", "com.tableau",
           "Looker", "com.looker",
           "Calcite", "org.apache.calcite",
           "Metabase", "metabase");
+
+  public static final Map<String, String> DRIVER_MAP = ImmutableMap.of();
 
   private static String getVersionForClass(String name) {
     try {
@@ -29,14 +31,14 @@ public class UsageTrackerUtil {
     }
   }
 
-  public Map<String, String> getClients(StackTraceElement[] stack) {
+  public Map<String, String> getClients(StackTraceElement[] stack, Map<String, String> client_map) {
     Map<String, String> clients = new HashMap<String, String>();
     if (stack == null) {
       return clients;
     }
     for (StackTraceElement s : stack) {
-      for (String connector : CLIENT_MAP.keySet()) {
-        if (s.getClassName().contains(CLIENT_MAP.get(connector))) {
+      for (String connector : client_map.keySet()) {
+        if (s.getClassName().contains(client_map.get(connector))) {
           String version = getVersionForClass(s.getClassName());
           log.debug("Detected running from " + connector + " Version " + version);
           clients.put(connector, version);
@@ -65,9 +67,22 @@ public class UsageTrackerUtil {
     }
   }
 
-  public static String getUserAgentString(String userConnectors) {
-    Map<String, String> detected_connectors = getClients(Thread.currentThread().getStackTrace());
-    overrideClients(detected_connectors, userConnectors);
+  private static String mapToString(Map<String, String> map) {
+    StringBuilder connectorString = new StringBuilder();
+    for (Map.Entry<String, String> entry : map.entrySet()) {
+      connectorString.append(entry.getKey() + "/" + entry.getValue());
+      connectorString.append(" ");
+    }
+    return connectorString.toString().trim();
+  }
+
+  public static String getUserAgentString(String userDrivers, String userClients) {
+    Map<String, String> detected_drivers =
+        getClients(Thread.currentThread().getStackTrace(), DRIVER_MAP);
+    Map<String, String> detected_clients =
+        getClients(Thread.currentThread().getStackTrace(), CLIENT_MAP);
+    overrideClients(detected_drivers, userDrivers);
+    overrideClients(detected_clients, userClients);
     String javaVersion = System.getProperty("java.version");
     String systemVersion = System.getProperty("os.version");
 
@@ -81,21 +96,19 @@ public class UsageTrackerUtil {
       os = "Linux";
     }
 
-    StringBuilder connectorString = new StringBuilder();
-    for (Map.Entry<String, String> entry : detected_connectors.entrySet()) {
-      connectorString.append(entry.getKey() + "/" + entry.getValue());
-      connectorString.append(" ");
-    }
-    return "JDBC/"
-        + ProjectVersionUtil.getProjectVersion()
-        + " (Java "
-        + javaVersion
-        + "; "
-        + os
-        + " "
-        + systemVersion
-        + "; )"
-        + " "
-        + connectorString.toString().trim();
+    String result =
+        mapToString(detected_clients)
+            + " JDBC/"
+            + ProjectVersionUtil.getProjectVersion()
+            + " (Java "
+            + javaVersion
+            + "; "
+            + os
+            + " "
+            + systemVersion
+            + "; )"
+            + " "
+            + mapToString(detected_drivers);
+    return result.trim();
   }
 }

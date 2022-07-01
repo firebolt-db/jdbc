@@ -71,6 +71,9 @@ class FireboltAccountClientTest {
   @AfterAll
   public static void close() {
     mockedProjectVersionUtil.close();
+    System.clearProperty("java.version");
+    System.clearProperty("os.version");
+    System.clearProperty("os.name");
   }
 
   @BeforeEach
@@ -80,7 +83,8 @@ class FireboltAccountClientTest {
         .thenReturn(
             Optional.of(FireboltConnectionTokens.builder().accessToken(ACCESS_TOKEN).build()));
     fireboltAccountClient =
-        new FireboltAccountClient(httpClient, objectMapper, fireboltConnection, "ConnA:1.0.9");
+        new FireboltAccountClient(
+            httpClient, objectMapper, fireboltConnection, "ConnA:1.0.9", "ConnB:2.0.9");
   }
 
   @Test
@@ -103,7 +107,7 @@ class FireboltAccountClientTest {
     Map<String, String> expectedHeader =
         ImmutableMap.of(
             "User-Agent",
-            "JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
+            "ConnB/2.0.9 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
             "Authorization",
             "Bearer " + ACCESS_TOKEN);
 
@@ -140,7 +144,7 @@ class FireboltAccountClientTest {
     Map<String, String> expectedHeader =
         ImmutableMap.of(
             "User-Agent",
-            "JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
+            "ConnB/2.0.9 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
             "Authorization",
             "Bearer " + ACCESS_TOKEN);
 
@@ -177,7 +181,7 @@ class FireboltAccountClientTest {
     Map<String, String> expectedHeader =
         ImmutableMap.of(
             "User-Agent",
-            "JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
+            "ConnB/2.0.9 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
             "Authorization",
             "Bearer " + ACCESS_TOKEN);
 
@@ -214,7 +218,7 @@ class FireboltAccountClientTest {
     Map<String, String> expectedHeader =
         ImmutableMap.of(
             "User-Agent",
-            "JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
+            "ConnB/2.0.9 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
             "Authorization",
             "Bearer " + ACCESS_TOKEN);
 

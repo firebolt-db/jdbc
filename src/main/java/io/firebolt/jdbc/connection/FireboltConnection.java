@@ -65,20 +65,24 @@ public class FireboltConnection extends AbstractConnection {
     this.connect();
   }
 
-  public FireboltConnection(String url, Properties connectionSettings)
-      throws FireboltException {
+  public FireboltConnection(String url, Properties connectionSettings) throws FireboltException {
     ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
     this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
-    String connectorVersions =
-        loginProperties.getAdditionalProperties().remove("connector_versions");
+    String driverVersions = loginProperties.getAdditionalProperties().remove("driver_versions");
+    String clientVersions = loginProperties.getAdditionalProperties().remove("client_versions");
     this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
     CloseableHttpClient httpClient = getHttpClient(loginProperties);
     this.fireboltAuthenticationService =
         new FireboltAuthenticationService(
-            new FireboltAuthenticationClient(httpClient, objectMapper, this, connectorVersions));
+            new FireboltAuthenticationClient(
+                httpClient, objectMapper, this, driverVersions, clientVersions));
     this.fireboltEngineService =
-        new FireboltEngineService(new FireboltAccountClient(httpClient, objectMapper, this, connectorVersions));
-    this.fireboltQueryService = new FireboltQueryService(new QueryClientImpl(httpClient, this, connectorVersions));
+        new FireboltEngineService(
+            new FireboltAccountClient(
+                httpClient, objectMapper, this, driverVersions, clientVersions));
+    this.fireboltQueryService =
+        new FireboltQueryService(
+            new QueryClientImpl(httpClient, this, driverVersions, clientVersions));
     this.statements = new ArrayList<>();
     this.connect();
   }
@@ -100,17 +104,14 @@ public class FireboltConnection extends AbstractConnection {
 
   private FireboltConnection connect() throws FireboltException {
     try {
-    if (!StringUtils.equalsIgnoreCase(LOCALHOST, loginProperties.getHost())) {
-      String engineHost =
-          fireboltEngineService.getEngineHost(
-              httpConnectionUrl,
-              loginProperties);
-      this.sessionProperties = loginProperties.toBuilder().host(engineHost).build();
-    } else {
-      this.sessionProperties = loginProperties;
-    }
-    closed = false;
-    log.debug("Connection opened");
+      if (!StringUtils.equalsIgnoreCase(LOCALHOST, loginProperties.getHost())) {
+        String engineHost = fireboltEngineService.getEngineHost(httpConnectionUrl, loginProperties);
+        this.sessionProperties = loginProperties.toBuilder().host(engineHost).build();
+      } else {
+        this.sessionProperties = loginProperties;
+      }
+      closed = false;
+      log.debug("Connection opened");
     } catch (FireboltException ex) {
       if (ex.getType() == ExceptionType.EXPIRED_TOKEN) {
         log.debug("Refreshing expired-token to establish new connection");
@@ -123,11 +124,11 @@ public class FireboltConnection extends AbstractConnection {
     return this;
   }
 
-  public void removeExpiredTokens() throws FireboltException{
+  public void removeExpiredTokens() throws FireboltException {
     fireboltAuthenticationService.removeConnectionTokens(httpConnectionUrl, loginProperties);
   }
 
-  public Optional<FireboltConnectionTokens> getConnectionTokens() throws FireboltException{
+  public Optional<FireboltConnectionTokens> getConnectionTokens() throws FireboltException {
     if (!StringUtils.equalsIgnoreCase(LOCALHOST, loginProperties.getHost())) {
       return Optional.of(
           fireboltAuthenticationService.getConnectionTokens(httpConnectionUrl, loginProperties));
