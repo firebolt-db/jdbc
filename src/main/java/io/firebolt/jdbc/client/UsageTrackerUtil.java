@@ -31,14 +31,14 @@ public class UsageTrackerUtil {
     }
   }
 
-  public Map<String, String> getClients(StackTraceElement[] stack, Map<String, String> client_map) {
+  public Map<String, String> getClients(StackTraceElement[] stack, Map<String, String> clientMap) {
     Map<String, String> clients = new HashMap<String, String>();
     if (stack == null) {
       return clients;
     }
     for (StackTraceElement s : stack) {
-      for (String connector : client_map.keySet()) {
-        if (s.getClassName().contains(client_map.get(connector))) {
+      for (String connector : clientMap.keySet()) {
+        if (s.getClassName().contains(clientMap.get(connector))) {
           String version = getVersionForClass(s.getClassName());
           log.debug("Detected running from " + connector + " Version " + version);
           clients.put(connector, version);
