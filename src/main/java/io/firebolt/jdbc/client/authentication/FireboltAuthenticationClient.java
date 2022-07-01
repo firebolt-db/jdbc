@@ -26,10 +26,13 @@ public class FireboltAuthenticationClient extends FireboltClient {
   private static final String AUTH_URL = "%s/auth/v1/login";
   private final ObjectMapper objectMapper;
 
-
   public FireboltAuthenticationClient(
-      CloseableHttpClient httpClient, ObjectMapper objectMapper, FireboltConnection connection, String customConnectors) {
-    super(httpClient, connection, customConnectors);
+      CloseableHttpClient httpClient,
+      ObjectMapper objectMapper,
+      FireboltConnection connection,
+      String customDrivers,
+      String customClients) {
+    super(httpClient, connection, customDrivers, customClients);
     this.objectMapper = objectMapper;
   }
 
@@ -78,5 +81,4 @@ public class FireboltAuthenticationClient extends FireboltClient {
     return new ObjectMapper()
         .writeValueAsString(ImmutableMap.of(USERNAME, username, PASSWORD, password));
   }
-
 }

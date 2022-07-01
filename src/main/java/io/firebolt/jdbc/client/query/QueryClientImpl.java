@@ -31,8 +31,12 @@ public class QueryClientImpl extends FireboltClient implements QueryClient {
       "TabSeparatedWithNamesAndTypes";
   private final Map<String, HttpPost> runningQueries = new HashMap<>();
 
-  public QueryClientImpl(CloseableHttpClient httpClient, FireboltConnection connection, String customConnectors) {
-    super(httpClient, connection, customConnectors);
+  public QueryClientImpl(
+      CloseableHttpClient httpClient,
+      FireboltConnection connection,
+      String customDrivers,
+      String customClients) {
+    super(httpClient, connection, customDrivers, customClients);
   }
 
   public InputStream postSqlQuery(

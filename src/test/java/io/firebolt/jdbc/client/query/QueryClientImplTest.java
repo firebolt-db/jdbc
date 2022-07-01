@@ -10,6 +10,7 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpEntity;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +34,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import org.mockito.MockedStatic;
-import io.firebolt.jdbc.ProjectVersionUtil;
 
 @ExtendWith(MockitoExtension.class)
 class QueryClientImplTest {
@@ -53,14 +53,24 @@ class QueryClientImplTest {
     System.setProperty("os.name", "MacosX");
   }
 
+  @AfterAll
+  static void close() {
+    mockedProjectVersionUtil.close();
+    System.clearProperty("java.version");
+    System.clearProperty("os.version");
+    System.clearProperty("os.name");
+  }
+
   @Test
   void shouldPostSqlQueryWithExpectedUrl()
       throws FireboltException, IOException, URISyntaxException {
     FireboltProperties fireboltProperties =
         FireboltProperties.builder().database("db1").compress(1).host("firebolt1").port(80).build();
     FireboltConnection connection = mock(FireboltConnection.class);
-    when(connection.getConnectionTokens()).thenReturn(Optional.of(FireboltConnectionTokens.builder().accessToken("token").build()));
-    QueryClient queryClient = new QueryClientImpl(closeableHttpClient, connection, "ConnA:1.0.9");
+    when(connection.getConnectionTokens())
+        .thenReturn(Optional.of(FireboltConnectionTokens.builder().accessToken("token").build()));
+    QueryClient queryClient =
+        new QueryClientImpl(closeableHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
     HttpEntity httpEntity = mock(HttpEntity.class);
     when(response.getCode()).thenReturn(200);
@@ -73,7 +83,8 @@ class QueryClientImplTest {
     HttpPost actualHttpPost = httpPostArgumentCaptor.getValue();
     Map<String, String> expectedHeaders = new HashMap();
     expectedHeaders.put("Authorization", "Bearer token");
-    expectedHeaders.put("User-Agent", "JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9");
+    expectedHeaders.put(
+        "User-Agent", "ConnB/2.0.9 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9");
     String actualQuery =
         new BufferedReader(
                 new InputStreamReader(
@@ -92,7 +103,8 @@ class QueryClientImplTest {
   void shouldCancelSqlQuery() throws FireboltException, IOException, URISyntaxException {
     FireboltProperties fireboltProperties =
         FireboltProperties.builder().database("db1").compress(1).host("firebolt1").port(80).build();
-    QueryClient queryClient = new QueryClientImpl(closeableHttpClient,  mock(FireboltConnection.class), "");
+    QueryClient queryClient =
+        new QueryClientImpl(closeableHttpClient, mock(FireboltConnection.class), "", "");
 
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
     when(response.getCode()).thenReturn(200);

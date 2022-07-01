@@ -46,8 +46,7 @@ class FireboltAuthenticationClientTest {
   @Mock private CloseableHttpClient httpClient;
   private FireboltAuthenticationClient fireboltAuthenticationClient;
 
-  @Mock
-  private FireboltConnection connection;
+  @Mock private FireboltConnection connection;
 
   @BeforeAll
   static void init() {
@@ -61,11 +60,16 @@ class FireboltAuthenticationClientTest {
   @AfterAll
   public static void close() {
     mockedProjectVersionUtil.close();
+    System.clearProperty("java.version");
+    System.clearProperty("os.version");
+    System.clearProperty("os.name");
   }
 
   @BeforeEach
   void setUp() {
-    fireboltAuthenticationClient = new FireboltAuthenticationClient(httpClient, objectMapper, connection, "ConnA:1.0.9");
+    fireboltAuthenticationClient =
+        new FireboltAuthenticationClient(
+            httpClient, objectMapper, connection, "ConnA:1.0.9", "ConnB:2.0.9");
   }
 
   @Test
@@ -92,7 +96,7 @@ class FireboltAuthenticationClientTest {
     HttpPost actualPost = httpPostArgumentCaptor.getValue();
     assertEquals("User-Agent", actualPost.getHeaders()[0].getName());
     assertEquals(
-        "JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
+        "ConnB/2.0.9 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
         actualPost.getHeaders()[0].getValue());
     verify(objectMapper)
         .readValue(
