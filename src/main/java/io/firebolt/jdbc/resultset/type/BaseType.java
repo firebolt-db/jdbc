@@ -20,6 +20,7 @@ import java.sql.Timestamp;
 public enum BaseType {
   LONG(Long.class, (value, subType) -> Long.parseLong(value)),
   INTEGER(Integer.class, (value, subType) -> Integer.parseInt(value)),
+  SHORT(Short.class, (value, subType) -> Short.parseShort(value)),
   BIG_INTEGER(BigInteger.class, (value, subType) -> new BigInteger(value)),
   STRING(String.class, (value, subType) -> StringEscapeUtils.unescapeJava(value)),
   FLOAT(

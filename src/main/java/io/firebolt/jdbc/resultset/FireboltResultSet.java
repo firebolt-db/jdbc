@@ -21,6 +21,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static io.firebolt.jdbc.LoggerUtil.FEATURE_NOT_SUPPORTED_YET;
+
 @Slf4j
 @EqualsAndHashCode(callSuper = true)
 public class FireboltResultSet extends AbstractResultSet {
@@ -35,7 +37,6 @@ public class FireboltResultSet extends AbstractResultSet {
   private boolean isClosed = false;
   private String[] arr = new String[0];
 
-  private static final String FEATURE_NOT_SUPPORTED_YET = "Feature not supported yet. Method: %s";
   private FireboltResultSet() {
     reader = // empty InputStream
         new BufferedReader(
@@ -59,7 +60,7 @@ public class FireboltResultSet extends AbstractResultSet {
       InputStream is, String tableName, String dbName, Integer bufferSize, boolean isCompressed)
       throws SQLException {
     log.debug("Creating resultSet...");
-    // is = debug(is);
+    //is = LoggerUtil.logInputStream(is);
 
     this.reader = createStreamReader(is, bufferSize, isCompressed);
 
@@ -97,30 +98,6 @@ public class FireboltResultSet extends AbstractResultSet {
       return bufferSize != null
           ? new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8), bufferSize)
           : new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-    }
-  }
-
-  private InputStream debug(InputStream is) {
-    try {
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      byte[] buffer = new byte[1024];
-      int len;
-      while ((len = is.read(buffer)) > -1) {
-        baos.write(buffer, 0, len);
-      }
-      baos.flush();
-      InputStream streamToLog = new ByteArrayInputStream(baos.toByteArray());
-      String text =
-          new BufferedReader(new InputStreamReader(streamToLog, StandardCharsets.UTF_8))
-              .lines()
-              .collect(Collectors.joining("\n"));
-      log.debug("======================================");
-      log.debug(text);
-      log.debug("======================================");
-      return new ByteArrayInputStream(baos.toByteArray());
-    } catch (Exception ex) {
-      log.debug("Could not log stream received", ex);
-      return is;
     }
   }
 
@@ -183,8 +160,18 @@ public class FireboltResultSet extends AbstractResultSet {
   }
 
   @Override
+  public short getShort(int columnIndex) throws SQLException {
+    return BaseType.SHORT.transform(getValueAtColumn(columnIndex));
+  }
+
+  @Override
   public byte getByte(String column) throws SQLException {
     return this.getByte(getColumnIndex(column));
+  }
+
+  @Override
+  public short getShort(String columnLabel) throws SQLException {
+    return this.getShort(getColumnIndex(columnLabel));
   }
 
   @Override

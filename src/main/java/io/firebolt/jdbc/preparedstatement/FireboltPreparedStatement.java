@@ -1,11 +1,11 @@
 package io.firebolt.jdbc.preparedstatement;
 
-import io.firebolt.QueryUtil;
+import io.firebolt.jdbc.statement.StatementUtil;
 import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.type.JavaTypeToFireboltSQLString;
-import io.firebolt.jdbc.service.FireboltQueryService;
+import io.firebolt.jdbc.service.FireboltStatementService;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -32,15 +32,15 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
       builderMethodName =
           "statementBuilder") // As the parent is also using @Builder, a method name is mandatory
   public FireboltPreparedStatement(
-      FireboltQueryService fireboltQueryService,
+      FireboltStatementService statementService,
       FireboltProperties sessionProperties,
       String sql,
       FireboltConnection connection) {
-    super(fireboltQueryService, sessionProperties, connection);
+    super(statementService, sessionProperties, connection);
     log.debug("Populating PreparedStatement object for SQL: {}", sql);
     this.sql = sql;
     Pair<String, Integer> cleanQueryWithParamCount =
-        QueryUtil.cleanQueryAndCountKeyWordOccurrences(sql, "?");
+        StatementUtil.cleanQueryAndCountKeyWordOccurrences(sql, "?");
     this.cleanSql = cleanQueryWithParamCount.getLeft();
     this.totalParams = cleanQueryWithParamCount.getRight();
     this.currentParams = new HashMap<>();
@@ -206,7 +206,7 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
 
   @Override
   public void addBatch() throws SQLException {
-    if (QueryUtil.isSelect(this.sql)) {
+    if (StatementUtil.isQuery(this.sql)) {
       throw new FireboltException("Cannot call addBatch() for SELECT queries");
     } else {
       rows.add(this.currentParams);

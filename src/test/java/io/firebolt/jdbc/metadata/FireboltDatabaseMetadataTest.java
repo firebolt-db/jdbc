@@ -4,7 +4,7 @@ import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.metadata.FireboltDatabaseMetadataResult.Column;
 import io.firebolt.jdbc.resultset.FireboltResultSet;
-import io.firebolt.jdbc.statement.FireboltStatementImpl;
+import io.firebolt.jdbc.statement.FireboltStatement;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +33,7 @@ class FireboltDatabaseMetadataTest {
 
   @Mock private FireboltConnection fireboltConnection;
 
-  @Mock private FireboltStatementImpl statement;
+  @Mock private FireboltStatement statement;
 
   @InjectMocks private FireboltDatabaseMetadata fireboltDatabaseMetadata;
 

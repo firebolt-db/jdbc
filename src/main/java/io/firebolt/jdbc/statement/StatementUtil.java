@@ -1,4 +1,4 @@
-package io.firebolt;
+package io.firebolt.jdbc.statement;
 
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 
 @UtilityClass
 @Slf4j
-public class QueryUtil {
+public class StatementUtil {
 
   private static final String SINGLE_LINE_COMMENTS_REGEX = "--[^\n]*\n";
   private static final String MULTI_LINE_COMMENTS_REGEX = "/\\*[^/\\*]*\\*/";
@@ -23,13 +23,13 @@ public class QueryUtil {
   private static final String[] SELECT_KEYWORDS =
       new String[] {"show", "select", "describe", "exists", "explain", "with"};
 
-  public static boolean isSelect(String sql) {
+  public static boolean isQuery(String sql) {
     String cleanQuery = cleanQuery(sql);
     cleanQuery = cleanQuery.replace("(", "");
     return StringUtils.startsWithAny(cleanQuery.toLowerCase(), SELECT_KEYWORDS);
   }
 
-  public Optional<Pair<String, String>> extractAdditionalProperties(String sql) {
+  public Optional<Pair<String, String>> extractPropertyFromQuery(String sql) {
     String cleanQuery = cleanQuery(sql);
     if (cleanQuery.toLowerCase().startsWith(SET_PREFIX)) {
       return extractPropertyPair(sql, cleanQuery);
@@ -109,7 +109,7 @@ public class QueryUtil {
   public static Pair<Optional<String>, Optional<String>> extractDbNameAndTableNamePairFromQuery(
       String sql) {
     Optional<String> from = Optional.empty();
-    if (isSelect(sql)) {
+    if (isQuery(sql)) {
       log.debug("Extracting DB and Table name for SELECT: {}", sql);
       String cleanQuery = cleanQuery(sql);
       String withoutQuotes = StringUtils.replace(cleanQuery, "'", "").trim();
@@ -164,7 +164,7 @@ public class QueryUtil {
       char previousChar,
       boolean isCurrentSubstringBetweenQuotes,
       boolean isInSingleLineComment) {
-    if (!isCurrentSubstringBetweenQuotes && ((previousChar == '-' && currentChar == '-'))) {
+    if (!isCurrentSubstringBetweenQuotes && (previousChar == '-' && currentChar == '-')) {
       return true;
     } else if (currentChar == '\n') {
       return false;

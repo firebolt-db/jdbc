@@ -8,9 +8,9 @@ import java.sql.*;
 import java.util.Calendar;
 import java.util.Map;
 
-public class AbstractResultSet implements ResultSet {
+import static io.firebolt.jdbc.LoggerUtil.FEATURE_NOT_SUPPORTED_YET;
 
-  private static final String FEATURE_NOT_SUPPORTED_YET = "Feature not supported yet. Method: %s";
+public abstract class AbstractResultSet implements ResultSet {
 
   @Override
   public boolean next() throws SQLException {
@@ -48,11 +48,6 @@ public class AbstractResultSet implements ResultSet {
         String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
   }
 
-  @Override
-  public short getShort(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
-  }
 
   @Override
   public int getInt(int columnIndex) throws SQLException {
@@ -143,11 +138,7 @@ public class AbstractResultSet implements ResultSet {
         String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
   }
 
-  @Override
-  public short getShort(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
-  }
+
 
   @Override
   public int getInt(String columnLabel) throws SQLException {

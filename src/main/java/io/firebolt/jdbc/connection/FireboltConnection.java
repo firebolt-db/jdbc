@@ -1,12 +1,11 @@
 package io.firebolt.jdbc.connection;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.firebolt.jdbc.LoggerUtil;
 import io.firebolt.jdbc.client.FireboltObjectMapper;
 import io.firebolt.jdbc.client.HttpClientConfig;
 import io.firebolt.jdbc.client.account.FireboltAccountClient;
 import io.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
-import io.firebolt.jdbc.client.query.QueryClientImpl;
+import io.firebolt.jdbc.client.query.StatementClientImpl;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.ExceptionType;
 import io.firebolt.jdbc.exception.FireboltException;
@@ -14,8 +13,8 @@ import io.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
 import io.firebolt.jdbc.preparedstatement.FireboltPreparedStatement;
 import io.firebolt.jdbc.service.FireboltAuthenticationService;
 import io.firebolt.jdbc.service.FireboltEngineService;
-import io.firebolt.jdbc.service.FireboltQueryService;
-import io.firebolt.jdbc.statement.FireboltStatementImpl;
+import io.firebolt.jdbc.service.FireboltStatementService;
+import io.firebolt.jdbc.statement.FireboltStatement;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -39,13 +38,13 @@ public class FireboltConnection extends AbstractConnection {
 
   private final FireboltAuthenticationService fireboltAuthenticationService;
   private final FireboltEngineService fireboltEngineService;
-  private final FireboltQueryService fireboltQueryService;
+  private final FireboltStatementService fireboltStatementService;
   private final FireboltProperties loginProperties;
   private boolean closed = true;
   private FireboltProperties sessionProperties;
   private final String httpConnectionUrl;
 
-  private final List<FireboltStatementImpl> statements;
+  private final List<FireboltStatement> statements;
 
   private static final String LOCALHOST = "localhost";
 
@@ -54,14 +53,14 @@ public class FireboltConnection extends AbstractConnection {
       Properties connectionSettings,
       FireboltAuthenticationService fireboltAuthenticationService,
       FireboltEngineService fireboltEngineService,
-      FireboltQueryService fireboltQueryService)
+      FireboltStatementService fireboltStatementService)
       throws FireboltException {
     this.fireboltAuthenticationService = fireboltAuthenticationService;
     this.fireboltEngineService = fireboltEngineService;
     this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
     loginProperties.getAdditionalProperties().remove("connector_versions");
     this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
-    this.fireboltQueryService = fireboltQueryService;
+    this.fireboltStatementService = fireboltStatementService;
     this.statements = new ArrayList<>();
     this.connect();
   }
@@ -81,9 +80,9 @@ public class FireboltConnection extends AbstractConnection {
         new FireboltEngineService(
             new FireboltAccountClient(
                 httpClient, objectMapper, this, driverVersions, clientVersions));
-    this.fireboltQueryService =
-        new FireboltQueryService(
-            new QueryClientImpl(httpClient, this, driverVersions, clientVersions));
+    this.fireboltStatementService =
+        new FireboltStatementService(
+            new StatementClientImpl(httpClient, this, driverVersions, clientVersions));
     this.statements = new ArrayList<>();
     this.connect();
   }
@@ -148,9 +147,9 @@ public class FireboltConnection extends AbstractConnection {
 
   public Statement createStatement(FireboltProperties tmpProperties) throws SQLException {
     checkConnectionIsNotClose();
-    FireboltStatementImpl fireboltStatement =
-        FireboltStatementImpl.builder()
-            .fireboltQueryService(fireboltQueryService)
+    FireboltStatement fireboltStatement =
+        FireboltStatement.builder()
+            .statementService(fireboltStatementService)
             .sessionProperties(tmpProperties)
             .connection(this)
             .build();
@@ -158,7 +157,7 @@ public class FireboltConnection extends AbstractConnection {
     return fireboltStatement;
   }
 
-  private void addStatement(FireboltStatementImpl statement) throws SQLException {
+  private void addStatement(FireboltStatement statement) throws SQLException {
     synchronized (statements) {
       checkConnectionIsNotClose();
       this.statements.add(statement);
@@ -217,7 +216,7 @@ public class FireboltConnection extends AbstractConnection {
     log.debug("Closing connection");
     synchronized (statements) {
       if (!this.isClosed()) {
-        for (FireboltStatementImpl statement : this.statements) {
+        for (FireboltStatement statement : this.statements) {
           try {
             statement.close(false);
           } catch (Exception e) {
@@ -295,7 +294,7 @@ public class FireboltConnection extends AbstractConnection {
     checkConnectionIsNotClose();
     FireboltPreparedStatement statement =
         FireboltPreparedStatement.statementBuilder()
-            .fireboltQueryService(fireboltQueryService)
+            .statementService(fireboltStatementService)
             .sessionProperties(this.getSessionProperties())
             .sql(sql)
             .connection(this)
@@ -350,7 +349,7 @@ public class FireboltConnection extends AbstractConnection {
     }
   }
 
-  public void removeClosedStatement(FireboltStatementImpl fireboltStatement) {
+  public void removeClosedStatement(FireboltStatement fireboltStatement) {
     synchronized (statements) {
       if (statements.contains(fireboltStatement)) {
         this.statements.remove(fireboltStatement);
@@ -371,5 +370,13 @@ public class FireboltConnection extends AbstractConnection {
           String.format("Could not set property %s=%s", property.getLeft(), property.getRight()),
           e);
     }
+  }
+  @Override
+  public void commit() throws SQLException {
+    //no-op
+  }
+  @Override
+  public void rollback() throws SQLException {
+    //no-op
   }
 }

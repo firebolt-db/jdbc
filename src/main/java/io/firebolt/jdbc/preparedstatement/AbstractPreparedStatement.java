@@ -2,8 +2,8 @@ package io.firebolt.jdbc.preparedstatement;
 
 import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
-import io.firebolt.jdbc.service.FireboltQueryService;
-import io.firebolt.jdbc.statement.FireboltStatementImpl;
+import io.firebolt.jdbc.service.FireboltStatementService;
+import io.firebolt.jdbc.statement.FireboltStatement;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -11,13 +11,13 @@ import java.net.URL;
 import java.sql.*;
 import java.util.Calendar;
 
-public abstract class AbstractPreparedStatement extends FireboltStatementImpl
+public abstract class AbstractPreparedStatement extends FireboltStatement
     implements PreparedStatement {
 
   protected AbstractPreparedStatement(
-      FireboltQueryService fireboltQueryService,
+      FireboltStatementService fireboltStatementService,
       FireboltProperties sessionProperties, FireboltConnection connection) {
-    super(fireboltQueryService, sessionProperties, connection);
+    super(fireboltStatementService, sessionProperties, connection);
   }
 
   @Override

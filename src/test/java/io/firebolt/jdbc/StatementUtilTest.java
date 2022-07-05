@@ -1,6 +1,6 @@
 package io.firebolt.jdbc;
 
-import io.firebolt.QueryUtil;
+import io.firebolt.jdbc.statement.StatementUtil;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
@@ -14,14 +14,14 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class QueryUtilTest {
+class StatementUtilTest {
 
   @Test
   void shouldExtractAdditionalProperties() {
     String query = "set my_custom_query=1";
     assertEquals(
         Optional.of(new ImmutablePair<>("my_custom_query", "1")),
-        QueryUtil.extractAdditionalProperties(query));
+        StatementUtil.extractPropertyFromQuery(query));
   }
 
   @Test
@@ -29,7 +29,7 @@ class QueryUtilTest {
     String query = "/* */" + " SeT my_custom_query=1";
     assertEquals(
         Optional.of(new ImmutablePair<>("my_custom_query", "1")),
-        QueryUtil.extractAdditionalProperties(query));
+        StatementUtil.extractPropertyFromQuery(query));
   }
 
   @Test
@@ -37,19 +37,19 @@ class QueryUtilTest {
     String query = "set my_custom_char=' '";
     assertEquals(
         Optional.of(new ImmutablePair<>("my_custom_char", "' '")),
-        QueryUtil.extractAdditionalProperties(query));
+        StatementUtil.extractPropertyFromQuery(query));
   }
 
   @Test
   void shouldFindThatShowQueryIsASelect() {
     String query = "/* Some random command*/ SHOW DATABASES";
-    assertTrue(QueryUtil.isSelect(query));
+    assertTrue(StatementUtil.isQuery(query));
   }
 
   @Test
   void shouldFindThatWithQueryIsASelect() {
     String sql = getSqlFromFile("/queries/query-with-keyword-with.sql");
-    assertTrue(QueryUtil.isSelect(sql));
+    assertTrue(StatementUtil.isQuery(sql));
   }
 
   @Test
@@ -58,7 +58,7 @@ class QueryUtilTest {
         "/* Some random comment*/ SELECT /* Second comment */ * FROM -- third comment \n EMPLOYEES WHERE id = 5";
     assertEquals(
         Optional.of("EMPLOYEES"),
-        QueryUtil.extractDbNameAndTableNamePairFromQuery(query).getRight());
+        StatementUtil.extractDbNameAndTableNamePairFromQuery(query).getRight());
   }
 
   @Test
@@ -66,53 +66,54 @@ class QueryUtilTest {
     String query =
         "-- Some random command   \n       SELECT *     FROM    db.schema.EMPLOYEES      WHERE id = 5";
     assertEquals(
-        Optional.of("db"), QueryUtil.extractDbNameAndTableNamePairFromQuery(query).getLeft());
+        Optional.of("db"), StatementUtil.extractDbNameAndTableNamePairFromQuery(query).getLeft());
   }
 
   @Test
   void shouldBeEmptyWhenGettingDbNameAndThereIsNoDbName() {
     String query = "/* Some random command*/ SELECT * FROM EMPLOYEES WHERE id = 5";
     assertEquals(
-        Optional.empty(), QueryUtil.extractDbNameAndTableNamePairFromQuery(query).getLeft());
+        Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromQuery(query).getLeft());
   }
 
   @Test
   void shouldBeEmptyWhenGettingDbNameFromAQueryWithoutFrom() {
     String query = "SELECT *";
     assertEquals(
-        Optional.empty(), QueryUtil.extractDbNameAndTableNamePairFromQuery(query).getLeft());
+        Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromQuery(query).getLeft());
   }
 
   @Test
   void shouldGetEmptyDbNameAndTablesTableNameWhenUsingDescribe() {
     String query = "DESCRIBE EMPLOYEES";
     assertEquals(
-        Optional.empty(), QueryUtil.extractDbNameAndTableNamePairFromQuery(query).getLeft());
+        Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromQuery(query).getLeft());
     assertEquals(
-        Optional.of("tables"), QueryUtil.extractDbNameAndTableNamePairFromQuery(query).getRight());
+        Optional.of("tables"),
+        StatementUtil.extractDbNameAndTableNamePairFromQuery(query).getRight());
   }
 
   @Test
   void shouldGetEmptyTableNameAndEmptyDbNameWhenUsingShow() {
     String query = "SHOW databases";
     assertEquals(
-        Optional.empty(), QueryUtil.extractDbNameAndTableNamePairFromQuery(query).getLeft());
+        Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromQuery(query).getLeft());
     assertEquals(
-        Optional.empty(), QueryUtil.extractDbNameAndTableNamePairFromQuery(query).getRight());
+        Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromQuery(query).getRight());
   }
 
   @Test
   void shouldBeEmptyWhenGettingTableNameWhenTheQueryIsNotASelect() {
     String query = "/* Some random command*/ UPDATE * FROM EMPLOYEES WHERE id = 5";
     assertEquals(
-        Optional.empty(), QueryUtil.extractDbNameAndTableNamePairFromQuery(query).getRight());
+        Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromQuery(query).getRight());
   }
 
   @Test
   void shouldThrowAnExceptionWhenTheSetCannotBeParsed() {
     String query = "set x=";
     assertThrows(
-        IllegalArgumentException.class, () -> QueryUtil.extractAdditionalProperties(query));
+        IllegalArgumentException.class, () -> StatementUtil.extractPropertyFromQuery(query));
   }
 
   @Test
@@ -120,7 +121,7 @@ class QueryUtilTest {
     String sql = getSqlFromFile("/queries/query-with-comment.sql");
     String expectedCleanQuery = getSqlFromFile("/queries/query-with-comment-cleaned.sql");
     Pair<String, Integer> cleanQueryWithCount =
-        QueryUtil.cleanQueryAndCountKeyWordOccurrences(sql, "?");
+        StatementUtil.cleanQueryAndCountKeyWordOccurrences(sql, "?");
     assertEquals(expectedCleanQuery, cleanQueryWithCount.getLeft());
     assertEquals(1, cleanQueryWithCount.getRight());
   }
@@ -134,7 +135,7 @@ class QueryUtilTest {
             + "'Taylor''s Prime Steak House 3' /* some comment */)--";
     String expectedCleanQuery =
         "INSERT INTO regex_test (name)\n" + "\n" + "VALUES (\n" + "'Taylor''s Prime Steak House 3'";
-    String cleanQuery = QueryUtil.cleanQuery(sql);
+    String cleanQuery = StatementUtil.cleanQuery(sql);
     assertEquals(expectedCleanQuery, cleanQuery);
   }
 
@@ -143,13 +144,13 @@ class QueryUtilTest {
     String sql = getSqlFromFile("/queries/query-with-comment.sql");
     String expectedCleanQuery = getSqlFromFile("/queries/query-with-comment-cleaned.sql");
     Pair<String, Integer> cleanQueryWithCount =
-        QueryUtil.cleanQueryAndCountKeyWordOccurrences(sql, "?");
+        StatementUtil.cleanQueryAndCountKeyWordOccurrences(sql, "?");
     assertEquals(expectedCleanQuery, cleanQueryWithCount.getLeft());
     assertEquals(1, cleanQueryWithCount.getRight());
   }
 
   private static String getSqlFromFile(String path) {
-    InputStream is = QueryUtilTest.class.getResourceAsStream(path);
+    InputStream is = StatementUtilTest.class.getResourceAsStream(path);
     return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
         .lines()
         .collect(Collectors.joining("\n"));
