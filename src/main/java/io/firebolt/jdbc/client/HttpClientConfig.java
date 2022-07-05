@@ -22,7 +22,7 @@ public class HttpClientConfig {
       throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException,
           KeyManagementException {
     client = HttpClientCreator.createClient(fireboltProperties);
-    log.debug("Http client initialized");
+    log.info("Http client initialized");
     return client;
   }
 

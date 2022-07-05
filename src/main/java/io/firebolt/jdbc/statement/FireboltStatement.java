@@ -64,7 +64,7 @@ public class FireboltStatement extends AbstractStatement {
       throws SQLException {
     this.statementId = UUID.randomUUID().toString();
     try {
-      log.debug("Executing query with id {} : {}", this.statementId, sql);
+      log.info("Executing the query with id {} : {}", this.statementId, sql);
       if (resultSet != null && !this.resultSet.isClosed()) {
         this.resultSet.close();
         this.resultSet = null;
@@ -99,7 +99,7 @@ public class FireboltStatement extends AbstractStatement {
           currentUpdateCount = 0;
           closeStream(sql, inputStream);
         }
-        log.debug("Query with id {} was executed with Success", this.statementId);
+        log.info("The query with the id {} was executed with success", this.statementId);
       }
     } catch (Exception ex) {
       log.error("Could not execute query with id {}", this.statementId, ex);
@@ -152,8 +152,9 @@ public class FireboltStatement extends AbstractStatement {
     log.debug("cancelling query");
     Map<String, String> statementParams = new HashMap<>(this.getStatementParameters());
     statementParams.put("use_standard_sql", "0");
-    try (ResultSet rs =
-        this.execute(String.format(KILL_QUERY_SQL, statementId), statementParams)) {}
+    try (ResultSet rs = this.execute(String.format(KILL_QUERY_SQL, statementId), statementParams)) {
+      //The empty try block is correct, we just use it so that java closes the closeable after execution
+    }
   }
 
   @Override

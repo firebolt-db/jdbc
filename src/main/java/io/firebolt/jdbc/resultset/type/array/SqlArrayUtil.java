@@ -30,7 +30,6 @@ public class SqlArrayUtil {
       else break;
     value = value.substring(dimensions, value.length() - dimensions);
     Object arr = createArray(value, dimensions, fireboltColumn);
-    log.info("Arr {}", arr);
     return FireboltArray.builder().array(arr).type(fireboltColumn.getArrayBaseDataType()).build();
   }
 

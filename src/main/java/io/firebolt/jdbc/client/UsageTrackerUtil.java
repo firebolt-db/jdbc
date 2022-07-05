@@ -60,7 +60,7 @@ public class UsageTrackerUtil {
         clients.put(connectorInfo[0], connectorInfo[1]);
       }
     } else {
-      log.info(
+      log.debug(
           "Incorrect connector format is provided: "
               + overrides
               + " Expected: ConnA:1.0.2,ConnB:2.9.3");

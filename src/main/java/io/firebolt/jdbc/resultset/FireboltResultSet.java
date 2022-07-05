@@ -399,12 +399,7 @@ public class FireboltResultSet extends AbstractResultSet {
   }
 
   private List<FireboltColumn> getColumns(String[] columnNames, String columnTypes) {
-    log.info("Column names {}", (Object) columnNames);
-    log.info("Column types {}", columnTypes);
     String[] types = toStringArray(columnTypes);
-
-    log.info(
-        "column types length: {} columnName length: {}", columnTypes.length(), columnNames.length);
     return IntStream.range(0, types.length)
         .mapToObj(i -> FireboltColumn.of(types[i], StringEscapeUtils.unescapeJava(columnNames[i])))
         .collect(Collectors.toList());
