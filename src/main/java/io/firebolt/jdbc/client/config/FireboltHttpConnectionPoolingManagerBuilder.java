@@ -38,18 +38,11 @@ public class FireboltHttpConnectionPoolingManagerBuilder {
   FireboltProperties fireboltProperties;
 
   public FireboltHttpConnectionPoolingManager create() {
-    @SuppressWarnings("resource")
     final FireboltHttpConnectionPoolingManager poolingManager =
         new FireboltHttpConnectionPoolingManager(
             RegistryBuilder.<ConnectionSocketFactory>create()
                 .register(URIScheme.HTTP.id, PlainConnectionSocketFactory.getSocketFactory())
-                .register(
-                    URIScheme.HTTPS.id,
-                    sslSocketFactory != null
-                        ? sslSocketFactory
-                        : (systemProperties
-                            ? SSLConnectionSocketFactory.getSystemSocketFactory()
-                            : SSLConnectionSocketFactory.getSocketFactory()))
+                .register(URIScheme.HTTPS.id, getConnectionSocketFactory())
                 .build(),
             poolConcurrencyPolicy,
             poolReusePolicy,
@@ -71,5 +64,15 @@ public class FireboltHttpConnectionPoolingManagerBuilder {
       poolingManager.setDefaultMaxPerRoute(maxConnPerRoute);
     }
     return poolingManager;
+  }
+
+  private ConnectionSocketFactory getConnectionSocketFactory() {
+    if (sslSocketFactory != null) {
+      return sslSocketFactory;
+    } else {
+      return systemProperties
+          ? SSLConnectionSocketFactory.getSystemSocketFactory()
+          : SSLConnectionSocketFactory.getSocketFactory();
+    }
   }
 }
