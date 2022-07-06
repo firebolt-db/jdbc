@@ -49,7 +49,7 @@ public class FireboltAccountClient extends FireboltClient {
     this.objectMapper = objectMapper;
   }
 
-  public Optional<String> getAccountId(String host, String account, boolean isCompress)
+  public Optional<String> getAccountId(String host, String account)
       throws FireboltException, IOException, ParseException {
     String uri = String.format(GET_ACCOUNT_ID_URI, host, account);
     return Optional.ofNullable(
@@ -59,12 +59,12 @@ public class FireboltAccountClient extends FireboltClient {
                 this.getHttpClient(),
                 objectMapper,
                 FireboltAccountResponse.class,
-                isCompress))
+                false))
         .map(FireboltAccountResponse::getAccountId);
   }
 
   public String getEngineAddress(
-      String host, String accountId, String engineName, String engineID, boolean isCompress)
+      String host, String accountId, String engineName, String engineID)
       throws FireboltException, IOException, ParseException {
     String uri =
         createAccountUri(accountId, host, URI_SUFFIX_ACCOUNT_ENGINE_INFO_BY_ENGINE_ID + engineID);
@@ -75,7 +75,7 @@ public class FireboltAccountClient extends FireboltClient {
             this.getHttpClient(),
             objectMapper,
             FireboltEngineResponse.class,
-            isCompress);
+            false);
     return Optional.ofNullable(response)
         .map(FireboltEngineResponse::getEngine)
         .map(FireboltEngineResponse.Engine::getEndpoint)
@@ -90,7 +90,7 @@ public class FireboltAccountClient extends FireboltClient {
   }
 
   public String getDbDefaultEngineAddress(
-      String host, String accountId, String dbName, boolean isCompress)
+      String host, String accountId, String dbName)
       throws FireboltException, IOException, ParseException {
     String uri = createAccountUri(accountId, host, URI_SUFFIX_DATABASE_INFO_URL + dbName);
     FireboltDatabaseResponse response =
@@ -100,7 +100,7 @@ public class FireboltAccountClient extends FireboltClient {
             this.getHttpClient(),
             objectMapper,
             FireboltDatabaseResponse.class,
-            isCompress);
+            false);
     return Optional.ofNullable(response)
         .map(FireboltDatabaseResponse::getEngineUrl)
         .orElseThrow(
@@ -113,7 +113,7 @@ public class FireboltAccountClient extends FireboltClient {
                         + ERROR_NO_RUNNING_ENGINE_SUFFIX));
   }
 
-  public String getEngineId(String host, String accountId, String engineName, boolean isCompress)
+  public String getEngineId(String host, String accountId, String engineName)
       throws FireboltException, IOException, ParseException {
     String uri =
         createAccountUri(
@@ -125,7 +125,7 @@ public class FireboltAccountClient extends FireboltClient {
             this.getHttpClient(),
             objectMapper,
             FireboltEngineIdResponse.class,
-            isCompress);
+            false);
     return Optional.ofNullable(response)
         .map(FireboltEngineIdResponse::getEngine)
         .map(FireboltEngineIdResponse.Engine::getEngineId)

@@ -15,7 +15,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class FireboltEngineServiceTest {
 
-  private static final String ACCESS_TOKEN = "token";
   private static final String HOST = "https://host";
   private static final String ACCOUNT_ID = "account_id";
   private static final String DB_NAME = "dbName";
@@ -29,33 +28,43 @@ class FireboltEngineServiceTest {
 
   @Test
   void shouldGetDbAddressWhenEngineNameIsNullOrEmpty() throws Exception {
-    FireboltProperties properties = FireboltProperties.builder().host(HOST).account(ACCOUNT_ID).database(DB_NAME).compress(0).build();
-    
-    when(fireboltAccountClient.getAccountId(properties.getHost(), properties.getAccount(), properties.isCompress()))
+    FireboltProperties properties =
+        FireboltProperties.builder()
+            .host(HOST)
+            .account(ACCOUNT_ID)
+            .database(DB_NAME)
+            .compress(0)
+            .build();
+
+    when(fireboltAccountClient.getAccountId(properties.getHost(), properties.getAccount()))
         .thenReturn(Optional.of(ACCOUNT_ID));
 
     fireboltEngineService.getEngineHost(HOST, properties);
 
-    verify(fireboltAccountClient).getAccountId(properties.getHost(), properties.getAccount(), properties.isCompress());
-    verify(fireboltAccountClient)
-        .getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME, IS_COMPRESS);
+    verify(fireboltAccountClient).getAccountId(properties.getHost(), properties.getAccount());
+    verify(fireboltAccountClient).getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME);
     verifyNoMoreInteractions(fireboltAccountClient);
   }
 
   @Test
   void shouldGetEngineAddressWhenEngineNameIsPresent() throws Exception {
-    FireboltProperties properties = FireboltProperties.builder().host(HOST).account(ACCOUNT_ID).database(DB_NAME).engine(ENGINE_NAME).compress(0).build();
-    when(fireboltAccountClient.getAccountId(properties.getHost(), properties.getAccount(), properties.isCompress()))
+    FireboltProperties properties =
+        FireboltProperties.builder()
+            .host(HOST)
+            .account(ACCOUNT_ID)
+            .database(DB_NAME)
+            .engine(ENGINE_NAME)
+            .compress(0)
+            .build();
+    when(fireboltAccountClient.getAccountId(properties.getHost(), properties.getAccount()))
         .thenReturn(Optional.of(ACCOUNT_ID));
-    when(fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, IS_COMPRESS))
-        .thenReturn(ENGINE_ID);
+    when(fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME)).thenReturn(ENGINE_ID);
 
     fireboltEngineService.getEngineHost(HOST, properties);
 
-    verify(fireboltAccountClient).getAccountId(properties.getHost(), ACCOUNT_ID, properties.isCompress());
-    verify(fireboltAccountClient).getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, IS_COMPRESS);
-    verify(fireboltAccountClient)
-        .getEngineAddress(HOST, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID, IS_COMPRESS);
+    verify(fireboltAccountClient).getAccountId(properties.getHost(), ACCOUNT_ID);
+    verify(fireboltAccountClient).getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME);
+    verify(fireboltAccountClient).getEngineAddress(HOST, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID);
     verifyNoMoreInteractions(fireboltAccountClient);
   }
 }

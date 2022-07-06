@@ -24,8 +24,6 @@ class FireboltAuthenticationServiceTest {
   private static final String USER = "usr";
   private static final String PASSWORD = "PA§§WORD";
 
-  private static final boolean IS_COMPRESS = true;
-
   private static final FireboltProperties PROPERTIES =
       FireboltProperties.builder().user(USER).password(PASSWORD).compress(1).build();
 
@@ -47,12 +45,11 @@ class FireboltAuthenticationServiceTest {
             .refreshToken("refresh")
             .accessToken("access")
             .build();
-    when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD, IS_COMPRESS))
+    when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD))
         .thenReturn(tokens);
 
     assertEquals(tokens, fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES));
-    verify(fireboltAuthenticationClient)
-        .postConnectionTokens(randomHost, USER, PASSWORD, IS_COMPRESS);
+    verify(fireboltAuthenticationClient).postConnectionTokens(randomHost, USER, PASSWORD);
   }
 
   @Test
@@ -65,13 +62,12 @@ class FireboltAuthenticationServiceTest {
             .refreshToken("refresh")
             .accessToken("access")
             .build();
-    when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD, IS_COMPRESS))
+    when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD))
         .thenReturn(tokens);
 
     fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES);
     assertEquals(tokens, fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES));
-    verify(fireboltAuthenticationClient)
-        .postConnectionTokens(randomHost, USER, PASSWORD, IS_COMPRESS);
+    verify(fireboltAuthenticationClient).postConnectionTokens(randomHost, USER, PASSWORD);
   }
 
   @Test
@@ -84,12 +80,11 @@ class FireboltAuthenticationServiceTest {
             .refreshToken("refresh")
             .accessToken("access")
             .build();
-    when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD, IS_COMPRESS))
+    when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD))
         .thenReturn(tokens);
     fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES);
     TimeUnit.MILLISECONDS.sleep(1100);
     assertEquals(tokens, fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES));
-    verify(fireboltAuthenticationClient, times(2))
-        .postConnectionTokens(randomHost, USER, PASSWORD, IS_COMPRESS);
+    verify(fireboltAuthenticationClient, times(2)).postConnectionTokens(randomHost, USER, PASSWORD);
   }
 }

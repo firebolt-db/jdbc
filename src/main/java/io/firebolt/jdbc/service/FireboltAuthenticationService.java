@@ -34,7 +34,7 @@ public class FireboltAuthenticationService {
           return foundToken;
         } else {
           FireboltConnectionTokens fireboltConnectionTokens =
-              fireboltAuthenticationClient.postConnectionTokens(host, loginProperties.getUser(), loginProperties.getPassword(), loginProperties.isCompress());
+              fireboltAuthenticationClient.postConnectionTokens(host, loginProperties.getUser(), loginProperties.getPassword());
           tokensMap.put(
               connectionParams,
               fireboltConnectionTokens,

@@ -17,18 +17,17 @@ public class FireboltEngineService {
       if (StringUtils.isNotEmpty(loginProperties.getAccount())) {
         accountId =
             fireboltAccountClient
-                .getAccountId(
-                    host, loginProperties.getAccount(), loginProperties.isCompress())
+                .getAccountId(host, loginProperties.getAccount())
                 .orElse(null);
       }
       if (StringUtils.isEmpty(loginProperties.getEngine()))
         return fireboltAccountClient.getDbDefaultEngineAddress(
-            host, accountId, loginProperties.getDatabase(), loginProperties.isCompress());
+            host, accountId, loginProperties.getDatabase());
       String engineID =
           fireboltAccountClient.getEngineId(
-              host, accountId, loginProperties.getEngine(), loginProperties.isCompress());
+              host, accountId, loginProperties.getEngine());
       return fireboltAccountClient.getEngineAddress(
-          host, accountId, loginProperties.getEngine(), engineID, loginProperties.isCompress());
+          host, accountId, loginProperties.getEngine(), engineID);
     } catch (Exception e) {
       throw new FireboltException(String.format("Could not get engine host at %s", host), e);
     }
