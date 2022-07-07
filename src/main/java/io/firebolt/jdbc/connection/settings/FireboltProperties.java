@@ -40,11 +40,10 @@ public class FireboltProperties {
   String host;
   String database;
   String path;
-  Boolean ssl;
+  boolean ssl;
   String sslCertificatePath;
   String sslMode;
-  Integer compress;
-  Integer enableConnectionPool;
+  boolean compress;
   String user;
   String password;
   String engine;
@@ -60,9 +59,7 @@ public class FireboltProperties {
     String sslRootCertificate =
         getSetting(mergedProperties, FireboltSessionProperty.SSL_CERTIFICATE_PATH);
     String sslMode = getSetting(mergedProperties, FireboltSessionProperty.SSL_MODE);
-    Integer compress = getSetting(mergedProperties, FireboltSessionProperty.COMPRESS);
-    Integer useConnectionPool =
-        getSetting(mergedProperties, FireboltSessionProperty.ENABLE_CONNECTION_POOL);
+    boolean compress = getSetting(mergedProperties, FireboltSessionProperty.COMPRESS);
     String user = getSetting(mergedProperties, FireboltSessionProperty.USER);
     String password = getSetting(mergedProperties, FireboltSessionProperty.PASSWORD);
     String path = getSetting(mergedProperties, FireboltSessionProperty.PATH);
@@ -87,7 +84,6 @@ public class FireboltProperties {
     int tcpKeepInterval = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_INTERVAL);
     int tcpKeepIdle = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_IDLE);
     int tcpKeepCount = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_COUNT);
-    String logLevel = getSetting(mergedProperties, FireboltSessionProperty.LOG_LEVEL);
 
     String host = getHost(mergedProperties);
     Integer port = getPort(mergedProperties, ssl);
@@ -102,7 +98,6 @@ public class FireboltProperties {
         .port(port)
         .database(database)
         .compress(compress)
-        .enableConnectionPool(useConnectionPool)
         .user(user)
         .password(password)
         .host(host)
@@ -187,8 +182,12 @@ public class FireboltProperties {
       return (T) clazz.cast(Long.valueOf(val));
     }
     if (clazz == boolean.class || clazz == Boolean.class) {
-      final Boolean boolValue =
-          "1".equals(val) || "0".equals(val) ? "1".equals(val) : Boolean.parseBoolean(val);
+      boolean boolValue;
+      if (StringUtils.isNumeric(val)) {
+        boolValue = Integer.parseInt(val) > 0;
+      } else {
+        boolValue = Boolean.parseBoolean(val);
+      }
       return (T) clazz.cast(boolValue);
     }
     return (T) clazz.cast(val);
@@ -204,20 +203,6 @@ public class FireboltProperties {
 
   public boolean isAggressiveCancelEnabled() {
     return "1".equals(this.additionalProperties.get("aggressive_cancel"));
-  }
-
-  public Integer getCompress() {
-    /* The compress field might be set at startup or by query (eg: SET compress=1), which
-    will add the compress field in the additionalProperties map, so we need to check both. */
-    Optional<String> compressFromAdditionalProperties =
-        Optional.ofNullable(
-            this.getAdditionalProperties().get(FireboltSessionProperty.COMPRESS.getKey()));
-
-    return compressFromAdditionalProperties.map(Integer::parseInt).orElse(compress);
-  }
-
-  public Boolean isCompress() {
-    return Optional.ofNullable(getCompress()).map(value -> 0 != value).orElse(false);
   }
 
   public void addProperty(@NonNull String key, String value) {

@@ -25,7 +25,7 @@ class FireboltAuthenticationServiceTest {
   private static final String PASSWORD = "PA§§WORD";
 
   private static final FireboltProperties PROPERTIES =
-      FireboltProperties.builder().user(USER).password(PASSWORD).compress(1).build();
+      FireboltProperties.builder().user(USER).password(PASSWORD).compress(true).build();
 
   @Mock private FireboltAuthenticationClient fireboltAuthenticationClient;
 

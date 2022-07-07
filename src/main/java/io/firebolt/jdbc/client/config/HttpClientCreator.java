@@ -112,7 +112,7 @@ public class HttpClientCreator {
 
     HostnameVerifier verifier = getHostnameVerifier(fireboltProperties);
     SSLConnectionSocketFactory sslConnectionSocketFactory =
-        TRUE.equals(fireboltProperties.getSsl())
+        TRUE.equals(fireboltProperties.isSsl())
             ? new SSLConnectionSocketFactory(getSSLContext(fireboltProperties), verifier)
             : null;
 

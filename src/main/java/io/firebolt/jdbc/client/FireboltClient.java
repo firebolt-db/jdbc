@@ -41,9 +41,11 @@ public abstract class FireboltClient {
 
   private final FireboltConnection connection;
 
-  protected FireboltClient(CloseableHttpClient httpClient, FireboltConnection connection,
-                           String customDrivers,
-                           String customClients) {
+  protected FireboltClient(
+      CloseableHttpClient httpClient,
+      FireboltConnection connection,
+      String customDrivers,
+      String customClients) {
     this.httpClient = httpClient;
     this.connection = connection;
     this.headerUserAgentValue =
@@ -74,6 +76,16 @@ public abstract class FireboltClient {
       EntityUtils.consumeQuietly(httpGet.getEntity());
       throw e;
     }
+  }
+
+  protected <T> T getResource(
+          String uri,
+          String host,
+          CloseableHttpClient httpClient,
+          ObjectMapper objectMapper,
+          Class<T> valueType)
+          throws IOException, ParseException, FireboltException {
+    return this.getResource(uri, host, httpClient, objectMapper, valueType, false);
   }
 
   private HttpGet createGetRequest(String uri, String accessToken) {
@@ -126,6 +138,11 @@ public abstract class FireboltClient {
     }
   }
 
+  protected void validateResponse(String host, CloseableHttpResponse response)
+          throws FireboltException {
+    this.validateResponse(host, response, false);
+  }
+
   private String extractErrorMessage(HttpEntity entity, boolean isCompress)
       throws IOException, ParseException {
     if (isCompress) {
@@ -164,5 +181,4 @@ public abstract class FireboltClient {
     stringBuilder.append(Arrays.toString(response.getHeaders()));
     return stringBuilder.toString();
   }
-
 }

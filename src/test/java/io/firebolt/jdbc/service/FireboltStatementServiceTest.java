@@ -27,7 +27,7 @@ class FireboltStatementServiceTest {
     StatementInfoWrapper statementInfoWrapper =
         StatementInfoWrapper.builder().sql("SELECT 1").query(true).id("id").build();
     FireboltProperties fireboltProperties =
-        FireboltProperties.builder().database("db").host("firebolt1").ssl(true).compress(1).build();
+        FireboltProperties.builder().database("db").host("firebolt1").ssl(true).compress(true).build();
     Map<String, String> statementParams = ImmutableMap.of("param_1", "value_1");
 
     fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statementParams);
@@ -43,7 +43,7 @@ class FireboltStatementServiceTest {
                 "query_id",
                 "id",
                 "compress",
-                "1",
+                "true",
                 "param_1",
                 "value_1"));
   }
@@ -53,7 +53,7 @@ class FireboltStatementServiceTest {
     StatementInfoWrapper statementInfoWrapper =
         StatementInfoWrapper.builder().sql("SELECT 1").query(true).id("id").build();
     FireboltProperties fireboltProperties =
-        FireboltProperties.builder().database("db").host("localhost").ssl(true).compress(1).build();
+        FireboltProperties.builder().database("db").host("localhost").ssl(true).compress(true).build();
     Map<String, String> statementParams = ImmutableMap.of("param_1", "value_1");
 
     fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statementParams);
@@ -69,7 +69,7 @@ class FireboltStatementServiceTest {
                 "query_id",
                 "id",
                 "compress",
-                "1",
+                "true",
                 "param_1",
                 "value_1"));
   }
@@ -81,7 +81,7 @@ class FireboltStatementServiceTest {
             .database("db")
             .host("http://firebolt1")
             .ssl(true)
-            .compress(1)
+            .compress(true)
             .build();
 
     fireboltStatementService.cancel("123", fireboltProperties);

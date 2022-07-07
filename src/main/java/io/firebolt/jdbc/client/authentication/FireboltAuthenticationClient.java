@@ -46,7 +46,7 @@ public class FireboltAuthenticationClient extends FireboltClient {
     post.setEntity(new StringEntity(createLoginRequest(user, password)));
 
     try (CloseableHttpResponse response = this.getHttpClient().execute(post)) {
-      this.validateResponse(host, response, false);
+      this.validateResponse(host, response);
       String responseStr = EntityUtils.toString(response.getEntity());
       FireboltAuthenticationResponse authenticationResponse =
           objectMapper.readValue(responseStr, FireboltAuthenticationResponse.class);

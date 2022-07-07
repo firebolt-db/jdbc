@@ -28,6 +28,8 @@ public class FireboltEngineService {
               host, accountId, loginProperties.getEngine());
       return fireboltAccountClient.getEngineAddress(
           host, accountId, loginProperties.getEngine(), engineID);
+    } catch (FireboltException e) {
+      throw e;
     } catch (Exception e) {
       throw new FireboltException(String.format("Could not get engine host at %s", host), e);
     }

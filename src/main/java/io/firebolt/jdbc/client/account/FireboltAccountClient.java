@@ -58,8 +58,7 @@ public class FireboltAccountClient extends FireboltClient {
                 host,
                 this.getHttpClient(),
                 objectMapper,
-                FireboltAccountResponse.class,
-                false))
+                FireboltAccountResponse.class))
         .map(FireboltAccountResponse::getAccountId);
   }
 
@@ -74,8 +73,7 @@ public class FireboltAccountClient extends FireboltClient {
             host,
             this.getHttpClient(),
             objectMapper,
-            FireboltEngineResponse.class,
-            false);
+            FireboltEngineResponse.class);
     return Optional.ofNullable(response)
         .map(FireboltEngineResponse::getEngine)
         .map(FireboltEngineResponse.Engine::getEndpoint)
@@ -99,8 +97,7 @@ public class FireboltAccountClient extends FireboltClient {
             host,
             this.getHttpClient(),
             objectMapper,
-            FireboltDatabaseResponse.class,
-            false);
+            FireboltDatabaseResponse.class);
     return Optional.ofNullable(response)
         .map(FireboltDatabaseResponse::getEngineUrl)
         .orElseThrow(
@@ -124,8 +121,7 @@ public class FireboltAccountClient extends FireboltClient {
             host,
             this.getHttpClient(),
             objectMapper,
-            FireboltEngineIdResponse.class,
-            false);
+            FireboltEngineIdResponse.class);
     return Optional.ofNullable(response)
         .map(FireboltEngineIdResponse::getEngine)
         .map(FireboltEngineIdResponse.Engine::getEngineId)

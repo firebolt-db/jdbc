@@ -20,8 +20,7 @@ class FireboltPropertiesTest {
             .sslMode("strict")
             .path("/")
             .port(443) // 443 by default as SSL is enabled by default
-            .compress(1)
-            .enableConnectionPool(0)
+            .compress(true)
             .user(null)
             .password(null)
             .host("host")
@@ -54,7 +53,7 @@ class FireboltPropertiesTest {
     Properties properties = new Properties();
     properties.put("buffer_size", "51");
     properties.put("socket_timeout_millis", "20");
-    properties.put("ssl", "true");
+    properties.put("ssl", "1");
     properties.put("host", "myDummyHost");
     properties.put("database", "myDb");
     properties.put("ssl_certificate_path", "root_cert");
@@ -73,9 +72,8 @@ class FireboltPropertiesTest {
             .sslMode("none")
             .path("/example")
             .database("myDb")
-            .compress(1)
+            .compress(true)
             .port(443)
-            .enableConnectionPool(0)
             .user(null)
             .password(null)
             .host("myDummyHost")
@@ -106,6 +104,30 @@ class FireboltPropertiesTest {
     properties.put("host", "host");
 
     assertEquals("example", FireboltProperties.of(properties).getDatabase());
+  }
+
+  @Test
+  void shouldSupportBooleansForBooleanProperties() {
+    Properties properties = new Properties();
+    properties.put("path", "/example");
+    properties.put("host", "host");
+    properties.put("ssl", "true");
+    properties.put("compress", "false");
+
+    assertTrue(FireboltProperties.of(properties).isSsl());
+    assertFalse(FireboltProperties.of(properties).isCompress());
+  }
+
+  @Test
+  void shouldSupportIntForBooleanProperties() {
+    Properties properties = new Properties();
+    properties.put("path", "/example");
+    properties.put("host", "host");
+    properties.put("ssl", "2");
+    properties.put("compress", "0");
+
+    assertTrue(FireboltProperties.of(properties).isSsl());
+    assertFalse(FireboltProperties.of(properties).isCompress());
   }
 
   @Test

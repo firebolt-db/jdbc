@@ -67,7 +67,7 @@ class StatementClientImplTest {
   void shouldPostSqlQueryWithExpectedUrl()
       throws FireboltException, IOException, URISyntaxException {
     FireboltProperties fireboltProperties =
-        FireboltProperties.builder().database("db1").compress(1).host("firebolt1").port(80).build();
+        FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(80).build();
     FireboltConnection connection = mock(FireboltConnection.class);
     when(connection.getConnectionTokens())
         .thenReturn(Optional.of(FireboltConnectionTokens.builder().accessToken("token").build()));
@@ -115,7 +115,7 @@ class StatementClientImplTest {
   @Test
   void shouldCancelSqlQuery() throws FireboltException, IOException, URISyntaxException {
     FireboltProperties fireboltProperties =
-        FireboltProperties.builder().database("db1").compress(1).host("firebolt1").port(80).build();
+        FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(80).build();
     StatementClient statementClient =
         new StatementClientImpl(closeableHttpClient, mock(FireboltConnection.class), "", "");
 

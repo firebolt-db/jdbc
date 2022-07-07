@@ -56,8 +56,6 @@ public enum FireboltSessionProperty {
       "max_connections_per_route", 500, Integer.class, "Maximum total connections per route"),
   MAX_CONNECTIONS_TOTAL("max_connections_total", 10000, Integer.class, "Maximum total connections"),
 
-  ENABLE_CONNECTION_POOL(
-      "use_connection_pool", 0, Integer.class, "use connection pool for valid connections"),
   VALIDATE_AFTER_INACTIVITY_MILLIS(
       "validate_after_inactivity_millis",
       3 * 1000,
@@ -81,8 +79,8 @@ public enum FireboltSessionProperty {
       "TCP option that defines the number of seconds to wait before retransmitting a keep-alive probe. TCP probes a connection that has been idle for some amount of time. If the remote system does not respond to a keep-alive probe, TCP retransmits the probe after some amount of time."),
   COMPRESS(
       "compress",
-      1,
-      Integer.class,
+      true,
+      Boolean.class,
       "Whether to compress transferred data or not. Compressed by default"),
   DATABASE("database", null, String.class, "default database name"),
   PASSWORD("password", null, String.class, "user password - null by default"),
@@ -95,10 +93,7 @@ public enum FireboltSessionProperty {
       "result_overflow_mode",
       null,
       String.class,
-      "Action to do when the result exceed a limit. Throw -> Throw an exception, Break -> Same as LIMIT"),
-
-  LOG_LEVEL(
-          "log_level", null, String.class, "Override log level. Supported values: ALL, TRACE, DEBUG, INFO, WARN, ERROR, OFF");
+      "Action to do when the result exceed a limit. Throw -> Throw an exception, Break -> Same as LIMIT");
 
   private final String key;
   private final Object defaultValue;

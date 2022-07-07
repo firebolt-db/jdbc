@@ -238,9 +238,7 @@ public class FireboltConnection extends AbstractConnection {
 
   private String getHttpConnectionUrl(FireboltProperties newSessionProperties) {
     String hostAndPort = newSessionProperties.getHost() + ":" + newSessionProperties.getPort();
-    return Boolean.TRUE.equals(newSessionProperties.getSsl())
-        ? "https://" + hostAndPort
-        : "http://" + hostAndPort;
+    return newSessionProperties.isSsl() ? "https://" + hostAndPort : "http://" + hostAndPort;
   }
 
   @Override
@@ -351,9 +349,7 @@ public class FireboltConnection extends AbstractConnection {
 
   public void removeClosedStatement(FireboltStatement fireboltStatement) {
     synchronized (statements) {
-      if (statements.contains(fireboltStatement)) {
-        this.statements.remove(fireboltStatement);
-      }
+      this.statements.remove(fireboltStatement);
     }
   }
 
@@ -371,10 +367,12 @@ public class FireboltConnection extends AbstractConnection {
           e);
     }
   }
+
   @Override
   public void commit() throws SQLException {
     //no-op
   }
+
   @Override
   public void rollback() throws SQLException {
     //no-op

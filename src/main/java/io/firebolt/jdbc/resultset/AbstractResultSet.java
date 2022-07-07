@@ -36,42 +36,6 @@ public abstract class AbstractResultSet implements ResultSet {
         String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
   }
 
-  @Override
-  public boolean getBoolean(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
-  }
-
-  @Override
-  public byte getByte(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
-  }
-
-
-  @Override
-  public int getInt(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
-  }
-
-  @Override
-  public long getLong(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
-  }
-
-  @Override
-  public float getFloat(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
-  }
-
-  @Override
-  public double getDouble(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
-  }
 
   @Override
   public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
@@ -152,17 +116,7 @@ public abstract class AbstractResultSet implements ResultSet {
         String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
   }
 
-  @Override
-  public float getFloat(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
-  }
 
-  @Override
-  public double getDouble(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
-  }
 
   @Override
   public BigDecimal getBigDecimal(String columnLabel, int scale) throws SQLException {
@@ -244,12 +198,6 @@ public abstract class AbstractResultSet implements ResultSet {
 
   @Override
   public Object getObject(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
-  }
-
-  @Override
-  public int findColumn(String columnLabel) throws SQLException {
     throw new UnsupportedOperationException(
         String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
   }

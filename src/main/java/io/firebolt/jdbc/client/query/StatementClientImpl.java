@@ -110,7 +110,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
     }
   }
 
-  private void abortCallWithId(String id) {
+  private void abortCallWithId(@NonNull String id) {
     try {
       if (runningQueries.containsKey(id)) {
         runningQueries.get(id).abort();
@@ -125,7 +125,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
       throws URISyntaxException {
 
     return new URIBuilder()
-        .setScheme(Boolean.TRUE.equals(fireboltProperties.getSsl()) ? "https" : "http")
+        .setScheme(Boolean.TRUE.equals(fireboltProperties.isSsl()) ? "https" : "http")
         .setHost(fireboltProperties.getHost())
         .setPort(fireboltProperties.getPort())
         .setPath("/")
@@ -138,7 +138,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
       throws URISyntaxException {
 
     return new URIBuilder()
-        .setScheme(Boolean.TRUE.equals(fireboltProperties.getSsl()) ? "https" : "http")
+        .setScheme(Boolean.TRUE.equals(fireboltProperties.isSsl()) ? "https" : "http")
         .setHost(fireboltProperties.getHost())
         .setPort(fireboltProperties.getPort())
         .setPath("/cancel")

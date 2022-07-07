@@ -29,8 +29,16 @@ public class DnsResolverByIpVersionPriority implements DnsResolver {
         .toArray(InetAddress[]::new);
   }
 
+  /**
+   * Implementation based on {@link SystemDefaultDnsResolver#resolveCanonicalHostname(String)}
+   * except that it picks the ip using IPV6 in priority.
+   */
   @Override
   public String resolveCanonicalHostname(String host) throws UnknownHostException {
+    if (host == null) {
+      return null;
+    }
+
     InetAddress ip = this.resolve(host)[0];
     final String canonicalServer = ip.getCanonicalHostName();
     if (ip.getHostAddress().contentEquals(canonicalServer)) {

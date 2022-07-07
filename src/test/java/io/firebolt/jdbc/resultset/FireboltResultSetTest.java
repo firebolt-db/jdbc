@@ -150,6 +150,30 @@ class FireboltResultSetTest {
   }
 
   @Test
+  void shouldReturnFloat() throws SQLException {
+    inputStream = getInputStreamWithArray();
+    resultSet = new FireboltResultSet(inputStream, "a_table", "a_db", 65535);
+    resultSet.next();
+    assertEquals(14.6f, resultSet.getFloat(7));
+    assertEquals(14.6f, resultSet.getFloat("a_double"));
+    resultSet.next();
+    assertEquals(0, resultSet.getFloat(7));
+    assertEquals(0, resultSet.getFloat("a_double"));
+  }
+
+  @Test
+  void shouldReturnDouble() throws SQLException {
+    inputStream = getInputStreamWithArray();
+    resultSet = new FireboltResultSet(inputStream, "a_table", "a_db", 65535);
+    resultSet.next();
+    assertEquals(14.6d, resultSet.getDouble(7));
+    assertEquals(14.6d, resultSet.getDouble("a_double"));
+    resultSet.next();
+    assertEquals(0, resultSet.getDouble(7));
+    assertEquals(0, resultSet.getDouble("a_double"));
+  }
+
+  @Test
   void shouldReturnString() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);

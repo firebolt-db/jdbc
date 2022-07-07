@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.resultset;
 
+import io.firebolt.jdbc.LoggerUtil;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import io.firebolt.jdbc.resultset.type.BaseType;
@@ -33,7 +34,7 @@ public class FireboltResultSet extends AbstractResultSet {
   boolean wasNull = false;
   private String currentLine;
   private int currentRow = 0;
-  private int lastSplittedRow = -1;
+  private int lastSplitRow = -1;
   private boolean isClosed = false;
   private String[] arr = new String[0];
 
@@ -60,7 +61,7 @@ public class FireboltResultSet extends AbstractResultSet {
       InputStream is, String tableName, String dbName, Integer bufferSize, boolean isCompressed)
       throws SQLException {
     log.debug("Creating resultSet...");
-    //is = LoggerUtil.logInputStream(is);
+    is = LoggerUtil.logInputStream(is);
 
     this.reader = createStreamReader(is, bufferSize, isCompressed);
 
@@ -126,7 +127,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public String getString(String column) throws SQLException {
-    return getString(getColumnIndex(column));
+    return getString(findColumn(column));
   }
 
   @Override
@@ -137,7 +138,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public int getInt(String columnName) throws SQLException {
-    return this.getInt(getColumnIndex(columnName));
+    return this.getInt(findColumn(columnName));
   }
 
   @Override
@@ -147,8 +148,33 @@ public class FireboltResultSet extends AbstractResultSet {
   }
 
   @Override
+  public float getFloat(int columnIndex) throws SQLException {
+    Float value = BaseType.FLOAT.transform(getValueAtColumn(columnIndex));
+    return value == null ? 0 : value;
+  }
+
+
+  @Override
+  public float getFloat(String columnLabel) throws SQLException {
+    return this.getFloat(findColumn(columnLabel));
+
+  }
+
+  @Override
+  public double getDouble(int columnIndex) throws SQLException {
+    Double value = BaseType.DOUBLE.transform(getValueAtColumn(columnIndex));
+    return value == null ? 0 : value;
+  }
+
+
+  @Override
+  public double getDouble(String columnLabel) throws SQLException {
+    return this.getDouble(findColumn(columnLabel));
+  }
+
+  @Override
   public long getLong(String column) throws SQLException {
-    return this.getLong(getColumnIndex(column));
+    return this.getLong(findColumn(column));
   }
 
   @Override
@@ -166,12 +192,12 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public byte getByte(String column) throws SQLException {
-    return this.getByte(getColumnIndex(column));
+    return this.getByte(findColumn(column));
   }
 
   @Override
   public short getShort(String columnLabel) throws SQLException {
-    return this.getShort(getColumnIndex(columnLabel));
+    return this.getShort(findColumn(columnLabel));
   }
 
   @Override
@@ -184,7 +210,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public byte[] getBytes(String column) throws SQLException {
-    return this.getBytes(getColumnIndex(column));
+    return this.getBytes(findColumn(column));
   }
 
   @Override
@@ -215,7 +241,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public BigDecimal getBigDecimal(String columnLabel) throws SQLException {
-    return getBigDecimal(this.getColumnIndex(columnLabel));
+    return getBigDecimal(this.findColumn(columnLabel));
   }
 
   @Override
@@ -226,7 +252,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public BigDecimal getBigDecimal(String columnLabel, int scale) throws SQLException {
-    return getBigDecimal(this.getColumnIndex(columnLabel), scale);
+    return getBigDecimal(this.findColumn(columnLabel), scale);
   }
 
   @Override
@@ -237,12 +263,12 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public Array getArray(String column) throws SQLException {
-    return this.getArray(this.getColumnIndex(column));
+    return this.getArray(this.findColumn(column));
   }
 
   @Override
   public boolean getBoolean(String columnLabel) throws SQLException {
-    return getBoolean(this.getColumnIndex(columnLabel));
+    return getBoolean(this.findColumn(columnLabel));
   }
 
   @Override
@@ -253,7 +279,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public Date getDate(String columnLabel) throws SQLException {
-    return getDate(this.getColumnIndex(columnLabel));
+    return getDate(this.findColumn(columnLabel));
   }
 
   @Override
@@ -270,7 +296,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public Timestamp getTimestamp(String columnLabel) throws SQLException {
-    return getTimestamp(this.getColumnIndex(columnLabel));
+    return getTimestamp(this.findColumn(columnLabel));
   }
 
   @Override
@@ -280,12 +306,12 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public Timestamp getTimestamp(String columnLabel, Calendar calendar) throws SQLException {
-    return getTimestamp(this.getColumnIndex(columnLabel), calendar);
+    return getTimestamp(this.findColumn(columnLabel), calendar);
   }
 
   @Override
   public Time getTime(String columnLabel) throws SQLException {
-    return getTime(this.getColumnIndex(columnLabel));
+    return getTime(this.findColumn(columnLabel));
   }
 
   @Override
@@ -327,7 +353,7 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public Object getObject(String column) throws SQLException {
-    return getObject(getColumnIndex(column));
+    return getObject(findColumn(column));
   }
 
   @Override
@@ -376,16 +402,16 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public boolean first() throws SQLException {
-    throw new SQLException("Cannot call first() for ResultSet of type TYPE_FORWARD_ONLY");
+    throw new FireboltException("Cannot call first() for ResultSet of type TYPE_FORWARD_ONLY");
   }
 
   @Override
   public boolean last() throws SQLException {
-    throw new SQLException("Cannot call last() for ResultSet of type TYPE_FORWARD_ONLY");
+    throw new FireboltException("Cannot call last() for ResultSet of type TYPE_FORWARD_ONLY");
   }
 
   private String[] toStringArray(String stringToSplit) {
-    if (currentRow != lastSplittedRow) {
+    if (currentRow != lastSplitRow) {
       if (StringUtils.isNotEmpty(stringToSplit)) {
         arr = StringUtils.splitPreserveAllTokens(stringToSplit, '\t');
       } else if (StringUtils.equals(stringToSplit, "")) {
@@ -393,7 +419,7 @@ public class FireboltResultSet extends AbstractResultSet {
       } else {
         arr = new String[0];
       }
-      lastSplittedRow = currentRow;
+      lastSplitRow = currentRow;
     }
     return arr;
   }
@@ -440,7 +466,8 @@ public class FireboltResultSet extends AbstractResultSet {
     }
   }
 
-  private Integer getColumnIndex(String columnName) throws SQLException {
+  @Override
+  public int findColumn(String columnName) throws SQLException {
     Integer index = columnNameToColumnNumber.get(columnName);
     if (index == null) {
       throw new SQLException(String.format("There is no column with name %s ", columnName));

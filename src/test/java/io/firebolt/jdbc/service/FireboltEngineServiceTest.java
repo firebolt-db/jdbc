@@ -33,7 +33,7 @@ class FireboltEngineServiceTest {
             .host(HOST)
             .account(ACCOUNT_ID)
             .database(DB_NAME)
-            .compress(0)
+            .compress(false)
             .build();
 
     when(fireboltAccountClient.getAccountId(properties.getHost(), properties.getAccount()))
@@ -54,7 +54,7 @@ class FireboltEngineServiceTest {
             .account(ACCOUNT_ID)
             .database(DB_NAME)
             .engine(ENGINE_NAME)
-            .compress(0)
+            .compress(false)
             .build();
     when(fireboltAccountClient.getAccountId(properties.getHost(), properties.getAccount()))
         .thenReturn(Optional.of(ACCOUNT_ID));
