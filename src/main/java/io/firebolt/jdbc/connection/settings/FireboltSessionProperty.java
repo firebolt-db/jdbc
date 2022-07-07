@@ -56,6 +56,8 @@ public enum FireboltSessionProperty {
       "max_connections_per_route", 500, Integer.class, "Maximum total connections per route"),
   MAX_CONNECTIONS_TOTAL("max_connections_total", 10000, Integer.class, "Maximum total connections"),
 
+  USE_CONNECTION_POOL( //Added it for backward compatibility but not used
+      "use_connection_pool", false, Boolean.class, "use connection pool for valid connections. This property is deprecated and setting it has no effect."),
   VALIDATE_AFTER_INACTIVITY_MILLIS(
       "validate_after_inactivity_millis",
       3 * 1000,
@@ -77,7 +79,7 @@ public enum FireboltSessionProperty {
       30,
       Integer.class,
       "TCP option that defines the number of seconds to wait before retransmitting a keep-alive probe. TCP probes a connection that has been idle for some amount of time. If the remote system does not respond to a keep-alive probe, TCP retransmits the probe after some amount of time."),
-  COMPRESS(
+  COMPRESS( //compress should always be used as the HTTP response code is sometimes incorrect when not using it
       "compress",
       true,
       Boolean.class,

@@ -94,8 +94,6 @@ public enum BaseType {
     validateObjectNotNull(value);
     if (isNull(value)) {
       return null;
-    } else if (this.getType() != String.class) {
-      validateThatValueDoesNotContainException(value);
     }
     return (T) transformFunction.apply(value, column);
   }

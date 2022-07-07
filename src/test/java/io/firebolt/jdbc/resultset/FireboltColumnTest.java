@@ -79,6 +79,28 @@ class FireboltColumnTest {
   }
 
   @Test
+  void shouldCreateColumDataForTupleWithMoreThan2Elements() {
+    String type = "Tuple(Array(int), Array(Nullable(Int64)), Int64)";
+    String name = "my_tuple";
+    FireboltColumn column = FireboltColumn.of(type, name);
+    assertEquals(name, column.getColumnName());
+    assertEquals(type.toUpperCase(), column.getColumnType());
+    assertEquals(FireboltDataType.TUPLE, column.getDataType());
+    assertEquals("TUPLE(ARRAY(INTEGER), ARRAY(BIGINT), BIGINT)", column.getCompactTypeName());
+  }
+
+  @Test
+  void shouldCreateColumDataForTupleWithOneElement() {
+    String type = "Tuple(Int64)";
+    String name = "my_tuple";
+    FireboltColumn column = FireboltColumn.of(type, name);
+    assertEquals(name, column.getColumnName());
+    assertEquals(type.toUpperCase(), column.getColumnType());
+    assertEquals(FireboltDataType.TUPLE, column.getDataType());
+    assertEquals("TUPLE(BIGINT)", column.getCompactTypeName());
+  }
+
+  @Test
   void shouldCreateColumDataForTupleWithOnlyOneArgument() {
     String type = "Tuple(Date)";
     String name = "TUPLE(CAST('2019-02-03' AS timestamp))";

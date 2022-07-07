@@ -16,11 +16,15 @@
  *
  * NOTICE: THIS FILE HAS BEEN MODIFIED BY Firebolt Analytics, Inc. UNDER COMPLIANCE WITH THE APACHE 2.0 LICENCE FROM THE ORIGINAL WORK
 OF THE COMPANY YANDEX LLC.
+ *  URLs :
+ *  - Main class: https://github.com/ClickHouse/clickhouse-jdbc/blob/094ed0b9d2dd8a18ae0c7b3f8f22c35e595822a6/clickhouse-jdbc/src/main/java/ru/yandex/clickhouse/util/ClickHouseLZ4OutputStream.java
+ *  - Utils class from which the writeInt method was taken: https://github.com/ClickHouse/clickhouse-jdbc/blob/094ed0b9d2dd8a18ae0c7b3f8f22c35e595822a6/clickhouse-jdbc/src/main/java/ru/yandex/clickhouse/util/Utils.java
  * Changes:
  *  - Class and file name
  *  - Imports
  *  - Package name
  *  - Formatting
+ *  - Import writeInt from Utils class
  */
 package io.firebolt.jdbc.resultset.compress;
 
@@ -34,7 +38,6 @@ import java.io.OutputStream;
 public class LZ4OutputStream extends OutputStream {
   private static final LZ4Factory factory = LZ4Factory.fastestInstance();
   private final DataOutputStream dataWrapper;
-
   private final LZ4Compressor compressor;
   private final byte[] currentBlock;
   private final byte[] compressedBlock;
@@ -111,6 +114,8 @@ public class LZ4OutputStream extends OutputStream {
     dataWrapper.write(compressedBlock, 0, compressed);
     pointer = 0;
   }
+
+  // This method was picked from ru.yandex.clickhouse.util.Utils
   private static void writeInt(DataOutputStream outputStream, int value) throws IOException {
     outputStream.write(0xFF & value);
     outputStream.write(0xFF & (value >> 8));

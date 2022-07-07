@@ -13,7 +13,6 @@ import org.apache.commons.lang3.StringUtils;
 import java.lang.reflect.Array;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -72,28 +71,25 @@ public class SqlArrayUtil {
         Array.set(currentArray, i, arrayBaseType.getBaseType().transform(elements.get(i), null));
       return currentArray;
     } else {
-      return getArrayForTuple(fireboltColumn, elements);
+      return getArrayOfTuples(fireboltColumn, elements);
     }
   }
 
-  private static Object[] getArrayForTuple(FireboltColumn fireboltColumn, List<String> tuples)
+  private static Object[] getArrayOfTuples(FireboltColumn fireboltColumn, List<String> tuples)
       throws FireboltException {
     List<FireboltDataType> types =
-        Arrays.asList(
-            fireboltColumn.getColumnsTuple().getLeft().getDataType(),
-            fireboltColumn.getColumnsTuple().getRight().getDataType());
+        fireboltColumn.getTupleBaseDateTypes().stream()
+            .map(FireboltColumn::getDataType)
+            .collect(Collectors.toList());
 
     List<Object[]> list = new ArrayList<>();
     for (String tupleContent : tuples) {
       List<Object> subList = new ArrayList<>();
       List<String> tupleValues =
           splitArrayContent(removeParenthesis(tupleContent), FireboltDataType.STRING);
-      for (int j = 0; j < 2; j++) {
+      for (int j = 0; j < types.size(); j++) {
         subList.add(
-            types
-                .get(j % 2)
-                .getBaseType()
-                .transform(removeQuotesAndTransformNull(tupleValues.get(j))));
+            types.get(j).getBaseType().transform(removeQuotesAndTransformNull(tupleValues.get(j))));
       }
       list.add(subList.toArray());
     }

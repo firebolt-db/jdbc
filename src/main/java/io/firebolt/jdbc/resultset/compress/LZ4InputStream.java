@@ -16,11 +16,15 @@
  *
  * NOTICE: THIS FILE HAS BEEN MODIFIED BY Firebolt Analytics, Inc. UNDER COMPLIANCE WITH THE APACHE 2.0 LICENCE FROM THE ORIGINAL WORK
 OF THE COMPANY YANDEX LLC.
+ *  URLs :
+ *  - Main class: https://github.com/ClickHouse/clickhouse-jdbc/blob/ea5aaf579b0612bcf1825eb1ec31bf9b170a7a65/clickhouse-jdbc/src/main/java/ru/yandex/clickhouse/response/ClickHouseLZ4Stream.java
+ *  - Utils class from which readInt and readFully method was taken: https://github.com/ClickHouse/clickhouse-jdbc/blob/094ed0b9d2dd8a18ae0c7b3f8f22c35e595822a6/clickhouse-jdbc/src/main/java/ru/yandex/clickhouse/util/Utils.java
  * Changes:
  *  - Class and file name
  *  - Imports
  *  - Package name
  *  - Formatting
+ *  - Import several readInt and readFully methods from ru.yandex.clickhouse.util.Utils class
  */
 package io.firebolt.jdbc.resultset.compress;
 
@@ -135,6 +139,7 @@ public class LZ4InputStream extends InputStream {
     return decompressed;
   }
 
+  // This method was picked from ru.yandex.clickhouse.util.Utils
   private static void readFully(DataInputStream in, byte[] b, int off, int len) throws IOException {
     Objects.requireNonNull(in);
     Objects.requireNonNull(b);
@@ -165,6 +170,7 @@ public class LZ4InputStream extends InputStream {
     }
   }
 
+  // This method was picked from ru.yandex.clickhouse.util.Utils
   private static int readInt(DataInputStream inputStream) throws IOException {
     byte b1 = (byte) inputStream.readUnsignedByte();
     byte b2 = (byte) inputStream.readUnsignedByte();
@@ -174,6 +180,7 @@ public class LZ4InputStream extends InputStream {
     return b4 << 24 | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
   }
 
+  // This method was picked from ru.yandex.clickhouse.util.Utils
   private static void readFully(DataInputStream in, byte[] b) throws IOException {
     readFully(in, b, 0, b.length);
   }

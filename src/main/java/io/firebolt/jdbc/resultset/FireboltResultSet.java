@@ -89,17 +89,17 @@ public class FireboltResultSet extends AbstractResultSet {
     log.debug("ResultSet created");
   }
 
-  private BufferedReader createStreamReader(InputStream is, Integer bufferSize, boolean isCompressed) {
+  private BufferedReader createStreamReader(
+      InputStream is, Integer bufferSize, boolean isCompressed) {
+    InputStreamReader inputStreamReader;
     if (isCompressed) {
-      return bufferSize != null
-          ? new BufferedReader(
-              new InputStreamReader(new LZ4InputStream(is), StandardCharsets.UTF_8), bufferSize)
-          : new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+      inputStreamReader = new InputStreamReader(new LZ4InputStream(is), StandardCharsets.UTF_8);
     } else {
-      return bufferSize != null
-          ? new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8), bufferSize)
-          : new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+      inputStreamReader = new InputStreamReader(is, StandardCharsets.UTF_8);
     }
+    return bufferSize != null
+        ? new BufferedReader(inputStreamReader, bufferSize)
+        : new BufferedReader(inputStreamReader);
   }
 
   public static FireboltResultSet empty() {
@@ -153,11 +153,9 @@ public class FireboltResultSet extends AbstractResultSet {
     return value == null ? 0 : value;
   }
 
-
   @Override
   public float getFloat(String columnLabel) throws SQLException {
     return this.getFloat(findColumn(columnLabel));
-
   }
 
   @Override
@@ -165,7 +163,6 @@ public class FireboltResultSet extends AbstractResultSet {
     Double value = BaseType.DOUBLE.transform(getValueAtColumn(columnIndex));
     return value == null ? 0 : value;
   }
-
 
   @Override
   public double getDouble(String columnLabel) throws SQLException {
@@ -391,13 +388,15 @@ public class FireboltResultSet extends AbstractResultSet {
   @Override
   public void setFetchDirection(int direction) throws SQLException {
     throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+        String.format(
+            FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
   }
 
   @Override
   public void setFetchSize(int rows) throws SQLException {
     throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+        String.format(
+            FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
   }
 
   @Override

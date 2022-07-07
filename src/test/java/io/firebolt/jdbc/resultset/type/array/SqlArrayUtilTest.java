@@ -102,15 +102,15 @@ class SqlArrayUtilTest {
 
   @Test
   void shouldTransformArrayOfTuplesWithSpecialCharacters() throws SQLException {
-    String value = "[(1,'a'),(2,'b'),(3,'[c]')]";
-    Object[][] expectedArray = new Object[][] {{1,"a"}, {2,"b"}, {3,"[c]"}};
+    String value = "[(1,'a','1a'),(2,'b','2b'),(3,'[c]','3c')]";
+    Object[][] expectedArray = new Object[][] {{1,"a","1a"}, {2,"b","2b"}, {3,"[c]","3c"}};
     FireboltArray expectedFireboltArray =
             FireboltArray.builder()
                     .array(expectedArray)
                     .type(FireboltDataType.TUPLE)
                     .build();
 
-    Array result = SqlArrayUtil.transformToSqlArray(value, FireboltColumn.of("Array(TUPLE(int,string))"));
+    Array result = SqlArrayUtil.transformToSqlArray(value, FireboltColumn.of("Array(TUPLE(int,string,string))"));
 
     assertEquals(expectedFireboltArray.getBaseType(), result.getBaseType());
     assertArrayEquals(expectedArray, (Object[]) result.getArray());

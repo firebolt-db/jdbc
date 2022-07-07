@@ -380,16 +380,6 @@ class FireboltResultSetTest {
     assertEquals(StringUtils.EMPTY, resultSet.getObject("city"));
   }
 
-  @Test
-  void shouldThrowExceptionWhenThereIsAnExceptionInTheResponse() throws SQLException {
-    inputStream = getInputStreamWithException();
-    resultSet = new FireboltResultSet(inputStream, "table_with_empty", "db_with_emtpy", 65535);
-    resultSet.next();
-    resultSet.next();
-    resultSet.next();
-    assertThrows(FireboltException.class, () -> resultSet.getObject(1));
-  }
-
   private InputStream getInputStreamWithArray() {
     return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-example");
   }

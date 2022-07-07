@@ -24,6 +24,11 @@ public class MetadataUtil {
     List<String> conditions = new ArrayList<>();
     Optional.ofNullable(catalog)
         .ifPresent(c -> conditions.add(String.format("catalog_name = '%s'", c)));
+
+//    Uncomment below once schemas are supported
+//    Optional.ofNullable(schemaPattern)
+//            .ifPresent(pattern -> conditions.add(String.format("schema_name LIKE '%s'", pattern)));
+
     return queryBuilder.conditions(conditions).build().toSql();
   }
 
@@ -40,6 +45,7 @@ public class MetadataUtil {
         .ifPresent(pattern -> conditions.add(String.format("table_name LIKE '%s'", pattern)));
     Optional.ofNullable(columnNamePattern)
         .ifPresent(pattern -> conditions.add(String.format("column_name LIKE '%s'", pattern)));
+// Uncomment once schemas are supported
 //    Optional.ofNullable(schemaPattern)
 //        .ifPresent(pattern -> conditions.add(String.format("table_schema LIKE '%s'", pattern))); Schemas are not supported
     return queryBuilder.conditions(conditions).build().toSql();

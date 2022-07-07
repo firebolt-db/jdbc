@@ -11,7 +11,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static io.firebolt.jdbc.resultset.type.FireboltDataType.*;
 
@@ -25,10 +28,10 @@ public final class FireboltColumn {
   private final FireboltDataType dataType;
   private final boolean nullable;
   private final FireboltDataType arrayBaseDataType;
+  private final List<FireboltColumn> tupleBaseDateTypes;
   private final int arrayDepth;
   private final int precision;
   private final int scale;
-  private Pair<FireboltColumn, FireboltColumn> columnsTuple;
 
   public static FireboltColumn of(String columnType, String columnName) {
     log.debug("Creating column info for column: {} of type: {}", columnName, columnType);
@@ -37,11 +40,11 @@ public final class FireboltColumn {
     int arrayDepth = 0;
     boolean isNullable = false;
     FireboltDataType arrayType = null;
-    Pair<FireboltColumn, FireboltColumn> tuple = null;
+    List<FireboltColumn> tupleDataTypes = null;
     Optional<Pair<Optional<Integer>, Optional<Integer>>> scaleAndPrecisionPair;
     FireboltDataType fireboltType;
     if (typeInUpperCase.startsWith(FireboltDataType.TUPLE.getInternalName().toUpperCase())) {
-      tuple = getColumnsTuple(typeInUpperCase, columnName);
+      tupleDataTypes = getTupleBaseDateTypes(typeInUpperCase, columnName);
     }
 
     while (typeInUpperCase.startsWith(
@@ -61,7 +64,7 @@ public final class FireboltColumn {
       arrayType = dataType;
       if (arrayType == TUPLE) {
         String tmp = columnType.substring(currentIndex, columnType.length() - arrayDepth);
-        tuple = getColumnsTuple(tmp.toUpperCase(), columnName);
+        tupleDataTypes = getTupleBaseDateTypes(tmp.toUpperCase(), columnName);
       }
       fireboltType = FireboltDataType.ARRAY;
     } else {
@@ -95,26 +98,19 @@ public final class FireboltColumn {
         .dataType(fireboltType)
         .nullable(isNullable)
         .arrayDepth(arrayDepth)
-        .columnsTuple(tuple)
+        .tupleBaseDateTypes(tupleDataTypes)
         .build();
   }
+
   public static FireboltColumn of(String columnType) {
     return of(columnType, null);
   }
 
-  private static Pair<FireboltColumn, FireboltColumn> getColumnsTuple(
-      String columnType, String columnName) {
-    String[] types = getTupleTypes(columnType);
-    FireboltColumn leftColumnType = null;
-    FireboltColumn rightColumnType = null;
-
-    if (types.length > 0) {
-      leftColumnType = FireboltColumn.of(types[0].trim(), columnName);
-      if (types.length > 1) {
-        rightColumnType = FireboltColumn.of(types[1].trim(), columnName);
-      }
-    }
-    return new ImmutablePair<>(leftColumnType, rightColumnType);
+  private static List<FireboltColumn> getTupleBaseDateTypes(String columnType, String columnName) {
+    return Arrays.stream(getTupleTypes(columnType))
+        .map(String::trim)
+        .map(type -> FireboltColumn.of(type, columnName))
+        .collect(Collectors.toList());
   }
 
   @NonNull
@@ -123,7 +119,9 @@ public final class FireboltColumn {
         RegExUtils.replaceFirst(
             columnType, FireboltDataType.TUPLE.getInternalName().toUpperCase() + "\\(", "");
     types = StringUtils.substring(types, 0, types.length() - 1);
-    return types.split(",(?![^()]*\\))"); // Regex to split on comma and ignoring comma that are between parenthesis
+    return types.split(
+        ",(?![^()]*\\))"); // Regex to split on comma and ignoring comma that are between
+                           // parenthesis
   }
 
   private static boolean reachedEndOfTypeName(int typeNameEndIndex, int type) {
@@ -172,7 +170,7 @@ public final class FireboltColumn {
     if (this.isArray()) {
       return getArrayCompactTypeName();
     } else if (this.isTuple()) {
-      return getTupleCompactTypeName(this.columnsTuple);
+      return getTupleCompactTypeName(this.tupleBaseDateTypes);
     } else {
       Optional<String> params = getTypeArguments(columnType);
       return dataType.getDisplayName() + params.orElse("");
@@ -188,7 +186,7 @@ public final class FireboltColumn {
     if (this.getArrayBaseDataType() != TUPLE) {
       type.append(this.getArrayBaseDataType().getDisplayName());
     } else {
-      type.append(this.getTupleCompactTypeName(this.getColumnsTuple()));
+      type.append(this.getTupleCompactTypeName(this.getTupleBaseDateTypes()));
     }
     for (int i = 0; i < arrayDepth; i++) {
       type.append(")");
@@ -196,19 +194,11 @@ public final class FireboltColumn {
     return type.toString();
   }
 
-  private String getTupleCompactTypeName(Pair<FireboltColumn, FireboltColumn> columnsTuple) {
-    if (columnsTuple.getRight() != null) {
-      return String.format(
-          "%s(%s, %s)",
-          TUPLE.getDisplayName(),
-          columnsTuple.getLeft().getCompactTypeName(),
-          columnsTuple.getRight().getCompactTypeName());
-    } else if (columnsTuple.getLeft() != null) {
-      return String.format(
-          "%s(%s)", TUPLE.getDisplayName(), columnsTuple.getLeft().getCompactTypeName());
-    } else {
-      return String.format("%s", TUPLE.getDisplayName());
-    }
+  private String getTupleCompactTypeName(List<FireboltColumn> columnsTuple) {
+
+    return columnsTuple.stream()
+        .map(FireboltColumn::getCompactTypeName)
+        .collect(Collectors.joining(", ", TUPLE.getDisplayName() + "(", ")"));
   }
 
   private Optional<String> getTypeArguments(String type) {

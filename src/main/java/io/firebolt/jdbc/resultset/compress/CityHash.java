@@ -16,6 +16,8 @@
  *
  * NOTICE: THIS FILE HAS BEEN MODIFIED BY Firebolt Analytics, Inc. UNDER COMPLIANCE WITH THE APACHE 2.0 LICENCE FROM THE ORIGINAL WORK
 OF THE COMPANY YANDEX LLC.
+ *  URL:
+ *   - https://github.com/ClickHouse/clickhouse-jdbc/blob/f9f9683f5dd914f9f7785499478ab7c50307a677/clickhouse-client/src/main/java/com/clickhouse/client/data/ClickHouseCityHash.java
  * Changes:
  *  - Class and file name
  *  - Imports

@@ -310,19 +310,18 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
   }
 
   private Statement createStatementWithRequiredPropertiesToQuerySystem() throws SQLException {
-    String useStandardSql =
-        ((FireboltConnection) this.getConnection())
+    FireboltConnection fireboltConnection = (FireboltConnection) this.getConnection();
+    String useStandardSql = fireboltConnection
             .getSessionProperties()
             .getAdditionalProperties()
             .get("use_standard_sql");
     if ("0".equals(useStandardSql)) {
-      FireboltProperties properties =
-          ((FireboltConnection) this.getConnection()).getSessionProperties();
+      FireboltProperties properties = fireboltConnection.getSessionProperties();
       FireboltProperties tmpProperties = FireboltProperties.copy(properties);
       tmpProperties.addProperty("use_standard_sql", "1");
-      return connection.createStatement(tmpProperties);
+      return fireboltConnection.createStatement(tmpProperties);
     } else {
-      return connection.createStatement();
+      return fireboltConnection.createStatement();
     }
   }
 }

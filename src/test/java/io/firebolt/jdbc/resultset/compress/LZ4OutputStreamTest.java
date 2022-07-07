@@ -16,6 +16,8 @@
  *
  * NOTICE: THIS FILE HAS BEEN MODIFIED BY Firebolt Analytics, Inc. UNDER COMPLIANCE WITH THE APACHE 2.0 LICENCE FROM THE ORIGINAL WORK
 OF THE COMPANY YANDEX LLC.
+ * URL:
+ *  - https://github.com/ClickHouse/clickhouse-jdbc/blob/ea5aaf579b0612bcf1825eb1ec31bf9b170a7a65/clickhouse-jdbc/src/test/java/ru/yandex/clickhouse/util/ClickHouseLZ4OutputStreamTest.java
  * Changes:
  *  - Class and file name
  *  - Imports
