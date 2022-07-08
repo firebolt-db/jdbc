@@ -27,7 +27,12 @@ class FireboltStatementServiceTest {
     StatementInfoWrapper statementInfoWrapper =
         StatementInfoWrapper.builder().sql("SELECT 1").query(true).id("id").build();
     FireboltProperties fireboltProperties =
-        FireboltProperties.builder().database("db").host("firebolt1").ssl(true).compress(true).build();
+        FireboltProperties.builder()
+            .database("db")
+            .host("firebolt1")
+            .ssl(true)
+            .compress(true)
+            .build();
     Map<String, String> statementParams = ImmutableMap.of("param_1", "value_1");
 
     fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statementParams);
@@ -53,7 +58,12 @@ class FireboltStatementServiceTest {
     StatementInfoWrapper statementInfoWrapper =
         StatementInfoWrapper.builder().sql("SELECT 1").query(true).id("id").build();
     FireboltProperties fireboltProperties =
-        FireboltProperties.builder().database("db").host("localhost").ssl(true).compress(true).build();
+        FireboltProperties.builder()
+            .database("db")
+            .host("localhost")
+            .ssl(true)
+            .compress(true)
+            .build();
     Map<String, String> statementParams = ImmutableMap.of("param_1", "value_1");
 
     fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statementParams);
@@ -84,8 +94,8 @@ class FireboltStatementServiceTest {
             .compress(true)
             .build();
 
-    fireboltStatementService.cancel("123", fireboltProperties);
+    fireboltStatementService.abortStatement("123", fireboltProperties);
     verify(statementClient)
-        .postCancelSqlStatement("123", fireboltProperties, ImmutableMap.of("query_id", "123"));
+        .abortStatement("123", fireboltProperties, ImmutableMap.of("query_id", "123"));
   }
 }

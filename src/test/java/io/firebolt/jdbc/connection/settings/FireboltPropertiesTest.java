@@ -165,13 +165,6 @@ class FireboltPropertiesTest {
 
   @Test
   void shouldHaveAggressiveCancelBeDisabledByDefault() {
-    assertFalse(FireboltProperties.builder().build().isAggressiveCancelEnabled());
-  }
-
-  @Test
-  void shouldHaveAggressiveCancelEnabledWhenPropertyWasSet() {
-    FireboltProperties fireboltProperties = FireboltProperties.builder().build();
-    fireboltProperties.addProperty("aggressive_cancel", "1");
-    assertTrue(fireboltProperties.isAggressiveCancelEnabled());
+    assertFalse(FireboltProperties.builder().build().isAggressiveCancel());
   }
 }

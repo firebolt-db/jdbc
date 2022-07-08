@@ -24,18 +24,23 @@ public class StatementUtil {
       new String[] {"show", "select", "describe", "exists", "explain", "with"};
 
   public static boolean isQuery(String sql) {
-    String cleanQuery = cleanQuery(sql);
-    cleanQuery = cleanQuery.replace("(", "");
-    return StringUtils.startsWithAny(cleanQuery.toLowerCase(), SELECT_KEYWORDS);
+    if (StringUtils.isNotEmpty(sql)) {
+      String cleanQuery = cleanQuery(sql);
+      cleanQuery = cleanQuery.replace("(", "");
+      return StringUtils.startsWithAny(cleanQuery.toLowerCase(), SELECT_KEYWORDS);
+    } else {
+      return false;
+    }
   }
 
   public Optional<Pair<String, String>> extractPropertyFromQuery(String sql) {
-    String cleanQuery = cleanQuery(sql);
-    if (cleanQuery.toLowerCase().startsWith(SET_PREFIX)) {
-      return extractPropertyPair(sql, cleanQuery);
-    } else {
-      return Optional.empty();
+    if (StringUtils.isNotEmpty(sql)) {
+      String cleanQuery = cleanQuery(sql);
+      if (cleanQuery.toLowerCase().startsWith(SET_PREFIX)) {
+        return extractPropertyPair(sql, cleanQuery);
+      }
     }
+    return Optional.empty();
   }
 
   public String cleanQuery(String sql) {

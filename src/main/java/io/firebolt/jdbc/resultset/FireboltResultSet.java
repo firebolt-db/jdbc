@@ -61,7 +61,7 @@ public class FireboltResultSet extends AbstractResultSet {
       InputStream is, String tableName, String dbName, Integer bufferSize, boolean isCompressed)
       throws SQLException {
     log.debug("Creating resultSet...");
-    is = LoggerUtil.logInputStream(is);
+    //is = LoggerUtil.logInputStream(is);
 
     this.reader = createStreamReader(is, bufferSize, isCompressed);
 

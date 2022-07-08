@@ -122,7 +122,7 @@ class StatementClientImplTest {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
     when(response.getCode()).thenReturn(200);
     when(closeableHttpClient.execute(any())).thenReturn(response);
-    statementClient.postCancelSqlStatement(
+    statementClient.abortStatement(
         "12345", fireboltProperties, ImmutableMap.of("query_id", "12345"));
     HttpPost httpPost = new HttpPost("http://firebolt1:80/cancel?query_id=12345");
     verify(closeableHttpClient).execute(httpPostArgumentCaptor.capture());

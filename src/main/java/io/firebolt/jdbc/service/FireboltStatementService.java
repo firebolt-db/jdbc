@@ -36,10 +36,14 @@ public class FireboltStatementService {
     return statementClient.postSqlStatement(statementInfoWrapper, connectionProperties, params);
   }
 
-  public void cancel(@NonNull String statementId, @NonNull FireboltProperties properties)
+  public void abortStatement(@NonNull String statementId, @NonNull FireboltProperties properties)
       throws FireboltException {
-    log.debug("Cancelling statement with id: {}", statementId);
-    statementClient.postCancelSqlStatement(statementId, properties, getCancelParameters(statementId));
+    statementClient.abortStatement(statementId, properties, getCancelParameters(statementId));
+  }
+
+  public void abortStatementHttpRequest(@NonNull String statementId)
+          throws FireboltException {
+    statementClient.abortRunningHttpRequest(statementId);
   }
 
   private Map<String, String> getCancelParameters(String statementId) {

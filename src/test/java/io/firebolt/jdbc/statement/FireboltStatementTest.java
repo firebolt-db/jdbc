@@ -26,6 +26,8 @@ class FireboltStatementTest {
 
   @Mock private FireboltStatementService fireboltStatementService;
 
+  @Mock private FireboltConnection fireboltConnection;
+
   @Captor ArgumentCaptor<FireboltProperties> fireboltPropertiesArgumentCaptor;
 
   @Captor ArgumentCaptor<StatementInfoWrapper> queryInfoWrapperArgumentCaptor;
@@ -85,13 +87,17 @@ class FireboltStatementTest {
         Mockito.mockConstruction(FireboltResultSet.class)) {
 
       FireboltProperties fireboltProperties =
-          FireboltProperties.builder().database("db").additionalProperties(new HashMap<>()).build();
-      fireboltProperties.addProperty("aggressive_cancel", "1");
+          FireboltProperties.builder()
+              .database("db")
+              .aggressiveCancel(true)
+              .additionalProperties(new HashMap<>())
+              .build();
 
       FireboltStatement fireboltStatement =
           FireboltStatement.builder()
               .statementService(fireboltStatementService)
               .sessionProperties(fireboltProperties)
+              .connection(fireboltConnection)
               .build();
 
       when(fireboltStatementService.execute(any(), any(), any()))
@@ -119,19 +125,19 @@ class FireboltStatementTest {
 
       FireboltProperties fireboltProperties =
           FireboltProperties.builder().database("db").additionalProperties(new HashMap<>()).build();
-      fireboltProperties.addProperty("aggressive_cancel", "0");
 
       FireboltStatement fireboltStatement =
           FireboltStatement.builder()
               .statementService(fireboltStatementService)
               .sessionProperties(fireboltProperties)
+              .connection(fireboltConnection)
               .build();
 
       when(fireboltStatementService.execute(any(), any(), any()))
           .thenReturn(mock(InputStream.class));
       fireboltStatement.executeQuery("SHOW DATABASE"); // call once to create queryId
       fireboltStatement.cancel();
-      verify(fireboltStatementService).cancel(any(), eq(fireboltProperties));
+      verify(fireboltStatementService).abortStatement(any(), eq(fireboltProperties));
     }
   }
 

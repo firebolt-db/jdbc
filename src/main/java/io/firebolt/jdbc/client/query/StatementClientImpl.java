@@ -1,14 +1,15 @@
 package io.firebolt.jdbc.client.query;
 
-import io.firebolt.jdbc.statement.StatementInfoWrapper;
-import io.firebolt.jdbc.statement.StatementUtil;
 import io.firebolt.jdbc.client.FireboltClient;
 import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
+import io.firebolt.jdbc.statement.StatementInfoWrapper;
+import io.firebolt.jdbc.statement.StatementUtil;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -50,7 +51,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
     String formattedStatement = formatStatement(statementInfoWrapper.getSql());
     try {
       List<NameValuePair> parameters =
-              statementParams.entrySet().stream()
+          statementParams.entrySet().stream()
               .map(e -> new BasicNameValuePair(e.getKey(), e.getValue()))
               .collect(Collectors.toList());
       String uri = this.buildQueryUri(connectionProperties, parameters).toString();
@@ -74,54 +75,60 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
       throw e;
     } catch (Exception e) {
       EntityUtils.consumeQuietly(requestEntity);
-      throw new FireboltException(String.format("Error executing statement %s", formattedStatement), e);
+      throw new FireboltException(
+          String.format("Error executing statement %s", formattedStatement), e);
     } finally {
       runningQueries.remove(statementInfoWrapper.getId());
     }
   }
 
   private String formatStatement(String sql) {
-    String cleaned = StatementUtil.cleanQuery(sql);
-    if (!cleaned.endsWith(";")) {
-      cleaned += ";";
+    if (StringUtils.isNotEmpty(sql)) {
+      String cleaned = StatementUtil.cleanQuery(sql);
+      if (!cleaned.endsWith(";")) {
+        cleaned += ";";
+      }
+      return cleaned;
+    } else {
+      return sql;
     }
-    return cleaned;
   }
 
-  public void postCancelSqlStatement(
+  public void abortStatement(
       String id, FireboltProperties fireboltProperties, Map<String, String> statementParams)
       throws FireboltException {
     try {
-      abortCallWithId(id);
-
       List<NameValuePair> params =
-              statementParams.entrySet().stream()
+          statementParams.entrySet().stream()
               .map(kv -> new BasicNameValuePair(kv.getKey(), kv.getValue()))
               .collect(Collectors.toList());
 
       String uri = this.buildCancelUri(fireboltProperties, params).toString();
-      HttpPost post = new HttpPost(uri);
+      HttpPost post =
+          this.createPostRequest(
+              uri,
+              this.getConnection()
+                  .getConnectionTokens()
+                  .map(FireboltConnectionTokens::getAccessToken)
+                  .orElse(null));
       CloseableHttpResponse response = this.getHttpClient().execute(post);
-      validateResponse(fireboltProperties.getHost(), response, fireboltProperties.isCompress());
+      validateResponse(fireboltProperties.getHost(), response);
+      EntityUtils.consumeQuietly(response.getEntity());
+
     } catch (Exception e) {
       throw new FireboltException(
-          String.format("Could not cancel query: %s at %s", id, fireboltProperties.getHost()),
-          e);
+          String.format("Could not cancel query: %s at %s", id, fireboltProperties.getHost()), e);
     }
   }
 
-  private void abortCallWithId(@NonNull String id) {
-    try {
-      if (runningQueries.containsKey(id)) {
-        runningQueries.get(id).abort();
-      }
-    } catch (Exception e) {
-      log.error("Could not abort running statement with id {}", id);
+  public void abortRunningHttpRequest(@NonNull String id) {
+    HttpPost running = runningQueries.get(id);
+    if (running != null) {
+      running.abort();
     }
   }
 
-  private URI buildQueryUri(
-      FireboltProperties fireboltProperties, List<NameValuePair> parameters)
+  private URI buildQueryUri(FireboltProperties fireboltProperties, List<NameValuePair> parameters)
       throws URISyntaxException {
 
     return new URIBuilder()
@@ -133,8 +140,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
         .build();
   }
 
-  private URI buildCancelUri(
-      FireboltProperties fireboltProperties, List<NameValuePair> parameters)
+  private URI buildCancelUri(FireboltProperties fireboltProperties, List<NameValuePair> parameters)
       throws URISyntaxException {
 
     return new URIBuilder()
@@ -145,5 +151,4 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
         .setParameters(parameters)
         .build();
   }
-
 }

@@ -60,8 +60,7 @@ public class FireboltStatement extends AbstractStatement {
     return this.execute(sql, (Map<String, String>) null);
   }
 
-  public ResultSet execute(String sql, Map<String, String> statementParams)
-      throws SQLException {
+  public ResultSet execute(String sql, Map<String, String> statementParams) throws SQLException {
     this.statementId = UUID.randomUUID().toString();
     try {
       log.info("Executing the query with id {} : {}", this.statementId, sql);
@@ -71,7 +70,8 @@ public class FireboltStatement extends AbstractStatement {
         log.info(
             "There was already an opened ResultSet for the statement object. The ResultSet is now closed.");
       }
-      Optional<Pair<String, String>> additionalProperties = StatementUtil.extractPropertyFromQuery(sql);
+      Optional<Pair<String, String>> additionalProperties =
+          StatementUtil.extractPropertyFromQuery(sql);
       if (additionalProperties.isPresent()) {
         this.connection.addProperty(additionalProperties.get());
         log.debug("The property from the query {} was stored", this.statementId);
@@ -102,7 +102,6 @@ public class FireboltStatement extends AbstractStatement {
         log.info("The query with the id {} was executed with success", this.statementId);
       }
     } catch (Exception ex) {
-      log.error("Could not execute query with id {}", this.statementId, ex);
       throw ex;
     }
     return resultSet;
@@ -131,30 +130,42 @@ public class FireboltStatement extends AbstractStatement {
 
   @Override
   public void cancel() throws SQLException {
-    try {
+    if (statementId == null || isClosed()) {
+      log.warn("Cannot cancel query as there is no query running");
+    } else {
       log.debug("Cancelling query with id {}", statementId);
-      if (this.statementId == null || isClosed()) {
-        log.warn("Cannot cancel query as there is no query running");
-      } else if ("localhost".equals(this.sessionProperties.getHost())
+      try {
+        statementService.abortStatementHttpRequest(statementId);
+      } finally {
+        abortStatementRunningOnFirebolt(statementId);
+      }
+    }
+  }
+
+  private void abortStatementRunningOnFirebolt(String statementId) throws SQLException {
+    try {
+      if ("localhost".equals(this.sessionProperties.getHost())
           || StringUtils.isEmpty(this.sessionProperties.getDatabase())
-          || this.sessionProperties.isAggressiveCancelEnabled()) {
-        cancelBySqlQuery();
+          || this.sessionProperties.isAggressiveCancel()) {
+        abortStatementByQuery(statementId);
       } else {
-        statementService.cancel(this.statementId, this.sessionProperties);
+        statementService.abortStatement(statementId, this.sessionProperties);
       }
       log.debug("Query with id {} was cancelled", statementId);
     } catch (Exception e) {
       throw new FireboltException("Could not cancel query", e);
+    } finally {
+      synchronized (connection) {
+        connection.notifyAll();
+      }
     }
   }
 
-  private void cancelBySqlQuery() throws SQLException {
-    log.debug("cancelling query");
+  private void abortStatementByQuery(String statementId) throws SQLException {
     Map<String, String> statementParams = new HashMap<>(this.getStatementParameters());
     statementParams.put("use_standard_sql", "0");
-    try (ResultSet rs = this.execute(String.format(KILL_QUERY_SQL, statementId), statementParams)) {
-      //The empty try block is correct, we just use it so that java closes the closeable after execution
-    }
+    try (ResultSet rs =
+        this.execute(String.format(KILL_QUERY_SQL, statementId), statementParams)) {}
   }
 
   @Override

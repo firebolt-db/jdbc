@@ -49,6 +49,7 @@ public class FireboltProperties {
   String engine;
   String account;
   Integer tcpKeepIdle;
+  boolean aggressiveCancel;
   Integer tcpKeepCount;
   Integer tcpKeepInterval;
   @Builder.Default Map<String, String> additionalProperties = new HashMap<>();
@@ -84,6 +85,8 @@ public class FireboltProperties {
     int tcpKeepInterval = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_INTERVAL);
     int tcpKeepIdle = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_IDLE);
     int tcpKeepCount = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_COUNT);
+    boolean aggressiveCancel =
+        getSetting(mergedProperties, FireboltSessionProperty.AGGRESSIVE_CANCEL);
 
     String host = getHost(mergedProperties);
     Integer port = getPort(mergedProperties, ssl);
@@ -118,6 +121,7 @@ public class FireboltProperties {
         .tcpKeepInterval(tcpKeepInterval)
         .tcpKeepCount(tcpKeepCount)
         .tcpKeepIdle(tcpKeepIdle)
+        .aggressiveCancel(aggressiveCancel)
         .build();
   }
 
@@ -199,10 +203,6 @@ public class FireboltProperties {
       mergedProperties.putAll(p);
     }
     return mergedProperties;
-  }
-
-  public boolean isAggressiveCancelEnabled() {
-    return "1".equals(this.additionalProperties.get("aggressive_cancel"));
   }
 
   public void addProperty(@NonNull String key, String value) {
