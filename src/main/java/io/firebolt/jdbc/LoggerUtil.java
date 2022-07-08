@@ -9,8 +9,6 @@ import java.util.stream.Collectors;
 @UtilityClass
 public class LoggerUtil {
 
-  public static final String FEATURE_NOT_SUPPORTED_YET = "Feature not supported yet. Method: %s";
-
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(LoggerUtil.class);
 
   public static InputStream logInputStream(InputStream is) {

@@ -1,7 +1,7 @@
 package io.firebolt.jdbc.resultset;
 
-import io.firebolt.jdbc.LoggerUtil;
 import io.firebolt.jdbc.exception.FireboltException;
+import io.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import io.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import io.firebolt.jdbc.resultset.type.BaseType;
 import io.firebolt.jdbc.resultset.type.FireboltDataType;
@@ -22,7 +22,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.firebolt.jdbc.LoggerUtil.FEATURE_NOT_SUPPORTED_YET;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = true)
@@ -387,16 +386,12 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public void setFetchDirection(int direction) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(
-            FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+    throw new FireboltUnsupportedOperationException();
   }
 
   @Override
   public void setFetchSize(int rows) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(
-            FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+    throw new FireboltUnsupportedOperationException();
   }
 
   @Override

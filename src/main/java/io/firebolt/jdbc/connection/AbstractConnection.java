@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.connection;
 
+import io.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.*;
@@ -7,14 +8,12 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
-import static io.firebolt.jdbc.LoggerUtil.FEATURE_NOT_SUPPORTED_YET;
-
 @Slf4j
 public abstract class AbstractConnection implements Connection {
 
   @Override
   public String nativeSQL(String sql) throws SQLException {
-    throw new UnsupportedOperationException(String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+    throw new FireboltUnsupportedOperationException();
   }
 
   @Override
@@ -37,7 +36,7 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public void setCatalog(String catalog) throws SQLException {
-    throw new UnsupportedOperationException(String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+   throw new FireboltUnsupportedOperationException();
   }
 
   @Override
@@ -47,7 +46,7 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public void setTransactionIsolation(int level) throws SQLException {
-    throw new UnsupportedOperationException(String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+   throw new FireboltUnsupportedOperationException();
   }
 
   @Override
@@ -149,7 +148,7 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public Array createArrayOf(String typeName, Object[] elements) throws SQLException {
-    throw new UnsupportedOperationException(String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+   throw new FireboltUnsupportedOperationException();
   }
 
   @Override
@@ -164,7 +163,7 @@ public abstract class AbstractConnection implements Connection {
 
   @Override
   public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
-    throw new UnsupportedOperationException(String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+   throw new FireboltUnsupportedOperationException();
   }
 
   @Override

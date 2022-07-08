@@ -1,10 +1,12 @@
 package io.firebolt.jdbc.statement;
 
+import io.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import lombok.extern.slf4j.Slf4j;
 
-import java.sql.*;
-
-import static io.firebolt.jdbc.LoggerUtil.FEATURE_NOT_SUPPORTED_YET;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.sql.Statement;
 
 @Slf4j
 public abstract class AbstractStatement implements Statement {
@@ -16,8 +18,7 @@ public abstract class AbstractStatement implements Statement {
 
   @Override
   public void close() throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+    throw new FireboltUnsupportedOperationException();
   }
 
   @Override
@@ -27,8 +28,7 @@ public abstract class AbstractStatement implements Statement {
 
   @Override
   public void setMaxFieldSize(int max) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+    throw new FireboltUnsupportedOperationException();
   }
 
   @Override
@@ -38,16 +38,13 @@ public abstract class AbstractStatement implements Statement {
 
   @Override
   public void setMaxRows(int max) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+    throw new FireboltUnsupportedOperationException();
   }
 
   @Override
   public void setEscapeProcessing(boolean enable) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+    throw new FireboltUnsupportedOperationException();
   }
-
 
   @Override
   public SQLWarning getWarnings() throws SQLException {
@@ -56,22 +53,18 @@ public abstract class AbstractStatement implements Statement {
 
   @Override
   public void clearWarnings() throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+    throw new FireboltUnsupportedOperationException();
   }
 
   @Override
   public void setCursorName(String name) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+    throw new FireboltUnsupportedOperationException();
   }
-
 
   @Override
   public int getUpdateCount() throws SQLException {
     return 0;
   }
-
 
   @Override
   public int getFetchDirection() throws SQLException {
@@ -90,8 +83,7 @@ public abstract class AbstractStatement implements Statement {
 
   @Override
   public void setFetchSize(int rows) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+    throw new FireboltUnsupportedOperationException();
   }
 
   @Override
@@ -106,21 +98,18 @@ public abstract class AbstractStatement implements Statement {
 
   @Override
   public void addBatch(String sql) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+    throw new FireboltUnsupportedOperationException();
   }
 
   @Override
   public void clearBatch() throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+    throw new FireboltUnsupportedOperationException();
   }
 
   @Override
   public int[] executeBatch() throws SQLException {
     return new int[0];
   }
-
 
   @Override
   public ResultSet getGeneratedKeys() throws SQLException {
@@ -174,14 +163,12 @@ public abstract class AbstractStatement implements Statement {
 
   @Override
   public void setPoolable(boolean poolable) throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+    throw new FireboltUnsupportedOperationException();
   }
 
   @Override
   public void closeOnCompletion() throws SQLException {
-    throw new UnsupportedOperationException(
-        String.format(FEATURE_NOT_SUPPORTED_YET, new Throwable().getStackTrace()[0].getMethodName()));
+    throw new FireboltUnsupportedOperationException();
   }
 
   @Override
