@@ -1,5 +1,6 @@
 package io.firebolt.jdbc;
 
+import com.google.common.collect.ImmutableMap;
 import io.firebolt.jdbc.statement.StatementUtil;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -21,15 +22,16 @@ class StatementUtilTest {
     String query = "set my_custom_query=1";
     assertEquals(
         Optional.of(new ImmutablePair<>("my_custom_query", "1")),
-        StatementUtil.extractPropertyFromQuery(query));
+        StatementUtil.extractPropertyFromQuery(query, null));
   }
 
   @Test
   void shouldExtractAdditionalPropertiesWithComments() {
     String query = "/* */" + " SeT my_custom_query=1";
+    String cleanQuery = "SeT my_custom_query=1";
     assertEquals(
         Optional.of(new ImmutablePair<>("my_custom_query", "1")),
-        StatementUtil.extractPropertyFromQuery(query));
+        StatementUtil.extractPropertyFromQuery(cleanQuery, query));
   }
 
   @Test
@@ -37,7 +39,7 @@ class StatementUtilTest {
     String query = "set my_custom_char=' '";
     assertEquals(
         Optional.of(new ImmutablePair<>("my_custom_char", "' '")),
-        StatementUtil.extractPropertyFromQuery(query));
+        StatementUtil.extractPropertyFromQuery(query, null));
   }
 
   @Test
@@ -113,7 +115,7 @@ class StatementUtilTest {
   void shouldThrowAnExceptionWhenTheSetCannotBeParsed() {
     String query = "set x=";
     assertThrows(
-        IllegalArgumentException.class, () -> StatementUtil.extractPropertyFromQuery(query));
+        IllegalArgumentException.class, () -> StatementUtil.extractPropertyFromQuery(query, null));
   }
 
   @Test
@@ -135,7 +137,7 @@ class StatementUtilTest {
             + "'Taylor''s Prime Steak House 3' /* some comment */)--";
     String expectedCleanQuery =
         "INSERT INTO regex_test (name)\n" + "\n" + "VALUES (\n" + "'Taylor''s Prime Steak House 3'";
-    String cleanQuery = StatementUtil.cleanQuery(sql);
+    String cleanQuery = StatementUtil.cleanStatement(sql);
     assertEquals(expectedCleanQuery, cleanQuery);
   }
 
@@ -147,6 +149,53 @@ class StatementUtilTest {
         StatementUtil.cleanQueryAndCountKeyWordOccurrences(sql, "?");
     assertEquals(expectedCleanQuery, cleanQueryWithCount.getLeft());
     assertEquals(1, cleanQueryWithCount.getRight());
+  }
+
+  @Test
+  void shouldCountParametersFromLongQueryWithComments() {
+    String sql = getSqlFromFile("/queries/query-with-comment.sql");
+    assertEquals(ImmutableMap.of(1, 200), StatementUtil.getQueryParamsPositions(sql));
+  }
+
+  @Test
+  void shouldGetAllQueryParams() {
+    String sql = "SElECT * FROM EMPLOYEES WHERE id = ?";
+    assertEquals(ImmutableMap.of( 1, 35), StatementUtil.getQueryParamsPositions(sql));
+  }
+
+  @Test
+  void shouldGetAllQueryParamsWithoutTrimmingRequest() {
+    String sql = "     SElECT * FROM EMPLOYEES WHERE id = ?";
+    assertEquals(ImmutableMap.of( 1, 40), StatementUtil.getQueryParamsPositions(sql));
+  }
+
+  @Test
+  void shouldGetAllQueryParamsFromIn() {
+    String sql = "SElECT * FROM EMPLOYEES WHERE id IN (?,?)";
+    assertEquals(ImmutableMap.of( 1, 37,2,39), StatementUtil.getQueryParamsPositions(sql));
+  }
+
+  @Test
+  void shouldGetAllQueryParamsThatAreNotInComments() {
+    String sql = "SElECT * FROM EMPLOYEES WHERE /* ?*/id IN (?,?)";
+    assertEquals(ImmutableMap.of( 1, 43,2,45), StatementUtil.getQueryParamsPositions(sql));
+  }
+
+  @Test
+  void shouldGetAllQueryParamsThatAreNotInComments2() {
+    String sql = "SElECT * FROM EMPLOYEES WHERE /* ?id IN (?,?)*/";
+    assertEquals(ImmutableMap.of(), StatementUtil.getQueryParamsPositions(sql));
+  }
+
+  @Test
+  void shouldGetAllQueryParamsThatAreNotInSingleLineComment() {
+    String sql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n";
+    assertEquals(ImmutableMap.of(), StatementUtil.getQueryParamsPositions(sql));
+  }
+  @Test
+  void shouldGetAllQueryParamsThatAreNotInSingleLineComment2() {
+    String sql = "SElECT * FROM EMPLOYEES WHERE id IN --\n(?,?)";
+    assertEquals(ImmutableMap.of( 1, 40,2,42), StatementUtil.getQueryParamsPositions(sql));
   }
 
   private static String getSqlFromFile(String path) {

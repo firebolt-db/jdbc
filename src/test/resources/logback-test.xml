@@ -13,8 +13,9 @@
             <pattern>%d %p %c{1.} [%t] %m%n</pattern>
         </encoder>
     </appender>
-    <logger name="org.apache.http" level="ERROR"/>
-    <root level="DEBUG">
+    <logger name="org.apache.hc" level="error"/>
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
     </root>
 </configuration>

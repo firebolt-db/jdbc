@@ -83,12 +83,9 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
   }
 
   private String formatStatement(String sql) {
-    if (StringUtils.isNotEmpty(sql)) {
-      String cleaned = StatementUtil.cleanQuery(sql);
-      if (!cleaned.endsWith(";")) {
-        cleaned += ";";
-      }
-      return cleaned;
+    String cleaned = StatementUtil.cleanStatement(sql);
+    if (!StringUtils.endsWith(cleaned, ";")) {
+      return sql + ";";
     } else {
       return sql;
     }

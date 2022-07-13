@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static io.firebolt.jdbc.statement.StatementInfoWrapper.StatementType.QUERY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -80,7 +81,7 @@ class StatementClientImplTest {
     when(closeableHttpClient.execute(any())).thenReturn(response);
 
     statementClient.postSqlStatement(
-        StatementInfoWrapper.builder().sql("show databases").id("123456").query(true).build(),
+        StatementInfoWrapper.builder().sql("show databases").id("123456").type(QUERY).build(),
         fireboltProperties,
         ImmutableMap.of(
             "output_format",

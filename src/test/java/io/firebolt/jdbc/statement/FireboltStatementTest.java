@@ -2,6 +2,7 @@ package io.firebolt.jdbc.statement;
 
 import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
+import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.FireboltResultSet;
 import io.firebolt.jdbc.service.FireboltStatementService;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -16,8 +17,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -55,7 +55,7 @@ class FireboltStatementTest {
       assertEquals(1, mocked.constructed().size());
       assertEquals(-1, fireboltStatement.getUpdateCount());
       assertEquals("show database", queryInfoWrapperArgumentCaptor.getValue().getSql());
-      assertTrue(queryInfoWrapperArgumentCaptor.getValue().isQuery());
+      assertEquals(queryInfoWrapperArgumentCaptor.getValue().getType(), StatementInfoWrapper.StatementType.QUERY);
     }
   }
 
@@ -74,7 +74,7 @@ class FireboltStatementTest {
               .connection(connection)
               .build();
 
-      fireboltStatement.executeQuery("set custom_1 = 1");
+      fireboltStatement.execute("set custom_1 = 1");
       verifyNoMoreInteractions(fireboltStatementService);
       verify(connection).addProperty(new ImmutablePair<>("custom_1", "1"));
       assertEquals(0, mockedResultSet.constructed().size());
@@ -162,6 +162,26 @@ class FireboltStatementTest {
       fireboltStatement.close();
       verify(mockedResultSet.constructed().get(0)).close();
       verify(connection).removeClosedStatement(fireboltStatement);
+    }
+  }
+
+
+  @Test
+  void shouldThrowAnExceptionWhenExecutingQueryOnANonQueryStatement() throws SQLException {
+    try (MockedConstruction<FireboltResultSet> mockedResultSet =
+                 Mockito.mockConstruction(FireboltResultSet.class)) {
+      FireboltConnection connection = mock(FireboltConnection.class);
+      FireboltProperties fireboltProperties =
+              FireboltProperties.builder().additionalProperties(new HashMap<>()).build();
+
+      FireboltStatement fireboltStatement =
+              FireboltStatement.builder()
+                      .statementService(fireboltStatementService)
+                      .sessionProperties(fireboltProperties)
+                      .connection(connection)
+                      .build();
+
+      assertThrows(FireboltException.class, () -> fireboltStatement.executeQuery("set custom_1 = 1"));
     }
   }
 }

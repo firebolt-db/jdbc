@@ -102,7 +102,7 @@ public class FireboltConnection extends AbstractConnection {
     }
   }
 
-  private FireboltConnection connect() throws FireboltException {
+  private void connect() throws FireboltException {
     try {
       if (!StringUtils.equalsIgnoreCase(LOCALHOST, loginProperties.getHost())) {
         String engineHost = fireboltEngineService.getEngineHost(httpConnectionUrl, loginProperties);
@@ -121,7 +121,6 @@ public class FireboltConnection extends AbstractConnection {
         throw ex;
       }
     }
-    return this;
   }
 
   public void removeExpiredTokens() throws FireboltException {
@@ -343,7 +342,7 @@ public class FireboltConnection extends AbstractConnection {
 
   private void checkConnectionIsNotClose() throws SQLException {
     if (isClosed()) {
-      throw new SQLException("Cannot proceed: connection closed");
+      throw new FireboltException("Cannot proceed: connection closed");
     }
   }
 

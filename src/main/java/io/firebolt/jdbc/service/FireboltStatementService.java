@@ -58,7 +58,7 @@ public class FireboltStatementService {
 
     Map<String, String> params = new HashMap<>(fireboltProperties.getAdditionalProperties());
 
-    getResponseFormatParameter(statementInfoWrapper.isQuery(), isLocalDb)
+    getResponseFormatParameter(statementInfoWrapper.getType() == StatementInfoWrapper.StatementType.QUERY, isLocalDb)
         .ifPresent(format -> params.put(format.getLeft(), format.getRight()));
 
     params.put("database", fireboltProperties.getDatabase());

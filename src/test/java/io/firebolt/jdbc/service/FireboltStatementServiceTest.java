@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
 
+import static io.firebolt.jdbc.statement.StatementInfoWrapper.StatementType.QUERY;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -25,7 +26,7 @@ class FireboltStatementServiceTest {
   @Test
   void shouldExecuteQueryWithAllRequiredParameters() throws FireboltException {
     StatementInfoWrapper statementInfoWrapper =
-        StatementInfoWrapper.builder().sql("SELECT 1").query(true).id("id").build();
+        StatementInfoWrapper.builder().sql("SELECT 1").type(QUERY).id("id").build();
     FireboltProperties fireboltProperties =
         FireboltProperties.builder()
             .database("db")
@@ -56,7 +57,7 @@ class FireboltStatementServiceTest {
   @Test
   void shouldExecuteQueryWithLocalHostFormatParameters() throws FireboltException {
     StatementInfoWrapper statementInfoWrapper =
-        StatementInfoWrapper.builder().sql("SELECT 1").query(true).id("id").build();
+        StatementInfoWrapper.builder().sql("SELECT 1").type(QUERY).id("id").build();
     FireboltProperties fireboltProperties =
         FireboltProperties.builder()
             .database("db")

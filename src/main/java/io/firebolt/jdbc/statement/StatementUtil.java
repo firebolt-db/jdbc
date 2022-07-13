@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.statement;
 
+import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RegExUtils;
@@ -7,6 +8,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -23,9 +26,36 @@ public class StatementUtil {
   private static final String[] SELECT_KEYWORDS =
       new String[] {"show", "select", "describe", "exists", "explain", "with"};
 
+  public static StatementInfoWrapper extractStatementInfo(String sql, String statementId) {
+    String cleaned = StatementUtil.cleanStatement(sql);
+    Optional<Pair<String, String>> additionalProperties =
+        extractPropertyFromQuery(cleaned, statementId);
+    StatementInfoWrapper.StatementType statementType;
+    if (additionalProperties.isPresent()) {
+      statementType = StatementInfoWrapper.StatementType.PARAM_SETTING;
+    } else {
+      statementType =
+          StatementUtil.isQuery(cleaned, true)
+              ? StatementInfoWrapper.StatementType.QUERY
+              : StatementInfoWrapper.StatementType.NON_QUERY;
+    }
+    return StatementInfoWrapper.builder()
+        .sql(sql)
+        .id(statementId)
+        .sql(sql)
+        .cleanSql(cleaned)
+        .type(statementType)
+        .param(additionalProperties.orElse(null))
+        .build();
+  }
+
   public static boolean isQuery(String sql) {
+    return isQuery(sql, false);
+  }
+
+  public static boolean isQuery(String sql, boolean isCleanStatement) {
     if (StringUtils.isNotEmpty(sql)) {
-      String cleanQuery = cleanQuery(sql);
+      String cleanQuery = isCleanStatement ? sql : cleanStatement(sql);
       cleanQuery = cleanQuery.replace("(", "");
       return StringUtils.startsWithAny(cleanQuery.toLowerCase(), SELECT_KEYWORDS);
     } else {
@@ -33,17 +63,15 @@ public class StatementUtil {
     }
   }
 
-  public Optional<Pair<String, String>> extractPropertyFromQuery(String sql) {
-    if (StringUtils.isNotEmpty(sql)) {
-      String cleanQuery = cleanQuery(sql);
-      if (cleanQuery.toLowerCase().startsWith(SET_PREFIX)) {
-        return extractPropertyPair(sql, cleanQuery);
-      }
+  public Optional<Pair<String, String>> extractPropertyFromQuery(
+      @NonNull String cleanStatement, String sql) {
+    if (StringUtils.startsWithIgnoreCase(cleanStatement, SET_PREFIX)) {
+      return extractPropertyPair(cleanStatement, sql);
     }
     return Optional.empty();
   }
 
-  public String cleanQuery(String sql) {
+  public String cleanStatement(String sql) {
     return cleanQueryAndCountKeyWordOccurrences(sql, null).getLeft();
   }
 
@@ -94,6 +122,37 @@ public class StatementUtil {
     return new ImmutablePair<>(result.toString().trim(), searchedWordCount);
   }
 
+  public Map<Integer, Integer> getQueryParamsPositions(String sql) {
+    Map<Integer, Integer> queryParams = new HashMap<>();
+    int currentIndex = 0;
+    char currentChar = sql.charAt(currentIndex);
+    boolean isCurrentSubstringBetweenQuotes = currentChar == '\'';
+    boolean isInSingleLineComment = false;
+    boolean isInMultipleLinesComment = false;
+    boolean isInComment;
+    char previousChar;
+    int count = 0;
+    while (currentIndex++ < sql.length() - 1) {
+      previousChar = currentChar;
+      currentChar = sql.charAt(currentIndex);
+      isInSingleLineComment =
+          isInSingleLineComment(
+              currentChar, previousChar, isCurrentSubstringBetweenQuotes, isInSingleLineComment);
+      isInMultipleLinesComment =
+          isInMultipleLinesComment(
+              currentChar, previousChar, isCurrentSubstringBetweenQuotes, isInMultipleLinesComment);
+      isInComment = isInSingleLineComment || isInMultipleLinesComment;
+      if (!isInComment) {
+        if (currentChar == '?' && !isCurrentSubstringBetweenQuotes) {
+          queryParams.put(++count, currentIndex);
+        } else if (currentChar == '\'') {
+          isCurrentSubstringBetweenQuotes = !isCurrentSubstringBetweenQuotes;
+        }
+      }
+    }
+    return queryParams;
+  }
+
   private boolean reachedEnd(String sql, int currentIndex) {
     return currentIndex == sql.length() - 1;
   }
@@ -116,7 +175,7 @@ public class StatementUtil {
     Optional<String> from = Optional.empty();
     if (isQuery(sql)) {
       log.debug("Extracting DB and Table name for SELECT: {}", sql);
-      String cleanQuery = cleanQuery(sql);
+      String cleanQuery = cleanStatement(sql);
       String withoutQuotes = StringUtils.replace(cleanQuery, "'", "").trim();
       if (StringUtils.startsWithIgnoreCase(withoutQuotes, "select")) {
         int fromIndex = StringUtils.indexOfIgnoreCase(withoutQuotes, "from");
@@ -197,14 +256,14 @@ public class StatementUtil {
     // of the line
   }
 
-  private Optional<Pair<String, String>> extractPropertyPair(String sql, String query) {
-    String setQuery = RegExUtils.removeFirst(query, SET_WITH_SPACE_REGEX);
+  private Optional<Pair<String, String>> extractPropertyPair(String cleanStatement, String sql) {
+    String setQuery = RegExUtils.removeFirst(cleanStatement, SET_WITH_SPACE_REGEX);
     String[] values = StringUtils.split(setQuery, "=");
     if (values.length == 2) {
       return Optional.of(Pair.of(values[0].trim(), values[1].trim()));
     } else {
       throw new IllegalArgumentException(
-          "Cannot parse the additional properties provided in the query: " + sql);
+          "Cannot parse the additional properties provided in the statement: " + sql);
     }
   }
 }
