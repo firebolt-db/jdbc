@@ -324,4 +324,15 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
       return fireboltConnection.createStatement();
     }
   }
+
+  public boolean isWrapperFor(Class<?> iface) throws SQLException {
+    return iface.isAssignableFrom(getClass());
+  }
+
+  public <T> T unwrap(Class<T> iface) throws SQLException {
+    if (iface.isAssignableFrom(getClass())) {
+      return iface.cast(this);
+    }
+    throw new SQLException("Cannot unwrap to " + iface.getName());
+  }
 }

@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.statement;
 
+import io.firebolt.jdbc.CloseableUtils;
 import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
@@ -64,6 +65,7 @@ public class FireboltStatement extends AbstractStatement {
   public ResultSet execute(String sql, Map<String, String> statementParams) throws SQLException {
     this.validateStatementIsNotClosed();
     this.statementId = UUID.randomUUID().toString();
+    InputStream inputStream = null;
     try {
       log.info("Executing the statement with id {} : {}", this.statementId, sql);
       if (resultSet != null && !this.resultSet.isClosed()) {
@@ -79,8 +81,7 @@ public class FireboltStatement extends AbstractStatement {
       } else {
         Map<String, String> params =
             statementParams != null ? statementParams : this.getStatementParameters();
-        InputStream inputStream =
-            statementService.execute(statementInfo, this.sessionProperties, params);
+        inputStream = statementService.execute(statementInfo, this.sessionProperties, params);
         if (statementInfo.getType() == StatementInfoWrapper.StatementType.QUERY) {
           currentUpdateCount = -1; // Always -1 when returning a ResultSet
           Pair<Optional<String>, Optional<String>> dbNameAndTableNamePair =
@@ -92,15 +93,17 @@ public class FireboltStatement extends AbstractStatement {
                   dbNameAndTableNamePair.getRight().orElse("unknown"),
                   dbNameAndTableNamePair.getRight().orElse(this.sessionProperties.getDatabase()),
                   this.sessionProperties.getBufferSize(),
-                  this.sessionProperties.isCompress());
+                  this.sessionProperties.isCompress(), this);
         } else {
           currentUpdateCount = 0;
-          closeStream(sql, inputStream);
+          CloseableUtils.close(inputStream);
         }
         log.info("The query with the id {} was executed with success", this.statementId);
       }
     } catch (Exception ex) {
-      log.error("An error happened while executing the statement with the id {}", this.statementId, ex);
+      CloseableUtils.close(inputStream);
+      log.error(
+          "An error happened while executing the statement with the id {}", this.statementId, ex);
       throw ex;
     }
     return resultSet;
@@ -116,15 +119,6 @@ public class FireboltStatement extends AbstractStatement {
       params.put("result_overflow_mode", "break");
     }
     return params;
-  }
-
-  private void closeStream(String sql, InputStream inputStream) throws FireboltException {
-    try {
-      inputStream.close();
-    } catch (Exception e) {
-      throw new FireboltException(
-          String.format("Error closing InputStream with query: %s", sql), e);
-    }
   }
 
   @Override
@@ -258,7 +252,7 @@ public class FireboltStatement extends AbstractStatement {
 
   @Override
   public boolean execute(String sql) throws SQLException {
-    return this.execute(sql,(Map<String, String>) null) != null;
+    return this.execute(sql, (Map<String, String>) null) != null;
   }
 
   @Override
@@ -270,6 +264,20 @@ public class FireboltStatement extends AbstractStatement {
   public void setQueryTimeout(int seconds) throws SQLException {
     queryTimeout = seconds;
   }
+
+  @Override
+  public boolean isWrapperFor(Class<?> iface) {
+    return iface.isAssignableFrom(getClass());
+  }
+
+  @Override
+  public <T> T unwrap(Class<T> iface) throws SQLException {
+    if (iface.isAssignableFrom(getClass())) {
+      return iface.cast(this);
+    }
+    throw new SQLException("Cannot unwrap to " + iface.getName());
+  }
+
   protected void validateStatementIsNotClosed() throws SQLException {
     if (isClosed()) {
       throw new FireboltException("Cannot proceed: statement closed");

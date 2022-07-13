@@ -376,4 +376,17 @@ public class FireboltConnection extends AbstractConnection {
   public void rollback() throws SQLException {
     //no-op
   }
+
+  @Override
+  public boolean isWrapperFor(Class<?> iface) {
+    return iface.isAssignableFrom(getClass());
+  }
+
+  @Override
+  public <T> T unwrap(Class<T> iface) throws SQLException {
+    if (iface.isAssignableFrom(getClass())) {
+      return iface.cast(this);
+    }
+    throw new SQLException("Cannot unwrap to " + iface.getName());
+  }
 }

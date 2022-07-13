@@ -3,7 +3,6 @@ package io.firebolt.jdbc;
 import com.google.common.collect.ImmutableMap;
 import io.firebolt.jdbc.statement.StatementUtil;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
@@ -122,10 +121,8 @@ class StatementUtilTest {
   void shouldCleanQueryWithComments() {
     String sql = getSqlFromFile("/queries/query-with-comment.sql");
     String expectedCleanQuery = getSqlFromFile("/queries/query-with-comment-cleaned.sql");
-    Pair<String, Integer> cleanQueryWithCount =
-        StatementUtil.cleanQueryAndCountKeyWordOccurrences(sql, "?");
-    assertEquals(expectedCleanQuery, cleanQueryWithCount.getLeft());
-    assertEquals(1, cleanQueryWithCount.getRight());
+    String cleanStatement = StatementUtil.cleanStatement(sql);
+    assertEquals(expectedCleanQuery, cleanStatement);
   }
 
   @Test
@@ -145,10 +142,8 @@ class StatementUtilTest {
   void shouldCleanQueryWithSingleLineComment() {
     String sql = getSqlFromFile("/queries/query-with-comment.sql");
     String expectedCleanQuery = getSqlFromFile("/queries/query-with-comment-cleaned.sql");
-    Pair<String, Integer> cleanQueryWithCount =
-        StatementUtil.cleanQueryAndCountKeyWordOccurrences(sql, "?");
-    assertEquals(expectedCleanQuery, cleanQueryWithCount.getLeft());
-    assertEquals(1, cleanQueryWithCount.getRight());
+    String cleanStatement = StatementUtil.cleanStatement(sql);
+    assertEquals(expectedCleanQuery, cleanStatement);
   }
 
   @Test
@@ -160,25 +155,25 @@ class StatementUtilTest {
   @Test
   void shouldGetAllQueryParams() {
     String sql = "SElECT * FROM EMPLOYEES WHERE id = ?";
-    assertEquals(ImmutableMap.of( 1, 35), StatementUtil.getQueryParamsPositions(sql));
+    assertEquals(ImmutableMap.of(1, 35), StatementUtil.getQueryParamsPositions(sql));
   }
 
   @Test
   void shouldGetAllQueryParamsWithoutTrimmingRequest() {
     String sql = "     SElECT * FROM EMPLOYEES WHERE id = ?";
-    assertEquals(ImmutableMap.of( 1, 40), StatementUtil.getQueryParamsPositions(sql));
+    assertEquals(ImmutableMap.of(1, 40), StatementUtil.getQueryParamsPositions(sql));
   }
 
   @Test
   void shouldGetAllQueryParamsFromIn() {
     String sql = "SElECT * FROM EMPLOYEES WHERE id IN (?,?)";
-    assertEquals(ImmutableMap.of( 1, 37,2,39), StatementUtil.getQueryParamsPositions(sql));
+    assertEquals(ImmutableMap.of(1, 37, 2, 39), StatementUtil.getQueryParamsPositions(sql));
   }
 
   @Test
   void shouldGetAllQueryParamsThatAreNotInComments() {
     String sql = "SElECT * FROM EMPLOYEES WHERE /* ?*/id IN (?,?)";
-    assertEquals(ImmutableMap.of( 1, 43,2,45), StatementUtil.getQueryParamsPositions(sql));
+    assertEquals(ImmutableMap.of(1, 43, 2, 45), StatementUtil.getQueryParamsPositions(sql));
   }
 
   @Test
@@ -195,7 +190,7 @@ class StatementUtilTest {
   @Test
   void shouldGetAllQueryParamsThatAreNotInSingleLineComment2() {
     String sql = "SElECT * FROM EMPLOYEES WHERE id IN --\n(?,?)";
-    assertEquals(ImmutableMap.of( 1, 40,2,42), StatementUtil.getQueryParamsPositions(sql));
+    assertEquals(ImmutableMap.of(1, 40, 2, 42), StatementUtil.getQueryParamsPositions(sql));
   }
 
   private static String getSqlFromFile(String path) {

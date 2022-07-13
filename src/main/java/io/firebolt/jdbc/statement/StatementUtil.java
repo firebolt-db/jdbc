@@ -55,9 +55,9 @@ public class StatementUtil {
 
   public static boolean isQuery(String sql, boolean isCleanStatement) {
     if (StringUtils.isNotEmpty(sql)) {
-      String cleanQuery = isCleanStatement ? sql : cleanStatement(sql);
-      cleanQuery = cleanQuery.replace("(", "");
-      return StringUtils.startsWithAny(cleanQuery.toLowerCase(), SELECT_KEYWORDS);
+      String cleanStatement = isCleanStatement ? sql : cleanStatement(sql);
+      cleanStatement = cleanStatement.replace("(", "");
+      return StringUtils.startsWithAny(cleanStatement.toLowerCase(), SELECT_KEYWORDS);
     } else {
       return false;
     }
@@ -72,11 +72,6 @@ public class StatementUtil {
   }
 
   public String cleanStatement(String sql) {
-    return cleanQueryAndCountKeyWordOccurrences(sql, null).getLeft();
-  }
-
-  public Pair<String, Integer> cleanQueryAndCountKeyWordOccurrences(String sql, String keyword) {
-    int searchedWordCount = 0;
     StringBuilder result = new StringBuilder();
     sql = sql.trim();
     int currentIndex = 0;
@@ -109,17 +104,15 @@ public class StatementUtil {
           result.append(subString);
         } else {
           int subStringEnd = isInComment ? latestCommentPos : currentIndex + 1;
-          Pair<String, Integer> cleanSubstring =
-              cleanQueryPartAndCountWordOccurrences(sql, substringStart, subStringEnd, keyword);
-          result.append(cleanSubstring.getLeft());
-          searchedWordCount += cleanSubstring.getRight();
+          String cleanSubstring = cleanQueryPart(sql, substringStart, subStringEnd);
+          result.append(cleanSubstring);
         }
         substringStart = currentIndex + 1;
         isCurrentSubstringBetweenQuotes = !isCurrentSubstringBetweenQuotes;
         latestCommentPos = null;
       }
     }
-    return new ImmutablePair<>(result.toString().trim(), searchedWordCount);
+    return result.toString().trim();
   }
 
   public Map<Integer, Integer> getQueryParamsPositions(String sql) {
@@ -236,15 +229,9 @@ public class StatementUtil {
     return isInSingleLineComment;
   }
 
-  private Pair<String, Integer> cleanQueryPartAndCountWordOccurrences(
-      String sql, int substringStart, int substringEnd, String searchedWord) {
+  private String cleanQueryPart(String sql, int substringStart, int substringEnd) {
     String subString = StringUtils.substring(sql, substringStart, substringEnd);
-    int count = 0;
-    String unquotedWord = removeCommentsFromSubstring(subString);
-    if (searchedWord != null) {
-      count = StringUtils.countMatches(unquotedWord, searchedWord);
-    }
-    return new ImmutablePair<>(unquotedWord, count);
+    return removeCommentsFromSubstring(subString);
   }
 
   private String removeCommentsFromSubstring(String subString) {

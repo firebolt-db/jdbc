@@ -1,10 +1,13 @@
 package io.firebolt.jdbc.resultset;
 
-import io.firebolt.jdbc.exception.FireboltException;
+import io.firebolt.jdbc.statement.FireboltStatement;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junitpioneer.jupiter.DefaultTimeZone;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -17,11 +20,16 @@ import java.time.LocalTime;
 
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class FireboltResultSetTest {
 
-  InputStream inputStream;
-  ResultSet resultSet;
+  private InputStream inputStream;
+  private ResultSet resultSet;
+
+  @Mock
+  private FireboltStatement fireboltStatement;
 
   @AfterEach
   void closeStream() {
@@ -35,7 +43,7 @@ class FireboltResultSetTest {
   void shouldReturnMetadata() throws SQLException {
     // This only tests that Metadata is available with the resultSet.
     inputStream = getInputStreamWithArray();
-    resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
+    resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535, false, fireboltStatement);
     assertNotNull(resultSet.getMetaData());
     assertEquals("array_test_table", resultSet.getMetaData().getTableName(1));
     assertEquals("array_test_db", resultSet.getMetaData().getCatalogName(1));
@@ -349,6 +357,24 @@ class FireboltResultSetTest {
     assertFalse(resultSet.isClosed());
     resultSet.close();
     assertTrue(resultSet.isClosed());
+  }
+
+  @Test
+  void shouldCloseStatementWhenCloseOnCompletion() throws SQLException {
+    when(fireboltStatement.isCloseOnCompletion()).thenReturn(true);
+    inputStream = getInputStreamWithArray();
+    resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535, fireboltStatement);
+    resultSet.close();
+    verify(fireboltStatement).close();
+  }
+
+  @Test
+  void shouldNotCloseStatementWhenNotCloseOnCompletion() throws SQLException {
+    when(fireboltStatement.isCloseOnCompletion()).thenReturn(false);
+    inputStream = getInputStreamWithArray();
+    resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535, fireboltStatement);
+    resultSet.close();
+    verifyNoMoreInteractions(fireboltStatement);
   }
 
   @Test
