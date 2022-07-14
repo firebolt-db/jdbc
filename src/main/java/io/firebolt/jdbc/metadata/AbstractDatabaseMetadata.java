@@ -1,6 +1,5 @@
 package io.firebolt.jdbc.metadata;
 
-import io.firebolt.jdbc.ProjectVersionUtil;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.FireboltResultSet;
 
@@ -46,21 +45,6 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
   @Override
   public boolean nullsAreSortedAtEnd() throws SQLException {
     return !nullsAreSortedAtStart();
-  }
-
-  @Override
-  public String getDriverVersion() throws SQLException {
-    return ProjectVersionUtil.getProjectVersion();
-  }
-
-  @Override
-  public int getDriverMajorVersion() {
-    return ProjectVersionUtil.getMajorVersion();
-  }
-
-  @Override
-  public int getDriverMinorVersion() {
-    return ProjectVersionUtil.getMinorVersion();
   }
 
   @Override
@@ -665,26 +649,6 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
   @Override
   public int getResultSetHoldability() throws SQLException {
     return 0;
-  }
-
-  @Override
-  public int getDatabaseMajorVersion() throws SQLException {
-    return 0;
-  }
-
-  @Override
-  public int getDatabaseMinorVersion() throws SQLException {
-    return 0;
-  }
-
-  @Override
-  public int getJDBCMajorVersion() throws SQLException {
-    return ProjectVersionUtil.getMajorVersion();
-  }
-
-  @Override
-  public int getJDBCMinorVersion() throws SQLException {
-    return ProjectVersionUtil.getMinorVersion();
   }
 
   @Override

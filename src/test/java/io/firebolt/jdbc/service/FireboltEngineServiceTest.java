@@ -2,14 +2,18 @@ package io.firebolt.jdbc.service;
 
 import io.firebolt.jdbc.client.account.FireboltAccountClient;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
+import io.firebolt.jdbc.exception.FireboltException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.sql.SQLException;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -66,5 +70,22 @@ class FireboltEngineServiceTest {
     verify(fireboltAccountClient).getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME);
     verify(fireboltAccountClient).getEngineAddress(HOST, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID);
     verifyNoMoreInteractions(fireboltAccountClient);
+  }
+
+  @Test
+  void shouldGetEngineNameFromEngineHost() throws SQLException {
+    assertEquals(
+        "myHost_345", fireboltEngineService.getEngineNameFromHost("myHost-345.firebolt.io"));
+  }
+
+  @Test
+  void shouldThrowExceptionWhenThEngineCannotBeEstablishedFromTheHost() {
+    assertThrows(
+        FireboltException.class, () -> fireboltEngineService.getEngineNameFromHost("myHost-345"));
+  }
+
+  @Test
+  void shouldThrowExceptionWhenThEngineCannotBeEstablishedFromNullHost() {
+    assertThrows(FireboltException.class, () -> fireboltEngineService.getEngineNameFromHost(null));
   }
 }

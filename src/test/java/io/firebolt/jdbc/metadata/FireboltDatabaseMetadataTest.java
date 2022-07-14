@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.InputStream;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -267,6 +268,37 @@ class FireboltDatabaseMetadataTest {
     verifyResultSetEquality(expectedResultSet, resultSet);
   }
 
+  @Test
+  void shouldGetDatabaseProductVersion() throws SQLException {
+    Statement statement = mock(FireboltStatement.class);
+    when(fireboltConnection.createStatement()).thenReturn(statement);
+    when(fireboltConnection.getEngine()).thenReturn("test");
+    when(statement.executeQuery("SELECT version FROM information_schema.engines WHERE engine_name iLIKE 'test%'"))
+        .thenReturn(new FireboltResultSet(getInputStreamForGetVersion()));
+    assertEquals("abcd_xxx_123", fireboltDatabaseMetadata.getDatabaseProductVersion());
+  }
+
+  @Test
+  void shouldGetDatabaseMajorVersion() throws SQLException {
+    Statement statement = mock(FireboltStatement.class);
+    when(fireboltConnection.createStatement()).thenReturn(statement);
+    when(fireboltConnection.getEngine()).thenReturn("test");
+    when(statement.executeQuery("SELECT version FROM information_schema.engines WHERE engine_name iLIKE 'test%'"))
+        .thenReturn(new FireboltResultSet(getInputStreamForGetVersion()));
+    assertEquals(0, fireboltDatabaseMetadata.getDatabaseMajorVersion());
+  }
+
+  @Test
+  void shouldGetDatabaseMinorVersion() throws SQLException {
+    Statement statement = mock(FireboltStatement.class);
+    when(fireboltConnection.createStatement()).thenReturn(statement);
+    when(fireboltConnection.getEngine()).thenReturn("test");
+    when(statement.executeQuery("SELECT version FROM information_schema.engines WHERE engine_name iLIKE 'test%'"))
+        .thenReturn(new FireboltResultSet(getInputStreamForGetVersion()));
+    assertEquals(0, fireboltDatabaseMetadata.getDatabaseMinorVersion());
+  }
+
+
   private void verifyResultSetEquality(ResultSet expected, ResultSet actual) throws SQLException {
     assertEquals(expected.getMetaData(), actual.getMetaData());
     while (expected.next()) {
@@ -291,6 +323,12 @@ class FireboltDatabaseMetadataTest {
     return FireboltDatabaseMetadata.class.getResourceAsStream(
         "/responses/metadata/firebolt-response-get-schemas-example");
   }
+
+  private InputStream getInputStreamForGetVersion() {
+    return FireboltDatabaseMetadata.class.getResourceAsStream(
+        "/responses/metadata/firebolt-response-get-version-example");
+  }
+
 
   private InputStream getExpectedTypeInfo() {
     return FireboltDatabaseMetadata.class.getResourceAsStream("/responses/metadata/expected-types");

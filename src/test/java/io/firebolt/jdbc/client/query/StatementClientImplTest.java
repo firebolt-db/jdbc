@@ -1,7 +1,7 @@
 package io.firebolt.jdbc.client.query;
 
 import com.google.common.collect.ImmutableMap;
-import io.firebolt.jdbc.ProjectVersionUtil;
+import io.firebolt.jdbc.VersionUtil;
 import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
@@ -16,6 +16,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junitpioneer.jupiter.SetSystemProperty;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -38,10 +39,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@SetSystemProperty(key = "java.version", value = "8.0.1")
+@SetSystemProperty(key = "os.version", value = "10.1")
+@SetSystemProperty(key = "os.name", value = "MacosX")
 @ExtendWith(MockitoExtension.class)
 class StatementClientImplTest {
 
-  private static MockedStatic<ProjectVersionUtil> mockedProjectVersionUtil;
+  private static MockedStatic<VersionUtil> mockedProjectVersionUtil;
 
   @Mock private CloseableHttpClient closeableHttpClient;
 
@@ -49,19 +53,13 @@ class StatementClientImplTest {
 
   @BeforeAll
   static void init() {
-    mockedProjectVersionUtil = mockStatic(ProjectVersionUtil.class);
-    mockedProjectVersionUtil.when(ProjectVersionUtil::getProjectVersion).thenReturn("1.0-TEST");
-    System.setProperty("java.version", "8.0.1");
-    System.setProperty("os.version", "10.1");
-    System.setProperty("os.name", "MacosX");
+    mockedProjectVersionUtil = mockStatic(VersionUtil.class);
+    mockedProjectVersionUtil.when(VersionUtil::getDriverVersion).thenReturn("1.0-TEST");
   }
 
   @AfterAll
   static void close() {
     mockedProjectVersionUtil.close();
-    System.clearProperty("java.version");
-    System.clearProperty("os.version");
-    System.clearProperty("os.name");
   }
 
   @Test

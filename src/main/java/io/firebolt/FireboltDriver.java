@@ -1,6 +1,6 @@
 package io.firebolt;
 
-import io.firebolt.jdbc.ProjectVersionUtil;
+import io.firebolt.jdbc.VersionUtil;
 import io.firebolt.jdbc.PropertyUtil;
 import io.firebolt.jdbc.connection.FireboltConnection;
 import lombok.extern.slf4j.Slf4j;
@@ -42,12 +42,12 @@ public class FireboltDriver implements Driver {
 
   @Override
   public int getMajorVersion() {
-    return ProjectVersionUtil.getMajorVersion();
+    return VersionUtil.getMajorDriverVersion();
   }
 
   @Override
   public int getMinorVersion() {
-    return ProjectVersionUtil.getMinorVersion();
+    return VersionUtil.getDriverMinorVersion();
   }
 
   @Override

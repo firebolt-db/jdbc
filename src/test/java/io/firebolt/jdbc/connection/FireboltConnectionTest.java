@@ -221,4 +221,19 @@ class FireboltConnectionTest {
             .getAdditionalProperties()
             .get("connector_versions"));
   }
+
+  @Test
+  void shouldGetEngineNameFromHost() throws SQLException {
+    when(fireboltEngineService.getEngineNameFromHost(any())).thenReturn("myHost_345");
+    FireboltConnection fireboltConnection =
+            new FireboltConnection(
+                    URL,
+                    connectionProperties,
+                    fireboltAuthenticationService,
+                    fireboltEngineService,
+                    fireboltStatementService);
+    assertEquals("myHost_345", fireboltConnection.getEngine());
+  }
+
+
 }

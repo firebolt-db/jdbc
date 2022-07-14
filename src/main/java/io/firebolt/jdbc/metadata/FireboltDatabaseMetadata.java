@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.metadata;
 
+import io.firebolt.jdbc.VersionUtil;
 import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.resultset.FireboltColumn;
@@ -25,6 +26,7 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 
   private final String url;
   private final FireboltConnection connection;
+  private String databaseVersion;
 
   public FireboltDatabaseMetadata(String url, FireboltConnection connection) {
     this.url = url;
@@ -78,11 +80,6 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
   @Override
   public String getDriverName() throws SQLException {
     return "Firebolt JDBC Driver";
-  }
-
-  @Override
-  public String getDatabaseProductVersion() throws SQLException {
-    return StringUtils.EMPTY;
   }
 
   @Override
@@ -324,6 +321,56 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
       return fireboltConnection.createStatement();
     }
   }
+
+  @Override
+  public int getDriverMajorVersion() {
+    return VersionUtil.getMajorDriverVersion();
+  }
+
+  @Override
+  public int getDriverMinorVersion() {
+    return VersionUtil.getDriverMinorVersion();
+  }
+
+  @Override
+  public String getDatabaseProductVersion() throws SQLException {
+    if (this.databaseVersion == null) {
+      String engine = this.connection.getEngine();
+      try (Statement statement = createStatementWithRequiredPropertiesToQuerySystem()) {
+        String query = MetadataUtil.getDatabaseVersionQuery(engine);
+        ResultSet rs = statement.executeQuery(query);
+        rs.next();
+        this.databaseVersion = rs.getString(1);
+      }
+    }
+    return this.databaseVersion;
+  }
+
+  @Override
+  public int getDatabaseMajorVersion() throws SQLException {
+    return VersionUtil.extractMajorVersion(getDatabaseProductVersion());
+  }
+
+  @Override
+  public int getDatabaseMinorVersion() throws SQLException {
+    return VersionUtil.extractMinorVersion(getDatabaseProductVersion());
+  }
+
+  @Override
+  public int getJDBCMajorVersion() throws SQLException {
+    return VersionUtil.getMajorDriverVersion();
+  }
+
+  @Override
+  public int getJDBCMinorVersion() throws SQLException {
+    return VersionUtil.getDriverMinorVersion();
+  }
+
+  @Override
+  public String getDriverVersion() throws SQLException {
+    return VersionUtil.getDriverVersion();
+  }
+
 
   public boolean isWrapperFor(Class<?> iface) throws SQLException {
     return iface.isAssignableFrom(getClass());

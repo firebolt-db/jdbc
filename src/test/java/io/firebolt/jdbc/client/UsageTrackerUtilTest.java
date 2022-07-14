@@ -1,10 +1,12 @@
 package io.firebolt.jdbc.client;
 
 import com.google.common.collect.ImmutableMap;
-import io.firebolt.jdbc.ProjectVersionUtil;
+import io.firebolt.jdbc.VersionUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ClearSystemProperty;
+import org.junitpioneer.jupiter.SetSystemProperty;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
@@ -19,9 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
+
+@SetSystemProperty(key = "java.version", value = "8.0.1")
+@SetSystemProperty(key = "os.version", value = "10.1")
+@ClearSystemProperty(key = "os.name")
 public class UsageTrackerUtilTest {
 
-  private static MockedStatic<ProjectVersionUtil> mockedProjectVersionUtil;
+  private static MockedStatic<VersionUtil> mockedProjectVersionUtil;
 
   private MockedStatic<UsageTrackerUtil> mockClients(
       Map<String, String> drivers, Map<String, String> clients) {
@@ -44,18 +50,14 @@ public class UsageTrackerUtilTest {
 
   @BeforeAll
   static void init() {
-    mockedProjectVersionUtil = mockStatic(ProjectVersionUtil.class);
-    mockedProjectVersionUtil.when(ProjectVersionUtil::getProjectVersion).thenReturn("1.0-TEST");
-    System.setProperty("java.version", "8.0.1");
-    System.setProperty("os.version", "10.1");
+    mockedProjectVersionUtil = mockStatic(VersionUtil.class);
+    mockedProjectVersionUtil.when(VersionUtil::getDriverVersion).thenReturn("1.0-TEST");
   }
 
   @AfterAll
   public static void close() {
     mockedProjectVersionUtil.reset();
     mockedProjectVersionUtil.close();
-    System.clearProperty("java.version");
-    System.clearProperty("os.version");
   }
 
   @Test

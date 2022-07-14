@@ -183,6 +183,10 @@ public class FireboltConnection extends AbstractConnection {
     return sessionProperties.getDatabase();
   }
 
+  public String getEngine() throws FireboltException {
+    return fireboltEngineService.getEngineNameFromHost(this.getSessionProperties().getHost());
+  }
+
   @Override
   public int getTransactionIsolation() throws SQLException {
     return Connection.TRANSACTION_NONE;

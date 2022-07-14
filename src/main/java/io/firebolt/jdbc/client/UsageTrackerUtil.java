@@ -1,7 +1,7 @@
 package io.firebolt.jdbc.client;
 
 import com.google.common.collect.ImmutableMap;
-import io.firebolt.jdbc.ProjectVersionUtil;
+import io.firebolt.jdbc.VersionUtil;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -99,7 +99,7 @@ public class UsageTrackerUtil {
     String result =
         mapToString(detectedClients)
             + " JDBC/"
-            + ProjectVersionUtil.getProjectVersion()
+            + VersionUtil.getDriverVersion()
             + " (Java "
             + javaVersion
             + "; "

@@ -6,32 +6,42 @@ import io.firebolt.jdbc.exception.FireboltException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Optional;
+
 @RequiredArgsConstructor
 public class FireboltEngineService {
   private final FireboltAccountClient fireboltAccountClient;
 
-  public String getEngineHost(String host, FireboltProperties loginProperties)
+  public String getEngineHost(String connectionUrl, FireboltProperties loginProperties)
       throws FireboltException {
     String accountId = null;
     try {
       if (StringUtils.isNotEmpty(loginProperties.getAccount())) {
         accountId =
             fireboltAccountClient
-                .getAccountId(host, loginProperties.getAccount())
+                .getAccountId(connectionUrl, loginProperties.getAccount())
                 .orElse(null);
       }
       if (StringUtils.isEmpty(loginProperties.getEngine()))
         return fireboltAccountClient.getDbDefaultEngineAddress(
-            host, accountId, loginProperties.getDatabase());
+            connectionUrl, accountId, loginProperties.getDatabase());
       String engineID =
           fireboltAccountClient.getEngineId(
-              host, accountId, loginProperties.getEngine());
+              connectionUrl, accountId, loginProperties.getEngine());
       return fireboltAccountClient.getEngineAddress(
-          host, accountId, loginProperties.getEngine(), engineID);
+          connectionUrl, accountId, loginProperties.getEngine(), engineID);
     } catch (FireboltException e) {
       throw e;
     } catch (Exception e) {
-      throw new FireboltException(String.format("Could not get engine host at %s", host), e);
+      throw new FireboltException(String.format("Could not get engine host at %s", connectionUrl), e);
     }
+  }
+
+  public String getEngineNameFromHost(String engineHost) throws FireboltException{
+    return Optional.ofNullable(engineHost)
+            .filter(host -> host.contains("."))
+            .map(host -> host.split("\\.")[0])
+            .map(host -> host.replace("-", "_"))
+            .orElseThrow(() -> new FireboltException(String.format("Could not establish the engine from the host: %s", engineHost)));
   }
 }

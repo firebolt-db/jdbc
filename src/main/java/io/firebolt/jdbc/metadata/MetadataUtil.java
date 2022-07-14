@@ -5,6 +5,7 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,9 +26,10 @@ public class MetadataUtil {
     Optional.ofNullable(catalog)
         .ifPresent(c -> conditions.add(String.format("catalog_name = '%s'", c)));
 
-//    Uncomment below once schemas are supported
-//    Optional.ofNullable(schemaPattern)
-//            .ifPresent(pattern -> conditions.add(String.format("schema_name LIKE '%s'", pattern)));
+    //    Uncomment below once schemas are supported
+    //    Optional.ofNullable(schemaPattern)
+    //            .ifPresent(pattern -> conditions.add(String.format("schema_name LIKE '%s'",
+    // pattern)));
 
     return queryBuilder.conditions(conditions).build().toSql();
   }
@@ -45,9 +47,10 @@ public class MetadataUtil {
         .ifPresent(pattern -> conditions.add(String.format("table_name LIKE '%s'", pattern)));
     Optional.ofNullable(columnNamePattern)
         .ifPresent(pattern -> conditions.add(String.format("column_name LIKE '%s'", pattern)));
-// Uncomment once schemas are supported
-//    Optional.ofNullable(schemaPattern)
-//        .ifPresent(pattern -> conditions.add(String.format("table_schema LIKE '%s'", pattern))); Schemas are not supported
+    // Uncomment once schemas are supported
+    //    Optional.ofNullable(schemaPattern)
+    //        .ifPresent(pattern -> conditions.add(String.format("table_schema LIKE '%s'",
+    // pattern))); Schemas are not supported
     return queryBuilder.conditions(conditions).build().toSql();
   }
 
@@ -70,17 +73,20 @@ public class MetadataUtil {
             .select("table_catalog, table_schema, table_name")
             .from("information_schema.views");
 
-    List<String> conditions = getConditionsForTablesAndViews(catalog, schemaPattern, tableNamePattern);
+    List<String> conditions =
+        getConditionsForTablesAndViews(catalog, schemaPattern, tableNamePattern);
 
     queryBuilder.orderBy("table_schema, table_name");
     return queryBuilder.conditions(conditions).build().toSql();
   }
 
   @NonNull
-  private List<String> getConditionsForTablesAndViews(String catalog, String schema, String tableName) {
+  private List<String> getConditionsForTablesAndViews(
+      String catalog, String schema, String tableName) {
     List<String> conditions = new ArrayList<>();
-//    Optional.ofNullable(schema)
-//        .ifPresent(pattern -> conditions.add(String.format("table_schema LIKE '%s'", pattern)));
+    //    Optional.ofNullable(schema)
+    //        .ifPresent(pattern -> conditions.add(String.format("table_schema LIKE '%s'",
+    // pattern)));
 
     Optional.ofNullable(tableName)
         .ifPresent(pattern -> conditions.add(String.format("table_name LIKE '%s'", pattern)));
@@ -88,5 +94,14 @@ public class MetadataUtil {
     Optional.ofNullable(catalog)
         .ifPresent(pattern -> conditions.add(String.format("table_catalog LIKE '%s'", pattern)));
     return conditions;
+  }
+
+  public static String getDatabaseVersionQuery(String engine) {
+    return Query.builder()
+        .select("version")
+        .from("information_schema.engines")
+        .conditions(Collections.singletonList(String.format("engine_name iLIKE '%s%%'", engine)))
+        .build()
+        .toSql();
   }
 }
