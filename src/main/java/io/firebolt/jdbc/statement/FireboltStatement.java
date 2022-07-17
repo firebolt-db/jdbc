@@ -28,13 +28,11 @@ public class FireboltStatement extends AbstractStatement {
       "KILL QUERY ON CLUSTER sql_cluster WHERE initial_query_id='%s'";
   private final FireboltStatementService statementService;
   private final FireboltProperties sessionProperties;
-  private String statementId;
-
+  private String runningStatementId;
   private boolean closeOnCompletion;
-  int currentUpdateCount;
-
-  int maxRows;
-  boolean isClosed;
+  private int currentUpdateCount;
+  private int maxRows;
+  private volatile boolean isClosed;
 
   private ResultSet resultSet;
 
@@ -63,21 +61,23 @@ public class FireboltStatement extends AbstractStatement {
   }
 
   public ResultSet execute(String sql, Map<String, String> statementParams) throws SQLException {
-    this.validateStatementIsNotClosed();
-    this.statementId = UUID.randomUUID().toString();
+    synchronized (this) {
+      this.validateStatementIsNotClosed();
+    }
+    this.runningStatementId = UUID.randomUUID().toString();
     InputStream inputStream = null;
     try {
-      log.info("Executing the statement with id {} : {}", this.statementId, sql);
+      log.info("Executing the statement with id {} : {}", this.runningStatementId, sql);
       if (resultSet != null && !this.resultSet.isClosed()) {
         this.resultSet.close();
         this.resultSet = null;
         log.info(
             "There was already an opened ResultSet for the statement object. The ResultSet is now closed.");
       }
-      StatementInfoWrapper statementInfo = StatementUtil.extractStatementInfo(sql, statementId);
+      StatementInfoWrapper statementInfo = StatementUtil.extractStatementInfo(sql, runningStatementId);
       if (statementInfo.getType() == StatementInfoWrapper.StatementType.PARAM_SETTING) {
         this.connection.addProperty(statementInfo.getParam());
-        log.debug("The property from the query {} was stored", this.statementId);
+        log.debug("The property from the query {} was stored", this.runningStatementId);
       } else {
         Map<String, String> params =
             statementParams != null ? statementParams : this.getStatementParameters();
@@ -98,13 +98,15 @@ public class FireboltStatement extends AbstractStatement {
           currentUpdateCount = 0;
           CloseableUtils.close(inputStream);
         }
-        log.info("The query with the id {} was executed with success", this.statementId);
+        log.info("The query with the id {} was executed with success", this.runningStatementId);
       }
     } catch (Exception ex) {
       CloseableUtils.close(inputStream);
       log.error(
-          "An error happened while executing the statement with the id {}", this.statementId, ex);
+          "An error happened while executing the statement with the id {}", this.runningStatementId, ex);
       throw ex;
+    } finally {
+      this.runningStatementId = null;
     }
     return resultSet;
   }
@@ -123,14 +125,12 @@ public class FireboltStatement extends AbstractStatement {
 
   @Override
   public void cancel() throws SQLException {
-    if (statementId == null || isClosed()) {
-      log.warn("Cannot cancel query as there is no query running");
-    } else {
-      log.debug("Cancelling query with id {}", statementId);
+    if (runningStatementId != null) {
+      log.debug("Cancelling statement with id {}", runningStatementId);
       try {
-        statementService.abortStatementHttpRequest(statementId);
+        statementService.abortStatementHttpRequest(runningStatementId);
       } finally {
-        abortStatementRunningOnFirebolt(statementId);
+        abortStatementRunningOnFirebolt(runningStatementId);
       }
     }
   }
@@ -144,9 +144,9 @@ public class FireboltStatement extends AbstractStatement {
       } else {
         statementService.abortStatement(statementId, this.sessionProperties);
       }
-      log.debug("Query with id {} was cancelled", statementId);
+      log.debug("Statement with id {} was aborted", statementId);
     } catch (Exception e) {
-      throw new FireboltException("Could not cancel query", e);
+      throw new FireboltException("Could not abort statement", e);
     } finally {
       synchronized (connection) {
         connection.notifyAll();
@@ -201,18 +201,23 @@ public class FireboltStatement extends AbstractStatement {
     close(true);
   }
 
-  public synchronized void close(boolean removeFromConnection) throws SQLException {
-    if (!this.isClosed) {
-      this.isClosed = true;
-      if (resultSet != null && !resultSet.isClosed()) {
-        resultSet.close();
-        resultSet = null;
+  public void close(boolean removeFromConnection) throws SQLException {
+    synchronized (this) {
+      if (isClosed) {
+        return;
       }
-      log.debug("Statement closed");
-      if (removeFromConnection) {
-        connection.removeClosedStatement(this);
-      }
+      isClosed = true;
     }
+    if (resultSet != null && !resultSet.isClosed()) {
+      resultSet.close();
+      resultSet = null;
+    }
+
+    if (removeFromConnection) {
+      connection.removeClosedStatement(this);
+    }
+    cancel();
+    log.debug("Statement closed");
   }
 
   @Override

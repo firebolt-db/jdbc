@@ -5,6 +5,7 @@ import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.FireboltResultSet;
 import io.firebolt.jdbc.service.FireboltStatementService;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,7 +57,9 @@ class FireboltStatementTest {
       assertEquals(1, mocked.constructed().size());
       assertEquals(-1, fireboltStatement.getUpdateCount());
       assertEquals("show database", queryInfoWrapperArgumentCaptor.getValue().getSql());
-      assertEquals(queryInfoWrapperArgumentCaptor.getValue().getType(), StatementInfoWrapper.StatementType.QUERY);
+      assertEquals(
+          queryInfoWrapperArgumentCaptor.getValue().getType(),
+          StatementInfoWrapper.StatementType.QUERY);
     }
   }
 
@@ -81,8 +85,10 @@ class FireboltStatementTest {
     }
   }
 
+  @SneakyThrows
   @Test
-  void shouldCancelByQueryWhenAggressiveCancelIsEnabled() throws SQLException, IOException {
+  void shouldCancelByQueryWhenAggressiveCancelIsEnabled()
+      throws SQLException, IOException, NoSuchFieldException {
     try (MockedConstruction<FireboltResultSet> mockedResultSet =
         Mockito.mockConstruction(FireboltResultSet.class)) {
 
@@ -100,24 +106,23 @@ class FireboltStatementTest {
               .connection(fireboltConnection)
               .build();
 
-      when(fireboltStatementService.execute(any(), any(), any()))
-          .thenReturn(mock(InputStream.class));
-      fireboltStatement.executeQuery("SHOW DATABASE"); // call once to create queryId
+      Field runningStatementField = FireboltStatement.class.getDeclaredField("runningStatementId");
+      runningStatementField.setAccessible(true);
+      runningStatementField.set(fireboltStatement, "1234");
       fireboltStatement.cancel();
-      verify(fireboltStatementService, times(2))
+      verify(fireboltStatementService, times(1))
           .execute(
               queryInfoWrapperArgumentCaptor.capture(),
               fireboltPropertiesArgumentCaptor.capture(),
               mapArgumentCaptor.capture());
       assertEquals(
-          "KILL QUERY ON CLUSTER sql_cluster WHERE initial_query_id='"
-              + queryInfoWrapperArgumentCaptor.getAllValues().get(0).getId()
-              + "'",
-          queryInfoWrapperArgumentCaptor.getAllValues().get(1).getSql());
+          "KILL QUERY ON CLUSTER sql_cluster WHERE initial_query_id='1234'",
+          queryInfoWrapperArgumentCaptor.getValue().getSql());
       assertEquals(String.valueOf(0), mapArgumentCaptor.getValue().get("use_standard_sql"));
     }
   }
 
+  @SneakyThrows
   @Test
   void shouldCancelByApiCallWhenAggressiveCancelIsDisabled() throws SQLException, IOException {
     try (MockedConstruction<FireboltResultSet> mockedResultSet =
@@ -133,9 +138,9 @@ class FireboltStatementTest {
               .connection(fireboltConnection)
               .build();
 
-      when(fireboltStatementService.execute(any(), any(), any()))
-          .thenReturn(mock(InputStream.class));
-      fireboltStatement.executeQuery("SHOW DATABASE"); // call once to create queryId
+      Field runningStatementField = FireboltStatement.class.getDeclaredField("runningStatementId");
+      runningStatementField.setAccessible(true);
+      runningStatementField.set(fireboltStatement, "1234");
       fireboltStatement.cancel();
       verify(fireboltStatementService).abortStatement(any(), eq(fireboltProperties));
     }
@@ -165,23 +170,23 @@ class FireboltStatementTest {
     }
   }
 
-
   @Test
   void shouldThrowAnExceptionWhenExecutingQueryOnANonQueryStatement() throws SQLException {
     try (MockedConstruction<FireboltResultSet> mockedResultSet =
-                 Mockito.mockConstruction(FireboltResultSet.class)) {
+        Mockito.mockConstruction(FireboltResultSet.class)) {
       FireboltConnection connection = mock(FireboltConnection.class);
       FireboltProperties fireboltProperties =
-              FireboltProperties.builder().additionalProperties(new HashMap<>()).build();
+          FireboltProperties.builder().additionalProperties(new HashMap<>()).build();
 
       FireboltStatement fireboltStatement =
-              FireboltStatement.builder()
-                      .statementService(fireboltStatementService)
-                      .sessionProperties(fireboltProperties)
-                      .connection(connection)
-                      .build();
+          FireboltStatement.builder()
+              .statementService(fireboltStatementService)
+              .sessionProperties(fireboltProperties)
+              .connection(connection)
+              .build();
 
-      assertThrows(FireboltException.class, () -> fireboltStatement.executeQuery("set custom_1 = 1"));
+      assertThrows(
+          FireboltException.class, () -> fireboltStatement.executeQuery("set custom_1 = 1"));
     }
   }
 }

@@ -170,7 +170,7 @@ public class FireboltConnection extends AbstractConnection {
   }
 
   @Override
-  public boolean isClosed() throws SQLException {
+  public boolean isClosed() {
     return this.closed;
   }
 
@@ -211,18 +211,23 @@ public class FireboltConnection extends AbstractConnection {
   }
 
   @Override
-  public void setSchema(String schema) throws SQLException {
+  public void setSchema(String schema) {
     sessionProperties = sessionProperties.toBuilder().database(schema).build();
   }
 
   @Override
   public void abort(Executor executor) throws SQLException {
-    log.debug("Aborting connection");
-    this.close();
+    validateConnectionIsNotClose();
+    if (executor == null) {
+      throw new FireboltException("Cannot abort: the executor is null");
+    }
+    if (!this.closed) {
+      executor.execute(this::close);
+    }
   }
 
   @Override
-  public void close() throws SQLException {
+  public void close() {
     log.debug("Closing connection");
     synchronized (statements) {
       if (!this.isClosed()) {
