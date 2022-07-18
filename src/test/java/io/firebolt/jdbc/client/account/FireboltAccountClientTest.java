@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.apache.hc.core5.http.HttpStatus.SC_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -61,7 +62,6 @@ class FireboltAccountClientTest {
   private FireboltAccountClient fireboltAccountClient;
 
   @Mock private FireboltConnection fireboltConnection;
-
 
   @BeforeAll
   static void init() {
@@ -231,7 +231,7 @@ class FireboltAccountClientTest {
   @Test
   void shouldThrowExceptionWhenStatusCodeIsNotFound() throws Exception {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
-    when(response.getCode()).thenReturn(HttpStatus.SC_NOT_FOUND);
+    when(response.getCode()).thenReturn(SC_NOT_FOUND);
     when(httpClient.execute(any())).thenReturn(response);
     assertThrows(FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT));
   }
@@ -245,6 +245,41 @@ class FireboltAccountClientTest {
     when(httpClient.execute(any())).thenReturn(response);
 
     assertThrows(FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT));
+  }
+
+  @Test
+  void shouldThrowExceptionWithDBNotFoundErrorMessageWhenDBIsNotFound() throws Exception {
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+    when(response.getCode()).thenReturn(SC_NOT_FOUND);
+    when(httpClient.execute(any())).thenReturn(response);
+    assertThrows(
+        FireboltException.class,
+        () -> fireboltAccountClient.getDbDefaultEngineAddress(HOST, ACCOUNT, DB_NAME),
+        "The DB dbName could not be found");
+  }
+
+  @Test
+  void shouldThrowExceptionWithEngineNotFoundErrorMessageWhenEngineAddressIsNotFound()
+      throws Exception {
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+    when(response.getCode()).thenReturn(SC_NOT_FOUND);
+    when(httpClient.execute(any())).thenReturn(response);
+    assertThrows(
+        FireboltException.class,
+        () -> fireboltAccountClient.getEngineAddress(HOST, ACCOUNT, ENGINE_NAME, "123"),
+        "The address of the engine with name engineName and id 123 could not be found");
+  }
+
+  @Test
+  void shouldThrowExceptionWithEngineNotFoundErrorMessageWhenEngineIdIsNotFound()
+          throws Exception {
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+    when(response.getCode()).thenReturn(SC_NOT_FOUND);
+    when(httpClient.execute(any())).thenReturn(response);
+    assertThrows(
+            FireboltException.class,
+            () -> fireboltAccountClient.getEngineId(HOST, ACCOUNT, ENGINE_NAME),
+            "The address of the engine with name engineName could not be found");
   }
 
   private Map<String, String> extractHeadersMap(HttpGet httpGet) {

@@ -33,7 +33,8 @@ import java.util.stream.Collectors;
 
 import static io.firebolt.jdbc.exception.ExceptionType.EXPIRED_TOKEN;
 import static io.firebolt.jdbc.exception.ExceptionType.RESOURCE_NOT_FOUND;
-import static java.net.HttpURLConnection.*;
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
+import static org.apache.hc.core5.http.HttpStatus.*;
 
 @Getter
 @Slf4j
@@ -127,23 +128,23 @@ public abstract class FireboltClient {
       throws FireboltException {
     int statusCode = response.getCode();
     if (!isCallSuccessful(statusCode)) {
-      if (statusCode == HTTP_UNAVAILABLE) {
+      if (statusCode == SC_SERVICE_UNAVAILABLE) {
         throw new FireboltException(
             String.format(
                 "Could not query Firebolt at %s. The engine is not running. Status code: %d",
                 host, HTTP_FORBIDDEN));
-      } else if (statusCode == HTTP_UNAUTHORIZED) {
+      } else if (statusCode == SC_UNAUTHORIZED) {
         this.getConnection().removeExpiredTokens();
         throw new FireboltException(
             String.format(
                 "Could not query Firebolt at %s. The token is expired and has been cleared", host),
             EXPIRED_TOKEN);
-      } else if (statusCode == HTTP_NOT_FOUND) {
+      } else if (statusCode == SC_NOT_FOUND) {
         throw new FireboltException(
             String.format(
                 "Could not query Firebolt at %s. The resource could not be found. Status code: %d",
-                host, HTTP_NOT_FOUND),
-                RESOURCE_NOT_FOUND);
+                host, SC_NOT_FOUND),
+            RESOURCE_NOT_FOUND);
       }
       String errorResponseMessage;
       try {
@@ -152,7 +153,6 @@ public abstract class FireboltClient {
             String.format(
                 "Server failed to execute query with the following error:%n%s%ninternal error:%n%s",
                 errorFromResponse, this.getInternalErrorWithHeadersText(response));
-
         throw new FireboltException(errorResponseMessage);
       } catch (ParseException | IOException e) {
         log.warn("Could not parse response containing the error message from Firebolt", e);
@@ -167,16 +167,19 @@ public abstract class FireboltClient {
 
   private String extractErrorMessage(HttpEntity entity, boolean isCompress)
       throws IOException, ParseException {
+    byte[] entityBytes = EntityUtils.toByteArray(entity);
     if (isCompress) {
-      InputStream is =
-          new LZ4InputStream(new ByteArrayInputStream(EntityUtils.toByteArray(entity)));
-      return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
-              .lines()
-              .collect(Collectors.joining("\n"))
-          + "\n";
-    } else {
-      return EntityUtils.toString(entity);
+      try {
+        InputStream is = new LZ4InputStream(new ByteArrayInputStream(entityBytes));
+        return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
+                .lines()
+                .collect(Collectors.joining("\n"))
+            + "\n";
+      } catch (Exception e) {
+        log.warn("Could not decompress error from server");
+      }
     }
+    return entityBytes != null ? new String(entityBytes, StandardCharsets.UTF_8) : null;
   }
 
   private boolean isCallSuccessful(int statusCode) {
@@ -198,10 +201,7 @@ public abstract class FireboltClient {
   }
 
   private String getInternalErrorWithHeadersText(CloseableHttpResponse response) {
-    StringBuilder stringBuilder = new StringBuilder(response.toString());
-    stringBuilder.append("\n");
-    stringBuilder.append(Arrays.toString(response.getHeaders()));
-    return stringBuilder.toString();
+    return response.toString() + "\n" + Arrays.toString(response.getHeaders());
   }
 
   private RequestConfig createRequestConfig(int connectionTimeoutMillis, int networkTimoutMillis) {

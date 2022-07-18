@@ -18,7 +18,7 @@ class VersionUtilTest {
 
   @Test
   void shouldGetProjectVersion() {
-    assertEquals("2.5-SNAPSHOT", VersionUtil.getDriverVersion());
+    assertEquals("2.5-TEST-SNAPSHOT", VersionUtil.getDriverVersion());
   }
 
   @Test

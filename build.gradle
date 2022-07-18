@@ -4,7 +4,11 @@ plugins {
 }
 
 group 'io.firebolt'
-version '2.0-SNAPSHOT'
+
+def props = new Properties()
+file("src/main/resources/config.properties").withInputStream { props.load(it) }
+
+version = props.getProperty("version")
 
 repositories {
     mavenCentral()
