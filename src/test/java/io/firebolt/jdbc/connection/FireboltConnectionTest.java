@@ -235,5 +235,31 @@ class FireboltConnectionTest {
     assertEquals("myHost_345", fireboltConnection.getEngine());
   }
 
+  @Test
+  void shouldInitNetworkTimeoutWithPropertyByDefault() throws SQLException {
+    connectionProperties.put("socket_timeout_millis", "60");
+    FireboltConnection fireboltConnection =
+            new FireboltConnection(
+                    URL,
+                    connectionProperties,
+                    fireboltAuthenticationService,
+                    fireboltEngineService,
+                    fireboltStatementService);
+    assertEquals(60, fireboltConnection.getNetworkTimeout());
+  }
+
+  @Test
+  void shouldInitConnectionTimeoutWithPropertyByDefault() throws SQLException {
+    connectionProperties.put("connection_timeout_millis", "50");
+    FireboltConnection fireboltConnection =
+            new FireboltConnection(
+                    URL,
+                    connectionProperties,
+                    fireboltAuthenticationService,
+                    fireboltEngineService,
+                    fireboltStatementService);
+    assertEquals(50, fireboltConnection.getConnectionTimeout());
+  }
+
 
 }

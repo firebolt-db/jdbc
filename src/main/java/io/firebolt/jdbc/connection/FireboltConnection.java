@@ -48,6 +48,10 @@ public class FireboltConnection extends AbstractConnection {
 
   private static final String LOCALHOST = "localhost";
 
+  private int networkTimeout;
+
+  private final int connectionTimeout;
+
   public FireboltConnection(
       @NonNull String url,
       Properties connectionSettings,
@@ -62,6 +66,8 @@ public class FireboltConnection extends AbstractConnection {
     this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
     this.fireboltStatementService = fireboltStatementService;
     this.statements = new ArrayList<>();
+    this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
+    this.networkTimeout = loginProperties.getSocketTimeoutMillis();
     this.connect();
   }
 
@@ -82,8 +88,10 @@ public class FireboltConnection extends AbstractConnection {
                 httpClient, objectMapper, this, driverVersions, clientVersions));
     this.fireboltStatementService =
         new FireboltStatementService(
-            new StatementClientImpl(httpClient, this, driverVersions, clientVersions));
+            new StatementClientImpl(httpClient, this, objectMapper, driverVersions, clientVersions));
     this.statements = new ArrayList<>();
+    this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
+    this.networkTimeout = loginProperties.getSocketTimeoutMillis();
     this.connect();
   }
 
@@ -229,8 +237,14 @@ public class FireboltConnection extends AbstractConnection {
   @Override
   public void close() {
     log.debug("Closing connection");
+    synchronized (this) {
+      if (this.isClosed()) {
+        return;
+      } else {
+        closed = true;
+      }
+    }
     synchronized (statements) {
-      if (!this.isClosed()) {
         for (FireboltStatement statement : this.statements) {
           try {
             statement.close(false);
@@ -238,9 +252,7 @@ public class FireboltConnection extends AbstractConnection {
             log.warn("Could not close statement", e);
           }
         }
-      }
       statements.clear();
-      closed = true;
     }
     log.debug("Connection closed");
   }
@@ -406,5 +418,20 @@ public class FireboltConnection extends AbstractConnection {
       return iface.cast(this);
     }
     throw new SQLException("Cannot unwrap to " + iface.getName());
+  }
+
+  @Override
+  public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
+    validateConnectionIsNotClose();
+    this.networkTimeout = milliseconds;
+  }
+
+  @Override
+  public int getNetworkTimeout() {
+    return this.networkTimeout;
+  }
+
+  public int getConnectionTimeout() {
+    return this.connectionTimeout;
   }
 }

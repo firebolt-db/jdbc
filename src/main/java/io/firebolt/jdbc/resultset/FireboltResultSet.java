@@ -7,7 +7,6 @@ import io.firebolt.jdbc.resultset.type.BaseType;
 import io.firebolt.jdbc.resultset.type.FireboltDataType;
 import io.firebolt.jdbc.resultset.type.array.FireboltArray;
 import io.firebolt.jdbc.statement.FireboltStatement;
-import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;

@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.client.query;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.firebolt.jdbc.client.FireboltClient;
 import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.FireboltConnectionTokens;
@@ -13,7 +14,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
@@ -36,9 +36,10 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
   public StatementClientImpl(
       CloseableHttpClient httpClient,
       FireboltConnection connection,
+      ObjectMapper objectMapper,
       String customDrivers,
       String customClients) {
-    super(httpClient, connection, customDrivers, customClients);
+    super(httpClient, connection, customDrivers, customClients, objectMapper);
   }
 
   @Override
@@ -47,15 +48,13 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
       @NonNull FireboltProperties connectionProperties,
       Map<String, String> statementParams)
       throws FireboltException {
-    HttpEntity requestEntity = null;
     String formattedStatement = formatStatement(statementInfoWrapper.getSql());
-    try {
+    try (StringEntity entity = new StringEntity(formattedStatement, StandardCharsets.UTF_8)) {
       List<NameValuePair> parameters =
           statementParams.entrySet().stream()
               .map(e -> new BasicNameValuePair(e.getKey(), e.getValue()))
               .collect(Collectors.toList());
       String uri = this.buildQueryUri(connectionProperties, parameters).toString();
-      requestEntity = new StringEntity(formattedStatement, StandardCharsets.UTF_8);
       HttpPost post =
           this.createPostRequest(
               uri,
@@ -64,17 +63,14 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
                   .map(FireboltConnectionTokens::getAccessToken)
                   .orElse(null));
       runningQueries.put(statementInfoWrapper.getId(), post);
-      post.setEntity(requestEntity);
+      post.setEntity(entity);
       log.debug("Posting statement with id {} to URI: {}", statementInfoWrapper.getId(), uri);
-      CloseableHttpResponse response = this.getHttpClient().execute(post);
-      validateResponse(connectionProperties.getHost(), response, connectionProperties.isCompress());
-      log.debug("Statement with id {} was successfully posted", statementInfoWrapper.getId());
+      CloseableHttpResponse response =
+          this.execute(post, connectionProperties.getHost(), connectionProperties.isCompress());
       return response.getEntity().getContent();
     } catch (FireboltException e) {
-      EntityUtils.consumeQuietly(requestEntity);
       throw e;
     } catch (Exception e) {
-      EntityUtils.consumeQuietly(requestEntity);
       throw new FireboltException(
           String.format("Error executing statement %s", formattedStatement), e);
     } finally {
@@ -108,10 +104,9 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
                   .getConnectionTokens()
                   .map(FireboltConnectionTokens::getAccessToken)
                   .orElse(null));
-      CloseableHttpResponse response = this.getHttpClient().execute(post);
-      validateResponse(fireboltProperties.getHost(), response);
-      EntityUtils.consumeQuietly(response.getEntity());
-
+      try (CloseableHttpResponse response = this.execute(post, fireboltProperties.getHost())) {
+        EntityUtils.consumeQuietly(response.getEntity());
+      }
     } catch (Exception e) {
       throw new FireboltException(
           String.format("Could not cancel query: %s at %s", id, fireboltProperties.getHost()), e);

@@ -49,7 +49,7 @@ class FireboltStatementServiceTest {
                 "query_id",
                 "id",
                 "compress",
-                "true",
+                "1",
                 "param_1",
                 "value_1"));
   }
@@ -80,7 +80,7 @@ class FireboltStatementServiceTest {
                 "query_id",
                 "id",
                 "compress",
-                "true",
+                "1",
                 "param_1",
                 "value_1"));
   }

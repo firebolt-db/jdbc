@@ -6,16 +6,21 @@ import io.firebolt.jdbc.connection.FireboltConnectionTokens;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.cookie.StandardCookieSpec;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.util.Timeout;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -23,9 +28,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static io.firebolt.jdbc.exception.ExceptionType.EXPIRED_TOKEN;
+import static io.firebolt.jdbc.exception.ExceptionType.RESOURCE_NOT_FOUND;
 import static java.net.HttpURLConnection.*;
 
 @Getter
@@ -41,25 +48,23 @@ public abstract class FireboltClient {
 
   private final FireboltConnection connection;
 
+  protected final ObjectMapper objectMapper;
+
   protected FireboltClient(
       CloseableHttpClient httpClient,
       FireboltConnection connection,
       String customDrivers,
-      String customClients) {
+      String customClients,
+      ObjectMapper objectMapper) {
     this.httpClient = httpClient;
     this.connection = connection;
+    this.objectMapper = objectMapper;
     this.headerUserAgentValue =
         UsageTrackerUtil.getUserAgentString(
             customDrivers != null ? customDrivers : "", customClients != null ? customClients : "");
   }
 
-  protected <T> T getResource(
-      String uri,
-      String host,
-      CloseableHttpClient httpClient,
-      ObjectMapper objectMapper,
-      Class<T> valueType,
-      boolean isCompress)
+  protected <T> T getResource(String uri, String host, Class<T> valueType)
       throws IOException, ParseException, FireboltException {
     HttpGet httpGet =
         createGetRequest(
@@ -68,35 +73,51 @@ public abstract class FireboltClient {
                 .getConnectionTokens()
                 .map(FireboltConnectionTokens::getAccessToken)
                 .orElse(null));
-    try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-      this.validateResponse(host, response, isCompress);
+    try (CloseableHttpResponse response = this.execute(httpGet, host)) {
       String responseStr = EntityUtils.toString(response.getEntity());
       return objectMapper.readValue(responseStr, valueType);
-    } catch (Exception e) {
-      EntityUtils.consumeQuietly(httpGet.getEntity());
-      throw e;
     }
-  }
-
-  protected <T> T getResource(
-          String uri,
-          String host,
-          CloseableHttpClient httpClient,
-          ObjectMapper objectMapper,
-          Class<T> valueType)
-          throws IOException, ParseException, FireboltException {
-    return this.getResource(uri, host, httpClient, objectMapper, valueType, false);
   }
 
   private HttpGet createGetRequest(String uri, String accessToken) {
     HttpGet httpGet = new HttpGet(uri);
+    httpGet.setConfig(
+        createRequestConfig(
+            this.connection.getConnectionTimeout(), this.connection.getNetworkTimeout()));
     this.createHeaders(accessToken)
         .forEach(header -> httpGet.addHeader(header.getLeft(), header.getRight()));
     return httpGet;
   }
 
+  protected CloseableHttpResponse execute(
+      @NonNull HttpUriRequestBase httpUriRequestBase, String host)
+      throws IOException, FireboltException {
+    return execute(httpUriRequestBase, host, false);
+  }
+
+  protected CloseableHttpResponse execute(
+      @NonNull HttpUriRequestBase httpUriRequestBase, String host, boolean isCompress)
+      throws IOException, FireboltException {
+    CloseableHttpResponse response;
+    try {
+      response = this.getHttpClient().execute(httpUriRequestBase);
+      validateResponse(host, response, isCompress);
+    } catch (Exception e) {
+      EntityUtils.consumeQuietly(httpUriRequestBase.getEntity());
+      throw e;
+    }
+    return response;
+  }
+
+  protected HttpPost createPostRequest(String uri) {
+    return createPostRequest(uri, null);
+  }
+
   protected HttpPost createPostRequest(String uri, String accessToken) {
     HttpPost httpPost = new HttpPost(uri);
+    httpPost.setConfig(
+        createRequestConfig(
+            this.connection.getConnectionTimeout(), this.connection.getNetworkTimeout()));
     this.createHeaders(accessToken)
         .forEach(header -> httpPost.addHeader(header.getLeft(), header.getRight()));
     return httpPost;
@@ -117,6 +138,12 @@ public abstract class FireboltClient {
             String.format(
                 "Could not query Firebolt at %s. The token is expired and has been cleared", host),
             EXPIRED_TOKEN);
+      } else if (statusCode == HTTP_NOT_FOUND) {
+        throw new FireboltException(
+            String.format(
+                "Could not query Firebolt at %s. The resource could not be found. Status code: %d",
+                host, HTTP_NOT_FOUND),
+                RESOURCE_NOT_FOUND);
       }
       String errorResponseMessage;
       try {
@@ -136,11 +163,6 @@ public abstract class FireboltClient {
         throw new FireboltException(errorResponseMessage, e);
       }
     }
-  }
-
-  protected void validateResponse(String host, CloseableHttpResponse response)
-          throws FireboltException {
-    this.validateResponse(host, response, false);
   }
 
   private String extractErrorMessage(HttpEntity entity, boolean isCompress)
@@ -180,5 +202,13 @@ public abstract class FireboltClient {
     stringBuilder.append("\n");
     stringBuilder.append(Arrays.toString(response.getHeaders()));
     return stringBuilder.toString();
+  }
+
+  private RequestConfig createRequestConfig(int connectionTimeoutMillis, int networkTimoutMillis) {
+    return RequestConfig.custom()
+        .setConnectTimeout(Timeout.of(connectionTimeoutMillis, TimeUnit.MILLISECONDS))
+        .setCookieSpec(StandardCookieSpec.RELAXED)
+        .setResponseTimeout(Timeout.ofMilliseconds(networkTimoutMillis))
+        .build();
   }
 }

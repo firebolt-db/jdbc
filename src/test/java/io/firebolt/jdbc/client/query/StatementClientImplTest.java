@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.client.query;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.firebolt.jdbc.VersionUtil;
 import io.firebolt.jdbc.connection.FireboltConnection;
@@ -66,12 +67,22 @@ class StatementClientImplTest {
   void shouldPostSqlQueryWithExpectedUrl()
       throws FireboltException, IOException, URISyntaxException {
     FireboltProperties fireboltProperties =
-        FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(80).build();
+        FireboltProperties.builder()
+            .database("db1")
+            .compress(true)
+            .host("firebolt1")
+            .port(80)
+            .build();
     FireboltConnection connection = mock(FireboltConnection.class);
     when(connection.getConnectionTokens())
         .thenReturn(Optional.of(FireboltConnectionTokens.builder().accessToken("token").build()));
     StatementClient statementClient =
-        new StatementClientImpl(closeableHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
+        new StatementClientImpl(
+            closeableHttpClient,
+            connection,
+            mock(ObjectMapper.class),
+            "ConnA:1.0.9",
+            "ConnB:2.0.9");
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
     HttpEntity httpEntity = mock(HttpEntity.class);
     when(response.getCode()).thenReturn(200);
@@ -114,9 +125,15 @@ class StatementClientImplTest {
   @Test
   void shouldCancelSqlQuery() throws FireboltException, IOException, URISyntaxException {
     FireboltProperties fireboltProperties =
-        FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(80).build();
+        FireboltProperties.builder()
+            .database("db1")
+            .compress(true)
+            .host("firebolt1")
+            .port(80)
+            .build();
     StatementClient statementClient =
-        new StatementClientImpl(closeableHttpClient, mock(FireboltConnection.class), "", "");
+        new StatementClientImpl(
+            closeableHttpClient, mock(FireboltConnection.class), mock(ObjectMapper.class), "", "");
 
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
     when(response.getCode()).thenReturn(200);

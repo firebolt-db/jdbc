@@ -63,7 +63,7 @@ public class FireboltStatementService {
 
     params.put("database", fireboltProperties.getDatabase());
     params.put("query_id", statementInfoWrapper.getId());
-    params.put("compress", String.format("%s", fireboltProperties.isCompress()));
+    params.put("compress", String.format("%d", fireboltProperties.isCompress() ? 1 : 0));
     Optional.ofNullable(statementParams).ifPresent(params::putAll);
     return params;
   }

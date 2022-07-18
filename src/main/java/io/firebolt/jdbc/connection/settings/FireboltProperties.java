@@ -104,7 +104,6 @@ public class FireboltProperties {
         .user(user)
         .password(password)
         .host(host)
-        .ssl(ssl)
         .additionalProperties(additionalProperties)
         .account(account)
         .engine(engine)

@@ -232,8 +232,6 @@ class FireboltAccountClientTest {
   void shouldThrowExceptionWhenStatusCodeIsNotFound() throws Exception {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
     when(response.getCode()).thenReturn(HttpStatus.SC_NOT_FOUND);
-    HttpEntity entity = mock(HttpEntity.class);
-    when(response.getEntity()).thenReturn(entity);
     when(httpClient.execute(any())).thenReturn(response);
     assertThrows(FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT));
   }

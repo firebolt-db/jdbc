@@ -37,16 +37,13 @@ public class FireboltAccountClient extends FireboltClient {
   private static final String ERROR_NO_RUNNING_ENGINE_PREFIX =
       "There is no running Firebolt engine running on ";
 
-  private final ObjectMapper objectMapper;
-
   public FireboltAccountClient(
       CloseableHttpClient httpClient,
       ObjectMapper objectMapper,
       FireboltConnection fireboltConnection,
       String customDrivers,
       String customClients) {
-    super(httpClient, fireboltConnection, customDrivers, customClients);
-    this.objectMapper = objectMapper;
+    super(httpClient, fireboltConnection, customDrivers, customClients, objectMapper);
   }
 
   public Optional<String> getAccountId(String host, String account)
@@ -56,8 +53,6 @@ public class FireboltAccountClient extends FireboltClient {
             getResource(
                 uri,
                 host,
-                this.getHttpClient(),
-                objectMapper,
                 FireboltAccountResponse.class))
         .map(FireboltAccountResponse::getAccountId);
   }
@@ -71,8 +66,6 @@ public class FireboltAccountClient extends FireboltClient {
         getResource(
             uri,
             host,
-            this.getHttpClient(),
-            objectMapper,
             FireboltEngineResponse.class);
     return Optional.ofNullable(response)
         .map(FireboltEngineResponse::getEngine)
@@ -95,8 +88,6 @@ public class FireboltAccountClient extends FireboltClient {
         getResource(
             uri,
             host,
-            this.getHttpClient(),
-            objectMapper,
             FireboltDatabaseResponse.class);
     return Optional.ofNullable(response)
         .map(FireboltDatabaseResponse::getEngineUrl)
@@ -119,8 +110,6 @@ public class FireboltAccountClient extends FireboltClient {
         getResource(
             uri,
             host,
-            this.getHttpClient(),
-            objectMapper,
             FireboltEngineIdResponse.class);
     return Optional.ofNullable(response)
         .map(FireboltEngineIdResponse::getEngine)
