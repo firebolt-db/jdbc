@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.resultset;
 
+import io.firebolt.jdbc.LoggerUtil;
 import io.firebolt.jdbc.statement.FireboltStatement;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junitpioneer.jupiter.DefaultTimeZone;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.InputStream;
@@ -43,7 +45,7 @@ class FireboltResultSetTest {
   void shouldReturnMetadata() throws SQLException {
     // This only tests that Metadata is available with the resultSet.
     inputStream = getInputStreamWithArray();
-    resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535, false, fireboltStatement);
+    resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535, false, fireboltStatement, false);
     assertNotNull(resultSet.getMetaData());
     assertEquals("array_test_table", resultSet.getMetaData().getTableName(1));
     assertEquals("array_test_db", resultSet.getMetaData().getCatalogName(1));
@@ -406,6 +408,17 @@ class FireboltResultSetTest {
     assertEquals(StringUtils.EMPTY, resultSet.getObject("city"));
   }
 
+  @Test
+  void shouldLogResultSet() throws SQLException {
+    // This only tests that Metadata is available with the resultSet.
+    inputStream = getInputStreamWithArray();
+    try (MockedStatic<LoggerUtil> loggerUtilMockedStatic = mockStatic(LoggerUtil.class)) {
+      loggerUtilMockedStatic.when(() -> LoggerUtil.logInputStream(inputStream)).thenReturn(inputStream);
+      resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535, false, fireboltStatement, true);
+      loggerUtilMockedStatic.verify(() -> LoggerUtil.logInputStream(inputStream));
+    }
+  }
+
   private InputStream getInputStreamWithArray() {
     return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-example");
   }
@@ -413,11 +426,6 @@ class FireboltResultSetTest {
   private InputStream getInputStreamWithEmpty() {
     return FireboltResultSetTest.class.getResourceAsStream(
         "/responses/firebolt-response-with-empty");
-  }
-
-  private InputStream getInputStreamWithException() {
-    return FireboltResultSetTest.class.getResourceAsStream(
-            "/responses/firebolt-response-with-db-exception");
   }
 
   private InputStream getInputStreamWitExplain() {

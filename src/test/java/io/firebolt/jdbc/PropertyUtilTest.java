@@ -6,6 +6,8 @@ import org.mockito.MockedStatic;
 import org.mockito.internal.matchers.apachecommons.ReflectionEquals;
 
 import java.sql.DriverPropertyInfo;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -16,11 +18,11 @@ class PropertyUtilTest {
   @Test
   void shouldGetPropertyInfo() {
     try (MockedStatic<FireboltSessionProperty> mocked = mockStatic(FireboltSessionProperty.class)) {
-      FireboltSessionProperty[] existingProperties =
-          new FireboltSessionProperty[] {
-            FireboltSessionProperty.ACCOUNT, FireboltSessionProperty.BUFFER_SIZE
-          };
-      mocked.when(FireboltSessionProperty::values).thenReturn(existingProperties);
+      List<FireboltSessionProperty> existingProperties =
+          Arrays.asList(FireboltSessionProperty.ACCOUNT, FireboltSessionProperty.BUFFER_SIZE);
+      mocked
+          .when(FireboltSessionProperty::getNonDeprecatedProperties)
+          .thenReturn(existingProperties);
       DriverPropertyInfo accountDriverInfo =
           createExpectedDriverInfo(
               FireboltSessionProperty.ACCOUNT.getKey(),
@@ -36,13 +38,17 @@ class PropertyUtilTest {
 
       for (int i = 0; i < expected.length; i++) {
         assertTrue(
-            new ReflectionEquals(PropertyUtil.getPropertyInfo("jdbc:firebolt://api.dev.firebolt.io/Tutorial_11_04?buffer_size=1", new Properties())[i])
+            new ReflectionEquals(
+                    PropertyUtil.getPropertyInfo(
+                        "jdbc:firebolt://api.dev.firebolt.io/Tutorial_11_04?buffer_size=1",
+                        new Properties())[i])
                 .matches(expected[i]));
       }
     }
   }
 
-  private DriverPropertyInfo createExpectedDriverInfo(String key, String description, String value) {
+  private DriverPropertyInfo createExpectedDriverInfo(
+      String key, String description, String value) {
     DriverPropertyInfo driverPropertyInfo = new DriverPropertyInfo(key, value);
     driverPropertyInfo.required = false;
     driverPropertyInfo.description = description;

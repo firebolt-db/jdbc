@@ -167,4 +167,13 @@ class FireboltPropertiesTest {
   void shouldHaveAggressiveCancelBeDisabledByDefault() {
     assertFalse(FireboltProperties.builder().build().isAggressiveCancel());
   }
+
+  @Test
+  void shouldNotReturnAliasAsCustomProperty() {
+    Properties properties = new Properties();
+    properties.put("path", "");
+    properties.put("host", "host");
+
+    assertThrows(IllegalArgumentException.class, () -> FireboltProperties.of(properties));
+  }
 }

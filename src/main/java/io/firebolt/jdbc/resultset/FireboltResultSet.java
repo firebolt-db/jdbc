@@ -1,5 +1,6 @@
 package io.firebolt.jdbc.resultset;
 
+import io.firebolt.jdbc.LoggerUtil;
 import io.firebolt.jdbc.exception.FireboltException;
 import io.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import io.firebolt.jdbc.resultset.compress.LZ4InputStream;
@@ -22,7 +23,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-
 @Slf4j
 public class FireboltResultSet extends AbstractResultSet {
   private final BufferedReader reader;
@@ -37,10 +37,29 @@ public class FireboltResultSet extends AbstractResultSet {
   private boolean isClosed = false;
   private String[] arr = new String[0];
 
+  public FireboltResultSet(InputStream is) throws SQLException {
+    this(is, null, null, null, false, null, false);
+  }
+
+  public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize)
+      throws SQLException {
+    this(is, tableName, dbName, bufferSize, false, null, false);
+  }
+
+  public FireboltResultSet(
+      InputStream is,
+      String tableName,
+      String dbName,
+      Integer bufferSize,
+      FireboltStatement fireboltStatement)
+      throws SQLException {
+    this(is, tableName, dbName, bufferSize, false, fireboltStatement, false);
+  }
+
   private FireboltResultSet() {
     reader = // empty InputStream
-        new BufferedReader(
-            new InputStreamReader(new ByteArrayInputStream("".getBytes()), StandardCharsets.UTF_8));
+            new BufferedReader(
+                    new InputStreamReader(new ByteArrayInputStream("".getBytes()), StandardCharsets.UTF_8));
     resultSetMetaData = FireboltResultSetMetaData.builder().build();
     columnNameToColumnNumber = new HashMap<>();
     currentLine = null;
@@ -48,26 +67,20 @@ public class FireboltResultSet extends AbstractResultSet {
     statement = null;
   }
 
-  public FireboltResultSet(InputStream is) throws SQLException {
-    this(is, null, null, null, false, null);
-  }
-
-  public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize)
-          throws SQLException {
-    this(is, tableName, dbName, bufferSize, false, null);
-  }
-
-  public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize, FireboltStatement fireboltStatement)
-          throws SQLException {
-    this(is, tableName, dbName, bufferSize, false, fireboltStatement);
-  }
-
   public FireboltResultSet(
-      InputStream is, String tableName, String dbName, Integer bufferSize, boolean isCompressed, FireboltStatement statement)
+      InputStream is,
+      String tableName,
+      String dbName,
+      Integer bufferSize,
+      boolean isCompressed,
+      FireboltStatement statement,
+      boolean logResultSet)
       throws SQLException {
     log.debug("Creating resultSet...");
     this.statement = statement;
-    //is = LoggerUtil.logInputStream(is);
+    if (logResultSet) {
+      is = LoggerUtil.logInputStream(is);
+    }
 
     this.reader = createStreamReader(is, bufferSize, isCompressed);
 
@@ -86,7 +99,6 @@ public class FireboltResultSet extends AbstractResultSet {
               .tableName(tableName)
               .dbName(dbName)
               .build();
-      log.debug("ResultSetMetaData created");
     } catch (Exception e) {
       log.error("Could not create ResultSet: " + ExceptionUtils.getStackTrace(e), e);
       throw new FireboltException(

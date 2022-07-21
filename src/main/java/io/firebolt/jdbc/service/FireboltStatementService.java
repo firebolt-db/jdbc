@@ -1,14 +1,15 @@
 package io.firebolt.jdbc.service;
 
 import com.google.common.collect.ImmutableMap;
-import io.firebolt.jdbc.statement.StatementInfoWrapper;
+import io.firebolt.jdbc.PropertyUtil;
 import io.firebolt.jdbc.client.query.StatementClient;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
+import io.firebolt.jdbc.connection.settings.FireboltQueryParameterKey;
 import io.firebolt.jdbc.exception.FireboltException;
+import io.firebolt.jdbc.statement.StatementInfoWrapper;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -41,29 +42,31 @@ public class FireboltStatementService {
     statementClient.abortStatement(statementId, properties, getCancelParameters(statementId));
   }
 
-  public void abortStatementHttpRequest(@NonNull String statementId)
-          throws FireboltException {
+  public void abortStatementHttpRequest(@NonNull String statementId) throws FireboltException {
     statementClient.abortRunningHttpRequest(statementId);
   }
 
   private Map<String, String> getCancelParameters(String statementId) {
-    return ImmutableMap.of("query_id", statementId);
+    return ImmutableMap.of(FireboltQueryParameterKey.QUERY_ID.getKey(), statementId);
   }
 
   private Map<String, String> getAllParameters(
       FireboltProperties fireboltProperties,
       StatementInfoWrapper statementInfoWrapper,
       Map<String, String> statementParams) {
-    boolean isLocalDb = StringUtils.equalsIgnoreCase("localhost", fireboltProperties.getHost());
+    boolean isLocalDb = PropertyUtil.isLocalDb(fireboltProperties);
 
     Map<String, String> params = new HashMap<>(fireboltProperties.getAdditionalProperties());
 
-    getResponseFormatParameter(statementInfoWrapper.getType() == StatementInfoWrapper.StatementType.QUERY, isLocalDb)
+    getResponseFormatParameter(
+            statementInfoWrapper.getType() == StatementInfoWrapper.StatementType.QUERY, isLocalDb)
         .ifPresent(format -> params.put(format.getLeft(), format.getRight()));
 
-    params.put("database", fireboltProperties.getDatabase());
-    params.put("query_id", statementInfoWrapper.getId());
-    params.put("compress", String.format("%d", fireboltProperties.isCompress() ? 1 : 0));
+    params.put(FireboltQueryParameterKey.DATABASE.getKey(), fireboltProperties.getDatabase());
+    params.put(FireboltQueryParameterKey.QUERY_ID.getKey(), statementInfoWrapper.getId());
+    params.put(
+        FireboltQueryParameterKey.COMPRESS.getKey(),
+        String.format("%d", fireboltProperties.isCompress() ? 1 : 0));
     Optional.ofNullable(statementParams).ifPresent(params::putAll);
     return params;
   }
@@ -73,10 +76,14 @@ public class FireboltStatementService {
     if (isQuery) {
       if (isLocalDb) {
         return Optional.of(
-            new ImmutablePair<>("default_format", TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT));
+            new ImmutablePair<>(
+                FireboltQueryParameterKey.DEFAULT_FORMAT.getKey(),
+                TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT));
       } else {
         return Optional.of(
-            new ImmutablePair<>("output_format", TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT));
+            new ImmutablePair<>(
+                FireboltQueryParameterKey.OUTPUT_FORMAT.getKey(),
+                TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT));
       }
     }
     return Optional.empty();

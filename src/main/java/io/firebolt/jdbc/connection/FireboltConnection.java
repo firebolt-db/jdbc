@@ -1,6 +1,7 @@
 package io.firebolt.jdbc.connection;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.firebolt.jdbc.PropertyUtil;
 import io.firebolt.jdbc.client.FireboltObjectMapper;
 import io.firebolt.jdbc.client.HttpClientConfig;
 import io.firebolt.jdbc.client.account.FireboltAccountClient;
@@ -9,6 +10,7 @@ import io.firebolt.jdbc.client.query.StatementClientImpl;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.ExceptionType;
 import io.firebolt.jdbc.exception.FireboltException;
+import io.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import io.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
 import io.firebolt.jdbc.preparedstatement.FireboltPreparedStatement;
 import io.firebolt.jdbc.service.FireboltAuthenticationService;
@@ -17,7 +19,6 @@ import io.firebolt.jdbc.service.FireboltStatementService;
 import io.firebolt.jdbc.statement.FireboltStatement;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
@@ -46,8 +47,6 @@ public class FireboltConnection extends AbstractConnection {
 
   private final List<FireboltStatement> statements;
 
-  private static final String LOCALHOST = "localhost";
-
   private int networkTimeout;
 
   private final int connectionTimeout;
@@ -71,7 +70,7 @@ public class FireboltConnection extends AbstractConnection {
     this.connect();
   }
 
-  public FireboltConnection(String url, Properties connectionSettings) throws FireboltException {
+  public FireboltConnection(@NonNull String url, Properties connectionSettings) throws FireboltException {
     ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
     this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
     String driverVersions = loginProperties.getAdditionalProperties().remove("driver_versions");
@@ -112,7 +111,7 @@ public class FireboltConnection extends AbstractConnection {
 
   private void connect() throws FireboltException {
     try {
-      if (!StringUtils.equalsIgnoreCase(LOCALHOST, loginProperties.getHost())) {
+      if (!PropertyUtil.isLocalDb(this.loginProperties)) {
         String engineHost = fireboltEngineService.getEngineHost(httpConnectionUrl, loginProperties);
         this.sessionProperties = loginProperties.toBuilder().host(engineHost).build();
       } else {
@@ -135,7 +134,7 @@ public class FireboltConnection extends AbstractConnection {
   }
 
   public Optional<FireboltConnectionTokens> getConnectionTokens() throws FireboltException {
-    if (!StringUtils.equalsIgnoreCase(LOCALHOST, loginProperties.getHost())) {
+    if (!PropertyUtil.isLocalDb(loginProperties)) {
       return Optional.of(
           fireboltAuthenticationService.getConnectionTokens(httpConnectionUrl, loginProperties));
     }
@@ -214,13 +213,12 @@ public class FireboltConnection extends AbstractConnection {
 
   @Override
   public String getSchema() throws SQLException {
-    this.validateConnectionIsNotClose();
-    return sessionProperties.getDatabase();
+    return null;
   }
 
   @Override
   public void setSchema(String schema) {
-    sessionProperties = sessionProperties.toBuilder().database(schema).build();
+    // no-op
   }
 
   @Override

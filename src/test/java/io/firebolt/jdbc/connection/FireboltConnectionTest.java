@@ -145,7 +145,7 @@ class FireboltConnectionTest {
   }
 
   @Test
-  void shouldNotSetNewPropertyWhenWhenConnectionIsNotValidWithTheNewProperty() throws SQLException {
+  void shouldNotSetNewPropertyWhenConnectionIsNotValidWithTheNewProperty() throws SQLException {
     FireboltConnection fireboltConnection =
         new FireboltConnection(
             URL,

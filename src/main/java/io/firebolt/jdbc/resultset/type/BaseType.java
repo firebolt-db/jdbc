@@ -81,15 +81,6 @@ public enum BaseType {
     return type;
   }
 
-  private static void validateThatValueDoesNotContainException(String value)
-      throws FireboltException {
-    if (StringUtils.contains(value, "DB::Exception")) {
-      String errorResponseMessage =
-          String.format("Server failed to execute query with the following error:%n%s", value);
-      throw new FireboltException(errorResponseMessage);
-    }
-  }
-
   public <T> T transform(String value, FireboltColumn column) throws FireboltException {
     validateObjectNotNull(value);
     if (isNull(value)) {

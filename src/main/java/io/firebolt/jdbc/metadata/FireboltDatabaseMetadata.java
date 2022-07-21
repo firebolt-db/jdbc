@@ -371,11 +371,12 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
     return VersionUtil.getDriverVersion();
   }
 
-
+  @Override
   public boolean isWrapperFor(Class<?> iface) throws SQLException {
     return iface.isAssignableFrom(getClass());
   }
 
+  @Override
   public <T> T unwrap(Class<T> iface) throws SQLException {
     if (iface.isAssignableFrom(getClass())) {
       return iface.cast(this);

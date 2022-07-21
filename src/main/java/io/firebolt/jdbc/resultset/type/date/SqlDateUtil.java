@@ -7,6 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -22,7 +23,7 @@ public class SqlDateUtil {
   DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   DateTimeFormatter dateTimeFormatter =
       new DateTimeFormatterBuilder()
-          .appendPattern("yyyy-MM-dd [HH:mm:ss]")
+          .appendPattern("yyyy-MM-dd [HH:mm[:ss]]")
           .appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true)
           .toFormatter();
 
@@ -40,10 +41,14 @@ public class SqlDateUtil {
         if (StringUtils.isEmpty(value)) {
           return null;
         }
-        Timestamp ts =
-            java.sql.Timestamp.valueOf(LocalDateTime.from(dateTimeFormatter.parse(value)));
-        log.debug("Converted timestamp from {} to {}", value, ts);
-        return ts;
+        LocalDateTime dateTime;
+        try {
+          dateTime = LocalDateTime.from(dateTimeFormatter.parse(value));
+        } catch (DateTimeException dateTimeException) {
+          LocalDate date = LocalDate.from(dateFormatter.parse(value));
+          dateTime = LocalDateTime.of(date.getYear(), date.getMonth(), date.getDayOfMonth(), 0, 0);
+        }
+        return java.sql.Timestamp.valueOf(dateTime);
       };
 
   public static final Function<String, Time> transformToTimeFunction =

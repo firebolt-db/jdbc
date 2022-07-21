@@ -91,7 +91,7 @@ class FireboltPreparedStatementTest {
   }
 
   @Test
-  void shouldThrowsExceptionWhenAllParametersAreNotDefined() {
+  void shouldThrowExceptionWhenAllParametersAreNotDefined() {
     FireboltPreparedStatement statementWithUndefinedParamWithSpace =
         FireboltPreparedStatement.statementBuilder()
             .sql("SELECT * FROM cars WHERE make LIKE ?")

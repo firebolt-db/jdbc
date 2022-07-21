@@ -23,7 +23,14 @@ public class FireboltProperties {
 
   private static final Set<String> sessionPropertyKeys =
       Arrays.stream(FireboltSessionProperty.values())
-          .map(FireboltSessionProperty::getKey)
+          .map(
+              property -> {
+                List<String> keys = new ArrayList<>();
+                keys.add(property.getKey());
+                keys.addAll(Arrays.asList(property.getAliases()));
+                return keys;
+              })
+          .flatMap(List::stream)
           .collect(Collectors.toSet());
 
   int timeToLiveMillis;
@@ -52,6 +59,7 @@ public class FireboltProperties {
   boolean aggressiveCancel;
   Integer tcpKeepCount;
   Integer tcpKeepInterval;
+  boolean logResultSet;
   @Builder.Default Map<String, String> additionalProperties = new HashMap<>();
 
   public static FireboltProperties of(Properties... properties) {
@@ -88,6 +96,8 @@ public class FireboltProperties {
     boolean aggressiveCancel =
         getSetting(mergedProperties, FireboltSessionProperty.AGGRESSIVE_CANCEL);
 
+    boolean logResultSet = getSetting(mergedProperties, FireboltSessionProperty.AGGRESSIVE_CANCEL);
+
     String host = getHost(mergedProperties);
     Integer port = getPort(mergedProperties, ssl);
     String database = getDatabase(mergedProperties, path);
@@ -121,6 +131,7 @@ public class FireboltProperties {
         .tcpKeepCount(tcpKeepCount)
         .tcpKeepIdle(tcpKeepIdle)
         .aggressiveCancel(aggressiveCancel)
+        .logResultSet(logResultSet)
         .build();
   }
 
@@ -169,14 +180,19 @@ public class FireboltProperties {
             Collectors.toMap(e -> (String) e.getKey(), e -> e.getValue().toString(), (x, y) -> y));
   }
 
-  private static <T> T getSetting(Properties info, FireboltSessionProperty param) {
-    return getSetting(info, param.getKey(), param.getDefaultValue(), param.getClazz());
-  }
-
   @SuppressWarnings("unchecked")
-  private static <T> T getSetting(
-      Properties info, String key, Object defaultValue, Class<?> clazz) {
-    String val = info.getProperty(key);
+  private static <T> T getSetting(Properties info, FireboltSessionProperty param) {
+    String val = info.getProperty(param.getKey());
+    Object defaultValue = param.getDefaultValue();
+    Class<?> clazz = param.getClazz();
+    if (val == null) {
+      String[] aliases = param.getAliases();
+      int i = 0;
+      while (val == null && i < aliases.length) {
+        val = info.getProperty(aliases[i++]);
+      }
+    }
+
     if (val == null) return (T) defaultValue;
     if (clazz == int.class || clazz == Integer.class) {
       return (T) clazz.cast(Integer.valueOf(val));

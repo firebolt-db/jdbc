@@ -9,6 +9,8 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -187,10 +189,93 @@ class StatementUtilTest {
     String sql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n";
     assertEquals(ImmutableMap.of(), StatementUtil.getQueryParamsPositions(sql));
   }
+
   @Test
   void shouldGetAllQueryParamsThatAreNotInSingleLineComment2() {
     String sql = "SElECT * FROM EMPLOYEES WHERE id IN --\n(?,?)";
     assertEquals(ImmutableMap.of(1, 40, 2, 42), StatementUtil.getQueryParamsPositions(sql));
+  }
+
+  @Test
+  void shouldGetAllQueryParamsThatAreNotInBetweenQuotesOrComments() {
+    String sql =
+        "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE ? AND my_date = ?";
+    assertEquals(ImmutableMap.of(1, 93, 2, 109), StatementUtil.getQueryParamsPositions(sql));
+  }
+
+  @Test
+  void shouldReplaceOneQueryParamsThatAreNotInBetweenQuotesOrComments() {
+    String sql =
+        "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE ?";
+    String expectedSql =
+        "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE '55 Liverpool road%'";
+    Map<Integer, String> params = ImmutableMap.of(1, "'55 Liverpool road%'");
+    Map<Integer, Integer> positions = ImmutableMap.of(1, 93);
+    assertEquals(
+        expectedSql,
+        StatementUtil.replaceParameterMarksWithValues(params, positions, sql));
+  }
+
+  @Test
+  void shouldReplaceAQueryParam() {
+    String sql = "SElECT * FROM EMPLOYEES WHERE id is ?";
+    String expectedSql = "SElECT * FROM EMPLOYEES WHERE id is 5";
+    Map<Integer, String> params = ImmutableMap.of(1, "5");
+    assertEquals(
+        expectedSql, StatementUtil.replaceParameterMarksWithValues(params, sql));
+  }
+
+  @Test
+  void shouldReplaceMultipleQueryParam() {
+    String sql = "SElECT * FROM EMPLOYEES WHERE id = ? AND name LIKE ? AND dob = ? ";
+    String expectedSql =
+        "SElECT * FROM EMPLOYEES WHERE id = 5 AND name LIKE 'George' AND dob = '1980-05-22' ";
+    Map<Integer, String> params = ImmutableMap.of(1, "5", 2, "'George'", 3, "'1980-05-22'");
+    assertEquals(
+        expectedSql, StatementUtil.replaceParameterMarksWithValues(params, sql));
+  }
+
+  @Test
+  void shouldReplaceAllQueryParamsThatAreNotInBetweenQuotesOrComments() {
+    String sql =
+        "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE ? AND my_date = ? AND age = /* */ ?";
+    String expectedSql =
+        "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE '55 Liverpool road%' AND my_date = '2022-01-01' AND age = /* */ 5";
+    Map<Integer, String> params =
+        ImmutableMap.of(1, "'55 Liverpool road%'", 2, "'2022-01-01'", 3, "5");
+    assertEquals(
+        expectedSql, StatementUtil.replaceParameterMarksWithValues(params, sql));
+  }
+
+  @Test
+  void shouldThrowExceptionWhenTheNumberOfParamsIsNotTheSameAsTheNumberOfParamMarkers() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            StatementUtil.replaceParameterMarksWithValues(
+                ImmutableMap.of(), ImmutableMap.of(1, 1), "SELECT 1;"),
+        "The number of parameters passed does not equal the number of parameter markers in the SQL query. Provided: 0, Parameter markers in the SQL query: 1");
+  }
+
+  @Test
+  void shouldThrowExceptionWhenThePositionOfTheParamMarkerIsGreaterThanTheLengthOfTheStatement() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            StatementUtil.replaceParameterMarksWithValues(
+                ImmutableMap.of(1, "'test'"), ImmutableMap.of(1, 9), "SELECT 1;"),
+        "The position of the parameter marker provided is invalid");
+  }
+
+  @Test
+  void shouldThrowExceptionWhenTheParameterProvidedIsNull() {
+    String sql = "SElECT * FROM EMPLOYEES WHERE id is ?";
+    Map<Integer, String> params = new HashMap<>();
+    params.put(1, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> StatementUtil.replaceParameterMarksWithValues(params, sql),
+        "No value for parameter marker at position: 1");
   }
 
   private static String getSqlFromFile(String path) {

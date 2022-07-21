@@ -60,7 +60,7 @@ public class MetadataUtil {
             .select("table_catalog, table_schema, table_name, table_type")
             .from("information_schema.tables");
 
-    List<String> conditions = getConditionsForTablesAndViews(catalog, schema, tableName);
+    List<String> conditions = getConditionsForTables(catalog, schema, tableName);
 
     queryBuilder.orderBy("table_schema, table_name");
     return queryBuilder.conditions(conditions).build().toSql();
@@ -73,17 +73,27 @@ public class MetadataUtil {
             .select("table_catalog, table_schema, table_name")
             .from("information_schema.views");
 
-    List<String> conditions =
-        getConditionsForTablesAndViews(catalog, schemaPattern, tableNamePattern);
+    List<String> conditions = getConditionsForViews(catalog, schemaPattern, tableNamePattern);
 
     queryBuilder.orderBy("table_schema, table_name");
     return queryBuilder.conditions(conditions).build().toSql();
   }
 
   @NonNull
+  private List<String> getConditionsForTables(String catalog, String schema, String tableName) {
+    return getConditionsForTablesAndViews(catalog, schema, tableName, true);
+  }
+
+  @NonNull
+  private List<String> getConditionsForViews(String catalog, String schema, String tableName) {
+    return getConditionsForTablesAndViews(catalog, schema, tableName, false);
+  }
+
+  @NonNull
   private List<String> getConditionsForTablesAndViews(
-      String catalog, String schema, String tableName) {
+      String catalog, String schema, String tableName, boolean isTable) {
     List<String> conditions = new ArrayList<>();
+    //To uncomment once schemas are supported
     //    Optional.ofNullable(schema)
     //        .ifPresent(pattern -> conditions.add(String.format("table_schema LIKE '%s'",
     // pattern)));
@@ -93,6 +103,9 @@ public class MetadataUtil {
 
     Optional.ofNullable(catalog)
         .ifPresent(pattern -> conditions.add(String.format("table_catalog LIKE '%s'", pattern)));
+    if (isTable) {
+      conditions.add("table_type NOT LIKE 'EXTERNAL'");
+    }
     return conditions;
   }
 

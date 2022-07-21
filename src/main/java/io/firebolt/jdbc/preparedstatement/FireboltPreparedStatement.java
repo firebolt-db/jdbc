@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static io.firebolt.jdbc.statement.StatementUtil.replaceParameterMarksWithValues;
+
 @Slf4j
 public class FireboltPreparedStatement extends AbstractPreparedStatement {
 
@@ -50,44 +52,10 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
   private String prepareSQL(@NonNull Map<Integer, String> params) throws SQLException {
     log.debug("Preparing SQL for statement: {}", this.sql);
     String result = this.sql;
-
-    if (!params.keySet().isEmpty()) {
-      result = replaceParameterMarksWithProvidedParameterValues(params, result);
+    if (!this.parameterMarkerPositions.isEmpty()) {
+      result = replaceParameterMarksWithValues(params, parameterMarkerPositions, result);
     }
-    if (params.size() != this.parameterMarkerPositions.size()) {
-      throw new IllegalArgumentException(
-          String.format(
-              "The number of parameters passed does not equal the number of parameter markers in the SQL query. Provided: %d, Parameter markers in the SQL query: %d",
-              params.size(), this.parameterMarkerPositions.size()));
-    } else {
-      log.debug("Prepared SQL for query: {}, result: {}", sql, result);
-      return result;
-    }
-  }
-
-  private String replaceParameterMarksWithProvidedParameterValues(Map<Integer, String> params, String sql) {
-    String result = sql;
-    int currentPos = 0;
-    char currentChar = sql.charAt(currentPos);
-    boolean isBetweenQuotes = currentChar == '\'';
-    boolean questionMarkFound = false;
-    for (int i = 1; i <= params.keySet().size(); i++) {
-      String value = params.get(i);
-      if (value == null) {
-        throw new IllegalArgumentException("No value for ? at position: " + i);
-      }
-      while (!questionMarkFound && currentPos < result.length() - 1) {
-        currentPos++;
-        currentChar = result.charAt(currentPos);
-        if (currentChar == '\'') {
-          isBetweenQuotes = !isBetweenQuotes;
-        }
-        questionMarkFound = '?' == currentChar && !isBetweenQuotes;
-      }
-      result = result.substring(0, currentPos) + value + result.substring(currentPos + 1);
-      currentPos = currentPos + value.length();
-      questionMarkFound = false;
-    }
+    log.debug("Prepared SQL for query: {}, result: {}", sql, result);
     return result;
   }
 

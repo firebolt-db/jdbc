@@ -58,8 +58,8 @@ class FireboltStatementTest {
       assertEquals(-1, fireboltStatement.getUpdateCount());
       assertEquals("show database", queryInfoWrapperArgumentCaptor.getValue().getSql());
       assertEquals(
-          queryInfoWrapperArgumentCaptor.getValue().getType(),
-          StatementInfoWrapper.StatementType.QUERY);
+          StatementInfoWrapper.StatementType.QUERY,
+          queryInfoWrapperArgumentCaptor.getValue().getType());
     }
   }
 

@@ -25,12 +25,12 @@ public class LoggerUtil {
               new BufferedReader(new InputStreamReader(streamToLog, StandardCharsets.UTF_8))
                       .lines()
                       .collect(Collectors.joining("\n"));
-      log.debug("======================================");
-      log.debug(text);
-      log.debug("======================================");
+      log.info("======================================");
+      log.info(text);
+      log.info("======================================");
       return new ByteArrayInputStream(baos.toByteArray());
     } catch (Exception ex) {
-      log.debug("Could not log stream received", ex);
+      log.warn("Could not log stream received", ex);
     }
     return new ByteArrayInputStream(baos.toByteArray());
   }

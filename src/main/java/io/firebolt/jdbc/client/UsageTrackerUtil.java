@@ -32,7 +32,7 @@ public class UsageTrackerUtil {
   }
 
   public Map<String, String> getClients(StackTraceElement[] stack, Map<String, String> clientMap) {
-    Map<String, String> clients = new HashMap<String, String>();
+    Map<String, String> clients = new HashMap<>();
     if (stack == null) {
       return clients;
     }

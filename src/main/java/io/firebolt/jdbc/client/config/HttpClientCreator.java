@@ -85,6 +85,7 @@ public class HttpClientCreator {
           try {
             return TimeValue.ofSeconds(Long.parseLong(value));
           } catch (final NumberFormatException ignore) {
+            //ignore
           }
         }
       }

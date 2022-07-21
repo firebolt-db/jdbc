@@ -191,6 +191,44 @@ public class StatementUtil {
         extractTableNameFromFromPartOfTheQuery(from.orElse(null)));
   }
 
+  public static String replaceParameterMarksWithValues(
+      @NonNull Map<Integer, String> params, @NonNull String sql) {
+    Map<Integer, Integer> positions = getQueryParamsPositions(sql);
+    return replaceParameterMarksWithValues(params, positions, sql);
+  }
+
+  public static String replaceParameterMarksWithValues(
+      @NonNull Map<Integer, String> params,
+      @NonNull Map<Integer, Integer> positions,
+      @NonNull String sql) {
+    String result = sql;
+    int currentPos = 0;
+    int offset = 0;
+    if (params.size() != positions.size()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "The number of parameters passed does not equal the number of parameter markers in the SQL query. Provided: %d, Parameter markers in the SQL query: %d",
+              params.size(), positions.size()));
+    }
+    for (int i = 1; i <= params.keySet().size(); i++) {
+      String value = params.get(i);
+      if (value == null) {
+        throw new IllegalArgumentException("No value for parameter marker at position: " + i);
+      }
+      while (currentPos != positions.get(i) + offset) {
+        if (currentPos >= result.length() - 1) {
+          throw new IllegalArgumentException(
+              "The position of the parameter marker provided is invalid");
+        }
+        currentPos++;
+      }
+      result = result.substring(0, currentPos) + value + result.substring(currentPos + 1);
+      currentPos = currentPos + value.length();
+      offset += value.length() - 1;
+    }
+    return result;
+  }
+
   private static Optional<String> extractTableNameFromFromPartOfTheQuery(String from) {
     return Optional.ofNullable(from)
         .map(s -> s.replace("\"", ""))

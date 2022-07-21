@@ -23,14 +23,14 @@ class MetadataUtilTest {
   @Test
   void shouldGetTablesQueryWhenGettingQueryWithArguments() {
     assertEquals(
-        "SELECT table_catalog, table_schema, table_name, table_type FROM information_schema.tables WHERE table_name LIKE 'tableName' AND table_catalog LIKE 'catalog' order by table_schema, table_name",
+        "SELECT table_catalog, table_schema, table_name, table_type FROM information_schema.tables WHERE table_name LIKE 'tableName' AND table_catalog LIKE 'catalog' AND table_type NOT LIKE 'EXTERNAL' order by table_schema, table_name",
         MetadataUtil.getTablesQuery("catalog", "db", "tableName"));
   }
 
   @Test
   void shouldGetTablesQueryWhenGettingQueryWithoutArguments() {
     assertEquals(
-        "SELECT table_catalog, table_schema, table_name, table_type FROM information_schema.tables order by table_schema, table_name",
+        "SELECT table_catalog, table_schema, table_name, table_type FROM information_schema.tables WHERE table_type NOT LIKE 'EXTERNAL' order by table_schema, table_name",
         MetadataUtil.getTablesQuery(null, null, null));
   }
 

@@ -212,7 +212,7 @@ class FireboltDatabaseMetadataTest {
   @Test
   void shouldGetTables() throws SQLException {
     String expectedSqlForTables =
-        "SELECT table_catalog, table_schema, table_name, table_type FROM information_schema.tables WHERE table_name LIKE 'tab%' AND table_catalog LIKE 'catalog' order by table_schema, table_name";
+        "SELECT table_catalog, table_schema, table_name, table_type FROM information_schema.tables WHERE table_name LIKE 'tab%' AND table_catalog LIKE 'catalog' AND table_type NOT LIKE 'EXTERNAL' order by table_schema, table_name";
 
     String expectedSqlForViews =
         "SELECT table_catalog, table_schema, table_name FROM information_schema.views WHERE table_name LIKE 'tab%' AND table_catalog LIKE 'catalog' order by table_schema, table_name";

@@ -1,6 +1,7 @@
 package io.firebolt.jdbc.statement;
 
 import io.firebolt.jdbc.CloseableUtils;
+import io.firebolt.jdbc.PropertyUtil;
 import io.firebolt.jdbc.connection.FireboltConnection;
 import io.firebolt.jdbc.connection.settings.FireboltProperties;
 import io.firebolt.jdbc.exception.FireboltException;
@@ -29,10 +30,10 @@ public class FireboltStatement extends AbstractStatement {
   private final FireboltStatementService statementService;
   private final FireboltProperties sessionProperties;
   private String runningStatementId;
-  private boolean closeOnCompletion;
-  private int currentUpdateCount;
+  private boolean closeOnCompletion = true;
+  private int currentUpdateCount = -1;
   private int maxRows;
-  private volatile boolean isClosed;
+  private volatile boolean isClosed = false;
 
   private ResultSet resultSet;
 
@@ -47,9 +48,6 @@ public class FireboltStatement extends AbstractStatement {
       FireboltConnection connection) {
     this.statementService = statementService;
     this.sessionProperties = sessionProperties;
-    this.closeOnCompletion = true;
-    this.currentUpdateCount = -1;
-    this.isClosed = false;
     this.connection = connection;
     log.debug("Created Statement");
   }
@@ -74,7 +72,8 @@ public class FireboltStatement extends AbstractStatement {
         log.info(
             "There was already an opened ResultSet for the statement object. The ResultSet is now closed.");
       }
-      StatementInfoWrapper statementInfo = StatementUtil.extractStatementInfo(sql, runningStatementId);
+      StatementInfoWrapper statementInfo =
+          StatementUtil.extractStatementInfo(sql, runningStatementId);
       if (statementInfo.getType() == StatementInfoWrapper.StatementType.PARAM_SETTING) {
         this.connection.addProperty(statementInfo.getParam());
         log.debug("The property from the query {} was stored", this.runningStatementId);
@@ -93,7 +92,9 @@ public class FireboltStatement extends AbstractStatement {
                   dbNameAndTableNamePair.getRight().orElse("unknown"),
                   dbNameAndTableNamePair.getRight().orElse(this.sessionProperties.getDatabase()),
                   this.sessionProperties.getBufferSize(),
-                  this.sessionProperties.isCompress(), this);
+                  this.sessionProperties.isCompress(),
+                  this,
+                  this.sessionProperties.isLogResultSet());
         } else {
           currentUpdateCount = 0;
           CloseableUtils.close(inputStream);
@@ -103,7 +104,9 @@ public class FireboltStatement extends AbstractStatement {
     } catch (Exception ex) {
       CloseableUtils.close(inputStream);
       log.error(
-          "An error happened while executing the statement with the id {}", this.runningStatementId, ex);
+          "An error happened while executing the statement with the id {}",
+          this.runningStatementId,
+          ex);
       throw ex;
     } finally {
       this.runningStatementId = null;
@@ -137,7 +140,7 @@ public class FireboltStatement extends AbstractStatement {
 
   private void abortStatementRunningOnFirebolt(String statementId) throws SQLException {
     try {
-      if ("localhost".equals(this.sessionProperties.getHost())
+      if (PropertyUtil.isLocalDb(this.sessionProperties)
           || StringUtils.isEmpty(this.sessionProperties.getDatabase())
           || this.sessionProperties.isAggressiveCancel()) {
         abortStatementByQuery(statementId);
@@ -157,8 +160,8 @@ public class FireboltStatement extends AbstractStatement {
   private void abortStatementByQuery(String statementId) throws SQLException {
     Map<String, String> statementParams = new HashMap<>(this.getStatementParameters());
     statementParams.put("use_standard_sql", "0");
-    try (ResultSet rs =
-        this.execute(String.format(KILL_QUERY_SQL, statementId), statementParams)) {}
+    try (ResultSet rs = this.execute(String.format(KILL_QUERY_SQL, statementId), statementParams)) {
+    }
   }
 
   @Override
@@ -173,13 +176,11 @@ public class FireboltStatement extends AbstractStatement {
 
   @Override
   public Connection getConnection() throws SQLException {
-    log.debug("Getting connection from statement");
     return this.connection;
   }
 
   @Override
   public boolean getMoreResults(int current) throws SQLException {
-    log.debug("Getting more results: false");
     return false;
   }
 
