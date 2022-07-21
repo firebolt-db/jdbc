@@ -58,7 +58,8 @@ public class FireboltConnection extends AbstractConnection {
     this.fireboltAuthenticationService = fireboltAuthenticationService;
     this.fireboltEngineService = fireboltEngineService;
     this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
-    loginProperties.getAdditionalProperties().remove("connector_versions");
+    loginProperties.getAdditionalProperties().remove("driver_versions");
+    loginProperties.getAdditionalProperties().remove("client_versions");
     this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
     this.fireboltStatementService = fireboltStatementService;
     this.statements = new ArrayList<>();
