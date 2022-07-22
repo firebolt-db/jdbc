@@ -3,7 +3,7 @@ plugins {
     id 'jacoco'
 }
 
-group 'io.firebolt'
+group 'com.firebolt'
 
 def props = new Properties()
 file("src/main/resources/config.properties").withInputStream { props.load(it) }
@@ -25,6 +25,7 @@ dependencies {
     implementation 'org.apache.httpcomponents.core5:httpcore5:5.1.3'
     implementation 'org.apache.commons:commons-text:1.9'
     implementation 'org.lz4:lz4-java:1.8.0'
+    implementation 'org.json:json:20220320'
 
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
@@ -48,10 +49,10 @@ jacocoTestReport {
     afterEvaluate {
         classDirectories.setFrom(files(classDirectories.files.collect {
             fileTree(dir: it, exclude: [
-                    "io/firebolt/jdbc/client/config/**",
-                    "io/firebolt/jdbc/FireboltDriver.class",
-                    "io/firebolt/jdbc/connection/settings/FireboltProperties.class",
-                    "io/firebolt/jdbc/**/Abstract*.class"
+                    "com/firebolt/jdbc/client/config/**",
+                    "com/firebolt/jdbc/FireboltDriver.class",
+                    "com/firebolt/jdbc/connection/settings/FireboltProperties.class",
+                    "com/firebolt/jdbc/**/Abstract*.class"
             ])
         }))
     }
