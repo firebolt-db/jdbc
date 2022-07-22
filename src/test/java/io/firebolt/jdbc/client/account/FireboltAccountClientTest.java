@@ -231,7 +231,9 @@ class FireboltAccountClientTest {
   @Test
   void shouldThrowExceptionWhenStatusCodeIsNotFound() throws Exception {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+    HttpEntity entity = mock(HttpEntity.class);
     when(response.getCode()).thenReturn(SC_NOT_FOUND);
+    when(response.getEntity()).thenReturn(entity);
     when(httpClient.execute(any())).thenReturn(response);
     assertThrows(FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT));
   }
@@ -250,7 +252,9 @@ class FireboltAccountClientTest {
   @Test
   void shouldThrowExceptionWithDBNotFoundErrorMessageWhenDBIsNotFound() throws Exception {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+    HttpEntity entity = mock(HttpEntity.class);
     when(response.getCode()).thenReturn(SC_NOT_FOUND);
+    when(response.getEntity()).thenReturn(entity);
     when(httpClient.execute(any())).thenReturn(response);
     assertThrows(
         FireboltException.class,
@@ -262,6 +266,8 @@ class FireboltAccountClientTest {
   void shouldThrowExceptionWithEngineNotFoundErrorMessageWhenEngineAddressIsNotFound()
       throws Exception {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+    HttpEntity entity = mock(HttpEntity.class);
+    when(response.getEntity()).thenReturn(entity);
     when(response.getCode()).thenReturn(SC_NOT_FOUND);
     when(httpClient.execute(any())).thenReturn(response);
     assertThrows(
@@ -274,6 +280,8 @@ class FireboltAccountClientTest {
   void shouldThrowExceptionWithEngineNotFoundErrorMessageWhenEngineIdIsNotFound()
           throws Exception {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+    HttpEntity entity = mock(HttpEntity.class);
+    when(response.getEntity()).thenReturn(entity);
     when(response.getCode()).thenReturn(SC_NOT_FOUND);
     when(httpClient.execute(any())).thenReturn(response);
     assertThrows(

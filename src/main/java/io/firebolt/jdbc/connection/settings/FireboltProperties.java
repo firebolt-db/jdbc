@@ -96,7 +96,7 @@ public class FireboltProperties {
     boolean aggressiveCancel =
         getSetting(mergedProperties, FireboltSessionProperty.AGGRESSIVE_CANCEL);
 
-    boolean logResultSet = getSetting(mergedProperties, FireboltSessionProperty.AGGRESSIVE_CANCEL);
+    boolean logResultSet = getSetting(mergedProperties, FireboltSessionProperty.LOG_RESULT_SET);
 
     String host = getHost(mergedProperties);
     Integer port = getPort(mergedProperties, ssl);

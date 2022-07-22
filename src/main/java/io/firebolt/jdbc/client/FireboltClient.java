@@ -31,10 +31,9 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static io.firebolt.jdbc.exception.ExceptionType.EXPIRED_TOKEN;
-import static io.firebolt.jdbc.exception.ExceptionType.RESOURCE_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
-import static org.apache.hc.core5.http.HttpStatus.*;
+import static org.apache.hc.core5.http.HttpStatus.SC_SERVICE_UNAVAILABLE;
+import static org.apache.hc.core5.http.HttpStatus.SC_UNAUTHORIZED;
 
 @Getter
 @Slf4j
@@ -132,19 +131,14 @@ public abstract class FireboltClient {
         throw new FireboltException(
             String.format(
                 "Could not query Firebolt at %s. The engine is not running. Status code: %d",
-                host, HTTP_FORBIDDEN));
+                host, HTTP_FORBIDDEN),
+            statusCode);
       } else if (statusCode == SC_UNAUTHORIZED) {
         this.getConnection().removeExpiredTokens();
         throw new FireboltException(
             String.format(
                 "Could not query Firebolt at %s. The token is expired and has been cleared", host),
-            EXPIRED_TOKEN);
-      } else if (statusCode == SC_NOT_FOUND) {
-        throw new FireboltException(
-            String.format(
-                "Could not query Firebolt at %s. The resource could not be found. Status code: %d",
-                host, SC_NOT_FOUND),
-            RESOURCE_NOT_FOUND);
+            statusCode);
       }
       String errorResponseMessage;
       try {
@@ -153,14 +147,14 @@ public abstract class FireboltClient {
             String.format(
                 "Server failed to execute query with the following error:%n%s%ninternal error:%n%s",
                 errorFromResponse, this.getInternalErrorWithHeadersText(response));
-        throw new FireboltException(errorResponseMessage);
+        throw new FireboltException(errorResponseMessage, statusCode);
       } catch (ParseException | IOException e) {
         log.warn("Could not parse response containing the error message from Firebolt", e);
         errorResponseMessage =
             String.format(
                 "Server failed to execute query%ninternal error:%n%s",
                 this.getInternalErrorWithHeadersText(response));
-        throw new FireboltException(errorResponseMessage, e);
+        throw new FireboltException(errorResponseMessage, statusCode, e);
       }
     }
   }

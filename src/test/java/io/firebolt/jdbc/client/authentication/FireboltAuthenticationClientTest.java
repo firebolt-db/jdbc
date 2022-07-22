@@ -104,6 +104,8 @@ class FireboltAuthenticationClientTest {
   @Test
   void shouldThrowExceptionWhenStatusCodeIsNotFound() throws Exception {
     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+    HttpEntity entity = mock(HttpEntity.class);
+    when(response.getEntity()).thenReturn(entity);
     when(response.getCode()).thenReturn(HttpStatus.SC_NOT_FOUND);
     when(httpClient.execute(any())).thenReturn(response);
 
