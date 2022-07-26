@@ -18,13 +18,13 @@ public class MetadataUtil {
   public String getSchemasQuery(String catalog, String schemaPattern) {
     Query.QueryBuilder queryBuilder = Query.builder();
     queryBuilder.select(
-        String.format("null AS %s, catalog_name AS %s", TABLE_SCHEM, TABLE_CATALOG));
+        String.format("'public' AS %s, 'default' AS %s", TABLE_SCHEM, TABLE_CATALOG));
 
     queryBuilder.from("information_schema.databases");
 
     List<String> conditions = new ArrayList<>();
-    Optional.ofNullable(catalog)
-        .ifPresent(c -> conditions.add(String.format("catalog_name = '%s'", c)));
+    //    Optional.ofNullable(catalog)
+    //        .ifPresent(c -> conditions.add(String.format("catalog_name = '%s'", c)));
 
     //    Uncomment below once schemas are supported
     //    Optional.ofNullable(schemaPattern)

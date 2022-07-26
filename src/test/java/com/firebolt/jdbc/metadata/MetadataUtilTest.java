@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.metadata;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -9,14 +10,15 @@ class MetadataUtilTest {
   @Test
   void shouldGetSchemasQueryWhenGettingQueryWithoutArguments() {
     assertEquals(
-        "SELECT null AS TABLE_SCHEM, catalog_name AS TABLE_CATALOG FROM information_schema.databases",
+        "SELECT 'public' AS TABLE_SCHEM, 'default' AS TABLE_CATALOG FROM information_schema.databases",
         MetadataUtil.getSchemasQuery(null, null));
   }
 
   @Test
+  @Disabled
   void shouldGetSchemasQueryWhenGettingQueryWithArguments() {
     assertEquals(
-        "SELECT null AS TABLE_SCHEM, catalog_name AS TABLE_CATALOG FROM information_schema.databases WHERE catalog_name = 'catalog'",
+        "SELECT 'public' AS TABLE_SCHEM, 'default' AS TABLE_CATALOG FROM information_schema.databases WHERE catalog_name = 'catalog'",
         MetadataUtil.getSchemasQuery("catalog", "schema%"));
   }
 

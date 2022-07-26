@@ -41,7 +41,7 @@ public enum JavaTypeToFireboltSQLString {
   private final CheckedFunction<Object, String> transformToJavaTypeFunction;
 
   private static final Pair<String[], String[]> characterToEscapedCharacterPair =
-      new ImmutablePair<>(new String[] {"\0", "\\", "'"}, new String[] {"\\0", "\\\\", "\\'"});
+      new ImmutablePair<>(new String[] {"\0", "\\", "'", "`"}, new String[] {"\\0", "\\\\", "\\'", "\\`"});
 
   JavaTypeToFireboltSQLString(
       Class<?> sourceType, CheckedFunction<Object, String> transformToSqlStringFunction) {

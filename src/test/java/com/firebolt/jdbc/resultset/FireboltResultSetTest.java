@@ -140,11 +140,23 @@ class FireboltResultSetTest {
   }
 
   @Test
-  void shouldReturnFalseWhenCallingWasNullBeforeAnyRead() throws SQLException {
+  void shouldThrowExceptionWhenCallingWasNullBeforeAnyGet() throws SQLException {
     inputStream = getInputStreamWithArray();
     resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
     resultSet.next();
-    assertFalse(resultSet.wasNull());
+    assertThrows(IllegalArgumentException.class, () -> resultSet.wasNull(), "A column must be read before checking nullability");
+  }
+
+  @Test
+  void shouldReturnTrueWhenLastValueGotWasNull() throws SQLException {
+    // This only tests that Metadata is available with the resultSet.
+    inputStream = getInputStreamWithNulls();
+    resultSet = new FireboltResultSet(inputStream);
+    resultSet.next();
+    resultSet.getObject(2);
+    assertTrue(resultSet.wasNull());
+    resultSet.next();
+    assertTrue(resultSet.wasNull());
   }
 
   @Test
@@ -426,6 +438,11 @@ class FireboltResultSetTest {
   private InputStream getInputStreamWithEmpty() {
     return FireboltResultSetTest.class.getResourceAsStream(
         "/responses/firebolt-response-with-empty");
+  }
+
+  private InputStream getInputStreamWithNulls() {
+    return FireboltResultSetTest.class.getResourceAsStream(
+            "/responses/firebolt-response-with-nulls");
   }
 
   private InputStream getInputStreamWitExplain() {

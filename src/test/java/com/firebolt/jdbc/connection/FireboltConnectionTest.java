@@ -22,6 +22,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -261,5 +264,37 @@ class FireboltConnectionTest {
     assertEquals(50, fireboltConnection.getConnectionTimeout());
   }
 
+  @Test
+  void shouldCloseConnectionWhenAbortingConnection() throws SQLException, InterruptedException {
+    FireboltConnection fireboltConnection =
+            new FireboltConnection(
+                    URL,
+                    connectionProperties,
+                    fireboltAuthenticationService,
+                    fireboltEngineService,
+                    fireboltStatementService);
+    ExecutorService executorService = Executors.newFixedThreadPool(10);
+    fireboltConnection.abort(executorService);
+    executorService.awaitTermination(1, TimeUnit.SECONDS);
+    assertTrue(fireboltConnection.isClosed());
+  }
+
+  @Test
+  void shouldRemoveExpiredToken() throws SQLException, InterruptedException {
+    FireboltConnection fireboltConnection =
+            new FireboltConnection(
+                    URL,
+                    connectionProperties,
+                    fireboltAuthenticationService,
+                    fireboltEngineService,
+                    fireboltStatementService);
+    fireboltConnection.removeExpiredTokens();
+    Properties propertiesFromUrl = new Properties();
+    propertiesFromUrl.put("host", "api.dev.firebolt.io");
+    propertiesFromUrl.put("path", "/db");
+
+    FireboltProperties fireboltProperties = FireboltProperties.of(connectionProperties, propertiesFromUrl);
+    verify(fireboltAuthenticationService).removeConnectionTokens("https://api.dev.firebolt.io:443", fireboltProperties);
+  }
 
 }

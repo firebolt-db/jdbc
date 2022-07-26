@@ -27,15 +27,16 @@ import java.util.stream.IntStream;
 public class FireboltResultSet extends AbstractResultSet {
   private final BufferedReader reader;
   private final Map<String, Integer> columnNameToColumnNumber;
-  private final List<FireboltColumn> columns;
+  private List<FireboltColumn> columns;
   private final FireboltResultSetMetaData resultSetMetaData;
   private final FireboltStatement statement;
-  boolean wasNull = false;
   private String currentLine;
   private int currentRow = 0;
   private int lastSplitRow = -1;
   private boolean isClosed = false;
   private String[] arr = new String[0];
+
+  private String lastReadValue = null;
 
   public FireboltResultSet(InputStream is) throws SQLException {
     this(is, null, null, null, false, null, false);
@@ -58,9 +59,9 @@ public class FireboltResultSet extends AbstractResultSet {
 
   private FireboltResultSet() {
     reader = // empty InputStream
-            new BufferedReader(
-                    new InputStreamReader(new ByteArrayInputStream("".getBytes()), StandardCharsets.UTF_8));
-    resultSetMetaData = FireboltResultSetMetaData.builder().build();
+        new BufferedReader(
+            new InputStreamReader(new ByteArrayInputStream("".getBytes()), StandardCharsets.UTF_8));
+    resultSetMetaData = FireboltResultSetMetaData.builder().columns(new ArrayList<>()).build();
     columnNameToColumnNumber = new HashMap<>();
     currentLine = null;
     columns = new ArrayList<>();
@@ -308,6 +309,14 @@ public class FireboltResultSet extends AbstractResultSet {
   }
 
   @Override
+  public Date getDate(int columnIndex, Calendar cal) throws SQLException {
+    log.warn(
+        "The calendar {} is ignored as Firebolt date does not hold hour information",
+        cal);
+    return getDate(columnIndex);
+  }
+
+  @Override
   public Timestamp getTimestamp(int columnIndex) throws SQLException {
     String value = this.getValueAtColumn(columnIndex);
     return BaseType.TIMESTAMP.transform(value);
@@ -404,7 +413,10 @@ public class FireboltResultSet extends AbstractResultSet {
   @Override
   public boolean wasNull() throws SQLException {
     checkStreamNotClosed();
-    return wasNull;
+    if (lastReadValue == null) {
+      throw new IllegalArgumentException("A column must be read before checking nullability");
+    }
+    return BaseType.isNull(lastReadValue);
   }
 
   @Override
@@ -414,7 +426,11 @@ public class FireboltResultSet extends AbstractResultSet {
 
   @Override
   public void setFetchSize(int rows) throws SQLException {
-    throw new FireboltUnsupportedOperationException();
+    checkStreamNotClosed();
+    if (rows < 0) {
+      throw new FireboltException("The number of rows cannot be less than 0");
+    }
+    // Not supported
   }
 
   @Override
@@ -450,7 +466,9 @@ public class FireboltResultSet extends AbstractResultSet {
 
   private String getValueAtColumn(int columnIndex) throws SQLException {
     checkStreamNotClosed();
-    return toStringArray(currentLine)[getColumnIndex(columnIndex)];
+    String value = toStringArray(currentLine)[getColumnIndex(columnIndex)];
+    lastReadValue = value;
+    return value;
   }
 
   private int getColumnIndex(int colNum) throws SQLException {

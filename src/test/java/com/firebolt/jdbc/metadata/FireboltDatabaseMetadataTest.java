@@ -108,7 +108,7 @@ class FireboltDatabaseMetadataTest {
   @Test
   void shouldGetSchemas() throws SQLException {
     String expectedSql =
-        "SELECT null AS TABLE_SCHEM, catalog_name AS TABLE_CATALOG FROM information_schema.databases";
+        "SELECT 'public' AS TABLE_SCHEM, 'default' AS TABLE_CATALOG FROM information_schema.databases";
     when(statement.executeQuery(expectedSql))
         .thenReturn(new FireboltResultSet(getInputStreamForGetSchemas()));
     ResultSet resultSet = fireboltDatabaseMetadata.getSchemas();

@@ -171,6 +171,10 @@ public class FireboltStatement extends AbstractStatement {
 
   @Override
   public void setFetchSize(int rows) throws SQLException {
+    validateStatementIsNotClosed();
+    if (rows < 0) {
+      throw new IllegalArgumentException("The number of rows cannot be less than 0");
+    }
     // Ignore
   }
 
