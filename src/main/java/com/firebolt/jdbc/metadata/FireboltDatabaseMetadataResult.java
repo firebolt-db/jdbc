@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.firebolt.jdbc.resultset.FireboltResultSet;
-import com.firebolt.jdbc.resultset.type.FireboltDataType;
+import com.firebolt.jdbc.type.FireboltDataType;
 
 import lombok.Builder;
 import lombok.Value;

@@ -1,4 +1,4 @@
-package com.firebolt.jdbc.preparedstatement;
+package com.firebolt.jdbc.statement.preparedstatement;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Timestamp;
 
+import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

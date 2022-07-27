@@ -1,4 +1,4 @@
-package com.firebolt.jdbc.resultset.type.array;
+package com.firebolt.jdbc.type.array;
 
 import java.lang.reflect.Array;
 import java.sql.SQLException;
@@ -6,12 +6,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.firebolt.jdbc.type.FireboltDataType;
 import org.apache.commons.lang3.StringUtils;
 
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltColumn;
-import com.firebolt.jdbc.resultset.type.FireboltDataType;
-import com.firebolt.jdbc.resultset.type.JavaTypeToFireboltSQLString;
+import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
 import com.google.common.base.CharMatcher;
 
 import lombok.NonNull;

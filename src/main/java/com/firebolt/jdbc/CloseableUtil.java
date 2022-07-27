@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @UtilityClass
-public class CloseableUtils {
+public class CloseableUtil {
 
 	public void close(Closeable closeable) {
 		if (closeable != null) {

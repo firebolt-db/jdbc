@@ -1,10 +1,10 @@
-package com.firebolt.jdbc.resultset.type.array;
+package com.firebolt.jdbc.type.array;
 
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Map;
 
-import com.firebolt.jdbc.resultset.type.FireboltDataType;
+import com.firebolt.jdbc.type.FireboltDataType;
 
 import lombok.Builder;
 

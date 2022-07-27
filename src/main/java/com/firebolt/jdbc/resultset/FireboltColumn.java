@@ -1,6 +1,6 @@
 package com.firebolt.jdbc.resultset;
 
-import static com.firebolt.jdbc.resultset.type.FireboltDataType.*;
+import static com.firebolt.jdbc.type.FireboltDataType.*;
 
 import java.util.Arrays;
 import java.util.List;
@@ -12,7 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.firebolt.jdbc.resultset.type.FireboltDataType;
+import com.firebolt.jdbc.type.FireboltDataType;
 
 import lombok.Builder;
 import lombok.EqualsAndHashCode;

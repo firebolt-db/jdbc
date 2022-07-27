@@ -1,4 +1,4 @@
-package com.firebolt.jdbc.resultset.type;
+package com.firebolt.jdbc.type;
 
 import java.sql.SQLException;
 

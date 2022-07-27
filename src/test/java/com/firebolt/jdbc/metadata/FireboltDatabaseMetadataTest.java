@@ -1,8 +1,8 @@
 package com.firebolt.jdbc.metadata;
 
 import static com.firebolt.jdbc.metadata.MetadataColumns.*;
-import static com.firebolt.jdbc.resultset.type.FireboltDataType.INT_32;
-import static com.firebolt.jdbc.resultset.type.FireboltDataType.STRING;
+import static com.firebolt.jdbc.type.FireboltDataType.INT_32;
+import static com.firebolt.jdbc.type.FireboltDataType.STRING;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;

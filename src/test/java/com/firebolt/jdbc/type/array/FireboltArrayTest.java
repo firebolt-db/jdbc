@@ -1,4 +1,4 @@
-package com.firebolt.jdbc.resultset.type.array;
+package com.firebolt.jdbc.type.array;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -7,9 +7,10 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.firebolt.jdbc.type.array.FireboltArray;
 import org.junit.jupiter.api.Test;
 
-import com.firebolt.jdbc.resultset.type.FireboltDataType;
+import com.firebolt.jdbc.type.FireboltDataType;
 
 class FireboltArrayTest {
 

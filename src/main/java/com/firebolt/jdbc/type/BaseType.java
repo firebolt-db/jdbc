@@ -1,4 +1,4 @@
-package com.firebolt.jdbc.resultset.type;
+package com.firebolt.jdbc.type;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -12,8 +12,8 @@ import org.apache.commons.text.StringEscapeUtils;
 
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltColumn;
-import com.firebolt.jdbc.resultset.type.array.SqlArrayUtil;
-import com.firebolt.jdbc.resultset.type.date.SqlDateUtil;
+import com.firebolt.jdbc.type.array.SqlArrayUtil;
+import com.firebolt.jdbc.type.date.SqlDateUtil;
 
 import lombok.extern.slf4j.Slf4j;
 

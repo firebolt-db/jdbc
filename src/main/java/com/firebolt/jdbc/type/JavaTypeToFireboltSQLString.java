@@ -1,8 +1,7 @@
-package com.firebolt.jdbc.resultset.type;
+package com.firebolt.jdbc.type;
 
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_NOT_SUPPORTED;
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
-import static com.firebolt.jdbc.resultset.type.BaseType.NULL_VALUE;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -12,13 +11,13 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.UUID;
 
+import com.firebolt.jdbc.type.array.SqlArrayUtil;
+import com.firebolt.jdbc.type.date.SqlDateUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.resultset.type.array.SqlArrayUtil;
-import com.firebolt.jdbc.resultset.type.date.SqlDateUtil;
 
 public enum JavaTypeToFireboltSQLString {
 	BOOLEAN(Boolean.class, value -> Boolean.TRUE.equals(value) ? "1" : "0"),
@@ -29,7 +28,7 @@ public enum JavaTypeToFireboltSQLString {
 	DOUBLE(Double.class, String::valueOf),
 	DATE(Date.class, date -> SqlDateUtil.transformFromDateToSQLStringFunction.apply((Date) date)),
 	TIMESTAMP(Timestamp.class, time -> SqlDateUtil.transformFromTimestampToSQLStringFunction.apply((Timestamp) time)),
-	BIG_DECIMAL(BigDecimal.class, value -> value == null ? NULL_VALUE : ((BigDecimal) value).toPlainString()),
+	BIG_DECIMAL(BigDecimal.class, value -> value == null ? BaseType.NULL_VALUE : ((BigDecimal) value).toPlainString()),
 	ARRAY(Array.class, SqlArrayUtil::arrayToString);
 
 	private static final Pair<String[], String[]> characterToEscapedCharacterPair = new ImmutablePair<>(
@@ -45,7 +44,7 @@ public enum JavaTypeToFireboltSQLString {
 	public static String transformAny(Object object) throws FireboltException {
 		Class<?> objectType;
 		if (object == null) {
-			return NULL_VALUE;
+			return BaseType.NULL_VALUE;
 		} else if (object.getClass().isArray()) {
 			objectType = Array.class;
 		} else {
@@ -73,7 +72,7 @@ public enum JavaTypeToFireboltSQLString {
 
 	public String transform(Object object) throws FireboltException {
 		if (object == null) {
-			return NULL_VALUE;
+			return BaseType.NULL_VALUE;
 		} else {
 			try {
 				return this.transformToJavaTypeFunction.apply(object);

@@ -1,4 +1,4 @@
-package com.firebolt.jdbc.resultset.type.array;
+package com.firebolt.jdbc.type.array;
 
 import java.sql.Array;
 import java.sql.ResultSet;

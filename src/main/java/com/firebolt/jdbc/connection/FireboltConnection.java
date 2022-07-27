@@ -26,11 +26,11 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
-import com.firebolt.jdbc.preparedstatement.FireboltPreparedStatement;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
+import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;

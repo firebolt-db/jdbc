@@ -1,4 +1,4 @@
-package com.firebolt.jdbc.preparedstatement;
+package com.firebolt.jdbc.statement.preparedstatement;
 
 import java.io.InputStream;
 import java.io.Reader;

@@ -1,4 +1,4 @@
-package com.firebolt.jdbc.preparedstatement;
+package com.firebolt.jdbc.statement.preparedstatement;
 
 import static com.firebolt.jdbc.statement.StatementUtil.replaceParameterMarksWithValues;
 
@@ -13,9 +13,9 @@ import java.util.Map;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.resultset.type.JavaTypeToFireboltSQLString;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.StatementUtil;
+import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
 
 import lombok.Builder;
 import lombok.NonNull;

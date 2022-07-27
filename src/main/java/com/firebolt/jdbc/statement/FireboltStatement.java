@@ -13,7 +13,7 @@ import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.firebolt.jdbc.CloseableUtils;
+import com.firebolt.jdbc.CloseableUtil;
 import com.firebolt.jdbc.PropertyUtil;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
@@ -86,12 +86,12 @@ public class FireboltStatement extends AbstractStatement {
 							this.sessionProperties.isLogResultSet());
 				} else {
 					currentUpdateCount = 0;
-					CloseableUtils.close(inputStream);
+					CloseableUtil.close(inputStream);
 				}
 				log.info("The query with the id {} was executed with success", this.runningStatementId);
 			}
 		} catch (Exception ex) {
-			CloseableUtils.close(inputStream);
+			CloseableUtil.close(inputStream);
 			log.error("An error happened while executing the statement with the id {}", this.runningStatementId, ex);
 			throw ex;
 		} finally {

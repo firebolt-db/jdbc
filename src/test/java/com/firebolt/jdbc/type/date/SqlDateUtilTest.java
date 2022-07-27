@@ -1,4 +1,4 @@
-package com.firebolt.jdbc.resultset.type.date;
+package com.firebolt.jdbc.type.date;
 
 import static java.sql.Time.valueOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 
+import com.firebolt.jdbc.type.date.SqlDateUtil;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.DefaultTimeZone;
 

@@ -18,10 +18,10 @@ import com.firebolt.jdbc.LoggerUtil;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
-import com.firebolt.jdbc.resultset.type.BaseType;
-import com.firebolt.jdbc.resultset.type.FireboltDataType;
-import com.firebolt.jdbc.resultset.type.array.FireboltArray;
 import com.firebolt.jdbc.statement.FireboltStatement;
+import com.firebolt.jdbc.type.BaseType;
+import com.firebolt.jdbc.type.FireboltDataType;
+import com.firebolt.jdbc.type.array.FireboltArray;
 
 import lombok.extern.slf4j.Slf4j;
 

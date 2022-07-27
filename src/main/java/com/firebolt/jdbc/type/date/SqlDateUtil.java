@@ -1,4 +1,4 @@
-package com.firebolt.jdbc.resultset.type.date;
+package com.firebolt.jdbc.type.date;
 
 import java.sql.Date;
 import java.sql.Time;

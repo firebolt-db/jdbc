@@ -2,7 +2,7 @@ package com.firebolt.jdbc.metadata;
 
 import static com.firebolt.jdbc.metadata.FireboltDatabaseMetadataResult.Column;
 import static com.firebolt.jdbc.metadata.MetadataColumns.*;
-import static com.firebolt.jdbc.resultset.type.FireboltDataType.*;
+import static com.firebolt.jdbc.type.FireboltDataType.*;
 import static java.sql.Types.VARCHAR;
 
 import java.sql.Connection;
@@ -19,7 +19,7 @@ import com.firebolt.jdbc.VersionUtil;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.resultset.FireboltColumn;
-import com.firebolt.jdbc.resultset.type.FireboltDataType;
+import com.firebolt.jdbc.type.FireboltDataType;
 
 import lombok.extern.slf4j.Slf4j;
 

@@ -1,4 +1,4 @@
-package com.firebolt.jdbc.resultset.type;
+package com.firebolt.jdbc.type;
 
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_NOT_SUPPORTED;
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
@@ -18,8 +18,8 @@ import org.junitpioneer.jupiter.DefaultTimeZone;
 
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltColumn;
-import com.firebolt.jdbc.resultset.type.array.FireboltArray;
-import com.firebolt.jdbc.resultset.type.array.SqlArrayUtil;
+import com.firebolt.jdbc.type.array.FireboltArray;
+import com.firebolt.jdbc.type.array.SqlArrayUtil;
 
 class JavaTypeToFireboltSQLStringTest {
 
