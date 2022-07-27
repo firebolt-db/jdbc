@@ -15,11 +15,10 @@ public enum FireboltDataType {
 	INT_32(Types.INTEGER, "Int32", BaseType.INTEGER.name(), BaseType.INTEGER, true, false, 11, 0, "INTEGER", "INT",
 			"Int8", "Int16", "UInt16", "UInt32"),
 	INT_64(Types.BIGINT, "Int64", "BIGINT", BaseType.LONG, true, false, 20, 0, "LONG"),
-	U_INT_64(Types.BIGINT, "UInt64", "BIGINT", BaseType.BIG_INTEGER, false, false, 20, 0), // Although not supported,
-																							// this type is still coming
-																							// from Firebolt and needs
-																							// to be handled
-	// for now
+	// Although not supported, U_INT_64 is still coming from Firebolt and needs to
+	// be handled for now
+	U_INT_64(Types.BIGINT, "UInt64", "BIGINT", BaseType.BIG_INTEGER, false, false, 20, 0),
+
 	FLOAT_32(Types.FLOAT, "Float32", BaseType.FLOAT.name(), BaseType.FLOAT, true, false, 8, 8, "FLOAT"),
 	FLOAT_64(Types.DOUBLE, "Float64", BaseType.DOUBLE.name(), BaseType.DOUBLE, true, false, 17, 17,
 			BaseType.DOUBLE.name()),

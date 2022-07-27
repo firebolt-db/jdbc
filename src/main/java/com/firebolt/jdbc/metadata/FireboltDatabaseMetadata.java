@@ -234,15 +234,9 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 						// in the future)
 				typeNullableUnknown, // It depends - A type can be nullable or not depending on
 				// the presence of the additional keyword Nullable()
-				type.isCaseSensitive() ? 1 : 0, type.getSqlType() == VARCHAR ? typeSearchable : typePredBasic, // SEARCHABLE
-																												// -
-																												// LIKE
-																												// can
-																												// only
-																												// be
-																												// used
-																												// for
-																												// VARCHAR
+				type.isCaseSensitive() ? 1 : 0,
+				type.getSqlType() == VARCHAR ? typeSearchable : typePredBasic, // SEARCHABLE, LIKE can only be used for
+																				// VARCHAR
 				type.isSigned() ? 1 : 0, 0, // FIXED_PREC_SCALE - indicates if the type can be a money value. Always
 											// false as we do not have a money type
 				0, // AUTO_INCREMENT
