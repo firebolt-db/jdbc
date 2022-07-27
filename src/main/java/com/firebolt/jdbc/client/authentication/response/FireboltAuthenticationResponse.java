@@ -1,6 +1,7 @@
 package com.firebolt.jdbc.client.authentication.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
@@ -10,12 +11,12 @@ import lombok.Value;
 @Builder
 public class FireboltAuthenticationResponse {
 
-  @JsonProperty("access_token")
-  String accessToken;
+	@JsonProperty("access_token")
+	String accessToken;
 
-  @JsonProperty("refresh_token")
-  String refreshToken;
+	@JsonProperty("refresh_token")
+	String refreshToken;
 
-  @JsonProperty("expires_in")
-  long expiresIn;
+	@JsonProperty("expires_in")
+	long expiresIn;
 }

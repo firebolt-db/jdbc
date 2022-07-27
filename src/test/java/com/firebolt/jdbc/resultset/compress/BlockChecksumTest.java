@@ -29,82 +29,74 @@ OF THE COMPANY YANDEX LLC.
  */
 package com.firebolt.jdbc.resultset.compress;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Anton Sukhonosenko <a href="mailto:algebraic@yandex-team.ru"></a>
  * @date 08.06.18
  */
 class BlockChecksumTest {
-  private static final int HEADER_SIZE_BYTES = 9;
+	private static final int HEADER_SIZE_BYTES = 9;
 
-  private static int hexToBin(char ch) {
-    if ('0' <= ch && ch <= '9') {
-      return ch - '0';
-    }
-    if ('A' <= ch && ch <= 'F') {
-      return ch - 'A' + 10;
-    }
-    if ('a' <= ch && ch <= 'f') {
-      return ch - 'a' + 10;
-    }
-    return -1;
-  }
+	private static int hexToBin(char ch) {
+		if ('0' <= ch && ch <= '9') {
+			return ch - '0';
+		}
+		if ('A' <= ch && ch <= 'F') {
+			return ch - 'A' + 10;
+		}
+		if ('a' <= ch && ch <= 'f') {
+			return ch - 'a' + 10;
+		}
+		return -1;
+	}
 
-  private static byte[] parseHexBinary(String s) {
-    final int len = s.length();
+	private static byte[] parseHexBinary(String s) {
+		final int len = s.length();
 
-    // "111" is not a valid hex encoding.
-    if (len % 2 != 0) {
-      throw new IllegalArgumentException("hexBinary needs to be even-length: " + s);
-    }
+		// "111" is not a valid hex encoding.
+		if (len % 2 != 0) {
+			throw new IllegalArgumentException("hexBinary needs to be even-length: " + s);
+		}
 
-    byte[] out = new byte[len / 2];
+		byte[] out = new byte[len / 2];
 
-    for (int i = 0; i < len; i += 2) {
-      int h = hexToBin(s.charAt(i));
-      int l = hexToBin(s.charAt(i + 1));
-      if (h == -1 || l == -1) {
-        throw new IllegalArgumentException("contains illegal character for hexBinary: " + s);
-      }
+		for (int i = 0; i < len; i += 2) {
+			int h = hexToBin(s.charAt(i));
+			int l = hexToBin(s.charAt(i + 1));
+			if (h == -1 || l == -1) {
+				throw new IllegalArgumentException("contains illegal character for hexBinary: " + s);
+			}
 
-      out[i / 2] = (byte) (h * 16 + l);
-    }
+			out[i / 2] = (byte) (h * 16 + l);
+		}
 
-    return out;
-  }
+		return out;
+	}
 
-  @Test
-  void trickyBlock() {
-    byte[] compressedData = parseHexBinary("1F000100078078000000B4000000");
-    int uncompressedSizeBytes = 35;
+	@Test
+	void trickyBlock() {
+		byte[] compressedData = parseHexBinary("1F000100078078000000B4000000");
+		int uncompressedSizeBytes = 35;
 
-    BlockChecksum checksum =
-        BlockChecksum.calculateForBlock(
-            (byte) LZ4InputStream.MAGIC,
-            compressedData.length + HEADER_SIZE_BYTES,
-            uncompressedSizeBytes,
-            compressedData,
-            compressedData.length);
+		BlockChecksum checksum = BlockChecksum.calculateForBlock((byte) LZ4InputStream.MAGIC,
+				compressedData.length + HEADER_SIZE_BYTES, uncompressedSizeBytes, compressedData,
+				compressedData.length);
 
-    assertEquals(new BlockChecksum(-493639813825217902L, -6253550521065361778L), checksum);
-  }
+		assertEquals(new BlockChecksum(-493639813825217902L, -6253550521065361778L), checksum);
+	}
 
-  @Test
-  void anotherTrickyBlock() {
-    byte[] compressedData = parseHexBinary("80D9CEF753E3A59B3F");
-    int uncompressedSizeBytes = 8;
+	@Test
+	void anotherTrickyBlock() {
+		byte[] compressedData = parseHexBinary("80D9CEF753E3A59B3F");
+		int uncompressedSizeBytes = 8;
 
-    BlockChecksum checksum =
-        BlockChecksum.calculateForBlock(
-            (byte) LZ4InputStream.MAGIC,
-            compressedData.length + HEADER_SIZE_BYTES,
-            uncompressedSizeBytes,
-            compressedData,
-            compressedData.length);
+		BlockChecksum checksum = BlockChecksum.calculateForBlock((byte) LZ4InputStream.MAGIC,
+				compressedData.length + HEADER_SIZE_BYTES, uncompressedSizeBytes, compressedData,
+				compressedData.length);
 
-    assertEquals(new BlockChecksum(-7135037831041210418L, -8214889029657590490L), checksum);
-  }
+		assertEquals(new BlockChecksum(-7135037831041210418L, -8214889029657590490L), checksum);
+	}
 }

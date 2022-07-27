@@ -1,6 +1,5 @@
 package com.firebolt.jdbc.client.config;
 
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import org.apache.hc.client5.http.DnsResolver;
 import org.apache.hc.client5.http.SchemePortResolver;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
@@ -12,23 +11,16 @@ import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.apache.hc.core5.pool.PoolReusePolicy;
 import org.apache.hc.core5.util.TimeValue;
 
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
+
 class FireboltHttpConnectionPoolingManager extends PoolingHttpClientConnectionManager {
 
-  protected FireboltHttpConnectionPoolingManager(
-      final Registry<ConnectionSocketFactory> socketFactoryRegistry,
-      final PoolConcurrencyPolicy poolConcurrencyPolicy,
-      final PoolReusePolicy poolReusePolicy,
-      final TimeValue timeToLive,
-      final SchemePortResolver schemePortResolver,
-      final DnsResolver dnsResolver,
-      final HttpConnectionFactory<ManagedHttpClientConnection> connFactory,
-      final FireboltProperties fireboltProperties) {
-    super(
-        new FireboltHttpConnectionOperator(
-            socketFactoryRegistry, schemePortResolver, dnsResolver, fireboltProperties),
-        poolConcurrencyPolicy,
-        poolReusePolicy,
-        timeToLive,
-        connFactory);
-  }
+	protected FireboltHttpConnectionPoolingManager(final Registry<ConnectionSocketFactory> socketFactoryRegistry,
+			final PoolConcurrencyPolicy poolConcurrencyPolicy, final PoolReusePolicy poolReusePolicy,
+			final TimeValue timeToLive, final SchemePortResolver schemePortResolver, final DnsResolver dnsResolver,
+			final HttpConnectionFactory<ManagedHttpClientConnection> connFactory,
+			final FireboltProperties fireboltProperties) {
+		super(new FireboltHttpConnectionOperator(socketFactoryRegistry, schemePortResolver, dnsResolver,
+				fireboltProperties), poolConcurrencyPolicy, poolReusePolicy, timeToLive, connFactory);
+	}
 }

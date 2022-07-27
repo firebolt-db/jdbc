@@ -28,160 +28,159 @@ OF THE COMPANY YANDEX LLC.
  */
 package com.firebolt.jdbc.resultset.compress;
 
-import net.jpountz.lz4.LZ4Factory;
-import net.jpountz.lz4.LZ4FastDecompressor;
-
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 
+import net.jpountz.lz4.LZ4Factory;
+import net.jpountz.lz4.LZ4FastDecompressor;
+
 /** Reader from clickhouse in lz4 */
 public class LZ4InputStream extends InputStream {
 
-  private static final LZ4Factory factory = LZ4Factory.fastestInstance();
+	public static final int MAGIC = 0x82;
+	private static final LZ4Factory factory = LZ4Factory.fastestInstance();
+	private final InputStream stream;
+	private final DataInputStream dataWrapper;
 
-  public static final int MAGIC = 0x82;
+	private byte[] currentBlock;
+	private int pointer;
 
-  private final InputStream stream;
-  private final DataInputStream dataWrapper;
+	public LZ4InputStream(InputStream stream) {
+		this.stream = stream;
+		dataWrapper = new DataInputStream(stream);
+	}
 
-  private byte[] currentBlock;
-  private int pointer;
+	// This method was picked from ru.yandex.clickhouse.util.Utils
+	private static void readFully(DataInputStream in, byte[] b, int off, int len) throws IOException {
+		Objects.requireNonNull(in);
+		Objects.requireNonNull(b);
+		if (len < 0 || off < 0) {
+			throw new IndexOutOfBoundsException(
+					String.format("length (%s) and offset (%s) cannot be negative", len, off));
+		}
+		int end = off + len;
+		if (end < off || end > b.length) {
+			throw new IndexOutOfBoundsException(String
+					.format("offset (%s) should less than length (%s) and buffer length (%s)", off, len, b.length));
+		}
 
-  public LZ4InputStream(InputStream stream) {
-    this.stream = stream;
-    dataWrapper = new DataInputStream(stream);
-  }
+		int total = 0;
+		while (total < len) {
+			int result = in.read(b, off + total, len - total);
+			if (result == -1) {
+				break;
+			}
+			total += result;
+		}
 
-  @Override
-  public int read() throws IOException {
-    if (!checkNext()) return -1;
-    byte b = currentBlock[pointer];
-    pointer += 1;
-    return b & 0xFF;
-  }
+		if (total != len) {
+			throw new EOFException(
+					"reached end of stream after reading " + total + " bytes; " + len + " bytes expected");
+		}
+	}
 
-  @Override
-  public int read(byte[] b, int off, int len) throws IOException {
-    if (b == null) {
-      throw new NullPointerException();
-    } else if (off < 0 || len < 0 || len > b.length - off) {
-      throw new IndexOutOfBoundsException();
-    } else if (len == 0) {
-      return 0;
-    }
+	// This method was picked from ru.yandex.clickhouse.util.Utils
+	private static int readInt(DataInputStream inputStream) throws IOException {
+		byte b1 = (byte) inputStream.readUnsignedByte();
+		byte b2 = (byte) inputStream.readUnsignedByte();
+		byte b3 = (byte) inputStream.readUnsignedByte();
+		byte b4 = (byte) inputStream.readUnsignedByte();
 
-    if (!checkNext()) return -1;
+		return b4 << 24 | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
+	}
 
-    int copied = 0;
-    int targetPointer = off;
-    while (copied != len) {
-      int toCopy = Math.min(currentBlock.length - pointer, len - copied);
-      System.arraycopy(currentBlock, pointer, b, targetPointer, toCopy);
-      targetPointer += toCopy;
-      pointer += toCopy;
-      copied += toCopy;
-      if (!checkNext()) { // finished
-        return copied;
-      }
-    }
-    return copied;
-  }
+	// This method was picked from ru.yandex.clickhouse.util.Utils
+	private static void readFully(DataInputStream in, byte[] b) throws IOException {
+		readFully(in, b, 0, b.length);
+	}
 
-  @Override
-  public void close() throws IOException {
-    stream.close();
-  }
+	@Override
+	public int read() throws IOException {
+		if (!checkNext())
+			return -1;
+		byte b = currentBlock[pointer];
+		pointer += 1;
+		return b & 0xFF;
+	}
 
-  private boolean checkNext() throws IOException {
-    if (currentBlock == null || pointer == currentBlock.length) {
-      currentBlock = readNextBlock();
-      pointer = 0;
-    }
-    return currentBlock != null;
-  }
+	@Override
+	public int read(byte[] b, int off, int len) throws IOException {
+		if (b == null) {
+			throw new NullPointerException();
+		} else if (off < 0 || len < 0 || len > b.length - off) {
+			throw new IndexOutOfBoundsException();
+		} else if (len == 0) {
+			return 0;
+		}
 
-  // every block is:
-  public byte[] readNextBlock() throws IOException {
-    int read = stream.read();
-    if (read < 0) return null;
+		if (!checkNext())
+			return -1;
 
-    byte[] checksum = new byte[16];
-    checksum[0] = (byte) read;
-    // checksum - 16 bytes.
-    readFully(dataWrapper, checksum, 1, 15);
-    BlockChecksum expected = BlockChecksum.fromBytes(checksum);
-    // header:
-    // 1 byte - 0x82 (shows this is LZ4)
-    int magic = dataWrapper.readUnsignedByte();
-    if (magic != MAGIC) throw new IOException("Magic is not correct: " + magic);
-    // 4 bytes - size of the compressed data including 9 bytes of the header
-    int compressedSizeWithHeader = readInt(dataWrapper);
-    // 4 bytes - size of uncompressed data
-    int uncompressedSize = readInt(dataWrapper);
-    int compressedSize = compressedSizeWithHeader - 9; // header
-    byte[] block = new byte[compressedSize];
-    // compressed data: compressed_size - 9 байт.
-    readFully(dataWrapper, block);
+		int copied = 0;
+		int targetPointer = off;
+		while (copied != len) {
+			int toCopy = Math.min(currentBlock.length - pointer, len - copied);
+			System.arraycopy(currentBlock, pointer, b, targetPointer, toCopy);
+			targetPointer += toCopy;
+			pointer += toCopy;
+			copied += toCopy;
+			if (!checkNext()) { // finished
+				return copied;
+			}
+		}
+		return copied;
+	}
 
-    BlockChecksum real =
-        BlockChecksum.calculateForBlock(
-            (byte) magic, compressedSizeWithHeader, uncompressedSize, block, compressedSize);
-    if (!real.equals(expected)) {
-      throw new IllegalArgumentException("Checksum doesn't match: corrupted data.");
-    }
+	@Override
+	public void close() throws IOException {
+		stream.close();
+	}
 
-    byte[] decompressed = new byte[uncompressedSize];
-    LZ4FastDecompressor decompressor = factory.fastDecompressor();
-    decompressor.decompress(block, 0, decompressed, 0, uncompressedSize);
-    return decompressed;
-  }
+	private boolean checkNext() throws IOException {
+		if (currentBlock == null || pointer == currentBlock.length) {
+			currentBlock = readNextBlock();
+			pointer = 0;
+		}
+		return currentBlock != null;
+	}
 
-  // This method was picked from ru.yandex.clickhouse.util.Utils
-  private static void readFully(DataInputStream in, byte[] b, int off, int len) throws IOException {
-    Objects.requireNonNull(in);
-    Objects.requireNonNull(b);
-    if (len < 0 || off < 0) {
-      throw new IndexOutOfBoundsException(
-          String.format("length (%s) and offset (%s) cannot be negative", len, off));
-    }
-    int end = off + len;
-    if (end < off || end > b.length) {
-      throw new IndexOutOfBoundsException(
-          String.format(
-              "offset (%s) should less than length (%s) and buffer length (%s)",
-              off, len, b.length));
-    }
+	// every block is:
+	public byte[] readNextBlock() throws IOException {
+		int read = stream.read();
+		if (read < 0)
+			return null;
 
-    int total = 0;
-    while (total < len) {
-      int result = in.read(b, off + total, len - total);
-      if (result == -1) {
-        break;
-      }
-      total += result;
-    }
+		byte[] checksum = new byte[16];
+		checksum[0] = (byte) read;
+		// checksum - 16 bytes.
+		readFully(dataWrapper, checksum, 1, 15);
+		BlockChecksum expected = BlockChecksum.fromBytes(checksum);
+		// header:
+		// 1 byte - 0x82 (shows this is LZ4)
+		int magic = dataWrapper.readUnsignedByte();
+		if (magic != MAGIC)
+			throw new IOException("Magic is not correct: " + magic);
+		// 4 bytes - size of the compressed data including 9 bytes of the header
+		int compressedSizeWithHeader = readInt(dataWrapper);
+		// 4 bytes - size of uncompressed data
+		int uncompressedSize = readInt(dataWrapper);
+		int compressedSize = compressedSizeWithHeader - 9; // header
+		byte[] block = new byte[compressedSize];
+		// compressed data: compressed_size - 9 байт.
+		readFully(dataWrapper, block);
 
-    if (total != len) {
-      throw new EOFException(
-          "reached end of stream after reading " + total + " bytes; " + len + " bytes expected");
-    }
-  }
+		BlockChecksum real = BlockChecksum.calculateForBlock((byte) magic, compressedSizeWithHeader, uncompressedSize,
+				block, compressedSize);
+		if (!real.equals(expected)) {
+			throw new IllegalArgumentException("Checksum doesn't match: corrupted data.");
+		}
 
-  // This method was picked from ru.yandex.clickhouse.util.Utils
-  private static int readInt(DataInputStream inputStream) throws IOException {
-    byte b1 = (byte) inputStream.readUnsignedByte();
-    byte b2 = (byte) inputStream.readUnsignedByte();
-    byte b3 = (byte) inputStream.readUnsignedByte();
-    byte b4 = (byte) inputStream.readUnsignedByte();
-
-    return b4 << 24 | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
-  }
-
-  // This method was picked from ru.yandex.clickhouse.util.Utils
-  private static void readFully(DataInputStream in, byte[] b) throws IOException {
-    readFully(in, b, 0, b.length);
-  }
+		byte[] decompressed = new byte[uncompressedSize];
+		LZ4FastDecompressor decompressor = factory.fastDecompressor();
+		decompressor.decompress(block, 0, decompressed, 0, uncompressedSize);
+		return decompressed;
+	}
 }

@@ -32,65 +32,62 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class BlockChecksum {
-  private final long first;
-  private final long second;
+	private final long first;
+	private final long second;
 
-  public BlockChecksum(long first, long second) {
-    this.first = first;
-    this.second = second;
-  }
+	public BlockChecksum(long first, long second) {
+		this.first = first;
+		this.second = second;
+	}
 
-  public static BlockChecksum fromBytes(byte[] checksum) {
-    ByteBuffer buffer = ByteBuffer.allocate(16).order(ByteOrder.LITTLE_ENDIAN).put(checksum);
-    buffer.flip();
-    return new BlockChecksum(buffer.getLong(), buffer.getLong());
-  }
+	public static BlockChecksum fromBytes(byte[] checksum) {
+		ByteBuffer buffer = ByteBuffer.allocate(16).order(ByteOrder.LITTLE_ENDIAN).put(checksum);
+		buffer.flip();
+		return new BlockChecksum(buffer.getLong(), buffer.getLong());
+	}
 
-  public static BlockChecksum calculateForBlock(
-      byte magic, int compressedSizeWithHeader, int uncompressedSize, byte[] data, int length) {
-    ByteBuffer buffer =
-        ByteBuffer.allocate(compressedSizeWithHeader)
-            .order(ByteOrder.LITTLE_ENDIAN)
-            .put(magic)
-            .putInt(compressedSizeWithHeader)
-            .putInt(uncompressedSize)
-            .put(data, 0, length);
-    buffer.flip();
-    return calculate(buffer.array());
-  }
+	public static BlockChecksum calculateForBlock(byte magic, int compressedSizeWithHeader, int uncompressedSize,
+			byte[] data, int length) {
+		ByteBuffer buffer = ByteBuffer.allocate(compressedSizeWithHeader).order(ByteOrder.LITTLE_ENDIAN).put(magic)
+				.putInt(compressedSizeWithHeader).putInt(uncompressedSize).put(data, 0, length);
+		buffer.flip();
+		return calculate(buffer.array());
+	}
 
-  public byte[] asBytes() {
-    ByteBuffer buffer =
-        ByteBuffer.allocate(16).order(ByteOrder.LITTLE_ENDIAN).putLong(first).putLong(second);
-    buffer.flip();
-    return buffer.array();
-  }
+	private static BlockChecksum calculate(byte[] data) {
+		long[] sum = CityHash.cityHash128(data, 0, data.length);
+		return new BlockChecksum(sum[0], sum[1]);
+	}
 
-  private static BlockChecksum calculate(byte[] data) {
-    long[] sum = CityHash.cityHash128(data, 0, data.length);
-    return new BlockChecksum(sum[0], sum[1]);
-  }
+	public byte[] asBytes() {
+		ByteBuffer buffer = ByteBuffer.allocate(16).order(ByteOrder.LITTLE_ENDIAN).putLong(first).putLong(second);
+		buffer.flip();
+		return buffer.array();
+	}
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
 
-    BlockChecksum that = (BlockChecksum) o;
+		BlockChecksum that = (BlockChecksum) o;
 
-    if (first != that.first) return false;
-    return second == that.second;
-  }
+		if (first != that.first)
+			return false;
+		return second == that.second;
+	}
 
-  @Override
-  public int hashCode() {
-    int result = (int) (first ^ (first >>> 32));
-    result = 31 * result + (int) (second ^ (second >>> 32));
-    return result;
-  }
+	@Override
+	public int hashCode() {
+		int result = (int) (first ^ (first >>> 32));
+		result = 31 * result + (int) (second ^ (second >>> 32));
+		return result;
+	}
 
-  @Override
-  public String toString() {
-    return "{" + first + ", " + second + '}';
-  }
+	@Override
+	public String toString() {
+		return "{" + first + ", " + second + '}';
+	}
 }
