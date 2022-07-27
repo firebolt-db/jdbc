@@ -24,7 +24,7 @@ public class StatementUtil {
   private static final Pattern SET_WITH_SPACE_REGEX =
       Pattern.compile(SET_PREFIX + " ", Pattern.CASE_INSENSITIVE);
   private static final String[] SELECT_KEYWORDS =
-      new String[] {"show", "select", "describe", "exists", "explain", "with"};
+      new String[] {"show", "select", "describe", "exists", "explain", "with", "call"};
 
   public static StatementInfoWrapper extractStatementInfo(String sql, String statementId) {
     String cleaned = StatementUtil.cleanStatement(sql);

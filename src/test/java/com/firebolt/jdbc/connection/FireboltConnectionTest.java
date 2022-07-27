@@ -12,15 +12,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayInputStream;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -229,12 +228,12 @@ class FireboltConnectionTest {
   void shouldGetEngineNameFromHost() throws SQLException {
     when(fireboltEngineService.getEngineNameFromHost(any())).thenReturn("myHost_345");
     FireboltConnection fireboltConnection =
-            new FireboltConnection(
-                    URL,
-                    connectionProperties,
-                    fireboltAuthenticationService,
-                    fireboltEngineService,
-                    fireboltStatementService);
+        new FireboltConnection(
+            URL,
+            connectionProperties,
+            fireboltAuthenticationService,
+            fireboltEngineService,
+            fireboltStatementService);
     assertEquals("myHost_345", fireboltConnection.getEngine());
   }
 
@@ -242,12 +241,12 @@ class FireboltConnectionTest {
   void shouldInitNetworkTimeoutWithPropertyByDefault() throws SQLException {
     connectionProperties.put("socket_timeout_millis", "60");
     FireboltConnection fireboltConnection =
-            new FireboltConnection(
-                    URL,
-                    connectionProperties,
-                    fireboltAuthenticationService,
-                    fireboltEngineService,
-                    fireboltStatementService);
+        new FireboltConnection(
+            URL,
+            connectionProperties,
+            fireboltAuthenticationService,
+            fireboltEngineService,
+            fireboltStatementService);
     assertEquals(60, fireboltConnection.getNetworkTimeout());
   }
 
@@ -255,24 +254,24 @@ class FireboltConnectionTest {
   void shouldInitConnectionTimeoutWithPropertyByDefault() throws SQLException {
     connectionProperties.put("connection_timeout_millis", "50");
     FireboltConnection fireboltConnection =
-            new FireboltConnection(
-                    URL,
-                    connectionProperties,
-                    fireboltAuthenticationService,
-                    fireboltEngineService,
-                    fireboltStatementService);
+        new FireboltConnection(
+            URL,
+            connectionProperties,
+            fireboltAuthenticationService,
+            fireboltEngineService,
+            fireboltStatementService);
     assertEquals(50, fireboltConnection.getConnectionTimeout());
   }
 
   @Test
   void shouldCloseConnectionWhenAbortingConnection() throws SQLException, InterruptedException {
     FireboltConnection fireboltConnection =
-            new FireboltConnection(
-                    URL,
-                    connectionProperties,
-                    fireboltAuthenticationService,
-                    fireboltEngineService,
-                    fireboltStatementService);
+        new FireboltConnection(
+            URL,
+            connectionProperties,
+            fireboltAuthenticationService,
+            fireboltEngineService,
+            fireboltStatementService);
     ExecutorService executorService = Executors.newFixedThreadPool(10);
     fireboltConnection.abort(executorService);
     executorService.awaitTermination(1, TimeUnit.SECONDS);
@@ -280,21 +279,66 @@ class FireboltConnectionTest {
   }
 
   @Test
-  void shouldRemoveExpiredToken() throws SQLException, InterruptedException {
-    FireboltConnection fireboltConnection =
-            new FireboltConnection(
-                    URL,
-                    connectionProperties,
-                    fireboltAuthenticationService,
-                    fireboltEngineService,
-                    fireboltStatementService);
-    fireboltConnection.removeExpiredTokens();
-    Properties propertiesFromUrl = new Properties();
-    propertiesFromUrl.put("host", "api.dev.firebolt.io");
-    propertiesFromUrl.put("path", "/db");
-
-    FireboltProperties fireboltProperties = FireboltProperties.of(connectionProperties, propertiesFromUrl);
-    verify(fireboltAuthenticationService).removeConnectionTokens("https://api.dev.firebolt.io:443", fireboltProperties);
+  void shouldRemoveExpiredToken() throws SQLException {
+    FireboltProperties fireboltProperties =
+        FireboltProperties.builder().host("host").path("/db").port(8080).build();
+    try (MockedStatic<FireboltProperties> mockedFireboltProperties =
+        Mockito.mockStatic(FireboltProperties.class)) {
+      when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
+      FireboltConnection fireboltConnection =
+          new FireboltConnection(
+              URL,
+              connectionProperties,
+              fireboltAuthenticationService,
+              fireboltEngineService,
+              fireboltStatementService);
+      fireboltConnection.removeExpiredTokens();
+      verify(fireboltAuthenticationService)
+          .removeConnectionTokens("http://host:8080", fireboltProperties);
+    }
   }
 
+  @Test
+  void shouldReturnConnectionTokenWhenAvailable() throws SQLException {
+    FireboltProperties fireboltProperties =
+        FireboltProperties.builder().host("host").path("/db").port(8080).build();
+    try (MockedStatic<FireboltProperties> mockedFireboltProperties =
+        Mockito.mockStatic(FireboltProperties.class)) {
+      when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
+      FireboltConnection fireboltConnection =
+          new FireboltConnection(
+              URL,
+              connectionProperties,
+              fireboltAuthenticationService,
+              fireboltEngineService,
+              fireboltStatementService);
+      FireboltConnectionTokens connectionTokens =
+          FireboltConnectionTokens.builder().accessToken("hello").build();
+      when(fireboltAuthenticationService.getConnectionTokens(
+              "http://host:8080", fireboltProperties))
+          .thenReturn(connectionTokens);
+      assertEquals(connectionTokens, fireboltConnection.getConnectionTokens().get());
+      verify(fireboltAuthenticationService)
+          .getConnectionTokens("http://host:8080", fireboltProperties);
+    }
+  }
+
+  @Test
+  void shouldNotReturnConnectionTokenWithLocalDb() throws SQLException {
+    FireboltProperties fireboltProperties =
+            FireboltProperties.builder().host("localhost").path("/db").port(8080).build();
+    try (MockedStatic<FireboltProperties> mockedFireboltProperties =
+                 Mockito.mockStatic(FireboltProperties.class)) {
+      when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
+      FireboltConnection fireboltConnection =
+              new FireboltConnection(
+                      URL,
+                      connectionProperties,
+                      fireboltAuthenticationService,
+                      fireboltEngineService,
+                      fireboltStatementService);
+      assertEquals(Optional.empty(), fireboltConnection.getConnectionTokens());
+      verifyNoInteractions(fireboltAuthenticationService);
+    }
+  }
 }

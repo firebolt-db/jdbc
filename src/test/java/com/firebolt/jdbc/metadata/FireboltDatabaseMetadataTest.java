@@ -6,6 +6,7 @@ import com.firebolt.jdbc.metadata.FireboltDatabaseMetadataResult.Column;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -106,6 +107,7 @@ class FireboltDatabaseMetadataTest {
   }
 
   @Test
+  @Disabled // To enable once schemas are supported
   void shouldGetSchemas() throws SQLException {
     String expectedSql =
         "SELECT 'public' AS TABLE_SCHEM, 'default' AS TABLE_CATALOG FROM information_schema.databases";

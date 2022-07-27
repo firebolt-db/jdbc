@@ -20,7 +20,7 @@ public class VersionUtil {
     Properties properties = new Properties();
     driverVersion = null;
     try {
-      properties.load(VersionUtil.class.getResourceAsStream("/config.properties"));
+      properties.load(VersionUtil.class.getResourceAsStream("/version.properties"));
       driverVersion = properties.getProperty("version");
     } catch (IOException e) {
       log.error("Could not get Project Version defined in the build.gradle file", e);

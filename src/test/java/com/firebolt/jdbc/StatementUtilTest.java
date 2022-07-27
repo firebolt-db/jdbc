@@ -9,9 +9,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,16 +42,20 @@ class StatementUtilTest {
   }
 
   @Test
-  void shouldFindThatShowQueryIsASelect() {
-    String query = "/* Some random command*/ SHOW DATABASES";
-    assertTrue(StatementUtil.isQuery(query));
+  void shouldFindThatStatementsWithQueryKeywordsAreQueries() {
+    List<String> keywords = Arrays.asList("shOW", "seleCt", "DESCRIBE", "exists", "explain", "with", "call");
+
+    String query = "/* Some random command*/ -- oneLineOfComment INSERT \n %s anything";
+    keywords.forEach(keyword -> assertTrue(StatementUtil.isQuery(String.format(query, keyword))));
   }
 
   @Test
-  void shouldFindThatWithQueryIsASelect() {
-    String sql = getSqlFromFile("/queries/query-with-keyword-with.sql");
-    assertTrue(StatementUtil.isQuery(sql));
+  void shouldFindThatStatementWithoutQueryKeywordsAreNotQueries() {
+    List<String> keywords = Arrays.asList("Insert", "updAte", "Delete", "hello");
+    String query = "/* Some random command SELECT */ -- oneLineOfComment SELECT \n %s anything";
+    keywords.forEach(keyword -> assertFalse(StatementUtil.isQuery(String.format(query, keyword))));
   }
+
 
   @Test
   void shouldExtractTableNameFromQuery() {

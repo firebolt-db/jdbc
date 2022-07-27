@@ -40,8 +40,11 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 
   @Override
   public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
-    Statement statement = this.createStatementWithRequiredPropertiesToQuerySystem();
-    return statement.executeQuery(MetadataUtil.getSchemasQuery(catalog, schemaPattern));
+    return FireboltDatabaseMetadataResult.builder()
+            .columns(Arrays.asList(Column.builder().name(TABLE_SCHEM).type(STRING).build(), Column.builder().name(TABLE_CATALOG).type(STRING).build()))
+            .rows(Collections.singletonList(Arrays.asList("public", "default")))
+            .build()
+            .toResultSet();
   }
 
   @Override

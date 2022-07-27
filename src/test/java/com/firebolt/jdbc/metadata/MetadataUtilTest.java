@@ -15,7 +15,7 @@ class MetadataUtilTest {
   }
 
   @Test
-  @Disabled
+  @Disabled // To enable once schemas are supported
   void shouldGetSchemasQueryWhenGettingQueryWithArguments() {
     assertEquals(
         "SELECT 'public' AS TABLE_SCHEM, 'default' AS TABLE_CATALOG FROM information_schema.databases WHERE catalog_name = 'catalog'",

@@ -1,5 +1,7 @@
 package com.firebolt.jdbc.resultset.type;
 
+import lombok.Getter;
+
 import java.sql.Types;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -7,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /** Supported data types. */
+@Getter
 public enum FireboltDataType {
   U_INT_8(
       Types.TINYINT,
@@ -101,7 +104,7 @@ public enum FireboltDataType {
   private final String internalName;
 
   private final String displayName;
-  private final BaseType fireboltBaseType;
+  private final BaseType baseType;
 
   private final boolean signed;
 
@@ -136,7 +139,7 @@ public enum FireboltDataType {
     this.sqlType = sqlType;
     this.internalName = internalName;
     this.displayName = displayName;
-    this.fireboltBaseType = baseType;
+    this.baseType = baseType;
     this.signed = signed;
     this.caseSensitive = caseSensitive;
     this.defaultPrecision = defaultPrecision;
@@ -147,37 +150,5 @@ public enum FireboltDataType {
   public static FireboltDataType ofType(String type) {
     String formattedType = type.trim().toUpperCase();
     return Optional.ofNullable(typeNameOrAliasToType.get(formattedType)).orElse(UNKNOWN);
-  }
-
-  public int getSqlType() {
-    return sqlType;
-  }
-
-  public String getInternalName() {
-    return internalName;
-  }
-
-  public String getDisplayName() {
-    return displayName;
-  }
-
-  public BaseType getBaseType() {
-    return fireboltBaseType;
-  }
-
-  public boolean isSigned() {
-    return signed;
-  }
-
-  public boolean isCaseSensitive() {
-    return caseSensitive;
-  }
-
-  public int getDefaultPrecision() {
-    return defaultPrecision;
-  }
-
-  public int getDefaultScale() {
-    return defaultScale;
   }
 }

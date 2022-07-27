@@ -103,8 +103,7 @@ public class FireboltAccountClient extends FireboltClient {
     } catch (FireboltException exception) {
       if (exception.getType() == ExceptionType.RESOURCE_NOT_FOUND) {
         throw new FireboltException(
-            String.format("The DB %s could not be found", dbName),
-            exception,
+            String.format("The database with the name %s could not be found", dbName), exception,
             ExceptionType.RESOURCE_NOT_FOUND);
       } else {
         throw exception;

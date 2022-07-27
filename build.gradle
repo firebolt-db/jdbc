@@ -5,10 +5,7 @@ plugins {
 
 group 'com.firebolt'
 
-def props = new Properties()
-file("src/main/resources/config.properties").withInputStream { props.load(it) }
-
-version = props.getProperty("version")
+version = 2.0
 
 repositories {
     mavenCentral()
@@ -70,7 +67,7 @@ jar {
 }
 
 // Generate file containing project version
-def generatedVersionDir = "${buildDir}/generated-version"
+def generatedVersionDir = "${buildDir}/resources"
 
 sourceSets {
     main {
