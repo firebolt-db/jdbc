@@ -8,13 +8,15 @@
         <file>${user.home}/.firebolt/logs/firebolt-jdbc.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${user.home}/.firebolt/logs/%d{yyyy-MM-dd}/firebolt-jdbc.log.gz</fileNamePattern>
+            <totalSizeCap>3GB</totalSizeCap>
+            <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
             <pattern>%d %p %c{1.} [%t] %m%n</pattern>
         </encoder>
     </appender>
-    <logger name="org.apache.http" level="ERROR"/>
-    <root level="DEBUG">
+    <logger name="org.apache.hc" level="error"/>
+    <root level="INFO">
         <appender-ref ref="FILE"/>
     </root>
 </configuration>

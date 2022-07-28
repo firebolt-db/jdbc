@@ -1,4 +1,4 @@
-table_catalog	table_schema	table_name	table_type
-STRING	STRING	STRING	STRING
-default	public	ex_lineitem	DIMENSION
-default	public	test_1	FACT
+table_schema	table_name	table_type
+STRING	STRING	STRING
+public	ex_lineitem	DIMENSION
+public	test_1	FACT

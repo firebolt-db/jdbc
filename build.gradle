@@ -3,8 +3,9 @@ plugins {
     id 'jacoco'
 }
 
-group 'io.firebolt'
-version '2.0-SNAPSHOT'
+group 'com.firebolt'
+
+version = '2.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -44,10 +45,10 @@ jacocoTestReport {
     afterEvaluate {
         classDirectories.setFrom(files(classDirectories.files.collect {
             fileTree(dir: it, exclude: [
-                    "io/firebolt/jdbc/client/config/**",
-                    "io/firebolt/jdbc/FireboltDriver.class",
-                    "io/firebolt/jdbc/connection/settings/FireboltProperties.class",
-                    "io/firebolt/jdbc/**/Abstract*.class"
+                    "com/firebolt/jdbc/client/config/**",
+                    "com/firebolt/jdbc/FireboltDriver.class",
+                    "com/firebolt/jdbc/connection/settings/FireboltProperties.class",
+                    "com/firebolt/jdbc/**/Abstract*.class"
             ])
         }))
     }
@@ -65,7 +66,7 @@ jar {
 }
 
 // Generate file containing project version
-def generatedVersionDir = "${buildDir}/generated-version"
+def generatedVersionDir = "${buildDir}/resources"
 
 sourceSets {
     main {
