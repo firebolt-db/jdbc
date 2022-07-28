@@ -7,7 +7,7 @@ This is the repository of the new type 4 JDBC driver for Firebolt.
 This driver is currently in alpha version. Please refer to the [Firebolt documentation](https://docs.firebolt.io/) to have the official version of the driver.
 
 ## Development
-The code of this repository is formatted using the Eclipse formatter. It was chosen because it is supported by other IDEs (such as Intellij).
+The code of this repository is formatted using the Eclipse formatter, which was chosen because it is supported by multiple modern IDEs (such as Intellij).
 ### Formatter configuration for Intellij
 1. Download and install [Adapter for Eclipse Code Formatter](https://github.com/google/google-java-format)
    1. Refer to the [instructions](https://github.com/krasa/EclipseCodeFormatter#instructions) if needed
