@@ -11,6 +11,14 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    integrationTestImplementation.extendsFrom implementation
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestCompileOnly.extendsFrom compileOnly
+    integrationTestAnnotationProcessor.extendsFrom annotationProcessor
+    integrationTestRuntimeOnly.extendsFrom runtimeOnly
+}
+
 dependencies {
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'ch.qos.logback:logback-classic:1.2.11'
@@ -38,6 +46,13 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+tasks.register('integrationTest', Test) {
+    description = 'Runs integration tests.'
+    useJUnitPlatform()
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
 }
 
 jacocoTestReport {
@@ -72,6 +87,11 @@ sourceSets {
     main {
         output.dir(generatedVersionDir, builtBy: 'generateVersionProperties')
     }
+    integrationTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+
 }
 
 task generateVersionProperties {
