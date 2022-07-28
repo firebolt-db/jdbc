@@ -278,7 +278,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public String getSchemaTerm() throws SQLException {
-		return "database";
+		return "schema";
 	}
 
 	@Override
@@ -288,7 +288,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public String getCatalogTerm() throws SQLException {
-		return "catalog";
+		return "database";
 	}
 
 	@Override

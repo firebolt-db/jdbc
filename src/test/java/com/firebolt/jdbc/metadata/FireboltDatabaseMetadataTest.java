@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -47,6 +46,7 @@ class FireboltDatabaseMetadataTest {
 	void init() throws SQLException {
 		lenient().when(fireboltConnection.createStatement(any())).thenReturn(statement);
 		lenient().when(fireboltConnection.createStatement()).thenReturn(statement);
+		lenient().when(fireboltConnection.getCatalog()).thenReturn("db_name");
 		lenient().when(fireboltConnection.getSessionProperties()).thenReturn(FireboltProperties.builder().build());
 		lenient().when(statement.executeQuery(any())).thenReturn(FireboltResultSet.empty());
 	}
@@ -66,7 +66,7 @@ class FireboltDatabaseMetadataTest {
 	void shouldReturnCatalogs() throws SQLException {
 		ResultSet expectedResultSet = FireboltDatabaseMetadataResult.builder()
 				.columns(Collections.singletonList(Column.builder().name(TABLE_CAT).type(STRING).build()))
-				.rows(Collections.singletonList(Collections.singletonList(DEFAULT_CATALOG_VALUE))).build()
+				.rows(Collections.singletonList(Collections.singletonList("db_name"))).build()
 				.toResultSet();
 
 		ResultSet actualResultSet = fireboltDatabaseMetadata.getCatalogs();
@@ -100,26 +100,26 @@ class FireboltDatabaseMetadataTest {
 		assertFalse(fireboltDatabaseMetadata.supportsTransactionIsolationLevel(1));
 	}
 
-	@Test
-	@Disabled // To enable once schemas are supported
-	void shouldGetSchemas() throws SQLException {
-		String expectedSql = "SELECT 'public' AS TABLE_SCHEM, 'default' AS TABLE_CATALOG FROM information_schema.databases";
-		when(statement.executeQuery(expectedSql)).thenReturn(new FireboltResultSet(getInputStreamForGetSchemas()));
-		ResultSet resultSet = fireboltDatabaseMetadata.getSchemas();
-		verify(statement).executeQuery(expectedSql);
-
-		ResultSet expectedResultSet = FireboltDatabaseMetadataResult.builder()
-				.columns(Arrays.asList(Column.builder().name(TABLE_SCHEM).type(STRING).build(),
-						Column.builder().name(TABLE_CATALOG).type(STRING).build()))
-				.rows(Arrays.asList(Arrays.asList("Tutorial_11_04", "default"), Arrays.asList("system", "default")))
-				.build().toResultSet();
-
-		verifyResultSetEquality(expectedResultSet, resultSet);
-	}
+//	@Test
+//	@Disabled // To enable once schemas are supported
+//	void shouldGetSchemas() throws SQLException {
+//		String expectedSql = "SELECT 'public' AS TABLE_SCHEM, 'default' AS TABLE_CATALOG FROM information_schema.databases";
+//		when(statement.executeQuery(expectedSql)).thenReturn(new FireboltResultSet(getInputStreamForGetSchemas()));
+//		ResultSet resultSet = fireboltDatabaseMetadata.getSchemas();
+//		verify(statement).executeQuery(expectedSql);
+//
+//		ResultSet expectedResultSet = FireboltDatabaseMetadataResult.builder()
+//				.columns(Arrays.asList(Column.builder().name(TABLE_SCHEM).type(STRING).build(),
+//						Column.builder().name(TABLE_CATALOG).type(STRING).build()))
+//				.rows(Arrays.asList(Arrays.asList("Tutorial_11_04", "default"), Arrays.asList("system", "default")))
+//				.build().toResultSet();
+//
+//		verifyResultSetEquality(expectedResultSet, resultSet);
+//	}
 
 	@Test
 	void shouldGetColumns() throws SQLException {
-		String expectedQuery = "SELECT table_catalog, table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns WHERE table_name LIKE 'c' AND column_name LIKE 'd'";
+		String expectedQuery = "SELECT table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns WHERE table_name LIKE 'c' AND column_name LIKE 'd' AND table_schema LIKE 'b'";
 
 		ResultSet expectedResultSet = FireboltDatabaseMetadataResult.builder()
 				.columns(Arrays.asList(Column.builder().name(TABLE_CAT).type(STRING).build(),
@@ -146,7 +146,7 @@ class FireboltDatabaseMetadataTest {
 						Column.builder().name(SOURCE_DATA_TYPE).type(INT_32).build(),
 						Column.builder().name(IS_AUTOINCREMENT).type(STRING).build(),
 						Column.builder().name(IS_GENERATEDCOLUMN).type(STRING).build()))
-				.rows(Collections.singletonList(Arrays.asList(DEFAULT_CATALOG_VALUE, null, // schema
+				.rows(Collections.singletonList(Arrays.asList("db_name", "Tutorial_11_04", // schema
 						"D2_TIMESTAMP", // table name
 						"id", // column name
 						Types.INTEGER, // sql data type
@@ -186,9 +186,9 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void shouldGetTables() throws SQLException {
-		String expectedSqlForTables = "SELECT table_catalog, table_schema, table_name, table_type FROM information_schema.tables WHERE table_name LIKE 'tab%' AND table_catalog LIKE 'catalog' AND table_type NOT LIKE 'EXTERNAL' order by table_schema, table_name";
+		String expectedSqlForTables = "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_schema LIKE 'def%' AND table_name LIKE 'tab%' AND table_type NOT LIKE 'EXTERNAL' order by table_schema, table_name";
 
-		String expectedSqlForViews = "SELECT table_catalog, table_schema, table_name FROM information_schema.views WHERE table_name LIKE 'tab%' AND table_catalog LIKE 'catalog' order by table_schema, table_name";
+		String expectedSqlForViews = "SELECT table_schema, table_name FROM information_schema.views WHERE table_schema LIKE 'def%' AND table_name LIKE 'tab%' order by table_schema, table_name";
 
 		when(statement.executeQuery(expectedSqlForTables))
 				.thenReturn(new FireboltResultSet(getInputStreamForGetTables()));
@@ -199,10 +199,10 @@ class FireboltDatabaseMetadataTest {
 		verify(statement).executeQuery(expectedSqlForTables);
 		verify(statement).executeQuery(expectedSqlForViews);
 
-		List<List<?>> rows = new ArrayList<>();
-		rows.add(Arrays.asList("default", null, "ex_lineitem", "TABLE", null, null, null, null, null, null, null, null,
-				null));
-		rows.add(Arrays.asList("default", null, "test_1", "TABLE", null, null, null, null, null, null, null, null,
+		List<List<?>> expectedRows = new ArrayList<>();
+		expectedRows.add(Arrays.asList("db_name", "public", "ex_lineitem", "TABLE", null, null, null, null, null, null, null,
+				null, null));
+		expectedRows.add(Arrays.asList("db_name", "public", "test_1", "TABLE", null, null, null, null, null, null, null, null,
 				null));
 
 		ResultSet expectedResultSet = FireboltDatabaseMetadataResult.builder()
@@ -216,7 +216,7 @@ class FireboltDatabaseMetadataTest {
 						Column.builder().name(TYPE_NAME).type(STRING).build(),
 						Column.builder().name(SELF_REFERENCING_COL_NAME).type(STRING).build(),
 						Column.builder().name(REF_GENERATION).type(STRING).build()))
-				.rows(rows).build().toResultSet();
+				.rows(expectedRows).build().toResultSet();
 
 		verifyResultSetEquality(expectedResultSet, resultSet);
 	}

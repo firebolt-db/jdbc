@@ -29,6 +29,9 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 	private final String url;
 	private final FireboltConnection connection;
 	private String databaseVersion;
+	private static final String PUBLIC_SCHEMA_NAME = "public";
+	private static final String INFORMATION_SCHEMA_NAME = "information_schema";
+	private static final String CATALOG_SCHEMA_NAME = "catalog";
 
 	public FireboltDatabaseMetadata(String url, FireboltConnection connection) {
 		this.url = url;
@@ -42,10 +45,14 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 
 	@Override
 	public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
+		String dbName = connection.getSessionProperties().getDatabase();
+		List<String> publicRow = Arrays.asList(PUBLIC_SCHEMA_NAME, dbName);
+		List<String> informationSchemaRow = Arrays.asList(INFORMATION_SCHEMA_NAME, dbName);
+		List<String> catalogRow = Arrays.asList(CATALOG_SCHEMA_NAME, dbName);
 		return FireboltDatabaseMetadataResult.builder()
 				.columns(Arrays.asList(Column.builder().name(TABLE_SCHEM).type(STRING).build(),
 						Column.builder().name(TABLE_CATALOG).type(STRING).build()))
-				.rows(Collections.singletonList(Arrays.asList("public", "default"))).build().toResultSet();
+				.rows(Arrays.asList(publicRow, informationSchemaRow, catalogRow)).build().toResultSet();
 	}
 
 	@Override
@@ -59,7 +66,7 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 	public ResultSet getCatalogs() throws SQLException {
 		return FireboltDatabaseMetadataResult.builder()
 				.columns(Collections.singletonList(Column.builder().name(TABLE_CAT).type(STRING).build()))
-				.rows(Collections.singletonList(Collections.singletonList(DEFAULT_CATALOG_VALUE))).build()
+				.rows(Collections.singletonList(Collections.singletonList(connection.getCatalog()))).build()
 				.toResultSet();
 	}
 
@@ -124,7 +131,7 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 				List<?> row;
 				FireboltColumn columnInfo = FireboltColumn.of(columnDescription.getString("data_type"),
 						columnDescription.getString("column_name"));
-				row = Arrays.asList(columnDescription.getString("table_catalog"), "\\N", // schema
+				row = Arrays.asList(connection.getCatalog(), columnDescription.getString("table_schema"), // schema
 						columnDescription.getString("table_name"), // table name
 						columnDescription.getString("column_name"), // column name
 						String.valueOf(columnInfo.getDataType().getSqlType()), // sql data type
@@ -187,9 +194,9 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 			Set<String> types = typesArr != null ? new HashSet<>(Arrays.asList(typesArr)) : null;
 			while (tables.next()) {
 				List<String> row = new ArrayList<>();
-				row.add(tables.getString(1));
-				row.add("\\N");
-				row.add(tables.getString(3));
+				row.add(connection.getCatalog());
+				row.add(tables.getString("table_schema"));
+				row.add(tables.getString("table_name"));
 				String tableType = isView ? "VIEW" : "TABLE";
 				row.add(tableType);
 				for (int i = 3; i < 9; i++) {
@@ -227,24 +234,28 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 		List<List<?>> rows = new ArrayList<>();
 		List<FireboltDataType> usableTypes = Arrays.asList(INT_32, INT_64, FLOAT_32, FLOAT_64, STRING, DATE, DATE_32,
 				DATE_TIME, DATE_TIME_64, DECIMAL, ARRAY, U_INT_8, TUPLE);
-		usableTypes.forEach(type -> rows.add(Arrays.asList(type.getDisplayName(), type.getSqlType(),
-				type.getDefaultPrecision(), type.getSqlType() == VARCHAR ? "'" : null, // LITERAL_PREFIX - ' for VARCHAR
-				type.getSqlType() == VARCHAR ? "'" : null, // LITERAL_SUFFIX - ' for VARCHAR
-				null, // Description of the creation parameters - can be null (can set if needed
-						// in the future)
-				typeNullableUnknown, // It depends - A type can be nullable or not depending on
-				// the presence of the additional keyword Nullable()
-				type.isCaseSensitive() ? 1 : 0,
-				type.getSqlType() == VARCHAR ? typeSearchable : typePredBasic, // SEARCHABLE, LIKE can only be used for
-																				// VARCHAR
-				type.isSigned() ? 1 : 0, 0, // FIXED_PREC_SCALE - indicates if the type can be a money value. Always
-											// false as we do not have a money type
-				0, // AUTO_INCREMENT
-				null, // LOCAL_TYPE_NAME
-				null, // MINIMUM_SCALE - There is no minimum scale
-				type.getDefaultScale(), null, // SQL_DATA_TYPE - Not needed - reserved for future use
-				null, // SQL_DATETIME_SUB - Not needed - reserved for future use
-				COMMON_RADIX)));
+		usableTypes
+				.forEach(type -> rows.add(Arrays.asList(type.getDisplayName(), type.getSqlType(),
+						type.getDefaultPrecision(), type.getSqlType() == VARCHAR ? "'" : null, // LITERAL_PREFIX - ' for
+																								// VARCHAR
+						type.getSqlType() == VARCHAR ? "'" : null, // LITERAL_SUFFIX - ' for VARCHAR
+						null, // Description of the creation parameters - can be null (can set if needed
+								// in the future)
+						typeNullableUnknown, // It depends - A type can be nullable or not depending on
+						// the presence of the additional keyword Nullable()
+						type.isCaseSensitive() ? 1 : 0, type.getSqlType() == VARCHAR ? typeSearchable
+								: typePredBasic, /*
+													 * SEARCHABLE - LIKE can only be used for VARCHAR
+													 */
+						type.isSigned() ? 1 : 0, 0, // FIXED_PREC_SCALE - indicates if the type can be a money value.
+													// Always
+													// false as we do not have a money type
+						0, // AUTO_INCREMENT
+						null, // LOCAL_TYPE_NAME
+						null, // MINIMUM_SCALE - There is no minimum scale
+						type.getDefaultScale(), null, // SQL_DATA_TYPE - Not needed - reserved for future use
+						null, // SQL_DATETIME_SUB - Not needed - reserved for future use
+						COMMON_RADIX)));
 
 		return FireboltDatabaseMetadataResult.builder().columns(columns).rows(rows).build().toResultSet();
 	}

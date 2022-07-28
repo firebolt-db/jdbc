@@ -32,7 +32,7 @@ public class FireboltStatement extends AbstractStatement {
 	private final FireboltProperties sessionProperties;
 	private final FireboltConnection connection;
 	private String runningStatementId;
-	private boolean closeOnCompletion = true;
+	private boolean closeOnCompletion = false;
 	private int currentUpdateCount = -1;
 	private int maxRows;
 	private volatile boolean isClosed = false;

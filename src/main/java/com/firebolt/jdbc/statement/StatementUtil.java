@@ -238,10 +238,11 @@ public class StatementUtil {
 
 	private String removeCommentsFromSubstring(String subString) {
 		subString = RegExUtils.replaceAll(subString, MULTI_LINE_COMMENTS_REGEX, "");
-		return RegExUtils.replaceAll(subString, SINGLE_LINE_COMMENTS_REGEX, "\n"); // Escape to next line to avoid words
-																					// being merged when comments are
-																					// added at the end
-		// of the line
+		return RegExUtils.replaceAll(subString, SINGLE_LINE_COMMENTS_REGEX,
+				"\n"); /*
+						 * Escape to next line to avoid words being merged when comments are added at
+						 * the end of the line
+						 */
 	}
 
 	private Optional<Pair<String, String>> extractPropertyPair(String cleanStatement, String sql) {

@@ -240,4 +240,31 @@ class FireboltConnectionTest {
 			verifyNoInteractions(fireboltAuthenticationService);
 		}
 	}
+
+	@Test
+	void shouldSetNetworkTimeout() throws SQLException {
+		FireboltProperties fireboltProperties = FireboltProperties.builder().host("localhost").path("/db")
+				.socketTimeoutMillis(5).port(8080).build();
+		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
+			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
+			FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
+					fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
+			assertEquals(5, fireboltConnection.getNetworkTimeout());
+			fireboltConnection.setNetworkTimeout(null, 1);
+			assertEquals(1, fireboltConnection.getNetworkTimeout());
+		}
+	}
+
+	@Test
+	void shouldUseConnectionTimeoutFromProperties() throws SQLException {
+		FireboltProperties fireboltProperties = FireboltProperties.builder().host("localhost").path("/db")
+				.connectionTimeoutMillis(20).port(8080).build();
+		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
+			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
+			FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
+					fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
+			assertEquals(20, fireboltConnection.getConnectionTimeout());
+		}
+	}
+
 }

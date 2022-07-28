@@ -8,7 +8,6 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class MetadataColumns {
-	public static final String DEFAULT_CATALOG_VALUE = "default";
 	public static final String TABLE_CAT = "TABLE_CAT";
 	public static final String TABLE_CATALOG = "TABLE_CATALOG";
 	public static final String TABLE_SCHEM = "TABLE_SCHEM";

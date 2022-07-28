@@ -52,9 +52,10 @@ public enum FireboltSessionProperty {
 			"TCP option that defines the maximum number of keep-alive probes to be sent. TCP probes a connection that has been idle for some amount of time. If the remote system does not respond to a keep-alive probe, TCP retransmits the probe a certain number of times before a connection is considered to be broken."),
 	TCP_KEEP_INTERVAL("tcp_keep_interval", 30, Integer.class, false,
 			"TCP option that defines the number of seconds to wait before retransmitting a keep-alive probe. TCP probes a connection that has been idle for some amount of time. If the remote system does not respond to a keep-alive probe, TCP retransmits the probe after some amount of time."),
-	COMPRESS( // compress should always be used as the HTTP response code is sometimes
-				// incorrect when
-				// not using it
+	COMPRESS( /*
+				 * compress should always be used as the HTTP response code is sometimes
+				 * incorrect when not using it
+				 */
 			"compress", true, Boolean.class, false,
 			"Whether to compress transferred data or not. Compressed by default"),
 	DATABASE("database", null, String.class, false, "default database name"),
