@@ -1,0 +1,41 @@
+name: Run integration tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to run tests against'
+        type: choice
+        required: true
+        default: 'dev'
+        options:
+          - dev
+          - staging
+      database:
+        description: 'Database'
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Prepare java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '8'
+          server-id: repsy
+          server-username: REPSY_USER # Env variable name for user (defined on deploy step)
+          server-password: REPSY_PASSWORD # Env variable name for password
+
+      - name: Build
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: build -x test
+
+      - name: Run integration tests
+        run: ./gradlew test --tests integration* -Ddb=${{ github.event.inputs.database }} -Dapi=api.${{ github.event.inputs.environment }}.firebolt.io -Dpassword="${{ secrets.FIREBOLT_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_USERNAME }}"
