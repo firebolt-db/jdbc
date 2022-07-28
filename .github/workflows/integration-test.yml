@@ -38,4 +38,4 @@ jobs:
           arguments: build -x test
 
       - name: Run integration tests
-        run: ./gradlew test --tests integration* -Ddb=${{ github.event.inputs.database }} -Dapi=api.${{ github.event.inputs.environment }}.firebolt.io -Dpassword="${{ secrets.FIREBOLT_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_USERNAME }}"
+        run: ./gradlew integrationTest -Ddb=${{ github.event.inputs.database }} -Dapi=api.${{ github.event.inputs.environment }}.firebolt.io -Dpassword="${{ secrets.FIREBOLT_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_USERNAME }}"
