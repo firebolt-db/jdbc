@@ -1,0 +1,4 @@
+table_schema	table_name	table_type
+STRING	STRING	STRING
+public	ex_lineitem	DIMENSION
+public	test_1	FACT

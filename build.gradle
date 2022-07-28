@@ -3,40 +3,56 @@ plugins {
     id 'jacoco'
 }
 
-group 'io.firebolt'
-version '2.0-SNAPSHOT'
+group 'com.firebolt'
+
+version = '2.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
 }
 
+configurations {
+    integrationTestImplementation.extendsFrom implementation
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestCompileOnly.extendsFrom compileOnly
+    integrationTestAnnotationProcessor.extendsFrom annotationProcessor
+    integrationTestRuntimeOnly.extendsFrom runtimeOnly
+}
+
 dependencies {
-    compileOnly 'org.projectlombok:lombok:1.18.24'
-    implementation 'com.squareup.okhttp3:okhttp:4.9.3'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'ch.qos.logback:logback-classic:1.2.11'
     implementation 'com.google.guava:guava:31.1-jre'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.2.2'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.3'
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'net.jodah:expiringmap:0.5.10'
-    implementation 'org.apache.httpcomponents:httpclient:4.5.13'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.1.3'
+    implementation 'org.apache.httpcomponents.core5:httpcore5:5.1.3'
+    implementation 'org.apache.commons:commons-text:1.9'
+    implementation 'org.lz4:lz4-java:1.8.0'
 
+    compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
     testCompileOnly 'org.projectlombok:lombok:1.18.24'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.22'
-    testImplementation 'org.mockito:mockito-junit-jupiter:4.5.1'
-    testImplementation 'org.mockito:mockito-core:4.5.1'
-    testImplementation 'org.mockito:mockito-inline:4.5.1'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
 
+    testImplementation 'org.mockito:mockito-junit-jupiter:4.6.1'
+    testImplementation 'org.mockito:mockito-core:4.6.1'
+    testImplementation 'org.mockito:mockito-inline:4.6.1'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+    testImplementation group: 'org.junit-pioneer', name: 'junit-pioneer', version: '1.7.1'
 }
 
 test {
     useJUnitPlatform()
-    testLogging {
-        events "passed", "skipped", "failed"
-    }
+}
+
+tasks.register('integrationTest', Test) {
+    description = 'Runs integration tests.'
+    useJUnitPlatform()
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
 }
 
 jacocoTestReport {
@@ -44,9 +60,10 @@ jacocoTestReport {
     afterEvaluate {
         classDirectories.setFrom(files(classDirectories.files.collect {
             fileTree(dir: it, exclude: [
-                    "io/firebolt/jdbc/client/config/**",
-                    "io/firebolt/jdbc/connection/settings/FireboltProperties.class",
-                    "io/firebolt/jdbc/FireboltDriver.class"
+                    "com/firebolt/jdbc/client/config/**",
+                    "com/firebolt/jdbc/FireboltDriver.class",
+                    "com/firebolt/jdbc/connection/settings/FireboltProperties.class",
+                    "com/firebolt/jdbc/**/Abstract*.class"
             ])
         }))
     }
@@ -64,12 +81,17 @@ jar {
 }
 
 // Generate file containing project version
-def generatedVersionDir = "${buildDir}/generated-version"
+def generatedVersionDir = "${buildDir}/resources"
 
 sourceSets {
     main {
         output.dir(generatedVersionDir, builtBy: 'generateVersionProperties')
     }
+    integrationTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+
 }
 
 task generateVersionProperties {

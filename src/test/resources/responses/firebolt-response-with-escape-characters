@@ -1,0 +1,3 @@
+output_lqp
+String
+[0] [Aggregate] GroupBy: [] Aggregates: [COUNT(DISTINCT FB_NODE_2.a1), APPROX_COUNT_DISTINCT(FB_NODE_2.a1)] @ FB_NODE_1\n \\_[1] [StoredTable] Name: \'ft\', used 1/1 column(s) FACT @ FB_NODE_2\n
