@@ -1,4 +1,4 @@
-package integration;
+package integration.tests;
 
 import static com.firebolt.jdbc.metadata.MetadataColumns.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -6,7 +6,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,43 +13,30 @@ import java.util.List;
 import java.util.Map;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import com.google.common.io.Resources;
-
-import lombok.SneakyThrows;
+import integration.ConnectionInfo;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class DatabaseMetaDataTest {
+class DatabaseMetaDataTest extends IntegrationTest {
 
 	@BeforeAll
-	@SneakyThrows
 	void beforeAll() {
-		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
-			String dropTable = Resources.toString(DatabaseMetaDataTest.class.getResource("/queries/drop-table.sql"),
-					StandardCharsets.UTF_8);
-			String createTable = Resources.toString(DatabaseMetaDataTest.class.getResource("/queries/create-table.sql"),
-					StandardCharsets.UTF_8);
-			statement.execute(dropTable);
-			statement.execute(createTable);
-		}
+		executeStatementFromFile("/queries/metadata/metadata-test-ddl.sql");
 	}
 
-	private Connection createConnection() throws SQLException {
-		return DriverManager.getConnection(
-				"jdbc:firebolt://" + integration.ConnectionInfo.getInstance().getApi() + "/"
-						+ integration.ConnectionInfo.getInstance().getDatabase(),
-				integration.ConnectionInfo.getInstance().getUser(),
-				integration.ConnectionInfo.getInstance().getPassword());
+	@AfterAll
+	void afterAll() {
+		executeStatementFromFile("/queries/metadata/clean-up.sql");
 	}
 
 	@Test
-	void shouldReturnSchema() throws SQLException, ClassNotFoundException {
-		Class.forName("com.firebolt.FireboltDriver");
+	void shouldReturnSchema() throws SQLException {
 		List<String> schemas = new ArrayList<>();
 		List<String> catalogs = new ArrayList<>();
 		try (Connection connection = createConnection()) {

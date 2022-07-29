@@ -76,4 +76,8 @@ public class FireboltStatementService {
 		}
 		return Optional.empty();
 	}
+
+	public boolean isStatementRunning(String statementId) {
+		return statementClient.isStatementRunning(statementId);
+	}
 }

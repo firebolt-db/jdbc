@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS "integration_test" CASCADE;
 CREATE FACT TABLE IF NOT EXISTS "integration_test" (
     id BIGINT,
 	ts timestamp NULL,
@@ -5,4 +6,4 @@ CREATE FACT TABLE IF NOT EXISTS "integration_test" (
 	success BOOLEAN NULL,
     year int
 )
-primary index ts
+primary index id

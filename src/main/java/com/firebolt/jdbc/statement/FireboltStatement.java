@@ -285,4 +285,9 @@ public class FireboltStatement extends AbstractStatement {
 			throw new FireboltException("Cannot proceed: the statement does not return a ResultSet");
 		}
 	}
+
+	public boolean isStatementRunning() {
+		return this.runningStatementId != null &&
+				statementService.isStatementRunning(this.runningStatementId);
+	}
 }

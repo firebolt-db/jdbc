@@ -135,10 +135,10 @@ public class FireboltConnection extends AbstractConnection {
 		return this.createStatement(this.getSessionProperties());
 	}
 
-	public Statement createStatement(FireboltProperties tmpProperties) throws SQLException {
+	public Statement createStatement(FireboltProperties fireboltProperties) throws SQLException {
 		this.validateConnectionIsNotClose();
 		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-				.sessionProperties(tmpProperties).connection(this).build();
+				.sessionProperties(fireboltProperties).connection(this).build();
 		this.addStatement(fireboltStatement);
 		return fireboltStatement;
 	}
@@ -357,7 +357,7 @@ public class FireboltConnection extends AbstractConnection {
 			FireboltProperties tmpProperties = FireboltProperties.copy(this.sessionProperties);
 			tmpProperties.addProperty(property);
 			validateConnection(tmpProperties);
-			this.sessionProperties = tmpProperties;
+			this.sessionProperties.addProperty(property);
 		} catch (FireboltException e) {
 			throw e;
 		} catch (Exception e) {
