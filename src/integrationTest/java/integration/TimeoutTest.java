@@ -14,22 +14,22 @@ import lombok.extern.slf4j.Slf4j;
 class TimeoutTest {
 
 	@Test
-	void whenTestThenDoNotTimeout() {
+	void shouldExecuteRequestWithoutTimeout() {
 		long startTime = System.nanoTime();
 		long endTime = System.nanoTime();
-		long timeElapsed = endTime - startTime;
-		try {
-			Class.forName("com.firebolt.FireboltDriver");
-			Connection con = DriverManager.getConnection(
-					"jdbc:firebolt://" + integration.ConnectionInfo.getInstance().getApi() + "/"
-							+ integration.ConnectionInfo.getInstance().getDatabase() + "?use_standard_sql=0&advanced_mode=1",
-					integration.ConnectionInfo.getInstance().getUser(), integration.ConnectionInfo.getInstance().getPassword());
+		try (Connection con = DriverManager.getConnection(
+				"jdbc:firebolt://" + integration.ConnectionInfo.getInstance().getApi() + "/"
+						+ integration.ConnectionInfo.getInstance().getDatabase()
+						+ "?use_standard_sql=0&advanced_mode=1",
+				integration.ConnectionInfo.getInstance().getUser(),
+				integration.ConnectionInfo.getInstance().getPassword());) {
+
 			Statement stmt = con.createStatement();
 			stmt.executeQuery("SELECT sleepEachRow(1) from numbers(360)");
 		} catch (Exception e) {
 			log.error("Error", e);
 			fail();
 		}
-		log.info("Time elapsed: " + timeElapsed);
+		log.info("Time elapsed: " + (endTime - startTime) / 1_000_000_000 + " seconds");
 	}
 }
