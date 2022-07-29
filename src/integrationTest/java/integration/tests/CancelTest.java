@@ -8,12 +8,10 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.FireboltStatement;
@@ -35,6 +33,7 @@ class CancelTest extends IntegrationTest {
 	}
 
 	@Test
+	@Timeout(value = 2, unit = TimeUnit.MINUTES)
 	void shouldCancelQuery() throws SQLException, InterruptedException {
 		String tableName = extractTableName();
 		long totalRecordsToInsert = 1000000000L;
@@ -74,7 +73,7 @@ class CancelTest extends IntegrationTest {
 			rs.next();
 			long count = rs.getInt(1);
 			log.info("{} records were added to table {} before the statement got cancelled", count, tableName);
-			Thread.sleep(15000); // waiting to see if more records are being added
+			Thread.sleep(5000); // waiting to see if more records are being added
 			rs = countStatement.executeQuery(countAddedRecordsQuery);
 			rs.next();
 			assertEquals(count, rs.getInt(1));

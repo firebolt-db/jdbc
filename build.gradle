@@ -47,6 +47,7 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
 }
 
 tasks.register('integrationTest', Test) {
@@ -59,6 +60,7 @@ tasks.register('integrationTest', Test) {
     testLogging.exceptionFormat = 'full'
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath
+    maxParallelForks = (int) (Runtime.runtime.availableProcessors() / 2 + 1)
 }
 
 jacocoTestReport {

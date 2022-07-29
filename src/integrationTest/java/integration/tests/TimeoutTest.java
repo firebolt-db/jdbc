@@ -4,8 +4,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
 import java.sql.Statement;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,9 +15,9 @@ import lombok.extern.slf4j.Slf4j;
 class TimeoutTest extends IntegrationTest {
 
 	@Test
+	@Timeout(value = 7, unit = TimeUnit.MINUTES)
 	void shouldExecuteRequestWithoutTimeout() {
 		long startTime = System.nanoTime();
-		long endTime = System.nanoTime();
 		try (Connection con = this.createConnection(); Statement stmt = con.createStatement()) {
 			this.setParam(con, "use_standard_sql", "0");
 			this.setParam(con, "advanced_mode", "1");
@@ -24,6 +26,6 @@ class TimeoutTest extends IntegrationTest {
 			log.error("Error", e);
 			fail();
 		}
-		log.info("Time elapsed: " + (endTime - startTime) / 1_000_000_000 + " seconds");
+		log.info("Time elapsed: " + (System.nanoTime() - startTime) / 1_000_000_000 + " seconds");
 	}
 }
