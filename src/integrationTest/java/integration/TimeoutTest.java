@@ -27,7 +27,7 @@ class TimeoutTest {
 			Statement stmt = con.createStatement();
 			stmt.executeQuery("SELECT sleepEachRow(1) from numbers(360)");
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Error", e);
 			fail();
 		}
 		log.info("Time elapsed: " + timeElapsed);

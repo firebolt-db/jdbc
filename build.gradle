@@ -51,6 +51,11 @@ test {
 tasks.register('integrationTest', Test) {
     description = 'Runs integration tests.'
     useJUnitPlatform()
+    options {
+        systemProperties(System.getProperties())
+    }
+    testLogging.showStandardStreams = true
+    testLogging.exceptionFormat = 'full'
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath
 }
