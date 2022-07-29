@@ -95,6 +95,13 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			try (CloseableHttpResponse response = this.execute(post, fireboltProperties.getHost())) {
 				EntityUtils.consumeQuietly(response.getEntity());
 			}
+		} catch (FireboltException e) {
+			if (e.getType() == ExceptionType.INVALID_REQUEST) {
+				// 400 on that request indicates that the statement does not exist
+				log.warn(e.getMessage());
+			} else {
+				throw e;
+			}
 		} catch (Exception e) {
 			throw new FireboltException(
 					String.format("Could not cancel query: %s at %s", id, fireboltProperties.getHost()), e);

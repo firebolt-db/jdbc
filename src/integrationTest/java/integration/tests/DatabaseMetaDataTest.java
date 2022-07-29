@@ -16,23 +16,21 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 
 import integration.ConnectionInfo;
-import lombok.extern.slf4j.Slf4j;
+import integration.IntegrationTest;
 
-@Slf4j
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+
 class DatabaseMetaDataTest extends IntegrationTest {
 
 	@BeforeAll
 	void beforeAll() {
-		executeStatementFromFile("/queries/metadata/metadata-test-ddl.sql");
+		executeStatementFromFile("/statements/metadata/ddl.sql");
 	}
 
 	@AfterAll
 	void afterAll() {
-		executeStatementFromFile("/queries/metadata/clean-up.sql");
+		executeStatementFromFile("/statements/metadata/cleanup.sql");
 	}
 
 	@Test

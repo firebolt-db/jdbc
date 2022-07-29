@@ -11,25 +11,29 @@ import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.FireboltStatement;
 
+import integration.IntegrationTest;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CancelTest extends IntegrationTest {
+
+class StatementCancelTest extends IntegrationTest {
 
 	@BeforeAll
 	void beforeAll() {
-		executeStatementFromFile("/queries/cancel/cancel-test-ddl.sql");
+		executeStatementFromFile("/statements/statement-cancel/ddl.sql");
 	}
 
 	@AfterAll
 	void afterAll() {
-		executeStatementFromFile("/queries/cancel/clean-up.sql");
+		executeStatementFromFile("/statements/statement-cancel/cleanup.sql");
 	}
 
 	@Test
@@ -55,7 +59,7 @@ class CancelTest extends IntegrationTest {
 					}
 				});
 				thread.start();
-				while (!insertStatement.isStatementRunning() && thread.isAlive()) {
+				while (!insertStatement.isStatementRunning()) {
 					Thread.sleep(1000);
 				}
 				insertStatement.cancel();

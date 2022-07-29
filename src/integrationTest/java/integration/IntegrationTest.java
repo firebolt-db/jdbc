@@ -1,4 +1,4 @@
-package integration.tests;
+package integration;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
@@ -6,10 +6,15 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.junit.jupiter.api.TestInstance;
+
 import com.google.common.io.Resources;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class IntegrationTest {
 	protected Connection createConnection() throws SQLException {
 		return DriverManager.getConnection(

@@ -6,12 +6,15 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import integration.IntegrationTest;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Disabled
 class TimeoutTest extends IntegrationTest {
 
 	@Test

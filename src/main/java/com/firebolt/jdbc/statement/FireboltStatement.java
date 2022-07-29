@@ -55,6 +55,11 @@ public class FireboltStatement extends AbstractStatement {
 	}
 
 	public ResultSet execute(String sql, Map<String, String> statementParams) throws SQLException {
+		if (resultSet != null && !this.resultSet.isClosed()) {
+			this.resultSet.close();
+			this.resultSet = null;
+			log.info("There was already an opened ResultSet for the statement object. The ResultSet is now closed.");
+		}
 		synchronized (this) {
 			this.validateStatementIsNotClosed();
 		}
@@ -62,12 +67,6 @@ public class FireboltStatement extends AbstractStatement {
 		InputStream inputStream = null;
 		try {
 			log.info("Executing the statement with id {} : {}", this.runningStatementId, sql);
-			if (resultSet != null && !this.resultSet.isClosed()) {
-				this.resultSet.close();
-				this.resultSet = null;
-				log.info(
-						"There was already an opened ResultSet for the statement object. The ResultSet is now closed.");
-			}
 			StatementInfoWrapper statementInfo = StatementUtil.extractStatementInfo(sql, runningStatementId);
 			if (statementInfo.getType() == StatementInfoWrapper.StatementType.PARAM_SETTING) {
 				this.connection.addProperty(statementInfo.getParam());
@@ -134,6 +133,8 @@ public class FireboltStatement extends AbstractStatement {
 				statementService.abortStatement(statementId, this.sessionProperties);
 			}
 			log.debug("Statement with id {} was aborted", statementId);
+		} catch (FireboltException e) {
+			throw e;
 		} catch (Exception e) {
 			throw new FireboltException("Could not abort statement", e);
 		} finally {
@@ -287,7 +288,6 @@ public class FireboltStatement extends AbstractStatement {
 	}
 
 	public boolean isStatementRunning() {
-		return this.runningStatementId != null &&
-				statementService.isStatementRunning(this.runningStatementId);
+		return this.runningStatementId != null && statementService.isStatementRunning(this.runningStatementId);
 	}
 }
