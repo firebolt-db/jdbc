@@ -13,23 +13,22 @@ import java.util.List;
 import java.util.Map;
 
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import integration.ConnectionInfo;
 import integration.IntegrationTest;
 
-
 class DatabaseMetaDataTest extends IntegrationTest {
 
-	@BeforeAll
+	@BeforeEach
 	void beforeAll() {
 		executeStatementFromFile("/statements/metadata/ddl.sql");
 	}
 
-	@AfterAll
-	void afterAll() {
+	@AfterEach
+	void afterEach() {
 		executeStatementFromFile("/statements/metadata/cleanup.sql");
 	}
 

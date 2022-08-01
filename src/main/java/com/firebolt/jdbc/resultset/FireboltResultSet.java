@@ -15,6 +15,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
 import com.firebolt.jdbc.LoggerUtil;
+import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
@@ -25,6 +26,9 @@ import com.firebolt.jdbc.type.array.FireboltArray;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * ResultSet following the TabSeparatedWithNamesAndTypes format
+ */
 @Slf4j
 public class FireboltResultSet extends AbstractResultSet {
 	private final BufferedReader reader;
@@ -39,6 +43,10 @@ public class FireboltResultSet extends AbstractResultSet {
 	private String[] arr = new String[0];
 
 	private String lastReadValue = null;
+
+	public FireboltResultSet(InputStream is, String tableName, String dbName) throws SQLException {
+		this(is, tableName, dbName, null, false, null, false);
+	}
 
 	public FireboltResultSet(InputStream is) throws SQLException {
 		this(is, null, null, null, false, null, false);
@@ -496,5 +504,11 @@ public class FireboltResultSet extends AbstractResultSet {
 			return iface.cast(this);
 		}
 		throw new SQLException("Cannot unwrap to " + iface.getName());
+	}
+
+	public static FireboltResultSet of(QueryResult queryResult) throws SQLException {
+		return new FireboltResultSet(new ByteArrayInputStream(queryResult.toString().getBytes()),
+				queryResult.getTableName(), queryResult.getDatabaseName());
+
 	}
 }

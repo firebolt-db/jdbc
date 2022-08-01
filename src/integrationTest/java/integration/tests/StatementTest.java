@@ -6,9 +6,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.firebolt.jdbc.exception.FireboltException;
@@ -17,16 +16,15 @@ import integration.IntegrationTest;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Disabled
 class StatementTest extends IntegrationTest {
 
-	@BeforeAll
-	void beforeAll() {
+	@BeforeEach
+	void beforeEach() {
 		executeStatementFromFile("/statements/statement/ddl.sql");
 	}
 
-	@AfterAll
-	void afterAll() {
+	@AfterEach
+	void afterEach() {
 		executeStatementFromFile("/statements/statement/cleanup.sql");
 	}
 

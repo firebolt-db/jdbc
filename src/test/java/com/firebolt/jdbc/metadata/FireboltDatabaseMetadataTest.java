@@ -24,11 +24,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.firebolt.jdbc.QueryResult;
+import com.firebolt.jdbc.QueryResult.Column;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.metadata.FireboltDatabaseMetadataResult.Column;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.statement.FireboltStatement;
+import com.firebolt.jdbc.testutils.AssertionUtil;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltDatabaseMetadataTest {
@@ -53,30 +55,29 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void shouldReturnTableTypes() throws SQLException {
-		ResultSet expectedResultSet = FireboltDatabaseMetadataResult.builder()
+		ResultSet expectedResultSet = FireboltResultSet.of(QueryResult.builder()
 				.columns(Collections.singletonList(Column.builder().name("TABLE_TYPE").type(STRING).build()))
-				.rows(Collections.singletonList(Arrays.asList("TABLE", "VIEW", "OTHER"))).build().toResultSet();
+				.rows(Collections.singletonList(Arrays.asList("TABLE", "VIEW", "OTHER"))).build());
 
 		ResultSet actualResultSet = fireboltDatabaseMetadata.getTableTypes();
 
-		verifyResultSetEquality(expectedResultSet, actualResultSet);
+		AssertionUtil.assertResultSetEquality(expectedResultSet, actualResultSet);
 	}
 
 	@Test
 	void shouldReturnCatalogs() throws SQLException {
-		ResultSet expectedResultSet = FireboltDatabaseMetadataResult.builder()
+		ResultSet expectedResultSet = FireboltResultSet.of(QueryResult.builder()
 				.columns(Collections.singletonList(Column.builder().name(TABLE_CAT).type(STRING).build()))
-				.rows(Collections.singletonList(Collections.singletonList("db_name"))).build()
-				.toResultSet();
+				.rows(Collections.singletonList(Collections.singletonList("db_name"))).build());
 
 		ResultSet actualResultSet = fireboltDatabaseMetadata.getCatalogs();
 
-		verifyResultSetEquality(expectedResultSet, actualResultSet);
+		AssertionUtil.assertResultSetEquality(expectedResultSet, actualResultSet);
 	}
 
 	@Test
 	void shouldNotReturnAnyProcedureColumns() throws SQLException {
-		verifyResultSetEquality(FireboltResultSet.empty(),
+		AssertionUtil.assertResultSetEquality(FireboltResultSet.empty(),
 				fireboltDatabaseMetadata.getProcedureColumns(null, null, null, null));
 	}
 
@@ -121,7 +122,7 @@ class FireboltDatabaseMetadataTest {
 	void shouldGetColumns() throws SQLException {
 		String expectedQuery = "SELECT table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns WHERE table_name LIKE 'c' AND column_name LIKE 'd' AND table_schema LIKE 'b'";
 
-		ResultSet expectedResultSet = FireboltDatabaseMetadataResult.builder()
+		ResultSet expectedResultSet = FireboltResultSet.of(QueryResult.builder()
 				.columns(Arrays.asList(Column.builder().name(TABLE_CAT).type(STRING).build(),
 						Column.builder().name(TABLE_SCHEM).type(STRING).build(),
 						Column.builder().name(TABLE_NAME).type(STRING).build(),
@@ -167,21 +168,21 @@ class FireboltDatabaseMetadataTest {
 						null, // "SOURCE_DATA_TYPE" - Unused
 						"NO", // IS_AUTOINCREMENT - Not supported
 						"NO")))
-				.build().toResultSet();
+				.build());
 
 		when(statement.executeQuery(expectedQuery))
 				.thenReturn(new FireboltResultSet(this.getInputStreamForGetColumns()));
 
 		ResultSet resultSet = fireboltDatabaseMetadata.getColumns("a", "b", "c", "d");
 		verify(statement).executeQuery(expectedQuery);
-		verifyResultSetEquality(expectedResultSet, resultSet);
+		AssertionUtil.assertResultSetEquality(expectedResultSet, resultSet);
 	}
 
 	@Test
 	void shouldGetTypeInfo() throws SQLException {
 		ResultSet resultSet = fireboltDatabaseMetadata.getTypeInfo();
 		ResultSet expectedTypeInfo = new FireboltResultSet(this.getExpectedTypeInfo());
-		verifyResultSetEquality(expectedTypeInfo, resultSet);
+		AssertionUtil.assertResultSetEquality(expectedTypeInfo, resultSet);
 	}
 
 	@Test
@@ -200,12 +201,12 @@ class FireboltDatabaseMetadataTest {
 		verify(statement).executeQuery(expectedSqlForViews);
 
 		List<List<?>> expectedRows = new ArrayList<>();
-		expectedRows.add(Arrays.asList("db_name", "public", "ex_lineitem", "TABLE", null, null, null, null, null, null, null,
+		expectedRows.add(Arrays.asList("db_name", "public", "ex_lineitem", "TABLE", null, null, null, null, null, null,
+				null, null, null));
+		expectedRows.add(Arrays.asList("db_name", "public", "test_1", "TABLE", null, null, null, null, null, null, null,
 				null, null));
-		expectedRows.add(Arrays.asList("db_name", "public", "test_1", "TABLE", null, null, null, null, null, null, null, null,
-				null));
 
-		ResultSet expectedResultSet = FireboltDatabaseMetadataResult.builder()
+		ResultSet expectedResultSet = FireboltResultSet.of(QueryResult.builder()
 				.columns(Arrays.asList(Column.builder().name(TABLE_CAT).type(STRING).build(),
 						Column.builder().name(TABLE_SCHEM).type(STRING).build(),
 						Column.builder().name(TABLE_NAME).type(STRING).build(),
@@ -216,9 +217,9 @@ class FireboltDatabaseMetadataTest {
 						Column.builder().name(TYPE_NAME).type(STRING).build(),
 						Column.builder().name(SELF_REFERENCING_COL_NAME).type(STRING).build(),
 						Column.builder().name(REF_GENERATION).type(STRING).build()))
-				.rows(expectedRows).build().toResultSet();
+				.rows(expectedRows).build());
 
-		verifyResultSetEquality(expectedResultSet, resultSet);
+		AssertionUtil.assertResultSetEquality(expectedResultSet, resultSet);
 	}
 
 	@Test
@@ -249,16 +250,6 @@ class FireboltDatabaseMetadataTest {
 		when(statement.executeQuery("SELECT version FROM information_schema.engines WHERE engine_name iLIKE 'test%'"))
 				.thenReturn(new FireboltResultSet(getInputStreamForGetVersion()));
 		assertEquals(0, fireboltDatabaseMetadata.getDatabaseMinorVersion());
-	}
-
-	private void verifyResultSetEquality(ResultSet expected, ResultSet actual) throws SQLException {
-		assertEquals(expected.getMetaData(), actual.getMetaData());
-		while (expected.next()) {
-			actual.next();
-			for (int i = 0; i < expected.getMetaData().getColumnCount(); i++) {
-				assertEquals(expected.getObject(i + 1), actual.getObject(i + 1));
-			}
-		}
 	}
 
 	private InputStream getInputStreamForGetColumns() {

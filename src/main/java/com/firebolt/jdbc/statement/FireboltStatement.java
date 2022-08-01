@@ -80,7 +80,7 @@ public class FireboltStatement extends AbstractStatement {
 							.extractDbNameAndTableNamePairFromQuery(statementInfo.getSql());
 
 					resultSet = new FireboltResultSet(inputStream, dbNameAndTableNamePair.getRight().orElse("unknown"),
-							dbNameAndTableNamePair.getRight().orElse(this.sessionProperties.getDatabase()),
+							dbNameAndTableNamePair.getLeft().orElse(this.sessionProperties.getDatabase()),
 							this.sessionProperties.getBufferSize(), this.sessionProperties.isCompress(), this,
 							this.sessionProperties.isLogResultSet());
 				} else {

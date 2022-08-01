@@ -11,8 +11,8 @@ import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -23,16 +23,15 @@ import integration.IntegrationTest;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-
 class StatementCancelTest extends IntegrationTest {
 
-	@BeforeAll
-	void beforeAll() {
+	@BeforeEach
+	void beforeEach() {
 		executeStatementFromFile("/statements/statement-cancel/ddl.sql");
 	}
 
-	@AfterAll
-	void afterAll() {
+	@AfterEach
+	void afterEach() {
 		executeStatementFromFile("/statements/statement-cancel/cleanup.sql");
 	}
 

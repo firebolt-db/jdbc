@@ -14,7 +14,7 @@ public enum FireboltDataType {
 	U_INT_8(Types.TINYINT, "UInt8", BaseType.INTEGER.name(), BaseType.INTEGER, false, false, 3, 0, "BOOLEAN"),
 	INT_32(Types.INTEGER, "Int32", BaseType.INTEGER.name(), BaseType.INTEGER, true, false, 11, 0, "INTEGER", "INT",
 			"Int8", "Int16", "UInt16", "UInt32"),
-	INT_64(Types.BIGINT, "Int64", "BIGINT", BaseType.LONG, true, false, 20, 0, "LONG"),
+	INT_64(Types.BIGINT, "Int64", "BIGINT", BaseType.LONG, true, false, 20, 0, "LONG", "BIGINT"),
 	// Although not supported, U_INT_64 is still coming from Firebolt and needs to
 	// be handled for now
 	U_INT_64(Types.BIGINT, "UInt64", "BIGINT", BaseType.BIG_INTEGER, false, false, 20, 0),

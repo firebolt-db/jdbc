@@ -235,8 +235,8 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
 			inserts.add(this.prepareSQL(row));
 		}
 		for (int i = 0; i < inserts.size(); i++) {
-			result[i] = 1;
 			this.execute(inserts.get(i));
+			result[i] = SUCCESS_NO_INFO;
 		}
 		return result;
 	}
