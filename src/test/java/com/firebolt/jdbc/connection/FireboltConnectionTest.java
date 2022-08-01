@@ -68,12 +68,12 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldReInitConnectionWhenTokenIsExpired() throws SQLException {
-		when(fireboltEngineService.getEngineHost(any(), any()))
+		when(fireboltEngineService.getEngineHost(any(), any(), any()))
 				.thenThrow(new FireboltException("The token is expired", ExceptionType.EXPIRED_TOKEN))
 				.thenReturn("engine");
 		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
-		verify(fireboltEngineService, times(2)).getEngineHost(any(), any());
+		verify(fireboltEngineService, times(2)).getEngineHost(any(), any(), any());
 		assertFalse(fireboltConnection.isClosed());
 	}
 
@@ -205,6 +205,8 @@ class FireboltConnectionTest {
 				.build();
 		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
 			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
+			when(fireboltAuthenticationService.getConnectionTokens("http://host:8080", fireboltProperties))
+					.thenReturn(FireboltConnectionTokens.builder().build());
 			FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 					fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
 			fireboltConnection.removeExpiredTokens();
@@ -218,13 +220,14 @@ class FireboltConnectionTest {
 				.build();
 		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
 			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
-			FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
-					fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
 			FireboltConnectionTokens connectionTokens = FireboltConnectionTokens.builder().accessToken("hello").build();
 			when(fireboltAuthenticationService.getConnectionTokens("http://host:8080", fireboltProperties))
 					.thenReturn(connectionTokens);
-			assertEquals(connectionTokens, fireboltConnection.getConnectionTokens().get());
+			FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
+					fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
 			verify(fireboltAuthenticationService).getConnectionTokens("http://host:8080", fireboltProperties);
+			assertEquals(connectionTokens, fireboltConnection.getConnectionTokens().get());
+
 		}
 	}
 

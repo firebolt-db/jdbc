@@ -96,8 +96,10 @@ public class FireboltConnection extends AbstractConnection {
 
 	private void connect() throws FireboltException {
 		try {
+			String accessToken = this.getConnectionTokens().map(FireboltConnectionTokens::getAccessToken).orElse("");
 			if (!PropertyUtil.isLocalDb(this.loginProperties)) {
-				String engineHost = fireboltEngineService.getEngineHost(httpConnectionUrl, loginProperties);
+				String engineHost = fireboltEngineService.getEngineHost(httpConnectionUrl, loginProperties,
+						accessToken);
 				this.sessionProperties = loginProperties.toBuilder().host(engineHost).build();
 			} else {
 				this.sessionProperties = loginProperties;

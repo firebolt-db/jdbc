@@ -29,7 +29,6 @@ import org.apache.hc.core5.util.Timeout;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
 
@@ -58,10 +57,9 @@ public abstract class FireboltClient {
 				customClients != null ? customClients : "");
 	}
 
-	protected <T> T getResource(String uri, String host, Class<T> valueType)
+	protected <T> T getResource(String uri, String host, String accessToken, Class<T> valueType)
 			throws IOException, ParseException, FireboltException {
-		HttpGet httpGet = createGetRequest(uri,
-				this.getConnection().getConnectionTokens().map(FireboltConnectionTokens::getAccessToken).orElse(null));
+		HttpGet httpGet = createGetRequest(uri, accessToken);
 		try (CloseableHttpResponse response = this.execute(httpGet, host)) {
 			String responseStr = EntityUtils.toString(response.getEntity());
 			return objectMapper.readValue(responseStr, valueType);

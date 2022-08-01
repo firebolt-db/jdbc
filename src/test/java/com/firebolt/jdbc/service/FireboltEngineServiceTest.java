@@ -25,7 +25,7 @@ class FireboltEngineServiceTest {
 	private static final String DB_NAME = "dbName";
 	private static final String ENGINE_NAME = "engineName";
 	private static final String ENGINE_ID = "engineId";
-	private static final Boolean IS_COMPRESS = false;
+	private static final String ACCESS_TOKEN = "token";
 
 	@Mock
 	private FireboltAccountClient fireboltAccountClient;
@@ -38,13 +38,13 @@ class FireboltEngineServiceTest {
 		FireboltProperties properties = FireboltProperties.builder().host(HOST).account(ACCOUNT_ID).database(DB_NAME)
 				.compress(false).build();
 
-		when(fireboltAccountClient.getAccountId(properties.getHost(), properties.getAccount()))
+		when(fireboltAccountClient.getAccountId(properties.getHost(), properties.getAccount(), ACCESS_TOKEN))
 				.thenReturn(Optional.of(ACCOUNT_ID));
 
-		fireboltEngineService.getEngineHost(HOST, properties);
+		fireboltEngineService.getEngineHost(HOST, properties, ACCESS_TOKEN);
 
-		verify(fireboltAccountClient).getAccountId(properties.getHost(), properties.getAccount());
-		verify(fireboltAccountClient).getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME);
+		verify(fireboltAccountClient).getAccountId(properties.getHost(), properties.getAccount(), ACCESS_TOKEN);
+		verify(fireboltAccountClient).getDbDefaultEngineAddress(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
 		verifyNoMoreInteractions(fireboltAccountClient);
 	}
 
@@ -52,15 +52,15 @@ class FireboltEngineServiceTest {
 	void shouldGetEngineAddressWhenEngineNameIsPresent() throws Exception {
 		FireboltProperties properties = FireboltProperties.builder().host(HOST).account(ACCOUNT_ID).database(DB_NAME)
 				.engine(ENGINE_NAME).compress(false).build();
-		when(fireboltAccountClient.getAccountId(properties.getHost(), properties.getAccount()))
+		when(fireboltAccountClient.getAccountId(properties.getHost(), properties.getAccount(), ACCESS_TOKEN))
 				.thenReturn(Optional.of(ACCOUNT_ID));
-		when(fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME)).thenReturn(ENGINE_ID);
+		when(fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN)).thenReturn(ENGINE_ID);
 
-		fireboltEngineService.getEngineHost(HOST, properties);
+		fireboltEngineService.getEngineHost(HOST, properties, ACCESS_TOKEN);
 
-		verify(fireboltAccountClient).getAccountId(properties.getHost(), ACCOUNT_ID);
-		verify(fireboltAccountClient).getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME);
-		verify(fireboltAccountClient).getEngineAddress(HOST, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID);
+		verify(fireboltAccountClient).getAccountId(properties.getHost(), ACCOUNT_ID, ACCESS_TOKEN);
+		verify(fireboltAccountClient).getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN);
+		verify(fireboltAccountClient).getEngineAddress(HOST, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN);
 		verifyNoMoreInteractions(fireboltAccountClient);
 	}
 

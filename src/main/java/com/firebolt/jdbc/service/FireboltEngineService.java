@@ -16,19 +16,21 @@ import lombok.extern.slf4j.Slf4j;
 public class FireboltEngineService {
 	private final FireboltAccountClient fireboltAccountClient;
 
-	public String getEngineHost(String connectionUrl, FireboltProperties loginProperties) throws FireboltException {
+	public String getEngineHost(String connectionUrl, FireboltProperties loginProperties, String accessToken)
+			throws FireboltException {
 		String accountId = null;
 		try {
 			if (StringUtils.isNotEmpty(loginProperties.getAccount())) {
-				accountId = fireboltAccountClient.getAccountId(connectionUrl, loginProperties.getAccount())
+				accountId = fireboltAccountClient.getAccountId(connectionUrl, loginProperties.getAccount(), accessToken)
 						.orElse(null);
 			}
 			if (StringUtils.isEmpty(loginProperties.getEngine()))
 				return fireboltAccountClient.getDbDefaultEngineAddress(connectionUrl, accountId,
-						loginProperties.getDatabase());
-			String engineID = fireboltAccountClient.getEngineId(connectionUrl, accountId, loginProperties.getEngine());
+						loginProperties.getDatabase(), accessToken);
+			String engineID = fireboltAccountClient.getEngineId(connectionUrl, accountId, loginProperties.getEngine(),
+					accessToken);
 			return fireboltAccountClient.getEngineAddress(connectionUrl, accountId, loginProperties.getEngine(),
-					engineID);
+					engineID, accessToken);
 		} catch (FireboltException e) {
 			throw e;
 		} catch (Exception e) {
