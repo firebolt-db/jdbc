@@ -38,13 +38,15 @@ class StatementCancelTest extends IntegrationTest {
 	@Test
 	@Timeout(value = 2, unit = TimeUnit.MINUTES)
 	void shouldCancelQuery() throws SQLException, InterruptedException {
-		String tableName = extractTableName();
-		long totalRecordsToInsert = 1000000000L;
-		String query = String.format("INSERT INTO %s SELECT id FROM generateRandom('id Int8') LIMIT %d", tableName,
-				totalRecordsToInsert);
 		try (Connection connection = createConnection()) {
+			this.setParam(connection, "use_standard_sql", "0");
+			String tableName = extractTableNameWithNonStandardSql(connection, "cancel_test");
+			long totalRecordsToInsert = 1000000000L;
+			String query = String.format("INSERT INTO %s SELECT id FROM generateRandom('id Int8') LIMIT %d", tableName,
+					totalRecordsToInsert);
+
 			try (FireboltStatement insertStatement = (FireboltStatement) connection.createStatement()) {
-				this.setParam(connection, "use_standard_sql", "0");
+
 				Thread thread = new Thread(() -> {
 					try {
 						insertStatement.execute(query);
@@ -86,14 +88,16 @@ class StatementCancelTest extends IntegrationTest {
 
 	}
 
-	private String extractTableName() throws SQLException {
+	/**
+	 * Extract table name when non-standard sql is used
+	 */
+	private String extractTableNameWithNonStandardSql(Connection connection, String testTableName) throws SQLException {
 		String tableName = null;
-		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
-			this.setParam(connection, "use_standard_sql", "0");
+		try (Statement statement = connection.createStatement()) {
 			ResultSet resultSet = statement.executeQuery("SHOW tables");
 			while (resultSet.next() && tableName == null) {
 				log.info(resultSet.getString(1));
-				if (StringUtils.startsWith(resultSet.getString(1), "cancel_test")
+				if (StringUtils.startsWith(resultSet.getString(1), testTableName)
 						&& StringUtils.endsWith(resultSet.getString(1), "_distributed")) {
 					tableName = resultSet.getString(1);
 				}
