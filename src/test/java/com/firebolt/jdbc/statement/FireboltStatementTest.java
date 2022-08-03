@@ -141,7 +141,7 @@ class FireboltStatementTest {
 	}
 
 	@Test
-	void shouldThrowAnExceptionWhenExecutingQueryOnANonQueryStatement() throws SQLException {
+	void shouldThrowAnExceptionWhenExecutingQueryOnANonQueryStatement() {
 		try (MockedConstruction<FireboltResultSet> mockedResultSet = Mockito
 				.mockConstruction(FireboltResultSet.class)) {
 			FireboltConnection connection = mock(FireboltConnection.class);
@@ -153,5 +153,35 @@ class FireboltStatementTest {
 
 			assertThrows(FireboltException.class, () -> fireboltStatement.executeQuery("set custom_1 = 1"));
 		}
+	}
+
+	@Test
+	void shouldThrowAnExceptionIfUpdateStatementWouldReturnAResultSet() throws SQLException {
+		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
+				.build();
+		FireboltConnection connection = mock(FireboltConnection.class);
+		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
+				.sessionProperties(fireboltProperties).connection(connection).build();
+
+		assertThrows(FireboltException.class, () -> fireboltStatement.executeUpdate("show database"),
+				"Cannot proceed: the statement would return a ResultSet");
+		fireboltStatement.close();
+	}
+
+	@Test
+	void shouldExecuteIfUpdateStatementWouldNotReturnAResultSet() throws SQLException {
+		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
+				.build();
+
+		try (FireboltStatement fireboltStatement = FireboltStatement.builder()
+				.statementService(fireboltStatementService).connection(fireboltConnection).sessionProperties(fireboltProperties).build();) {
+			when(fireboltStatementService.execute(any(), any(), any())).thenReturn(mock(InputStream.class));
+			assertEquals(0, fireboltStatement.executeUpdate("INSERT INTO cars(sales, name) VALUES (500, 'Ford')"));
+			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(fireboltProperties),
+					any());
+			assertEquals("INSERT INTO cars(sales, name) VALUES (500, 'Ford')",
+					queryInfoWrapperArgumentCaptor.getValue().getSql());
+		}
+
 	}
 }

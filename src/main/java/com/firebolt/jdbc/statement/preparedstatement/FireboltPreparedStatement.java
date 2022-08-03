@@ -241,6 +241,11 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
 		return result;
 	}
 
+	@Override
+	public int executeUpdate(String sql) throws SQLException {
+		throw new FireboltException("Connect call method executeUpdate(String sql) on a PreparedStatement");
+	}
+
 	private void validateParamIndex(int paramIndex) throws FireboltException {
 		if (!this.parameterMarkerPositions.containsKey(paramIndex)) {
 			throw new FireboltException(
