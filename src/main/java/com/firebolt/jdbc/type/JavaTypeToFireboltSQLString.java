@@ -11,13 +11,13 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.UUID;
 
-import com.firebolt.jdbc.type.array.SqlArrayUtil;
-import com.firebolt.jdbc.type.date.SqlDateUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.type.array.SqlArrayUtil;
+import com.firebolt.jdbc.type.date.SqlDateUtil;
 
 public enum JavaTypeToFireboltSQLString {
 	BOOLEAN(Boolean.class, value -> Boolean.TRUE.equals(value) ? "1" : "0"),
@@ -32,7 +32,7 @@ public enum JavaTypeToFireboltSQLString {
 	ARRAY(Array.class, SqlArrayUtil::arrayToString);
 
 	private static final Pair<String[], String[]> characterToEscapedCharacterPair = new ImmutablePair<>(
-			new String[] { "\0", "\\", "'", "`" }, new String[] { "\\0", "\\\\", "\\'", "\\`" });
+			new String[] { "\0", "\\", "'" }, new String[] { "\\0", "\\\\", "\\'" });
 	private final Class<?> sourceType;
 	private final CheckedFunction<Object, String> transformToJavaTypeFunction;
 

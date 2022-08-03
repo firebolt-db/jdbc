@@ -12,8 +12,9 @@ on:
           - dev
           - staging
       database:
-        description: 'Database'
-        required: true
+        description: 'Database - a new one will be created if not provided'
+        required: false
+        default: ''
 
 jobs:
   build:
@@ -28,14 +29,26 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '8'
-          server-id: repsy
-          server-username: REPSY_USER # Env variable name for user (defined on deploy step)
-          server-password: REPSY_PASSWORD # Env variable name for password
 
-      - name: Build
-        uses: gradle/gradle-build-action@v2
+      - name: Setup database and engine
+        id: setup
+        if: ${{ github.event.inputs.database == '' }}
+        uses: firebolt-db/integration-testing-setup@master
         with:
-          arguments: build -x test
+          firebolt-username: ${{ secrets.FIREBOLT_USERNAME }}
+          firebolt-password: ${{ secrets.FIREBOLT_PASSWORD }}
+          api-endpoint: "api.${{ github.event.inputs.environment }}.firebolt.io"
+          region: "us-east-1"
+          instance-type: "B2"
+
+      - name: Determine database name
+        id: find-database-name
+        run: |
+          if ! [[ -z "${{ github.event.inputs.database }}" ]]; then
+             echo ::set-output name=database_name::${{ github.event.inputs.database }}
+          else
+             echo ::set-output name=database_name::${{ steps.setup.outputs.database_name }}
+          fi
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb=${{ github.event.inputs.database }} -Dapi=api.${{ github.event.inputs.environment }}.firebolt.io -Dpassword="${{ secrets.FIREBOLT_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_USERNAME }}"
+        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Dapi=api.${{ github.event.inputs.environment }}.firebolt.io -Dpassword="${{ secrets.FIREBOLT_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_USERNAME }}"

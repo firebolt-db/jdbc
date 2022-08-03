@@ -1,22 +1,25 @@
-package com.firebolt.jdbc.metadata;
+package com.firebolt.jdbc;
 
-import java.io.ByteArrayInputStream;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.type.FireboltDataType;
 
 import lombok.Builder;
 import lombok.Value;
 
+/**
+ * Class containing a query result that can be used to create a {@link com.firebolt.jdbc.resultset.FireboltResultSet}
+ */
 @Builder
 @Value
-public class FireboltDatabaseMetadataResult {
+public class QueryResult {
+
+	String databaseName;
+
+	String tableName;
 
 	private static final String TAB = "\t";
 	private static final String NEXT_LINE = "\n";
@@ -25,13 +28,16 @@ public class FireboltDatabaseMetadataResult {
 	@Builder.Default
 	List<List<?>> rows = new ArrayList<>();
 
+	/**
+	 * @return the string representing a query response in the TabSeparatedWithNamesAndTypes format
+	 */
 	@Override
 	public String toString() {
 		StringBuilder stringBuilder = new StringBuilder();
 		this.appendWithListValues(stringBuilder, columns.stream().map(Column::getName).collect(Collectors.toList()));
 		stringBuilder.append(NEXT_LINE);
 		this.appendWithListValues(stringBuilder, columns.stream().map(Column::getType)
-				.map(FireboltDataType::getDisplayName).collect(Collectors.toList()));
+				.map(FireboltDataType::getInternalName).collect(Collectors.toList()));
 		stringBuilder.append(NEXT_LINE);
 
 		for (int i = 0; i < rows.size(); i++) {
@@ -43,7 +49,7 @@ public class FireboltDatabaseMetadataResult {
 		return stringBuilder.toString();
 	}
 
-	public StringBuilder appendWithListValues(StringBuilder destination, List<?> values) {
+	private StringBuilder appendWithListValues(StringBuilder destination, List<?> values) {
 		Iterator<?> iterator = values.iterator();
 		while (iterator.hasNext()) {
 			Object value = iterator.next();
@@ -56,10 +62,6 @@ public class FireboltDatabaseMetadataResult {
 			}
 		}
 		return destination;
-	}
-
-	public ResultSet toResultSet() throws SQLException {
-		return new FireboltResultSet(new ByteArrayInputStream(this.toString().getBytes()));
 	}
 
 	@Builder

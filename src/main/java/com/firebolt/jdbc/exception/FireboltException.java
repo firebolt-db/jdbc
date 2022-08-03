@@ -1,8 +1,7 @@
 package com.firebolt.jdbc.exception;
 
 import static com.firebolt.jdbc.exception.ExceptionType.*;
-import static org.apache.hc.core5.http.HttpStatus.SC_NOT_FOUND;
-import static org.apache.hc.core5.http.HttpStatus.SC_UNAUTHORIZED;
+import static org.apache.hc.core5.http.HttpStatus.*;
 
 import java.sql.SQLException;
 
@@ -54,6 +53,8 @@ public class FireboltException extends SQLException {
 		switch (httpStatusCode) {
 		case SC_NOT_FOUND:
 			return RESOURCE_NOT_FOUND;
+		case SC_CLIENT_ERROR:
+			return INVALID_REQUEST;
 		case SC_UNAUTHORIZED:
 			return EXPIRED_TOKEN;
 		default:

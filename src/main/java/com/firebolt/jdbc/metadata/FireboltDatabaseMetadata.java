@@ -1,6 +1,6 @@
 package com.firebolt.jdbc.metadata;
 
-import static com.firebolt.jdbc.metadata.FireboltDatabaseMetadataResult.Column;
+import static com.firebolt.jdbc.QueryResult.Column;
 import static com.firebolt.jdbc.metadata.MetadataColumns.*;
 import static com.firebolt.jdbc.type.FireboltDataType.*;
 import static java.sql.Types.VARCHAR;
@@ -15,10 +15,12 @@ import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.VersionUtil;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.resultset.FireboltColumn;
+import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.type.FireboltDataType;
 
 import lombok.extern.slf4j.Slf4j;
@@ -49,25 +51,24 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 		List<String> publicRow = Arrays.asList(PUBLIC_SCHEMA_NAME, dbName);
 		List<String> informationSchemaRow = Arrays.asList(INFORMATION_SCHEMA_NAME, dbName);
 		List<String> catalogRow = Arrays.asList(CATALOG_SCHEMA_NAME, dbName);
-		return FireboltDatabaseMetadataResult.builder()
+		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Arrays.asList(Column.builder().name(TABLE_SCHEM).type(STRING).build(),
 						Column.builder().name(TABLE_CATALOG).type(STRING).build()))
-				.rows(Arrays.asList(publicRow, informationSchemaRow, catalogRow)).build().toResultSet();
+				.rows(Arrays.asList(publicRow, informationSchemaRow, catalogRow)).build());
 	}
 
 	@Override
 	public ResultSet getTableTypes() throws SQLException {
-		return FireboltDatabaseMetadataResult.builder()
+		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Collections.singletonList(Column.builder().name(TABLE_TYPE).type(STRING).build()))
-				.rows(Arrays.asList(Arrays.asList("TABLE"), Arrays.asList("VIEW"))).build().toResultSet();
+				.rows(Arrays.asList(Arrays.asList("TABLE"), Arrays.asList("VIEW"))).build());
 	}
 
 	@Override
 	public ResultSet getCatalogs() throws SQLException {
-		return FireboltDatabaseMetadataResult.builder()
+		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Collections.singletonList(Column.builder().name(TABLE_CAT).type(STRING).build()))
-				.rows(Collections.singletonList(Collections.singletonList(connection.getCatalog()))).build()
-				.toResultSet();
+				.rows(Collections.singletonList(Collections.singletonList(connection.getCatalog()))).build());
 	}
 
 	@Override
@@ -156,7 +157,7 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 						"NO"); // IS_GENERATEDCOLUMN - Not supported
 				rows.add(row);
 			}
-			return FireboltDatabaseMetadataResult.builder().rows(rows).columns(columns).build().toResultSet();
+			return FireboltResultSet.of(QueryResult.builder().rows(rows).columns(columns).build());
 		}
 	}
 
@@ -168,7 +169,7 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 						this.getTables(catalog, schemaPattern, tableNamePattern, typesArr, true))
 				.flatMap(Collection::stream).collect(Collectors.toList());
 
-		return FireboltDatabaseMetadataResult.builder()
+		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Arrays.asList(Column.builder().name(TABLE_CAT).type(STRING).build(),
 						Column.builder().name(TABLE_SCHEM).type(STRING).build(),
 						Column.builder().name(TABLE_NAME).type(STRING).build(),
@@ -179,7 +180,7 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 						Column.builder().name(TYPE_NAME).type(STRING).build(),
 						Column.builder().name(SELF_REFERENCING_COL_NAME).type(STRING).build(),
 						Column.builder().name(REF_GENERATION).type(STRING).build()))
-				.rows(rows).build().toResultSet();
+				.rows(rows).build());
 	}
 
 	private List<List<?>> getTables(String catalog, String schemaPattern, String tableNamePattern, String[] typesArr,
@@ -257,7 +258,7 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 						null, // SQL_DATETIME_SUB - Not needed - reserved for future use
 						COMMON_RADIX)));
 
-		return FireboltDatabaseMetadataResult.builder().columns(columns).rows(rows).build().toResultSet();
+		return FireboltResultSet.of(QueryResult.builder().columns(columns).rows(rows).build());
 	}
 
 	private Statement createStatementWithRequiredPropertiesToQuerySystem() throws SQLException {

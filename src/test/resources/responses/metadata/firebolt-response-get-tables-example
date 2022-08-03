@@ -1,4 +1,4 @@
 table_schema	table_name	table_type
-STRING	STRING	STRING
+String	String	String
 public	ex_lineitem	DIMENSION
 public	test_1	FACT

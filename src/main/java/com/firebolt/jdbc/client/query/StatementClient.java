@@ -25,4 +25,6 @@ public interface StatementClient {
 	 * Abort running HTTP request of a statement
 	 */
 	void abortRunningHttpRequest(String id) throws FireboltException;
+
+    boolean isStatementRunning(String statementId);
 }
