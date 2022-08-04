@@ -17,13 +17,10 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '8'
-          server-id: repsy
-          server-username: REPSY_USER # Env variable name for user (defined on deploy step)
-          server-password: REPSY_PASSWORD # Env variable name for password
       - name: Build and test
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: build
+          arguments: build --scan
       - name: Get project version
         id: project-version
         run: |

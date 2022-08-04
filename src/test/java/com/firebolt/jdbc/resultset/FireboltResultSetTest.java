@@ -35,11 +35,12 @@ class FireboltResultSetTest {
 	private FireboltStatement fireboltStatement;
 
 	@AfterEach
-	void closeStream() {
+	void afterEach() throws SQLException {
 		try {
 			inputStream.close();
 		} catch (Exception e) {
 		}
+		resultSet.close();
 	}
 
 	@Test
@@ -203,6 +204,18 @@ class FireboltResultSetTest {
 		resultSet.next();
 		assertEquals("Taylor's Prime Steak House", resultSet.getString(3));
 		assertEquals("Taylor's Prime Steak House", resultSet.getString("name"));
+	}
+
+	@Test
+	void shouldReturnShort() throws SQLException {
+		inputStream = getInputStreamWithArray();
+		resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
+		resultSet.next();
+		assertEquals(5, resultSet.getShort("an_integer"));
+		assertEquals(5, resultSet.getShort(8));
+		resultSet.next();
+		assertEquals(0, resultSet.getShort("an_integer"));
+		assertEquals(0, resultSet.getShort(8));
 	}
 
 	@Test

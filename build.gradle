@@ -2,14 +2,21 @@ plugins {
     id 'java'
     id 'jacoco'
     id "org.sonarqube" version "3.4.0.2513"
+    id 'maven-publish'
 }
 
 group 'com.firebolt'
-
-version = '2.0-SNAPSHOT'
+version = '2.0'
 
 repositories {
     mavenCentral()
+}
+
+project.ext {
+    codeCoverageExclusionList = [
+            "**/firebolt/jdbc/client/config/**",
+            "**/firebolt/jdbc/**/Abstract*.*",
+    ]
 }
 
 configurations {
@@ -91,12 +98,7 @@ jacocoTestReport {
     dependsOn test
     afterEvaluate {
         classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: [
-                    "com/firebolt/jdbc/client/config/**",
-                    "com/firebolt/jdbc/FireboltDriver.class",
-                    "com/firebolt/jdbc/connection/settings/FireboltProperties.class",
-                    "com/firebolt/jdbc/**/Abstract*.class"
-            ])
+            fileTree(dir: it, exclude: project.codeCoverageExclusionList)
         }))
     }
     reports {
@@ -133,5 +135,31 @@ sonarqube {
         property "sonar.projectKey", "firebolt-db_jdbc"
         property "sonar.organization", "firebolt-db"
         property "sonar.host.url", "https://sonarcloud.io"
+        property 'sonar.coverage.exclusions', project.codeCoverageExclusionList
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+        }
+    }
+
+    repositories {
+        maven {
+            url 'https://repo.repsy.io/mvn/firebolt/maven-snapshots'
+            credentials {
+                username System.getenv("REPSY_USERNAME")
+                password System.getenv("REPSY_PASSWORD")
+            }
+        }
+    }
+}
+
+if (hasProperty('buildScan')) {
+    buildScan {
+        termsOfServiceUrl = 'https://gradle.com/terms-of-service'
+        termsOfServiceAgree = 'yes'
     }
 }

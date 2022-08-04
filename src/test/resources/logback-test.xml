@@ -6,10 +6,11 @@
     </appender>
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${user.home}/.firebolt/logs/firebolt-jdbc-test.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${user.home}/.firebolt/logs/%d{yyyy-MM-dd}/firebolt-jdbc-test.log.gz</fileNamePattern>
-            <totalSizeCap>3GB</totalSizeCap>
-            <maxHistory>30</maxHistory>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${user.home}/.firebolt/logs/%d{yyyy-MM-dd}/firebolt-jdbc-test.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <totalSizeCap>1GB</totalSizeCap>
+            <maxHistory>10</maxHistory>
         </rollingPolicy>
         <encoder>
             <pattern>%d %p %c{1.} [%t] %m%n</pattern>
