@@ -155,7 +155,7 @@ class FireboltDatabaseMetadataTest {
 						11, // Precision of INT
 						null, // buffer length (not used, see Javadoc)
 						0, 10, // base of a number system / radix
-						0, "id", // description of the column
+						0, null, // description of the column
 						null, null, // SQL_DATA_TYPE - reserved for future use (see javadoc)
 						null, // SQL_DATETIME_SUB - reserved for future use (see javadoc)
 						null, // CHAR_OCTET_LENGTH - The maximum length of binary and character

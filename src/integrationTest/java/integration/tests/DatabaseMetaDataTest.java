@@ -108,7 +108,7 @@ class DatabaseMetaDataTest extends IntegrationTest {
 		assertThat(result.get(COLUMN_NAME), Matchers.containsInAnyOrder("id", "ts", "content", "success", "year"));
 		assertThat(result.get(TABLE_SCHEM),
 				Matchers.containsInAnyOrder(schemaName, schemaName, schemaName, schemaName, schemaName));
-		assertThat(result.get(REMARKS), Matchers.containsInAnyOrder("id", "ts", "content", "success", "year"));
+		assertThat(result.get(REMARKS), contains(null, null, null, null, null));
 		assertThat(result.get(NULLABLE), Matchers.containsInAnyOrder("0", "1", "1", "1", "0"));
 		assertThat(result.get(DECIMAL_DIGITS), Matchers.containsInAnyOrder("0", "0", "0", "0", "0"));
 		assertThat(result.get(SQL_DATETIME_SUB), contains(null, null, null, null, null));

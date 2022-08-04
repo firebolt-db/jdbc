@@ -6,11 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.firebolt.jdbc.type.FireboltDataType;
 import org.apache.commons.lang3.StringUtils;
 
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltColumn;
+import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
 import com.google.common.base.CharMatcher;
 

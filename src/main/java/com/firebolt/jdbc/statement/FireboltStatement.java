@@ -4,7 +4,6 @@ import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -54,7 +53,7 @@ public class FireboltStatement extends AbstractStatement {
 		return this.execute(sql, (Map<String, String>) null);
 	}
 
-	public ResultSet execute(String sql, Map<String, String> statementParams) throws SQLException {
+	private ResultSet execute(String sql, Map<String, String> statementParams) throws SQLException {
 		if (resultSet != null && !this.resultSet.isClosed()) {
 			this.resultSet.close();
 			this.resultSet = null;
@@ -153,7 +152,9 @@ public class FireboltStatement extends AbstractStatement {
 
 	@Override
 	public int executeUpdate(String sql) throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+		validateStatementWillNotReturnAResultSet(sql);
+		this.execute(sql);
+		return 0;
 	}
 
 	@Override
@@ -283,7 +284,13 @@ public class FireboltStatement extends AbstractStatement {
 
 	protected void validateStatementWillReturnAResultSet(String sql) throws SQLException {
 		if (!StatementUtil.isQuery(sql)) {
-			throw new FireboltException("Cannot proceed: the statement does not return a ResultSet");
+			throw new FireboltException("Cannot proceed: the statement would not return a ResultSet");
+		}
+	}
+
+	protected void validateStatementWillNotReturnAResultSet(String sql) throws SQLException {
+		if (StatementUtil.isQuery(sql)) {
+			throw new FireboltException("Cannot proceed: the statement would return a ResultSet");
 		}
 	}
 

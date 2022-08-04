@@ -140,7 +140,7 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 						String.valueOf(columnInfo.getPrecision()), null, // buffer length (not used, see Javadoc)
 						String.valueOf(columnInfo.getScale()), String.valueOf(COMMON_RADIX), // radix
 						columnDescription.getInt("is_nullable") == 1 ? columnNullable : columnNoNulls,
-						columnInfo.getColumnName(), // description of the column
+						null, // description of the column
 						StringUtils.isNotBlank(columnDescription.getString("column_default"))
 								? columnDescription.getString("column_default")
 								: null, // default value for the column: null,

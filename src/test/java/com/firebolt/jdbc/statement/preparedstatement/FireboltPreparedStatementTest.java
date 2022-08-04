@@ -13,7 +13,6 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Timestamp;
 
-import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -134,7 +133,7 @@ class FireboltPreparedStatementTest {
 		statement.setObject(1, 150);
 		statement.setObject(2, "Ford");
 
-		assertThrows(SQLFeatureNotSupportedException.class, statement::executeUpdate);
+		assertThrows(FireboltException.class, () -> statement.executeUpdate("update cars set sales = 50 where make = 'Ford"));
 	}
 
 	@Test
