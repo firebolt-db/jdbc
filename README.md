@@ -1,5 +1,7 @@
 [![.github/workflows/code-coverage.yml](https://github.com/firebolt-db/jdbc/actions/workflows/code-coverage.yml/badge.svg)](https://github.com/firebolt-db/jdbc/actions/workflows/code-coverage.yml)
-[![.github/workflows/build.yml](https://github.com/firebolt-db/jdbc/actions/workflows/build.yml/badge.svg)](https://github.com/firebolt-db/jdbc/actions/workflows/build.yml)<br/>
+[![.github/workflows/build.yml](https://github.com/firebolt-db/jdbc/actions/workflows/build.yml/badge.svg)](https://github.com/firebolt-db/jdbc/actions/workflows/build.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=firebolt-db_jdbc&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=firebolt-db_jdbc)
+<br/><br/>
 [![Firebolt logo](https://assets.website-files.com/5e8a264ceaf4870394477fc7/5e8a264ceaf4879f75477fdd_logo_website.svg)](https://firebolt.io)<br/>
 This is the repository of the new type 4 JDBC driver for Firebolt.
 

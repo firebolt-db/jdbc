@@ -23,6 +23,7 @@ OF THE COMPANY YANDEX LLC.
  *  - Imports
  *  - Package name
  *  - Formatting
+ *  - Remove useless shift and parentheses
  *
  */
 
@@ -81,12 +82,11 @@ public class CityHash {
 	private static long toLongLE(byte[] b, int i) {
 		return (((long) b[i + 7] << 56) + ((long) (b[i + 6] & 255) << 48) + ((long) (b[i + 5] & 255) << 40)
 				+ ((long) (b[i + 4] & 255) << 32) + ((long) (b[i + 3] & 255) << 24) + ((b[i + 2] & 255) << 16)
-				+ ((b[i + 1] & 255) << 8) + ((b[i + 0] & 255) << 0));
+				+ ((b[i + 1] & 255) << 8) + (b[i] & 255));
 	}
 
 	private static long toIntLE(byte[] b, int i) {
-		return (((b[i + 3] & 255L) << 24) + ((b[i + 2] & 255L) << 16) + ((b[i + 1] & 255L) << 8)
-				+ ((b[i + 0] & 255L) << 0));
+		return (((b[i + 3] & 255L) << 24) + ((b[i + 2] & 255L) << 16) + ((b[i + 1] & 255L) << 8) + (b[i] & 255L));
 	}
 
 	private static long fetch64(byte[] s, int pos) {

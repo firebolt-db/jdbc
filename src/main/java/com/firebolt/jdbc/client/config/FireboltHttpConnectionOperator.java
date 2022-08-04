@@ -24,6 +24,7 @@ OF the Apache Software Foundation (ASF)
  *  - Socket options setting
  *  - Logging
  *  - Replace null check with lombok annotation @NonNull
+ *  - rename method from getSocketFactoryRegistry to findSocketFactoryRegistry so that it is different from the private method in the parent class
  *
  */
 
@@ -107,7 +108,7 @@ public class FireboltHttpConnectionOperator extends DefaultHttpClientConnectionO
 	}
 
 	@SuppressWarnings("unchecked")
-	private Lookup<ConnectionSocketFactory> getSocketFactoryRegistry(final HttpContext context) {
+	private Lookup<ConnectionSocketFactory> findSocketFactoryRegistry(final HttpContext context) {
 		Lookup<ConnectionSocketFactory> reg = (Lookup<ConnectionSocketFactory>) context
 				.getAttribute(SOCKET_FACTORY_REGISTRY);
 		if (reg == null) {
@@ -120,7 +121,7 @@ public class FireboltHttpConnectionOperator extends DefaultHttpClientConnectionO
 	public void connect(@NonNull final ManagedHttpClientConnection conn, @NonNull final HttpHost host,
 			final InetSocketAddress localAddress, final TimeValue connectTimeout,
 			@NonNull final SocketConfig socketConfig, @NonNull final HttpContext context) throws IOException {
-		final Lookup<ConnectionSocketFactory> registry = getSocketFactoryRegistry(context);
+		final Lookup<ConnectionSocketFactory> registry = findSocketFactoryRegistry(context);
 		final ConnectionSocketFactory sf = registry.lookup(host.getSchemeName());
 		if (sf == null) {
 			throw new UnsupportedSchemeException(host.getSchemeName() + " protocol is not supported");

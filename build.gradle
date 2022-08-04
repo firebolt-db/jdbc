@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'jacoco'
+    id "org.sonarqube" version "3.4.0.2513"
 }
 
 group 'com.firebolt'
@@ -100,6 +101,7 @@ jacocoTestReport {
     }
     reports {
         csv.enabled true
+        xml.required = true
     }
 }
 
@@ -125,4 +127,11 @@ processResources.dependsOn generateVersionProperties
 
 task printVersion {
     println project.version
+}
+sonarqube {
+    properties {
+        property "sonar.projectKey", "firebolt-db_jdbc"
+        property "sonar.organization", "firebolt-db"
+        property "sonar.host.url", "https://sonarcloud.io"
+    }
 }

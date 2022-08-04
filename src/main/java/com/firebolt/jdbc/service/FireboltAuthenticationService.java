@@ -67,10 +67,10 @@ public class FireboltAuthenticationService {
 
 		public ConnectParams(String fireboltHost, String user, String password) throws NoSuchAlgorithmException {
 			this.fireboltHost = fireboltHost;
-			MessageDigest md5Instance = MessageDigest.getInstance("MD5");
-			Optional.ofNullable(user).map(String::getBytes).ifPresent(md5Instance::update);
-			Optional.ofNullable(password).map(String::getBytes).ifPresent(md5Instance::update);
-			this.credentialsHash = new String(Hex.encodeHex(md5Instance.digest()));
+			MessageDigest sha256Instance = MessageDigest.getInstance("SHA-256");
+			Optional.ofNullable(user).map(String::getBytes).ifPresent(sha256Instance::update);
+			Optional.ofNullable(password).map(String::getBytes).ifPresent(sha256Instance::update);
+			this.credentialsHash = new String(Hex.encodeHex(sha256Instance.digest()));
 		}
 	}
 }
