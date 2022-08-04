@@ -243,13 +243,13 @@ public class FireboltPreparedStatement extends AbstractPreparedStatement {
 
 	@Override
 	public int executeUpdate(String sql) throws SQLException {
-		throw new FireboltException("Connect call method executeUpdate(String sql) on a PreparedStatement");
+		throw new FireboltException("Cannot call method executeUpdate(String sql) on a PreparedStatement");
 	}
 
 	private void validateParamIndex(int paramIndex) throws FireboltException {
 		if (!this.parameterMarkerPositions.containsKey(paramIndex)) {
 			throw new FireboltException(
-					String.format("Cannot not set parameter as there is no parameter at index: %d for query: %s",
+					String.format("Cannot set parameter as there is no parameter at index: %d for query: %s",
 							paramIndex, this.sql));
 		}
 	}
