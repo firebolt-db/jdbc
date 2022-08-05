@@ -191,7 +191,8 @@ public class FireboltResultSet extends AbstractResultSet {
 
 	@Override
 	public short getShort(int columnIndex) throws SQLException {
-		return BaseType.SHORT.transform(getValueAtColumn(columnIndex));
+		Short value = BaseType.SHORT.transform(getValueAtColumn(columnIndex));
+		return value == null ? 0 : value;
 	}
 
 	@Override
