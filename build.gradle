@@ -47,7 +47,6 @@ sourceSets {
 }
 dependencies {
     implementation 'org.apache.commons:commons-lang3:3.12.0'
-    implementation 'ch.qos.logback:logback-classic:1.2.11'
     implementation 'com.google.guava:guava:31.1-jre'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.3'
     implementation 'commons-codec:commons-codec:1.15'
@@ -62,6 +61,7 @@ dependencies {
     testCompileOnly 'org.projectlombok:lombok:1.18.24'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
 
+    testImplementation 'ch.qos.logback:logback-classic:1.2.11'
     testImplementation 'org.mockito:mockito-junit-jupiter:4.6.1'
     testImplementation 'org.mockito:mockito-core:4.6.1'
     testImplementation 'org.mockito:mockito-inline:4.6.1'
@@ -148,7 +148,9 @@ publishing {
 
     repositories {
         maven {
-            url 'https://repo.repsy.io/mvn/firebolt/maven-snapshots'
+            def releasesRepoUrl = 'https://repo.repsy.io/mvn/firebolt/maven'
+            def snapshotsRepoUrl = 'https://repo.repsy.io/mvn/firebolt/maven-snapshots'
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
             credentials {
                 username System.getenv("REPSY_USERNAME")
                 password System.getenv("REPSY_PASSWORD")
