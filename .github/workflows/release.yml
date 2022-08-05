@@ -21,6 +21,9 @@ jobs:
       contents: read
     needs: build
     steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
     - name: Download jar file
       uses: actions/download-artifact@v2
       with:
