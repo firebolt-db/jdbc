@@ -102,7 +102,6 @@ jacocoTestReport {
         }))
     }
     reports {
-        csv.enabled true
         xml.required = true
     }
 }
