@@ -4,45 +4,27 @@ on:
   release:
     types: [published]
 
-env:
-  AWS_REGION: "us-east-1"
-  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }} # publishing
-  IAM_ROLE_NAME: "github-actions-publishing"
-  S3_BUCKET: firebolt-build-artifacts
-
 jobs:
   build:
     uses: ./.github/workflows/build.yml
 
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
     needs: build
     steps:
     - name: Check out code
       uses: actions/checkout@v2
-
     - name: Download jar file
       uses: actions/download-artifact@v2
       with:
         name: ${{ needs.build.outputs.jar-name }}
-
-    - name: configure aws credentials
-      uses: aws-actions/configure-aws-credentials@master
+    - uses: xresloader/upload-to-github-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.IAM_ROLE_NAME }}
-        aws-region: ${{ env.AWS_REGION }}
-  
-    - name:  Copy a file to s3
-      run: |
-        export COMMIT_ID=$(TZ=UTC git log -1 --format="%cd--%h" --date=format-local:%Y-%m-%dT%H:%M:%S)
-        export ARTIFACT_FOLDER=firebolt-jdbc/${GITHUB_REF#refs/heads/}
-        export ARTIFACT_FOLDER_COMMIT=${ARTIFACT_FOLDER}/$COMMIT_ID
-        TARGET=${{ needs.build.outputs.jar-name }}
-        aws s3 cp $TARGET s3://${{ env.S3_BUCKET }}/$ARTIFACT_FOLDER_COMMIT/${{ needs.build.outputs.jar-name }}
-
+        file: ${{ needs.build.outputs.jar-name }}
+        tags: true
+        draft: false
     - name: Deploy to Repsy repository
       run: ./gradlew publish
       env:
