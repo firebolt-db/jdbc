@@ -3,11 +3,8 @@ name: Build
 on:
   workflow_call:
     outputs:
-      version:
-        description: Build version e.g. 1.25
-        value: ${{ jobs.build.outputs.version }}
       jar-name:
-        description: Generated jar name e.g. firebolt-jdbc-2.0.jar
+        description: Generated jar
         value: ${{ jobs.build.outputs.jar-name }}
   push:
 jobs:
