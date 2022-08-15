@@ -23,7 +23,6 @@ import com.firebolt.jdbc.client.account.FireboltAccountClient;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.client.query.StatementClientImpl;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
@@ -95,25 +94,15 @@ public class FireboltConnection extends AbstractConnection {
 	}
 
 	private void connect() throws FireboltException {
-		try {
-			String accessToken = this.getConnectionTokens().map(FireboltConnectionTokens::getAccessToken).orElse("");
-			if (!PropertyUtil.isLocalDb(this.loginProperties)) {
-				String engineHost = fireboltEngineService.getEngineHost(httpConnectionUrl, loginProperties,
-						accessToken);
-				this.sessionProperties = loginProperties.toBuilder().host(engineHost).build();
-			} else {
-				this.sessionProperties = loginProperties;
-			}
-			closed = false;
-			log.debug("Connection opened");
-		} catch (FireboltException ex) {
-			if (ex.getType() == ExceptionType.EXPIRED_TOKEN) {
-				log.debug("Refreshing expired-token to establish new connection");
-				this.connect();
-			} else {
-				throw ex;
-			}
+		String accessToken = this.getConnectionTokens().map(FireboltConnectionTokens::getAccessToken).orElse("");
+		if (!PropertyUtil.isLocalDb(this.loginProperties)) {
+			String engineHost = fireboltEngineService.getEngineHost(httpConnectionUrl, loginProperties, accessToken);
+			this.sessionProperties = loginProperties.toBuilder().host(engineHost).build();
+		} else {
+			this.sessionProperties = loginProperties;
 		}
+		closed = false;
+		log.debug("Connection opened");
 	}
 
 	public void removeExpiredTokens() throws FireboltException {
@@ -320,7 +309,7 @@ public class FireboltConnection extends AbstractConnection {
 
 	public boolean isValid(int timeout) throws SQLException {
 		if (timeout < 0) {
-			throw new SQLException("Timeout value cannot be less than 0");
+			throw new FireboltException("Timeout value cannot be less than 0");
 		}
 		if (isClosed()) {
 			return false;

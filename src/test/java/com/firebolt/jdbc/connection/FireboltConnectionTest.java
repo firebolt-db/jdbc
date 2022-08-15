@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import java.io.ByteArrayInputStream;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -24,7 +25,6 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineService;
@@ -63,17 +63,6 @@ class FireboltConnectionTest {
 	void shouldInitConnection() throws SQLException {
 		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
-		assertFalse(fireboltConnection.isClosed());
-	}
-
-	@Test
-	void shouldReInitConnectionWhenTokenIsExpired() throws SQLException {
-		when(fireboltEngineService.getEngineHost(any(), any(), any()))
-				.thenThrow(new FireboltException("The token is expired", ExceptionType.EXPIRED_TOKEN))
-				.thenReturn("engine");
-		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
-				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
-		verify(fireboltEngineService, times(2)).getEngineHost(any(), any(), any());
 		assertFalse(fireboltConnection.isClosed());
 	}
 
@@ -147,6 +136,33 @@ class FireboltConnectionTest {
 		assertEquals("1", propertiesArgumentCaptor.getValue().getAdditionalProperties().get("custom_1"));
 		assertEquals("1", fireboltConnection.getSessionProperties().getAdditionalProperties().get("custom_1"));
 		assertEquals("SELECT 1", queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
+
+	@Test
+	void shouldValidateConnectionWhenCallingIsValid() throws SQLException {
+		when(fireboltStatementService.execute(any(), any(), any())).thenReturn(new ByteArrayInputStream("".getBytes()));
+		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
+				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
+		fireboltConnection.isValid(500);
+
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
+				propertiesArgumentCaptor.capture(), any());
+		assertEquals("SELECT 1", queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
+
+	@Test
+	void shouldThrowExceptionWhenValidatingConnectionWithNegativeTimeout() throws SQLException {
+		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
+				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
+		assertThrows(FireboltException.class, () -> fireboltConnection.isValid(-1));
+	}
+
+	@Test
+	void shouldReturnFalseWhenValidatingClosedConnection() throws SQLException {
+		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
+				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
+		fireboltConnection.close();
+		assertFalse(fireboltConnection.isValid(50));
 	}
 
 	@Test
@@ -267,6 +283,31 @@ class FireboltConnectionTest {
 			FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 					fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
 			assertEquals(20, fireboltConnection.getConnectionTimeout());
+		}
+	}
+
+	@Test
+	void shouldThrowExceptionWhenTryingToUseClosedConnection() throws SQLException {
+		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
+				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
+		fireboltConnection.close();
+		assertThrows(FireboltException.class, fireboltConnection::getCatalog);
+	}
+
+	@Test
+	void shouldUnwrapFireboltConnection() throws SQLException {
+		Connection connection = new FireboltConnection(URL, connectionProperties, fireboltAuthenticationService,
+				fireboltEngineService, fireboltStatementService);
+		assertTrue(connection.isWrapperFor(FireboltConnection.class));
+		assertEquals(connection, connection.unwrap(FireboltConnection.class));
+	}
+
+	@Test
+	void shouldThrowExceptionWhenCannotUnwrap() throws SQLException {
+		try (Connection connection = new FireboltConnection(URL, connectionProperties, fireboltAuthenticationService,
+				fireboltEngineService, fireboltStatementService)) {
+			assertFalse(connection.isWrapperFor(String.class));
+			assertThrows(SQLException.class, () -> connection.unwrap(String.class));
 		}
 	}
 
