@@ -26,6 +26,9 @@ public class FireboltAuthenticationService {
 			.variableExpiration().build();
 	private final FireboltAuthenticationClient fireboltAuthenticationClient;
 
+	private static final long TOKEN_EXPIRATION_OFFSET = 5L;
+	private static final long TOKEN_TTL_THRESHOLD = 60L;
+
 	public FireboltConnectionTokens getConnectionTokens(String host, FireboltProperties loginProperties)
 			throws FireboltException {
 		try {
@@ -39,14 +42,23 @@ public class FireboltAuthenticationService {
 				} else {
 					FireboltConnectionTokens fireboltConnectionTokens = fireboltAuthenticationClient
 							.postConnectionTokens(host, loginProperties.getUser(), loginProperties.getPassword());
+					long durationInSeconds = getCachingDurationInSeconds(fireboltConnectionTokens.getExpiresInSeconds());
 					tokensMap.put(connectionParams, fireboltConnectionTokens, ExpirationPolicy.CREATED,
-							fireboltConnectionTokens.getExpiresInSeconds(), TimeUnit.SECONDS);
+							durationInSeconds, TimeUnit.SECONDS);
 					return fireboltConnectionTokens;
 				}
 			}
 		} catch (Exception e) {
 			throw new FireboltException("Could not get connection tokens", e);
 		}
+	}
+
+	/**
+	 * To avoid returning tokens that are about to expire, we store them {@link #TOKEN_EXPIRATION_OFFSET} seconds shorter than their expiry time
+	 * unless the token lives for less than {@link #TOKEN_TTL_THRESHOLD} seconds.
+	 */
+	private long getCachingDurationInSeconds(long expireInSeconds) {
+		return expireInSeconds > TOKEN_TTL_THRESHOLD ? expireInSeconds - TOKEN_EXPIRATION_OFFSET : expireInSeconds;
 	}
 
 	public void removeConnectionTokens(String host, FireboltProperties loginProperties) throws FireboltException {
