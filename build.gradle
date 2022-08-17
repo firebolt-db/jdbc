@@ -158,6 +158,17 @@ publishing {
     }
 }
 
+task generateJavadoc(type: Javadoc) {
+    failOnError false
+    source = sourceSets.main.allJava
+    classpath = sourceSets.main.runtimeClasspath
+    classpath = classpath + sourceSets.main.compileClasspath
+    options {
+        links = ['https://docs.oracle.com/javase/8/docs/api/']
+    }
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
 if (hasProperty('buildScan')) {
     buildScan {
         termsOfServiceUrl = 'https://gradle.com/terms-of-service'

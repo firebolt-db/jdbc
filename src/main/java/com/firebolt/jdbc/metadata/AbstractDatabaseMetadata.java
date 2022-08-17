@@ -2,7 +2,7 @@ package com.firebolt.jdbc.metadata;
 
 import java.sql.*;
 
-import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.doc.NotImplemented;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 
 public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
@@ -18,6 +18,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
+	@NotImplemented
 	public String getUserName() throws SQLException {
 		return null;
 	}
@@ -99,7 +100,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public String getIdentifierQuoteString() throws SQLException {
-		return "`";
+		return "\"";
 	}
 
 	@Override
@@ -112,21 +113,25 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
+	@NotImplemented
 	public String getNumericFunctions() throws SQLException {
 		return "";
 	}
 
 	@Override
+	@NotImplemented
 	public String getStringFunctions() throws SQLException {
 		return "";
 	}
 
 	@Override
+	@NotImplemented
 	public String getSystemFunctions() throws SQLException {
 		return "";
 	}
 
 	@Override
+	@NotImplemented
 	public String getTimeDateFunctions() throws SQLException {
 		return "";
 	}
@@ -137,18 +142,19 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
+	@NotImplemented
 	public String getExtraNameCharacters() throws SQLException {
 		return "";
 	}
 
 	@Override
 	public boolean supportsAlterTableWithAddColumn() throws SQLException {
-		return true;
+		return false;
 	}
 
 	@Override
 	public boolean supportsAlterTableWithDropColumn() throws SQLException {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -173,7 +179,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public boolean supportsTableCorrelationNames() throws SQLException {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -208,7 +214,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public boolean supportsLikeEscapeClause() throws SQLException {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -243,6 +249,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public boolean supportsANSI92EntryLevelSQL() throws SQLException {
+		//We do not support it (eg: we would need to be compliant with JDBC and support 'schema')
 		return false;
 	}
 
@@ -258,7 +265,8 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public boolean supportsIntegrityEnhancementFacility() throws SQLException {
-		return false;
+		//Similar approach as pgjdbc: we guess it means supported constraints
+		return true;
 	}
 
 	@Override
@@ -268,7 +276,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public boolean supportsFullOuterJoins() throws SQLException {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -293,6 +301,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public boolean isCatalogAtStart() throws SQLException {
+		//it is currently not supported but it will be soon
 		return false;
 	}
 
@@ -393,7 +402,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public boolean supportsCorrelatedSubqueries() throws SQLException {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -427,76 +436,91 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxBinaryLiteralLength() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxCharLiteralLength() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxColumnNameLength() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxColumnsInGroupBy() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxColumnsInIndex() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxColumnsInOrderBy() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxColumnsInSelect() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxColumnsInTable() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxConnections() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxCursorNameLength() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxIndexLength() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxSchemaNameLength() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxProcedureNameLength() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxCatalogNameLength() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxRowSize() throws SQLException {
 		return 0;
 	}
@@ -507,26 +531,31 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxStatementLength() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxStatements() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxTableNameLength() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxTablesInSelect() throws SQLException {
 		return 0;
 	}
 
 	@Override
+	@NotImplemented
 	public int getMaxUserNameLength() throws SQLException {
 		return 0;
 	}
@@ -571,6 +600,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return false;
 	}
 
+	/* The methods related to the visibility of updated ResultSets do not apply since we do not support updating ResultSet objects */
 	@Override
 	public boolean ownUpdatesAreVisible(int type) throws SQLException {
 		return true;
@@ -618,7 +648,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public boolean supportsBatchUpdates() throws SQLException {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -648,6 +678,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public int getResultSetHoldability() throws SQLException {
+		// N/A applicable as we do not support transactions
 		return 0;
 	}
 
@@ -682,107 +713,126 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getProcedureColumns(String catalog, String schemaPattern, String procedureNamePattern,
 			String columnNamePattern) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getUDTs(String catalog, String schemaPattern, String typeNamePattern, int[] types)
 			throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getSuperTypes(String catalog, String schemaPattern, String typeNamePattern) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getSuperTables(String catalog, String schemaPattern, String tableNamePattern) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getAttributes(String catalog, String schemaPattern, String typeNamePattern,
 			String attributeNamePattern) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getProcedures(String catalog, String schemaPattern, String procedureNamePattern)
 			throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getColumnPrivileges(String catalog, String schema, String table, String columnNamePattern)
 			throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getTablePrivileges(String catalog, String schemaPattern, String tableNamePattern)
 			throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getBestRowIdentifier(String catalog, String schema, String table, int scope, boolean nullable)
 			throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getVersionColumns(String catalog, String schema, String table) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getPrimaryKeys(String catalog, String schema, String table) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getImportedKeys(String catalog, String schema, String table) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getExportedKeys(String catalog, String schema, String table) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getCrossReference(String parentCatalog, String parentSchema, String parentTable,
 			String foreignCatalog, String foreignSchema, String foreignTable) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getIndexInfo(String catalog, String schema, String table, boolean unique, boolean approximate)
 			throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getClientInfoProperties() throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern)
 			throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getFunctionColumns(String catalog, String schemaPattern, String functionNamePattern,
 			String columnNamePattern) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
 	@Override
+	@NotImplemented
 	public ResultSet getPseudoColumns(String catalog, String schemaPattern, String tableNamePattern,
 			String columnNamePattern) throws SQLException {
 		return FireboltResultSet.empty();
@@ -793,16 +843,4 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return false;
 	}
 
-	@Override
-	public boolean isWrapperFor(Class<?> iface) throws SQLException {
-		return iface.isAssignableFrom(getClass());
-	}
-
-	@Override
-	public <T> T unwrap(Class<T> iface) throws SQLException {
-		if (iface.isAssignableFrom(getClass())) {
-			return iface.cast(this);
-		}
-		throw new FireboltException("Cannot unwrap to " + iface.getName());
-	}
 }
