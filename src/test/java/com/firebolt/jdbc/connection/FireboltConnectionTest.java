@@ -168,7 +168,8 @@ class FireboltConnectionTest {
 	@Test
 	void shouldExtractConnectorOverrides() throws SQLException {
 		when(fireboltStatementService.execute(any(), any(), any())).thenReturn(new ByteArrayInputStream("".getBytes()));
-		connectionProperties.put("connector_versions", "ConnA:1.0.9,ConnB:2.8.0");
+		connectionProperties.put("user_clients", "ConnA:1.0.9,ConnB:2.8.0");
+		connectionProperties.put("user_drivers", "DriverA:2.0.9,DriverB:3.8.0");
 
 		FireboltConnection fireboltConnectionImpl = new FireboltConnection(URL, connectionProperties,
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
@@ -177,8 +178,10 @@ class FireboltConnectionTest {
 		statement.execute();
 
 		verify(fireboltStatementService).execute(any(), propertiesArgumentCaptor.capture(), any());
-		assertNull(propertiesArgumentCaptor.getValue().getAdditionalProperties().get("connector_versions"));
-		assertNull(fireboltConnectionImpl.getSessionProperties().getAdditionalProperties().get("connector_versions"));
+		assertNull(propertiesArgumentCaptor.getValue().getAdditionalProperties().get("user_clients"));
+		assertNull(propertiesArgumentCaptor.getValue().getAdditionalProperties().get("user_drivers"));
+		assertNull(fireboltConnectionImpl.getSessionProperties().getAdditionalProperties().get("user_clients"));
+		assertNull(fireboltConnectionImpl.getSessionProperties().getAdditionalProperties().get("user_drivers"));
 	}
 
 	@Test
