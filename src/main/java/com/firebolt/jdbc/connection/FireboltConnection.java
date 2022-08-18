@@ -54,7 +54,8 @@ public class FireboltConnection extends AbstractConnection {
 		this.fireboltAuthenticationService = fireboltAuthenticationService;
 		this.fireboltEngineService = fireboltEngineService;
 		this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
-		loginProperties.getAdditionalProperties().remove("connector_versions");
+		loginProperties.getAdditionalProperties().remove("user_clients");
+		loginProperties.getAdditionalProperties().remove("user_drivers");
 		this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
 		this.fireboltStatementService = fireboltStatementService;
 		this.statements = new ArrayList<>();
@@ -66,8 +67,8 @@ public class FireboltConnection extends AbstractConnection {
 	public FireboltConnection(@NonNull String url, Properties connectionSettings) throws FireboltException {
 		ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
 		this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
-		String driverVersions = loginProperties.getAdditionalProperties().remove("driver_versions");
-		String clientVersions = loginProperties.getAdditionalProperties().remove("client_versions");
+		String driverVersions = loginProperties.getAdditionalProperties().remove("user_drivers");
+		String clientVersions = loginProperties.getAdditionalProperties().remove("user_clients");
 		this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
 		CloseableHttpClient httpClient = getHttpClient(loginProperties);
 		this.fireboltAuthenticationService = new FireboltAuthenticationService(
