@@ -63,7 +63,7 @@ public enum FireboltSessionProperty {
 	USER("user", null, String.class, false, "user name - null by default"),
 	HOST("host", null, String.class, false, "Firebolt host - null by default"),
 	PORT("port", null, Integer.class, false, "Firebolt port - null by default"),
-	ENGINE("engine", null, String.class, false, "engine - null by default"),
+	ENGINE("engine", null, String.class, false, "engine - null by default", "engine_name"),
 	AGGRESSIVE_CANCEL("aggressive_cancel", false, Boolean.class, false,
 			"enable aggressive cancel. Permits to cancel queries by sending a query to Firebolt rather than calling the /cancel endpoint"),
 	ACCOUNT("account", null, String.class, false, "account - null by default"),
