@@ -167,6 +167,9 @@ task generateJavadoc(type: Javadoc) {
         links = ['https://docs.oracle.com/javase/8/docs/api/']
     }
     options.addStringOption('Xdoclint:none', '-quiet')
+    if (JavaVersion.current() >= JavaVersion.VERSION_1_9) {
+        options.addBooleanOption("html5", true)
+    }
 }
 
 if (hasProperty('buildScan')) {

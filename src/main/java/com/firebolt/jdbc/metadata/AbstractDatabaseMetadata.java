@@ -17,6 +17,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return true;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public String getUserName() throws SQLException {
@@ -112,24 +113,28 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 				+ "TOP,TRIM,TRUNCATE,UNKNOWN_CHAR,UNTERMINATED_STRING,WEEK";
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public String getNumericFunctions() throws SQLException {
 		return "";
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public String getStringFunctions() throws SQLException {
 		return "";
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public String getSystemFunctions() throws SQLException {
 		return "";
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public String getTimeDateFunctions() throws SQLException {
@@ -141,6 +146,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return "\\";
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public String getExtraNameCharacters() throws SQLException {
@@ -249,7 +255,8 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public boolean supportsANSI92EntryLevelSQL() throws SQLException {
-		//We do not support it (eg: we would need to be compliant with JDBC and support 'schema')
+		// We do not support it (eg: we would need to be compliant with JDBC and support
+		// 'schema')
 		return false;
 	}
 
@@ -265,7 +272,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public boolean supportsIntegrityEnhancementFacility() throws SQLException {
-		//Similar approach as pgjdbc: we guess it means supported constraints
+		// Similar approach as pgjdbc: we assume it means supported constraints
 		return true;
 	}
 
@@ -301,7 +308,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public boolean isCatalogAtStart() throws SQLException {
-		//it is currently not supported but it will be soon
+		// it is currently not supported but it will be soon
 		return false;
 	}
 
@@ -435,90 +442,105 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return false;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxBinaryLiteralLength() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxCharLiteralLength() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxColumnNameLength() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxColumnsInGroupBy() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxColumnsInIndex() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxColumnsInOrderBy() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxColumnsInSelect() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxColumnsInTable() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxConnections() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxCursorNameLength() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxIndexLength() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxSchemaNameLength() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxProcedureNameLength() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxCatalogNameLength() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxRowSize() throws SQLException {
@@ -530,30 +552,35 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return false;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxStatementLength() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxStatements() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxTableNameLength() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxTablesInSelect() throws SQLException {
 		return 0;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public int getMaxUserNameLength() throws SQLException {
@@ -600,7 +627,10 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return false;
 	}
 
-	/* The methods related to the visibility of updated ResultSets do not apply since we do not support updating ResultSet objects */
+	/*
+	 * The methods related to the visibility of updated ResultSets do not apply
+	 * since we do not support updating ResultSet objects
+	 */
 	@Override
 	public boolean ownUpdatesAreVisible(int type) throws SQLException {
 		return true;
@@ -648,6 +678,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public boolean supportsBatchUpdates() throws SQLException {
+		// We support it partially (via FireboltPreparedStatement but not with the 'basic' FireboltStatement )
 		return false;
 	}
 
@@ -712,6 +743,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return false;
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getProcedureColumns(String catalog, String schemaPattern, String procedureNamePattern,
@@ -719,6 +751,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getUDTs(String catalog, String schemaPattern, String typeNamePattern, int[] types)
@@ -726,18 +759,21 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getSuperTypes(String catalog, String schemaPattern, String typeNamePattern) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getSuperTables(String catalog, String schemaPattern, String tableNamePattern) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getAttributes(String catalog, String schemaPattern, String typeNamePattern,
@@ -745,6 +781,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getProcedures(String catalog, String schemaPattern, String procedureNamePattern)
@@ -752,6 +789,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getColumnPrivileges(String catalog, String schema, String table, String columnNamePattern)
@@ -759,6 +797,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getTablePrivileges(String catalog, String schemaPattern, String tableNamePattern)
@@ -766,6 +805,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getBestRowIdentifier(String catalog, String schema, String table, int scope, boolean nullable)
@@ -773,30 +813,35 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getVersionColumns(String catalog, String schema, String table) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getPrimaryKeys(String catalog, String schema, String table) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getImportedKeys(String catalog, String schema, String table) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getExportedKeys(String catalog, String schema, String table) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getCrossReference(String parentCatalog, String parentSchema, String parentTable,
@@ -804,6 +849,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getIndexInfo(String catalog, String schema, String table, boolean unique, boolean approximate)
@@ -811,12 +857,14 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getClientInfoProperties() throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern)
@@ -824,6 +872,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getFunctionColumns(String catalog, String schemaPattern, String functionNamePattern,
@@ -831,6 +880,7 @@ public abstract class AbstractDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
+	/** @hidden */
 	@Override
 	@NotImplemented
 	public ResultSet getPseudoColumns(String catalog, String schemaPattern, String tableNamePattern,
