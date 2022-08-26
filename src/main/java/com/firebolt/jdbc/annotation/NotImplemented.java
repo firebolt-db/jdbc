@@ -1,4 +1,4 @@
-package com.firebolt.jdbc.doc;
+package com.firebolt.jdbc.annotation;
 
 import java.lang.annotation.Documented;
 
