@@ -1,6 +1,9 @@
 package com.firebolt.jdbc.resultset;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
+import java.util.TimeZone;
 
 import org.junit.jupiter.api.Test;
 
@@ -190,4 +193,39 @@ class FireboltColumnTest {
 				column.getCompactTypeName());
 	}
 
+	@Test
+	void shouldCreateColumDataForDateTime64() {
+		String type = "DateTime64(4, \\'EST\\')";
+		String name = "my_d";
+		FireboltColumn column = FireboltColumn.of(type, name);
+		assertEquals(name, column.getColumnName());
+		assertEquals(type.toUpperCase(), column.getColumnType());
+		assertEquals(FireboltDataType.DATE_TIME_64, column.getDataType());
+		assertEquals(TimeZone.getTimeZone("EST"), column.getTimeZone());
+		assertEquals(4, column.getScale());
+		assertEquals(23, column.getPrecision());
+	}
+
+	@Test
+	void shouldCreateColumDataForDateTime64WithoutTimeZone() {
+		String type = "DateTime64(6)";
+		String name = "my_d";
+		FireboltColumn column = FireboltColumn.of(type, name);
+		assertEquals(name, column.getColumnName());
+		assertEquals(type.toUpperCase(), column.getColumnType());
+		assertNull(column.getTimeZone());
+		assertEquals(6, column.getScale());
+		assertEquals(25, column.getPrecision());
+	}
+
+	@Test
+	void shouldCreateColumDataForDateTimeWithTimeZone() {
+		String type = "DateTime(\\'EST\\')";
+		String name = "my_d";
+		FireboltColumn column = FireboltColumn.of(type, name);
+		assertEquals(name, column.getColumnName());
+		assertEquals(type.toUpperCase(), column.getColumnType());
+		assertEquals(FireboltDataType.DATE_TIME, column.getDataType());
+		assertEquals(TimeZone.getTimeZone("EST"), column.getTimeZone());
+	}
 }

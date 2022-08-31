@@ -1,6 +1,7 @@
 package com.firebolt.jdbc.resultset;
 
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static java.sql.Time.valueOf;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -11,7 +12,10 @@ import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Calendar;
+import java.util.TimeZone;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -26,6 +30,7 @@ import com.firebolt.jdbc.LoggerUtil;
 import com.firebolt.jdbc.statement.FireboltStatement;
 
 @ExtendWith(MockitoExtension.class)
+@DefaultTimeZone("UTC")
 class FireboltResultSetTest {
 
 	private InputStream inputStream;
@@ -33,6 +38,9 @@ class FireboltResultSetTest {
 
 	@Mock
 	private FireboltStatement fireboltStatement;
+
+	private final static Calendar EST_CALENDAR = Calendar.getInstance(TimeZone.getTimeZone("EST"));
+	private final static Calendar UTC_CALENDAR = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
 
 	@AfterEach
 	void afterEach() throws SQLException {
@@ -274,8 +282,7 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	@DefaultTimeZone("Europe/Paris")
-	void shouldReturnDate() throws SQLException, ParseException {
+	void shouldReturnDate() throws SQLException {
 		Date expectedDate = Date.valueOf(LocalDate.of(2022, 5, 10));
 		inputStream = getInputStreamWithArray();
 		resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
@@ -286,7 +293,6 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	@DefaultTimeZone("Europe/Paris")
 	void shouldReturnTimeStamp() throws SQLException, ParseException {
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 		java.util.Date parsedDate = dateFormat.parse("2022-05-10 13:01:02");
@@ -442,6 +448,84 @@ class FireboltResultSetTest {
 			resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535, false,
 					fireboltStatement, true);
 			loggerUtilMockedStatic.verify(() -> LoggerUtil.logInputStream(inputStream));
+		}
+	}
+
+	@Test
+	void shouldGetTimeWithTimezoneFromCalendar() throws SQLException {
+		inputStream = getInputStreamWithArray();
+		try (MockedStatic<LoggerUtil> loggerUtilMockedStatic = mockStatic(LoggerUtil.class)) {
+			loggerUtilMockedStatic.when(() -> LoggerUtil.logInputStream(inputStream)).thenReturn(inputStream);
+			resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535, false,
+					fireboltStatement, true);
+			resultSet.next();
+
+			assertEquals(valueOf(LocalTime.of(18, 1, 2)), resultSet.getTime("a_timestamp", EST_CALENDAR));
+			assertEquals(valueOf(LocalTime.of(13, 1, 2)), resultSet.getTime("a_timestamp", UTC_CALENDAR));
+			assertEquals(valueOf(LocalTime.of(13, 1, 2)), resultSet.getTime("a_timestamp", null));
+
+		}
+	}
+
+	@Test
+	void shouldGetTimestampWithTimezoneFromCalendar() throws SQLException {
+		inputStream = getInputStreamWithArray();
+		try (MockedStatic<LoggerUtil> loggerUtilMockedStatic = mockStatic(LoggerUtil.class)) {
+			loggerUtilMockedStatic.when(() -> LoggerUtil.logInputStream(inputStream)).thenReturn(inputStream);
+			resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535, false,
+					fireboltStatement, true);
+			resultSet.next();
+
+			assertEquals(Timestamp.valueOf(LocalDateTime.of(2022, 5, 10, 18, 1, 2)),
+					resultSet.getTimestamp("a_timestamp", EST_CALENDAR));
+			assertEquals(Timestamp.valueOf(LocalDateTime.of(2022, 5, 10, 13, 1, 2)),
+					resultSet.getTimestamp("a_timestamp", UTC_CALENDAR));
+			assertEquals(Timestamp.valueOf(LocalDateTime.of(2022, 5, 10, 13, 1, 2)),
+					resultSet.getTimestamp("a_timestamp", null));
+			resultSet.next();
+			assertEquals(Timestamp.valueOf(LocalDateTime.of(2022, 5, 11, 4, 1, 2)),
+					resultSet.getTimestamp("a_timestamp", EST_CALENDAR));
+		}
+	}
+
+	@Test
+	void shouldGetTimeObjectsWithTimeZoneFromResponse() throws SQLException {
+		inputStream = getInputStreamWithArray();
+		try (MockedStatic<LoggerUtil> loggerUtilMockedStatic = mockStatic(LoggerUtil.class)) {
+			loggerUtilMockedStatic.when(() -> LoggerUtil.logInputStream(inputStream)).thenReturn(inputStream);
+			resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535, false,
+					fireboltStatement, true);
+			resultSet.next();
+			Timestamp expectedTimestamp = Timestamp.valueOf(LocalDateTime.of(2022, 5, 10, 18, 1, 2));
+			Time expectedTime = valueOf(LocalTime.of(18, 1, 2));
+
+			// The timezone returned by the db is always used regardless of the timezone
+			// passed as an argument
+			assertEquals(expectedTime, resultSet.getTime("a_timestamp_with_tz", EST_CALENDAR));
+			assertEquals(expectedTime, resultSet.getTime("a_timestamp_with_tz", UTC_CALENDAR));
+			assertEquals(expectedTime, resultSet.getTime("a_timestamp_with_tz", null));
+
+			assertEquals(expectedTimestamp, resultSet.getTimestamp("a_timestamp_with_tz", EST_CALENDAR));
+			assertEquals(expectedTimestamp, resultSet.getTimestamp("a_timestamp_with_tz", UTC_CALENDAR));
+			assertEquals(expectedTimestamp, resultSet.getTimestamp("a_timestamp_with_tz", null));
+			resultSet.next();
+			assertEquals(Date.valueOf(LocalDate.of(2022, 5, 11)),
+					resultSet.getDate("a_timestamp_with_tz", UTC_CALENDAR));
+		}
+	}
+
+	@Test
+	void shouldGetDateWithTimezoneFromCalendar() throws SQLException {
+		inputStream = getInputStreamWithArray();
+		try (MockedStatic<LoggerUtil> loggerUtilMockedStatic = mockStatic(LoggerUtil.class)) {
+			loggerUtilMockedStatic.when(() -> LoggerUtil.logInputStream(inputStream)).thenReturn(inputStream);
+			resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535, false,
+					fireboltStatement, true);
+			resultSet.next();
+			assertEquals(Date.valueOf(LocalDate.of(2022, 5, 10)), resultSet.getDate("a_timestamp", EST_CALENDAR));
+			resultSet.next();
+			assertEquals(Date.valueOf(LocalDate.of(2022, 5, 11)), resultSet.getDate("a_timestamp", EST_CALENDAR));
+			assertEquals(Date.valueOf(LocalDate.of(2022, 5, 10)), resultSet.getDate("a_timestamp", UTC_CALENDAR));
 		}
 	}
 

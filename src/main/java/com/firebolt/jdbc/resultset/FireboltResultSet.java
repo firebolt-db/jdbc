@@ -294,20 +294,24 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public Date getDate(int columnIndex) throws SQLException {
-		String value = this.getValueAtColumn(columnIndex);
-		return BaseType.DATE.transform(value);
+		return getDate(columnIndex, null);
 	}
 
 	@Override
-	public Date getDate(int columnIndex, Calendar cal) throws SQLException {
-		log.warn("The calendar {} is ignored as Firebolt date does not hold hour information", cal);
-		return getDate(columnIndex);
+	public Date getDate(int columnIndex, Calendar calendar) throws SQLException {
+		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
+		String value = this.getValueAtColumn(columnIndex);
+		return BaseType.DATE.transform(value, this.resultSetMetaData.getColumn(columnIndex), timeZone);
+	}
+
+	@Override
+	public Date getDate(String columnLabel, Calendar cal) throws SQLException {
+		return getDate(this.findColumn(columnLabel), cal);
 	}
 
 	@Override
 	public Timestamp getTimestamp(int columnIndex) throws SQLException {
-		String value = this.getValueAtColumn(columnIndex);
-		return BaseType.TIMESTAMP.transform(value);
+		return this.getTimestamp(columnIndex, null);
 	}
 
 	@Override
@@ -317,12 +321,21 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public Timestamp getTimestamp(int columnIndex, Calendar calendar) throws SQLException {
-		return this.getTimestamp(columnIndex);
+		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
+		String value = this.getValueAtColumn(columnIndex);
+		return BaseType.TIMESTAMP.transform(value, this.resultSetMetaData.getColumn(columnIndex), timeZone);
 	}
 
 	@Override
 	public Timestamp getTimestamp(String columnLabel, Calendar calendar) throws SQLException {
 		return getTimestamp(this.findColumn(columnLabel), calendar);
+	}
+
+	@Override
+	public Time getTime(int columnIndex, Calendar calendar) throws SQLException {
+		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
+		String value = this.getValueAtColumn(columnIndex);
+		return BaseType.TIME.transform(value, this.resultSetMetaData.getColumn(columnIndex), timeZone);
 	}
 
 	@Override
@@ -332,7 +345,12 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public Time getTime(int columnIndex) throws SQLException {
-		return BaseType.TIME.transform(this.getValueAtColumn(columnIndex));
+		return this.getTime(columnIndex, null);
+	}
+
+	@Override
+	public Time getTime(String columnLabel, Calendar cal) throws SQLException {
+		return getTime(this.findColumn(columnLabel), cal);
 	}
 
 	@Override
@@ -356,10 +374,9 @@ public class FireboltResultSet implements ResultSet {
 		if (BaseType.isNull(value)) {
 			return null;
 		}
-
 		FireboltColumn columnInfo = this.columns.get(columnIndex - 1);
 		FireboltDataType columnType = columnInfo.getDataType();
-		Object object = columnType.getBaseType().transform(value, columnInfo);
+		Object object = columnType.getBaseType().transform(value, columnInfo, columnInfo.getTimeZone());
 		if (columnType == FireboltDataType.ARRAY && object != null) {
 			return ((FireboltArray) object).getArray();
 		} else {
@@ -1125,29 +1142,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/** @hidden */
-	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public Date getDate(String columnLabel, Calendar cal) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
-	}
-
-	/** @hidden */
-	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public Time getTime(int columnIndex, Calendar cal) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
-	}
-
-	/** @hidden */
-	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public Time getTime(String columnLabel, Calendar cal) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
-	}
 
 	/** @hidden */
 	@Override

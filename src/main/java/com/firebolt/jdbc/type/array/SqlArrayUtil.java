@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 public class SqlArrayUtil {
 
 	public static FireboltArray transformToSqlArray(String value, FireboltColumn fireboltColumn)
-			throws FireboltException {
+			throws SQLException {
 		log.debug("Transformer array with value {} and type {}", value, fireboltColumn);
 		int dimensions = 0;
 		for (int x = 0; x < value.length(); x++)
@@ -37,7 +37,7 @@ public class SqlArrayUtil {
 	}
 
 	private static Object createArray(String arrayContent, int dimension, FireboltColumn fireboltColumn)
-			throws FireboltException {
+			throws SQLException {
 		if (dimension == 1) {
 			return extractArrayFromOneDimensionalArray(arrayContent, fireboltColumn);
 		} else {
@@ -47,7 +47,7 @@ public class SqlArrayUtil {
 
 	@NonNull
 	private static Object extractArrayFromMultiDimensionalArray(String str, int dimension,
-			FireboltColumn fireboltColumn) throws FireboltException {
+			FireboltColumn fireboltColumn) throws SQLException {
 		String[] s = str.split(getArraySeparator(dimension));
 		int[] lengths = new int[dimension];
 		lengths[0] = s.length;
@@ -60,7 +60,7 @@ public class SqlArrayUtil {
 	}
 
 	private static Object extractArrayFromOneDimensionalArray(String arrayContent, FireboltColumn fireboltColumn)
-			throws FireboltException {
+			throws SQLException {
 		List<String> elements = splitArrayContent(arrayContent, fireboltColumn.getArrayBaseDataType()).stream()
 				.filter(StringUtils::isNotEmpty).map(SqlArrayUtil::removeQuotesAndTransformNull)
 				.collect(Collectors.toList());
@@ -76,7 +76,7 @@ public class SqlArrayUtil {
 	}
 
 	private static Object[] getArrayOfTuples(FireboltColumn fireboltColumn, List<String> tuples)
-			throws FireboltException {
+			throws SQLException {
 		List<FireboltDataType> types = fireboltColumn.getTupleBaseDateTypes().stream().map(FireboltColumn::getDataType)
 				.collect(Collectors.toList());
 
