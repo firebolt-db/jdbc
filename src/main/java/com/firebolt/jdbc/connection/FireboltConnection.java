@@ -25,6 +25,7 @@ import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.client.query.StatementClientImpl;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
@@ -604,7 +605,7 @@ public class FireboltConnection implements Connection {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public Array createArrayOf(String typeName, Object[] elements) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	/** @hidden */
