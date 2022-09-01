@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.sql.Date;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -137,7 +138,7 @@ class JavaTypeToFireboltSQLStringTest {
 	}
 
 	@Test
-	void shouldTransformSqlArray() throws FireboltException {
+	void shouldTransformSqlArray() throws SQLException {
 		String value = "[1,2,3,\\N,5]";
 		FireboltColumn column = FireboltColumn.of("Array(INT32)");
 		FireboltArray fireboltArray = SqlArrayUtil.transformToSqlArray(value, column);
@@ -145,7 +146,7 @@ class JavaTypeToFireboltSQLStringTest {
 	}
 
 	@Test
-	void shouldTransformArrayOfArray() throws FireboltException {
+	void shouldTransformArrayOfArray() throws SQLException {
 		String value = "[['a','b'],['c']]";
 		FireboltColumn column = FireboltColumn.of("Array(Array(string))");
 		FireboltArray fireboltArray = SqlArrayUtil.transformToSqlArray(value, column);

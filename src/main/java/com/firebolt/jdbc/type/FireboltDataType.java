@@ -1,40 +1,44 @@
 package com.firebolt.jdbc.type;
 
 import java.sql.Types;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import lombok.Getter;
 
 /** Supported data types. */
 @Getter
 public enum FireboltDataType {
-	U_INT_8(Types.TINYINT, "UInt8", BaseType.INTEGER.name(), BaseType.INTEGER, false, false, 3, 0, "BOOLEAN"),
-	INT_32(Types.INTEGER, "Int32", BaseType.INTEGER.name(), BaseType.INTEGER, true, false, 11, 0, "INTEGER", "INT",
-			"Int8", "Int16", "UInt16", "UInt32"),
-	INT_64(Types.BIGINT, "Int64", BaseType.BIGINT.name(), BaseType.LONG, true, false, 20, 0, "LONG", "BIGINT"),
+	U_INT_8(Types.TINYINT, "UInt8", BaseType.INTEGER.name(), BaseType.INTEGER, false, false, 3, 0, false, "BOOLEAN"),
+	INT_32(Types.INTEGER, "Int32", BaseType.INTEGER.name(), BaseType.INTEGER, true, false, 11, 0, false, "INTEGER",
+			"INT", "Int8", "Int16", "UInt16", "UInt32"),
+	INT_64(Types.BIGINT, "Int64", BaseType.BIGINT.name(), BaseType.LONG, true, false, 20, 0, false, "LONG", "BIGINT"),
 	// Although not supported, U_INT_64 is still coming from Firebolt and needs to
 	// be handled for now
-	U_INT_64(Types.BIGINT, "UInt64", BaseType.BIGINT.name(), BaseType.BIGINT, false, false, 20, 0),
+	U_INT_64(Types.BIGINT, "UInt64", BaseType.BIGINT.name(), BaseType.BIGINT, false, false, 20, 0, false),
 
-	FLOAT_32(Types.FLOAT, "Float32", BaseType.FLOAT.name(), BaseType.FLOAT, true, false, 8, 8, "FLOAT"),
-	FLOAT_64(Types.DOUBLE, "Float64", BaseType.DOUBLE.name(), BaseType.DOUBLE, true, false, 17, 17,
+	FLOAT_32(Types.FLOAT, "Float32", BaseType.FLOAT.name(), BaseType.FLOAT, true, false, 8, 8, false, "FLOAT"),
+	FLOAT_64(Types.DOUBLE, "Float64", BaseType.DOUBLE.name(), BaseType.DOUBLE, true, false, 17, 17, false,
 			BaseType.DOUBLE.name()),
-	STRING(Types.VARCHAR, "String", BaseType.STRING.name(), BaseType.STRING, false, true, 0, 0, "VARCHAR", "TEXT"),
-	DATE(Types.DATE, "Date", BaseType.DATE.name(), BaseType.DATE, false, false, 10, 0),
-	DATE_32(Types.DATE, "Date32", "DATE_EXT", BaseType.DATE, false, false, 10, 0, "DATE_EXT"),
-	DATE_TIME_64(Types.TIMESTAMP, "DateTime64", "TIMESTAMP_EXT", BaseType.TIMESTAMP, false, false, 19, 0,
+	STRING(Types.VARCHAR, "String", BaseType.STRING.name(), BaseType.STRING, false, true, 0, 0, false, "VARCHAR",
+			"TEXT"),
+	DATE(Types.DATE, "Date", BaseType.DATE.name(), BaseType.DATE, false, false, 10, 0, true),
+	DATE_32(Types.DATE, "Date32", "DATE_EXT", BaseType.DATE, false, false, 10, 0, true, "DATE_EXT"),
+	DATE_TIME_64(Types.TIMESTAMP, "DateTime64", "TIMESTAMP_EXT", BaseType.TIMESTAMP, false, false, 19, 0, true,
 			"TIMESTAMP_EXT"),
-	DATE_TIME(Types.TIMESTAMP, "DateTime", "TIMESTAMP", BaseType.TIMESTAMP, false, false, 19, 0, "TIMESTAMP"),
-	NOTHING(Types.NULL, "Nothing", "NOTHING", BaseType.NULL, false, false, 0, 0),
-	UNKNOWN(Types.OTHER, "Unknown", "UNKNOWN", BaseType.OTHER, false, false, 0, 0),
-	DECIMAL(Types.DECIMAL, "Decimal", BaseType.DECIMAL.name(), BaseType.DECIMAL, true, false, 0, 0, "DEC"),
-	ARRAY(Types.ARRAY, "Array", BaseType.ARRAY.name(), BaseType.ARRAY, false, true, 0, 0),
-	TUPLE(Types.OTHER, "Tuple", "TUPLE", BaseType.OBJECT, false, true, 0, 0);
+	DATE_TIME(Types.TIMESTAMP, "DateTime", "TIMESTAMP", BaseType.TIMESTAMP, false, false, 19, 0, true, "TIMESTAMP"),
+	NOTHING(Types.NULL, "Nothing", "NOTHING", BaseType.NULL, false, false, 0, 0, false),
+	UNKNOWN(Types.OTHER, "Unknown", "UNKNOWN", BaseType.OTHER, false, false, 0, 0, false),
+	DECIMAL(Types.DECIMAL, "Decimal", BaseType.DECIMAL.name(), BaseType.DECIMAL, true, false, 0, 0, false, "DEC"),
+	ARRAY(Types.ARRAY, "Array", BaseType.ARRAY.name(), BaseType.ARRAY, false, true, 0, 0, false),
+	TUPLE(Types.OTHER, "Tuple", "TUPLE", BaseType.OBJECT, false, true, 0, 0, false);
 
 	public static final String NULLABLE_TYPE = "NULLABLE";
+
+	private static final Set<FireboltDataType> DATE_TYPES = Stream.of(DATE, DATE_TIME, DATE_TIME_64, DATE_32)
+			.collect(Collectors.toCollection(HashSet::new));
+
 	private static final Map<String, FireboltDataType> typeNameOrAliasToType;
 
 	static {
@@ -53,10 +57,12 @@ public enum FireboltDataType {
 	private final boolean caseSensitive;
 	private final int defaultPrecision;
 	private final int defaultScale;
+
+	private final boolean time;
 	private final String[] aliases;
 
 	FireboltDataType(int sqlType, String internalName, String displayName, BaseType baseType, boolean signed,
-			boolean caseSensitive, int defaultPrecision, int defaultScale, String... aliases) {
+			boolean caseSensitive, int defaultPrecision, int defaultScale, boolean isTime, String... aliases) {
 		this.sqlType = sqlType;
 		this.internalName = internalName;
 		this.displayName = displayName;
@@ -66,10 +72,16 @@ public enum FireboltDataType {
 		this.defaultPrecision = defaultPrecision;
 		this.defaultScale = defaultScale;
 		this.aliases = aliases;
+		this.time = isTime;
 	}
 
 	public static FireboltDataType ofType(String type) {
 		String formattedType = type.trim().toUpperCase();
 		return Optional.ofNullable(typeNameOrAliasToType.get(formattedType)).orElse(UNKNOWN);
 	}
+
+	public static boolean isTimeType(FireboltDataType fireboltDataType) {
+		return DATE_TYPES.contains(fireboltDataType);
+	}
+
 }

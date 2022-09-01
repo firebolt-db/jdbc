@@ -2,63 +2,67 @@ package com.firebolt.jdbc.type;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.sql.Array;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
+import java.sql.*;
+import java.util.TimeZone;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
-import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltColumn;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import com.firebolt.jdbc.type.date.SqlDateUtil;
 
+import lombok.Builder;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /** This class contains the java types the Firebolt datatypes are mapped to */
 @Slf4j
 public enum BaseType {
-	LONG(Long.class, (value, subType) -> Long.parseLong(value)),
-	INTEGER(Integer.class, (value, subType) -> Integer.parseInt(value)),
-	SHORT(Short.class, (value, subType) -> Short.parseShort(value)),
-	BIGINT(BigInteger.class, (value, subType) -> new BigInteger(value)),
-	STRING(String.class, (value, subType) -> StringEscapeUtils.unescapeJava(value)),
-	FLOAT(Float.class, (value, subType) -> {
-		if (isNan(value)) {
+	LONG(Long.class, conversion -> Long.parseLong(conversion.getValue())),
+	INTEGER(Integer.class, conversion -> Integer.parseInt(conversion.getValue())),
+	SHORT(Short.class, conversion -> Short.parseShort(conversion.getValue())),
+	BIGINT(BigInteger.class, conversion -> new BigInteger(conversion.getValue())),
+	STRING(String.class, conversion -> StringEscapeUtils.unescapeJava(conversion.getValue())),
+	FLOAT(Float.class, conversion -> {
+		if (isNan(conversion.getValue())) {
 			return Float.NaN;
-		} else if (isPositiveInf(value)) {
+		} else if (isPositiveInf(conversion.getValue())) {
 			return Float.POSITIVE_INFINITY;
-		} else if (isNegativeInf(value)) {
+		} else if (isNegativeInf(conversion.getValue())) {
 			return Float.NEGATIVE_INFINITY;
 		} else {
-			return Float.parseFloat(value);
+			return Float.parseFloat(conversion.getValue());
 		}
-	}), DOUBLE(Double.class, (value, subType) -> {
-		if (isNan(value)) {
+	}), DOUBLE(Double.class, conversion -> {
+		if (isNan(conversion.getValue())) {
 			return Double.NaN;
-		} else if (isPositiveInf(value)) {
+		} else if (isPositiveInf(conversion.getValue())) {
 			return Double.POSITIVE_INFINITY;
-		} else if (isNegativeInf(value)) {
+		} else if (isNegativeInf(conversion.getValue())) {
 			return Double.NEGATIVE_INFINITY;
 		} else {
-			return Double.parseDouble(value);
+			return Double.parseDouble(conversion.getValue());
 		}
-	}), DATE(Date.class, (value, subType) -> SqlDateUtil.transformToDateFunction.apply(value)),
-	TIMESTAMP(Timestamp.class, (value, subType) -> SqlDateUtil.transformToTimestampFunction.apply(value)),
-	TIME(Time.class, (value, subType) -> SqlDateUtil.transformToTimeFunction.apply(value)),
-	NULL(Object.class, (value, subType) -> null), OTHER(String.class, (value, subType) -> "Unknown"),
-	OBJECT(Object.class, (value, subType) -> value),
-	DECIMAL(BigDecimal.class, (value, subType) -> new BigDecimal(value)),
-	BOOLEAN(Boolean.class, (value, subType) -> !"0".equals(value)),
-	ARRAY(Array.class, SqlArrayUtil::transformToSqlArray);
+	}),
+	DATE(Date.class,
+			conversion -> SqlDateUtil.transformToDateFunction.apply(conversion.getValue(), conversion.getTimeZone())),
+	TIMESTAMP(Timestamp.class,
+			conversion -> SqlDateUtil.transformToTimestampFunction.apply(conversion.getValue(),
+					conversion.getTimeZone())),
+	TIME(Time.class,
+			conversion -> SqlDateUtil.transformToTimeFunction.apply(conversion.getValue(), conversion.getTimeZone())),
+	NULL(Object.class, conversion -> null), OTHER(String.class, conversion -> "Unknown"),
+	OBJECT(Object.class, StringToColumnTypeConversion::getValue),
+	DECIMAL(BigDecimal.class, conversion -> new BigDecimal(conversion.getValue())),
+	BOOLEAN(Boolean.class, conversion -> !"0".equals(conversion.getValue())),
+	ARRAY(Array.class, conversion -> SqlArrayUtil.transformToSqlArray(conversion.getValue(), conversion.getColumn()));
 
 	public static final String NULL_VALUE = "\\N";
 	private final Class<?> type;
-	private final CheckedBiFunction<String, FireboltColumn, Object> transformFunction;
+	private final CheckedFunction<StringToColumnTypeConversion, Object> transformFunction;
 
-	BaseType(Class<?> type, CheckedBiFunction<String, FireboltColumn, Object> transformFunction) {
+	BaseType(Class<?> type, CheckedFunction<StringToColumnTypeConversion, Object> transformFunction) {
 		this.type = type;
 		this.transformFunction = transformFunction;
 	}
@@ -81,7 +85,7 @@ public enum BaseType {
 
 	private static void validateObjectNotNull(String value) {
 		if (value == null) {
-			throw new NumberFormatException("The value cannot be null");
+			throw new IllegalArgumentException("The value cannot be null");
 		}
 	}
 
@@ -89,15 +93,39 @@ public enum BaseType {
 		return type;
 	}
 
-	public <T> T transform(String value, FireboltColumn column) throws FireboltException {
-		validateObjectNotNull(value);
-		if (isNull(value)) {
-			return null;
-		}
-		return (T) transformFunction.apply(value, column);
+	public <T> T transform(String value, FireboltColumn column) throws SQLException {
+		return this.transform(value, column, null);
 	}
 
-	public <T> T transform(String value) throws FireboltException {
-		return this.transform(value, null);
+	public <T> T transform(String value) throws SQLException {
+		return this.transform(value, null, null);
+	}
+
+	public <T> T transform(String value, FireboltColumn fireboltColumn, TimeZone timeZone) throws SQLException {
+		TimeZone fromTimeZone;
+		if (fireboltColumn != null && fireboltColumn.getTimeZone() != null) {
+			fromTimeZone = fireboltColumn.getTimeZone();
+		} else {
+			fromTimeZone = timeZone;
+		}
+		StringToColumnTypeConversion conversion = StringToColumnTypeConversion.builder().value(value)
+				.column(fireboltColumn).timeZone(fromTimeZone).build();
+		return this.transform(conversion);
+	}
+
+	private <T> T transform(StringToColumnTypeConversion conversion) throws SQLException {
+		validateObjectNotNull(conversion.getValue());
+		if (isNull(conversion.getValue())) {
+			return null;
+		}
+		return (T) transformFunction.apply(conversion);
+	}
+
+	@Builder
+	@Value
+	private static class StringToColumnTypeConversion {
+		String value;
+		FireboltColumn column;
+		TimeZone timeZone;
 	}
 }

@@ -5,6 +5,7 @@ import static com.firebolt.jdbc.type.FireboltDataType.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.RegExUtils;
@@ -34,6 +35,7 @@ public final class FireboltColumn {
 	private final int arrayDepth;
 	private final int precision;
 	private final int scale;
+	private final TimeZone timeZone;
 
 	public static FireboltColumn of(String columnType, String columnName) {
 		log.debug("Creating column info for column: {} of type: {}", columnName, columnType);
@@ -43,6 +45,7 @@ public final class FireboltColumn {
 		boolean isNullable = false;
 		FireboltDataType arrayType = null;
 		List<FireboltColumn> tupleDataTypes = null;
+		TimeZone timeZone = null;
 		Optional<Pair<Optional<Integer>, Optional<Integer>>> scaleAndPrecisionPair;
 		FireboltDataType fireboltType;
 		if (typeInUpperCase.startsWith(FireboltDataType.TUPLE.getInternalName().toUpperCase())) {
@@ -70,13 +73,16 @@ public final class FireboltColumn {
 		} else {
 			fireboltType = dataType;
 		}
-
+		String[] arguments = null;
 		if (!reachedEndOfTypeName(typeEndIndex, typeInUpperCase.length())
 				|| typeInUpperCase.startsWith("(", typeEndIndex)) {
-			String[] arguments = splitArguments(typeInUpperCase, typeEndIndex);
+			arguments = splitArguments(typeInUpperCase, typeEndIndex);
 			scaleAndPrecisionPair = Optional.of(getsCaleAndPrecision(arguments, dataType));
 		} else {
 			scaleAndPrecisionPair = Optional.empty();
+		}
+		if (dataType.isTime() && arguments != null) {
+			timeZone = getTimeZoneFromArguments(arguments);
 		}
 
 		return FireboltColumn.builder().columnName(columnName).columnType(typeInUpperCase)
@@ -84,8 +90,23 @@ public final class FireboltColumn {
 						.orElse(dataType.getDefaultScale()))
 				.precision(scaleAndPrecisionPair.map(Pair::getRight).filter(Optional::isPresent).map(Optional::get)
 						.orElse(dataType.getDefaultPrecision()))
+				.timeZone(timeZone)
 				.arrayBaseDataType(arrayType).dataType(fireboltType).nullable(isNullable).arrayDepth(arrayDepth)
 				.tupleBaseDateTypes(tupleDataTypes).build();
+	}
+
+	private static TimeZone getTimeZoneFromArguments(String[] arguments) {
+		String timeZoneArgument = null;
+		TimeZone timeZone = null;
+		if (arguments.length > 1) {
+			timeZoneArgument = arguments[1];
+		} else if (arguments.length == 1 && !StringUtils.isNumeric(arguments[0])) {
+			timeZoneArgument = arguments[0];
+		}
+		if (timeZoneArgument != null) {
+			timeZone = TimeZone.getTimeZone(timeZoneArgument.replace("\\'", ""));
+		}
+		return timeZone;
 	}
 
 	public static FireboltColumn of(String columnType) {
