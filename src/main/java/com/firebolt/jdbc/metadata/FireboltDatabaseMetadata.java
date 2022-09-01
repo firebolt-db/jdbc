@@ -5,10 +5,7 @@ import static com.firebolt.jdbc.metadata.MetadataColumns.*;
 import static com.firebolt.jdbc.type.FireboltDataType.*;
 import static java.sql.Types.VARCHAR;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -17,6 +14,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.VersionUtil;
+import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
+import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.resultset.FireboltColumn;
@@ -26,7 +25,7 @@ import com.firebolt.jdbc.type.FireboltDataType;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
+public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 	private final String url;
 	private final FireboltConnection connection;
@@ -335,5 +334,1045 @@ public class FireboltDatabaseMetadata extends AbstractDatabaseMetadata {
 			return iface.cast(this);
 		}
 		throw new SQLException("Cannot unwrap to " + iface.getName());
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean allProceduresAreCallable() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean allTablesAreSelectable() throws SQLException {
+		return true;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public String getUserName() throws SQLException {
+		return null;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean isReadOnly() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean nullsAreSortedHigh() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean nullsAreSortedLow() throws SQLException {
+		return !nullsAreSortedHigh();
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean nullsAreSortedAtStart() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean nullsAreSortedAtEnd() throws SQLException {
+		return !nullsAreSortedAtStart();
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean usesLocalFiles() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean usesLocalFilePerTable() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsMixedCaseIdentifiers() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean storesUpperCaseIdentifiers() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean storesLowerCaseIdentifiers() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean storesMixedCaseIdentifiers() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsMixedCaseQuotedIdentifiers() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean storesUpperCaseQuotedIdentifiers() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean storesLowerCaseQuotedIdentifiers() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean storesMixedCaseQuotedIdentifiers() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public String getIdentifierQuoteString() throws SQLException {
+		return "\"";
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public String getSQLKeywords() throws SQLException {
+		// Firebolt reserved words minus SQL:2003 keywords
+		return "BOOL,CONCAT,COPY,DATABASE,DATETIME,DOUBLECOLON,DOW,"
+				+ "DOY,EMPTY_IDENTIFIER,EPOCH,EXPLAIN,EXTRACT,FIRST,GENERATE,ILIKE,ISNULL,"
+				+ "JOIN_TYPE,LIMIT,LIMIT_DISTINCT,LONG,NEXT,OFFSET,PRIMARY,QUARTER,SAMPLE,SHOW,TEXT,"
+				+ "TOP,TRIM,TRUNCATE,UNKNOWN_CHAR,UNTERMINATED_STRING,WEEK";
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public String getNumericFunctions() throws SQLException {
+		return "";
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public String getStringFunctions() throws SQLException {
+		return "";
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public String getSystemFunctions() throws SQLException {
+		return "";
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public String getTimeDateFunctions() throws SQLException {
+		return "";
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public String getSearchStringEscape() throws SQLException {
+		return "\\";
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public String getExtraNameCharacters() throws SQLException {
+		return "";
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsAlterTableWithAddColumn() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsAlterTableWithDropColumn() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsColumnAliasing() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean nullPlusNonNullIsNull() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsConvert() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsConvert(int fromType, int toType) throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsTableCorrelationNames() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsDifferentTableCorrelationNames() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsExpressionsInOrderBy() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsOrderByUnrelated() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsGroupBy() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsGroupByUnrelated() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsGroupByBeyondSelect() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsLikeEscapeClause() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsMultipleResultSets() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsMultipleTransactions() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsNonNullableColumns() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsMinimumSQLGrammar() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsCoreSQLGrammar() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsExtendedSQLGrammar() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsANSI92EntryLevelSQL() throws SQLException {
+		// We do not support it (eg: we would need to be compliant with JDBC and support
+		// 'schema')
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsANSI92IntermediateSQL() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsANSI92FullSQL() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsIntegrityEnhancementFacility() throws SQLException {
+		// Similar approach as pgjdbc: we assume it means supported constraints
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsOuterJoins() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsFullOuterJoins() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsLimitedOuterJoins() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public String getSchemaTerm() throws SQLException {
+		return "schema";
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public String getProcedureTerm() throws SQLException {
+		return "procedure";
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public String getCatalogTerm() throws SQLException {
+		return "database";
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean isCatalogAtStart() throws SQLException {
+		// it is currently not supported but it will be soon
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public String getCatalogSeparator() throws SQLException {
+		return ".";
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsSchemasInDataManipulation() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsSchemasInProcedureCalls() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsSchemasInTableDefinitions() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsSchemasInIndexDefinitions() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsSchemasInPrivilegeDefinitions() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsCatalogsInDataManipulation() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsCatalogsInProcedureCalls() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsCatalogsInTableDefinitions() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsCatalogsInIndexDefinitions() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsCatalogsInPrivilegeDefinitions() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsPositionedDelete() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsPositionedUpdate() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsSelectForUpdate() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsStoredProcedures() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsSubqueriesInComparisons() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsSubqueriesInExists() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsSubqueriesInIns() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsSubqueriesInQuantifieds() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsCorrelatedSubqueries() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsUnion() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsUnionAll() throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsOpenCursorsAcrossCommit() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsOpenCursorsAcrossRollback() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsOpenStatementsAcrossCommit() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsOpenStatementsAcrossRollback() throws SQLException {
+		return false;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxBinaryLiteralLength() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxCharLiteralLength() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxColumnNameLength() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxColumnsInGroupBy() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxColumnsInIndex() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxColumnsInOrderBy() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxColumnsInSelect() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxColumnsInTable() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxConnections() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxCursorNameLength() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxIndexLength() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxSchemaNameLength() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxProcedureNameLength() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxCatalogNameLength() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxRowSize() throws SQLException {
+		return 0;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean doesMaxRowSizeIncludeBlobs() throws SQLException {
+		return false;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxStatementLength() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxStatements() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxTableNameLength() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxTablesInSelect() throws SQLException {
+		return 0;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public int getMaxUserNameLength() throws SQLException {
+		return 0;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public int getDefaultTransactionIsolation() throws SQLException {
+		return Connection.TRANSACTION_NONE;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsTransactions() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsDataDefinitionAndDataManipulationTransactions() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsDataManipulationTransactionsOnly() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean dataDefinitionCausesTransactionCommit() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean dataDefinitionIgnoredInTransactions() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsResultSetType(int type) throws SQLException {
+		return ResultSet.TYPE_FORWARD_ONLY == type;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsResultSetConcurrency(int type, int concurrency) throws SQLException {
+		return false;
+	}
+
+	/*
+	 * The methods related to the visibility of updated ResultSets do not apply
+	 * since we do not support updating ResultSet objects
+	 */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean ownUpdatesAreVisible(int type) throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean ownDeletesAreVisible(int type) throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean ownInsertsAreVisible(int type) throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean othersUpdatesAreVisible(int type) throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean othersDeletesAreVisible(int type) throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean othersInsertsAreVisible(int type) throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean updatesAreDetected(int type) throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean deletesAreDetected(int type) throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean insertsAreDetected(int type) throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsBatchUpdates() throws SQLException {
+		// We support it partially (via FireboltPreparedStatement but not with the 'basic' FireboltStatement )
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsSavepoints() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsNamedParameters() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsMultipleOpenResults() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsGetGeneratedKeys() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsResultSetHoldability(int holdability) throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public int getResultSetHoldability() throws SQLException {
+		// N/A applicable as we do not support transactions
+		return 0;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public int getSQLStateType() throws SQLException {
+		return sqlStateSQL;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean locatorsUpdateCopy() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsStatementPooling() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public RowIdLifetime getRowIdLifetime() throws SQLException {
+		return RowIdLifetime.ROWID_UNSUPPORTED;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean supportsStoredFunctionsUsingCallSyntax() throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean autoCommitFailureClosesAllResultSets() throws SQLException {
+		return false;
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getProcedureColumns(String catalog, String schemaPattern, String procedureNamePattern,
+										 String columnNamePattern) throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getUDTs(String catalog, String schemaPattern, String typeNamePattern, int[] types)
+			throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getSuperTypes(String catalog, String schemaPattern, String typeNamePattern) throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getSuperTables(String catalog, String schemaPattern, String tableNamePattern) throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getAttributes(String catalog, String schemaPattern, String typeNamePattern,
+								   String attributeNamePattern) throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getProcedures(String catalog, String schemaPattern, String procedureNamePattern)
+			throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getColumnPrivileges(String catalog, String schema, String table, String columnNamePattern)
+			throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getTablePrivileges(String catalog, String schemaPattern, String tableNamePattern)
+			throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getBestRowIdentifier(String catalog, String schema, String table, int scope, boolean nullable)
+			throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getVersionColumns(String catalog, String schema, String table) throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getPrimaryKeys(String catalog, String schema, String table) throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getImportedKeys(String catalog, String schema, String table) throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getExportedKeys(String catalog, String schema, String table) throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getCrossReference(String parentCatalog, String parentSchema, String parentTable,
+									   String foreignCatalog, String foreignSchema, String foreignTable) throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getIndexInfo(String catalog, String schema, String table, boolean unique, boolean approximate)
+			throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getClientInfoProperties() throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern)
+			throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getFunctionColumns(String catalog, String schemaPattern, String functionNamePattern,
+										String columnNamePattern) throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	/** @hidden */
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	public ResultSet getPseudoColumns(String catalog, String schemaPattern, String tableNamePattern,
+									  String columnNamePattern) throws SQLException {
+		return FireboltResultSet.empty();
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean generatedKeyAlwaysReturned() throws SQLException {
+		return false;
 	}
 }

@@ -1,0 +1,25 @@
+name: Deploy Javadoc
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Prepare java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - name: Generate Javadoc
+        run: ./gradlew generateJavadoc
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: build/docs/javadoc
+          target-folder: javadoc

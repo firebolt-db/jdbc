@@ -25,7 +25,7 @@ public enum FireboltSessionProperty {
 			"Maximum number of retries used by the client to query Firebolt. Set to 0 to disable"),
 
 	SOCKET_TIMEOUT_MILLIS("socket_timeout_millis", 0, Integer.class, false,
-			"Max time waiting for data after establishing a connection. A timeout value of zero is interpreted as an infinite timeout. A negative value is interpreted as undefined.",
+			"maximum time of inactivity between two data packets when exchanging data with the server. A timeout value of zero is interpreted as an infinite timeout. A negative value is interpreted as undefined.",
 			"socket_timeout"),
 	CONNECTION_TIMEOUT_MILLIS("connection_timeout_millis", 0, Integer.class, false,
 			"Connection timeout in milliseconds. A timeout value of zero is interpreted as an infinite timeout",
