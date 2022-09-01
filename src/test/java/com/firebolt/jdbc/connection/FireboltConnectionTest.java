@@ -1,15 +1,13 @@
 package com.firebolt.jdbc.connection;
 
+import static java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import java.io.ByteArrayInputStream;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -314,4 +312,31 @@ class FireboltConnectionTest {
 		}
 	}
 
+	@Test
+	void shouldGetDatabaseWhenGettingCatalog() throws SQLException {
+		connectionProperties.put("database", "db");
+		try (Connection connection = new FireboltConnection(URL, connectionProperties, fireboltAuthenticationService,
+				fireboltEngineService, fireboltStatementService)) {
+			assertEquals("db", connection.getCatalog());
+		}
+	}
+
+	@Test
+	void shouldGetNoneTransactionIsolation() throws SQLException {
+		connectionProperties.put("database", "db");
+		try (Connection connection = new FireboltConnection(URL, connectionProperties, fireboltAuthenticationService,
+				fireboltEngineService, fireboltStatementService)) {
+			assertEquals(Connection.TRANSACTION_NONE, connection.getTransactionIsolation());
+		}
+	}
+
+	@Test
+	void shouldThrowExceptionWhenPreparingStatementWIthInvalidResultSetType() throws SQLException {
+		connectionProperties.put("database", "db");
+		try (Connection connection = new FireboltConnection(URL, connectionProperties, fireboltAuthenticationService,
+				fireboltEngineService, fireboltStatementService)) {
+			assertThrows(SQLFeatureNotSupportedException.class,
+					() -> connection.prepareStatement("any", TYPE_SCROLL_INSENSITIVE, 0));
+		}
+	}
 }

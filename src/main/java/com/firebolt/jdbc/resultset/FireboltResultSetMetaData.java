@@ -1,8 +1,13 @@
 package com.firebolt.jdbc.resultset;
 
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+
+import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
+import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.exception.FireboltException;
 
 import lombok.Builder;
@@ -12,7 +17,7 @@ import lombok.Value;
 @Value
 @Builder
 @EqualsAndHashCode(callSuper = false)
-public class FireboltResultSetMetaData extends AbstractResultSetMetaData {
+public class FireboltResultSetMetaData implements ResultSetMetaData {
 
 	List<FireboltColumn> columns;
 
@@ -96,5 +101,68 @@ public class FireboltResultSetMetaData extends AbstractResultSetMetaData {
 	@Override
 	public boolean isWrapperFor(Class<?> interfaceName) throws SQLException {
 		return interfaceName != null && interfaceName.isAssignableFrom(getClass());
+	}
+
+	@Override
+	public boolean isCaseSensitive(int column) throws SQLException {
+		return this.getColumn(column).getDataType().isCaseSensitive();
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
+	/**
+	 * @hidden
+	 */
+	public boolean isAutoIncrement(int column) throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean isSearchable(int column) throws SQLException {
+		return true;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean isCurrency(int column) throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public int getColumnDisplaySize(int column) throws SQLException {
+		//Default value for backward compatibility
+		return 80;
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public String getSchemaName(int column) throws SQLException {
+		//Schemas are not implemented so N/A
+		return StringUtils.EMPTY;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean isReadOnly(int column) throws SQLException {
+		return false;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean isWritable(int column) throws SQLException {
+		return !isReadOnly(column);
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public boolean isDefinitelyWritable(int column) throws SQLException {
+		return false;
 	}
 }

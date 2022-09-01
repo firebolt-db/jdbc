@@ -108,4 +108,12 @@ class FireboltResultSetMetaDataTest {
 		return Arrays.asList(FireboltColumn.of("Nullable(String)", "name"), FireboltColumn.of("Integer", "age"),
 				FireboltColumn.of("Decimal(1,2)", "Weight"));
 	}
+
+	@Test
+	void shouldReturnTrueWhenColumnIsCaseSensitiveAndFalseOtherwise() throws SQLException {
+		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
+				.tableName("table-name").dbName("db-name").build();
+		assertTrue(fireboltResultSetMetaData.isCaseSensitive(1));
+		assertFalse(fireboltResultSetMetaData.isCaseSensitive(2));
+	}
 }
