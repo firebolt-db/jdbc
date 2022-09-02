@@ -1,5 +1,6 @@
 com.firebolt
 com.firebolt.jdbc
+com.firebolt.jdbc.annotation
 com.firebolt.jdbc.client
 com.firebolt.jdbc.client.account
 com.firebolt.jdbc.client.account.response
@@ -10,7 +11,6 @@ com.firebolt.jdbc.client.query
 com.firebolt.jdbc.client.ssl
 com.firebolt.jdbc.connection
 com.firebolt.jdbc.connection.settings
-com.firebolt.jdbc.doc
 com.firebolt.jdbc.exception
 com.firebolt.jdbc.metadata
 com.firebolt.jdbc.resultset
