@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.firebolt.jdbc.PropertyUtil;
 import com.firebolt.jdbc.VersionUtil;
 import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -63,6 +64,6 @@ public class FireboltDriver implements Driver {
 
 	@Override
 	public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-		throw new SQLFeatureNotSupportedException();
+		throw new FireboltSQLFeatureNotSupportedException();
 	}
 }

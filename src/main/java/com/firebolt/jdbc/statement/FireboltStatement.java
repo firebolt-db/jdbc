@@ -1,9 +1,7 @@
 package com.firebolt.jdbc.statement;
 
 import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -14,9 +12,13 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import com.firebolt.jdbc.CloseableUtil;
 import com.firebolt.jdbc.PropertyUtil;
+import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
+import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
+import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.service.FireboltStatementService;
 
@@ -24,7 +26,7 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class FireboltStatement extends AbstractStatement {
+public class FireboltStatement implements Statement {
 
 	private static final String KILL_QUERY_SQL = "KILL QUERY ON CLUSTER sql_cluster WHERE initial_query_id='%s'";
 	private final FireboltStatementService statementService;
@@ -158,15 +160,6 @@ public class FireboltStatement extends AbstractStatement {
 	}
 
 	@Override
-	public void setFetchSize(int rows) throws SQLException {
-		validateStatementIsNotClosed();
-		if (rows < 0) {
-			throw new IllegalArgumentException("The number of rows cannot be less than 0");
-		}
-		// Ignore
-	}
-
-	@Override
 	public Connection getConnection() throws SQLException {
 		return this.connection;
 	}
@@ -297,4 +290,245 @@ public class FireboltStatement extends AbstractStatement {
 	public boolean isStatementRunning() {
 		return this.runningStatementId != null && statementService.isStatementRunning(this.runningStatementId);
 	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public int getMaxFieldSize() throws SQLException {
+		return 0;
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public void setMaxFieldSize(int max) throws SQLException {
+		throw new FireboltUnsupportedOperationException();
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public void setEscapeProcessing(boolean enable) throws SQLException {
+		throw new FireboltUnsupportedOperationException();
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public SQLWarning getWarnings() throws SQLException {
+		return null;
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public void clearWarnings() throws SQLException {
+		throw new FireboltUnsupportedOperationException();
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public void setCursorName(String name) throws SQLException {
+		throw new FireboltSQLFeatureNotSupportedException();
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public int getFetchDirection() throws SQLException {
+		return ResultSet.FETCH_FORWARD;
+	}
+
+	@Override
+	@ExcludeFromJacocoGeneratedReport
+	public void setFetchDirection(int direction) throws SQLException {
+		// no-op
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public int getFetchSize() throws SQLException {
+		return 0;
+	}
+
+	@Override
+	public void setFetchSize(int rows) throws SQLException {
+		validateStatementIsNotClosed();
+		if (rows < 0) {
+			throw new IllegalArgumentException("The number of rows cannot be less than 0");
+		}
+		// Ignore
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public int getResultSetConcurrency() throws SQLException {
+		return 0;
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public int getResultSetType() throws SQLException {
+		return 0;
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public void addBatch(String sql) throws SQLException {
+		// Batch are not supported by the driver
+		throw new FireboltUnsupportedOperationException();
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public void clearBatch() throws SQLException {
+		// Batch are not supported by the driver
+		throw new FireboltUnsupportedOperationException();
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public int[] executeBatch() throws SQLException {
+		// Batch are not supported by the driver
+		throw new FireboltUnsupportedOperationException();
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public ResultSet getGeneratedKeys() throws SQLException {
+		throw new FireboltSQLFeatureNotSupportedException();
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public int executeUpdate(String sql, int autoGeneratedKeys) throws SQLException {
+		throw new FireboltSQLFeatureNotSupportedException();
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public int executeUpdate(String sql, int[] columnIndexes) throws SQLException {
+		throw new FireboltSQLFeatureNotSupportedException();
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public int executeUpdate(String sql, String[] columnNames) throws SQLException {
+		throw new FireboltSQLFeatureNotSupportedException();
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public boolean execute(String sql, int autoGeneratedKeys) throws SQLException {
+		throw new FireboltSQLFeatureNotSupportedException();
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public boolean execute(String sql, int[] columnIndexes) throws SQLException {
+		throw new FireboltSQLFeatureNotSupportedException();
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public boolean execute(String sql, String[] columnNames) throws SQLException {
+		throw new FireboltSQLFeatureNotSupportedException();
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public int getResultSetHoldability() throws SQLException {
+		// N/A applicable as we do not support transactions
+		return 0;
+	}
+
+	@Override
+	public boolean isPoolable() throws SQLException {
+		return false;
+	}
+
+	/**
+	 * @hidden
+	 */
+	@Override
+	@NotImplemented
+	@ExcludeFromJacocoGeneratedReport
+	public void setPoolable(boolean poolable) throws SQLException {
+		throw new FireboltUnsupportedOperationException();
+	}
+
 }
