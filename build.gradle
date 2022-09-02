@@ -19,6 +19,11 @@ project.ext {
     ]
 }
 
+compileJava {
+    sourceCompatibility = '1.8'
+    targetCompatibility = '1.8'
+}
+
 configurations {
     integrationTestImplementation.extendsFrom testImplementation
     integrationTestCompileOnly.extendsFrom compileOnly
