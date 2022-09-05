@@ -1,8 +1,11 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
+
 plugins {
     id 'java'
     id 'jacoco'
     id "org.sonarqube" version "3.4.0.2513"
     id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
 group 'com.firebolt'
@@ -110,14 +113,19 @@ jacocoTestReport {
     }
 }
 
-
-jar {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    }
+// move all dependencies to 'com.firebolt.shadow' package
+task relocateShadowJar(type: ConfigureShadowRelocation) {
+    target = tasks.shadowJar
+    prefix = 'com.firebolt.shadow'
 }
 
+// rename the shadow jar to the original jar by omitting the classifier
+shadowJar {
+    archiveClassifier.set('')
+}
+
+tasks.shadowJar.dependsOn tasks.relocateShadowJar
+tasks.assemble.dependsOn shadowJar
 
 task generateVersionProperties {
     doLast {
