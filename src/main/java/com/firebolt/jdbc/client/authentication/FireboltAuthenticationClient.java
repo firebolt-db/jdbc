@@ -8,24 +8,18 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.apache.hc.core5.http.io.entity.StringEntity;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltClient;
 import com.firebolt.jdbc.client.authentication.response.FireboltAuthenticationResponse;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.exception.FireboltException;
-import com.google.common.collect.ImmutableMap;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class FireboltAuthenticationClient extends FireboltClient {
-	private static final String USERNAME = "username";
-	private static final String PASSWORD = "password";
-	private static final String AUTH_URL = "%s/auth/v1/login";
 
 	public FireboltAuthenticationClient(CloseableHttpClient httpClient, ObjectMapper objectMapper,
 			FireboltConnection connection, String customDrivers, String customClients) {
@@ -34,7 +28,7 @@ public class FireboltAuthenticationClient extends FireboltClient {
 
 	/**
 	 * Sends POST to obtain connection tokens
-	 * 
+	 *
 	 * @param host     the host
 	 * @param user     the username
 	 * @param password the password
@@ -42,11 +36,13 @@ public class FireboltAuthenticationClient extends FireboltClient {
 	 */
 	public FireboltConnectionTokens postConnectionTokens(String host, String user, String password)
 			throws IOException, ParseException, FireboltException {
-		String connectUrl = String.format(AUTH_URL, host);
-		log.debug("Creating connection with url {}", connectUrl);
-		HttpPost post = this.createPostRequest(connectUrl);
+		AuthenticationRequest authenticationRequest = AuthenticationRequestFactory.getAuthenticationRequest(user,
+				password, host);
+		String uri = authenticationRequest.getUri();
+		log.debug("Creating connection with url {}", uri);
+		HttpPost post = this.createHttpPost(uri);
 		post.addHeader(HEADER_USER_AGENT, this.getHeaderUserAgentValue());
-		post.setEntity(new StringEntity(createLoginRequest(user, password)));
+		post.setEntity(authenticationRequest.getHttpEntity());
 		try (CloseableHttpResponse response = this.execute(post, host)) {
 			String responseStr = EntityUtils.toString(response.getEntity());
 			FireboltAuthenticationResponse authenticationResponse = objectMapper.readValue(responseStr,

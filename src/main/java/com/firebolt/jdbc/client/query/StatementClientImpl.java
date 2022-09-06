@@ -61,7 +61,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			List<NameValuePair> parameters = queryParams.entrySet().stream()
 					.map(e -> new BasicNameValuePair(e.getKey(), e.getValue())).collect(Collectors.toList());
 			String uri = this.buildQueryUri(connectionProperties, parameters).toString();
-			HttpPost post = this.createPostRequest(uri, this.getConnection().getConnectionTokens()
+			HttpPost post = this.createHttpPost(uri, this.getConnection().getConnectionTokens()
 					.map(FireboltConnectionTokens::getAccessToken).orElse(null));
 			post.setEntity(entity);
 			log.debug("Posting statement with id {} to URI: {}", statementInfoWrapper.getId(), uri);
@@ -109,7 +109,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 					.map(kv -> new BasicNameValuePair(kv.getKey(), kv.getValue())).collect(Collectors.toList());
 
 			String uri = this.buildCancelUri(fireboltProperties, params).toString();
-			HttpPost post = this.createPostRequest(uri, this.getConnection().getConnectionTokens()
+			HttpPost post = this.createHttpPost(uri, this.getConnection().getConnectionTokens()
 					.map(FireboltConnectionTokens::getAccessToken).orElse(null));
 			try (CloseableHttpResponse response = this.execute(post, fireboltProperties.getHost())) {
 				EntityUtils.consumeQuietly(response.getEntity());

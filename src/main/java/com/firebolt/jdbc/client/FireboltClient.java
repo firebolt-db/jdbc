@@ -92,11 +92,11 @@ public abstract class FireboltClient {
 		return response;
 	}
 
-	protected HttpPost createPostRequest(String uri) {
-		return createPostRequest(uri, null);
+	protected HttpPost createHttpPost(String uri) {
+		return createHttpPost(uri, null);
 	}
 
-	protected HttpPost createPostRequest(String uri, String accessToken) {
+	protected HttpPost createHttpPost(String uri, String accessToken) {
 		HttpPost httpPost = new HttpPost(uri);
 		httpPost.setConfig(
 				createRequestConfig(this.connection.getConnectionTimeout(), this.connection.getNetworkTimeout()));
@@ -116,7 +116,8 @@ public abstract class FireboltClient {
 			} else if (statusCode == SC_UNAUTHORIZED) {
 				this.getConnection().removeExpiredTokens();
 				throw new FireboltException(String.format(
-						"Could not query Firebolt at %s. The token is expired and has been cleared", host), statusCode);
+						"Could not query Firebolt at %s. The operation is not authorized or the token is expired and has been cleared from the cache",
+						host), statusCode);
 			}
 			String errorResponseMessage;
 			try {

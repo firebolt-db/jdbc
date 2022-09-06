@@ -1,11 +1,11 @@
 package com.firebolt.jdbc.exception;
 
-import static com.firebolt.jdbc.exception.ExceptionType.*;
-import static org.apache.hc.core5.http.HttpStatus.*;
+import lombok.Getter;
 
 import java.sql.SQLException;
 
-import lombok.Getter;
+import static com.firebolt.jdbc.exception.ExceptionType.*;
+import static org.apache.hc.core5.http.HttpStatus.*;
 
 public class FireboltException extends SQLException {
 
@@ -56,7 +56,7 @@ public class FireboltException extends SQLException {
 		case SC_CLIENT_ERROR:
 			return INVALID_REQUEST;
 		case SC_UNAUTHORIZED:
-			return EXPIRED_TOKEN;
+			return UNAUTHORIZED;
 		case SC_TOO_MANY_REQUESTS:
 			return TOO_MANY_REQUESTS;
 		default:
