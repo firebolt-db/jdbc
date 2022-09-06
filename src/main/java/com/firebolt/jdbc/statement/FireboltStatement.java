@@ -2,10 +2,8 @@ package com.firebolt.jdbc.statement;
 
 import java.io.InputStream;
 import java.sql.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -32,13 +30,14 @@ public class FireboltStatement implements Statement {
 	private final FireboltStatementService statementService;
 	private final FireboltProperties sessionProperties;
 	private final FireboltConnection connection;
-	private String runningStatementId;
 	private boolean closeOnCompletion = false;
 	private int currentUpdateCount = -1;
 	private int maxRows;
 	private volatile boolean isClosed = false;
-	private ResultSet resultSet;
+	private StatementResponseWrapper statementResponseWrapper;
 	private Integer queryTimeout;
+
+	private String runningStatementId;
 
 	@Builder
 	public FireboltStatement(FireboltStatementService statementService, FireboltProperties sessionProperties,
@@ -49,29 +48,46 @@ public class FireboltStatement implements Statement {
 		log.debug("Created Statement");
 	}
 
+
 	@Override
 	public ResultSet executeQuery(String sql) throws SQLException {
 		validateStatementWillReturnAResultSet(sql);
-		return this.execute(sql, (Map<String, String>) null);
+		this.execute(sql, (Map<String, String>) null);
+		return statementResponseWrapper.getResultSet();
 	}
 
-	private ResultSet execute(String sql, Map<String, String> statementParams) throws SQLException {
-		if (resultSet != null && !this.resultSet.isClosed()) {
-			this.resultSet.close();
-			this.resultSet = null;
+	private void execute(String sql, Map<String, String> params) throws SQLException {
+		if (this.statementResponseWrapper != null) {
+			this.statementResponseWrapper.close();
+			this.statementResponseWrapper = null;
 			log.info("There was already an opened ResultSet for the statement object. The ResultSet is now closed.");
 		}
+		List<StatementInfoWrapper> queries = StatementUtil.getQueryWrapper(sql).getSubQueries().stream().map(QueryWrapper.SubQuery::getSql)
+				.map(StatementUtil::extractStatementInfo).collect(Collectors.toList());
+		for (int i = 0; i < queries.size(); i++) {
+			StatementInfoWrapper statementInfoWrapper = queries.get(i);
+			ResultSet rs = execute(statementInfoWrapper, params);
+			if (i == 0) {
+				this.statementResponseWrapper = new StatementResponseWrapper(rs, statementInfoWrapper);
+			} else {
+				this.statementResponseWrapper.append(new StatementResponseWrapper(rs, statementInfoWrapper));
+			}
+		}
+	}
+
+	private ResultSet execute(StatementInfoWrapper statementInfo, Map<String, String> statementParams)
+			throws SQLException {
+		runningStatementId = UUID.randomUUID().toString();
+		ResultSet resultSet = null;
 		synchronized (this) {
 			this.validateStatementIsNotClosed();
 		}
-		this.runningStatementId = UUID.randomUUID().toString();
 		InputStream inputStream = null;
 		try {
-			log.info("Executing the statement with id {} : {}", this.runningStatementId, sql);
-			StatementInfoWrapper statementInfo = StatementUtil.extractStatementInfo(sql, runningStatementId);
+			log.info("Executing the statement with id {} : {}", statementInfo.getId(), statementInfo.getSql());
 			if (statementInfo.getType() == StatementInfoWrapper.StatementType.PARAM_SETTING) {
 				this.connection.addProperty(statementInfo.getParam());
-				log.debug("The property from the query {} was stored", this.runningStatementId);
+				log.debug("The property from the query {} was stored", runningStatementId);
 			} else {
 				Map<String, String> params = statementParams != null ? statementParams : this.getStatementParameters();
 				inputStream = statementService.execute(statementInfo, this.sessionProperties, params);
@@ -88,11 +104,11 @@ public class FireboltStatement implements Statement {
 					currentUpdateCount = 0;
 					CloseableUtil.close(inputStream);
 				}
-				log.info("The query with the id {} was executed with success", this.runningStatementId);
+				log.info("The query with the id {} was executed with success", runningStatementId);
 			}
 		} catch (Exception ex) {
 			CloseableUtil.close(inputStream);
-			log.error("An error happened while executing the statement with the id {}", this.runningStatementId, ex);
+			log.error("An error happened while executing the statement with the id {}", runningStatementId, ex);
 			throw ex;
 		} finally {
 			this.runningStatementId = null;
@@ -148,8 +164,7 @@ public class FireboltStatement implements Statement {
 	private void abortStatementByQuery(String statementId) throws SQLException {
 		Map<String, String> statementParams = new HashMap<>(this.getStatementParameters());
 		statementParams.put("use_standard_sql", "0");
-		try (ResultSet rs = this.execute(String.format(KILL_QUERY_SQL, statementId), statementParams)) {
-		}
+		this.execute(String.format(KILL_QUERY_SQL, statementId), statementParams);
 	}
 
 	@Override
@@ -194,9 +209,9 @@ public class FireboltStatement implements Statement {
 			}
 			isClosed = true;
 		}
-		if (resultSet != null && !resultSet.isClosed()) {
-			resultSet.close();
-			resultSet = null;
+		if (this.statementResponseWrapper != null) {
+			this.statementResponseWrapper.close();
+			this.statementResponseWrapper = null;
 		}
 
 		if (removeFromConnection) {
@@ -213,17 +228,21 @@ public class FireboltStatement implements Statement {
 
 	@Override
 	public ResultSet getResultSet() throws SQLException {
-		return this.resultSet;
+		return this.statementResponseWrapper != null ? this.statementResponseWrapper.getResultSet() : null;
 	}
 
 	@Override
 	public boolean getMoreResults() throws SQLException {
-		if (resultSet != null && !resultSet.isClosed()) {
-			resultSet.close();
-			resultSet = null;
+		if (this.statementResponseWrapper != null) {
+			if (this.statementResponseWrapper.getResultSet() != null) {
+				this.statementResponseWrapper.getResultSet().close();
+			}
+			this.statementResponseWrapper = statementResponseWrapper.getNext();
+			return true;
+		} else {
+			currentUpdateCount = -1;
+			return false;
 		}
-		currentUpdateCount = -1;
-		return false;
 	}
 
 	@Override
@@ -243,7 +262,8 @@ public class FireboltStatement implements Statement {
 
 	@Override
 	public boolean execute(String sql) throws SQLException {
-		return this.execute(sql, (Map<String, String>) null) != null;
+		this.execute(sql, (Map<String, String>) null);
+		return statementResponseWrapper.getStatementInfoWrapper().getType() == StatementInfoWrapper.StatementType.QUERY;
 	}
 
 	@Override
@@ -276,7 +296,9 @@ public class FireboltStatement implements Statement {
 	}
 
 	protected void validateStatementWillReturnAResultSet(String sql) throws SQLException {
-		if (!StatementUtil.isQuery(sql)) {
+		List<StatementInfoWrapper> queries = StatementUtil.getQueryWrapper(sql).getSubQueries().stream().map(QueryWrapper.SubQuery::getSql)
+				.map(StatementUtil::extractStatementInfo).collect(Collectors.toList());
+		if (queries.size() != 1 || queries.get(0).getType() != StatementInfoWrapper.StatementType.QUERY) {
 			throw new FireboltException("Cannot proceed: the statement would not return a ResultSet");
 		}
 	}

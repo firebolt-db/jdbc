@@ -184,4 +184,24 @@ class FireboltStatementTest {
 		}
 
 	}
+
+	@Test
+	void shouldExecuteQueryForMultiStatementQuery() throws SQLException {
+		try (MockedConstruction<FireboltResultSet> mocked = Mockito.mockConstruction(FireboltResultSet.class)) {
+			FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
+					.build();
+			FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
+					.sessionProperties(fireboltProperties).build();
+
+			when(fireboltStatementService.execute(any(), any(), any())).thenReturn(mock(InputStream.class));
+			fireboltStatement.executeQuery("SELECT 1;");
+			assertTrue(fireboltProperties.getAdditionalProperties().isEmpty());
+			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(fireboltProperties),
+					any());
+			assertEquals(1, mocked.constructed().size());
+			assertEquals(-1, fireboltStatement.getUpdateCount());
+			assertEquals("show database", queryInfoWrapperArgumentCaptor.getValue().getSql());
+			assertEquals(StatementInfoWrapper.StatementType.QUERY, queryInfoWrapperArgumentCaptor.getValue().getType());
+		}
+	}
 }

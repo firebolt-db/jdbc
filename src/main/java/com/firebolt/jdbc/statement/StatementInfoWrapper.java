@@ -13,7 +13,6 @@ public class StatementInfoWrapper {
 	StatementType type;
 	String cleanSql;
 	Pair<String, String> param;
-	String tablePair;
 
 	public enum StatementType {
 		PARAM_SETTING, // SET

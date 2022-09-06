@@ -196,7 +196,7 @@ class StatementUtilTest {
 		String expectedSql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE '55 Liverpool road%'";
 		Map<Integer, String> params = ImmutableMap.of(1, "'55 Liverpool road%'");
 		Map<Integer, Integer> positions = ImmutableMap.of(1, 93);
-		assertEquals(expectedSql, StatementUtil.replaceParameterMarksWithValues(params, positions, sql));
+		assertEquals(expectedSql, StatementUtil.replaceParameterMarksWithValues(params, sql).get(0));
 	}
 
 	@Test
@@ -226,18 +226,17 @@ class StatementUtilTest {
 	@Test
 	void shouldThrowExceptionWhenTheNumberOfParamsIsNotTheSameAsTheNumberOfParamMarkers() {
 		Map<Integer, String> params = ImmutableMap.of();
-		Map<Integer, Integer> positions = ImmutableMap.of(1, 1);
 		assertThrows(IllegalArgumentException.class,
-				() -> StatementUtil.replaceParameterMarksWithValues(params, positions, "SELECT 1;"),
+				() -> StatementUtil.replaceParameterMarksWithValues(params,
+						"SELECT 1;"),
 				"The number of parameters passed does not equal the number of parameter markers in the SQL query. Provided: 0, Parameter markers in the SQL query: 1");
 	}
 
 	@Test
 	void shouldThrowExceptionWhenThePositionOfTheParamMarkerIsGreaterThanTheLengthOfTheStatement() {
 		Map<Integer, String> params = ImmutableMap.of(1, "'test'");
-		Map<Integer, Integer> positions = ImmutableMap.of(1, 9);
-		assertThrows(IllegalArgumentException.class,
-				() -> StatementUtil.replaceParameterMarksWithValues(params, positions, "SELECT 1;"),
+		assertThrows(IllegalArgumentException.class, () -> StatementUtil
+						.replaceParameterMarksWithValues(params, "SELECT 1;"),
 				"The position of the parameter marker provided is invalid");
 	}
 

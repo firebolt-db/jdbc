@@ -1,8 +1,6 @@
 package com.firebolt.jdbc.statement;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.RegExUtils;
@@ -25,6 +23,10 @@ public class StatementUtil {
 	private static final Pattern SET_WITH_SPACE_REGEX = Pattern.compile(SET_PREFIX + " ", Pattern.CASE_INSENSITIVE);
 	private static final String[] SELECT_KEYWORDS = new String[] { "show", "select", "describe", "exists", "explain",
 			"with", "call" };
+
+	public static StatementInfoWrapper extractStatementInfo(String sql) {
+		return extractStatementInfo(sql, UUID.randomUUID().toString());
+	}
 
 	public static StatementInfoWrapper extractStatementInfo(String sql, String statementId) {
 		String cleaned = StatementUtil.cleanStatement(sql);
@@ -103,6 +105,47 @@ public class StatementUtil {
 		return result.toString().trim();
 	}
 
+	public QueryWrapper getQueryWrapper(String sql) {
+		List<QueryWrapper.SubQuery> subQueries = new ArrayList<>();
+		List<Pair<Integer,Integer>> paramPositions = new ArrayList<>();
+		int subQueryStart = 0;
+		int currentIndex = 0;
+		int totalParams = 0;
+		char currentChar = sql.charAt(currentIndex);
+		boolean isCurrentSubstringBetweenQuotes = currentChar == '\'';
+		boolean isInSingleLineComment = false;
+		boolean isInMultipleLinesComment = false;
+		boolean isInComment;
+		char previousChar;
+		int count = 0;
+		while (currentIndex++ < sql.length() - 1) {
+			previousChar = currentChar;
+			currentChar = sql.charAt(currentIndex);
+			isInSingleLineComment = isInSingleLineComment(currentChar, previousChar, isCurrentSubstringBetweenQuotes,
+					isInSingleLineComment);
+			isInMultipleLinesComment = isInMultipleLinesComment(currentChar, previousChar,
+					isCurrentSubstringBetweenQuotes, isInMultipleLinesComment);
+			isInComment = isInSingleLineComment || isInMultipleLinesComment;
+			if (!isInComment) {
+				if (currentChar == '?' && !isCurrentSubstringBetweenQuotes) {
+					paramPositions.add(Pair.of(++count, currentIndex - subQueryStart));
+					totalParams++;
+				} else if (currentChar == '\'') {
+					isCurrentSubstringBetweenQuotes = !isCurrentSubstringBetweenQuotes;
+				} else if (currentChar == ';') {
+					subQueries.add(new QueryWrapper.SubQuery(sql.substring(subQueryStart, currentIndex), paramPositions));
+					paramPositions = new ArrayList<>();
+					subQueryStart = currentIndex;
+				}
+			}
+		}
+		if(currentChar != ';') { //TODO: check if it's not just comments at the end
+			subQueries.add(new QueryWrapper.SubQuery(sql.substring(subQueryStart, currentIndex), paramPositions));
+		}
+
+		return new QueryWrapper(subQueries, totalParams);
+	}
+
 	public Map<Integer, Integer> getQueryParamsPositions(String sql) {
 		Map<Integer, Integer> queryParams = new HashMap<>();
 		int currentIndex = 0;
@@ -169,37 +212,49 @@ public class StatementUtil {
 				extractTableNameFromFromPartOfTheQuery(from.orElse(null)));
 	}
 
-	public static String replaceParameterMarksWithValues(@NonNull Map<Integer, String> params, @NonNull String sql) {
-		Map<Integer, Integer> positions = getQueryParamsPositions(sql);
-		return replaceParameterMarksWithValues(params, positions, sql);
+//	public static String replaceParameterMarksWithValues(@NonNull Map<Integer, String> params, @NonNull QueryWrapper query) {
+//		Map<Integer, Integer> positions = query.getParamPositions();
+//		return replaceParameterMarksWithValues(params, positions, sql);
+//	}
+
+	public static List<String> replaceParameterMarksWithValues(@NonNull Map<Integer, String> params, @NonNull String sql) {
+		QueryWrapper queryWrapper = getQueryWrapper(sql);
+		return replaceParameterMarksWithValues(params, queryWrapper);
 	}
 
-	public static String replaceParameterMarksWithValues(@NonNull Map<Integer, String> params,
-			@NonNull Map<Integer, Integer> positions, @NonNull String sql) {
-		String result = sql;
-		int currentPos = 0;
-		int offset = 0;
-		if (params.size() != positions.size()) {
-			throw new IllegalArgumentException(String.format(
-					"The number of parameters passed does not equal the number of parameter markers in the SQL query. Provided: %d, Parameter markers in the SQL query: %d",
-					params.size(), positions.size()));
-		}
-		for (int i = 1; i <= params.keySet().size(); i++) {
-			String value = params.get(i);
-			if (value == null) {
-				throw new IllegalArgumentException("No value for parameter marker at position: " + i);
+	public static List<String> replaceParameterMarksWithValues(@NonNull Map<Integer, String> params, @NonNull QueryWrapper query) {
+
+		List<String> queries = new ArrayList<>();
+		for (int subqueryIndex = 0 ; subqueryIndex < query.getSubQueries().size() ; subqueryIndex++) {
+			int currentPos = 0;
+			int offset = 0;
+			QueryWrapper.SubQuery subQuery = query.getSubQueries().get(subqueryIndex);
+			String subQueryWithParams = subQuery.getSql();
+
+			if (params.size() != query.totalParams) {
+				throw new IllegalArgumentException(String.format(
+						"The number of parameters passed does not equal the number of parameter markers in the SQL query. Provided: %d, Parameter markers in the SQL query: %d",
+						params.size(), query.totalParams));
 			}
-			while (currentPos != positions.get(i) + offset) {
-				if (currentPos >= result.length() - 1) {
-					throw new IllegalArgumentException("The position of the parameter marker provided is invalid");
+			for (Pair<Integer, Integer> position: subQuery.getParamPositions()) {
+				String value = params.get(position.getLeft());
+				if (value == null) {
+					throw new IllegalArgumentException("No value for parameter marker at position: " + position.getRight());
 				}
-				currentPos++;
+				while (currentPos != position.getRight() + offset) {
+					if (currentPos >= subQuery.getSql().length() - 1) {
+						throw new IllegalArgumentException("The position of the parameter marker provided is invalid");
+					}
+					currentPos++;
+				}
+				subQueryWithParams = subQueryWithParams.substring(0, currentPos) + value + subQueryWithParams.substring(currentPos + 1);
+				currentPos = currentPos + value.length();
+				offset += value.length() - 1;
+
 			}
-			result = result.substring(0, currentPos) + value + result.substring(currentPos + 1);
-			currentPos = currentPos + value.length();
-			offset += value.length() - 1;
+			queries.add(subQueryWithParams);
 		}
-		return result;
+		return queries;
 	}
 
 	private static Optional<String> extractTableNameFromFromPartOfTheQuery(String from) {
