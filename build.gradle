@@ -1,4 +1,4 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
+import java.util.jar.JarFile
 
 plugins {
     id 'java'
@@ -113,18 +113,28 @@ jacocoTestReport {
     }
 }
 
-// move all dependencies to 'com.firebolt.shadow' package
-task relocateShadowJar(type: ConfigureShadowRelocation) {
-    target = tasks.shadowJar
-    prefix = 'com.firebolt.shadow'
-}
-
-// rename the shadow jar to the original jar by omitting the classifier
 shadowJar {
+    // rename the shadow jar to the original jar by omitting the classifier
     archiveClassifier.set('')
+    // move all packages except org.slf4j for now
+    def packages = [] as Set<String>
+    configurations.each { configuration ->
+        configuration.files.each { jar ->
+            JarFile jf = new JarFile(jar)
+            jf.entries().each { entry ->
+                if (entry.name.endsWith(".class") && entry.name != "module-info.class" &&
+                   !entry.name.startsWith('org/slf4j')) {
+                    packages << entry.name[0..entry.name.lastIndexOf('/')-1].replaceAll('/', '.')
+                }
+            }
+            jf.close()
+        }
+    }
+    packages.each {
+        relocate(it, "com.firebolt.shadow.${it}")
+    }
 }
 
-tasks.shadowJar.dependsOn tasks.relocateShadowJar
 tasks.assemble.dependsOn shadowJar
 
 task generateVersionProperties {
