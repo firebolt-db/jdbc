@@ -19,7 +19,7 @@ import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
-import com.firebolt.jdbc.statement.QueryWrapper;
+import com.firebolt.jdbc.statement.SqlQueryWrapper;
 import com.firebolt.jdbc.statement.StatementUtil;
 import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
 
@@ -30,8 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class FireboltPreparedStatement extends FireboltStatement implements PreparedStatement {
 
-	private final String sql;
-	private final QueryWrapper query;
+	private final SqlQueryWrapper query;
 	private final List<Map<Integer, String>> rows;
 	private Map<Integer, String> providedParameters;
 
@@ -40,7 +39,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 			String sql, FireboltConnection connection) {
 		super(statementService, sessionProperties, connection);
 		log.debug("Populating PreparedStatement object for SQL: {}", sql);
-		this.sql = sql;
 		this.providedParameters = new HashMap<>();
 		this.query = StatementUtil.getQueryWrapper(sql);
 		this.rows = new ArrayList<>();
@@ -48,23 +46,22 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 
 	@Override
 	public ResultSet executeQuery() throws SQLException {
-		List<String> sql = prepareSQL(providedParameters);
-		return super.executeQuery(sql.get(0)); // TODO
+		SqlQueryWrapper sqlQueryWrapper = prepareSQL(providedParameters);
+		return super.executeQuery(sqlQueryWrapper);
 	}
 
-	private List<String> prepareSQL(@NonNull Map<Integer, String> params) throws SQLException {
-		log.debug("Preparing SQL for statement: {}", this.sql);
+	private SqlQueryWrapper prepareSQL(@NonNull Map<Integer, String> params) throws SQLException {
+		log.debug("Preparing SQL for statement: {}", query.getSubQueries());
 
-		List<String> result = new ArrayList<>();
-		result = replaceParameterMarksWithValues(params, this.query);
-		log.debug("Prepared SQL for query: {}, result: {}", sql, result);
+		SqlQueryWrapper result = replaceParameterMarksWithValues(params, this.query);
+		log.debug("Prepared SQL for query: {}, result: {}", query, result);
 		return result;
 	}
 
 	@Override
 	public int executeUpdate() throws SQLException {
 		this.validateStatementIsNotClosed();
-		return super.executeUpdate(prepareSQL(this.providedParameters).get(0));
+		return super.executeUpdate(prepareSQL(this.providedParameters));
 	}
 
 	@Override
@@ -182,17 +179,13 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	@Override
 	public boolean execute() throws SQLException {
 		this.validateStatementIsNotClosed();
-		return super.execute(prepareSQL(providedParameters).get(0));
+		return super.execute(prepareSQL(providedParameters));
 	}
 
 	@Override
 	public void addBatch() throws SQLException {
-		if (StatementUtil.isQuery(this.sql)) {
-			throw new FireboltException("Cannot call addBatch() for SELECT queries");
-		} else {
-			rows.add(this.providedParameters);
-			this.providedParameters = new HashMap<>();
-		}
+		rows.add(this.providedParameters);
+		this.providedParameters = new HashMap<>();
 	}
 
 	@Override
@@ -234,11 +227,11 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	@Override
 	public int[] executeBatch() throws SQLException {
 		this.validateStatementIsNotClosed();
-		log.debug("Executing batch for query: {}", sql);
-		List<String> inserts = new ArrayList<>();
+		log.debug("Executing batch for query: {}", query);
+		List<SqlQueryWrapper> inserts = new ArrayList<>();
 		int[] result = new int[this.rows.size()];
 		for (Map<Integer, String> row : rows) {
-			inserts.add(this.prepareSQL(row).get(0)); //TODO : CHECK
+			inserts.add(this.prepareSQL(row));
 		}
 		for (int i = 0; i < inserts.size(); i++) {
 			this.execute(inserts.get(i));
@@ -255,8 +248,13 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	private void validateParamIndex(int paramIndex) throws FireboltException {
 		if (this.query.getTotalParams() < paramIndex) {
 			throw new FireboltException(String.format(
-					"Cannot set parameter as there is no parameter at index: %d for query: %s", paramIndex, this.sql));
+					"Cannot set parameter as there is no parameter at index: %d for query: %s", paramIndex, query));
 		}
+	}
+
+	@Override
+	public boolean execute(String sql) throws SQLException {
+		throw new FireboltException("Cannot query execute(String) on a PreparedStatement");
 	}
 
 	/**

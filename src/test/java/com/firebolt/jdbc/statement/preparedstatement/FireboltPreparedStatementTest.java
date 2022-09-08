@@ -133,7 +133,8 @@ class FireboltPreparedStatementTest {
 		statement.setObject(1, 150);
 		statement.setObject(2, "Ford");
 
-		assertThrows(FireboltException.class, () -> statement.executeUpdate("update cars set sales = 50 where make = 'Ford"));
+		assertThrows(FireboltException.class,
+				() -> statement.executeUpdate("update cars set sales = 50 where make = 'Ford"));
 	}
 
 	@Test
@@ -277,14 +278,6 @@ class FireboltPreparedStatementTest {
 		assertEquals(
 				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,\\N,1,5)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
-	}
-
-	@Test
-	void shouldThrowExceptionWhenTryingToAddBatchForSelectQuery() throws SQLException {
-		FireboltPreparedStatement statement = createStatementWithSql("SELECT * FROM employees WHERE id = ?");
-
-		statement.setObject(1, 1);
-		assertThrows(FireboltException.class, statement::addBatch);
 	}
 
 	private FireboltPreparedStatement createStatementWithSql(String sql) {

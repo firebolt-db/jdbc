@@ -2,7 +2,6 @@ package com.firebolt.jdbc.statement;
 
 import java.io.Closeable;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -29,12 +28,11 @@ public class StatementResponseWrapper implements Closeable {
 			if (resultSet != null) {
 				resultSet.close();
 			}
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			log.warn("Could not close ResultSet", e);
 		}
 		if (next != null) {
 			next.close();
-
 		}
 	}
 
