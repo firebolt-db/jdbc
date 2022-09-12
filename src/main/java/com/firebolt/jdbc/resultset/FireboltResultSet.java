@@ -229,7 +229,7 @@ public class FireboltResultSet implements ResultSet {
 			} catch (IOException e) {
 				throw new SQLException("Could not close data stream when closing ResultSet", e);
 			} finally {
-				if (this.statement != null && this.statement.isCloseOnCompletion()) {
+				if (this.statement != null && (this.statement.isCloseOnCompletion() && !this.statement.hasMoreResults())) {
 					this.statement.close();
 				}
 			}

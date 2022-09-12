@@ -79,8 +79,7 @@ class StatementClientImplTest {
 		when(response.getEntity()).thenReturn(httpEntity);
 		when(closeableHttpClient.execute(any())).thenReturn(response);
 
-		statementClient.postSqlStatement(
-				StatementInfoWrapper.builder().sql("show databases").id("123456").type(QUERY).build(),
+		statementClient.postSqlStatement(new StatementInfoWrapper("show databases", "123456", QUERY),
 				fireboltProperties, ImmutableMap.of("output_format", "TabSeparatedWithNamesAndTypes", "database", "db1",
 						"query_id", "123456", "compress", "1"));
 
@@ -94,7 +93,7 @@ class StatementClientImplTest {
 						.collect(Collectors.joining("\n"));
 
 		assertEquals(expectedHeaders, extractHeadersMap(actualHttpPost));
-		assertEquals("show databases;", actualQuery);
+		assertEquals("show databases", actualQuery);
 		assertEquals(
 				"http://firebolt1:80/?output_format=TabSeparatedWithNamesAndTypes&database=db1&query_id=123456&compress=1",
 				actualHttpPost.getUri().toString());

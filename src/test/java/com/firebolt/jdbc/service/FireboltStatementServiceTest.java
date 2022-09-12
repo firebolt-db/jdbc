@@ -28,8 +28,7 @@ class FireboltStatementServiceTest {
 
 	@Test
 	void shouldExecuteQueryWithAllRequiredParameters() throws FireboltException {
-		StatementInfoWrapper statementInfoWrapper = StatementInfoWrapper.builder().sql("SELECT 1").type(QUERY).id("id")
-				.build();
+		StatementInfoWrapper statementInfoWrapper = new StatementInfoWrapper("SELECT 1", "id", QUERY);
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("firebolt1").ssl(true)
 				.compress(true).build();
 		Map<String, String> statementParams = ImmutableMap.of("param_1", "value_1");
@@ -42,8 +41,7 @@ class FireboltStatementServiceTest {
 
 	@Test
 	void shouldExecuteQueryWithLocalHostFormatParameters() throws FireboltException {
-		StatementInfoWrapper statementInfoWrapper = StatementInfoWrapper.builder().sql("SELECT 1").type(QUERY).id("id")
-				.build();
+		StatementInfoWrapper statementInfoWrapper = new StatementInfoWrapper("SELECT 1", "id", QUERY);
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("localhost").ssl(true)
 				.compress(true).build();
 		Map<String, String> statementParams = ImmutableMap.of("param_1", "value_1");

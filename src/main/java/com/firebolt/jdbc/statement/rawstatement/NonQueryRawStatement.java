@@ -9,9 +9,9 @@ import com.firebolt.jdbc.statement.StatementType;
 /**
  * A non query statement is a statement that does not return data (such as INSERT)
  */
-public class NonQueryStatement extends RawSqlStatement {
+public class NonQueryRawStatement extends RawStatement {
 
-    public NonQueryStatement(String sql, String cleanSql, List<SqlParamMarker> paramPositions) {
+    public NonQueryRawStatement(String sql, String cleanSql, List<SqlParamMarker> paramPositions) {
         super(sql, cleanSql, paramPositions);
     }
 

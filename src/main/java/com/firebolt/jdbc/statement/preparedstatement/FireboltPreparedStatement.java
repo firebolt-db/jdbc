@@ -41,7 +41,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		super(statementService, sessionProperties, connection);
 		log.debug("Populating PreparedStatement object for SQL: {}", sql);
 		this.providedParameters = new HashMap<>();
-		this.query = StatementUtil.parseToSqlQueryWrapper(sql);
+		this.query = StatementUtil.parseToRawStatementWrapper(sql);
 		this.rows = new ArrayList<>();
 	}
 

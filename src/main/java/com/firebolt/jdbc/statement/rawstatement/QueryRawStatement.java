@@ -10,6 +10,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import com.firebolt.jdbc.statement.StatementType;
 import com.firebolt.jdbc.statement.StatementUtil;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 /**
@@ -17,13 +18,14 @@ import lombok.Getter;
  * SELECT, SHOW, etc)
  */
 @Getter
-public class QueryStatement extends RawSqlStatement {
+@EqualsAndHashCode(callSuper=true)
+public class QueryRawStatement extends RawStatement {
 
-	String database;
+	private final String database;
 
-	String table;
+	private final String table;
 
-	public QueryStatement(String sql, String cleanSql, List<SqlParamMarker> paramPositions) {
+	public QueryRawStatement(String sql, String cleanSql, List<SqlParamMarker> paramPositions) {
 		super(sql, cleanSql, paramPositions);
 		Pair<Optional<String>, Optional<String>> databaseAndTablePair = StatementUtil
 				.extractDbNameAndTableNamePairFromQuery(this.getCleanSql());

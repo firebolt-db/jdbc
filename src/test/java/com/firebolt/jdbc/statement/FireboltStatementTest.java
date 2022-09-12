@@ -177,27 +177,7 @@ class FireboltStatementTest {
 	}
 
 	@Test
-	void shouldExecuteQueryForMultiStatementQuery() throws SQLException {
-		try (MockedConstruction<FireboltResultSet> mocked = Mockito.mockConstruction(FireboltResultSet.class)) {
-			FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-					.build();
-			FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-					.sessionProperties(fireboltProperties).build();
-
-			when(fireboltStatementService.execute(any(), any(), any())).thenReturn(mock(InputStream.class));
-			fireboltStatement.executeQuery("show database");
-			assertTrue(fireboltProperties.getAdditionalProperties().isEmpty());
-			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(fireboltProperties),
-					any());
-			assertEquals(1, mocked.constructed().size());
-			assertEquals(-1, fireboltStatement.getUpdateCount());
-			assertEquals("show database", queryInfoWrapperArgumentCaptor.getValue().getSql());
-			assertEquals(StatementType.QUERY, queryInfoWrapperArgumentCaptor.getValue().getType());
-		}
-	}
-
-	@Test
-	void shouldCloseCurrentAndGetMoreResults() throws SQLException {
+	void shouldCloseCurrentAndGetMoreResultsForMultiStatementQuery() throws SQLException {
 		try (MockedConstruction<FireboltResultSet> mockedResultSet = Mockito
 				.mockConstruction(FireboltResultSet.class)) {
 			FireboltConnection connection = mock(FireboltConnection.class);
@@ -219,7 +199,7 @@ class FireboltStatementTest {
 	}
 
 	@Test
-	void shouldCloseCurrentAndGetMoreResultWhenCallingWithCloseCurrentFlag() throws SQLException {
+	void shouldCloseCurrentAndGetMoreResultWhenCallingGetMoreResultsWithCloseCurrentFlag() throws SQLException {
 		try (MockedConstruction<FireboltResultSet> mockedResultSet = Mockito
 				.mockConstruction(FireboltResultSet.class)) {
 			FireboltConnection connection = mock(FireboltConnection.class);
@@ -235,7 +215,7 @@ class FireboltStatementTest {
 	}
 
 	@Test
-	void shouldKeepCurrentAndGetMoreResultWhenCallingWithKeepCurrentResultFlag() throws SQLException {
+	void shouldKeepCurrentAndGetMoreResultWhenCallingGetMoreResultsWithKeepCurrentResultFlag() throws SQLException {
 		try (MockedConstruction<FireboltResultSet> mockedResultSet = Mockito
 				.mockConstruction(FireboltResultSet.class)) {
 			FireboltConnection connection = mock(FireboltConnection.class);
@@ -251,7 +231,7 @@ class FireboltStatementTest {
 	}
 
 	@Test
-	void shouldCloseUnclosedAndGetMoreResultWhenCallingWithCloseAllResultFlag() throws SQLException {
+	void shouldCloseUnclosedAndGetMoreResultWhenCallingGetMoreResultsWithCloseAllResultFlag() throws SQLException {
 		try (MockedConstruction<FireboltResultSet> mockedResultSet = Mockito
 				.mockConstruction(FireboltResultSet.class)) {
 			FireboltConnection connection = mock(FireboltConnection.class);

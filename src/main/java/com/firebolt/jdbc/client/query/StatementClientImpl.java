@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -28,7 +27,6 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
-import com.firebolt.jdbc.statement.StatementUtil;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -46,8 +44,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	public InputStream postSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
 			@NonNull FireboltProperties connectionProperties, Map<String, String> statementParams)
 			throws FireboltException {
-		String formattedStatement = formatStatement(statementInfoWrapper.getSql());
-		try (StringEntity entity = new StringEntity(formattedStatement, StandardCharsets.UTF_8)) {
+		try (StringEntity entity = new StringEntity(statementInfoWrapper.getSql(), StandardCharsets.UTF_8)) {
 			List<NameValuePair> parameters = statementParams.entrySet().stream()
 					.map(e -> new BasicNameValuePair(e.getKey(), e.getValue())).collect(Collectors.toList());
 			String uri = this.buildQueryUri(connectionProperties, parameters).toString();
@@ -62,7 +59,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		} catch (FireboltException e) {
 			throw e;
 		} catch (Exception e) {
-			String errorMessage = String.format("Error executing statement %s", formattedStatement);
+			String errorMessage = String.format("Error executing statement %s", statementInfoWrapper.getSql());
 			if (e instanceof RequestFailedException) {
 				throw new FireboltException(errorMessage, e, ExceptionType.REQUEST_FAILED);
 			} else {
@@ -71,15 +68,6 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 		} finally {
 			runningQueries.remove(statementInfoWrapper.getId());
-		}
-	}
-
-	private String formatStatement(String sql) {
-		String cleaned = StatementUtil.cleanStatement(sql);
-		if (!StringUtils.endsWith(cleaned, ";")) {
-			return sql + ";";
-		} else {
-			return sql;
 		}
 	}
 

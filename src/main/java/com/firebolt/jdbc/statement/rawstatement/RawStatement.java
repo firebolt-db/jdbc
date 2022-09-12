@@ -9,14 +9,20 @@ import org.apache.commons.lang3.tuple.Pair;
 import com.firebolt.jdbc.statement.StatementType;
 import com.firebolt.jdbc.statement.StatementUtil;
 
-import lombok.AllArgsConstructor;
+import lombok.Data;
 
-@AllArgsConstructor
-public abstract class RawSqlStatement {
+@Data
+public abstract class RawStatement {
 
-	String sql;
-	String cleanSql;
+	private String sql;
+	private String cleanSql;
 	List<SqlParamMarker> paramMarkers;
+
+	protected RawStatement(String sql, String cleanSql, List<SqlParamMarker> paramPositions) {
+		this.sql = sql;
+		this.cleanSql = cleanSql;
+		this.paramMarkers = paramPositions;
+	}
 
 	@Override
 	public String toString() {
@@ -38,14 +44,14 @@ public abstract class RawSqlStatement {
 
 	public abstract StatementType getStatementType();
 
-	public static RawSqlStatement of(String sql, List<SqlParamMarker> paramPositions, String cleanSql) {
+	public static RawStatement of(String sql, List<SqlParamMarker> paramPositions, String cleanSql) {
 		Optional<Pair<String, String>> additionalProperties = StatementUtil.extractPropertyFromQuery(cleanSql, sql);
 		if (additionalProperties.isPresent()) {
-			return new SetParamStatement(sql, cleanSql, paramPositions, additionalProperties.get());
-		} else if (StatementUtil.isQuery(cleanSql, true)) {
-			return new QueryStatement(sql, cleanSql, paramPositions);
+			return new SetParamRawStatement(sql, cleanSql, paramPositions, additionalProperties.get());
+		} else if (StatementUtil.isQuery(cleanSql)) {
+			return new QueryRawStatement(sql, cleanSql, paramPositions);
 		} else {
-			return new NonQueryStatement(sql, cleanSql, paramPositions);
+			return new NonQueryRawStatement(sql, cleanSql, paramPositions);
 		}
 	}
 }

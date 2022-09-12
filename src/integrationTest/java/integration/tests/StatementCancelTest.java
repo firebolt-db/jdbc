@@ -40,10 +40,11 @@ class StatementCancelTest extends IntegrationTest {
 	void shouldCancelQuery() throws SQLException, InterruptedException {
 		try (Connection connection = createConnection()) {
 			this.setParam(connection, "use_standard_sql", "0");
-			String tableName = extractTableNameWithNonStandardSql(connection, "cancel_test");
+			String tableName = extractTableNameWithNonStandardSql(connection, "first_statement_cancel_test");
+			String secondTableName = extractTableNameWithNonStandardSql(connection, "second_statement_cancel_test");
 			long totalRecordsToInsert = 1000000000L;
-			String query = String.format("INSERT INTO %s SELECT id FROM generateRandom('id Int8') LIMIT %d", tableName,
-					totalRecordsToInsert);
+			String query = String.format("INSERT INTO %s SELECT id FROM generateRandom('id Int8') LIMIT %d; INSERT INTO %s(id) values(1) ", tableName,
+					totalRecordsToInsert, secondTableName);
 
 			try (FireboltStatement insertStatement = (FireboltStatement) connection.createStatement()) {
 
@@ -67,6 +68,8 @@ class StatementCancelTest extends IntegrationTest {
 			}
 			Thread.sleep(5000);
 			verifyThatNoMoreRecordsAreAdded(connection, tableName, totalRecordsToInsert);
+			verifyThatSecondStatementWasNotExecuted(connection, secondTableName);
+
 		}
 	}
 
@@ -88,6 +91,14 @@ class StatementCancelTest extends IntegrationTest {
 
 	}
 
+	private void verifyThatSecondStatementWasNotExecuted(Connection connection, String tableName) throws SQLException {
+		String countAddedRecordsQuery = String.format("SELECT COUNT(*) FROM %s", tableName);
+		try (Statement countStatement = connection.createStatement()) {
+			ResultSet rs = countStatement.executeQuery(countAddedRecordsQuery);
+			rs.next();
+			assertEquals(0, rs.getInt(1));
+		}
+	}
 	/**
 	 * Extract table name when non-standard sql is used
 	 */

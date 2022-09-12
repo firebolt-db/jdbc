@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 public class RawStatementWrapper {
 
-	List<RawSqlStatement> subStatements;
+	List<RawStatement> subStatements;
 
 	long totalParams;
 
@@ -24,10 +24,10 @@ public class RawStatementWrapper {
 				'}';
 	}
 
-	public RawStatementWrapper(List<RawSqlStatement> subStatements) {
+	public RawStatementWrapper(List<RawStatement> subStatements) {
 		this.subStatements = subStatements;
 		this.totalParams = subStatements.stream()
-				.map(RawSqlStatement::getParamMarkers)
+				.map(RawStatement::getParamMarkers)
 				.mapToLong(Collection::size).sum();
 	}
 

@@ -1,1 +1,2 @@
-DROP TABLE IF EXISTS "cancel_test" CASCADE;
+DROP TABLE IF EXISTS "first_statement_cancel_test" CASCADE;
+DROP TABLE IF EXISTS "second_statement_cancel_test" CASCADE;

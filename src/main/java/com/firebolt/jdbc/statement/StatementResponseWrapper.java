@@ -11,10 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @Slf4j
 public class StatementResponseWrapper implements Closeable {
-	private ResultSet resultSet;
-	private int updateCount;
-	private StatementInfoWrapper statementInfoWrapper;
-	private StatementResponseWrapper next;
+	ResultSet resultSet;
+	int updateCount;
+	StatementInfoWrapper statementInfoWrapper;
+	StatementResponseWrapper next;
 
 	public StatementResponseWrapper(@Nullable ResultSet rs, StatementInfoWrapper statementInfoWrapper) {
 		this.resultSet = rs;
@@ -37,10 +37,10 @@ public class StatementResponseWrapper implements Closeable {
 	}
 
 	public void append(StatementResponseWrapper newResult) {
-		StatementResponseWrapper tail = this;
-		while (tail.next != null) {
-			tail = tail.next;
+		StatementResponseWrapper lastResponse = this;
+		while (lastResponse.next != null) {
+			lastResponse = lastResponse.next;
 		}
-		tail.next = newResult;
+		lastResponse.next = newResult;
 	}
 }
