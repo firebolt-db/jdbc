@@ -1,8 +1,5 @@
 package com.firebolt.jdbc.statement;
 
-import static com.firebolt.jdbc.statement.SqlQueryWrapper.SubQuery;
-import static com.firebolt.jdbc.statement.SqlQueryWrapper.SubQuery.SqlQueryParameter;
-
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -11,6 +8,11 @@ import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+
+import com.firebolt.jdbc.statement.rawstatement.RawSqlStatement;
+import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
+import com.firebolt.jdbc.statement.rawstatement.SetParamStatement;
+import com.firebolt.jdbc.statement.rawstatement.SqlParamMarker;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
@@ -28,22 +30,8 @@ public class StatementUtil {
 	private static final String[] SELECT_KEYWORDS = new String[] { "show", "select", "describe", "exists", "explain",
 			"with", "call" };
 
-	public static StatementInfoWrapper extractStatementInfo(String sql) {
-		return extractStatementInfo(sql, UUID.randomUUID().toString());
-	}
-
-	public static StatementInfoWrapper extractStatementInfo(String sql, String statementId) {
-		String cleaned = StatementUtil.cleanStatement(sql);
-		Optional<Pair<String, String>> additionalProperties = extractPropertyFromQuery(cleaned, statementId);
-		StatementInfoWrapper.StatementType statementType;
-		if (additionalProperties.isPresent()) {
-			statementType = StatementInfoWrapper.StatementType.PARAM_SETTING;
-		} else {
-			statementType = StatementUtil.isQuery(cleaned, true) ? StatementInfoWrapper.StatementType.QUERY
-					: StatementInfoWrapper.StatementType.NON_QUERY;
-		}
-		return StatementInfoWrapper.builder().sql(sql).id(statementId).sql(sql).cleanSql(cleaned).type(statementType)
-				.param(additionalProperties.orElse(null)).build();
+	public static StatementInfoWrapper extractStatementInfo(RawSqlStatement query) {
+		return StatementInfoWrapper.of(query, UUID.randomUUID().toString());
 	}
 
 	public static boolean isQuery(String sql) {
@@ -109,12 +97,19 @@ public class StatementUtil {
 		return result.toString().trim();
 	}
 
-	public SqlQueryWrapper getQueryWrapper(String sql) {
-		List<SqlQueryWrapper.SubQuery> subQueries = new ArrayList<>();
-		List<SqlQueryWrapper.SubQuery.SqlQueryParameter> subQueryParamMarkersPositions = new ArrayList<>();
+	public List<StatementInfoWrapper> parseToStatementInfoWrappers(String sql) {
+		return parseToSqlQueryWrapper(sql).getSubStatements().stream().map(StatementUtil::extractStatementInfo)
+				.collect(Collectors.toList());
+	}
+
+	public RawStatementWrapper parseToSqlQueryWrapper(String sql) {
+		List<RawSqlStatement> subQueries = new ArrayList<>();
+		List<SqlParamMarker> subQueryParamMarkersPositions = new ArrayList<>();
 		int subQueryStart = 0;
 		int currentIndex = 0;
 		char currentChar = sql.charAt(currentIndex);
+		StringBuilder cleanedSubQuery = isCommentStart(currentChar) ? new StringBuilder()
+				: new StringBuilder(String.valueOf(currentChar));
 		boolean isCurrentSubstringBetweenQuotes = currentChar == '\'';
 		boolean isInSingleLineComment = false;
 		boolean isInMultipleLinesComment = false;
@@ -131,24 +126,32 @@ public class StatementUtil {
 					isCurrentSubstringBetweenQuotes, isInMultipleLinesComment);
 			isInComment = isInSingleLineComment || isInMultipleLinesComment;
 			if (!isInComment) {
-				//Although the ending semicolon may have been found, we need to include any potential comments to the subquery
+				// Although the ending semicolon may have been found, we need to include any
+				// potential comments to the subquery
 				if (foundSubqueryEndingSemicolon || isEndingSemicolon(currentChar, previousChar)) {
 					foundSubqueryEndingSemicolon = true;
 					if (isEndOfSubquery(currentChar)) {
-						subQueries.add(new SubQuery(sql.substring(subQueryStart, currentIndex), subQueryParamMarkersPositions));
+						subQueries.add(RawSqlStatement.of(sql.substring(subQueryStart, currentIndex),
+								subQueryParamMarkersPositions, cleanedSubQuery.toString().trim()));
 						subQueryParamMarkersPositions = new ArrayList<>();
 						subQueryStart = currentIndex;
 						foundSubqueryEndingSemicolon = false;
+						cleanedSubQuery = new StringBuilder();
 					}
 				} else if (currentChar == '?' && !isCurrentSubstringBetweenQuotes) {
-					subQueryParamMarkersPositions.add(new SqlQueryParameter(++subQueryParamsCount, currentIndex - subQueryStart));
+					subQueryParamMarkersPositions
+							.add(new SqlParamMarker(++subQueryParamsCount, currentIndex - subQueryStart));
 				} else if (currentChar == '\'') {
 					isCurrentSubstringBetweenQuotes = !isCurrentSubstringBetweenQuotes;
 				}
+				if (!(isCommentStart(currentChar) && !isCurrentSubstringBetweenQuotes)) {
+					cleanedSubQuery.append(currentChar);
+				}
 			}
 		}
-		subQueries.add(new SubQuery(sql.substring(subQueryStart, currentIndex), subQueryParamMarkersPositions));
-		return new SqlQueryWrapper(subQueries);
+		subQueries.add(RawSqlStatement.of(sql.substring(subQueryStart, currentIndex), subQueryParamMarkersPositions,
+				cleanedSubQuery.toString().trim()));
+		return new RawStatementWrapper(subQueries);
 	}
 
 	private boolean isEndingSemicolon(char currentChar, char previousChar) {
@@ -159,10 +162,15 @@ public class StatementUtil {
 		return currentChar != '-' && currentChar != '/' && currentChar != ' ' && currentChar != '\n';
 	}
 
+	private boolean isCommentStart(char currentChar) {
+		return currentChar == '-' || currentChar == '/';
+	}
+
 	public Map<Integer, Integer> getQueryParamsPositions(String sql) {
-		SqlQueryWrapper sqlQueryWrapper = getQueryWrapper(sql);
-		return sqlQueryWrapper.getSubQueries().stream().map(SubQuery::getParamPositions).flatMap(Collection::stream)
-				.collect(Collectors.toMap(SubQuery.SqlQueryParameter::getId, SubQuery.SqlQueryParameter::getPosition));
+		RawStatementWrapper rawStatementWrapper = parseToSqlQueryWrapper(sql);
+		return rawStatementWrapper.getSubStatements().stream().map(RawSqlStatement::getParamMarkers)
+				.flatMap(Collection::stream)
+				.collect(Collectors.toMap(SqlParamMarker::getId, SqlParamMarker::getPosition));
 	}
 
 	private boolean reachedEnd(String sql, int currentIndex) {
@@ -202,23 +210,23 @@ public class StatementUtil {
 				extractTableNameFromFromPartOfTheQuery(from.orElse(null)));
 	}
 
-	public static SqlQueryWrapper replaceParameterMarksWithValues(@NonNull Map<Integer, String> params,
+	public static List<StatementInfoWrapper> replaceParameterMarksWithValues(@NonNull Map<Integer, String> params,
 			@NonNull String sql) {
-		SqlQueryWrapper sqlQueryWrapper = getQueryWrapper(sql);
-		return replaceParameterMarksWithValues(params, sqlQueryWrapper);
+		RawStatementWrapper rawStatementWrapper = parseToSqlQueryWrapper(sql);
+		return replaceParameterMarksWithValues(params, rawStatementWrapper);
 	}
 
-	public static SqlQueryWrapper replaceParameterMarksWithValues(@NonNull Map<Integer, String> params,
-			@NonNull SqlQueryWrapper query) {
-		List<SubQuery> subQueries = new ArrayList<>();
-		for (int subqueryIndex = 0; subqueryIndex < query.getSubQueries().size(); subqueryIndex++) {
+	public static List<StatementInfoWrapper> replaceParameterMarksWithValues(@NonNull Map<Integer, String> params,
+			@NonNull RawStatementWrapper query) {
+		List<StatementInfoWrapper> subQueries = new ArrayList<>();
+		for (int subqueryIndex = 0; subqueryIndex < query.getSubStatements().size(); subqueryIndex++) {
 			int currentPos;
 			/*
 			 * As the parameter markers are being placed then the statement sql keeps
 			 * getting bigger, which is why we need to keep track of the offset
 			 */
 			int offset = 0;
-			SubQuery subQuery = query.getSubQueries().get(subqueryIndex);
+			RawSqlStatement subQuery = query.getSubStatements().get(subqueryIndex);
 			String subQueryWithParams = subQuery.getSql();
 
 			if (params.size() != query.getTotalParams()) {
@@ -226,7 +234,7 @@ public class StatementUtil {
 						"The number of parameters passed does not equal the number of parameter markers in the SQL query. Provided: %d, Parameter markers in the SQL query: %d",
 						params.size(), query.getTotalParams()));
 			}
-			for (SubQuery.SqlQueryParameter param : subQuery.getParamPositions()) {
+			for (SqlParamMarker param : subQuery.getParamMarkers()) {
 				String value = params.get(param.getId());
 				if (value == null) {
 					throw new IllegalArgumentException(
@@ -240,9 +248,14 @@ public class StatementUtil {
 						+ subQueryWithParams.substring(currentPos + 1);
 				offset += value.length() - 1;
 			}
-			subQueries.add(new SubQuery(subQueryWithParams, Collections.emptyList()));
+			Pair<String, String> additionalParams = subQuery.getStatementType() == StatementType.PARAM_SETTING
+					? ((SetParamStatement) subQuery).getAdditionalProperty()
+					: null;
+			subQueries.add(new StatementInfoWrapper(subQueryWithParams, UUID.randomUUID().toString(),
+					subQuery.getStatementType(), additionalParams, subQuery));
+
 		}
-		return new SqlQueryWrapper(subQueries);
+		return subQueries;
 	}
 
 	private static Optional<String> extractTableNameFromFromPartOfTheQuery(String from) {

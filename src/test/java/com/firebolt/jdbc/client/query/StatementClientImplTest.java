@@ -1,6 +1,6 @@
 package com.firebolt.jdbc.client.query;
 
-import static com.firebolt.jdbc.statement.StatementInfoWrapper.StatementType.QUERY;
+import static com.firebolt.jdbc.statement.StatementType.QUERY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;

@@ -6,7 +6,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
 import com.firebolt.jdbc.CloseableUtil;
 import com.firebolt.jdbc.PropertyUtil;
@@ -19,6 +18,8 @@ import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.service.FireboltStatementService;
+import com.firebolt.jdbc.statement.rawstatement.QueryStatement;
+import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
 
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
@@ -51,17 +52,17 @@ public class FireboltStatement implements Statement {
 
 	@Override
 	public ResultSet executeQuery(String sql) throws SQLException {
-		return this.executeQuery(StatementUtil.getQueryWrapper(sql));
+		return this.executeQuery(StatementUtil.parseToSqlQueryWrapper(sql).getSubStatements().stream().map(StatementUtil::extractStatementInfo).collect(Collectors.toList()));
 	}
 
-	public ResultSet executeQuery(SqlQueryWrapper sqlQueryWrapper) throws SQLException {
-		StatementInfoWrapper query = getOneQueryStatementInfo(sqlQueryWrapper);
+	public ResultSet executeQuery(List<StatementInfoWrapper> statementInfoWrappers) throws SQLException {
+		StatementInfoWrapper query = getOneQueryStatementInfo(statementInfoWrappers);
 		this.execute(Collections.singletonList(query), null);
 		return firstUnclosedResult.getResultSet();
 	}
 
 	private void execute(String sql, Map<String, String> params) throws SQLException {
-		this.execute(StatementUtil.getQueryWrapper(sql), params);
+		this.execute(StatementUtil.parseToSqlQueryWrapper(sql), params);
 	}
 
 	private void execute(List<StatementInfoWrapper> queries, Map<String, String> params) throws SQLException {
@@ -72,7 +73,7 @@ public class FireboltStatement implements Statement {
 		}
 		for (int i = 0; i < queries.size(); i++) {
 			StatementInfoWrapper statementInfoWrapper = queries.get(i);
-			runningStatementId = UUID.randomUUID().toString();
+			runningStatementId = statementInfoWrapper.getId();
 			ResultSet rs = null;
 			synchronized (this) {
 				this.validateStatementIsNotClosed();
@@ -81,20 +82,19 @@ public class FireboltStatement implements Statement {
 			try {
 				log.info("Executing the statement with id {} : {}", statementInfoWrapper.getId(),
 						statementInfoWrapper.getSql());
-				if (statementInfoWrapper.getType() == StatementInfoWrapper.StatementType.PARAM_SETTING) {
+				if (statementInfoWrapper.getType() == StatementType.PARAM_SETTING) {
 					this.connection.addProperty(statementInfoWrapper.getParam());
 					log.debug("The property from the query {} was stored", runningStatementId);
 				} else {
 					Map<String, String> statementParams = params != null ? params : this.getStatementParameters();
 					inputStream = statementService.execute(statementInfoWrapper, this.sessionProperties,
 							statementParams);
-					if (statementInfoWrapper.getType() == StatementInfoWrapper.StatementType.QUERY) {
+					if (statementInfoWrapper.getType() == StatementType.QUERY) {
+						QueryStatement initialQuery = ((QueryStatement)statementInfoWrapper.getInitialQuery());
 						currentUpdateCount = -1; // Always -1 when returning a ResultSet
-						Pair<Optional<String>, Optional<String>> dbNameAndTableNamePair = StatementUtil
-								.extractDbNameAndTableNamePairFromQuery(statementInfoWrapper.getSql());
 
-						rs = new FireboltResultSet(inputStream, dbNameAndTableNamePair.getRight().orElse("unknown"),
-								dbNameAndTableNamePair.getLeft().orElse(this.sessionProperties.getDatabase()),
+						rs = new FireboltResultSet(inputStream, Optional.ofNullable(initialQuery.getTable()).orElse("unknown"),
+								Optional.ofNullable(initialQuery.getDatabase()).orElse(this.sessionProperties.getDatabase()),
 								this.sessionProperties.getBufferSize(), this.sessionProperties.isCompress(), this,
 								this.sessionProperties.isLogResultSet());
 					} else {
@@ -118,8 +118,8 @@ public class FireboltStatement implements Statement {
 		}
 	}
 
-	private void execute(SqlQueryWrapper sql, Map<String, String> params) throws SQLException {
-		this.execute(sql.getSubQueries().stream().map(SqlQueryWrapper.SubQuery::getSql)
+	private void execute(RawStatementWrapper sql, Map<String, String> params) throws SQLException {
+		this.execute(sql.getSubStatements().stream()
 				.map(StatementUtil::extractStatementInfo).collect(Collectors.toList()), params);
 	}
 
@@ -176,10 +176,10 @@ public class FireboltStatement implements Statement {
 
 	@Override
 	public int executeUpdate(String sql) throws SQLException {
-		return this.executeUpdate(StatementUtil.getQueryWrapper(sql));
+		return this.executeUpdate(StatementUtil.parseToStatementInfoWrappers(sql));
 	}
 
-	public int executeUpdate(SqlQueryWrapper sql) throws SQLException {
+	public int executeUpdate(List<StatementInfoWrapper> sql) throws SQLException {
 		this.execute(sql);
 		StatementResponseWrapper response = this.firstUnclosedResult;
 		try {
@@ -311,12 +311,12 @@ public class FireboltStatement implements Statement {
 	@Override
 	public boolean execute(String sql) throws SQLException {
 		this.execute(sql, (Map<String, String>) null);
-		return firstUnclosedResult.getStatementInfoWrapper().getType() == StatementInfoWrapper.StatementType.QUERY;
+		return firstUnclosedResult.getStatementInfoWrapper().getType() == StatementType.QUERY;
 	}
 
-	public boolean execute(SqlQueryWrapper sql) throws SQLException {
-		this.execute(sql, (Map<String, String>) null);
-		return firstUnclosedResult.getStatementInfoWrapper().getType() == StatementInfoWrapper.StatementType.QUERY;
+	public boolean execute(List<StatementInfoWrapper> statementInfoWrappers) throws SQLException {
+		this.execute(statementInfoWrappers, (Map<String, String>) null);
+		return firstUnclosedResult.getStatementInfoWrapper().getType() == StatementType.QUERY;
 	}
 
 	@Override
@@ -348,13 +348,11 @@ public class FireboltStatement implements Statement {
 		}
 	}
 
-	protected StatementInfoWrapper getOneQueryStatementInfo(SqlQueryWrapper sql) throws SQLException {
-		List<StatementInfoWrapper> queries = sql.getSubQueries().stream().map(SqlQueryWrapper.SubQuery::getSql)
-				.map(StatementUtil::extractStatementInfo).collect(Collectors.toList());
-		if (queries.size() != 1 || queries.get(0).getType() != StatementInfoWrapper.StatementType.QUERY) {
+	protected StatementInfoWrapper getOneQueryStatementInfo(List<StatementInfoWrapper> statementInfoWrappers) throws SQLException {
+		if (statementInfoWrappers.size() != 1 || statementInfoWrappers.get(0).getType() != StatementType.QUERY) {
 			throw new FireboltException("Cannot proceed: the statement would not return a ResultSet");
 		} else {
-			return queries.get(0);
+			return statementInfoWrappers.get(0);
 		}
 	}
 

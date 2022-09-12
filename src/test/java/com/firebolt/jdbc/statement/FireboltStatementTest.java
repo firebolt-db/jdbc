@@ -58,7 +58,7 @@ class FireboltStatementTest {
 			assertEquals(1, mocked.constructed().size());
 			assertEquals(-1, fireboltStatement.getUpdateCount());
 			assertEquals("show database", queryInfoWrapperArgumentCaptor.getValue().getSql());
-			assertEquals(StatementInfoWrapper.StatementType.QUERY, queryInfoWrapperArgumentCaptor.getValue().getType());
+			assertEquals(StatementType.QUERY, queryInfoWrapperArgumentCaptor.getValue().getType());
 		}
 	}
 
@@ -192,7 +192,7 @@ class FireboltStatementTest {
 			assertEquals(1, mocked.constructed().size());
 			assertEquals(-1, fireboltStatement.getUpdateCount());
 			assertEquals("show database", queryInfoWrapperArgumentCaptor.getValue().getSql());
-			assertEquals(StatementInfoWrapper.StatementType.QUERY, queryInfoWrapperArgumentCaptor.getValue().getType());
+			assertEquals(StatementType.QUERY, queryInfoWrapperArgumentCaptor.getValue().getType());
 		}
 	}
 

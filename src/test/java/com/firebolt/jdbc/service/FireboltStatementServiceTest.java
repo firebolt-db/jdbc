@@ -1,6 +1,6 @@
 package com.firebolt.jdbc.service;
 
-import static com.firebolt.jdbc.statement.StatementInfoWrapper.StatementType.QUERY;
+import static com.firebolt.jdbc.statement.StatementType.QUERY;
 import static org.mockito.Mockito.verify;
 
 import java.util.Map;
