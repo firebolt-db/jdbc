@@ -341,14 +341,16 @@ public class FireboltConnection implements Connection {
 		}
 	}
 
-	private void validateConnection(FireboltProperties fireboltProperties, boolean ignoreToManyRequestsError) throws SQLException {
+	private void validateConnection(FireboltProperties fireboltProperties, boolean ignoreToManyRequestsError)
+			throws SQLException {
 		try (Statement s = createStatement(fireboltProperties)) {
 			s.execute("SELECT 1");
-		} catch (FireboltException e) {
-			//A connection is not invalid when too many requests are being sent.
-			//This error cannot be ignored when testing the connection to validate a param.
-			if (e.getType() == ExceptionType.TOO_MANY_REQUESTS && ignoreToManyRequestsError) {
-				log.warn("Too many requests are sent to the server", e);
+		} catch (Exception e) {
+			// A connection is not invalid when too many requests are being sent.
+			// This error cannot be ignored when testing the connection to validate a param.
+			if (ignoreToManyRequestsError && e instanceof FireboltException
+					&& ((FireboltException) e).getType() == ExceptionType.TOO_MANY_REQUESTS) {
+				log.warn("Too many requests are being sent to the server", e);
 			} else {
 				log.warn("Connection is not valid", e);
 				throw e;
