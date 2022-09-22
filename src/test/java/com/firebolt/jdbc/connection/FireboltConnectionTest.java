@@ -23,6 +23,7 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineService;
@@ -108,7 +109,7 @@ class FireboltConnectionTest {
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
 
 		when(fireboltStatementService.execute(any(), any(), any()))
-				.thenThrow(new IllegalArgumentException("The property is invalid"));
+				.thenThrow(new FireboltException(ExceptionType.TOO_MANY_REQUESTS));
 		assertThrows(FireboltException.class,
 				() -> fireboltConnection.addProperty(new ImmutablePair<>("custom_1", "1")));
 
@@ -146,6 +147,24 @@ class FireboltConnectionTest {
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
 				propertiesArgumentCaptor.capture(), any());
 		assertEquals("SELECT 1", queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
+
+	@Test
+	void shouldIgnore429WhenValidatingConnection() throws SQLException {
+		when(fireboltStatementService.execute(any(), any(), any()))
+				.thenThrow(new FireboltException(ExceptionType.TOO_MANY_REQUESTS));
+		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
+				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
+		assertTrue(fireboltConnection.isValid(500));
+	}
+
+	@Test
+	void shouldReturnFalseWhenValidatingConnectionThrowsAnException() throws SQLException {
+		when(fireboltStatementService.execute(any(), any(), any()))
+				.thenThrow(new FireboltException(ExceptionType.ERROR));
+		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
+				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
+		assertFalse(fireboltConnection.isValid(500));
 	}
 
 	@Test

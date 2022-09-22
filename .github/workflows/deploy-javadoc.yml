@@ -3,9 +3,10 @@ name: Deploy Javadoc
 on:
   workflow_dispatch:
   release:
-    types: [published]
+    types: [ published ]
 jobs:
   publish:
+    if: ${{ !contains(github.event.release.name, 'SNAPSHOT') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
