@@ -24,6 +24,7 @@ import com.firebolt.jdbc.client.account.FireboltAccountClient;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.client.query.StatementClientImpl;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
@@ -333,19 +334,25 @@ public class FireboltConnection implements Connection {
 			return false;
 		}
 		try {
-			validateConnection(this.getSessionProperties());
+			validateConnection(this.getSessionProperties(), true);
 			return true;
 		} catch (Exception e) {
 			return false;
 		}
 	}
 
-	private void validateConnection(FireboltProperties fireboltProperties) throws SQLException {
+	private void validateConnection(FireboltProperties fireboltProperties, boolean ignoreToManyRequestsError) throws SQLException {
 		try (Statement s = createStatement(fireboltProperties)) {
 			s.execute("SELECT 1");
-		} catch (Exception e) {
-			log.warn("Connection is not valid", e);
-			throw e;
+		} catch (FireboltException e) {
+			//A connection is not invalid when too many requests are being sent.
+			//This error cannot be ignored when testing the connection to validate a param.
+			if (e.getType() == ExceptionType.TOO_MANY_REQUESTS && ignoreToManyRequestsError) {
+				log.warn("Too many requests are sent to the server", e);
+			} else {
+				log.warn("Connection is not valid", e);
+				throw e;
+			}
 		}
 	}
 
@@ -365,7 +372,7 @@ public class FireboltConnection implements Connection {
 		try {
 			FireboltProperties tmpProperties = FireboltProperties.copy(this.sessionProperties);
 			tmpProperties.addProperty(property);
-			validateConnection(tmpProperties);
+			validateConnection(tmpProperties, false);
 			this.sessionProperties.addProperty(property);
 		} catch (FireboltException e) {
 			throw e;

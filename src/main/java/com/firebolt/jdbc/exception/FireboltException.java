@@ -57,6 +57,8 @@ public class FireboltException extends SQLException {
 			return INVALID_REQUEST;
 		case SC_UNAUTHORIZED:
 			return EXPIRED_TOKEN;
+		case SC_TOO_MANY_REQUESTS:
+			return TOO_MANY_REQUESTS;
 		default:
 			return ERROR;
 		}
