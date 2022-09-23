@@ -123,13 +123,6 @@ public class StatementUtil {
 		return currentChar == '-' || currentChar == '/';
 	}
 
-	public Map<Integer, Integer> getQueryParamsPositions(String sql) {
-		RawStatementWrapper rawStatementWrapper = parseToRawStatementWrapper(sql);
-		return rawStatementWrapper.getSubStatements().stream().map(RawStatement::getParamMarkers)
-				.flatMap(Collection::stream)
-				.collect(Collectors.toMap(SqlParamMarker::getId, SqlParamMarker::getPosition));
-	}
-
 	private static boolean isInMultipleLinesComment(char currentChar, char previousChar,
 			boolean isCurrentSubstringBetweenQuotes, boolean isInMultipleLinesComment) {
 		if (!isCurrentSubstringBetweenQuotes && (previousChar == '/' && currentChar == '*')) {
@@ -140,7 +133,14 @@ public class StatementUtil {
 		return isInMultipleLinesComment;
 	}
 
-	public static Pair<Optional<String>, Optional<String>> extractDbNameAndTableNamePairFromQuery(String cleanSql) {
+	public Map<Integer, Integer> getQueryParamsPositions(String sql) {
+		RawStatementWrapper rawStatementWrapper = parseToRawStatementWrapper(sql);
+		return rawStatementWrapper.getSubStatements().stream().map(RawStatement::getParamMarkers)
+				.flatMap(Collection::stream)
+				.collect(Collectors.toMap(SqlParamMarker::getId, SqlParamMarker::getPosition));
+	}
+
+	public Pair<Optional<String>, Optional<String>> extractDbNameAndTableNamePairFromQuery(String cleanSql) {
 		Optional<String> from = Optional.empty();
 		if (isQuery(cleanSql)) {
 			log.debug("Extracting DB and Table name for SELECT: {}", cleanSql);
@@ -168,7 +168,7 @@ public class StatementUtil {
 		return replaceParameterMarksWithValues(params, rawStatementWrapper);
 	}
 
-	public static List<StatementInfoWrapper> replaceParameterMarksWithValues(@NonNull Map<Integer, String> params,
+	public List<StatementInfoWrapper> replaceParameterMarksWithValues(@NonNull Map<Integer, String> params,
 			@NonNull RawStatementWrapper query) {
 		List<StatementInfoWrapper> subQueries = new ArrayList<>();
 		for (int subqueryIndex = 0; subqueryIndex < query.getSubStatements().size(); subqueryIndex++) {
@@ -210,7 +210,7 @@ public class StatementUtil {
 		return subQueries;
 	}
 
-	private static Optional<String> extractTableNameFromFromPartOfTheQuery(String from) {
+	private Optional<String> extractTableNameFromFromPartOfTheQuery(String from) {
 		return Optional.ofNullable(from).map(s -> s.replace("\"", "")).map(fromPartOfTheQuery -> {
 			if (StringUtils.contains(fromPartOfTheQuery, ".")) {
 				int indexOfTableName = StringUtils.lastIndexOf(fromPartOfTheQuery, ".");

@@ -15,7 +15,7 @@ import lombok.NonNull;
 
 /**
  * This represents a query that is ready to be sent to Firebolt or executed
- * internally for param setting
+ * internally to set a param
  */
 @Data
 @AllArgsConstructor

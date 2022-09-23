@@ -59,7 +59,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		} catch (FireboltException e) {
 			throw e;
 		} catch (Exception e) {
-			String errorMessage = String.format("Error executing statement %s", statementInfoWrapper.getSql());
+			String errorMessage = String.format("Error executing statement with id %s: %s", statementInfoWrapper.getId(), statementInfoWrapper.getSql());
 			if (e instanceof RequestFailedException) {
 				throw new FireboltException(errorMessage, e, ExceptionType.REQUEST_FAILED);
 			} else {
