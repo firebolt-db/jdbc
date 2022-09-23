@@ -9,7 +9,7 @@ plugins {
 }
 
 group 'com.firebolt'
-version = '2.1.2-SNAPSHOT'
+version = '2.1.2'
 
 repositories {
     mavenCentral()
