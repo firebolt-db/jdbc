@@ -162,13 +162,6 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
-	@Builder
-	@Value
-	private static class Car {
-		Integer sales;
-		String make;
-	}
-
 	private QueryResult createExpectedResult(List<List<?>> expectedRows) {
 		return QueryResult.builder().databaseName(ConnectionInfo.getInstance().getDatabase())
 				.tableName("prepared_statement_test")
@@ -176,6 +169,13 @@ class PreparedStatementTest extends IntegrationTest {
 						QueryResult.Column.builder().name("make").type(FireboltDataType.STRING).build()))
 				.rows(expectedRows).build();
 
+	}
+
+	@Builder
+	@Value
+	private static class Car {
+		Integer sales;
+		String make;
 	}
 
 }

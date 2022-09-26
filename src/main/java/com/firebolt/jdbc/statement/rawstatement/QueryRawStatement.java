@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.firebolt.jdbc.statement.ParamMarker;
 import com.firebolt.jdbc.statement.StatementType;
 import com.firebolt.jdbc.statement.StatementUtil;
 
@@ -25,7 +26,7 @@ public class QueryRawStatement extends RawStatement {
 
 	private final String table;
 
-	public QueryRawStatement(String sql, String cleanSql, List<SqlParamMarker> paramPositions) {
+	public QueryRawStatement(String sql, String cleanSql, List<ParamMarker> paramPositions) {
 		super(sql, cleanSql, paramPositions);
 		Pair<Optional<String>, Optional<String>> databaseAndTablePair = StatementUtil
 				.extractDbNameAndTableNamePairFromQuery(this.getCleanSql());

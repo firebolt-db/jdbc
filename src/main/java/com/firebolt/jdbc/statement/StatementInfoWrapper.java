@@ -14,22 +14,22 @@ import lombok.Data;
 import lombok.NonNull;
 
 /**
- * This represents a query that is ready to be sent to Firebolt or executed
+ * This represents a statement that is ready to be sent to Firebolt or executed
  * internally to set a param
  */
 @Data
 @AllArgsConstructor
 public class StatementInfoWrapper {
-	String sql;
-	String id;
-	StatementType type;
-	Pair<String, String> param;
-	RawStatement initialQuery;
+	private String sql;
+	private String id;
+	private StatementType type;
+	private Pair<String, String> param;
+	private RawStatement initialStatement;
 
-	public StatementInfoWrapper(String sql, String id, StatementType statementType) {
+	public StatementInfoWrapper(String sql, String id, StatementType type) {
 		this.sql = sql;
 		this.id = id;
-		this.type = statementType;
+		this.type = type;
 	}
 
 	/**

@@ -18,17 +18,13 @@ public class RawStatementWrapper {
 
 	@Override
 	public String toString() {
-		return "SqlQueryWrapper{" +
-				"subQueries=" + StringUtils.join(subStatements, "|") +
-				", totalParams=" + totalParams +
-				'}';
+		return "SqlQueryWrapper{" + "subQueries=" + StringUtils.join(subStatements, "|") + ", totalParams="
+				+ totalParams + '}';
 	}
 
 	public RawStatementWrapper(List<RawStatement> subStatements) {
 		this.subStatements = subStatements;
-		this.totalParams = subStatements.stream()
-				.map(RawStatement::getParamMarkers)
-				.mapToLong(Collection::size).sum();
+		this.totalParams = subStatements.stream().map(RawStatement::getParamMarkers).mapToLong(Collection::size).sum();
 	}
 
 }

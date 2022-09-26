@@ -43,8 +43,9 @@ class StatementCancelTest extends IntegrationTest {
 			String tableName = extractTableNameWithNonStandardSql(connection, "first_statement_cancel_test");
 			String secondTableName = extractTableNameWithNonStandardSql(connection, "second_statement_cancel_test");
 			long totalRecordsToInsert = 1000000000L;
-			String query = String.format("INSERT INTO %s SELECT id FROM generateRandom('id Int8') LIMIT %d; INSERT INTO %s(id) values(1) ", tableName,
-					totalRecordsToInsert, secondTableName);
+			String query = String.format(
+					"INSERT INTO %s SELECT id FROM generateRandom('id Int8') LIMIT %d; INSERT INTO %s(id) values(1) ",
+					tableName, totalRecordsToInsert, secondTableName);
 
 			try (FireboltStatement insertStatement = (FireboltStatement) connection.createStatement()) {
 
@@ -99,6 +100,7 @@ class StatementCancelTest extends IntegrationTest {
 			assertEquals(0, rs.getInt(1));
 		}
 	}
+
 	/**
 	 * Extract table name when non-standard sql is used
 	 */

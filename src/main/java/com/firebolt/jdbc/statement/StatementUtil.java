@@ -12,7 +12,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import com.firebolt.jdbc.statement.rawstatement.RawStatement;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
 import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
-import com.firebolt.jdbc.statement.rawstatement.SqlParamMarker;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
@@ -54,7 +53,7 @@ public class StatementUtil {
 
 	public RawStatementWrapper parseToRawStatementWrapper(String sql) {
 		List<RawStatement> subQueries = new ArrayList<>();
-		List<SqlParamMarker> subStatementParamMarkersPositions = new ArrayList<>();
+		List<ParamMarker> subStatementParamMarkersPositions = new ArrayList<>();
 		int subQueryStart = 0;
 		int currentIndex = 0;
 		char currentChar = sql.charAt(currentIndex);
@@ -93,7 +92,7 @@ public class StatementUtil {
 					}
 				} else if (currentChar == '?' && !isCurrentSubstringBetweenQuotes) {
 					subStatementParamMarkersPositions
-							.add(new SqlParamMarker(++subQueryParamsCount, currentIndex - subQueryStart));
+							.add(new ParamMarker(++subQueryParamsCount, currentIndex - subQueryStart));
 				} else if (currentChar == '\'') {
 					isCurrentSubstringBetweenQuotes = !isCurrentSubstringBetweenQuotes;
 				}
@@ -137,7 +136,7 @@ public class StatementUtil {
 		RawStatementWrapper rawStatementWrapper = parseToRawStatementWrapper(sql);
 		return rawStatementWrapper.getSubStatements().stream().map(RawStatement::getParamMarkers)
 				.flatMap(Collection::stream)
-				.collect(Collectors.toMap(SqlParamMarker::getId, SqlParamMarker::getPosition));
+				.collect(Collectors.toMap(ParamMarker::getId, ParamMarker::getPosition));
 	}
 
 	public Pair<Optional<String>, Optional<String>> extractDbNameAndTableNamePairFromQuery(String cleanSql) {
@@ -186,11 +185,11 @@ public class StatementUtil {
 						"The number of parameters passed does not equal the number of parameter markers in the SQL query. Provided: %d, Parameter markers in the SQL query: %d",
 						params.size(), query.getTotalParams()));
 			}
-			for (SqlParamMarker param : subQuery.getParamMarkers()) {
+			for (ParamMarker param : subQuery.getParamMarkers()) {
 				String value = params.get(param.getId());
 				if (value == null) {
 					throw new IllegalArgumentException(
-							"No value for parameter marker at position: " + param.getPosition());
+							"No value for parameter marker at position: " + param.getId());
 				}
 				currentPos = param.getPosition() + offset;
 				if (currentPos >= subQuery.getSql().length() + offset) {

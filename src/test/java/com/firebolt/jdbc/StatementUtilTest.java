@@ -15,11 +15,11 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
 
+import com.firebolt.jdbc.statement.ParamMarker;
 import com.firebolt.jdbc.statement.StatementUtil;
 import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
 import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
-import com.firebolt.jdbc.statement.rawstatement.SqlParamMarker;
 import com.google.common.collect.ImmutableMap;
 
 class StatementUtilTest {
@@ -163,7 +163,7 @@ class StatementUtilTest {
 	void shouldCountParametersFromLongQueryWithComments() {
 		String sql = getSqlFromFile("/queries/query-with-comment.sql");
 		StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().get(0).getSql();
-		assertEquals(Arrays.asList(new SqlParamMarker(1, 200)),
+		assertEquals(Arrays.asList(new ParamMarker(1, 200)),
 				StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().get(0).getParamMarkers());
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
@@ -266,23 +266,16 @@ class StatementUtilTest {
 				"'Charles'");
 		assertEquals(expectedFirstSql, replaceParameterMarksWithValues(params, sql).get(0).getSql());
 		assertEquals(expectedSecondSql, replaceParameterMarksWithValues(params, sql).get(1).getSql());
-
 	}
 
 	@Test
 	void shouldThrowExceptionWhenTheNumberOfParamsIsNotTheSameAsTheNumberOfParamMarkers() {
-		Map<Integer, String> params = ImmutableMap.of();
-		assertThrows(IllegalArgumentException.class,
-				() -> replaceParameterMarksWithValues(params, "SELECT 1;"),
-				"The number of parameters passed does not equal the number of parameter markers in the SQL query. Provided: 0, Parameter markers in the SQL query: 1");
-	}
-
-	@Test
-	void shouldThrowExceptionWhenThePositionOfTheParamMarkerIsGreaterThanTheLengthOfTheStatement() {
-		Map<Integer, String> params = ImmutableMap.of(1, "'test'");
-		assertThrows(IllegalArgumentException.class, () -> StatementUtil
-						.replaceParameterMarksWithValues(params, "SELECT 1;"),
-				"The position of the parameter marker provided is invalid");
+		Map<Integer, String> params = ImmutableMap.of(1, "1");
+		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+				() -> replaceParameterMarksWithValues(params, "SELECT 1;"));
+		assertEquals(
+				"The number of parameters passed does not equal the number of parameter markers in the SQL query. Provided: 1, Parameter markers in the SQL query: 0",
+				exception.getMessage());
 	}
 
 	@Test
@@ -290,8 +283,9 @@ class StatementUtilTest {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id is ?";
 		Map<Integer, String> params = new HashMap<>();
 		params.put(1, null);
-		assertThrows(IllegalArgumentException.class, () -> replaceParameterMarksWithValues(params, sql),
-				"No value for parameter marker at position: 1");
+		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+				() -> replaceParameterMarksWithValues(params, sql));
+		assertEquals("No value for parameter marker at position: 1", exception.getMessage());
 	}
 
 	@Test

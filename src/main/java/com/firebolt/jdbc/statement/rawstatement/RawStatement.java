@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.firebolt.jdbc.statement.ParamMarker;
 import com.firebolt.jdbc.statement.StatementType;
 import com.firebolt.jdbc.statement.StatementUtil;
 
@@ -14,11 +15,11 @@ import lombok.Data;
 @Data
 public abstract class RawStatement {
 
-	private String sql;
-	private String cleanSql;
-	List<SqlParamMarker> paramMarkers;
+	private final String sql;
+	private final String cleanSql;
+	private final List<ParamMarker> paramMarkers;
 
-	protected RawStatement(String sql, String cleanSql, List<SqlParamMarker> paramPositions) {
+	protected RawStatement(String sql, String cleanSql, List<ParamMarker> paramPositions) {
 		this.sql = sql;
 		this.cleanSql = cleanSql;
 		this.paramMarkers = paramPositions;
@@ -30,7 +31,7 @@ public abstract class RawStatement {
 				+ StringUtils.join(paramMarkers, "|") + '}';
 	}
 
-	public List<SqlParamMarker> getParamMarkers() {
+	public List<ParamMarker> getParamMarkers() {
 		return paramMarkers;
 	}
 
@@ -44,7 +45,7 @@ public abstract class RawStatement {
 
 	public abstract StatementType getStatementType();
 
-	public static RawStatement of(String sql, List<SqlParamMarker> paramPositions, String cleanSql) {
+	public static RawStatement of(String sql, List<ParamMarker> paramPositions, String cleanSql) {
 		Optional<Pair<String, String>> additionalProperties = StatementUtil.extractPropertyFromQuery(cleanSql, sql);
 		if (additionalProperties.isPresent()) {
 			return new SetParamRawStatement(sql, cleanSql, paramPositions, additionalProperties.get());
