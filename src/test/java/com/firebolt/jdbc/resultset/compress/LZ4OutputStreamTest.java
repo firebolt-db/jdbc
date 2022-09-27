@@ -27,6 +27,7 @@ OF THE COMPANY YANDEX LLC.
  *  - Formatting
  *  - Method names
  *  - Method positions
+ *  - Refactored the code of the lambdas to have only one invocation possibly throwing a runtime exception
  */
 package com.firebolt.jdbc.resultset.compress;
 
@@ -70,11 +71,9 @@ class LZ4OutputStreamTest {
 
 	@Test
 	void testWriteBytes() throws IOException {
-		assertThrows(NullPointerException.class, () -> {
-			try (LZ4OutputStream out = new LZ4OutputStream(new ByteArrayOutputStream(), 3)) {
-				out.write(null);
-			}
-		});
+		try (LZ4OutputStream out = new LZ4OutputStream(new ByteArrayOutputStream(), 3)) {
+			assertThrows(NullPointerException.class, () -> out.write(null));
+		}
 
 		ByteArrayOutputStream bas = new ByteArrayOutputStream(64);
 		try (LZ4OutputStream out = new LZ4OutputStream(bas, 3)) {
@@ -136,29 +135,20 @@ class LZ4OutputStreamTest {
 
 	@Test
 	void testWriteBytesWithOffset() throws IOException {
-		assertThrows(NullPointerException.class, () -> {
-			try (LZ4OutputStream out = new LZ4OutputStream(new ByteArrayOutputStream(), 3)) {
-				out.write(null, 0, 1);
-			}
-		});
+		try (LZ4OutputStream out = new LZ4OutputStream(new ByteArrayOutputStream(), 3)) {
+			assertThrows(NullPointerException.class, () -> out.write(null, 0, 1));
+		}
 
-		assertThrows(IndexOutOfBoundsException.class, () -> {
-			try (LZ4OutputStream out = new LZ4OutputStream(new ByteArrayOutputStream(), 3)) {
-				out.write(new byte[0], 0, 1);
-			}
-		});
+		try (LZ4OutputStream out = new LZ4OutputStream(new ByteArrayOutputStream(), 3)) {
+			assertThrows(IndexOutOfBoundsException.class, () -> out.write(new byte[0], 0, 1));
+		}
+		try (LZ4OutputStream out = new LZ4OutputStream(new ByteArrayOutputStream(), 3)) {
+			assertThrows(IndexOutOfBoundsException.class, () -> out.write(new byte[0], -1, 0));
+		}
 
-		assertThrows(IndexOutOfBoundsException.class, () -> {
-			try (LZ4OutputStream out = new LZ4OutputStream(new ByteArrayOutputStream(), 3)) {
-				out.write(new byte[0], -1, 0);
-			}
-		});
-
-		assertThrows(IndexOutOfBoundsException.class, () -> {
-			try (LZ4OutputStream out = new LZ4OutputStream(new ByteArrayOutputStream(), 3)) {
-				out.write(new byte[1], 1, 1);
-			}
-		});
+		try (LZ4OutputStream out = new LZ4OutputStream(new ByteArrayOutputStream(), 3)) {
+			assertThrows(IndexOutOfBoundsException.class, () -> out.write(new byte[1], 1, 1));
+		}
 
 		final byte[] bytes = new byte[] { (byte) 0, (byte) 13, (byte) 13, (byte) 13, (byte) 13, (byte) 13, (byte) 13,
 				(byte) 13, (byte) 0 };

@@ -3,6 +3,8 @@ package com.firebolt.jdbc.client;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.firebolt.jdbc.VersionUtil;
 import com.google.common.collect.ImmutableMap;
 
@@ -20,7 +22,7 @@ public class UsageTrackerUtil {
 
 	private static String getVersionForClass(String name) {
 		try {
-			Class c = Class.forName(name);
+			Class<?> c = Class.forName(name);
 			return c.getPackage().getImplementationVersion();
 		} catch (ClassNotFoundException e) {
 			log.debug("Unable to get version for class " + name);
@@ -34,11 +36,11 @@ public class UsageTrackerUtil {
 			return clients;
 		}
 		for (StackTraceElement s : stack) {
-			for (String connector : clientMap.keySet()) {
-				if (s.getClassName().contains(clientMap.get(connector))) {
+			for (Map.Entry<String, String> connectorEntry : clientMap.entrySet()) {
+				if (StringUtils.contains(s.getClassName(), connectorEntry.getValue())) {
 					String version = getVersionForClass(s.getClassName());
-					log.debug("Detected running from " + connector + " Version " + version);
-					clients.put(connector, version);
+					log.debug("Detected running from " + connectorEntry.getKey() + " Version " + version);
+					clients.put(connectorEntry.getKey(), version);
 				}
 			}
 		}
@@ -79,12 +81,12 @@ public class UsageTrackerUtil {
 		String systemVersion = System.getProperty("os.version");
 
 		String os = System.getProperty("os.name").toLowerCase();
-		if (os.indexOf("win") >= 0) {
+		if (os.contains("win")) {
 			os = "Windows";
-		} else if (os.indexOf("mac") >= 0) {
+		} else if (os.contains("mac")) {
 			// Keeping this in sync with Python counterpart
 			os = "Darwin";
-		} else if (os.indexOf("linux") >= 0) {
+		} else if (os.contains("linux")) {
 			os = "Linux";
 		}
 
