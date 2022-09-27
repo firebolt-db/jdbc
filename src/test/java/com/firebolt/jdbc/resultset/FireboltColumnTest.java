@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import java.util.TimeZone;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import com.firebolt.jdbc.type.FireboltDataType;
 
@@ -72,50 +74,6 @@ class FireboltColumnTest {
 	}
 
 	@Test
-	void shouldCreateColumDataForTupleOfArray() {
-		String type = "Tuple(Array(int), Array(Nullable(Int64)))";
-		String name = "my_tuple";
-		FireboltColumn column = FireboltColumn.of(type, name);
-		assertEquals(name, column.getColumnName());
-		assertEquals(type.toUpperCase(), column.getColumnType());
-		assertEquals(FireboltDataType.TUPLE, column.getDataType());
-		assertEquals("TUPLE(ARRAY(INTEGER), ARRAY(BIGINT))", column.getCompactTypeName());
-	}
-
-	@Test
-	void shouldCreateColumDataForTupleWithMoreThan2Elements() {
-		String type = "Tuple(Array(int), Array(Nullable(Int64)), Int64)";
-		String name = "my_tuple";
-		FireboltColumn column = FireboltColumn.of(type, name);
-		assertEquals(name, column.getColumnName());
-		assertEquals(type.toUpperCase(), column.getColumnType());
-		assertEquals(FireboltDataType.TUPLE, column.getDataType());
-		assertEquals("TUPLE(ARRAY(INTEGER), ARRAY(BIGINT), BIGINT)", column.getCompactTypeName());
-	}
-
-	@Test
-	void shouldCreateColumDataForTupleWithOneElement() {
-		String type = "Tuple(Int64)";
-		String name = "my_tuple";
-		FireboltColumn column = FireboltColumn.of(type, name);
-		assertEquals(name, column.getColumnName());
-		assertEquals(type.toUpperCase(), column.getColumnType());
-		assertEquals(FireboltDataType.TUPLE, column.getDataType());
-		assertEquals("TUPLE(BIGINT)", column.getCompactTypeName());
-	}
-
-	@Test
-	void shouldCreateColumDataForTupleWithOnlyOneArgument() {
-		String type = "Tuple(Date)";
-		String name = "TUPLE(CAST('2019-02-03' AS timestamp))";
-		FireboltColumn column = FireboltColumn.of(type, name);
-		assertEquals(name, column.getColumnName());
-		assertEquals(type.toUpperCase(), column.getColumnType());
-		assertEquals(FireboltDataType.TUPLE, column.getDataType());
-		assertEquals("TUPLE(DATE)", column.getCompactTypeName());
-	}
-
-	@Test
 	void shouldCreateColumDataForBoolean() {
 		String type = "Nullable(String)";
 		String name = "name";
@@ -126,71 +84,33 @@ class FireboltColumnTest {
 		assertEquals("STRING", column.getCompactTypeName());
 	}
 
-	@Test
-	void shouldCreateColumDataForTupleOfArrays() {
-		String type = "Tuple(Array(int),Array(int))";
+	@ParameterizedTest
+	@CsvSource(value = { "Tuple(Int64);TUPLE(BIGINT)",
+			"Tuple(Array(Tuple(int,int)), int);TUPLE(ARRAY(TUPLE(INTEGER, INTEGER)), INTEGER)",
+			"Tuple(Array(int),Array(int));TUPLE(ARRAY(INTEGER), ARRAY(INTEGER))", "Tuple(Date);TUPLE(DATE)",
+			"Tuple(Array(int), Array(Nullable(Int64)), Int64);TUPLE(ARRAY(INTEGER), ARRAY(BIGINT), BIGINT)",
+			"Tuple(Array(int), Array(Nullable(Int64)));TUPLE(ARRAY(INTEGER), ARRAY(BIGINT))" }, delimiter = ';')
+	void shouldCreateColumDataForTupleOfArrayOfTuple(String inputType, String expectedType) {
 		String name = "name";
-		FireboltColumn column = FireboltColumn.of(type, name);
+		FireboltColumn column = FireboltColumn.of(inputType, name);
 		assertEquals(name, column.getColumnName());
-		assertEquals(type.toUpperCase(), column.getColumnType());
+		assertEquals(inputType.toUpperCase(), column.getColumnType());
 		assertEquals(FireboltDataType.TUPLE, column.getDataType());
-		assertEquals("TUPLE(ARRAY(INTEGER), ARRAY(INTEGER))", column.getCompactTypeName());
+		assertEquals(expectedType, column.getCompactTypeName());
 	}
 
-	@Test
-	void shouldCreateColumDataForTupleOfArrayOfTuple() {
-		String type = "Tuple(Array(Tuple(int,int)), int)";
+	@ParameterizedTest
+	@CsvSource(value = { "ARRAY(ARRAY(ARRAY(TEXT)));ARRAY(ARRAY(ARRAY(STRING)))",
+			"Array(Tuple(Array(Tuple(UInt8, String)),Array(Tuple(UInt8, String))));ARRAY(TUPLE(ARRAY(TUPLE(INTEGER, STRING)), ARRAY(TUPLE(INTEGER, STRING))))",
+			"Array(Tuple(UInt8, String));ARRAY(TUPLE(INTEGER, STRING))",
+			"Array(Array(Tuple(UInt8, String)));ARRAY(ARRAY(TUPLE(INTEGER, STRING)))" }, delimiter = ';')
+	void shouldCreateColumDataForArrayOfArrayOfArray(String inputType, String expectedType) {
 		String name = "name";
-		FireboltColumn column = FireboltColumn.of(type, name);
+		FireboltColumn column = FireboltColumn.of(inputType, name);
 		assertEquals(name, column.getColumnName());
-		assertEquals(type.toUpperCase(), column.getColumnType());
-		assertEquals(FireboltDataType.TUPLE, column.getDataType());
-		assertEquals("TUPLE(ARRAY(TUPLE(INTEGER, INTEGER)), INTEGER)", column.getCompactTypeName());
-	}
-
-	@Test
-	void shouldCreateColumDataForArrayOfArrayOfArray() {
-		String type = "ARRAY(ARRAY(ARRAY(TEXT)))";
-		String name = "name";
-		FireboltColumn column = FireboltColumn.of(type, name);
-		assertEquals(name, column.getColumnName());
-		assertEquals(type.toUpperCase(), column.getColumnType());
+		assertEquals(inputType.toUpperCase(), column.getColumnType());
 		assertEquals(FireboltDataType.ARRAY, column.getDataType());
-		assertEquals("ARRAY(ARRAY(ARRAY(STRING)))", column.getCompactTypeName());
-	}
-
-	@Test
-	void shouldCreateColumDataForArrayOfTuple() {
-		String type = "Array(Tuple(UInt8, String))";
-		String name = "ARRAY_OF_TUPLE";
-		FireboltColumn column = FireboltColumn.of(type, name);
-		assertEquals(name, column.getColumnName());
-		assertEquals(type.toUpperCase(), column.getColumnType());
-		assertEquals(FireboltDataType.ARRAY, column.getDataType());
-		assertEquals("ARRAY(TUPLE(INTEGER, STRING))", column.getCompactTypeName());
-	}
-
-	@Test
-	void shouldCreateColumDataForArrayOfArrayOfTuple() {
-		String type = "Array(Array(Tuple(UInt8, String)))";
-		String name = "COMPLEX_ARRAY";
-		FireboltColumn column = FireboltColumn.of(type, name);
-		assertEquals(name, column.getColumnName());
-		assertEquals(type.toUpperCase(), column.getColumnType());
-		assertEquals(FireboltDataType.ARRAY, column.getDataType());
-		assertEquals("ARRAY(ARRAY(TUPLE(INTEGER, STRING)))", column.getCompactTypeName());
-	}
-
-	@Test
-	void shouldCreateColumDataForArrayOfTupleOfArrayOfTuple() {
-		String type = "Array(Tuple(Array(Tuple(UInt8, String)),Array(Tuple(UInt8, String))))";
-		String name = "COMPLEX_ARRAY";
-		FireboltColumn column = FireboltColumn.of(type, name);
-		assertEquals(name, column.getColumnName());
-		assertEquals(type.toUpperCase(), column.getColumnType());
-		assertEquals(FireboltDataType.ARRAY, column.getDataType());
-		assertEquals("ARRAY(TUPLE(ARRAY(TUPLE(INTEGER, STRING)), ARRAY(TUPLE(INTEGER, STRING))))",
-				column.getCompactTypeName());
+		assertEquals(expectedType, column.getCompactTypeName());
 	}
 
 	@Test

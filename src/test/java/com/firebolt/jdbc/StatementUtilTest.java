@@ -225,16 +225,19 @@ class StatementUtilTest {
 
 	@Test
 	void shouldThrowExceptionWhenTheNumberOfParamsIsNotTheSameAsTheNumberOfParamMarkers() {
+		Map<Integer, String> params = ImmutableMap.of();
+		Map<Integer, Integer> positions = ImmutableMap.of(1, 1);
 		assertThrows(IllegalArgumentException.class,
-				() -> StatementUtil.replaceParameterMarksWithValues(ImmutableMap.of(), ImmutableMap.of(1, 1),
-						"SELECT 1;"),
+				() -> StatementUtil.replaceParameterMarksWithValues(params, positions, "SELECT 1;"),
 				"The number of parameters passed does not equal the number of parameter markers in the SQL query. Provided: 0, Parameter markers in the SQL query: 1");
 	}
 
 	@Test
 	void shouldThrowExceptionWhenThePositionOfTheParamMarkerIsGreaterThanTheLengthOfTheStatement() {
-		assertThrows(IllegalArgumentException.class, () -> StatementUtil
-				.replaceParameterMarksWithValues(ImmutableMap.of(1, "'test'"), ImmutableMap.of(1, 9), "SELECT 1;"),
+		Map<Integer, String> params = ImmutableMap.of(1, "'test'");
+		Map<Integer, Integer> positions = ImmutableMap.of(1, 9);
+		assertThrows(IllegalArgumentException.class,
+				() -> StatementUtil.replaceParameterMarksWithValues(params, positions, "SELECT 1;"),
 				"The position of the parameter marker provided is invalid");
 	}
 

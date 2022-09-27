@@ -1,11 +1,11 @@
 package com.firebolt.jdbc.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.hc.core5.http.ParseException;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,16 +62,4 @@ class FireboltAuthenticationServiceTest {
 		verify(fireboltAuthenticationClient).postConnectionTokens(randomHost, USER, PASSWORD);
 	}
 
-	@Test
-	void shouldCallClientAgainWhenTokenIsExpired()
-			throws IOException, InterruptedException, ParseException, FireboltException {
-		String randomHost = UUID.randomUUID().toString();
-		FireboltConnectionTokens tokens = FireboltConnectionTokens.builder().expiresInSeconds(1).refreshToken("refresh")
-				.accessToken("access").build();
-		when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD)).thenReturn(tokens);
-		fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES);
-		TimeUnit.MILLISECONDS.sleep(1100);
-		assertEquals(tokens, fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES));
-		verify(fireboltAuthenticationClient, times(2)).postConnectionTokens(randomHost, USER, PASSWORD);
-	}
 }
