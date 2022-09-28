@@ -27,10 +27,10 @@ public enum FireboltSessionProperty {
 	SOCKET_TIMEOUT_MILLIS("socket_timeout_millis", 0, Integer.class, false,
 			"maximum time of inactivity between two data packets when exchanging data with the server. A timeout value of zero is interpreted as an infinite timeout. A negative value is interpreted as undefined.",
 			"socket_timeout"),
-	CONNECTION_TIMEOUT_MILLIS("connection_timeout_millis", 0, Integer.class, false,
+	CONNECTION_TIMEOUT_MILLIS("connection_timeout_millis", 60 * 1000, Integer.class, false,
 			"Connection timeout in milliseconds. A timeout value of zero is interpreted as an infinite timeout",
 			"connection_timeout"),
-	KEEP_ALIVE_TIMEOUT_MILLIS("connection_keep_alive_timeout_millis", Integer.MAX_VALUE, Integer.class, false,
+	KEEP_ALIVE_TIMEOUT_MILLIS("connection_keep_alive_timeout_millis", Integer.MAX_VALUE, Integer.class, true,
 			"How long a connection can remain idle before being reused (in milliseconds).", "keepAliveTimeout"),
 	TIME_TO_LIVE_MILLIS("time_to_live_millis", 60 * 1000, Integer.class, false,
 			"Maximum life span of connections regardless of their connection_keep_alive_timeout_millis",
@@ -41,7 +41,7 @@ public enum FireboltSessionProperty {
 			"maxTotal"),
 
 	USE_CONNECTION_POOL( // Added it for backward compatibility but not used
-			"use_connection_pool", false, Boolean.class, false,
+			"use_connection_pool", false, Boolean.class, true,
 			"use connection pool for valid connections. This property is deprecated and setting it has no effect."),
 	VALIDATE_AFTER_INACTIVITY_MILLIS("validate_after_inactivity_millis", 3 * 1000, Integer.class, false,
 			"Defines period of inactivity in milliseconds after which persistent connections must be re-validated prior to being leased to the consumer. Non-positive value disables connection validation. "),

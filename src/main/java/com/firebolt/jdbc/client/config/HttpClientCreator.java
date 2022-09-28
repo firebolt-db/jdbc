@@ -10,13 +10,11 @@ import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.*;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hc.client5.http.ConnectionKeepAliveStrategy;
 import org.apache.hc.client5.http.HttpRequestRetryStrategy;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.cookie.StandardCookieSpec;
@@ -29,13 +27,10 @@ import org.apache.hc.client5.http.io.ManagedHttpClientConnection;
 import org.apache.hc.client5.http.ssl.DefaultHostnameVerifier;
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
-import org.apache.hc.core5.http.HeaderElement;
-import org.apache.hc.core5.http.HeaderElements;
 import org.apache.hc.core5.http.config.Http1Config;
 import org.apache.hc.core5.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.hc.core5.http.io.HttpConnectionFactory;
 import org.apache.hc.core5.http.io.SocketConfig;
-import org.apache.hc.core5.http.message.MessageSupport;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 
@@ -61,31 +56,11 @@ public class HttpClientCreator {
 				.setConnectionManagerShared(true).disableDefaultUserAgent()
 				.setDefaultRequestConfig(getDefaultRequestConfig(properties))
 				.setConnectionReuseStrategy(new DefaultConnectionReuseStrategy())
-				.setKeepAliveStrategy(createKeepAliveStrategy(properties))
 				.setRetryStrategy(createRetryStrategy(properties)).disableContentCompression().build();
 	}
 
 	private static HttpRequestRetryStrategy createRetryStrategy(FireboltProperties properties) {
 		return new DefaultHttpRequestRetryStrategy(properties.getMaxRetries(), TimeValue.ofMilliseconds(500));
-	}
-
-	private static ConnectionKeepAliveStrategy createKeepAliveStrategy(FireboltProperties fireboltProperties) {
-		return (httpResponse, httpContext) -> {
-			final Iterator<HeaderElement> it = MessageSupport.iterate(httpResponse, HeaderElements.KEEP_ALIVE);
-			while (it.hasNext()) {
-				final HeaderElement he = it.next();
-				final String param = he.getName();
-				final String value = he.getValue();
-				if (value != null && param.equalsIgnoreCase("timeout")) {
-					try {
-						return TimeValue.ofSeconds(Long.parseLong(value));
-					} catch (final NumberFormatException ignore) {
-						// ignore
-					}
-				}
-			}
-			return TimeValue.ofMilliseconds(fireboltProperties.getKeepAliveTimeoutMillis());
-		};
 	}
 
 	private static RequestConfig getDefaultRequestConfig(FireboltProperties fireboltProperties) {
