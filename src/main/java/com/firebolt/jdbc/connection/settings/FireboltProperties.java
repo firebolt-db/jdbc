@@ -39,7 +39,6 @@ public class FireboltProperties {
 	int clientBufferSize;
 	int socketTimeoutMillis;
 	int connectionTimeoutMillis;
-	int keepAliveTimeoutMillis;
 	Integer port;
 	String host;
 	String database;
@@ -81,8 +80,6 @@ public class FireboltProperties {
 		int clientBufferSize = getSetting(mergedProperties, FireboltSessionProperty.CLIENT_BUFFER_SIZE);
 		int socketTimeout = getSetting(mergedProperties, FireboltSessionProperty.SOCKET_TIMEOUT_MILLIS);
 		int connectionTimeout = getSetting(mergedProperties, FireboltSessionProperty.CONNECTION_TIMEOUT_MILLIS);
-		int keepAliveTimeout = getSetting(mergedProperties, FireboltSessionProperty.KEEP_ALIVE_TIMEOUT_MILLIS);
-
 		int tcpKeepInterval = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_INTERVAL);
 		int tcpKeepIdle = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_IDLE);
 		int tcpKeepCount = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_COUNT);
@@ -102,7 +99,7 @@ public class FireboltProperties {
 				.validateAfterInactivityMillis(validateAfterInactivityMillis).maxConnectionsTotal(maxTotal)
 				.maxRetries(maxRetries).clientBufferSize(clientBufferSize).bufferSize(bufferSize)
 				.socketTimeoutMillis(socketTimeout).connectionTimeoutMillis(connectionTimeout)
-				.keepAliveTimeoutMillis(keepAliveTimeout).tcpKeepInterval(tcpKeepInterval).tcpKeepCount(tcpKeepCount)
+				.tcpKeepInterval(tcpKeepInterval).tcpKeepCount(tcpKeepCount)
 				.tcpKeepIdle(tcpKeepIdle).aggressiveCancel(aggressiveCancel).logResultSet(logResultSet).build();
 	}
 
