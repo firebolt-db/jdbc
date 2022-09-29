@@ -34,7 +34,7 @@ class StatementUtilTest {
 	void shouldExtractAdditionalProperties() {
 		String query = "set my_custom_query=1";
 		assertEquals(Optional.of(new ImmutablePair<>("my_custom_query", "1")),
-				StatementUtil.extractPropertyFromQuery(query, null));
+				StatementUtil.extractParamFromSetStatement(query, null));
 	}
 
 	@Test
@@ -42,14 +42,14 @@ class StatementUtilTest {
 		String query = "/* */" + " SeT my_custom_query=1";
 		String cleanQuery = "SeT my_custom_query=1";
 		assertEquals(Optional.of(new ImmutablePair<>("my_custom_query", "1")),
-				StatementUtil.extractPropertyFromQuery(cleanQuery, query));
+				StatementUtil.extractParamFromSetStatement(cleanQuery, query));
 	}
 
 	@Test
 	void shouldExtractAdditionalWithEmptyProperties() {
 		String query = "set my_custom_char=' '";
 		assertEquals(Optional.of(new ImmutablePair<>("my_custom_char", "' '")),
-				StatementUtil.extractPropertyFromQuery(query, null));
+				StatementUtil.extractParamFromSetStatement(query, null));
 	}
 
 	@Test
@@ -104,27 +104,28 @@ class StatementUtilTest {
 	@Test
 	void shouldGetEmptyDbNameAndTablesTableNameWhenUsingDescribe() {
 		String query = "DESCRIBE EMPLOYEES";
-		assertEquals(Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromQuery(query).getLeft());
-		assertEquals(Optional.of("tables"), StatementUtil.extractDbNameAndTableNamePairFromQuery(query).getRight());
+		assertEquals(Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromCleanQuery(query).getLeft());
+		assertEquals(Optional.of("tables"),
+				StatementUtil.extractDbNameAndTableNamePairFromCleanQuery(query).getRight());
 	}
 
 	@Test
 	void shouldGetEmptyTableNameAndEmptyDbNameWhenUsingShow() {
 		String query = "SHOW databases";
-		assertEquals(Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromQuery(query).getLeft());
-		assertEquals(Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromQuery(query).getRight());
+		assertEquals(Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromCleanQuery(query).getLeft());
+		assertEquals(Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromCleanQuery(query).getRight());
 	}
 
 	@Test
 	void shouldBeEmptyWhenGettingTableNameWhenTheQueryIsNotASelect() {
 		String query = "/* Some random command*/ UPDATE * FROM EMPLOYEES WHERE id = 5";
-		assertEquals(Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromQuery(query).getRight());
+		assertEquals(Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromCleanQuery(query).getRight());
 	}
 
 	@Test
 	void shouldThrowAnExceptionWhenTheSetCannotBeParsed() {
 		String query = "set x=";
-		assertThrows(IllegalArgumentException.class, () -> StatementUtil.extractPropertyFromQuery(query, null));
+		assertThrows(IllegalArgumentException.class, () -> StatementUtil.extractParamFromSetStatement(query, null));
 	}
 
 	@Test
@@ -171,56 +172,56 @@ class StatementUtilTest {
 	@Test
 	void shouldGetAllQueryParams() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id = ?";
-		assertEquals(ImmutableMap.of(1, 35), StatementUtil.getQueryParamsPositions(sql));
+		assertEquals(ImmutableMap.of(1, 35), StatementUtil.getParamMarketsPositions(sql));
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
 
 	@Test
 	void shouldGetAllQueryParamsWithoutTrimmingRequest() {
 		String sql = "     SElECT * FROM EMPLOYEES WHERE id = ?";
-		assertEquals(ImmutableMap.of(1, 40), StatementUtil.getQueryParamsPositions(sql));
+		assertEquals(ImmutableMap.of(1, 40), StatementUtil.getParamMarketsPositions(sql));
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
 
 	@Test
 	void shouldGetAllQueryParamsFromIn() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id IN (?,?)";
-		assertEquals(ImmutableMap.of(1, 37, 2, 39), StatementUtil.getQueryParamsPositions(sql));
+		assertEquals(ImmutableMap.of(1, 37, 2, 39), StatementUtil.getParamMarketsPositions(sql));
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
 
 	@Test
 	void shouldGetAllQueryParamsThatAreNotInComments() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE /* ?*/id IN (?,?)";
-		assertEquals(ImmutableMap.of(1, 43, 2, 45), StatementUtil.getQueryParamsPositions(sql));
+		assertEquals(ImmutableMap.of(1, 43, 2, 45), StatementUtil.getParamMarketsPositions(sql));
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
 
 	@Test
 	void shouldGetAllQueryParamsThatAreNotInComments2() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE /* ?id IN (?,?)*/";
-		assertEquals(ImmutableMap.of(), StatementUtil.getQueryParamsPositions(sql));
+		assertEquals(ImmutableMap.of(), StatementUtil.getParamMarketsPositions(sql));
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
 
 	@Test
 	void shouldGetAllQueryParamsThatAreNotInSingleLineComment() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n";
-		assertEquals(ImmutableMap.of(), StatementUtil.getQueryParamsPositions(sql));
+		assertEquals(ImmutableMap.of(), StatementUtil.getParamMarketsPositions(sql));
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
 
 	@Test
 	void shouldGetAllQueryParamsThatAreNotInSingleLineComment2() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id IN --\n(?,?)";
-		assertEquals(ImmutableMap.of(1, 40, 2, 42), StatementUtil.getQueryParamsPositions(sql));
+		assertEquals(ImmutableMap.of(1, 40, 2, 42), StatementUtil.getParamMarketsPositions(sql));
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
 
 	@Test
 	void shouldGetAllQueryParamsThatAreNotInBetweenQuotesOrComments() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE ? AND my_date = ?";
-		assertEquals(ImmutableMap.of(1, 93, 2, 109), StatementUtil.getQueryParamsPositions(sql));
+		assertEquals(ImmutableMap.of(1, 93, 2, 109), StatementUtil.getParamMarketsPositions(sql));
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
 

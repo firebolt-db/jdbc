@@ -54,7 +54,7 @@ public class FireboltStatement implements Statement {
 		return this.executeQuery(StatementUtil.parseToStatementInfoWrappers(sql));
 	}
 
-	public ResultSet executeQuery(List<StatementInfoWrapper> statementInfoList) throws SQLException {
+	protected ResultSet executeQuery(List<StatementInfoWrapper> statementInfoList) throws SQLException {
 		StatementInfoWrapper query = getOneQueryStatementInfo(statementInfoList);
 		this.execute(Collections.singletonList(query), null);
 		synchronized (this) {
@@ -90,7 +90,6 @@ public class FireboltStatement implements Statement {
 		}
 		return isFirstStatementAQuery != null && isFirstStatementAQuery;
 	}
-
 
 	private boolean execute(StatementInfoWrapper statementInfoWrapper, Map<String, String> params,
 			boolean verifyNotCancelled) throws SQLException {
@@ -226,7 +225,7 @@ public class FireboltStatement implements Statement {
 		return this.executeUpdate(StatementUtil.parseToStatementInfoWrappers(sql));
 	}
 
-	public int executeUpdate(List<StatementInfoWrapper> sql) throws SQLException {
+	protected int executeUpdate(List<StatementInfoWrapper> sql) throws SQLException {
 		this.execute(sql);
 		StatementResultWrapper response;
 		synchronized (this) {
@@ -301,6 +300,15 @@ public class FireboltStatement implements Statement {
 		close(true);
 	}
 
+	/**
+	 * Closes the Statement and removes the object from the list of Statements kept
+	 * in the {@link FireboltConnection} if the param removeFromConnection is set to
+	 * true
+	 * 
+	 * @param removeFromConnection whether the {@link FireboltStatement} must be
+	 *                             removed from the parent
+	 *                             {@link FireboltConnection}
+	 */
 	public void close(boolean removeFromConnection) throws SQLException {
 		synchronized (this) {
 			if (isClosed) {
@@ -398,6 +406,11 @@ public class FireboltStatement implements Statement {
 		}
 	}
 
+	/**
+	 * Returns true if the statement is currently running
+	 * 
+	 * @return true if the statement is currently running
+	 */
 	public boolean isStatementRunning() {
 		return this.runningStatementId != null && statementService.isStatementRunning(this.runningStatementId);
 	}
@@ -642,6 +655,11 @@ public class FireboltStatement implements Statement {
 		throw new FireboltUnsupportedOperationException();
 	}
 
+	/**
+	 * Returns true if the statement has more results
+	 * 
+	 * @return true if the statement has more results
+	 */
 	public boolean hasMoreResults() {
 		return this.currentStatementResult.getNext() != null;
 	}

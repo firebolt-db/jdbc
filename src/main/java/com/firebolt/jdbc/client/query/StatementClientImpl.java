@@ -33,33 +33,42 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class StatementClientImpl extends FireboltClient implements StatementClient {
-	private final Map<String, HttpPost> runningQueries = new HashMap<>();
+	private final Map<String, HttpPost> runningStatements = new HashMap<>();
 
 	public StatementClientImpl(CloseableHttpClient httpClient, FireboltConnection connection, ObjectMapper objectMapper,
 			String customDrivers, String customClients) {
 		super(httpClient, connection, customDrivers, customClients, objectMapper);
 	}
 
+	/**
+	 * Sends SQL statement to Firebolt
+	 * 
+	 * @param statementInfoWrapper the statement wrapper
+	 * @param connectionProperties the connection properties
+	 * @param queryParams          the statement parameters
+	 * @return the server response
+	 */
 	@Override
 	public InputStream postSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
-			@NonNull FireboltProperties connectionProperties, Map<String, String> statementParams)
+			@NonNull FireboltProperties connectionProperties, Map<String, String> queryParams)
 			throws FireboltException {
 		try (StringEntity entity = new StringEntity(statementInfoWrapper.getSql(), StandardCharsets.UTF_8)) {
-			List<NameValuePair> parameters = statementParams.entrySet().stream()
+			List<NameValuePair> parameters = queryParams.entrySet().stream()
 					.map(e -> new BasicNameValuePair(e.getKey(), e.getValue())).collect(Collectors.toList());
 			String uri = this.buildQueryUri(connectionProperties, parameters).toString();
 			HttpPost post = this.createPostRequest(uri, this.getConnection().getConnectionTokens()
 					.map(FireboltConnectionTokens::getAccessToken).orElse(null));
 			post.setEntity(entity);
 			log.debug("Posting statement with id {} to URI: {}", statementInfoWrapper.getId(), uri);
-			runningQueries.put(statementInfoWrapper.getId(), post);
+			runningStatements.put(statementInfoWrapper.getId(), post);
 			CloseableHttpResponse response = this.execute(post, connectionProperties.getHost(),
 					connectionProperties.isCompress());
 			return response.getEntity().getContent();
 		} catch (FireboltException e) {
 			throw e;
 		} catch (Exception e) {
-			String errorMessage = String.format("Error executing statement with id %s: %s", statementInfoWrapper.getId(), statementInfoWrapper.getSql());
+			String errorMessage = String.format("Error executing statement with id %s: %s",
+					statementInfoWrapper.getId(), statementInfoWrapper.getSql());
 			if (e instanceof RequestFailedException) {
 				throw new FireboltException(errorMessage, e, ExceptionType.REQUEST_FAILED);
 			} else {
@@ -67,14 +76,21 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			}
 
 		} finally {
-			runningQueries.remove(statementInfoWrapper.getId());
+			runningStatements.remove(statementInfoWrapper.getId());
 		}
 	}
 
-	public void abortStatement(String id, FireboltProperties fireboltProperties, Map<String, String> statementParams)
+	/**
+	 * Aborts the statement being sent to the server
+	 * 
+	 * @param id                 id of the statement
+	 * @param fireboltProperties the properties
+	 * @param queryParams        query parameters
+	 */
+	public void abortStatement(String id, FireboltProperties fireboltProperties, Map<String, String> queryParams)
 			throws FireboltException {
 		try {
-			List<NameValuePair> params = statementParams.entrySet().stream()
+			List<NameValuePair> params = queryParams.entrySet().stream()
 					.map(kv -> new BasicNameValuePair(kv.getKey(), kv.getValue())).collect(Collectors.toList());
 
 			String uri = this.buildCancelUri(fireboltProperties, params).toString();
@@ -96,8 +112,13 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		}
 	}
 
+	/**
+	 * Abort HttpRequest if it is currently being sent
+	 * 
+	 * @param id id of the statement
+	 */
 	public void abortRunningHttpRequest(@NonNull String id) {
-		HttpPost running = runningQueries.get(id);
+		HttpPost running = runningStatements.get(id);
 		if (running != null) {
 			running.abort();
 		}
@@ -105,7 +126,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 	@Override
 	public boolean isStatementRunning(String statementId) {
-		return runningQueries.containsKey(statementId);
+		return runningStatements.containsKey(statementId);
 	}
 
 	private URI buildQueryUri(FireboltProperties fireboltProperties, List<NameValuePair> parameters)

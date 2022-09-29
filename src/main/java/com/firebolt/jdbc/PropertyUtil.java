@@ -22,7 +22,14 @@ public class PropertyUtil {
 
 	private static final String LOCALHOST = "localhost";
 
-	public static DriverPropertyInfo[] getPropertyInfo(String url, Properties properties) {
+	/**
+	 * Returns an array containing the properties used by the driver
+	 * 
+	 * @param url        the JDBC url
+	 * @param properties the properties
+	 * @return an array containing the properties used by the driver
+	 */
+	public DriverPropertyInfo[] getPropertyInfo(String url, Properties properties) {
 		try {
 			Properties propertiesFromUrl = FireboltJdbcUrlUtil.extractProperties(url);
 			for (Object key : propertiesFromUrl.keySet()) {
@@ -37,11 +44,17 @@ public class PropertyUtil {
 		return result.toArray(new DriverPropertyInfo[0]);
 	}
 
+	/**
+	 * Returns true if the host property is localhost
+	 * 
+	 * @param fireboltProperties the properties
+	 * @return true if the host property is localhost
+	 */
 	public boolean isLocalDb(FireboltProperties fireboltProperties) {
 		return StringUtils.equalsIgnoreCase(fireboltProperties.getHost(), LOCALHOST);
 	}
 
-	private static List<DriverPropertyInfo> mapProperties(List<FireboltSessionProperty> fireboltSessionProperties,
+	private List<DriverPropertyInfo> mapProperties(List<FireboltSessionProperty> fireboltSessionProperties,
 			Properties properties) {
 		return fireboltSessionProperties.stream().map(fireboltProperty -> {
 			DriverPropertyInfo driverPropertyInfo = new DriverPropertyInfo(fireboltProperty.getKey(),
@@ -53,7 +66,7 @@ public class PropertyUtil {
 		}).collect(Collectors.toList());
 	}
 
-	private static String getValueForFireboltSessionProperty(Properties properties,
+	private String getValueForFireboltSessionProperty(Properties properties,
 			FireboltSessionProperty fireboltSessionProperty) {
 		Optional<String> value = Optional.ofNullable(properties.getProperty(fireboltSessionProperty.getKey()));
 

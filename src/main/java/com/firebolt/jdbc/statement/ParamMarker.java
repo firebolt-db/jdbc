@@ -1,11 +1,11 @@
 package com.firebolt.jdbc.statement;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Value;
 
 @AllArgsConstructor
-@Data
+@Value
 public class ParamMarker {
-    int id; // Id / index of the param marker in the SQL statement
-    int position; // Position in the SQL subStatement
+	int id; // Id / index of the param marker in the SQL statement
+	int position; // Position in the SQL subStatement
 }

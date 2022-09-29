@@ -32,6 +32,14 @@ public class FireboltAuthenticationClient extends FireboltClient {
 		super(httpClient, connection, customDrivers, customClients, objectMapper);
 	}
 
+	/**
+	 * Sends POST to obtain connection tokens
+	 * 
+	 * @param host     the host
+	 * @param user     the username
+	 * @param password the password
+	 * @return the connection tokens
+	 */
 	public FireboltConnectionTokens postConnectionTokens(String host, String user, String password)
 			throws IOException, ParseException, FireboltException {
 		String connectUrl = String.format(AUTH_URL, host);

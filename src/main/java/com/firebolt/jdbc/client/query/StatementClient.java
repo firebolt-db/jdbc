@@ -18,7 +18,7 @@ public interface StatementClient {
 	/**
 	 * Call endpoint to abort a running SQL statement
 	 */
-	void abortStatement(String id, FireboltProperties fireboltProperties, Map<String, String> statementParams)
+	void abortStatement(String id, FireboltProperties fireboltProperties, Map<String, String> queryParams)
 			throws FireboltException;
 
 	/**
@@ -26,5 +26,5 @@ public interface StatementClient {
 	 */
 	void abortRunningHttpRequest(String id) throws FireboltException;
 
-    boolean isStatementRunning(String statementId);
+	boolean isStatementRunning(String statementId);
 }

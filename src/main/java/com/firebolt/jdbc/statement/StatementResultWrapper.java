@@ -36,6 +36,13 @@ public class StatementResultWrapper implements Closeable {
 		}
 	}
 
+	/**
+	 * Appends the result with another {@link StatementResultWrapper} This may
+	 * happen if the statement executed was a multistatement returning multiple
+	 * {@link ResultSet}
+	 * 
+	 * @param newResult the additional {@link StatementResultWrapper}
+	 */
 	public void append(StatementResultWrapper newResult) {
 		StatementResultWrapper lastResponse = this;
 		while (lastResponse.next != null) {

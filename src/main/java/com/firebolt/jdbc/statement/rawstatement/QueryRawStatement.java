@@ -19,7 +19,7 @@ import lombok.Getter;
  * SELECT, SHOW, etc)
  */
 @Getter
-@EqualsAndHashCode(callSuper=true)
+@EqualsAndHashCode(callSuper = true)
 public class QueryRawStatement extends RawStatement {
 
 	private final String database;
@@ -29,7 +29,7 @@ public class QueryRawStatement extends RawStatement {
 	public QueryRawStatement(String sql, String cleanSql, List<ParamMarker> paramPositions) {
 		super(sql, cleanSql, paramPositions);
 		Pair<Optional<String>, Optional<String>> databaseAndTablePair = StatementUtil
-				.extractDbNameAndTableNamePairFromQuery(this.getCleanSql());
+				.extractDbNameAndTableNamePairFromCleanQuery(this.getCleanSql());
 		this.database = databaseAndTablePair.getLeft().orElse(null);
 		this.table = databaseAndTablePair.getRight().orElse(null);
 	}

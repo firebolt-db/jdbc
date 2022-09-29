@@ -25,6 +25,17 @@ public abstract class RawStatement {
 		this.paramMarkers = paramPositions;
 	}
 
+	public static RawStatement of(String sql, List<ParamMarker> paramPositions, String cleanSql) {
+		Optional<Pair<String, String>> additionalProperties = StatementUtil.extractParamFromSetStatement(cleanSql, sql);
+		if (additionalProperties.isPresent()) {
+			return new SetParamRawStatement(sql, cleanSql, paramPositions, additionalProperties.get());
+		} else if (StatementUtil.isQuery(cleanSql)) {
+			return new QueryRawStatement(sql, cleanSql, paramPositions);
+		} else {
+			return new NonQueryRawStatement(sql, cleanSql, paramPositions);
+		}
+	}
+
 	@Override
 	public String toString() {
 		return "RawSqlStatement{" + "sql='" + sql + '\'' + ", cleanSql='" + cleanSql + '\'' + ", paramMarkers="
@@ -44,15 +55,4 @@ public abstract class RawStatement {
 	}
 
 	public abstract StatementType getStatementType();
-
-	public static RawStatement of(String sql, List<ParamMarker> paramPositions, String cleanSql) {
-		Optional<Pair<String, String>> additionalProperties = StatementUtil.extractPropertyFromQuery(cleanSql, sql);
-		if (additionalProperties.isPresent()) {
-			return new SetParamRawStatement(sql, cleanSql, paramPositions, additionalProperties.get());
-		} else if (StatementUtil.isQuery(cleanSql)) {
-			return new QueryRawStatement(sql, cleanSql, paramPositions);
-		} else {
-			return new NonQueryRawStatement(sql, cleanSql, paramPositions);
-		}
-	}
 }
