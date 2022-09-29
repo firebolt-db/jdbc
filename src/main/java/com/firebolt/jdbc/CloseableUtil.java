@@ -10,6 +10,11 @@ import lombok.extern.slf4j.Slf4j;
 @UtilityClass
 public class CloseableUtil {
 
+	/**
+	 * Closes the {@link Closeable} and log any potential {@link IOException}
+	 * 
+	 * @param closeable the closeable to close
+	 */
 	public void close(Closeable closeable) {
 		if (closeable != null) {
 			try {

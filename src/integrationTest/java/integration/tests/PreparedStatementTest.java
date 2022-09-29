@@ -1,12 +1,12 @@
 package integration.tests;
 
 import static java.sql.Statement.SUCCESS_NO_INFO;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
@@ -59,12 +59,7 @@ class PreparedStatementTest extends IntegrationTest {
 			expectedRows.add(Arrays.asList(car1.getSales(), car1.getMake()));
 			expectedRows.add(Arrays.asList(car2.getSales(), car2.getMake()));
 
-			QueryResult queryResult = QueryResult.builder().databaseName(ConnectionInfo.getInstance().getDatabase())
-					.tableName("prepared_statement_test")
-					.columns(Arrays.asList(
-							QueryResult.Column.builder().name("sales").type(FireboltDataType.INT_64).build(),
-							QueryResult.Column.builder().name("make").type(FireboltDataType.STRING).build()))
-					.rows(expectedRows).build();
+			QueryResult queryResult = this.createExpectedResult(expectedRows);
 
 			try (Statement statement = connection.createStatement();
 					ResultSet rs = statement
@@ -91,12 +86,7 @@ class PreparedStatementTest extends IntegrationTest {
 
 			String selectSql = "SELECT sales, make FROM prepared_statement_test WHERE make = ?";
 			try (PreparedStatement selectStatement = connection.prepareStatement(selectSql)) {
-				QueryResult expectedResult = QueryResult.builder()
-						.databaseName(ConnectionInfo.getInstance().getDatabase()).tableName("prepared_statement_test")
-						.columns(Arrays.asList(
-								QueryResult.Column.builder().name("sales").type(FireboltDataType.INT_64).build(),
-								QueryResult.Column.builder().name("make").type(FireboltDataType.STRING).build()))
-						.rows(expectedRows).build();
+				QueryResult expectedResult = this.createExpectedResult(expectedRows);
 				selectStatement.setString(1, "VW");
 				try (ResultSet rs = selectStatement.executeQuery();
 						ResultSet expectedRs = FireboltResultSet.of(expectedResult)) {
@@ -109,7 +99,47 @@ class PreparedStatementTest extends IntegrationTest {
 	}
 
 	@Test
-	void ShouldNotWorkWithSQLInjection() throws SQLException {
+	void shouldParReplaceParamMarkersInMultistatementStatement() throws SQLException {
+		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  (?,?);"
+				+ "INSERT INTO prepared_statement_test(sales, make) VALUES (?,?)";
+		try (Connection connection = createConnection()) {
+
+			try (PreparedStatement statement = connection.prepareStatement(insertSql)) {
+				statement.setObject(1, 5000);
+				statement.setObject(2, "Porsche");
+				statement.setObject(3, 10000);
+				statement.setObject(4, "Ferrari");
+				assertFalse(statement.execute());
+			}
+
+			List<List<?>> firstExpectedRows = new ArrayList<>();
+			firstExpectedRows.add(Arrays.asList(5000, "Porsche"));
+			List<List<?>> secondExceptedRows = new ArrayList<>();
+			secondExceptedRows.add(Arrays.asList(10000, "Ferrari"));
+
+			String selectSql = "SELECT sales, make FROM prepared_statement_test WHERE make = ?; SELECT sales, make FROM prepared_statement_test WHERE make = ?";
+			try (PreparedStatement selectStatement = connection.prepareStatement(selectSql)) {
+				QueryResult expectedFirstResult = createExpectedResult(firstExpectedRows);
+				QueryResult expectedSecondResult = createExpectedResult(secondExceptedRows);
+				selectStatement.setString(1, "Porsche");
+				selectStatement.setString(2, "Ferrari");
+				selectStatement.execute();
+				try (ResultSet rs = selectStatement.getResultSet();
+						ResultSet expectedRs = FireboltResultSet.of(expectedFirstResult)) {
+					AssertionUtil.assertResultSetEquality(expectedRs, rs);
+				}
+				assertTrue(selectStatement.getMoreResults());
+				try (ResultSet rs = selectStatement.getResultSet();
+						ResultSet expectedRs = FireboltResultSet.of(expectedSecondResult)) {
+					AssertionUtil.assertResultSetEquality(expectedRs, rs);
+				}
+
+			}
+		}
+	}
+
+	@Test
+	void shouldFailSQLInjectionAttempt() throws SQLException {
 		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  (?,?)";
 		try (Connection connection = createConnection()) {
 
@@ -121,12 +151,7 @@ class PreparedStatementTest extends IntegrationTest {
 
 			String selectSql = "SELECT sales, make FROM prepared_statement_test WHERE make = ?";
 			try (PreparedStatement statement = connection.prepareStatement(selectSql)) {
-				QueryResult emptyResult = QueryResult.builder().databaseName(ConnectionInfo.getInstance().getDatabase())
-						.tableName("prepared_statement_test")
-						.columns(Arrays.asList(
-								QueryResult.Column.builder().name("sales").type(FireboltDataType.INT_64).build(),
-								QueryResult.Column.builder().name("make").type(FireboltDataType.STRING).build()))
-						.build();
+				QueryResult emptyResult = createExpectedResult(Collections.emptyList());
 				statement.setString(1, "VW' OR 1=1");
 				try (ResultSet rs = statement.executeQuery();
 						ResultSet expectedRs = FireboltResultSet.of(emptyResult)) {
@@ -135,6 +160,15 @@ class PreparedStatementTest extends IntegrationTest {
 
 			}
 		}
+	}
+
+	private QueryResult createExpectedResult(List<List<?>> expectedRows) {
+		return QueryResult.builder().databaseName(ConnectionInfo.getInstance().getDatabase())
+				.tableName("prepared_statement_test")
+				.columns(Arrays.asList(QueryResult.Column.builder().name("sales").type(FireboltDataType.INT_64).build(),
+						QueryResult.Column.builder().name("make").type(FireboltDataType.STRING).build()))
+				.rows(expectedRows).build();
+
 	}
 
 	@Builder

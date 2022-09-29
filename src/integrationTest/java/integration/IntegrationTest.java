@@ -33,8 +33,8 @@ public abstract class IntegrationTest {
 	@SneakyThrows
 	protected void executeStatementFromFile(String path) {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
-			String createTable = Resources.toString(IntegrationTest.class.getResource(path), StandardCharsets.UTF_8);
-			statement.execute(createTable);
+			String sql = Resources.toString(IntegrationTest.class.getResource(path), StandardCharsets.UTF_8);
+			statement.execute(sql);
 		}
 	}
 

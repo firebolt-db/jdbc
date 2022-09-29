@@ -50,7 +50,7 @@ class FireboltDatabaseMetadataTest {
 		lenient().when(fireboltConnection.createStatement()).thenReturn(statement);
 		lenient().when(fireboltConnection.getCatalog()).thenReturn("db_name");
 		lenient().when(fireboltConnection.getSessionProperties()).thenReturn(FireboltProperties.builder().build());
-		lenient().when(statement.executeQuery(any())).thenReturn(FireboltResultSet.empty());
+		lenient().when(statement.executeQuery(anyString())).thenReturn(FireboltResultSet.empty());
 	}
 
 	@Test

@@ -11,7 +11,13 @@ public class LoggerUtil {
 
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(LoggerUtil.class);
 
-	public static InputStream logInputStream(InputStream is) {
+	/**
+	 * Logs the {@link InputStream}
+	 * 
+	 * @param is the {@link InputStream}
+	 * @return a copy of the {@link InputStream} provided
+	 */
+	public InputStream logInputStream(InputStream is) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
 			byte[] buffer = new byte[1024];

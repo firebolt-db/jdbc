@@ -27,15 +27,31 @@ public class VersionUtil {
 		}
 	}
 
-	public static int getMajorDriverVersion() {
+	/**
+	 * Returns the driver major version
+	 * 
+	 * @return the driver major version
+	 */
+	public int getMajorDriverVersion() {
 		return extractMajorVersion(driverVersion);
 	}
 
-	public static int getDriverMinorVersion() {
+	/**
+	 * Returns the driver minor version
+	 * 
+	 * @return the driver minor version
+	 */
+	public int getDriverMinorVersion() {
 		return extractMinorVersion(driverVersion);
 	}
 
-	public static int extractMajorVersion(String version) {
+	/**
+	 * Extracts the major version from the version provided
+	 * 
+	 * @param version the version to extract the major version from
+	 * @return the major version
+	 */
+	public int extractMajorVersion(String version) {
 		if (version == null) {
 			return 0;
 		}
@@ -43,7 +59,13 @@ public class VersionUtil {
 		return matcher.matches() ? Integer.parseInt(matcher.group(1)) : 0;
 	}
 
-	public static int extractMinorVersion(String version) {
+	/**
+	 * Extracts the minor version from the version provided
+	 * 
+	 * @param version the version to extract the minor version from
+	 * @return the minor version
+	 */
+	public int extractMinorVersion(String version) {
 		if (version == null) {
 			return 0;
 		}
@@ -51,7 +73,12 @@ public class VersionUtil {
 		return matcher.matches() ? Integer.parseInt(matcher.group(2)) : 0;
 	}
 
-	public static String getDriverVersion() {
+	/**
+	 * Returns the driver version
+	 * 
+	 * @return the driver version
+	 */
+	public String getDriverVersion() {
 		return driverVersion;
 	}
 }

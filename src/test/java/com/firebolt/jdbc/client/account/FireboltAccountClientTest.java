@@ -225,9 +225,10 @@ class FireboltAccountClientTest {
 		when(response.getEntity()).thenReturn(entity);
 		when(response.getCode()).thenReturn(SC_NOT_FOUND);
 		when(httpClient.execute(any())).thenReturn(response);
-		assertThrows(FireboltException.class,
-				() -> fireboltAccountClient.getEngineAddress(HOST, ACCOUNT, ENGINE_NAME, "123", ACCESS_TOKEN),
-				"The address of the engine with name engineName and id 123 could not be found");
+		FireboltException fireboltException = assertThrows(FireboltException.class,
+				() -> fireboltAccountClient.getEngineAddress(HOST, ACCOUNT, ENGINE_NAME, "123", ACCESS_TOKEN));
+		assertEquals("The address of the engine with name engineName and id 123 could not be found",
+				fireboltException.getMessage());
 	}
 
 	@Test
@@ -237,9 +238,9 @@ class FireboltAccountClientTest {
 		when(response.getEntity()).thenReturn(entity);
 		when(response.getCode()).thenReturn(SC_NOT_FOUND);
 		when(httpClient.execute(any())).thenReturn(response);
-		assertThrows(FireboltException.class,
-				() -> fireboltAccountClient.getEngineId(HOST, ACCOUNT, ENGINE_NAME, ACCESS_TOKEN),
-				"The address of the engine with name engineName could not be found");
+		FireboltException fireboltException = assertThrows(FireboltException.class,
+				() -> fireboltAccountClient.getEngineId(HOST, ACCOUNT, ENGINE_NAME, ACCESS_TOKEN));
+		assertEquals("The engine engineName could not be found", fireboltException.getMessage());
 	}
 
 	private Map<String, String> extractHeadersMap(HttpGet httpGet) {

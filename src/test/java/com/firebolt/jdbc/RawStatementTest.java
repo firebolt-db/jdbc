@@ -8,7 +8,7 @@ import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 
-class QueryTest {
+class RawStatementTest {
 
 	@Test
 	void shouldGetSQL() {

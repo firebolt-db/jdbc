@@ -1,6 +1,5 @@
 package com.firebolt.jdbc.client.query;
 
-import static com.firebolt.jdbc.statement.StatementInfoWrapper.StatementType.QUERY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -38,7 +37,7 @@ import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.statement.StatementInfoWrapper;
+import com.firebolt.jdbc.statement.StatementUtil;
 import com.google.common.collect.ImmutableMap;
 
 @SetSystemProperty(key = "java.version", value = "8.0.1")
@@ -78,9 +77,7 @@ class StatementClientImplTest {
 		when(response.getCode()).thenReturn(200);
 		when(response.getEntity()).thenReturn(httpEntity);
 		when(closeableHttpClient.execute(any())).thenReturn(response);
-
-		statementClient.postSqlStatement(
-				StatementInfoWrapper.builder().sql("show databases").id("123456").type(QUERY).build(),
+		statementClient.postSqlStatement(StatementUtil.parseToStatementInfoWrappers("show databases").get(0),
 				fireboltProperties, ImmutableMap.of("output_format", "TabSeparatedWithNamesAndTypes", "database", "db1",
 						"query_id", "123456", "compress", "1"));
 

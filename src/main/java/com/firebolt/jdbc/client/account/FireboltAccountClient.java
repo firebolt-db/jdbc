@@ -41,6 +41,14 @@ public class FireboltAccountClient extends FireboltClient {
 		super(httpClient, fireboltConnection, customDrivers, customClients, objectMapper);
 	}
 
+	/**
+	 * Returns the accountId
+	 * 
+	 * @param host        the host
+	 * @param account     the name of the account
+	 * @param accessToken the access token
+	 * @return the account id
+	 */
 	public Optional<String> getAccountId(String host, String account, String accessToken)
 			throws FireboltException, IOException, ParseException {
 		String uri = String.format(GET_ACCOUNT_ID_URI, host, account);
@@ -48,10 +56,20 @@ public class FireboltAccountClient extends FireboltClient {
 				.map(FireboltAccountResponse::getAccountId);
 	}
 
-	public String getEngineAddress(String host, String accountId, String engineName, String engineID,
+	/**
+	 * Returns the accountId
+	 * 
+	 * @param host        the host
+	 * @param accountId   the id of the account
+	 * @param engineName  the engine name
+	 * @param engineId    the engine id
+	 * @param accessToken the access token
+	 * @return the account id
+	 */
+	public String getEngineAddress(String host, String accountId, String engineName, String engineId,
 			String accessToken) throws FireboltException, IOException, ParseException {
 		try {
-			String uri = createAccountUri(accountId, host, URI_SUFFIX_ACCOUNT_ENGINE_INFO_BY_ENGINE_ID + engineID);
+			String uri = createAccountUri(accountId, host, URI_SUFFIX_ACCOUNT_ENGINE_INFO_BY_ENGINE_ID + engineId);
 			FireboltEngineResponse response = getResource(uri, host, accessToken, FireboltEngineResponse.class);
 			return Optional.ofNullable(response).map(FireboltEngineResponse::getEngine)
 					.map(FireboltEngineResponse.Engine::getEndpoint)
@@ -61,7 +79,7 @@ public class FireboltAccountClient extends FireboltClient {
 			if (exception.getType() == ExceptionType.RESOURCE_NOT_FOUND) {
 				throw new FireboltException(
 						String.format("The address of the engine with name %s and id %s could not be found", engineName,
-								engineID),
+								engineId),
 						exception, ExceptionType.RESOURCE_NOT_FOUND);
 			} else {
 				throw exception;
@@ -69,6 +87,15 @@ public class FireboltAccountClient extends FireboltClient {
 		}
 	}
 
+	/**
+	 * Returns the default engine address of the database
+	 * 
+	 * @param host        the host
+	 * @param accountId   the account id
+	 * @param dbName      the name of the database
+	 * @param accessToken the access token
+	 * @return the default engine address of the database
+	 */
 	public String getDbDefaultEngineAddress(String host, String accountId, String dbName, String accessToken)
 			throws FireboltException, IOException, ParseException {
 		String uri = createAccountUri(accountId, host, URI_SUFFIX_DATABASE_INFO_URL + dbName);
@@ -87,6 +114,15 @@ public class FireboltAccountClient extends FireboltClient {
 		}
 	}
 
+	/**
+	 * Returns the engine id
+	 * 
+	 * @param host        the host
+	 * @param accountId   the account id
+	 * @param engineName  the name of the engine
+	 * @param accessToken the access token
+	 * @return the engine id
+	 */
 	public String getEngineId(String host, String accountId, String engineName, String accessToken)
 			throws FireboltException, IOException, ParseException {
 		try {

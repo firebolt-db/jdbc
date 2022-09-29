@@ -14,6 +14,7 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
+import com.firebolt.jdbc.statement.StatementType;
 import com.google.common.collect.ImmutableMap;
 
 import lombok.NonNull;
@@ -53,7 +54,7 @@ public class FireboltStatementService {
 
 		Map<String, String> params = new HashMap<>(fireboltProperties.getAdditionalProperties());
 
-		getResponseFormatParameter(statementInfoWrapper.getType() == StatementInfoWrapper.StatementType.QUERY,
+		getResponseFormatParameter(statementInfoWrapper.getType() == StatementType.QUERY,
 				isLocalDb).ifPresent(format -> params.put(format.getLeft(), format.getRight()));
 
 		params.put(FireboltQueryParameterKey.DATABASE.getKey(), fireboltProperties.getDatabase());

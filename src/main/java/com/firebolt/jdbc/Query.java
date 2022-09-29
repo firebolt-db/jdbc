@@ -8,6 +8,9 @@ import org.apache.commons.lang3.StringUtils;
 import lombok.Builder;
 import lombok.Value;
 
+/**
+ * Represents a SQL query that can be sent to Firebolt
+ */
 @Builder
 @Value
 public class Query {
@@ -17,6 +20,11 @@ public class Query {
 	String orderBy;
 	List<String> conditions;
 
+	/**
+	 * Parse the object to a SQL query that can be sent to Firebolt
+	 * 
+	 * @return SQL query that can be sent to Firebolt
+	 */
 	public String toSql() {
 		StringBuilder query = new StringBuilder();
 		if (StringUtils.isBlank(select)) {
