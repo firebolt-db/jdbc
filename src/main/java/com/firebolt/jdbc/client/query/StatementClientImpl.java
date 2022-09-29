@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -52,7 +53,9 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	public InputStream postSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
 			@NonNull FireboltProperties connectionProperties, Map<String, String> queryParams)
 			throws FireboltException {
-		try (StringEntity entity = new StringEntity(statementInfoWrapper.getSql(), StandardCharsets.UTF_8)) {
+		String formattedStatement = formatStatement(statementInfoWrapper);
+
+		try (StringEntity entity = new StringEntity(formattedStatement, StandardCharsets.UTF_8)) {
 			List<NameValuePair> parameters = queryParams.entrySet().stream()
 					.map(e -> new BasicNameValuePair(e.getKey(), e.getValue())).collect(Collectors.toList());
 			String uri = this.buildQueryUri(connectionProperties, parameters).toString();
@@ -68,7 +71,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			throw e;
 		} catch (Exception e) {
 			String errorMessage = String.format("Error executing statement with id %s: %s",
-					statementInfoWrapper.getId(), statementInfoWrapper.getSql());
+					statementInfoWrapper.getId(), formattedStatement);
 			if (e instanceof RequestFailedException) {
 				throw new FireboltException(errorMessage, e, ExceptionType.REQUEST_FAILED);
 			} else {
@@ -80,9 +83,17 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		}
 	}
 
+	private String formatStatement(StatementInfoWrapper statementInfoWrapper) {
+		if (!StringUtils.endsWith(statementInfoWrapper.getInitialStatement().getCleanSql(), ";")) {
+			return statementInfoWrapper.getSql() + ";";
+		} else {
+			return statementInfoWrapper.getSql();
+		}
+	}
+
 	/**
 	 * Aborts the statement being sent to the server
-	 * 
+	 *
 	 * @param id                 id of the statement
 	 * @param fireboltProperties the properties
 	 * @param queryParams        query parameters

@@ -1,6 +1,5 @@
 package com.firebolt.jdbc.service;
 
-import static com.firebolt.jdbc.statement.StatementType.QUERY;
 import static org.mockito.Mockito.verify;
 
 import java.util.Map;
@@ -15,6 +14,7 @@ import com.firebolt.jdbc.client.query.StatementClient;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
+import com.firebolt.jdbc.statement.StatementUtil;
 import com.google.common.collect.ImmutableMap;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,27 +28,27 @@ class FireboltStatementServiceTest {
 
 	@Test
 	void shouldExecuteQueryWithAllRequiredParameters() throws FireboltException {
-		StatementInfoWrapper statementInfoWrapper = new StatementInfoWrapper("SELECT 1", "id", QUERY);
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1").get(0);
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("firebolt1").ssl(true)
 				.compress(true).build();
 		Map<String, String> statementParams = ImmutableMap.of("param_1", "value_1");
 
 		fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statementParams);
 		verify(statementClient).postSqlStatement(statementInfoWrapper, fireboltProperties,
-				ImmutableMap.of("database", "db", "output_format", "TabSeparatedWithNamesAndTypes", "query_id", "id",
+				ImmutableMap.of("database", "db", "output_format", "TabSeparatedWithNamesAndTypes", "query_id", statementInfoWrapper.getId(),
 						"compress", "1", "param_1", "value_1"));
 	}
 
 	@Test
 	void shouldExecuteQueryWithLocalHostFormatParameters() throws FireboltException {
-		StatementInfoWrapper statementInfoWrapper = new StatementInfoWrapper("SELECT 1", "id", QUERY);
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1").get(0);
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("localhost").ssl(true)
 				.compress(true).build();
 		Map<String, String> statementParams = ImmutableMap.of("param_1", "value_1");
 
 		fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statementParams);
 		verify(statementClient).postSqlStatement(statementInfoWrapper, fireboltProperties,
-				ImmutableMap.of("database", "db", "default_format", "TabSeparatedWithNamesAndTypes", "query_id", "id",
+				ImmutableMap.of("database", "db", "default_format", "TabSeparatedWithNamesAndTypes", "query_id", statementInfoWrapper.getId(),
 						"compress", "1", "param_1", "value_1"));
 	}
 

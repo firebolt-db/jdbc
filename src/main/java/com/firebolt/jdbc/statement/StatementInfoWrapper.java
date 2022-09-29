@@ -26,12 +26,6 @@ public class StatementInfoWrapper {
 	private Pair<String, String> param;
 	private RawStatement initialStatement;
 
-	public StatementInfoWrapper(String sql, String id, StatementType type) {
-		this.sql = sql;
-		this.id = id;
-		this.type = type;
-	}
-
 	/**
 	 * Creates a StatementInfoWrapper from the {@link RawStatement}.
 	 * @throws IllegalArgumentException if trying to create a StatementInfoWrapper with a raw statement that has

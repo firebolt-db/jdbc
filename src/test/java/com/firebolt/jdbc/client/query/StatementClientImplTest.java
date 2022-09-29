@@ -1,6 +1,5 @@
 package com.firebolt.jdbc.client.query;
 
-import static com.firebolt.jdbc.statement.StatementType.QUERY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -38,7 +37,7 @@ import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.statement.StatementInfoWrapper;
+import com.firebolt.jdbc.statement.StatementUtil;
 import com.google.common.collect.ImmutableMap;
 
 @SetSystemProperty(key = "java.version", value = "8.0.1")
@@ -78,8 +77,7 @@ class StatementClientImplTest {
 		when(response.getCode()).thenReturn(200);
 		when(response.getEntity()).thenReturn(httpEntity);
 		when(closeableHttpClient.execute(any())).thenReturn(response);
-
-		statementClient.postSqlStatement(new StatementInfoWrapper("show databases", "123456", QUERY),
+		statementClient.postSqlStatement(StatementUtil.parseToStatementInfoWrappers("show databases").get(0),
 				fireboltProperties, ImmutableMap.of("output_format", "TabSeparatedWithNamesAndTypes", "database", "db1",
 						"query_id", "123456", "compress", "1"));
 
@@ -93,7 +91,7 @@ class StatementClientImplTest {
 						.collect(Collectors.joining("\n"));
 
 		assertEquals(expectedHeaders, extractHeadersMap(actualHttpPost));
-		assertEquals("show databases", actualQuery);
+		assertEquals("show databases;", actualQuery);
 		assertEquals(
 				"http://firebolt1:80/?output_format=TabSeparatedWithNamesAndTypes&database=db1&query_id=123456&compress=1",
 				actualHttpPost.getUri().toString());
