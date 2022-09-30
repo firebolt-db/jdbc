@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -28,6 +29,7 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
+import com.firebolt.jdbc.statement.rawstatement.RawStatement;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -84,7 +86,9 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	private String formatStatement(StatementInfoWrapper statementInfoWrapper) {
-		if (!StringUtils.endsWith(statementInfoWrapper.getInitialStatement().getCleanSql(), ";")) {
+		Optional<String> cleanSql = Optional.ofNullable(statementInfoWrapper.getInitialStatement())
+				.map(RawStatement::getCleanSql);
+		if (cleanSql.isPresent() && !StringUtils.endsWith(cleanSql.get(), ";")) {
 			return statementInfoWrapper.getSql() + ";";
 		} else {
 			return statementInfoWrapper.getSql();

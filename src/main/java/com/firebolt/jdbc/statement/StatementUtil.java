@@ -83,6 +83,7 @@ public class StatementUtil {
 		StringBuilder cleanedSubQuery = isCommentStart(currentChar) ? new StringBuilder()
 				: new StringBuilder(String.valueOf(currentChar));
 		boolean isCurrentSubstringBetweenQuotes = currentChar == '\'';
+		boolean isCurrentSubstringBetweenDoubleQuotes = currentChar == '"';
 		boolean isInSingleLineComment = false;
 		boolean isInMultipleLinesComment = false;
 		boolean isInComment = false;
@@ -113,11 +114,13 @@ public class StatementUtil {
 						foundSubqueryEndingSemicolon = false;
 						cleanedSubQuery = new StringBuilder();
 					}
-				} else if (currentChar == '?' && !isCurrentSubstringBetweenQuotes) {
+				} else if (currentChar == '?' && !isCurrentSubstringBetweenQuotes && !isCurrentSubstringBetweenDoubleQuotes) {
 					subStatementParamMarkersPositions
 							.add(new ParamMarker(++subQueryParamsCount, currentIndex - subQueryStart));
 				} else if (currentChar == '\'') {
 					isCurrentSubstringBetweenQuotes = !isCurrentSubstringBetweenQuotes;
+				} else if (currentChar == '"') {
+					isCurrentSubstringBetweenDoubleQuotes = !isCurrentSubstringBetweenDoubleQuotes;
 				}
 				if (!(isCommentStart(currentChar) && !isCurrentSubstringBetweenQuotes)) {
 					cleanedSubQuery.append(currentChar);
