@@ -165,7 +165,9 @@ public abstract class FireboltClient {
 	}
 
 	private RequestConfig createRequestConfig(int connectionTimeoutMillis, int networkTimoutMillis) {
-		return RequestConfig.custom().setConnectTimeout(Timeout.of(connectionTimeoutMillis, TimeUnit.MILLISECONDS))
+		return RequestConfig.custom()
+				.setConnectTimeout(Timeout.of(connectionTimeoutMillis, TimeUnit.MILLISECONDS))
+				.setConnectionRequestTimeout(Timeout.of(connectionTimeoutMillis, TimeUnit.MILLISECONDS))
 				.setCookieSpec(StandardCookieSpec.RELAXED)
 				.setResponseTimeout(Timeout.ofMilliseconds(networkTimoutMillis)).build();
 	}
