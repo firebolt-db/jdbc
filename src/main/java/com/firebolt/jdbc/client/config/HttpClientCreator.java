@@ -10,14 +10,11 @@ import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.*;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.HttpRequestRetryStrategy;
-import org.apache.hc.client5.http.config.RequestConfig;
-import org.apache.hc.client5.http.cookie.StandardCookieSpec;
 import org.apache.hc.client5.http.impl.DefaultHttpRequestRetryStrategy;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
@@ -32,7 +29,6 @@ import org.apache.hc.core5.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.hc.core5.http.io.HttpConnectionFactory;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.util.TimeValue;
-import org.apache.hc.core5.util.Timeout;
 
 import com.firebolt.jdbc.client.ssl.InsecureTrustManager;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
@@ -54,19 +50,12 @@ public class HttpClientCreator {
 
 		return HttpClientBuilder.create().setConnectionManager(getConnectionManager(properties))
 				.setConnectionManagerShared(true).disableDefaultUserAgent()
-				.setDefaultRequestConfig(getDefaultRequestConfig(properties))
 				.setConnectionReuseStrategy(new DefaultConnectionReuseStrategy())
 				.setRetryStrategy(createRetryStrategy(properties)).disableContentCompression().build();
 	}
 
 	private static HttpRequestRetryStrategy createRetryStrategy(FireboltProperties properties) {
 		return new DefaultHttpRequestRetryStrategy(properties.getMaxRetries(), TimeValue.ofMilliseconds(500));
-	}
-
-	private static RequestConfig getDefaultRequestConfig(FireboltProperties fireboltProperties) {
-		return RequestConfig.custom()
-				.setConnectTimeout(Timeout.of(fireboltProperties.getConnectionTimeoutMillis(), TimeUnit.MILLISECONDS))
-				.setCookieSpec(StandardCookieSpec.RELAXED).build();
 	}
 
 	private static PoolingHttpClientConnectionManager getConnectionManager(FireboltProperties fireboltProperties)
@@ -88,10 +77,8 @@ public class HttpClientCreator {
 				.validateAfterInactivity(
 						TimeValue.ofMilliseconds(fireboltProperties.getValidateAfterInactivityMillis()))
 				.maxConnTotal(fireboltProperties.getMaxConnectionsTotal())
+				.defaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).build())
 				.timeToLive(TimeValue.ofMilliseconds(fireboltProperties.getTimeToLiveMillis()))
-				.defaultSocketConfig(SocketConfig.custom().setSoKeepAlive(true).setSoReuseAddress(true)
-						.setTcpNoDelay(true).setSoLinger(TimeValue.ofMilliseconds(Integer.MAX_VALUE))
-						.setSoTimeout(Timeout.ofMilliseconds(fireboltProperties.getSocketTimeoutMillis())).build())
 				.fireboltProperties(fireboltProperties).build().create();
 	}
 
