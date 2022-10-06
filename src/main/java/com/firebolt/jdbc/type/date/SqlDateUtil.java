@@ -23,45 +23,37 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SqlDateUtil {
 
-	private DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-	private static final ZoneId UTC_ZONE_ID = ZoneId.of("UTC");
+	private static final TimeZone DEFAULT_TZ = TimeZone.getDefault();
+
+	private static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 	public static final Function<Date, String> transformFromDateToSQLStringFunction = value -> String.format("'%s'",
 			dateFormatter.format(value.toLocalDate()));
 	DateTimeFormatter dateTimeFormatter = new DateTimeFormatterBuilder().appendPattern("yyyy-MM-dd [HH:mm[:ss]]")
 			.appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true).toFormatter();
 	public static final BiFunction<String, TimeZone, Timestamp> transformToTimestampFunction = (value,
-			fromTimeZone) -> {
-		Optional<ZonedDateTime> zdt = parse(value, fromTimeZone);
-		return zdt.map(t -> Timestamp.valueOf(t.toLocalDateTime())).orElse(null);
-	};
+			fromTimeZone) -> parse(value, fromTimeZone).map(t -> Timestamp.valueOf(t.toLocalDateTime())).orElse(null);
 
-	public static final BiFunction<String, TimeZone, Date> transformToDateFunction = (value, fromTimeZone) -> {
-		Optional<ZonedDateTime> zdt = parse(value, fromTimeZone);
-		return zdt.map(t -> Date.valueOf(t.toLocalDate())).orElse(null);
-	};
+	public static final BiFunction<String, TimeZone, Date> transformToDateFunction = (value,
+			fromTimeZone) -> parse(value, fromTimeZone).map(t -> Date.valueOf(t.toLocalDate())).orElse(null);
 
-	public static final BiFunction<String, TimeZone, Time> transformToTimeFunction = (value, fromTimeZone) -> {
-		Optional<ZonedDateTime> zdt = parse(value, fromTimeZone);
-		return zdt.map(t -> Time.valueOf(LocalTime.of(t.getHour(), t.getMinute(), t.getSecond(), t.getNano())))
-				.orElse(null);
-	};
+	public static final BiFunction<String, TimeZone, Time> transformToTimeFunction = (value,
+			fromTimeZone) -> parse(value, fromTimeZone).map(t -> Time.valueOf(t.toLocalTime())).orElse(null);
+	public static final Function<Timestamp, String> transformFromTimestampToSQLStringFunction = value -> String
+			.format("'%s'", dateTimeFormatter.format(value.toLocalDateTime()));
 
 	private static Optional<ZonedDateTime> parse(String value, @Nullable TimeZone fromTimeZone) {
 		if (StringUtils.isEmpty(value)) {
 			return Optional.empty();
 		}
-		ZoneId zoneId = fromTimeZone == null ? UTC_ZONE_ID : fromTimeZone.toZoneId();
+		ZoneId zoneId = fromTimeZone == null ? DEFAULT_TZ.toZoneId() : fromTimeZone.toZoneId();
 		try {
-			return Optional
-					.of(LocalDateTime.parse(value, dateTimeFormatter).atZone(zoneId).withZoneSameInstant(UTC_ZONE_ID));
+			return Optional.of(LocalDateTime.parse(value, dateTimeFormatter).atZone(zoneId)
+					.withZoneSameInstant(DEFAULT_TZ.toZoneId()));
 		} catch (DateTimeException dateTimeException) {
 			LocalDate date = LocalDate.from(dateFormatter.parse(value));
 			return Optional.of(LocalDateTime.of(date.getYear(), date.getMonth(), date.getDayOfMonth(), 0, 0)
-					.atZone(zoneId).withZoneSameInstant(UTC_ZONE_ID));
+					.atZone(zoneId).withZoneSameInstant(DEFAULT_TZ.toZoneId()));
 		}
 	}
-
-	public static final Function<Timestamp, String> transformFromTimestampToSQLStringFunction = value -> String
-			.format("'%s'", dateTimeFormatter.format(value.toLocalDateTime()));
 }
