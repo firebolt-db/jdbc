@@ -22,7 +22,7 @@ public class FireboltDriver implements Driver {
 	static {
 		try {
 			java.sql.DriverManager.registerDriver(new FireboltDriver());
-			log.info("Driver registered");
+			log.info("Firebolt Driver registered");
 		} catch (SQLException ex) {
 			throw new RuntimeException("Cannot register the driver");
 		}

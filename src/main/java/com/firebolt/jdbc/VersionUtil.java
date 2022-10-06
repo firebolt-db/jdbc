@@ -22,6 +22,7 @@ public class VersionUtil {
 		try {
 			properties.load(VersionUtil.class.getResourceAsStream("/version.properties"));
 			driverVersion = properties.getProperty("version");
+			log.info("Firebolt driver version used: {}", driverVersion);
 		} catch (IOException e) {
 			log.error("Could not get Project Version defined in the build.gradle file", e);
 		}
