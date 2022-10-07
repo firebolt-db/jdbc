@@ -3,16 +3,17 @@ package integration.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.sql.*;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.ZonedDateTime;
+import java.util.TimeZone;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.DefaultTimeZone;
 
 import integration.IntegrationTest;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@DefaultTimeZone("UTC")
 class TimestampTest extends IntegrationTest {
 
 	@Test
@@ -22,9 +23,14 @@ class TimestampTest extends IntegrationTest {
 				ResultSet resultSet = statement
 						.executeQuery("SELECT TO_TIMESTAMP_EXT('1975/01/01 23:01:01', 6, 'EST');")) {
 			resultSet.next();
-			Timestamp expectedTimestamp = Timestamp.valueOf(LocalDateTime.of(1975, 1, 2, 4, 1, 1));
-			Time expectedTime = Time.valueOf(LocalTime.of(4, 1, 1));
-			Date expectedDate = Date.valueOf(LocalDate.of(1975, 1, 2));
+
+			ZonedDateTime zonedDateTime = ZonedDateTime.of(1975, 1, 2, 4, 1, 1, 0,
+					TimeZone.getTimeZone("UTC").toZoneId());
+
+			Timestamp expectedTimestamp = Timestamp.valueOf(zonedDateTime.toLocalDateTime());
+			Time expectedTime = Time.valueOf(zonedDateTime.toLocalTime());
+			Date expectedDate = Date.valueOf(zonedDateTime.toLocalDate());
+
 			assertEquals(expectedTimestamp, resultSet.getTimestamp(1));
 			assertEquals(expectedTimestamp, resultSet.getObject(1));
 			assertEquals(expectedTime, resultSet.getTime(1));
@@ -38,9 +44,13 @@ class TimestampTest extends IntegrationTest {
 				Statement statement = connection.createStatement();
 				ResultSet resultSet = statement.executeQuery("SELECT TO_TIMESTAMP_EXT('1975/01/01 23:01:01', 6);")) {
 			resultSet.next();
-			Timestamp expectedTimestamp = Timestamp.valueOf(LocalDateTime.of(1975, 1, 1, 23, 1, 1));
-			Time expectedTime = Time.valueOf(LocalTime.of(23, 1, 1));
-			Date expectedDate = Date.valueOf(LocalDate.of(1975, 1, 1));
+			ZonedDateTime zonedDateTime = ZonedDateTime.of(1975, 1, 1, 23, 1, 1, 0,
+					TimeZone.getTimeZone("UTC").toZoneId());
+
+			Timestamp expectedTimestamp = Timestamp.valueOf(zonedDateTime.toLocalDateTime());
+			Time expectedTime = Time.valueOf(zonedDateTime.toLocalTime());
+			Date expectedDate = Date.valueOf(zonedDateTime.toLocalDate());
+
 			assertEquals(expectedTimestamp, resultSet.getTimestamp(1));
 			assertEquals(expectedTimestamp, resultSet.getObject(1));
 			assertEquals(expectedTime, resultSet.getTime(1));
@@ -55,9 +65,13 @@ class TimestampTest extends IntegrationTest {
 				ResultSet resultSet = statement
 						.executeQuery("SELECT CAST('1111-11-11 ' || '12:00:03' AS timestamp_ext);")) {
 			resultSet.next();
-			Timestamp expectedTimestamp = Timestamp.valueOf(LocalDateTime.of(1111, 11, 11, 12, 0, 3));
-			Time expectedTime = Time.valueOf(LocalTime.of(12, 0, 3));
-			Date expectedDate = Date.valueOf(LocalDate.of(1111, 11, 11));
+			ZonedDateTime zonedDateTime = ZonedDateTime.of(1111, 11, 11, 12, 0, 3, 0,
+					TimeZone.getTimeZone("UTC").toZoneId());
+
+			Timestamp expectedTimestamp = Timestamp.valueOf(zonedDateTime.toLocalDateTime());
+			Time expectedTime = Time.valueOf(zonedDateTime.toLocalTime());
+			Date expectedDate = Date.valueOf(zonedDateTime.toLocalDate());
+
 			assertEquals(expectedTimestamp, resultSet.getTimestamp(1));
 			assertEquals(expectedTimestamp, resultSet.getObject(1));
 			assertEquals(expectedTime, resultSet.getTime(1));
