@@ -25,6 +25,12 @@ public class SqlDateUtil {
 
 	private static final TimeZone DEFAULT_TZ = TimeZone.getDefault();
 
+	public static final long ONE_DAY_MILLIS = 86400000L;
+
+	// Number of milliseconds at the start of the introduction of the gregorian
+	// calendar(1582-10-05T00:00:00Z) from the epoch of 1970-01-01T00:00:00Z
+	private static final long GREGORIAN_START_DATE_IN_MILLIS = -12220156800000L;
+
 	private static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 	public static final Function<Date, String> transformFromDateToSQLStringFunction = value -> String.format("'%s'",
@@ -32,13 +38,17 @@ public class SqlDateUtil {
 	DateTimeFormatter dateTimeFormatter = new DateTimeFormatterBuilder().appendPattern("yyyy-MM-dd [HH:mm[:ss]]")
 			.appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true).toFormatter();
 	public static final BiFunction<String, TimeZone, Timestamp> transformToTimestampFunction = (value,
-			fromTimeZone) -> parse(value, fromTimeZone).map(t -> Timestamp.valueOf(t.toLocalDateTime())).orElse(null);
+			fromTimeZone) -> parse(value, fromTimeZone).map(t -> {
+				Timestamp ts = new Timestamp(getEpochMilli(t));
+				ts.setNanos(t.getNano());
+				return ts;
+			}).orElse(null);
 
 	public static final BiFunction<String, TimeZone, Date> transformToDateFunction = (value,
-			fromTimeZone) -> parse(value, fromTimeZone).map(t -> Date.valueOf(t.toLocalDate())).orElse(null);
+			fromTimeZone) -> parse(value, fromTimeZone).map(t -> new Date(getEpochMilli(t))).orElse(null);
 
 	public static final BiFunction<String, TimeZone, Time> transformToTimeFunction = (value,
-			fromTimeZone) -> parse(value, fromTimeZone).map(t -> Time.valueOf(t.toLocalTime())).orElse(null);
+			fromTimeZone) -> parse(value, fromTimeZone).map(t -> new Time(getEpochMilli(t))).orElse(null);
 	public static final Function<Timestamp, String> transformFromTimestampToSQLStringFunction = value -> String
 			.format("'%s'", dateTimeFormatter.format(value.toLocalDateTime()));
 
@@ -56,4 +66,33 @@ public class SqlDateUtil {
 					.atZone(zoneId).withZoneSameInstant(DEFAULT_TZ.toZoneId()));
 		}
 	}
+
+	private static long getEpochMilli(ZonedDateTime t) {
+		return t.toInstant().toEpochMilli() + calculateJulianToGregorianDiffMillis(t);
+	}
+
+	/**
+	 * Calculates the difference in ms from Julian to Gregorian date for dates that
+	 * are before the 5th of Oct 1582, which is before the introduction of the
+	 * Gregorian Calendar
+	 * 
+	 * @param zdt the date
+	 * @return the difference in millis
+	 */
+	public static long calculateJulianToGregorianDiffMillis(ZonedDateTime zdt) {
+		if (zdt.toInstant().toEpochMilli() < GREGORIAN_START_DATE_IN_MILLIS) {
+			int year;
+			if (zdt.getMonthValue() == 1 || (zdt.getMonthValue() == 2 && zdt.getDayOfMonth() <= 28)) {
+				year = zdt.getYear() - 1;
+			} else {
+				year = zdt.getYear();
+			}
+			int hundredsOfYears = year / 100;
+			long daysDiff = hundredsOfYears - (hundredsOfYears / 4L) - 2L;
+			return daysDiff * ONE_DAY_MILLIS;
+		} else {
+			return 0;
+		}
+	}
+
 }

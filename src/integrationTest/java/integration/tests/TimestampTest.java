@@ -1,5 +1,6 @@
 package integration.tests;
 
+import static com.firebolt.jdbc.type.date.SqlDateUtil.ONE_DAY_MILLIS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.sql.*;
@@ -27,9 +28,9 @@ class TimestampTest extends IntegrationTest {
 			ZonedDateTime zonedDateTime = ZonedDateTime.of(1975, 1, 2, 4, 1, 1, 0,
 					TimeZone.getTimeZone("UTC").toZoneId());
 
-			Timestamp expectedTimestamp = Timestamp.valueOf(zonedDateTime.toLocalDateTime());
-			Time expectedTime = Time.valueOf(zonedDateTime.toLocalTime());
-			Date expectedDate = Date.valueOf(zonedDateTime.toLocalDate());
+			Timestamp expectedTimestamp = new Timestamp(zonedDateTime.toInstant().toEpochMilli());
+			Time expectedTime = new Time(zonedDateTime.toInstant().toEpochMilli());
+			Date expectedDate = new Date(zonedDateTime.toInstant().toEpochMilli());
 
 			assertEquals(expectedTimestamp, resultSet.getTimestamp(1));
 			assertEquals(expectedTimestamp, resultSet.getObject(1));
@@ -47,9 +48,9 @@ class TimestampTest extends IntegrationTest {
 			ZonedDateTime zonedDateTime = ZonedDateTime.of(1975, 1, 1, 23, 1, 1, 0,
 					TimeZone.getTimeZone("UTC").toZoneId());
 
-			Timestamp expectedTimestamp = Timestamp.valueOf(zonedDateTime.toLocalDateTime());
-			Time expectedTime = Time.valueOf(zonedDateTime.toLocalTime());
-			Date expectedDate = Date.valueOf(zonedDateTime.toLocalDate());
+			Timestamp expectedTimestamp = new Timestamp(zonedDateTime.toInstant().toEpochMilli());
+			Time expectedTime = new Time(zonedDateTime.toInstant().toEpochMilli());
+			Date expectedDate = new Date(zonedDateTime.toInstant().toEpochMilli());
 
 			assertEquals(expectedTimestamp, resultSet.getTimestamp(1));
 			assertEquals(expectedTimestamp, resultSet.getObject(1));
@@ -68,9 +69,9 @@ class TimestampTest extends IntegrationTest {
 			ZonedDateTime zonedDateTime = ZonedDateTime.of(1111, 11, 11, 12, 0, 3, 0,
 					TimeZone.getTimeZone("UTC").toZoneId());
 
-			Timestamp expectedTimestamp = Timestamp.valueOf(zonedDateTime.toLocalDateTime());
-			Time expectedTime = Time.valueOf(zonedDateTime.toLocalTime());
-			Date expectedDate = Date.valueOf(zonedDateTime.toLocalDate());
+			Timestamp expectedTimestamp = new Timestamp(zonedDateTime.toInstant().toEpochMilli() + 7 * ONE_DAY_MILLIS);
+			Time expectedTime = new Time(zonedDateTime.toInstant().toEpochMilli() + 7 * ONE_DAY_MILLIS);
+			Date expectedDate = new Date(zonedDateTime.toInstant().toEpochMilli() + 7 * ONE_DAY_MILLIS);
 
 			assertEquals(expectedTimestamp, resultSet.getTimestamp(1));
 			assertEquals(expectedTimestamp, resultSet.getObject(1));

@@ -77,7 +77,7 @@ public class SqlArrayUtil {
 
 	private static Object[] getArrayOfTuples(FireboltColumn fireboltColumn, List<String> tuples)
 			throws SQLException {
-		List<FireboltDataType> types = fireboltColumn.getTupleBaseDateTypes().stream().map(FireboltColumn::getDataType)
+		List<FireboltDataType> types = fireboltColumn.getTupleBaseDataTypes().stream().map(FireboltColumn::getDataType)
 				.collect(Collectors.toList());
 
 		List<Object[]> list = new ArrayList<>();

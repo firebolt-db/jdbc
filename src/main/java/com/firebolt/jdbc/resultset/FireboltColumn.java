@@ -2,10 +2,7 @@ package com.firebolt.jdbc.resultset;
 
 import static com.firebolt.jdbc.type.FireboltDataType.*;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.RegExUtils;
@@ -31,11 +28,13 @@ public final class FireboltColumn {
 	private final FireboltDataType dataType;
 	private final boolean nullable;
 	private final FireboltDataType arrayBaseDataType;
-	private final List<FireboltColumn> tupleBaseDateTypes;
+	private final List<FireboltColumn> tupleBaseDataTypes;
 	private final int arrayDepth;
 	private final int precision;
 	private final int scale;
 	private final TimeZone timeZone;
+	private static final Set<String> TIMEZONES = Arrays.stream(TimeZone.getAvailableIDs())
+			.collect(Collectors.toCollection(HashSet::new));
 
 	public static FireboltColumn of(String columnType, String columnName) {
 		log.debug("Creating column info for column: {} of type: {}", columnName, columnType);
@@ -49,7 +48,7 @@ public final class FireboltColumn {
 		Optional<Pair<Optional<Integer>, Optional<Integer>>> scaleAndPrecisionPair;
 		FireboltDataType fireboltType;
 		if (typeInUpperCase.startsWith(FireboltDataType.TUPLE.getInternalName().toUpperCase())) {
-			tupleDataTypes = getTupleBaseDateTypes(typeInUpperCase, columnName);
+			tupleDataTypes = getTupleBaseDataTypes(typeInUpperCase, columnName);
 		}
 
 		while (typeInUpperCase.startsWith(FireboltDataType.ARRAY.getInternalName().toUpperCase(), currentIndex)) {
@@ -67,21 +66,20 @@ public final class FireboltColumn {
 			arrayType = dataType;
 			if (arrayType == TUPLE) {
 				String tmp = columnType.substring(currentIndex, columnType.length() - arrayDepth);
-				tupleDataTypes = getTupleBaseDateTypes(tmp.toUpperCase(), columnName);
+				tupleDataTypes = getTupleBaseDataTypes(tmp.toUpperCase(), columnName);
 			}
 			fireboltType = FireboltDataType.ARRAY;
 		} else {
 			fireboltType = dataType;
 		}
 		String[] arguments = null;
-		if (!reachedEndOfTypeName(typeEndIndex, typeInUpperCase.length())
-				|| typeInUpperCase.startsWith("(", typeEndIndex)) {
+		if (!reachedEndOfTypeName(typeEndIndex, typeInUpperCase) || typeInUpperCase.startsWith("(", typeEndIndex)) {
 			arguments = splitArguments(typeInUpperCase, typeEndIndex);
 			scaleAndPrecisionPair = Optional.of(getsCaleAndPrecision(arguments, dataType));
 		} else {
 			scaleAndPrecisionPair = Optional.empty();
 		}
-		if (dataType.isTime() && arguments != null) {
+		if (dataType.isTime() && arguments != null && arguments.length != 0) {
 			timeZone = getTimeZoneFromArguments(arguments);
 		}
 
@@ -90,9 +88,8 @@ public final class FireboltColumn {
 						.orElse(dataType.getDefaultScale()))
 				.precision(scaleAndPrecisionPair.map(Pair::getRight).filter(Optional::isPresent).map(Optional::get)
 						.orElse(dataType.getDefaultPrecision()))
-				.timeZone(timeZone)
-				.arrayBaseDataType(arrayType).dataType(fireboltType).nullable(isNullable).arrayDepth(arrayDepth)
-				.tupleBaseDateTypes(tupleDataTypes).build();
+				.timeZone(timeZone).arrayBaseDataType(arrayType).dataType(fireboltType).nullable(isNullable)
+				.arrayDepth(arrayDepth).tupleBaseDataTypes(tupleDataTypes).build();
 	}
 
 	private static TimeZone getTimeZoneFromArguments(String[] arguments) {
@@ -104,7 +101,13 @@ public final class FireboltColumn {
 			timeZoneArgument = arguments[0];
 		}
 		if (timeZoneArgument != null) {
-			timeZone = TimeZone.getTimeZone(timeZoneArgument.replace("\\'", ""));
+			String id = timeZoneArgument.replace("\\'", "");
+			if (TIMEZONES.contains(id)) {
+				timeZone = TimeZone.getTimeZone(timeZoneArgument.replace("\\'", ""));
+			} else {
+				log.warn("Could not use the timezone returned by the server with the id {} as it is not supported.",
+						id);
+			}
 		}
 		return timeZone;
 	}
@@ -113,7 +116,7 @@ public final class FireboltColumn {
 		return of(columnType, null);
 	}
 
-	private static List<FireboltColumn> getTupleBaseDateTypes(String columnType, String columnName) {
+	private static List<FireboltColumn> getTupleBaseDataTypes(String columnType, String columnName) {
 		return Arrays.stream(getTupleTypes(columnType)).map(String::trim)
 				.map(type -> FireboltColumn.of(type, columnName)).collect(Collectors.toList());
 	}
@@ -127,8 +130,9 @@ public final class FireboltColumn {
 												// parenthesis
 	}
 
-	private static boolean reachedEndOfTypeName(int typeNameEndIndex, int type) {
-		return typeNameEndIndex == type;
+	private static boolean reachedEndOfTypeName(int typeNameEndIndex, String type) {
+		return typeNameEndIndex == type.length() || type.indexOf("(", typeNameEndIndex) < 0
+				|| type.indexOf(")", typeNameEndIndex) < 0;
 	}
 
 	private static int getTypeEndPosition(String type, int currentIndex) {
@@ -150,7 +154,7 @@ public final class FireboltColumn {
 			}
 			break;
 		case DECIMAL:
-			if (reachedEndOfTypeName(arguments.length, 2)) {
+			if (arguments.length == 2) {
 				precision = Integer.parseInt(arguments[0]);
 				scale = Integer.parseInt(arguments[1]);
 			}
@@ -170,7 +174,7 @@ public final class FireboltColumn {
 		if (this.isArray()) {
 			return getArrayCompactTypeName();
 		} else if (this.isTuple()) {
-			return getTupleCompactTypeName(this.tupleBaseDateTypes);
+			return getTupleCompactTypeName(this.tupleBaseDataTypes);
 		} else {
 			Optional<String> params = getTypeArguments(columnType);
 			return dataType.getDisplayName() + params.orElse("");
@@ -186,7 +190,7 @@ public final class FireboltColumn {
 		if (this.getArrayBaseDataType() != TUPLE) {
 			type.append(this.getArrayBaseDataType().getDisplayName());
 		} else {
-			type.append(this.getTupleCompactTypeName(this.getTupleBaseDateTypes()));
+			type.append(this.getTupleCompactTypeName(this.getTupleBaseDataTypes()));
 		}
 		for (int i = 0; i < arrayDepth; i++) {
 			type.append(")");

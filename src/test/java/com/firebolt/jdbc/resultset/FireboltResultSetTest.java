@@ -320,7 +320,8 @@ class FireboltResultSetTest {
 
 	@Test
 	void shouldReturnTime() throws SQLException {
-		Time expectedTime = Time.valueOf(ZonedDateTime.of(2022, 5, 10, 13, 1, 2, 0, UTC_TZ.toZoneId()).toLocalTime());
+		Time expectedTime = new Time(
+				ZonedDateTime.of(2022, 5, 10, 13, 1, 2, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
 		inputStream = getInputStreamWithArray();
 		resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535);
 		resultSet.next();
@@ -459,11 +460,11 @@ class FireboltResultSetTest {
 					fireboltStatement, true);
 			resultSet.next();
 
-			Time firstExpectedTime = Time
-					.valueOf(ZonedDateTime.of(2022, 5, 10, 18, 1, 2, 0, UTC_TZ.toZoneId()).toLocalTime());
+			Time firstExpectedTime = new Time(
+					ZonedDateTime.of(2022, 5, 10, 18, 1, 2, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
 
-			Time secondExpectedTime = Time
-					.valueOf(ZonedDateTime.of(2022, 5, 10, 13, 1, 2, 0, UTC_TZ.toZoneId()).toLocalTime());
+			Time secondExpectedTime = new Time(
+					ZonedDateTime.of(2022, 5, 10, 13, 1, 2, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
 
 			assertEquals(firstExpectedTime, resultSet.getTime("a_timestamp", EST_CALENDAR));
 			assertEquals(secondExpectedTime, resultSet.getTime("a_timestamp", UTC_CALENDAR));
@@ -505,12 +506,11 @@ class FireboltResultSetTest {
 			resultSet.next();
 			ZonedDateTime zonedDateTime = ZonedDateTime.of(2022, 5, 10, 18, 1, 2, 0, UTC_TZ.toZoneId());
 
-			Timestamp expectedTimestamp = Timestamp.valueOf(zonedDateTime.toLocalDateTime());
+			Timestamp expectedTimestamp = new Timestamp(zonedDateTime.toInstant().toEpochMilli());
 
-			Timestamp.valueOf(zonedDateTime.toLocalDateTime());
-			Time expectedTime = Time.valueOf(zonedDateTime.toLocalTime());
-			Date expectedDate = Date.valueOf(
-					ZonedDateTime.of(2022, 5, 11, 4, 1, 2, 0, TimeZone.getTimeZone("UTC").toZoneId()).toLocalDate());
+			Time expectedTime = new Time(zonedDateTime.toInstant().toEpochMilli());
+			Date expectedDate = new Date(ZonedDateTime
+					.of(2022, 5, 11, 4, 1, 2, 0, TimeZone.getTimeZone("UTC").toZoneId()).toInstant().toEpochMilli());
 
 			// The timezone returned by the db is always used regardless of the timezone
 			// passed as an argument
@@ -534,12 +534,12 @@ class FireboltResultSetTest {
 			resultSet = new FireboltResultSet(inputStream, "array_test_table", "array_test_db", 65535, false,
 					fireboltStatement, true);
 			resultSet.next();
-			Date firstExpectedDateFromEST = Date.valueOf(
-					ZonedDateTime.of(2022, 5, 10, 18, 1, 2, 0, TimeZone.getTimeZone("UTC").toZoneId()).toLocalDate());
-			Date secondExpectedDateFromEST = Date.valueOf(
-					ZonedDateTime.of(2022, 5, 11, 4, 1, 2, 0, TimeZone.getTimeZone("UTC").toZoneId()).toLocalDate());
-			Date secondExpectedDateFromUTC = Date.valueOf(
-					ZonedDateTime.of(2022, 5, 10, 23, 1, 2, 0, TimeZone.getTimeZone("UTC").toZoneId()).toLocalDate());
+			Date firstExpectedDateFromEST = new Date(ZonedDateTime
+					.of(2022, 5, 10, 18, 1, 2, 0, TimeZone.getTimeZone("UTC").toZoneId()).toInstant().toEpochMilli());
+			Date secondExpectedDateFromEST = new Date(ZonedDateTime
+					.of(2022, 5, 11, 4, 1, 2, 0, TimeZone.getTimeZone("UTC").toZoneId()).toInstant().toEpochMilli());
+			Date secondExpectedDateFromUTC = new Date(ZonedDateTime
+					.of(2022, 5, 10, 23, 1, 2, 0, TimeZone.getTimeZone("UTC").toZoneId()).toInstant().toEpochMilli());
 
 			assertEquals(firstExpectedDateFromEST, resultSet.getDate("a_timestamp", EST_CALENDAR));
 			resultSet.next();
