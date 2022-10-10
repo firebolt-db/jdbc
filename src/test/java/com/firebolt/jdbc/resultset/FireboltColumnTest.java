@@ -26,14 +26,15 @@ class FireboltColumnTest {
 
 	@Test
 	void shouldCreateColumDataForArray() {
-		String type = "Array(Array(Nullable(String)))";
+		String type = "Array(Array(Nullable(DateTime64(4, \\'EST\\'))))";
 		String name = "name";
 		FireboltColumn column = FireboltColumn.of(type, name);
 		assertEquals(name, column.getColumnName());
 		assertEquals(type.toUpperCase(), column.getColumnType());
 		assertEquals(FireboltDataType.ARRAY, column.getDataType());
-		assertEquals(FireboltDataType.STRING, column.getArrayBaseDataType());
-		assertEquals("ARRAY(ARRAY(STRING))", column.getCompactTypeName());
+		assertEquals(FireboltDataType.DATE_TIME_64, column.getArrayBaseDataType());
+		assertEquals(TimeZone.getTimeZone("EST"), column.getTimeZone());
+		assertEquals("ARRAY(ARRAY(TIMESTAMP_EXT))", column.getCompactTypeName());
 	}
 
 	@Test
@@ -128,7 +129,7 @@ class FireboltColumnTest {
 
 	@Test
 	void shouldCreateColumDataForDateTime64WithoutTimeZone() {
-		String type = "DateTime64(6)";
+		String type = "Nullable(DateTime64(6))";
 		String name = "my_d";
 		FireboltColumn column = FireboltColumn.of(type, name);
 		assertEquals(name, column.getColumnName());
@@ -136,6 +137,16 @@ class FireboltColumnTest {
 		assertNull(column.getTimeZone());
 		assertEquals(6, column.getScale());
 		assertEquals(25, column.getPrecision());
+	}
+
+	@Test
+	void shouldCreateColumDataForDateWithoutTimeZone() {
+		String type = "Nullable(Date)";
+		String name = "my_d";
+		FireboltColumn column = FireboltColumn.of(type, name);
+		assertEquals(name, column.getColumnName());
+		assertEquals(type.toUpperCase(), column.getColumnType());
+		assertNull(column.getTimeZone());
 	}
 
 	@Test
@@ -147,5 +158,26 @@ class FireboltColumnTest {
 		assertEquals(type.toUpperCase(), column.getColumnType());
 		assertEquals(FireboltDataType.DATE_TIME, column.getDataType());
 		assertEquals(TimeZone.getTimeZone("EST"), column.getTimeZone());
+	}
+	@Test
+	void shouldCreateColumDataForNullableDateTimeWithTimeZone() {
+		String type = "Nullable(DateTime(\\'EST\\'))";
+		String name = "my_d";
+		FireboltColumn column = FireboltColumn.of(type, name);
+		assertEquals(name, column.getColumnName());
+		assertEquals(type.toUpperCase(), column.getColumnType());
+		assertEquals(FireboltDataType.DATE_TIME, column.getDataType());
+		assertEquals(TimeZone.getTimeZone("EST"), column.getTimeZone());
+	}
+
+	@Test
+	void shouldCreateColumDataForDateTimeWithoutTimezoneWhenTheTimezoneIsInvalid() {
+		String type = "DateTime(\\'HelloTz\\')";
+		String name = "my_d";
+		FireboltColumn column = FireboltColumn.of(type, name);
+		assertEquals(name, column.getColumnName());
+		assertEquals(type.toUpperCase(), column.getColumnType());
+		assertEquals(FireboltDataType.DATE_TIME, column.getDataType());
+		assertNull(column.getTimeZone());
 	}
 }
