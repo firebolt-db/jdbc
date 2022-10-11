@@ -4,3 +4,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    ignore:
+      - dependency-name: "ch.qos.logback:logback-classic"
+        # logback-classic 1.4 requires java 11+
+        versions: ["1.4.x"]
