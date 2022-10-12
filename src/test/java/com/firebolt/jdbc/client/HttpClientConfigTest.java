@@ -16,7 +16,7 @@ class HttpClientConfigTest {
 	@BeforeEach
 	public void resetSingleton()
 			throws SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
-		Field instance = HttpClientConfig.class.getDeclaredField("client");
+		Field instance = HttpClientConfig.class.getDeclaredField("instance");
 		instance.setAccessible(true);
 		instance.set(null, null);
 	}

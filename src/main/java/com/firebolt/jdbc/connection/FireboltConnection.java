@@ -88,7 +88,7 @@ public class FireboltConnection implements Connection {
 		this.connect();
 	}
 
-	private static synchronized CloseableHttpClient getHttpClient(FireboltProperties fireboltProperties)
+	private static CloseableHttpClient getHttpClient(FireboltProperties fireboltProperties)
 			throws FireboltException {
 		try {
 			return HttpClientConfig.getInstance() == null ? HttpClientConfig.init(fireboltProperties)

@@ -16,19 +16,22 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class HttpClientConfig {
 
-	private static CloseableHttpClient client;
+	private static CloseableHttpClient instance;
 
 	private HttpClientConfig() {
 	}
 
-	public static CloseableHttpClient init(FireboltProperties fireboltProperties) throws CertificateException,
-			NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException {
-		client = HttpClientCreator.createClient(fireboltProperties);
-		log.info("Http client initialized");
-		return client;
+	public static synchronized CloseableHttpClient init(FireboltProperties fireboltProperties)
+			throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException,
+			KeyManagementException {
+		if (instance == null) {
+			instance = HttpClientCreator.createClient(fireboltProperties);
+			log.info("Http client initialized");
+		}
+		return instance;
 	}
 
 	public static CloseableHttpClient getInstance() {
-		return client;
+		return instance;
 	}
 }
