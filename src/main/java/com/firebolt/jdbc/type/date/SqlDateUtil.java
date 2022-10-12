@@ -31,12 +31,17 @@ public class SqlDateUtil {
 	// calendar(1582-10-05T00:00:00Z) from the epoch of 1970-01-01T00:00:00Z
 	private static final long GREGORIAN_START_DATE_IN_MILLIS = -12220156800000L;
 
-	private static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+	private static final DateTimeFormatter dateFormatter = new DateTimeFormatterBuilder()
+			.appendValue(ChronoField.YEAR, 4).parseDefaulting(ChronoField.YEAR, 0).appendPattern("[-]MM-dd")
+			.toFormatter();
 
 	public static final Function<Date, String> transformFromDateToSQLStringFunction = value -> String.format("'%s'",
 			dateFormatter.format(value.toLocalDate()));
-	DateTimeFormatter dateTimeFormatter = new DateTimeFormatterBuilder().appendPattern("yyyy-MM-dd [HH:mm[:ss]]")
-			.appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true).toFormatter();
+
+	public static final DateTimeFormatter dateTimeFormatter = new DateTimeFormatterBuilder()
+			.appendValue(ChronoField.YEAR, 4).parseDefaulting(ChronoField.YEAR, 0)
+			.appendPattern("[-]MM-dd [HH:mm[:ss]]").appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true)
+			.toFormatter();
 	public static final BiFunction<String, TimeZone, Timestamp> transformToTimestampFunction = (value,
 			fromTimeZone) -> parse(value, fromTimeZone).map(t -> {
 				Timestamp ts = new Timestamp(getEpochMilli(t));
