@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.resultset.column.Column;
 
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -19,7 +20,7 @@ import lombok.Value;
 @EqualsAndHashCode(callSuper = false)
 public class FireboltResultSetMetaData implements ResultSetMetaData {
 
-	List<FireboltColumn> columns;
+	List<Column> columns;
 
 	String tableName;
 
@@ -32,12 +33,12 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 
 	@Override
 	public int isNullable(int column) throws SQLException {
-		return getColumn(column).isNullable() ? columnNullable : columnNoNulls;
+		return getColumn(column).getType().isNullable() ? columnNullable : columnNoNulls;
 	}
 
 	@Override
 	public boolean isSigned(int column) throws SQLException {
-		return getColumn(column).getDataType().isSigned();
+		return getColumn(column).getType().getDataType().isSigned();
 	}
 
 	@Override
@@ -52,12 +53,12 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 
 	@Override
 	public int getPrecision(int column) throws SQLException {
-		return getColumn(column).getPrecision();
+		return getColumn(column).getType().getPrecision();
 	}
 
 	@Override
 	public int getScale(int column) throws SQLException {
-		return getColumn(column).getScale();
+		return getColumn(column).getType().getScale();
 	}
 
 	@Override
@@ -72,20 +73,20 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 
 	@Override
 	public int getColumnType(int column) throws SQLException {
-		return getColumn(column).getDataType().getSqlType();
+		return getColumn(column).getType().getDataType().getSqlType();
 	}
 
 	@Override
 	public String getColumnTypeName(int column) throws SQLException {
-		return getColumn(column).getCompactTypeName();
+		return getColumn(column).getType().getCompactTypeName();
 	}
 
 	@Override
 	public String getColumnClassName(int column) throws SQLException {
-		return getColumn(column).getDataType().getBaseType().getType().getCanonicalName();
+		return getColumn(column).getType().getDataType().getBaseType().getType().getCanonicalName();
 	}
 
-	public FireboltColumn getColumn(int column) {
+	public Column getColumn(int column) {
 		return this.columns.get(column - 1);
 	}
 
@@ -105,7 +106,7 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 
 	@Override
 	public boolean isCaseSensitive(int column) throws SQLException {
-		return this.getColumn(column).getDataType().isCaseSensitive();
+		return getColumn(column).getType().getDataType().isCaseSensitive();
 	}
 
 	@Override
