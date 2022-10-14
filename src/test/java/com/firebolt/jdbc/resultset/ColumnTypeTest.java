@@ -1,7 +1,6 @@
 package com.firebolt.jdbc.resultset;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.TimeZone;
 
@@ -170,5 +169,30 @@ class ColumnTypeTest {
 		assertEquals(type.toUpperCase(), columnType.getTypeName());
 		assertEquals(FireboltDataType.DATE_TIME, columnType.getDataType());
 		assertNull(columnType.getTimeZone());
+	}
+
+	@Test
+	void shouldCreateColumDataForArrayWithoutNullKeywordWhenIntInArrayIsNullable() {
+		String type = "Array(INTEGER NULL)";
+		ColumnType columnType = ColumnType.of(type);
+		assertEquals(type.toUpperCase(), columnType.getTypeName());
+		assertEquals(FireboltDataType.ARRAY, columnType.getDataType());
+		assertEquals(FireboltDataType.INT_32, columnType.getInnerTypes().get(0).getDataType());
+		assertTrue(columnType.getInnerTypes().get(0).isNullable());
+		assertFalse(columnType.isNullable());
+		assertEquals("ARRAY(INTEGER)", columnType.getCompactTypeName());
+
+	}
+
+	@Test
+	void shouldCreateColumDataForArrayWithoutNullKeywordWhenIntInArrayIsNotNullable() {
+		String type = "Array(INTEGER NOT NULL)";
+		ColumnType columnType = ColumnType.of(type);
+		assertEquals(type.toUpperCase(), columnType.getTypeName());
+		assertEquals(FireboltDataType.ARRAY, columnType.getDataType());
+		assertEquals(FireboltDataType.INT_32, columnType.getInnerTypes().get(0).getDataType());
+		assertFalse(columnType.getInnerTypes().get(0).isNullable());
+		assertFalse(columnType.isNullable());
+		assertEquals("ARRAY(INTEGER)", columnType.getCompactTypeName());
 	}
 }
