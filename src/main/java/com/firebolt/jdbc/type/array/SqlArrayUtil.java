@@ -33,7 +33,7 @@ public class SqlArrayUtil {
 				break;
 		value = value.substring(dimensions, value.length() - dimensions);
 		Object arr = createArray(value, dimensions, columnType);
-		return FireboltArray.builder().array(arr).type(columnType.getArrayBaseType().getDataType()).build();
+		return FireboltArray.builder().array(arr).type(columnType.getArrayBaseColumnType().getDataType()).build();
 	}
 
 	private static Object createArray(String arrayContent, int dimension, ColumnType columnType)
@@ -51,7 +51,7 @@ public class SqlArrayUtil {
 		String[] s = str.split(getArraySeparator(dimension));
 		int[] lengths = new int[dimension];
 		lengths[0] = s.length;
-		Object currentArray = Array.newInstance(columnType.getArrayBaseType().getDataType().getBaseType().getType(), lengths);
+		Object currentArray = Array.newInstance(columnType.getArrayBaseColumnType().getDataType().getBaseType().getType(), lengths);
 
 		for (int x = 0; x < s.length; x++)
 			Array.set(currentArray, x, createArray(s[x], dimension - 1, columnType));
@@ -61,10 +61,10 @@ public class SqlArrayUtil {
 
 	private static Object extractArrayFromOneDimensionalArray(String arrayContent, ColumnType columnType)
 			throws SQLException {
-		List<String> elements = splitArrayContent(arrayContent, columnType.getArrayBaseType().getDataType()).stream()
+		List<String> elements = splitArrayContent(arrayContent, columnType.getArrayBaseColumnType().getDataType()).stream()
 				.filter(StringUtils::isNotEmpty).map(SqlArrayUtil::removeQuotesAndTransformNull)
 				.collect(Collectors.toList());
-		FireboltDataType arrayBaseType = columnType.getArrayBaseType().getDataType();
+		FireboltDataType arrayBaseType = columnType.getArrayBaseColumnType().getDataType();
 		if (arrayBaseType != FireboltDataType.TUPLE) {
 			Object currentArray = Array.newInstance(arrayBaseType.getBaseType().getType(), elements.size());
 			for (int i = 0; i < elements.size(); i++)
@@ -77,7 +77,7 @@ public class SqlArrayUtil {
 
 	private static Object[] getArrayOfTuples(ColumnType columnType, List<String> tuples)
 			throws SQLException {
-		List<FireboltDataType> types = columnType.getArrayBaseType().getInnerTypes().stream().map(ColumnType::getDataType)
+		List<FireboltDataType> types = columnType.getArrayBaseColumnType().getInnerTypes().stream().map(ColumnType::getDataType)
 				.collect(Collectors.toList());
 
 		List<Object[]> list = new ArrayList<>();

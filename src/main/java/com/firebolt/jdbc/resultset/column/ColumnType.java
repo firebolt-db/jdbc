@@ -26,10 +26,9 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Value
 public class ColumnType {
-	String typeName;
+	String name;
 	FireboltDataType dataType;
 	boolean nullable;
-	int arrayDepth;
 	int precision;
 	int scale;
 	TimeZone timeZone;
@@ -69,7 +68,7 @@ public class ColumnType {
 			timeZone = getTimeZoneFromArguments(arguments);
 		}
 
-		return builder().typeName(columnTypeWrapper.getTypeInUpperCase()).nullable(isNullable).dataType(fireboltType)
+		return builder().name(columnTypeWrapper.getTypeInUpperCase()).nullable(isNullable).dataType(fireboltType)
 				.scale(scaleAndPrecisionPair.map(Pair::getLeft).filter(Optional::isPresent).map(Optional::get)
 						.orElse(dataType.getDefaultScale()))
 				.precision(scaleAndPrecisionPair.map(Pair::getRight).filter(Optional::isPresent).map(Optional::get)
@@ -83,8 +82,7 @@ public class ColumnType {
 		} else if (this.isTuple()) {
 			return getTupleCompactTypeName(this.innerTypes);
 		} else {
-			Optional<String> params = getTypeArguments(typeName);
-			return dataType.getDisplayName() + params.orElse("");
+			return dataType.getDisplayName();
 		}
 	}
 
@@ -97,7 +95,7 @@ public class ColumnType {
 			compactType.append("ARRAY(");
 			columnType = columnType.getInnerTypes().isEmpty() ? null : columnType.getInnerTypes().get(0);
 		}
-		compactType.append(this.getArrayBaseType().getCompactTypeName());
+		compactType.append(this.getArrayBaseColumnType().getCompactTypeName());
 		for (int i = 0; i < depth; i++) {
 			compactType.append(")");
 		}
@@ -117,20 +115,9 @@ public class ColumnType {
 		return dataType.equals(TUPLE);
 	}
 
-	private Optional<String> getTypeArguments(String type) {
-		return Optional.ofNullable(getTypeWithoutNullableKeyword(type)).filter(t -> t.contains("("))
-				.map(t -> t.substring(t.indexOf("(")));
-	}
-
-	private String getTypeWithoutNullableKeyword(String columnType) {
-		return Optional.ofNullable(columnType).filter(t -> nullable)
-				.map(type -> StringUtils.remove(type, NULLABLE_TYPE + "("))
-				.map(type -> StringUtils.removeEnd(type, ")")).orElse(columnType);
-	}
-
 	private static List<ColumnType> getInnerTypes(String columnType) {
 		if (columnType.startsWith(FireboltDataType.TUPLE.getInternalName().toUpperCase())) {
-			return Arrays.stream(getTupleTypes(columnType)).map(String::trim).map(ColumnType::of)
+			return Arrays.stream(getTupleColumnTypes(columnType)).map(String::trim).map(ColumnType::of)
 					.collect(Collectors.toList());
 		} else {
 			return Arrays.stream(getArrayType(columnType)).map(String::trim).map(ColumnType::of)
@@ -195,7 +182,7 @@ public class ColumnType {
 		return timeZone;
 	}
 
-	public ColumnType getArrayBaseType() {
+	public ColumnType getArrayBaseColumnType() {
 		if (innerTypes == null || innerTypes.isEmpty()) {
 			return null;
 		}
@@ -208,7 +195,7 @@ public class ColumnType {
 	}
 
 	@NonNull
-	private static String[] getTupleTypes(String columnType) {
+	private static String[] getTupleColumnTypes(String columnType) {
 		String types = RegExUtils.replaceFirst(columnType,
 				FireboltDataType.TUPLE.getInternalName().toUpperCase() + "\\(", "");
 		types = StringUtils.substring(types, 0, types.length() - 1);
