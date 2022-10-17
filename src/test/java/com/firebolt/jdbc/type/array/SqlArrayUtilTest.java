@@ -6,11 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.sql.Array;
 import java.sql.SQLException;
 
-import com.firebolt.jdbc.type.array.FireboltArray;
-import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import org.junit.jupiter.api.Test;
 
-import com.firebolt.jdbc.resultset.FireboltColumn;
+import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.type.FireboltDataType;
 
 class SqlArrayUtilTest {
@@ -21,7 +19,7 @@ class SqlArrayUtilTest {
 		FireboltArray emptyArray = FireboltArray.builder().array(new Integer[] {}).type(FireboltDataType.INT_32)
 				.build();
 
-		Array result = SqlArrayUtil.transformToSqlArray(value, FireboltColumn.of("Array(INT32)"));
+		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(INT32)"));
 
 		assertEquals(emptyArray.getBaseType(), result.getBaseType());
 		assertArrayEquals((Integer[]) emptyArray.getArray(), (Integer[]) result.getArray());
@@ -33,7 +31,7 @@ class SqlArrayUtilTest {
 		FireboltArray expectedArray = FireboltArray.builder().array(new Integer[] { 1, 2, 3, null, 5 })
 				.type(FireboltDataType.INT_32).build();
 
-		Array result = SqlArrayUtil.transformToSqlArray(value, FireboltColumn.of("Array(INT32)"));
+		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(INT32)"));
 
 		assertEquals(expectedArray.getBaseType(), result.getBaseType());
 		assertArrayEquals((Integer[]) expectedArray.getArray(), (Integer[]) result.getArray());
@@ -45,7 +43,7 @@ class SqlArrayUtilTest {
 		FireboltArray expectedArray = FireboltArray.builder().array(new String[] { "1", "2", "3", "", null, "5" })
 				.type(FireboltDataType.STRING).build();
 
-		Array result = SqlArrayUtil.transformToSqlArray(value, FireboltColumn.of("Array(TEXT)"));
+		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(TEXT)"));
 
 		assertEquals(expectedArray.getBaseType(), result.getBaseType());
 		assertArrayEquals((String[]) expectedArray.getArray(), (String[]) result.getArray());
@@ -57,7 +55,7 @@ class SqlArrayUtilTest {
 		FireboltArray expectedArray = FireboltArray.builder().array(new String[] { "1", "2,", "3", "", null, "5" })
 				.type(FireboltDataType.STRING).build();
 
-		Array result = SqlArrayUtil.transformToSqlArray(value, FireboltColumn.of("Array(TEXT)"));
+		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(TEXT)"));
 
 		assertEquals(expectedArray.getBaseType(), result.getBaseType());
 		assertArrayEquals((String[]) expectedArray.getArray(), (String[]) result.getArray());
@@ -70,7 +68,7 @@ class SqlArrayUtilTest {
 		FireboltArray expectedFireboltArray = FireboltArray.builder().array(expectedArray).type(FireboltDataType.TUPLE)
 				.build();
 
-		Array result = SqlArrayUtil.transformToSqlArray(value, FireboltColumn.of("Array(TUPLE(int,string))"));
+		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(TUPLE(int,string))"));
 
 		assertEquals(expectedFireboltArray.getBaseType(), result.getBaseType());
 		assertArrayEquals(expectedArray, (Object[]) result.getArray());
@@ -84,7 +82,7 @@ class SqlArrayUtilTest {
 		FireboltArray expectedFireboltArray = FireboltArray.builder().array(expectedArray).type(FireboltDataType.TUPLE)
 				.build();
 
-		Array result = SqlArrayUtil.transformToSqlArray(value, FireboltColumn.of("Array(Array(TUPLE(int,string)))"));
+		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(Array(TUPLE(int,string)))"));
 
 		assertEquals(expectedFireboltArray.getBaseType(), result.getBaseType());
 		assertArrayEquals(expectedArray, (Object[][]) result.getArray());
@@ -97,7 +95,7 @@ class SqlArrayUtilTest {
 		FireboltArray expectedFireboltArray = FireboltArray.builder().array(expectedArray).type(FireboltDataType.TUPLE)
 				.build();
 
-		Array result = SqlArrayUtil.transformToSqlArray(value, FireboltColumn.of("Array(TUPLE(int,string,string))"));
+		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(TUPLE(int,string,string))"));
 
 		assertEquals(expectedFireboltArray.getBaseType(), result.getBaseType());
 		assertArrayEquals(expectedArray, (Object[]) result.getArray());

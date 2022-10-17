@@ -22,6 +22,7 @@ import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
+import com.firebolt.jdbc.resultset.column.Column;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.type.BaseType;
@@ -39,7 +40,7 @@ public class FireboltResultSet implements ResultSet {
 	private final Map<String, Integer> columnNameToColumnNumber;
 	private final FireboltResultSetMetaData resultSetMetaData;
 	private final FireboltStatement statement;
-	private final List<FireboltColumn> columns;
+	private final List<Column> columns;
 	private String currentLine;
 	private int currentRow = 0;
 	private int lastSplitRow = -1;
@@ -375,9 +376,9 @@ public class FireboltResultSet implements ResultSet {
 		if (BaseType.isNull(value)) {
 			return null;
 		}
-		FireboltColumn columnInfo = this.columns.get(columnIndex - 1);
-		FireboltDataType columnType = columnInfo.getDataType();
-		Object object = columnType.getBaseType().transform(value, columnInfo, columnInfo.getTimeZone());
+		Column columnInfo = this.columns.get(columnIndex - 1);
+		FireboltDataType columnType = columnInfo.getType().getDataType();
+		Object object = columnType.getBaseType().transform(value, columnInfo, columnInfo.getType().getTimeZone());
 		if (columnType == FireboltDataType.ARRAY && object != null) {
 			return ((FireboltArray) object).getArray();
 		} else {
@@ -463,10 +464,10 @@ public class FireboltResultSet implements ResultSet {
 		return arr;
 	}
 
-	private List<FireboltColumn> getColumns(String[] columnNames, String columnTypes) {
+	private List<Column> getColumns(String[] columnNames, String columnTypes) {
 		String[] types = toStringArray(columnTypes);
 		return IntStream.range(0, types.length)
-				.mapToObj(i -> FireboltColumn.of(types[i], StringEscapeUtils.unescapeJava(columnNames[i])))
+				.mapToObj(i -> Column.of(types[i], StringEscapeUtils.unescapeJava(columnNames[i])))
 				.collect(Collectors.toList());
 	}
 
