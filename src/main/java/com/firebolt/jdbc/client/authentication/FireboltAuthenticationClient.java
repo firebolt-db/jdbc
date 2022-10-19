@@ -76,6 +76,6 @@ public class FireboltAuthenticationClient extends FireboltClient {
 	}
 
 	private String createLoginRequest(String username, String password) throws JsonProcessingException {
-		return new ObjectMapper().writeValueAsString(ImmutableMap.of(USERNAME, username, PASSWORD, password));
+		return objectMapper.writeValueAsString(ImmutableMap.of(USERNAME, username, PASSWORD, password));
 	}
 }
