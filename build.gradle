@@ -138,9 +138,11 @@ shadowJar {
     packages.each {
         relocate(it, "com.firebolt.shadow.${it}")
     }
-    // while slf4j is not relocated, but should still not be shaded
-    exclude("org/slf4j/**")
-    exclude("META-INF/maven/org.slf4j/**")
+    if (!project.hasProperty("addLogbackDependency")) {
+        // while slf4j is not relocated, but should still not be shaded
+        exclude("org/slf4j/**")
+        exclude("META-INF/maven/org.slf4j/**")
+    }
     exclude("test/**")
     exclude("integrationTest/**")
 }
