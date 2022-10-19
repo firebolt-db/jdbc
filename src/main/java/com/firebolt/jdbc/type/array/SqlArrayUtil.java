@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
 import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.resultset.FireboltColumn;
+import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
 import com.google.common.base.CharMatcher;
@@ -22,9 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SqlArrayUtil {
 
-	public static FireboltArray transformToSqlArray(String value, FireboltColumn fireboltColumn)
+	public static FireboltArray transformToSqlArray(String value, ColumnType columnType)
 			throws SQLException {
-		log.debug("Transformer array with value {} and type {}", value, fireboltColumn);
+		log.debug("Transformer array with value {} and type {}", value, columnType);
 		int dimensions = 0;
 		for (int x = 0; x < value.length(); x++)
 			if (value.charAt(x) == '[')
@@ -32,52 +32,52 @@ public class SqlArrayUtil {
 			else
 				break;
 		value = value.substring(dimensions, value.length() - dimensions);
-		Object arr = createArray(value, dimensions, fireboltColumn);
-		return FireboltArray.builder().array(arr).type(fireboltColumn.getArrayBaseDataType()).build();
+		Object arr = createArray(value, dimensions, columnType);
+		return FireboltArray.builder().array(arr).type(columnType.getArrayBaseColumnType().getDataType()).build();
 	}
 
-	private static Object createArray(String arrayContent, int dimension, FireboltColumn fireboltColumn)
+	private static Object createArray(String arrayContent, int dimension, ColumnType columnType)
 			throws SQLException {
 		if (dimension == 1) {
-			return extractArrayFromOneDimensionalArray(arrayContent, fireboltColumn);
+			return extractArrayFromOneDimensionalArray(arrayContent, columnType);
 		} else {
-			return extractArrayFromMultiDimensionalArray(arrayContent, dimension, fireboltColumn);
+			return extractArrayFromMultiDimensionalArray(arrayContent, dimension, columnType);
 		}
 	}
 
 	@NonNull
 	private static Object extractArrayFromMultiDimensionalArray(String str, int dimension,
-			FireboltColumn fireboltColumn) throws SQLException {
+			ColumnType columnType) throws SQLException {
 		String[] s = str.split(getArraySeparator(dimension));
 		int[] lengths = new int[dimension];
 		lengths[0] = s.length;
-		Object currentArray = Array.newInstance(fireboltColumn.getArrayBaseDataType().getBaseType().getType(), lengths);
+		Object currentArray = Array.newInstance(columnType.getArrayBaseColumnType().getDataType().getBaseType().getType(), lengths);
 
 		for (int x = 0; x < s.length; x++)
-			Array.set(currentArray, x, createArray(s[x], dimension - 1, fireboltColumn));
+			Array.set(currentArray, x, createArray(s[x], dimension - 1, columnType));
 
 		return currentArray;
 	}
 
-	private static Object extractArrayFromOneDimensionalArray(String arrayContent, FireboltColumn fireboltColumn)
+	private static Object extractArrayFromOneDimensionalArray(String arrayContent, ColumnType columnType)
 			throws SQLException {
-		List<String> elements = splitArrayContent(arrayContent, fireboltColumn.getArrayBaseDataType()).stream()
+		List<String> elements = splitArrayContent(arrayContent, columnType.getArrayBaseColumnType().getDataType()).stream()
 				.filter(StringUtils::isNotEmpty).map(SqlArrayUtil::removeQuotesAndTransformNull)
 				.collect(Collectors.toList());
-		FireboltDataType arrayBaseType = fireboltColumn.getArrayBaseDataType();
+		FireboltDataType arrayBaseType = columnType.getArrayBaseColumnType().getDataType();
 		if (arrayBaseType != FireboltDataType.TUPLE) {
 			Object currentArray = Array.newInstance(arrayBaseType.getBaseType().getType(), elements.size());
 			for (int i = 0; i < elements.size(); i++)
 				Array.set(currentArray, i, arrayBaseType.getBaseType().transform(elements.get(i), null));
 			return currentArray;
 		} else {
-			return getArrayOfTuples(fireboltColumn, elements);
+			return getArrayOfTuples(columnType, elements);
 		}
 	}
 
-	private static Object[] getArrayOfTuples(FireboltColumn fireboltColumn, List<String> tuples)
+	private static Object[] getArrayOfTuples(ColumnType columnType, List<String> tuples)
 			throws SQLException {
-		List<FireboltDataType> types = fireboltColumn.getTupleBaseDataTypes().stream().map(FireboltColumn::getDataType)
+		List<FireboltDataType> types = columnType.getArrayBaseColumnType().getInnerTypes().stream().map(ColumnType::getDataType)
 				.collect(Collectors.toList());
 
 		List<Object[]> list = new ArrayList<>();

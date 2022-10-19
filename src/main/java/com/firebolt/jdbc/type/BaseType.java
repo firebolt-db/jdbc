@@ -8,7 +8,7 @@ import java.util.TimeZone;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
-import com.firebolt.jdbc.resultset.FireboltColumn;
+import com.firebolt.jdbc.resultset.column.Column;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import com.firebolt.jdbc.type.date.SqlDateUtil;
 
@@ -56,7 +56,7 @@ public enum BaseType {
 	OBJECT(Object.class, StringToColumnTypeConversion::getValue),
 	DECIMAL(BigDecimal.class, conversion -> new BigDecimal(conversion.getValue())),
 	BOOLEAN(Boolean.class, conversion -> !"0".equals(conversion.getValue())),
-	ARRAY(Array.class, conversion -> SqlArrayUtil.transformToSqlArray(conversion.getValue(), conversion.getColumn()));
+	ARRAY(Array.class, conversion -> SqlArrayUtil.transformToSqlArray(conversion.getValue(), conversion.getColumn().getType()));
 
 	public static final String NULL_VALUE = "\\N";
 	private final Class<?> type;
@@ -93,7 +93,7 @@ public enum BaseType {
 		return type;
 	}
 
-	public <T> T transform(String value, FireboltColumn column) throws SQLException {
+	public <T> T transform(String value, Column column) throws SQLException {
 		return this.transform(value, column, null);
 	}
 
@@ -101,15 +101,15 @@ public enum BaseType {
 		return this.transform(value, null, null);
 	}
 
-	public <T> T transform(String value, FireboltColumn fireboltColumn, TimeZone timeZone) throws SQLException {
+	public <T> T transform(String value, Column column, TimeZone timeZone) throws SQLException {
 		TimeZone fromTimeZone;
-		if (fireboltColumn != null && fireboltColumn.getTimeZone() != null) {
-			fromTimeZone = fireboltColumn.getTimeZone();
+		if (column != null && column.getType().getTimeZone() != null) {
+			fromTimeZone = column.getType().getTimeZone();
 		} else {
 			fromTimeZone = timeZone;
 		}
 		StringToColumnTypeConversion conversion = StringToColumnTypeConversion.builder().value(value)
-				.column(fireboltColumn).timeZone(fromTimeZone).build();
+				.column(column).timeZone(fromTimeZone).build();
 		return this.transform(conversion);
 	}
 
@@ -125,7 +125,7 @@ public enum BaseType {
 	@Value
 	private static class StringToColumnTypeConversion {
 		String value;
-		FireboltColumn column;
+		Column column;
 		TimeZone timeZone;
 	}
 }

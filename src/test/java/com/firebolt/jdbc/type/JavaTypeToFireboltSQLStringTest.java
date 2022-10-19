@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.DefaultTimeZone;
 
 import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.resultset.FireboltColumn;
+import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.type.array.FireboltArray;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
 
@@ -140,16 +140,16 @@ class JavaTypeToFireboltSQLStringTest {
 	@Test
 	void shouldTransformSqlArray() throws SQLException {
 		String value = "[1,2,3,\\N,5]";
-		FireboltColumn column = FireboltColumn.of("Array(INT32)");
-		FireboltArray fireboltArray = SqlArrayUtil.transformToSqlArray(value, column);
+		ColumnType columnType = ColumnType.of("Array(INT32)");
+		FireboltArray fireboltArray = SqlArrayUtil.transformToSqlArray(value, columnType);
 		assertEquals(value, JavaTypeToFireboltSQLString.ARRAY.transform(fireboltArray));
 	}
 
 	@Test
 	void shouldTransformArrayOfArray() throws SQLException {
 		String value = "[['a','b'],['c']]";
-		FireboltColumn column = FireboltColumn.of("Array(Array(string))");
-		FireboltArray fireboltArray = SqlArrayUtil.transformToSqlArray(value, column);
+		ColumnType columnType = ColumnType.of("Array(Array(string))");
+		FireboltArray fireboltArray = SqlArrayUtil.transformToSqlArray(value, columnType);
 		assertEquals(value, JavaTypeToFireboltSQLString.ARRAY.transform(fireboltArray));
 	}
 

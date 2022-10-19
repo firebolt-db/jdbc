@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.TimeZone;
@@ -23,7 +25,7 @@ class SqlDateUtilTest {
 	void shouldTransformTimestampWithDefaultTzWhenTimeZoneIsNotSpecified() {
 		String timestamp = "1000-08-23 12:57:13.073456789";
 		ZonedDateTime zonedDateTime = ZonedDateTime.of(1000, 8, 23, 12, 57, 13, 73456789, UTC_TZ.toZoneId());
-		Timestamp expectedTimestamp = new Timestamp(zonedDateTime.toInstant().toEpochMilli() + ONE_DAY_MILLIS * 6 );
+		Timestamp expectedTimestamp = new Timestamp(zonedDateTime.toInstant().toEpochMilli() + ONE_DAY_MILLIS * 6);
 		expectedTimestamp.setNanos(73456789);
 		assertEquals(expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(timestamp, null));
 	}
@@ -134,6 +136,21 @@ class SqlDateUtilTest {
 
 		ZonedDateTime zonedDateTime6 = ZonedDateTime.of(1099, 1, 29, 12, 57, 13, 73456789, UTC_TZ.toZoneId());
 		assertEquals(6, SqlDateUtil.calculateJulianToGregorianDiffMillis(zonedDateTime6) / ONE_DAY_MILLIS);
+	}
+
+	@Test
+	void shouldTransformDateWithZeroYear() {
+		String timeWithMissingMinutes = "0000-01-01";
+		Date date = Date.valueOf(LocalDate.of(0, 1, 1));
+		assertEquals(date,
+				SqlDateUtil.transformToDateFunction.apply(timeWithMissingMinutes, null));
+	}
+
+	@Test
+	void shouldTransformTimestampDateWithZeroYear() {
+		String timeWithMissingMinutes = "0000-01-01 12:13:14";
+		Timestamp ts = Timestamp.valueOf(LocalDateTime.of(0, 1, 1, 12, 13, 14));
+		assertEquals(ts, SqlDateUtil.transformToTimestampFunction.apply(timeWithMissingMinutes, null));
 	}
 
 }

@@ -10,6 +10,8 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 
+import com.firebolt.jdbc.resultset.column.Column;
+
 class FireboltResultSetMetaDataTest {
 
 	@Test
@@ -104,9 +106,9 @@ class FireboltResultSetMetaDataTest {
 		assertEquals("java.math.BigDecimal", fireboltResultSetMetaData.getColumnClassName(3));
 	}
 
-	private List<FireboltColumn> getColumns() {
-		return Arrays.asList(FireboltColumn.of("Nullable(String)", "name"), FireboltColumn.of("Integer", "age"),
-				FireboltColumn.of("Decimal(1,2)", "Weight"));
+	private List<Column> getColumns() {
+		return Arrays.asList(Column.of("Nullable(String)", "name"), Column.of("Integer", "age"),
+				Column.of("Decimal(1,2)", "Weight"));
 	}
 
 	@Test
