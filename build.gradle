@@ -125,19 +125,22 @@ shadowJar {
     def packages = [] as Set<String>
     configurations.each { configuration ->
         configuration.files.each { jar ->
-            JarFile jf = new JarFile(jar)
-            jf.entries().each { entry ->
-                if (entry.name.endsWith(".class") && entry.name != "module-info.class" &&
-                   !entry.name.startsWith('org/slf4j') && !entry.name.startsWith('ch/qos/logback')) {
-                    packages << entry.name[0..entry.name.lastIndexOf('/')-1].replaceAll('/', '.')
+            try (JarFile jf = new JarFile(jar)) {
+                jf.entries().each { entry ->
+                    if (entry.name.endsWith(".class") && entry.name != "module-info.class" &&
+                       !entry.name.startsWith('org/slf4j') && !entry.name.startsWith('ch/qos/logback')) {
+                        packages << entry.name[0..entry.name.lastIndexOf('/')-1].replaceAll('/', '.')
+                    }
                 }
             }
-            jf.close()
         }
     }
     packages.each {
         relocate(it, "com.firebolt.shadow.${it}")
     }
+    // while slf4j is not relocated, but should still not be shaded
+    exclude("org/slf4j/**")
+    exclude("META-INF/maven/org.slf4j/**")
     exclude("test/**")
     exclude("integrationTest/**")
 }
