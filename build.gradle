@@ -171,6 +171,11 @@ publishing {
     publications {
         maven(MavenPublication) {
             from components.java
+            // remove dependencies due to shaded jar
+            pom.withXml {
+              node = asNode()
+              node.remove(node.get('dependencies'))
+            }
         }
     }
 
