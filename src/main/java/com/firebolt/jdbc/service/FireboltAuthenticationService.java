@@ -49,6 +49,7 @@ public class FireboltAuthenticationService {
 				}
 			}
 		} catch (Exception e) {
+			log.error("Could not get connection tokens", e);
 			throw new FireboltException("Could not get connection tokens", e);
 		}
 	}
