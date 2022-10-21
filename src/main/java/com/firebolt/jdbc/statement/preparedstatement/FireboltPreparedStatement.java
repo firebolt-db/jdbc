@@ -51,12 +51,8 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		return super.executeQuery(rawStatementWrapper);
 	}
 
-	private List<StatementInfoWrapper> prepareSQL(@NonNull Map<Integer, String> params) throws SQLException {
-		log.debug("Preparing SQL for statement: {}", rawStatement.getSubStatements());
-
-		List<StatementInfoWrapper> result = replaceParameterMarksWithValues(params, this.rawStatement);
-		log.debug("Prepared SQL for query: {}, result: {}", rawStatement, result);
-		return result;
+	private List<StatementInfoWrapper> prepareSQL(@NonNull Map<Integer, String> params) {
+		return replaceParameterMarksWithValues(params, this.rawStatement);
 	}
 
 	@Override
