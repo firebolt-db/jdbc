@@ -100,7 +100,6 @@ tasks.register('integrationTest', Test) {
     testLogging.exceptionFormat = 'full'
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath
-    maxParallelForks = (int) (Runtime.runtime.availableProcessors() / 2 + 1)
 }
 
 jacocoTestReport {

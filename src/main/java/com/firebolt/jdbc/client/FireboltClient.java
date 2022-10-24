@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static java.net.HttpURLConnection.*;
@@ -46,16 +47,11 @@ public abstract class FireboltClient {
             throws IOException, FireboltException {
         Request rq = createGetRequest(uri, accessToken);
         try (Response response = this.execute(rq, host)) {
-            assert response.body() != null : "Cannot get resource: the response from the server is empty";
-            String responseStr = response.body().string();
-            return objectMapper.readValue(responseStr, valueType);
+            return objectMapper.readValue(getResponseAsString(response), valueType);
         }
     }
 
     private Request createGetRequest(String uri, String accessToken) {
-//		httpGet.setConfig(
-//				createRequestConfig(this.connection.getConnectionTimeout(), this.connection.getNetworkTimeout()));
-
         Request.Builder requestBuilder = new Request.Builder().url(uri);
         this.createHeaders(accessToken).forEach(header -> requestBuilder.addHeader(header.getLeft(), header.getRight()));
         return requestBuilder.build();
@@ -70,7 +66,8 @@ public abstract class FireboltClient {
                                boolean isCompress) throws IOException, FireboltException {
         Response response = null;
         try {
-            response = this.getHttpClient().newCall(request).execute();
+            OkHttpClient client = getClientWithTimeouts(this.connection.getConnectionTimeout(), this.connection.getNetworkTimeout());
+            response = client.newCall(request).execute();
             validateResponse(host, response, isCompress);
         } catch (Exception e) {
             CloseableUtil.close(response);
@@ -79,11 +76,23 @@ public abstract class FireboltClient {
         return response;
     }
 
-    protected Request createPostRequest(String uri, String body) {
-        return createPostRequest(uri,  body, null, null);
+    private OkHttpClient getClientWithTimeouts(int connectionTimeout, int networkTimeout) {
+        if (connectionTimeout != this.httpClient.connectTimeoutMillis() ||
+                networkTimeout != this.httpClient.readTimeoutMillis()) {
+            //This creates a shallow copy using the same connection pool
+            return this.httpClient.newBuilder().readTimeout(this.connection.getNetworkTimeout(), TimeUnit.MILLISECONDS)
+                    .connectTimeout(this.connection.getConnectionTimeout(), TimeUnit.MILLISECONDS).build();
+        } else {
+            return this.httpClient;
+        }
     }
 
-    protected Request createPostRequest(String uri, String accessToken, String body, String id) {
+
+    protected Request createPostRequest(String uri, String body) {
+        return createPostRequest(uri, body, null, null);
+    }
+
+    protected Request createPostRequest(String uri, String body, String accessToken, String id) {
         Request.Builder requestBuilder = new Request.Builder().url(uri);
         this.createHeaders(accessToken).forEach(header -> requestBuilder.addHeader(header.getLeft(), header.getRight()));
         if (body != null) {
@@ -126,6 +135,14 @@ public abstract class FireboltClient {
         }
     }
 
+    protected String getResponseAsString(Response response) throws FireboltException, IOException {
+        if (response.body() == null) {
+            throw new FireboltException("Cannot get resource: the response from the server is empty");
+        } else {
+            return response.body().string();
+        }
+    }
+
     private String extractErrorMessage(Response response, boolean isCompress) throws IOException {
         byte[] entityBytes;
         if (response.body() != null) {
@@ -160,5 +177,7 @@ public abstract class FireboltClient {
     private String getInternalErrorWithHeadersText(Response response) {
         return response.toString() + "\n" + response.headers();
     }
+
+
 
 }

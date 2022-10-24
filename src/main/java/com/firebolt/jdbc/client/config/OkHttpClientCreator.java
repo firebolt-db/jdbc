@@ -17,6 +17,8 @@ import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -35,32 +37,38 @@ public class OkHttpClientCreator {
         OkHttpClient.Builder builder = new OkHttpClient.Builder().retryOnConnectionFailure(true)
                 .connectTimeout(properties.getConnectionTimeoutMillis(), TimeUnit.MILLISECONDS)
                 .dns(new DnsResolverByIpVersionPriority())
+                .readTimeout(properties.getSocketTimeoutMillis(), TimeUnit.MILLISECONDS)
                 .connectionPool(new ConnectionPool(properties.getMaxConnectionsTotal(), properties.getTimeToLiveMillis(), TimeUnit.MILLISECONDS));
-        SSLConfig sslConfig = getSSLConfig(properties);
-        builder.sslSocketFactory(sslConfig.getSslSocketFactory(), sslConfig.getTrustManager());
-        if (sslConfig.getHostnameVerifier() != null) {
-            builder.hostnameVerifier(sslConfig.getHostnameVerifier());
-        }
+
+        getSSLConfig(properties).ifPresent(config -> builder.sslSocketFactory(config.getSslSocketFactory(), config.getTrustManager()));
+        getHostnameVerifier(properties).ifPresent(builder::hostnameVerifier);
+
         return builder.build();
 
     }
 
+    private static Optional<HostnameVerifier> getHostnameVerifier(FireboltProperties properties) {
+        if (properties.isSsl() && SSL_NONE_MODE.equals(properties.getSslMode())) {
+            return Optional.of((hostname, session) -> true);
+        } else {
+            return Optional.empty();
+        }
+    }
 
-    private static SSLConfig getSSLConfig(FireboltProperties fireboltProperties) throws CertificateException,
+    private static Optional<SSLConfig> getSSLConfig(FireboltProperties fireboltProperties) throws CertificateException,
             NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException {
         SSLContext ctx = SSLContext.getInstance(TLS_PROTOCOL);
-        TrustManager[] trustManagers = null;
-        KeyManager[] keyManagers = null;
-        SecureRandom secureRandom = null;
-        X509TrustManager x509TrustManager = null;
-        HostnameVerifier hostnameVerifier = null;
-        if (!fireboltProperties.isSsl() || SSL_NONE_MODE.equals(fireboltProperties.getSslMode())) {
+        if (!fireboltProperties.isSsl()) {
+            return Optional.empty();
+        }
+        TrustManager[] trustManagers;
+        KeyManager[] keyManagers;
+        SecureRandom secureRandom;
+        if (SSL_NONE_MODE.equals(fireboltProperties.getSslMode())) {
             trustManagers = trustAllCerts;
             keyManagers = new KeyManager[]{};
             secureRandom = new SecureRandom();
-            hostnameVerifier = (hostname, session) -> true;
-            x509TrustManager = (X509TrustManager) trustAllCerts[0];
-        } else if (fireboltProperties.getSslMode().equals(SSL_STRICT_MODE)) {
+        } else if (SSL_STRICT_MODE.equals(fireboltProperties.getSslMode())) {
             if (StringUtils.isNotEmpty(fireboltProperties.getSslCertificatePath())) {
                 TrustManagerFactory trustManagerFactory = TrustManagerFactory
                         .getInstance(TrustManagerFactory.getDefaultAlgorithm());
@@ -68,16 +76,20 @@ public class OkHttpClientCreator {
                 trustManagers = trustManagerFactory.getTrustManagers();
                 keyManagers = new KeyManager[]{};
                 secureRandom = new SecureRandom();
+            } else {
+                //If there is no certificate file then the default config will be used.
+                return Optional.empty();
             }
         } else {
             throw new IllegalArgumentException(
                     String.format("The ssl mode %s does not exist", fireboltProperties.getSslMode()));
         }
-
+        if (trustManagers.length != 1 || !(trustManagers[0] instanceof X509TrustManager)) {
+            throw new IllegalStateException("Unexpected default trust managers:" + Arrays.toString(trustManagers));
+        }
         ctx.init(keyManagers, trustManagers, secureRandom);
-        return SSLConfig.builder().sslSocketFactory(ctx.getSocketFactory())
-                .hostnameVerifier(hostnameVerifier)
-                .trustManager(x509TrustManager).build();
+        return Optional.of(SSLConfig.builder().sslSocketFactory(ctx.getSocketFactory())
+                .trustManager((X509TrustManager) trustManagers[0]).build());
     }
 
     private static KeyStore getKeyStore(FireboltProperties fireboltProperties)
