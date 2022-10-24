@@ -1,5 +1,7 @@
 package com.firebolt.jdbc.client.config;
 
+import com.firebolt.jdbc.client.config.socket.FireboltSSLSocketFactory;
+import com.firebolt.jdbc.client.config.socket.FireboltSocketFactory;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import lombok.Builder;
 import lombok.Value;
@@ -37,10 +39,17 @@ public class OkHttpClientCreator {
         OkHttpClient.Builder builder = new OkHttpClient.Builder().retryOnConnectionFailure(true)
                 .connectTimeout(properties.getConnectionTimeoutMillis(), TimeUnit.MILLISECONDS)
                 .dns(new DnsResolverByIpVersionPriority())
+                .socketFactory(new FireboltSocketFactory(properties))
                 .readTimeout(properties.getSocketTimeoutMillis(), TimeUnit.MILLISECONDS)
                 .connectionPool(new ConnectionPool(properties.getMaxConnectionsTotal(), properties.getTimeToLiveMillis(), TimeUnit.MILLISECONDS));
 
-        getSSLConfig(properties).ifPresent(config -> builder.sslSocketFactory(config.getSslSocketFactory(), config.getTrustManager()));
+        Optional<SSLConfig> sslConfig = getSSLConfig(properties);
+        if (sslConfig.isPresent()) {
+            SSLContext ctx = SSLContext.getInstance(TLS_PROTOCOL);
+            SSLConfig config = sslConfig.get();
+            ctx.init(config.getKeyManagers(), config.getTrustManagers(), config.secureRandom);
+            builder.sslSocketFactory(new FireboltSSLSocketFactory(properties, ctx.getSocketFactory()), (X509TrustManager) config.trustManagers[0]);
+        }
         getHostnameVerifier(properties).ifPresent(builder::hostnameVerifier);
 
         return builder.build();
@@ -57,7 +66,6 @@ public class OkHttpClientCreator {
 
     private static Optional<SSLConfig> getSSLConfig(FireboltProperties fireboltProperties) throws CertificateException,
             NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException {
-        SSLContext ctx = SSLContext.getInstance(TLS_PROTOCOL);
         if (!fireboltProperties.isSsl()) {
             return Optional.empty();
         }
@@ -69,17 +77,12 @@ public class OkHttpClientCreator {
             keyManagers = new KeyManager[]{};
             secureRandom = new SecureRandom();
         } else if (SSL_STRICT_MODE.equals(fireboltProperties.getSslMode())) {
-            if (StringUtils.isNotEmpty(fireboltProperties.getSslCertificatePath())) {
-                TrustManagerFactory trustManagerFactory = TrustManagerFactory
-                        .getInstance(TrustManagerFactory.getDefaultAlgorithm());
-                trustManagerFactory.init(getKeyStore(fireboltProperties));
-                trustManagers = trustManagerFactory.getTrustManagers();
-                keyManagers = new KeyManager[]{};
-                secureRandom = new SecureRandom();
-            } else {
-                //If there is no certificate file then the default config will be used.
-                return Optional.empty();
-            }
+            TrustManagerFactory trustManagerFactory = TrustManagerFactory
+                    .getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            trustManagerFactory.init(getKeyStore(fireboltProperties).orElse(null));
+            trustManagers = trustManagerFactory.getTrustManagers();
+            keyManagers = new KeyManager[]{};
+            secureRandom = new SecureRandom();
         } else {
             throw new IllegalArgumentException(
                     String.format("The ssl mode %s does not exist", fireboltProperties.getSslMode()));
@@ -87,24 +90,28 @@ public class OkHttpClientCreator {
         if (trustManagers.length != 1 || !(trustManagers[0] instanceof X509TrustManager)) {
             throw new IllegalStateException("Unexpected default trust managers:" + Arrays.toString(trustManagers));
         }
-        ctx.init(keyManagers, trustManagers, secureRandom);
-        return Optional.of(SSLConfig.builder().sslSocketFactory(ctx.getSocketFactory())
-                .trustManager((X509TrustManager) trustManagers[0]).build());
+        return Optional.of(SSLConfig.builder().keyManagers(keyManagers).trustManagers(trustManagers).secureRandom(secureRandom).build());
+
     }
 
-    private static KeyStore getKeyStore(FireboltProperties fireboltProperties)
+    private static Optional<KeyStore> getKeyStore(FireboltProperties fireboltProperties)
             throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException {
-        KeyStore keyStore;
-        keyStore = KeyStore.getInstance(JKS_KEYSTORE_TYPE);
-        try (InputStream certificate = openSslFile(fireboltProperties)) {
-            keyStore.load(null, null);
-            CertificateFactory cf = CertificateFactory.getInstance(CERTIFICATE_TYPE_X_509);
-            int i = 0;
-            for (Certificate value : cf.generateCertificates(certificate)) {
-                keyStore.setCertificateEntry(String.format("Certificate_ %d)", i++), value);
+        if (StringUtils.isNotEmpty(fireboltProperties.getSslCertificatePath())) {
+            KeyStore keyStore;
+            keyStore = KeyStore.getInstance(JKS_KEYSTORE_TYPE);
+            try (InputStream certificate = openSslFile(fireboltProperties)) {
+                keyStore.load(null, null);
+                CertificateFactory cf = CertificateFactory.getInstance(CERTIFICATE_TYPE_X_509);
+                int i = 0;
+                for (Certificate value : cf.generateCertificates(certificate)) {
+                    keyStore.setCertificateEntry(String.format("Certificate_ %d)", i++), value);
+                }
+                return Optional.of(keyStore);
             }
-            return keyStore;
+        } else {
+            return Optional.empty();
         }
+
     }
 
     private static InputStream openSslFile(FireboltProperties fireboltProperties) throws IOException {
@@ -143,9 +150,9 @@ public class OkHttpClientCreator {
     @Builder
     @Value
     private static class SSLConfig {
-        X509TrustManager trustManager;
-        SSLSocketFactory sslSocketFactory;
-        HostnameVerifier hostnameVerifier;
+        TrustManager[] trustManagers;
+        KeyManager[] keyManagers;
+        SecureRandom secureRandom;
     }
 
 }
