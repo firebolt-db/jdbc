@@ -1,12 +1,5 @@
 package com.firebolt.jdbc.client.account;
 
-import java.io.IOException;
-import java.util.Optional;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.core5.http.ParseException;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltClient;
 import com.firebolt.jdbc.client.account.response.FireboltAccountResponse;
@@ -16,8 +9,12 @@ import com.firebolt.jdbc.client.account.response.FireboltEngineResponse;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
-
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
+import org.apache.commons.lang3.StringUtils;
+
+import java.io.IOException;
+import java.util.Optional;
 
 @Slf4j
 public class FireboltAccountClient extends FireboltClient {
@@ -36,8 +33,8 @@ public class FireboltAccountClient extends FireboltClient {
 	private static final String ERROR_NO_RUNNING_ENGINE_SUFFIX = ". To connect first make sure there is a running engine and then try again.";
 	private static final String ERROR_NO_RUNNING_ENGINE_PREFIX = "There is no running Firebolt engine running on ";
 
-	public FireboltAccountClient(CloseableHttpClient httpClient, ObjectMapper objectMapper,
-			FireboltConnection fireboltConnection, String customDrivers, String customClients) {
+	public FireboltAccountClient(OkHttpClient httpClient, ObjectMapper objectMapper,
+								 FireboltConnection fireboltConnection, String customDrivers, String customClients) {
 		super(httpClient, fireboltConnection, customDrivers, customClients, objectMapper);
 	}
 
@@ -50,7 +47,7 @@ public class FireboltAccountClient extends FireboltClient {
 	 * @return the account id
 	 */
 	public Optional<String> getAccountId(String host, String account, String accessToken)
-			throws FireboltException, IOException, ParseException {
+			throws FireboltException, IOException {
 		String uri = String.format(GET_ACCOUNT_ID_URI, host, account);
 		return Optional.ofNullable(getResource(uri, host, accessToken, FireboltAccountResponse.class))
 				.map(FireboltAccountResponse::getAccountId);
@@ -67,7 +64,7 @@ public class FireboltAccountClient extends FireboltClient {
 	 * @return the account id
 	 */
 	public String getEngineAddress(String host, String accountId, String engineName, String engineId,
-			String accessToken) throws FireboltException, IOException, ParseException {
+			String accessToken) throws FireboltException, IOException {
 		try {
 			String uri = createAccountUri(accountId, host, URI_SUFFIX_ACCOUNT_ENGINE_INFO_BY_ENGINE_ID + engineId);
 			FireboltEngineResponse response = getResource(uri, host, accessToken, FireboltEngineResponse.class);
@@ -97,7 +94,7 @@ public class FireboltAccountClient extends FireboltClient {
 	 * @return the default engine address of the database
 	 */
 	public String getDbDefaultEngineAddress(String host, String accountId, String dbName, String accessToken)
-			throws FireboltException, IOException, ParseException {
+			throws FireboltException, IOException {
 		String uri = createAccountUri(accountId, host, URI_SUFFIX_DATABASE_INFO_URL + dbName);
 		try {
 			FireboltDatabaseResponse response = getResource(uri, host, accessToken, FireboltDatabaseResponse.class);
@@ -124,7 +121,7 @@ public class FireboltAccountClient extends FireboltClient {
 	 * @return the engine id
 	 */
 	public String getEngineId(String host, String accountId, String engineName, String accessToken)
-			throws FireboltException, IOException, ParseException {
+			throws FireboltException, IOException {
 		try {
 			String uri = createAccountUri(accountId, host,
 					URI_SUFFIX_ENGINE_AND_ACCOUNT_ID_BY_ENGINE_NAME + engineName);

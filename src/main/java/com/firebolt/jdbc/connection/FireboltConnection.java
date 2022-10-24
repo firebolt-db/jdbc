@@ -1,19 +1,5 @@
 package com.firebolt.jdbc.connection;
 
-import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-
-import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.Executor;
-
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.PropertyUtil;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
@@ -34,9 +20,21 @@ import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
-
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.sql.*;
+import java.util.*;
+import java.util.concurrent.Executor;
+
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
 @Slf4j
 public class FireboltConnection implements Connection {
@@ -75,7 +73,7 @@ public class FireboltConnection implements Connection {
 		String driverVersions = loginProperties.getAdditionalProperties().remove("user_drivers");
 		String clientVersions = loginProperties.getAdditionalProperties().remove("user_clients");
 		this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
-		CloseableHttpClient httpClient = getHttpClient(loginProperties);
+		OkHttpClient httpClient = getHttpClient(loginProperties);
 		this.fireboltAuthenticationService = new FireboltAuthenticationService(
 				new FireboltAuthenticationClient(httpClient, objectMapper, this, driverVersions, clientVersions));
 		this.fireboltEngineService = new FireboltEngineService(
@@ -88,7 +86,7 @@ public class FireboltConnection implements Connection {
 		this.connect();
 	}
 
-	private static CloseableHttpClient getHttpClient(FireboltProperties fireboltProperties)
+	private static OkHttpClient getHttpClient(FireboltProperties fireboltProperties)
 			throws FireboltException {
 		try {
 			return HttpClientConfig.getInstance() == null ? HttpClientConfig.init(fireboltProperties)

@@ -1,30 +1,30 @@
 package com.firebolt.jdbc.client.authentication;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltClient;
 import com.firebolt.jdbc.client.authentication.response.FireboltAuthenticationResponse;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.apache.hc.core5.http.ParseException;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
 
 import java.io.IOException;
 
 @Slf4j
 public class FireboltAuthenticationClient extends FireboltClient {
 
-    public FireboltAuthenticationClient(CloseableHttpClient httpClient, ObjectMapper objectMapper,
+    public FireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper,
                                         FireboltConnection connection, String customDrivers, String customClients) {
         super(httpClient, connection, customDrivers, customClients, objectMapper);
     }
 
-    /**
+	/**
      * Sends POST to obtain connection tokens
      *
      * @param host     the host
