@@ -51,7 +51,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
         try {
             String uri = this.buildQueryUri(connectionProperties, queryParams).toString();
-            Request post = this.createHttpPost(uri, formattedStatement, this.getConnection().getConnectionTokens()
+            Request post = this.createPostRequest(uri, formattedStatement, this.getConnection().getConnectionTokens()
                     .map(FireboltConnectionTokens::getAccessToken).orElse(null), statementInfoWrapper.getId());
             log.debug("Posting statement with id {} to URI: {}", statementInfoWrapper.getId(), uri);
             Response response = this.execute(post, connectionProperties.getHost(),

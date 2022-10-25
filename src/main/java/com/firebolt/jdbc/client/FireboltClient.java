@@ -87,21 +87,28 @@ public abstract class FireboltClient {
         }
     }
 
-
-    protected Request createPostRequest(String uri, String body) {
-        return createPostRequest(uri, body, null, null);
+    protected Request createPostRequest(String uri, RequestBody requestBody) {
+        return createPostRequest(uri, requestBody, null, null);
     }
 
-    protected Request createPostRequest(String uri, String body, String accessToken, String id) {
+    protected Request createPostRequest(String uri, RequestBody body, String accessToken, String id) {
         Request.Builder requestBuilder = new Request.Builder().url(uri);
         this.createHeaders(accessToken).forEach(header -> requestBuilder.addHeader(header.getLeft(), header.getRight()));
         if (body != null) {
-            requestBuilder.post(RequestBody.create(body, MediaType.parse("application/json")));
+            requestBuilder.post(body);
         }
         if (id != null) {
             requestBuilder.tag(id);
         }
         return requestBuilder.build();
+    }
+
+    protected Request createPostRequest(String uri, String json, String accessToken, String id) {
+        RequestBody requestBody = null;
+        if (json != null) {
+            requestBody = RequestBody.create(json, MediaType.parse("application/json"));
+        }
+        return createPostRequest(uri, requestBody, accessToken, id);
     }
 
     protected void validateResponse(String host, Response response, Boolean isCompress)
@@ -117,7 +124,7 @@ public abstract class FireboltClient {
                 this.getConnection().removeExpiredTokens();
                 throw new FireboltException(String.format(
                         "Could not query Firebolt at %s. The operation is not authorized or the token is expired and has been cleared from the cache",
-						host), statusCode);
+                        host), statusCode);
             }
             String errorResponseMessage;
             try {
@@ -177,7 +184,6 @@ public abstract class FireboltClient {
     private String getInternalErrorWithHeadersText(Response response) {
         return response.toString() + "\n" + response.headers();
     }
-
 
 
 }

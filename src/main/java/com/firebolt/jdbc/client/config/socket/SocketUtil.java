@@ -15,7 +15,7 @@ import java.net.SocketOption;
 @Slf4j
 public class SocketUtil {
 
-    Socket wrap(Socket s, FireboltProperties fireboltProperties) throws IOException {
+    public static Socket wrap(Socket s, FireboltProperties fireboltProperties) throws IOException {
         s.setReceiveBufferSize(fireboltProperties.getClientBufferSize());
         s.setKeepAlive(true);
         s.setTcpNoDelay(true);

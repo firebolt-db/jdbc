@@ -1,13 +1,11 @@
 package com.firebolt.jdbc.client.authentication;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltClient;
 import com.firebolt.jdbc.client.authentication.response.FireboltAuthenticationResponse;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.exception.FireboltException;
-import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -24,7 +22,7 @@ public class FireboltAuthenticationClient extends FireboltClient {
         super(httpClient, connection, customDrivers, customClients, objectMapper);
     }
 
-	/**
+    /**
      * Sends POST to obtain connection tokens
      *
      * @param host     the host
@@ -33,23 +31,21 @@ public class FireboltAuthenticationClient extends FireboltClient {
      * @return the connection tokens
      */
     public FireboltConnectionTokens postConnectionTokens(String host, String user, String password)
-            throws IOException, ParseException, FireboltException {
+            throws IOException, FireboltException {
         AuthenticationRequest authenticationRequest = AuthenticationRequestFactory.getAuthenticationRequest(user,
                 password, host);
         String uri = authenticationRequest.getUri();
         log.debug("Creating connection with url {}", uri);
-        HttpPost post = this.createHttpPost(uri);
-        post.addHeader(HEADER_USER_AGENT, this.getHeaderUserAgentValue());
-        post.setEntity(authenticationRequest.getHttpEntity());
-        try (CloseableHttpResponse response = this.execute(post, host)) {
-            String responseStr = EntityUtils.toString(response.getEntity());
+        Request request = this.createPostRequest(uri, authenticationRequest.getRequestBody());
+        try (Response response = this.execute(request, host)) {
+            String responseStr = getResponseAsString(response);
             FireboltAuthenticationResponse authenticationResponse = objectMapper.readValue(responseStr,
                     FireboltAuthenticationResponse.class);
             FireboltConnectionTokens authenticationTokens = FireboltConnectionTokens.builder()
                     .accessToken(authenticationResponse.getAccessToken())
                     .refreshToken(authenticationResponse.getRefreshToken())
                     .expiresInSeconds(authenticationResponse.getExpiresIn()).build();
-            log.info("Successfully fetched connection tokens");
+            log.info("Successfully fetched connection token");
             logToken(authenticationResponse);
             return authenticationTokens;
         }
