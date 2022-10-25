@@ -27,7 +27,7 @@ class FireboltClientTest {
 		when(client.getConnection()).thenReturn(mock(FireboltConnection.class));
 		FireboltException exception = assertThrows(FireboltException.class,
 				() -> client.validateResponse("host", response, false));
-		assertEquals(ExceptionType.EXPIRED_TOKEN, exception.getType());
+		assertEquals(ExceptionType.UNAUTHORIZED, exception.getType());
 	}
 
 	@Test
