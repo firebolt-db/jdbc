@@ -21,6 +21,10 @@ project.ext {
     ]
 }
 
+java {
+    withSourcesJar()
+}
+
 compileJava {
     sourceCompatibility = '1.8'
     targetCompatibility = '1.8'
