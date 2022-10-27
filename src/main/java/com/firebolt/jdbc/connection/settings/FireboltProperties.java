@@ -1,17 +1,16 @@
 package com.firebolt.jdbc.connection.settings;
 
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Value
 @Builder(toBuilder = true)
@@ -30,7 +29,7 @@ public class FireboltProperties {
 				return keys;
 			}).flatMap(List::stream).collect(Collectors.toSet());
 
-	int timeToLiveMillis;
+	int keepAliveTimeoutMillis;
 	int validateAfterInactivityMillis;
 	int maxConnectionsPerRoute;
 	int maxConnectionsTotal;
@@ -71,7 +70,7 @@ public class FireboltProperties {
 		String engine = getSetting(mergedProperties, FireboltSessionProperty.ENGINE);
 		String account = getSetting(mergedProperties, FireboltSessionProperty.ACCOUNT);
 		int maxConnectionsPerRoute = getSetting(mergedProperties, FireboltSessionProperty.MAX_CONNECTIONS_PER_ROUTE);
-		int timeToLiveMillis = getSetting(mergedProperties, FireboltSessionProperty.TIME_TO_LIVE_MILLIS);
+		int keepAliveMillis = getSetting(mergedProperties, FireboltSessionProperty.KEEP_ALIVE_TIMEOUT_MILLIS);
 		int validateAfterInactivityMillis = getSetting(mergedProperties,
 				FireboltSessionProperty.VALIDATE_AFTER_INACTIVITY_MILLIS);
 		int maxTotal = getSetting(mergedProperties, FireboltSessionProperty.MAX_CONNECTIONS_TOTAL);
@@ -95,7 +94,8 @@ public class FireboltProperties {
 		return FireboltProperties.builder().ssl(ssl).sslCertificatePath(sslRootCertificate).sslMode(sslMode).path(path)
 				.port(port).database(database).compress(compress).user(user).password(password).host(host)
 				.additionalProperties(additionalProperties).account(account).engine(engine)
-				.maxConnectionsPerRoute(maxConnectionsPerRoute).timeToLiveMillis(timeToLiveMillis)
+				.keepAliveTimeoutMillis(keepAliveMillis)
+				.maxConnectionsPerRoute(maxConnectionsPerRoute)
 				.validateAfterInactivityMillis(validateAfterInactivityMillis).maxConnectionsTotal(maxTotal)
 				.maxRetries(maxRetries).clientBufferSize(clientBufferSize).bufferSize(bufferSize)
 				.socketTimeoutMillis(socketTimeout).connectionTimeoutMillis(connectionTimeout)

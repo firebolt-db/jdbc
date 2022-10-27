@@ -75,11 +75,11 @@ public class FireboltConnection implements Connection {
 		this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
 		OkHttpClient httpClient = getHttpClient(loginProperties);
 		this.fireboltAuthenticationService = new FireboltAuthenticationService(
-				new FireboltAuthenticationClient(httpClient, objectMapper, this, driverVersions, clientVersions));
+				new FireboltAuthenticationClient(httpClient, objectMapper, this, driverVersions, clientVersions, loginProperties.getMaxRetries() ));
 		this.fireboltEngineService = new FireboltEngineService(
-				new FireboltAccountClient(httpClient, objectMapper, this, driverVersions, clientVersions));
+				new FireboltAccountClient(httpClient, objectMapper, this, driverVersions, clientVersions, loginProperties.getMaxRetries()));
 		this.fireboltStatementService = new FireboltStatementService(
-				new StatementClientImpl(httpClient, this, objectMapper, driverVersions, clientVersions));
+				new StatementClientImpl(httpClient, this, objectMapper, driverVersions, clientVersions, loginProperties.getMaxRetries()));
 		this.statements = new ArrayList<>();
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();

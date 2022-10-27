@@ -60,7 +60,8 @@ dependencies {
     implementation 'net.jodah:expiringmap:0.5.10'
     implementation 'org.apache.commons:commons-text:1.10.0'
     implementation 'org.lz4:lz4-java:1.8.0'
-    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+    implementation'dev.failsafe:failsafe:3.3.0'
+    implementation'dev.failsafe:failsafe-okhttp:3.3.0'
     implementation fileTree(dir: 'libs', includes: ['*.jar'])
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.36'
 
@@ -76,8 +77,9 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.1'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.9.1'
     testImplementation 'org.junit.jupiter:junit-jupiter-params:5.9.1'
-    testImplementation group: 'org.junit-pioneer', name: 'junit-pioneer', version: '1.7.1'
+    testImplementation 'org.junit-pioneer:junit-pioneer:1.7.1'
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
+    testImplementation 'com.squareup.okhttp3:mockwebserver:4.10.0'
     testCommonImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
     testImplementation sourceSets.testCommon.output
     compileTestJava.dependsOn processTestResources

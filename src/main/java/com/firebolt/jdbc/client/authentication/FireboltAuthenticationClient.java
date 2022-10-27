@@ -18,8 +18,8 @@ import java.io.IOException;
 public class FireboltAuthenticationClient extends FireboltClient {
 
     public FireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper,
-                                        FireboltConnection connection, String customDrivers, String customClients) {
-        super(httpClient, connection, customDrivers, customClients, objectMapper);
+                                        FireboltConnection connection, String customDrivers, String customClients, int maxRetries) {
+        super(httpClient, connection, customDrivers, customClients, objectMapper, maxRetries);
     }
 
     /**

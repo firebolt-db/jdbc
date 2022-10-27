@@ -6,6 +6,7 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
@@ -27,6 +28,7 @@ import java.util.concurrent.TimeUnit;
  * Class to configure the http client using the session settings
  */
 @UtilityClass
+@Slf4j
 public class OkHttpClientCreator {
 
     private static final String SSL_STRICT_MODE = "strict";
@@ -36,12 +38,11 @@ public class OkHttpClientCreator {
     private static final String CERTIFICATE_TYPE_X_509 = "X.509";
 
     public static OkHttpClient createClient(FireboltProperties properties) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException {
-        OkHttpClient.Builder builder = new OkHttpClient.Builder().retryOnConnectionFailure(true)
+        OkHttpClient.Builder builder = new OkHttpClient.Builder().retryOnConnectionFailure(false)
                 .connectTimeout(properties.getConnectionTimeoutMillis(), TimeUnit.MILLISECONDS)
-                .dns(new DnsResolverByIpVersionPriority())
                 .socketFactory(new FireboltSocketFactory(properties))
                 .readTimeout(properties.getSocketTimeoutMillis(), TimeUnit.MILLISECONDS)
-                .connectionPool(new ConnectionPool(properties.getMaxConnectionsTotal(), properties.getTimeToLiveMillis(), TimeUnit.MILLISECONDS));
+                .connectionPool(new ConnectionPool(properties.getMaxConnectionsTotal(), properties.getKeepAliveTimeoutMillis(), TimeUnit.MILLISECONDS));
 
         Optional<SSLConfig> sslConfig = getSSLConfig(properties);
         if (sslConfig.isPresent()) {
