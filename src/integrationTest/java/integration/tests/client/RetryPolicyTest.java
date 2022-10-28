@@ -1,4 +1,4 @@
-package integration.tests;
+package integration.tests.client;
 
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class RetryPolicyTest extends IntegrationTest {
+
     private MockWebServer mockBackEnd;
 
     @BeforeEach
@@ -39,6 +40,8 @@ public class RetryPolicyTest extends IntegrationTest {
             assertEquals(ex.getType(), INVALID_REQUEST);
             assertEquals(1, mockBackEnd.getRequestCount());
         }
+
+
     }
 
     @Test
@@ -46,10 +49,11 @@ public class RetryPolicyTest extends IntegrationTest {
         mockBackEnd.enqueue(new MockResponse().setResponseCode(502));
         mockBackEnd.enqueue(new MockResponse().setResponseCode(502));
         mockBackEnd.enqueue(new MockResponse().setResponseCode(200));
-        try (FireboltConnection fireboltConnection = (FireboltConnection)createLocalConnection(String.format("?ssl=0&port=%d&retries=%d", mockBackEnd.getPort(), 3)); Statement statement = fireboltConnection.createStatement()) {
+        try (FireboltConnection fireboltConnection = (FireboltConnection) createLocalConnection(String.format("?ssl=0&port=%d&retries=%d", mockBackEnd.getPort(), 3)); Statement statement = fireboltConnection.createStatement()) {
             statement.execute("SELECT 1;");
             assertEquals(3, mockBackEnd.getRequestCount());
         }
+
     }
 
 

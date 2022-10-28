@@ -13,6 +13,7 @@ import com.firebolt.jdbc.statement.rawstatement.RawStatement;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
+import okhttp3.internal.http2.StreamResetException;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.InputStream;
@@ -56,12 +57,20 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
             log.debug("Posting statement with id {} to URI: {}", statementInfoWrapper.getId(), uri);
             Response response = this.execute(post, connectionProperties.getHost(),
                     connectionProperties.isCompress());
-            return response.body().byteStream();
+
+            InputStream stream = response.body() != null ? response.body().byteStream() : null;
+            if (stream == null) {
+                CloseableUtil.close(response);
+            }
+            return stream;
         } catch (FireboltException e) {
             throw e;
         } catch (Exception e) {
             String errorMessage = String.format("Error executing statement with id %s: %s",
                     statementInfoWrapper.getId(), formattedStatement);
+            if (e instanceof StreamResetException) {
+                throw new FireboltException(errorMessage, e, ExceptionType.CANCELED);
+            }
             throw new FireboltException(errorMessage, e);
         }
 
@@ -91,7 +100,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
             String uri = this.buildCancelUri(fireboltProperties, queryParams).toString();
             Request rq = this.createPostRequest(uri, this.getConnection().getConnectionTokens()
-                    .map(FireboltConnectionTokens::getAccessToken).orElse(null), null, null);
+                    .map(FireboltConnectionTokens::getAccessToken).orElse(null), null);
             try (Response response = this.execute(rq, fireboltProperties.getHost())) {
                 CloseableUtil.close(response);
             }
@@ -145,7 +154,6 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
     private URI buildURI(FireboltProperties fireboltProperties, Map<String, String> parameters, List<String> pathSegments) {
         HttpUrl.Builder httpUrlBuilder = new HttpUrl.Builder()
                 .scheme(Boolean.TRUE.equals(fireboltProperties.isSsl()) ? "https" : "http")
-                .fragment("/")
                 .host(fireboltProperties.getHost())
                 .port(fireboltProperties.getPort());
         parameters.forEach(httpUrlBuilder::addQueryParameter);

@@ -1,8 +1,15 @@
 package integration.tests;
 
-import static com.firebolt.jdbc.exception.ExceptionType.REQUEST_FAILED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.firebolt.jdbc.exception.ExceptionType;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.statement.FireboltStatement;
+import integration.IntegrationTest;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -10,17 +17,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.statement.FireboltStatement;
-
-import integration.IntegrationTest;
-import lombok.extern.slf4j.Slf4j;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 class StatementCancelTest extends IntegrationTest {
@@ -53,9 +51,9 @@ class StatementCancelTest extends IntegrationTest {
 					try {
 						insertStatement.execute(query);
 					} catch (FireboltException e) {
-						if (!e.getType().equals(REQUEST_FAILED)) {
+						if (!e.getType().equals(ExceptionType.CANCELED)) {
 							throw new RuntimeException(e);
-							// REQUEST_FAILED is expected since the query was aborted
+							// CANCELED is expected since the query was aborted
 						}
 					} catch (SQLException e) {
 						throw new RuntimeException(e);

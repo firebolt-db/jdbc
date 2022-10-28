@@ -23,7 +23,7 @@ class HttpClientConfigTest {
 	@Test
 	void shouldInitHttpClient() throws Exception {
 		OkHttpClient client = HttpClientConfig
-				.init(FireboltProperties.builder().maxConnectionsPerRoute(1).maxConnectionsTotal(1).keepAliveTimeoutMillis(1).build());
+				.init(FireboltProperties.builder().maxConnectionsTotal(1).keepAliveTimeoutMillis(1).build());
 			assertNotNull(client);
 	}
 

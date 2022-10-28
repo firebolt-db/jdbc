@@ -30,8 +30,6 @@ public class FireboltProperties {
 			}).flatMap(List::stream).collect(Collectors.toSet());
 
 	int keepAliveTimeoutMillis;
-	int validateAfterInactivityMillis;
-	int maxConnectionsPerRoute;
 	int maxConnectionsTotal;
 	int maxRetries;
 	int bufferSize;
@@ -69,10 +67,7 @@ public class FireboltProperties {
 		String path = getSetting(mergedProperties, FireboltSessionProperty.PATH);
 		String engine = getSetting(mergedProperties, FireboltSessionProperty.ENGINE);
 		String account = getSetting(mergedProperties, FireboltSessionProperty.ACCOUNT);
-		int maxConnectionsPerRoute = getSetting(mergedProperties, FireboltSessionProperty.MAX_CONNECTIONS_PER_ROUTE);
 		int keepAliveMillis = getSetting(mergedProperties, FireboltSessionProperty.KEEP_ALIVE_TIMEOUT_MILLIS);
-		int validateAfterInactivityMillis = getSetting(mergedProperties,
-				FireboltSessionProperty.VALIDATE_AFTER_INACTIVITY_MILLIS);
 		int maxTotal = getSetting(mergedProperties, FireboltSessionProperty.MAX_CONNECTIONS_TOTAL);
 		int maxRetries = getSetting(mergedProperties, FireboltSessionProperty.MAX_RETRIES);
 		int bufferSize = getSetting(mergedProperties, FireboltSessionProperty.BUFFER_SIZE);
@@ -95,8 +90,7 @@ public class FireboltProperties {
 				.port(port).database(database).compress(compress).user(user).password(password).host(host)
 				.additionalProperties(additionalProperties).account(account).engine(engine)
 				.keepAliveTimeoutMillis(keepAliveMillis)
-				.maxConnectionsPerRoute(maxConnectionsPerRoute)
-				.validateAfterInactivityMillis(validateAfterInactivityMillis).maxConnectionsTotal(maxTotal)
+				.maxConnectionsTotal(maxTotal)
 				.maxRetries(maxRetries).clientBufferSize(clientBufferSize).bufferSize(bufferSize)
 				.socketTimeoutMillis(socketTimeout).connectionTimeoutMillis(connectionTimeout)
 				.tcpKeepInterval(tcpKeepInterval).tcpKeepCount(tcpKeepCount)

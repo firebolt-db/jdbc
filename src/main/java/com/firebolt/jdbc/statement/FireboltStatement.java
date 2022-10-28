@@ -1,12 +1,5 @@
 package com.firebolt.jdbc.statement;
 
-import java.io.InputStream;
-import java.sql.*;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.firebolt.jdbc.CloseableUtil;
 import com.firebolt.jdbc.PropertyUtil;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
@@ -19,9 +12,14 @@ import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
-
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+
+import java.io.InputStream;
+import java.sql.*;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class FireboltStatement implements Statement {
@@ -309,7 +307,7 @@ public class FireboltStatement implements Statement {
 	 * Closes the Statement and removes the object from the list of Statements kept
 	 * in the {@link FireboltConnection} if the param removeFromConnection is set to
 	 * true
-	 * 
+	 *
 	 * @param removeFromConnection whether the {@link FireboltStatement} must be
 	 *                             removed from the parent
 	 *                             {@link FireboltConnection}
@@ -413,7 +411,7 @@ public class FireboltStatement implements Statement {
 
 	/**
 	 * Returns true if the statement is currently running
-	 * 
+	 *
 	 * @return true if the statement is currently running
 	 */
 	public boolean isStatementRunning() {
@@ -662,7 +660,7 @@ public class FireboltStatement implements Statement {
 
 	/**
 	 * Returns true if the statement has more results
-	 * 
+	 *
 	 * @return true if the statement has more results
 	 */
 	public boolean hasMoreResults() {

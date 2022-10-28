@@ -1,10 +1,12 @@
 package integration;
 
+import com.firebolt.jdbc.client.HttpClientConfig;
 import com.google.common.io.Resources;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.TestInstance;
 
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -43,6 +45,12 @@ public abstract class IntegrationTest {
             String sql = Resources.toString(IntegrationTest.class.getResource(path), StandardCharsets.UTF_8);
             statement.execute(sql);
         }
+    }
+
+    protected void removeExistingClient() throws NoSuchFieldException, IllegalAccessException {
+        Field field = HttpClientConfig.class.getDeclaredField("instance");
+        field.setAccessible(true);
+        field.set(null, null);
     }
 
 }

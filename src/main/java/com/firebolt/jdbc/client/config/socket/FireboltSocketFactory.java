@@ -11,7 +11,7 @@ import java.net.Socket;
 import static com.firebolt.jdbc.client.config.socket.SocketUtil.wrap;
 
 @Slf4j
-public class FireboltSocketFactory extends javax.net.SocketFactory {
+public class FireboltSocketFactory extends SocketFactory {
     private static final javax.net.SocketFactory delegate = SocketFactory.getDefault();
     private final FireboltProperties fireboltProperties;
 

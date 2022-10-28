@@ -62,26 +62,26 @@ public enum FireboltSessionProperty {
             "When set to true, the result of the queries executed are logged with the log level INFO. This has a negative performance impact and should only be enabled for debugging purposes"),
 
     //We keep all the deprecated properties to ensure backward compatibility - but they do not have any effect.
-
+    @Deprecated
     TIME_TO_LIVE_MILLIS("time_to_live_millis", 60 * 1000, Integer.class, true,
             "Maximum life span of connections regardless of their connection_keep_alive_timeout_millis",
             "timeToLiveMillis"),
+    @Deprecated
     MAX_CONNECTIONS_PER_ROUTE("max_connections_per_route", 500, Integer.class, true,
             "Maximum total connections per route", "defaultMaxPerRoute"),
 
-
+    @Deprecated
     USE_PATH_AS_DB("use_path_as_db", null, Boolean.class, true,
             "When set to true (the default) or not specified, the path parameter from the URL is used as the database name"),
 
-
+    @Deprecated
 	USE_CONNECTION_POOL(
 			"use_connection_pool", false, Boolean.class, true,
 			"use connection pool for valid connections. This property is deprecated and setting it has no effect."),
+
+    @Deprecated
 	VALIDATE_AFTER_INACTIVITY_MILLIS("validate_after_inactivity_millis", 3 * 1000, Integer.class, true,
 			"Defines period of inactivity in milliseconds after which persistent connections must be re-validated prior to being leased to the consumer. Non-positive value disables connection validation. ");
-
-
-
 
 	private final String key;
     private final Object defaultValue;

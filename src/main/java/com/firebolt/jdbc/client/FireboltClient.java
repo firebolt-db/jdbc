@@ -121,6 +121,10 @@ public abstract class FireboltClient {
         return requestBuilder.build();
     }
 
+    protected Request createPostRequest(String uri, String accessToken, String id) {
+        return createPostRequest(uri, (RequestBody) null, accessToken, id);
+    }
+
     protected Request createPostRequest(String uri, String json, String accessToken, String id) {
         RequestBody requestBody = null;
         if (json != null) {
@@ -138,11 +142,6 @@ public abstract class FireboltClient {
                         String.format("Could not query Firebolt at %s. The engine is not running. Status code: %d",
                                 host, HTTP_FORBIDDEN),
                         statusCode);
-            } else if (statusCode == HTTP_UNAUTHORIZED) {
-                this.getConnection().removeExpiredTokens();
-                throw new FireboltException(String.format(
-                        "Could not query Firebolt at %s. The operation is not authorized or the token is expired and has been cleared from the cache",
-                        host), statusCode);
             }
             String errorResponseMessage;
             try {
@@ -150,6 +149,12 @@ public abstract class FireboltClient {
                 errorResponseMessage = String.format(
                         "Server failed to execute query with the following error:%n%s%ninternal error:%n%s",
                         errorFromResponse, this.getInternalErrorWithHeadersText(response));
+                if (statusCode == HTTP_UNAUTHORIZED) {
+                    this.getConnection().removeExpiredTokens();
+                    throw new FireboltException(String.format(
+                            "Could not query Firebolt at %s. The operation is not authorized or the token is expired and has been cleared from the cache. %s",
+                            host, errorResponseMessage), statusCode);
+                }
                 throw new FireboltException(errorResponseMessage, statusCode);
             } catch (IOException e) {
                 log.warn("Could not parse response containing the error message from Firebolt", e);

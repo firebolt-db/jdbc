@@ -59,6 +59,7 @@ public class OkHttpClientCreator {
 
     private static Optional<HostnameVerifier> getHostnameVerifier(FireboltProperties properties) {
         if (properties.isSsl() && SSL_NONE_MODE.equals(properties.getSslMode())) {
+            //No verification when SSL mode is NONE
             return Optional.of((hostname, session) -> true);
         } else {
             return Optional.empty();
@@ -80,6 +81,7 @@ public class OkHttpClientCreator {
         } else if (SSL_STRICT_MODE.equals(fireboltProperties.getSslMode())) {
             TrustManagerFactory trustManagerFactory = TrustManagerFactory
                     .getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            //When null, it uses the default trusted KeyStore
             trustManagerFactory.init(getKeyStore(fireboltProperties).orElse(null));
             trustManagers = trustManagerFactory.getTrustManagers();
             keyManagers = new KeyManager[]{};
@@ -134,10 +136,12 @@ public class OkHttpClientCreator {
             new X509TrustManager() {
                 @Override
                 public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {
+                    //Not checking
                 }
 
                 @Override
                 public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {
+                    //Not checking
                 }
 
                 @Override
