@@ -1,13 +1,5 @@
 package com.firebolt.jdbc.service;
 
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-
 import com.firebolt.jdbc.PropertyUtil;
 import com.firebolt.jdbc.client.query.StatementClient;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
@@ -16,13 +8,19 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementType;
 import com.google.common.collect.ImmutableMap;
-
+import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @RequiredArgsConstructor
-@Slf4j
+@CustomLog
 public class FireboltStatementService {
 
 	private static final String TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT = "TabSeparatedWithNamesAndTypes";

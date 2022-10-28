@@ -3,7 +3,7 @@ package com.firebolt.jdbc.connection.settings;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 @Value
 @Builder(toBuilder = true)
-@Slf4j
+@CustomLog
 public class FireboltProperties {
 
 	private static final Pattern DB_PATH_PATTERN = Pattern.compile("/([a-zA-Z0-9_*\\-]+)");

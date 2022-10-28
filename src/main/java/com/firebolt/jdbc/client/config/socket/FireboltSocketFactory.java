@@ -1,7 +1,7 @@
 package com.firebolt.jdbc.client.config.socket;
 
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 
 import javax.net.SocketFactory;
 import java.io.IOException;
@@ -10,7 +10,7 @@ import java.net.Socket;
 
 import static com.firebolt.jdbc.client.config.socket.SocketUtil.wrap;
 
-@Slf4j
+@CustomLog
 public class FireboltSocketFactory extends SocketFactory {
     private static final javax.net.SocketFactory delegate = SocketFactory.getDefault();
     private final FireboltProperties fireboltProperties;

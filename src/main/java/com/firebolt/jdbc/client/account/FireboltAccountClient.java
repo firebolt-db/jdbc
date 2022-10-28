@@ -9,14 +9,14 @@ import com.firebolt.jdbc.client.account.response.FireboltEngineResponse;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.util.Optional;
 
-@Slf4j
+@CustomLog
 public class FireboltAccountClient extends FireboltClient {
 
     private static final String GET_ACCOUNT_ID_URI = "%s/iam/v2/accounts:getIdByName?accountName=%s";

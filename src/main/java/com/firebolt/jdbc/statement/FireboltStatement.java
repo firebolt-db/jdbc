@@ -13,7 +13,7 @@ import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
 import lombok.Builder;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.InputStream;
@@ -21,7 +21,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j
+@CustomLog
 public class FireboltStatement implements Statement {
 
 	private static final String KILL_QUERY_SQL = "KILL QUERY ON CLUSTER sql_cluster WHERE initial_query_id='%s'";

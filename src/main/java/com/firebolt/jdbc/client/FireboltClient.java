@@ -9,7 +9,7 @@ import dev.failsafe.RetryPolicy;
 import dev.failsafe.okhttp.FailsafeCall;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import okhttp3.*;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 import static java.net.HttpURLConnection.*;
 
 @Getter
-@Slf4j
+@CustomLog
 public abstract class FireboltClient {
 
     public static final String HEADER_AUTHORIZATION = "Authorization";

@@ -10,8 +10,8 @@ import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.rawstatement.RawStatement;
+import lombok.CustomLog;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okhttp3.internal.http2.StreamResetException;
 import org.apache.commons.lang3.StringUtils;
@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 
-@Slf4j
+@CustomLog
 public class StatementClientImpl extends FireboltClient implements StatementClient {
 
 

@@ -6,7 +6,7 @@ import com.firebolt.jdbc.client.authentication.response.FireboltAuthenticationRe
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.exception.FireboltException;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -14,7 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 
-@Slf4j
+@CustomLog
 public class FireboltAuthenticationClient extends FireboltClient {
 
     public FireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper,

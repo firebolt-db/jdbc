@@ -4,9 +4,9 @@ import com.firebolt.jdbc.client.config.socket.FireboltSSLSocketFactory;
 import com.firebolt.jdbc.client.config.socket.FireboltSocketFactory;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import lombok.Builder;
+import lombok.CustomLog;
 import lombok.Value;
 import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
 import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * Class to configure the http client using the session settings
  */
 @UtilityClass
-@Slf4j
+@CustomLog
 public class OkHttpClientCreator {
 
     private static final String SSL_STRICT_MODE = "strict";

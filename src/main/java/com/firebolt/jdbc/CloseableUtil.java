@@ -4,9 +4,9 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 
-@Slf4j
+@CustomLog
 @UtilityClass
 public class CloseableUtil {
 

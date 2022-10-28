@@ -1,5 +1,10 @@
 package com.firebolt.jdbc.type.date;
 
+import lombok.CustomLog;
+import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.StringUtils;
+
+import javax.annotation.Nullable;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -12,15 +17,8 @@ import java.util.TimeZone;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import javax.annotation.Nullable;
-
-import org.apache.commons.lang3.StringUtils;
-
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
-
 @UtilityClass
-@Slf4j
+@CustomLog
 public class SqlDateUtil {
 
 	private static final TimeZone DEFAULT_TZ = TimeZone.getDefault();

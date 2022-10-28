@@ -2,8 +2,8 @@ package integration;
 
 import com.firebolt.jdbc.client.HttpClientConfig;
 import com.google.common.io.Resources;
+import lombok.CustomLog;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.TestInstance;
 
 import java.lang.reflect.Field;
@@ -13,7 +13,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-@Slf4j
+@CustomLog
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class IntegrationTest {
 

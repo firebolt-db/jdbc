@@ -4,15 +4,15 @@ package com.firebolt.jdbc.client.config.socket;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import jdk.net.ExtendedSocketOptions;
 import jdk.net.Sockets;
+import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketOption;
 
 @UtilityClass
-@Slf4j
+@CustomLog
 public class SocketUtil {
 
     public static Socket wrap(Socket s, FireboltProperties fireboltProperties) throws IOException {

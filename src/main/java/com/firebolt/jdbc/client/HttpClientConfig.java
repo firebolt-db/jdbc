@@ -2,7 +2,7 @@ package com.firebolt.jdbc.client;
 
 import com.firebolt.jdbc.client.config.OkHttpClientCreator;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import okhttp3.OkHttpClient;
 
 import java.io.IOException;
@@ -11,7 +11,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 
-@Slf4j
+@CustomLog
 public class HttpClientConfig {
 
 	private static OkHttpClient instance;

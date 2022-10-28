@@ -20,8 +20,8 @@ import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
+import lombok.CustomLog;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -36,7 +36,7 @@ import java.util.concurrent.Executor;
 
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
-@Slf4j
+@CustomLog
 public class FireboltConnection implements Connection {
 
 	private final FireboltAuthenticationService fireboltAuthenticationService;

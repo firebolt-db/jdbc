@@ -14,12 +14,12 @@ import com.firebolt.jdbc.exception.FireboltException;
 
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
 
 @RequiredArgsConstructor
-@Slf4j
+@CustomLog
 public class FireboltAuthenticationService {
 
 	private static final ExpiringMap<ConnectParams, FireboltConnectionTokens> tokensMap = ExpiringMap.builder()

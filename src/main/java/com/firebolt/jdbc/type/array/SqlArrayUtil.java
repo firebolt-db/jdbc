@@ -1,25 +1,23 @@
 package com.firebolt.jdbc.type.array;
 
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.resultset.column.ColumnType;
+import com.firebolt.jdbc.type.FireboltDataType;
+import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
+import com.google.common.base.CharMatcher;
+import lombok.CustomLog;
+import lombok.NonNull;
+import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.StringUtils;
+
 import java.lang.reflect.Array;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
-
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.resultset.column.ColumnType;
-import com.firebolt.jdbc.type.FireboltDataType;
-import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
-import com.google.common.base.CharMatcher;
-
-import lombok.NonNull;
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
-
 @UtilityClass
-@Slf4j
+@CustomLog
 public class SqlArrayUtil {
 
 	public static FireboltArray transformToSqlArray(String value, ColumnType columnType)
