@@ -38,7 +38,7 @@ public class OkHttpClientCreator {
     private static final String CERTIFICATE_TYPE_X_509 = "X.509";
 
     public static OkHttpClient createClient(FireboltProperties properties) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException {
-        OkHttpClient.Builder builder = new OkHttpClient.Builder().retryOnConnectionFailure(false)
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .connectTimeout(properties.getConnectionTimeoutMillis(), TimeUnit.MILLISECONDS)
                 .socketFactory(new FireboltSocketFactory(properties))
                 .readTimeout(properties.getSocketTimeoutMillis(), TimeUnit.MILLISECONDS)

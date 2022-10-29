@@ -15,7 +15,6 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.*;
-import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -52,7 +51,6 @@ public abstract class FireboltClient {
         this.retryPolicy = RetryPolicy.<Response>builder()
                 .handleResultIf(response -> retryableResponseCodes.contains(response.code()))
                 .onRetry(e -> log.warn("Failure #{}. Retrying to send the request.", e.getAttemptCount()))
-                .handle(ConnectException.class)
                 .withMaxRetries(maxRetries)
                 .build();
     }

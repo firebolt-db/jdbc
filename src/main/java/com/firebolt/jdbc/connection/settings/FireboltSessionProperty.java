@@ -33,7 +33,7 @@ public enum FireboltSessionProperty {
     KEEP_ALIVE_TIMEOUT_MILLIS("connection_keep_alive_timeout_millis", Integer.MAX_VALUE, Integer.class, false,
             "How long to keep a connection with the server alive in the pool before closing it.", "keepAliveTimeout"),
 
-    MAX_CONNECTIONS_TOTAL("max_connections_total", 10000, Integer.class, false, "Maximum total connections",
+    MAX_CONNECTIONS_TOTAL("max_connections_total", 100, Integer.class, false, "Maximum total connections",
             "maxTotal"),
 
     TCP_KEEP_IDLE("tcp_keep_idle", 60, Integer.class, false,
