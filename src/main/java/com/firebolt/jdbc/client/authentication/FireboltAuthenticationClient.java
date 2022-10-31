@@ -38,8 +38,8 @@ public class FireboltAuthenticationClient extends FireboltClient {
         log.debug("Creating connection with url {}", uri);
         Request request = this.createPostRequest(uri, authenticationRequest.getRequestBody());
         try (Response response = this.execute(request, host)) {
-            String responseStr = getResponseAsString(response);
-            FireboltAuthenticationResponse authenticationResponse = objectMapper.readValue(responseStr,
+            String responseString = getResponseAsString(response);
+            FireboltAuthenticationResponse authenticationResponse = objectMapper.readValue(responseString,
                     FireboltAuthenticationResponse.class);
             FireboltConnectionTokens authenticationTokens = FireboltConnectionTokens.builder()
                     .accessToken(authenticationResponse.getAccessToken())

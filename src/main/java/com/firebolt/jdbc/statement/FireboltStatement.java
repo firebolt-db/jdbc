@@ -124,7 +124,7 @@ public class FireboltStatement implements Statement {
 				}
 			} catch (Exception ex) {
 				CloseableUtil.close(inputStream);
-				log.error("An error happened while executing the statement with the id {}", runningStatementId, ex);
+				log.error(String.format("An error happened while executing the statement with the id %s", runningStatementId), ex);
 				throw ex;
 			} finally {
 				runningStatementId = null;
@@ -139,7 +139,7 @@ public class FireboltStatement implements Statement {
 				}
 			}
 		} else {
-			log.warn("Did not run cancelled query with id {}", statementInfoWrapper.getId());
+			log.warn("Aborted query with id {}", statementInfoWrapper.getId());
 		}
 		return Optional.ofNullable(resultSet);
 	}

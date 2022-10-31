@@ -7,9 +7,9 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import dev.failsafe.RetryPolicy;
 import dev.failsafe.okhttp.FailsafeCall;
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.CustomLog;
 import okhttp3.*;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -49,8 +49,9 @@ public abstract class FireboltClient {
                 customClients != null ? customClients : "");
 
         this.retryPolicy = RetryPolicy.<Response>builder()
+                .abortOn(e -> true) // Do not retry when facing an exception
                 .handleResultIf(response -> retryableResponseCodes.contains(response.code()))
-                .onRetry(e -> log.warn("Failure #{}. Retrying to send the request.", e.getAttemptCount()))
+                .onRetry(e -> log.warn("Failure #{}. Retrying to send the request after exception. {}", e.getAttemptCount(), e.getLastException()))
                 .withMaxRetries(maxRetries)
                 .build();
     }
