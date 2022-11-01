@@ -12,6 +12,8 @@ public class FireboltException extends SQLException {
 	@Getter
 	private final ExceptionType type;
 
+	private static final int HTTP_MANY_REQUESTS = 429;
+
 	public FireboltException(ExceptionType type) {
 		super();
 		this.type = type;
@@ -57,7 +59,7 @@ public class FireboltException extends SQLException {
 			return INVALID_REQUEST;
 		case HTTP_UNAUTHORIZED:
 			return UNAUTHORIZED;
-		case 429:
+		case HTTP_MANY_REQUESTS:
 			return TOO_MANY_REQUESTS;
 		default:
 			return ERROR;

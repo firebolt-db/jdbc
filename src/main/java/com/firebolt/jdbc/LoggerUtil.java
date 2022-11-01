@@ -1,7 +1,7 @@
 package com.firebolt.jdbc;
 
 import com.firebolt.jdbc.log.FireboltLogger;
-import com.firebolt.jdbc.log.JdkLogger;
+import com.firebolt.jdbc.log.JDKLogger;
 import com.firebolt.jdbc.log.SLF4JLogger;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
@@ -34,7 +34,7 @@ public class LoggerUtil {
 		if (hasSLF4JDependency) {
 			return new SLF4JLogger(name);
 		} else {
-			return new JdkLogger(name);
+			return new JDKLogger(name);
 		}
 	}
 

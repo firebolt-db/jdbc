@@ -120,6 +120,18 @@ class FireboltAuthenticationClientTest {
 	}
 
 	@Test
+	void shouldNotRetryWhenFacingANonRetryableException() throws Exception {
+		Call call = mock(Call.class);
+		when(call.execute()).thenThrow(IOException.class);
+		when(httpClient.newCall(any())).thenReturn(call);
+
+		assertThrows(IOException.class,
+				() -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
+		verify(call).execute();
+		verify(call, times(0)).clone();
+	}
+
+	@Test
 	void shouldThrowExceptionWhenStatusCodeIsForbidden() throws Exception {
 		Response response = mock(Response.class);
 		Call call = mock(Call.class);

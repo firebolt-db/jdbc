@@ -2,10 +2,11 @@ package com.firebolt.jdbc.log;
 
 import java.util.logging.Level;
 
-public class JdkLogger implements FireboltLogger {
+public class JDKLogger implements FireboltLogger {
+
     private final java.util.logging.Logger logger;
 
-    public JdkLogger(String name) {
+    public JDKLogger(String name) {
         this.logger = java.util.logging.Logger.getLogger(name);
     }
 

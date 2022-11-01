@@ -40,8 +40,6 @@ public class RetryPolicyTest extends IntegrationTest {
             assertEquals(ex.getType(), INVALID_REQUEST);
             assertEquals(1, mockBackEnd.getRequestCount());
         }
-
-
     }
 
     @Test
@@ -53,8 +51,6 @@ public class RetryPolicyTest extends IntegrationTest {
             statement.execute("SELECT 1;");
             assertEquals(3, mockBackEnd.getRequestCount());
         }
-
     }
-
 
 }

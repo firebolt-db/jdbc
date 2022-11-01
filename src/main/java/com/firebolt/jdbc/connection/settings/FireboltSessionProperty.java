@@ -18,7 +18,7 @@ public enum FireboltSessionProperty {
             "SSL mode to verify/not verify the certificate. Supported Types: none (don't verify), strict (verify)",
             "sslmode"),
     MAX_RETRIES("max_retries", 3, Integer.class,
-            "Maximum number of retries used by the client to query Firebolt. Set to 0 to disable"),
+            "Maximum number of retries used by the client to query Firebolt when the response has an invalid status code that is retryable (HTTP_CLIENT_TIMEOUT/408, HTTP_BAD_GATEWAY/502, HTTP_UNAVAILABLE/503 or HTTP_GATEWAY_TIMEOUT/504). Set to 0 to disable "),
 
     SOCKET_TIMEOUT_MILLIS("socket_timeout_millis", 0, Integer.class,
             "maximum time of inactivity between two data packets when exchanging data with the server. A timeout value of zero is interpreted as an infinite timeout. A negative value is interpreted as undefined.",
@@ -83,7 +83,8 @@ public enum FireboltSessionProperty {
     CLIENT_BUFFER_SIZE("client_buffer_size", 65536, Integer.class,
             "The buffer for the Apache client used by the Driver (in bytes). It is the preferred buffer size for the body of the http response. A larger buffer allows more content to be written before anything is actually sent while a smaller buffer decreases server memory load and allows the client to start receiving data quicker.\n"
                     + "The buffer will be at least as large as the size requested.",
-                    "apache_buffer_size"),;
+            "apache_buffer_size"),
+    ;
     private final String key;
     private final Object defaultValue;
     private final Class<?> clazz;

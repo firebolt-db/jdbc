@@ -11,14 +11,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class JdkLoggerTest {
+class JDKLoggerTest {
 
     @Test
     void shouldLogWithCorrectLevel() {
         try (MockedStatic<Logger> mockedLogger = Mockito.mockStatic(Logger.class)) {
             Logger logger = mock(Logger.class);
             mockedLogger.when(() -> java.util.logging.Logger.getLogger(any())).thenReturn(logger);
-            JdkLogger jdkLogger = new JdkLogger("myTest");
+            JDKLogger jdkLogger = new JDKLogger("myTest");
             jdkLogger.debug("This is a debug log");
             jdkLogger.warn("This is a warning log");
             jdkLogger.error("This is an error log");
@@ -35,7 +35,7 @@ class JdkLoggerTest {
         try (MockedStatic<Logger> mockedLogger = Mockito.mockStatic(Logger.class)) {
             Logger logger = mock(Logger.class);
             mockedLogger.when(() -> java.util.logging.Logger.getLogger(any())).thenReturn(logger);
-            JdkLogger jdkLogger = new JdkLogger("myTest");
+            JDKLogger jdkLogger = new JDKLogger("myTest");
             jdkLogger.debug("This debug log has some arguments: {}, {}, {}", "arg1", "arg2", "arg3");
             jdkLogger.warn("This warning log has some arguments: {}, {}, {}", "arg1", "arg2", "arg3");
             jdkLogger.error("This error log has some arguments: {}, {}, {}", "arg1", "arg2", "arg3");
@@ -53,7 +53,7 @@ class JdkLoggerTest {
         try (MockedStatic<Logger> mockedLogger = Mockito.mockStatic(Logger.class)) {
             Logger logger = mock(Logger.class);
             mockedLogger.when(() -> java.util.logging.Logger.getLogger(any())).thenReturn(logger);
-            JdkLogger jdkLogger = new JdkLogger("myTest");
+            JDKLogger jdkLogger = new JDKLogger("myTest");
             IllegalArgumentException illegalArgumentException = new IllegalArgumentException();
             jdkLogger.debug("This debug log has an exception", illegalArgumentException);
             jdkLogger.warn("This warning log has an exception", illegalArgumentException);

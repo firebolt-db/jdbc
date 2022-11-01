@@ -49,9 +49,10 @@ public abstract class FireboltClient {
                 customClients != null ? customClients : "");
 
         this.retryPolicy = RetryPolicy.<Response>builder()
-                .abortOn(e -> true) // Do not retry when facing an exception
+                .abortOn(e -> true) // Do not retry when facing an exception.
                 .handleResultIf(response -> retryableResponseCodes.contains(response.code()))
-                .onRetry(e -> log.warn("Failure #{}. Retrying to send the request.", e.getAttemptCount()))
+                .onRetry(e -> log.warn("Failure #{} - Response code: {}. Retrying to send the request.",
+                        Optional.ofNullable(e.getLastResult()).map(Response::code).orElse(null), e.getAttemptCount()))
                 .withMaxRetries(maxRetries)
                 .build();
     }
@@ -151,7 +152,7 @@ public abstract class FireboltClient {
                 if (statusCode == HTTP_UNAUTHORIZED) {
                     this.getConnection().removeExpiredTokens();
                     throw new FireboltException(String.format(
-                            "Could not query Firebolt at %s. The operation is not authorized or the token is expired and has been cleared from the cache. %s",
+                            "Could not query Firebolt at %s. The operation is not authorized or the token is expired and has been cleared from the cache.%n%s",
                             host, errorResponseMessage), statusCode);
                 }
                 throw new FireboltException(errorResponseMessage, statusCode);
