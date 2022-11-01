@@ -51,7 +51,7 @@ public abstract class FireboltClient {
         this.retryPolicy = RetryPolicy.<Response>builder()
                 .abortOn(e -> true) // Do not retry when facing an exception
                 .handleResultIf(response -> retryableResponseCodes.contains(response.code()))
-                .onRetry(e -> log.warn("Failure #{}. Retrying to send the request after exception. {}", e.getAttemptCount(), e.getLastException()))
+                .onRetry(e -> log.warn("Failure #{}. Retrying to send the request.", e.getAttemptCount()))
                 .withMaxRetries(maxRetries)
                 .build();
     }

@@ -58,11 +58,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
             Response response = this.execute(post, connectionProperties.getHost(),
                     connectionProperties.isCompress());
 
-            InputStream stream = response.body() != null ? response.body().byteStream() : null;
-            if (stream == null) {
-                CloseableUtil.close(response);
-            }
-            return stream;
+            return response.body() != null ? response.body().byteStream() : null;
         } catch (FireboltException e) {
             throw e;
         } catch (Exception e) {

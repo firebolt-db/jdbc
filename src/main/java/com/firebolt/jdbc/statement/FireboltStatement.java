@@ -57,7 +57,7 @@ public class FireboltStatement implements Statement {
 		Optional<ResultSet> resultSet = this.execute(Collections.singletonList(query), null);
 		synchronized (this) {
 			if (!resultSet.isPresent()) {
-				throw new FireboltException("Could not return ResultSet - the result object is null");
+				throw new FireboltException("Could not return ResultSet - the query returned no result.");
 			} else {
 				return resultSet.get();
 			}

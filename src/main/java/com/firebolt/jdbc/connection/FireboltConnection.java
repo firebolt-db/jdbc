@@ -75,7 +75,7 @@ public class FireboltConnection implements Connection {
 		this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
 		OkHttpClient httpClient = getHttpClient(loginProperties);
 		this.fireboltAuthenticationService = new FireboltAuthenticationService(
-				new FireboltAuthenticationClient(httpClient, objectMapper, this, driverVersions, clientVersions, loginProperties.getMaxRetries() ));
+				new FireboltAuthenticationClient(httpClient, objectMapper, this, driverVersions, clientVersions, loginProperties.getMaxRetries()));
 		this.fireboltEngineService = new FireboltEngineService(
 				new FireboltAccountClient(httpClient, objectMapper, this, driverVersions, clientVersions, loginProperties.getMaxRetries()));
 		this.fireboltStatementService = new FireboltStatementService(

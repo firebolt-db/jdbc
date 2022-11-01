@@ -12,7 +12,6 @@ public class JdkLogger implements FireboltLogger {
     @Override
     public void trace(String message) {
         logger.log(Level.FINEST, message);
-
     }
 
     @Override
