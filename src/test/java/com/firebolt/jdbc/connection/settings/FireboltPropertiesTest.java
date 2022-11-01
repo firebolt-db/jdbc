@@ -18,7 +18,7 @@ class FireboltPropertiesTest {
 				.compress(true).user(null).password(null).host("host").ssl(true).additionalProperties(new HashMap<>())
 				.account(null).engine(null).keepAliveTimeoutMillis(300000)
 				.maxConnectionsTotal(300).maxRetries(3).socketTimeoutMillis(0)
-				.connectionTimeoutMillis(60000).clientBufferSize(65536).tcpKeepInterval(30).tcpKeepIdle(60)
+				.connectionTimeoutMillis(60000).tcpKeepInterval(30).tcpKeepIdle(60)
 				.tcpKeepCount(10).build();
 
 		Properties properties = new Properties();
@@ -49,7 +49,7 @@ class FireboltPropertiesTest {
 				.port(443).user(null).password(null).host("myDummyHost").ssl(true)
 				.additionalProperties(customProperties).account(null).engine(null)
 				.keepAliveTimeoutMillis(300000).maxConnectionsTotal(300).maxRetries(3)
-				.socketTimeoutMillis(20).connectionTimeoutMillis(60000).clientBufferSize(65536).tcpKeepInterval(30)
+				.socketTimeoutMillis(20).connectionTimeoutMillis(60000).tcpKeepInterval(30)
 				.tcpKeepIdle(60).tcpKeepCount(10).build();
 		assertEquals(expectedDefaultProperties, FireboltProperties.of(properties));
 	}

@@ -71,7 +71,6 @@ public class FireboltProperties {
 		int maxTotal = getSetting(mergedProperties, FireboltSessionProperty.MAX_CONNECTIONS_TOTAL);
 		int maxRetries = getSetting(mergedProperties, FireboltSessionProperty.MAX_RETRIES);
 		int bufferSize = getSetting(mergedProperties, FireboltSessionProperty.BUFFER_SIZE);
-		int clientBufferSize = getSetting(mergedProperties, FireboltSessionProperty.CLIENT_BUFFER_SIZE);
 		int socketTimeout = getSetting(mergedProperties, FireboltSessionProperty.SOCKET_TIMEOUT_MILLIS);
 		int connectionTimeout = getSetting(mergedProperties, FireboltSessionProperty.CONNECTION_TIMEOUT_MILLIS);
 		int tcpKeepInterval = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_INTERVAL);
@@ -91,7 +90,7 @@ public class FireboltProperties {
 				.additionalProperties(additionalProperties).account(account).engine(engine)
 				.keepAliveTimeoutMillis(keepAliveMillis)
 				.maxConnectionsTotal(maxTotal)
-				.maxRetries(maxRetries).clientBufferSize(clientBufferSize).bufferSize(bufferSize)
+				.maxRetries(maxRetries).bufferSize(bufferSize)
 				.socketTimeoutMillis(socketTimeout).connectionTimeoutMillis(connectionTimeout)
 				.tcpKeepInterval(tcpKeepInterval).tcpKeepCount(tcpKeepCount)
 				.tcpKeepIdle(tcpKeepIdle).aggressiveCancel(aggressiveCancel).logResultSet(logResultSet).build();

@@ -17,11 +17,6 @@ public enum FireboltSessionProperty {
     SSL_MODE("ssl_mode", "strict", String.class,
             "SSL mode to verify/not verify the certificate. Supported Types: none (don't verify), strict (verify)",
             "sslmode"),
-
-    CLIENT_BUFFER_SIZE("client_buffer_size", 65536, Integer.class,
-            "The buffer for the Apache client used by the Driver (in bytes). It is the preferred buffer size for the body of the http response. A larger buffer allows more content to be written before anything is actually sent while a smaller buffer decreases server memory load and allows the client to start receiving data quicker.\n"
-                    + "The buffer will be at least as large as the size requested.",
-            "apache_buffer_size"),
     MAX_RETRIES("max_retries", 3, Integer.class,
             "Maximum number of retries used by the client to query Firebolt. Set to 0 to disable"),
 
@@ -82,8 +77,13 @@ public enum FireboltSessionProperty {
 
     @Deprecated
     VALIDATE_AFTER_INACTIVITY_MILLIS("validate_after_inactivity_millis", 3 * 1000, Integer.class,
-            "Defines period of inactivity in milliseconds after which persistent connections must be re-validated prior to being leased to the consumer. Non-positive value disables connection validation. ");
+            "Defines period of inactivity in milliseconds after which persistent connections must be re-validated prior to being leased to the consumer. Non-positive value disables connection validation. "),
 
+    @Deprecated
+    CLIENT_BUFFER_SIZE("client_buffer_size", 65536, Integer.class,
+            "The buffer for the Apache client used by the Driver (in bytes). It is the preferred buffer size for the body of the http response. A larger buffer allows more content to be written before anything is actually sent while a smaller buffer decreases server memory load and allows the client to start receiving data quicker.\n"
+                    + "The buffer will be at least as large as the size requested.",
+                    "apache_buffer_size"),;
     private final String key;
     private final Object defaultValue;
     private final Class<?> clazz;
