@@ -64,7 +64,7 @@ class StatementClientImplTest {
 		when(connection.getConnectionTokens())
 				.thenReturn(Optional.of(FireboltConnectionTokens.builder().accessToken("token").build()));
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection,
-				mock(ObjectMapper.class), "ConnA:1.0.9", "ConnB:2.0.9", 1);
+				mock(ObjectMapper.class), "ConnA:1.0.9", "ConnB:2.0.9");
 		Response response = mock(Response.class);
 		ResponseBody responseBody = mock(ResponseBody.class);
 		when(response.code()).thenReturn(200);
@@ -103,7 +103,7 @@ class StatementClientImplTest {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
 				.host("firebolt1").port(555).build();
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(FireboltConnection.class),
-				mock(ObjectMapper.class), "", "", 1);
+				mock(ObjectMapper.class), "", "");
 		Response response = mock(Response.class);
 		when(response.code()).thenReturn(200);
 		Call call = mock(Call.class);

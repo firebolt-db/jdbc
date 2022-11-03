@@ -32,8 +32,8 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
             && StringUtils.equals((String) call.request().tag(), id);
 
     public StatementClientImpl(OkHttpClient httpClient, FireboltConnection connection, ObjectMapper objectMapper,
-                               String customDrivers, String customClients, int maxRetries) {
-        super(httpClient, connection, customDrivers, customClients, objectMapper, maxRetries);
+                               String customDrivers, String customClients) {
+        super(httpClient, connection, customDrivers, customClients, objectMapper);
     }
 
     /**

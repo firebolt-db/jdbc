@@ -74,7 +74,7 @@ class FireboltAccountClientTest {
     @BeforeEach
     void setUp() throws FireboltException {
         fireboltAccountClient = new FireboltAccountClient(httpClient, objectMapper, fireboltConnection, "ConnA:1.0.9",
-                "ConnB:2.0.9", 1);
+                "ConnB:2.0.9");
         when(httpClient.newCall(any())).thenReturn(call);
     }
 
@@ -187,7 +187,6 @@ class FireboltAccountClientTest {
         ResponseBody body = mock(ResponseBody.class);
         when(response.body()).thenReturn(body);
         when(call.execute()).thenReturn(response);
-		when(call.clone()).thenReturn(call);
         assertThrows(FireboltException.class, () -> fireboltAccountClient.getAccountId(HOST, ACCOUNT, ACCESS_TOKEN));
     }
 

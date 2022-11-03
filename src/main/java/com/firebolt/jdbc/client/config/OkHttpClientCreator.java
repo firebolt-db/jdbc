@@ -40,6 +40,7 @@ public class OkHttpClientCreator {
     public static OkHttpClient createClient(FireboltProperties properties) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException {
         OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .connectTimeout(properties.getConnectionTimeoutMillis(), TimeUnit.MILLISECONDS)
+                .addInterceptor(new RetryInterceptor(properties.getMaxRetries()))
                 .socketFactory(new FireboltSocketFactory(properties))
                 .readTimeout(properties.getSocketTimeoutMillis(), TimeUnit.MILLISECONDS)
                 .connectionPool(new ConnectionPool(properties.getMaxConnectionsTotal(), properties.getKeepAliveTimeoutMillis(), TimeUnit.MILLISECONDS));

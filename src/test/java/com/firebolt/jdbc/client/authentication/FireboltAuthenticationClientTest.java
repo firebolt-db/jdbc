@@ -60,7 +60,7 @@ class FireboltAuthenticationClientTest {
 	@BeforeEach
 	void setUp() {
 		fireboltAuthenticationClient = new FireboltAuthenticationClient(httpClient, objectMapper, connection,
-				"ConnA:1.0.9", "ConnB:2.0.9", RETRIES);
+				"ConnA:1.0.9", "ConnB:2.0.9");
 	}
 
 	@Test
@@ -97,26 +97,6 @@ class FireboltAuthenticationClientTest {
 
 		assertThrows(FireboltException.class,
 				() -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
-	}
-
-	@Test
-	void shouldRetryWhenFacingRetryableException() throws Exception {
-		Response response = mock(Response.class);
-		Call call = mock(Call.class);
-		Call retryCall = mock(Call.class);
-		//This happens during a retry
-		when(call.clone()).thenReturn(retryCall);
-		when(call.execute()).thenReturn(response);
-		when(retryCall.execute()).thenReturn(response);
-		ResponseBody body = mock(ResponseBody.class);
-		when(response.body()).thenReturn(body);
-		when(response.code()).thenReturn(HTTP_BAD_GATEWAY);
-		when(httpClient.newCall(any())).thenReturn(call);
-
-		assertThrows(FireboltException.class,
-				() -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
-		verify(call).execute();
-		verify(retryCall, times(RETRIES)).execute();
 	}
 
 	@Test

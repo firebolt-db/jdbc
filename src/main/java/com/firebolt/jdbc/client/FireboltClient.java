@@ -5,8 +5,6 @@ import com.firebolt.jdbc.CloseableUtil;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
-import dev.failsafe.RetryPolicy;
-import dev.failsafe.okhttp.FailsafeCall;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NonNull;
@@ -16,7 +14,9 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -33,28 +33,16 @@ public abstract class FireboltClient {
     private final String headerUserAgentValue;
     private final OkHttpClient httpClient;
     private final FireboltConnection connection;
-    private final RetryPolicy<Response> retryPolicy;
 
-    private static final Set<Integer> retryableResponseCodes = new HashSet<>(Arrays.asList(HTTP_CLIENT_TIMEOUT,
-            HTTP_BAD_GATEWAY,
-            HTTP_UNAVAILABLE,
-            HTTP_GATEWAY_TIMEOUT));
+
 
     protected FireboltClient(OkHttpClient httpClient, FireboltConnection connection, String customDrivers,
-                             String customClients, ObjectMapper objectMapper, int maxRetries) {
+                             String customClients, ObjectMapper objectMapper) {
         this.httpClient = httpClient;
         this.connection = connection;
         this.objectMapper = objectMapper;
         this.headerUserAgentValue = UsageTrackerUtil.getUserAgentString(customDrivers != null ? customDrivers : "",
                 customClients != null ? customClients : "");
-
-        this.retryPolicy = RetryPolicy.<Response>builder()
-                .abortOn(e -> true) // Do not retry when facing an exception.
-                .handleResultIf(response -> retryableResponseCodes.contains(response.code()))
-                .onRetry(e -> log.warn("Failure #{} - Response code: {}. Retrying to send the request.",
-                        Optional.ofNullable(e.getLastResult()).map(Response::code).orElse(null), e.getAttemptCount()))
-                .withMaxRetries(maxRetries)
-                .build();
     }
 
     protected <T> T getResource(String uri, String host, String accessToken, Class<T> valueType)
@@ -82,10 +70,7 @@ public abstract class FireboltClient {
         try {
             OkHttpClient client = getClientWithTimeouts(this.connection.getConnectionTimeout(), this.connection.getNetworkTimeout());
             Call call = client.newCall(request);
-
-            FailsafeCall failsafeCall = FailsafeCall.with(retryPolicy).compose(call);
-
-            response = failsafeCall.execute();
+            response = call.execute();
             validateResponse(host, response, isCompress);
         } catch (Exception e) {
             CloseableUtil.close(response);

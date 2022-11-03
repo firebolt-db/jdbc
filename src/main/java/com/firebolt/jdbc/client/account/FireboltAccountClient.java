@@ -34,8 +34,8 @@ public class FireboltAccountClient extends FireboltClient {
     private static final String ERROR_NO_RUNNING_ENGINE_PREFIX = "There is no running Firebolt engine running on ";
 
     public FireboltAccountClient(OkHttpClient httpClient, ObjectMapper objectMapper,
-                                 FireboltConnection fireboltConnection, String customDrivers, String customClients, int maxRetries) {
-        super(httpClient, fireboltConnection, customDrivers, customClients, objectMapper, maxRetries);
+                                 FireboltConnection fireboltConnection, String customDrivers, String customClients) {
+        super(httpClient, fireboltConnection, customDrivers, customClients, objectMapper);
     }
 
     /**
