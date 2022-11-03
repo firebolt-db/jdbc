@@ -17,7 +17,7 @@ import static org.mockito.Mockito.*;
 class RetryInterceptorTest {
 
     @ParameterizedTest
-    @ValueSource(ints = {HTTP_CLIENT_TIMEOUT, HTTP_BAD_GATEWAY, HTTP_UNAVAILABLE,
+    @ValueSource(ints = {HTTP_CLIENT_TIMEOUT, HTTP_INTERNAL_ERROR, HTTP_BAD_GATEWAY, HTTP_UNAVAILABLE,
             HTTP_GATEWAY_TIMEOUT})
     void shouldRetryOnRetryableResponseCode(int arg) throws IOException {
         int retries = 3;

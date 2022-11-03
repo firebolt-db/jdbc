@@ -19,6 +19,7 @@ import static java.net.HttpURLConnection.*;
 public class RetryInterceptor implements Interceptor {
 
     private static final Set<Integer> RETRYABLE_RESPONSE_CODES = new HashSet<>(Arrays.asList(HTTP_CLIENT_TIMEOUT,
+            HTTP_INTERNAL_ERROR,
             HTTP_BAD_GATEWAY,
             HTTP_UNAVAILABLE,
             HTTP_GATEWAY_TIMEOUT));

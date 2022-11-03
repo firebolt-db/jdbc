@@ -2,7 +2,7 @@ name: Release new version
 
 on:
   release:
-    types: [published]
+    types: [created]
 
 jobs:
   build:
