@@ -1,18 +1,17 @@
 package integration.tests;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import integration.IntegrationTest;
+import lombok.CustomLog;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import integration.IntegrationTest;
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
+@CustomLog
 class TimeoutTest extends IntegrationTest {
 
 	@Test

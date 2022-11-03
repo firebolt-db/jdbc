@@ -1,22 +1,20 @@
 package integration.tests;
 
-import static org.junit.jupiter.api.Assertions.*;
+import com.firebolt.jdbc.exception.FireboltException;
+import integration.IntegrationTest;
+import lombok.CustomLog;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
-import com.firebolt.jdbc.exception.FireboltException;
-
-import integration.IntegrationTest;
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
+@CustomLog
 class StatementTest extends IntegrationTest {
 
 	@BeforeEach

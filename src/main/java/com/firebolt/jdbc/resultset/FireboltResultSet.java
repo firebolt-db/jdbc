@@ -29,12 +29,12 @@ import com.firebolt.jdbc.type.BaseType;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.array.FireboltArray;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 
 /**
  * ResultSet following the TabSeparatedWithNamesAndTypes format
  */
-@Slf4j
+@CustomLog
 public class FireboltResultSet implements ResultSet {
 	private final BufferedReader reader;
 	private final Map<String, Integer> columnNameToColumnNumber;

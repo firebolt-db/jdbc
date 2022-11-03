@@ -1,12 +1,5 @@
 package com.firebolt.jdbc.statement;
 
-import java.io.InputStream;
-import java.sql.*;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.firebolt.jdbc.CloseableUtil;
 import com.firebolt.jdbc.PropertyUtil;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
@@ -19,11 +12,16 @@ import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
-
 import lombok.Builder;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
+import org.apache.commons.lang3.StringUtils;
 
-@Slf4j
+import java.io.InputStream;
+import java.sql.*;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@CustomLog
 public class FireboltStatement implements Statement {
 
 	private static final String KILL_QUERY_SQL = "KILL QUERY ON CLUSTER sql_cluster WHERE initial_query_id='%s'";
@@ -59,7 +57,7 @@ public class FireboltStatement implements Statement {
 		Optional<ResultSet> resultSet = this.execute(Collections.singletonList(query), null);
 		synchronized (this) {
 			if (!resultSet.isPresent()) {
-				throw new FireboltException("Could not return ResultSet - the result object is null");
+				throw new FireboltException("Could not return ResultSet - the query returned no result.");
 			} else {
 				return resultSet.get();
 			}
@@ -126,7 +124,7 @@ public class FireboltStatement implements Statement {
 				}
 			} catch (Exception ex) {
 				CloseableUtil.close(inputStream);
-				log.error("An error happened while executing the statement with the id {}", runningStatementId, ex);
+				log.error(String.format("An error happened while executing the statement with the id %s", runningStatementId), ex);
 				throw ex;
 			} finally {
 				runningStatementId = null;
@@ -141,7 +139,7 @@ public class FireboltStatement implements Statement {
 				}
 			}
 		} else {
-			log.warn("Did not run cancelled query with id {}", statementInfoWrapper.getId());
+			log.warn("Aborted query with id {}", statementInfoWrapper.getId());
 		}
 		return Optional.ofNullable(resultSet);
 	}
@@ -309,7 +307,7 @@ public class FireboltStatement implements Statement {
 	 * Closes the Statement and removes the object from the list of Statements kept
 	 * in the {@link FireboltConnection} if the param removeFromConnection is set to
 	 * true
-	 * 
+	 *
 	 * @param removeFromConnection whether the {@link FireboltStatement} must be
 	 *                             removed from the parent
 	 *                             {@link FireboltConnection}
@@ -413,7 +411,7 @@ public class FireboltStatement implements Statement {
 
 	/**
 	 * Returns true if the statement is currently running
-	 * 
+	 *
 	 * @return true if the statement is currently running
 	 */
 	public boolean isStatementRunning() {
@@ -662,7 +660,7 @@ public class FireboltStatement implements Statement {
 
 	/**
 	 * Returns true if the statement has more results
-	 * 
+	 *
 	 * @return true if the statement has more results
 	 */
 	public boolean hasMoreResults() {
