@@ -36,7 +36,8 @@ public class RetryInterceptor implements Interceptor {
             log.warn("Failure #{} - Response code: {}. Retrying to send the request.",
                     tryCount, response.code());
             // retry the request
-            response = chain.call().clone().execute();
+            response.close();
+            response = chain.proceed(request);
         }
 
         return response;

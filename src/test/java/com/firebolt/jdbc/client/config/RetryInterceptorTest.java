@@ -25,17 +25,16 @@ class RetryInterceptorTest {
         Interceptor.Chain chain = mock(Interceptor.Chain.class);
         Response response = mock(Response.class);
         Call call = mock(Call.class);
+        Request request = mock(Request.class);
 
-        when(chain.request()).thenReturn(mock(Request.class));
+        when(chain.request()).thenReturn(request);
         when(chain.proceed(any(Request.class))).thenReturn(response);
         when(response.isSuccessful()).thenReturn(false);
         when(response.code()).thenReturn(arg);
         when(chain.call()).thenReturn(call);
-        when(call.clone()).thenReturn(call);
-        when(call.execute()).thenReturn(response);
 
         retryInterceptor.intercept(chain);
-        verify(call, times(retries)).execute();
+        verify(chain, times(1 + retries)).proceed(request);
     }
 
     @Test
