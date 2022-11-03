@@ -21,9 +21,9 @@ import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.resultset.column.Column;
 import com.firebolt.jdbc.type.FireboltDataType;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 
-@Slf4j
+@CustomLog
 public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 	private final String url;

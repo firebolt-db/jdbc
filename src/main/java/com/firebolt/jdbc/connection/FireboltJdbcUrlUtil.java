@@ -9,9 +9,9 @@ import org.apache.commons.lang3.StringUtils;
 import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
 
 import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 
-@Slf4j
+@CustomLog
 @UtilityClass
 public class FireboltJdbcUrlUtil {
 

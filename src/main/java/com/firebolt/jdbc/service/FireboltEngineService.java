@@ -1,18 +1,16 @@
 package com.firebolt.jdbc.service;
 
-import java.util.Optional;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.firebolt.jdbc.client.account.FireboltAccountClient;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
-
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Optional;
 
 @RequiredArgsConstructor
-@Slf4j
+@CustomLog
 public class FireboltEngineService {
 	private final FireboltAccountClient fireboltAccountClient;
 

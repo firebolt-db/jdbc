@@ -1,23 +1,21 @@
 package com.firebolt.jdbc.type;
 
+import com.firebolt.jdbc.resultset.column.Column;
+import com.firebolt.jdbc.type.array.SqlArrayUtil;
+import com.firebolt.jdbc.type.date.SqlDateUtil;
+import lombok.Builder;
+import lombok.CustomLog;
+import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.*;
 import java.util.TimeZone;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.text.StringEscapeUtils;
-
-import com.firebolt.jdbc.resultset.column.Column;
-import com.firebolt.jdbc.type.array.SqlArrayUtil;
-import com.firebolt.jdbc.type.date.SqlDateUtil;
-
-import lombok.Builder;
-import lombok.Value;
-import lombok.extern.slf4j.Slf4j;
-
 /** This class contains the java types the Firebolt datatypes are mapped to */
-@Slf4j
+@CustomLog
 public enum BaseType {
 	LONG(Long.class, conversion -> Long.parseLong(conversion.getValue())),
 	INTEGER(Integer.class, conversion -> Integer.parseInt(conversion.getValue())),

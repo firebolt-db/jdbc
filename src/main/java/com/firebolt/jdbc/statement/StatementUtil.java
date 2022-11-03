@@ -1,24 +1,22 @@
 package com.firebolt.jdbc.statement;
 
-import java.util.*;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
+import com.firebolt.jdbc.statement.rawstatement.RawStatement;
+import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
+import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
+import lombok.CustomLog;
+import lombok.NonNull;
+import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.firebolt.jdbc.statement.rawstatement.RawStatement;
-import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
-import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
-
-import lombok.NonNull;
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
+import java.util.*;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @UtilityClass
-@Slf4j
+@CustomLog
 public class StatementUtil {
 
 	private static final String SET_PREFIX = "set";

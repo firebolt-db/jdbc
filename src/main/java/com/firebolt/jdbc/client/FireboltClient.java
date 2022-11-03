@@ -1,174 +1,197 @@
 package com.firebolt.jdbc.client;
 
-import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
-import static org.apache.hc.core5.http.HttpStatus.SC_SERVICE_UNAVAILABLE;
-import static org.apache.hc.core5.http.HttpStatus.SC_UNAUTHORIZED;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.firebolt.jdbc.CloseableUtil;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
+import lombok.CustomLog;
+import lombok.Getter;
+import lombok.NonNull;
+import okhttp3.*;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hc.client5.http.classic.methods.HttpGet;
-import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
-import org.apache.hc.client5.http.config.RequestConfig;
-import org.apache.hc.client5.http.cookie.StandardCookieSpec;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.apache.hc.core5.http.HttpEntity;
-import org.apache.hc.core5.http.ParseException;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.apache.hc.core5.util.Timeout;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
-
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
+import static java.net.HttpURLConnection.*;
 
 @Getter
-@Slf4j
+@CustomLog
 public abstract class FireboltClient {
 
-	public static final String HEADER_AUTHORIZATION = "Authorization";
-	public static final String HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE = "Bearer ";
-	public static final String HEADER_USER_AGENT = "User-Agent";
-	protected final ObjectMapper objectMapper;
-	private final String headerUserAgentValue;
-	private final CloseableHttpClient httpClient;
-	private final FireboltConnection connection;
+    public static final String HEADER_AUTHORIZATION = "Authorization";
+    public static final String HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE = "Bearer ";
+    public static final String HEADER_USER_AGENT = "User-Agent";
+    protected final ObjectMapper objectMapper;
+    private final String headerUserAgentValue;
+    private final OkHttpClient httpClient;
+    private final FireboltConnection connection;
 
-	protected FireboltClient(CloseableHttpClient httpClient, FireboltConnection connection, String customDrivers,
-			String customClients, ObjectMapper objectMapper) {
-		this.httpClient = httpClient;
-		this.connection = connection;
-		this.objectMapper = objectMapper;
-		this.headerUserAgentValue = UsageTrackerUtil.getUserAgentString(customDrivers != null ? customDrivers : "",
-				customClients != null ? customClients : "");
-	}
 
-	protected <T> T getResource(String uri, String host, String accessToken, Class<T> valueType)
-			throws IOException, ParseException, FireboltException {
-		HttpGet httpGet = createGetRequest(uri, accessToken);
-		try (CloseableHttpResponse response = this.execute(httpGet, host)) {
-			String responseStr = EntityUtils.toString(response.getEntity());
-			return objectMapper.readValue(responseStr, valueType);
-		}
-	}
 
-	private HttpGet createGetRequest(String uri, String accessToken) {
-		HttpGet httpGet = new HttpGet(uri);
-		httpGet.setConfig(
-				createRequestConfig(this.connection.getConnectionTimeout(), this.connection.getNetworkTimeout()));
-		this.createHeaders(accessToken).forEach(header -> httpGet.addHeader(header.getLeft(), header.getRight()));
-		return httpGet;
-	}
+    protected FireboltClient(OkHttpClient httpClient, FireboltConnection connection, String customDrivers,
+                             String customClients, ObjectMapper objectMapper) {
+        this.httpClient = httpClient;
+        this.connection = connection;
+        this.objectMapper = objectMapper;
+        this.headerUserAgentValue = UsageTrackerUtil.getUserAgentString(customDrivers != null ? customDrivers : "",
+                customClients != null ? customClients : "");
+    }
 
-	protected CloseableHttpResponse execute(@NonNull HttpUriRequestBase httpUriRequestBase, String host)
-			throws IOException, FireboltException {
-		return execute(httpUriRequestBase, host, false);
-	}
+    protected <T> T getResource(String uri, String host, String accessToken, Class<T> valueType)
+            throws IOException, FireboltException {
+        Request rq = createGetRequest(uri, accessToken);
+        try (Response response = this.execute(rq, host)) {
+            return objectMapper.readValue(getResponseAsString(response), valueType);
+        }
+    }
 
-	protected CloseableHttpResponse execute(@NonNull HttpUriRequestBase httpUriRequestBase, String host,
-			boolean isCompress) throws IOException, FireboltException {
-		CloseableHttpResponse response;
-		try {
-			response = this.getHttpClient().execute(httpUriRequestBase);
-			validateResponse(host, response, isCompress);
-		} catch (Exception e) {
-			EntityUtils.consumeQuietly(httpUriRequestBase.getEntity());
-			throw e;
-		}
-		return response;
-	}
+    private Request createGetRequest(String uri, String accessToken) {
+        Request.Builder requestBuilder = new Request.Builder().url(uri);
+        this.createHeaders(accessToken).forEach(header -> requestBuilder.addHeader(header.getLeft(), header.getRight()));
+        return requestBuilder.build();
+    }
 
-	protected HttpPost createPostRequest(String uri) {
-		return createPostRequest(uri, null);
-	}
+    protected Response execute(@NonNull Request request, String host)
+            throws IOException, FireboltException {
+        return execute(request, host, false);
+    }
 
-	protected HttpPost createPostRequest(String uri, String accessToken) {
-		HttpPost httpPost = new HttpPost(uri);
-		httpPost.setConfig(
-				createRequestConfig(this.connection.getConnectionTimeout(), this.connection.getNetworkTimeout()));
-		this.createHeaders(accessToken).forEach(header -> httpPost.addHeader(header.getLeft(), header.getRight()));
-		return httpPost;
-	}
+    protected Response execute(@NonNull Request request, String host,
+                               boolean isCompress) throws IOException, FireboltException {
+        Response response = null;
+        try {
+            OkHttpClient client = getClientWithTimeouts(this.connection.getConnectionTimeout(), this.connection.getNetworkTimeout());
+            Call call = client.newCall(request);
+            response = call.execute();
+            validateResponse(host, response, isCompress);
+        } catch (Exception e) {
+            CloseableUtil.close(response);
+            throw e;
+        }
+        return response;
+    }
 
-	protected void validateResponse(String host, CloseableHttpResponse response, Boolean isCompress)
-			throws FireboltException {
-		int statusCode = response.getCode();
-		if (!isCallSuccessful(statusCode)) {
-			if (statusCode == SC_SERVICE_UNAVAILABLE) {
-				throw new FireboltException(
-						String.format("Could not query Firebolt at %s. The engine is not running. Status code: %d",
-								host, HTTP_FORBIDDEN),
-						statusCode);
-			} else if (statusCode == SC_UNAUTHORIZED) {
-				this.getConnection().removeExpiredTokens();
-				throw new FireboltException(String.format(
-						"Could not query Firebolt at %s. The token is expired and has been cleared", host), statusCode);
-			}
-			String errorResponseMessage;
-			try {
-				String errorFromResponse = extractErrorMessage(response.getEntity(), isCompress);
-				errorResponseMessage = String.format(
-						"Server failed to execute query with the following error:%n%s%ninternal error:%n%s",
-						errorFromResponse, this.getInternalErrorWithHeadersText(response));
-				throw new FireboltException(errorResponseMessage, statusCode);
-			} catch (ParseException | IOException e) {
-				log.warn("Could not parse response containing the error message from Firebolt", e);
-				errorResponseMessage = String.format("Server failed to execute query%ninternal error:%n%s",
-						this.getInternalErrorWithHeadersText(response));
-				throw new FireboltException(errorResponseMessage, statusCode, e);
-			}
-		}
-	}
+    private OkHttpClient getClientWithTimeouts(int connectionTimeout, int networkTimeout) {
+        if (connectionTimeout != this.httpClient.connectTimeoutMillis() ||
+                networkTimeout != this.httpClient.readTimeoutMillis()) {
+            //This creates a shallow copy using the same connection pool
+            return this.httpClient.newBuilder().readTimeout(this.connection.getNetworkTimeout(), TimeUnit.MILLISECONDS)
+                    .connectTimeout(this.connection.getConnectionTimeout(), TimeUnit.MILLISECONDS).build();
+        } else {
+            return this.httpClient;
+        }
+    }
 
-	private String extractErrorMessage(HttpEntity entity, boolean isCompress) throws IOException, ParseException {
-		byte[] entityBytes = EntityUtils.toByteArray(entity);
-		if (isCompress) {
-			try {
-				InputStream is = new LZ4InputStream(new ByteArrayInputStream(entityBytes));
-				return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8)).lines()
-						.collect(Collectors.joining("\n")) + "\n";
-			} catch (Exception e) {
-				log.warn("Could not decompress error from server");
-			}
-		}
-		return entityBytes != null ? new String(entityBytes, StandardCharsets.UTF_8) : null;
-	}
+    protected Request createPostRequest(String uri, RequestBody requestBody) {
+        return createPostRequest(uri, requestBody, null, null);
+    }
 
-	private boolean isCallSuccessful(int statusCode) {
-		return statusCode >= 200 && statusCode <= 299; // Call is considered successful when the status code is 2XX
-	}
+    protected Request createPostRequest(String uri, RequestBody body, String accessToken, String id) {
+        Request.Builder requestBuilder = new Request.Builder().url(uri);
+        this.createHeaders(accessToken).forEach(header -> requestBuilder.addHeader(header.getLeft(), header.getRight()));
+        if (body != null) {
+            requestBuilder.post(body);
+        }
+        if (id != null) {
+            requestBuilder.tag(id);
+        }
+        return requestBuilder.build();
+    }
 
-	private List<Pair<String, String>> createHeaders(String accessToken) {
-		List<Pair<String, String>> headers = new ArrayList<>();
-		headers.add(new ImmutablePair<>(HEADER_USER_AGENT, this.getHeaderUserAgentValue()));
-		Optional.ofNullable(accessToken).ifPresent(token -> headers.add(
-				new ImmutablePair<>(HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken)));
-		return headers;
-	}
+    protected Request createPostRequest(String uri, String accessToken, String id) {
+        return createPostRequest(uri, (RequestBody) null, accessToken, id);
+    }
 
-	private String getInternalErrorWithHeadersText(CloseableHttpResponse response) {
-		return response.toString() + "\n" + Arrays.toString(response.getHeaders());
-	}
+    protected Request createPostRequest(String uri, String json, String accessToken, String id) {
+        RequestBody requestBody = null;
+        if (json != null) {
+            requestBody = RequestBody.create(json, MediaType.parse("application/json"));
+        }
+        return createPostRequest(uri, requestBody, accessToken, id);
+    }
 
-	private RequestConfig createRequestConfig(int connectionTimeoutMillis, int networkTimoutMillis) {
-		return RequestConfig.custom()
-				.setConnectTimeout(Timeout.of(connectionTimeoutMillis, TimeUnit.MILLISECONDS))
-				.setConnectionRequestTimeout(Timeout.of(connectionTimeoutMillis, TimeUnit.MILLISECONDS))
-				.setCookieSpec(StandardCookieSpec.RELAXED)
-				.setResponseTimeout(Timeout.ofMilliseconds(networkTimoutMillis)).build();
-	}
+    protected void validateResponse(String host, Response response, Boolean isCompress)
+            throws FireboltException {
+        int statusCode = response.code();
+        if (!isCallSuccessful(statusCode)) {
+            if (statusCode == HTTP_UNAVAILABLE) {
+                throw new FireboltException(
+                        String.format("Could not query Firebolt at %s. The engine is not running. Status code: %d",
+                                host, HTTP_FORBIDDEN),
+                        statusCode);
+            }
+            String errorResponseMessage;
+            try {
+                String errorFromResponse = extractErrorMessage(response, isCompress);
+                errorResponseMessage = String.format(
+                        "Server failed to execute query with the following error:%n%s%ninternal error:%n%s",
+                        errorFromResponse, this.getInternalErrorWithHeadersText(response));
+                if (statusCode == HTTP_UNAUTHORIZED) {
+                    this.getConnection().removeExpiredTokens();
+                    throw new FireboltException(String.format(
+                            "Could not query Firebolt at %s. The operation is not authorized or the token is expired and has been cleared from the cache.%n%s",
+                            host, errorResponseMessage), statusCode);
+                }
+                throw new FireboltException(errorResponseMessage, statusCode);
+            } catch (IOException e) {
+                log.warn("Could not parse response containing the error message from Firebolt", e);
+                errorResponseMessage = String.format("Server failed to execute query%ninternal error:%n%s",
+                        this.getInternalErrorWithHeadersText(response));
+                throw new FireboltException(errorResponseMessage, statusCode, e);
+            }
+        }
+    }
+
+    protected String getResponseAsString(Response response) throws FireboltException, IOException {
+        if (response.body() == null) {
+            throw new FireboltException("Cannot get resource: the response from the server is empty");
+        } else {
+            return response.body().string();
+        }
+    }
+
+    private String extractErrorMessage(Response response, boolean isCompress) throws IOException {
+        byte[] entityBytes;
+        if (response.body() != null) {
+            entityBytes = response.body().bytes();
+        } else {
+            entityBytes = null;
+        }
+        if (isCompress && entityBytes != null) {
+            try {
+                InputStream is = new LZ4InputStream(new ByteArrayInputStream(entityBytes));
+                return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8)).lines()
+                        .collect(Collectors.joining("\n")) + "\n";
+            } catch (Exception e) {
+                log.warn("Could not decompress error from server");
+            }
+        }
+        return entityBytes != null ? new String(entityBytes, StandardCharsets.UTF_8) : null;
+    }
+
+    private boolean isCallSuccessful(int statusCode) {
+        return statusCode >= 200 && statusCode <= 299; // Call is considered successful when the status code is 2XX
+    }
+
+    private List<Pair<String, String>> createHeaders(String accessToken) {
+        List<Pair<String, String>> headers = new ArrayList<>();
+        headers.add(new ImmutablePair<>(HEADER_USER_AGENT, this.getHeaderUserAgentValue()));
+        Optional.ofNullable(accessToken).ifPresent(token -> headers.add(
+                new ImmutablePair<>(HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken)));
+        return headers;
+    }
+
+    private String getInternalErrorWithHeadersText(Response response) {
+        return response.toString() + "\n" + response.headers();
+    }
+
+
 }

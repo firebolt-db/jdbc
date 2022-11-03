@@ -1,28 +1,22 @@
 package com.firebolt.jdbc.resultset.column;
 
-import static com.firebolt.jdbc.type.FireboltDataType.*;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
+import com.firebolt.jdbc.type.FireboltDataType;
+import lombok.*;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.firebolt.jdbc.type.FireboltDataType;
+import java.util.*;
+import java.util.stream.Collectors;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.extern.slf4j.Slf4j;
+import static com.firebolt.jdbc.type.FireboltDataType.*;
 
 /**
  * This class represents a Column type returned by the server
  */
-@Slf4j
+@CustomLog
 @Builder
 @Value
 public class ColumnType {

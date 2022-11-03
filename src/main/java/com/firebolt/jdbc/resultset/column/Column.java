@@ -3,12 +3,12 @@ package com.firebolt.jdbc.resultset.column;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 
 @Builder
 @Getter
 @EqualsAndHashCode
-@Slf4j
+@CustomLog
 public final class Column {
 
 	private final ColumnType type;
