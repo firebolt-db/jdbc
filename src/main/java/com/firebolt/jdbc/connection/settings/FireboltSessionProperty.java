@@ -50,12 +50,10 @@ public enum FireboltSessionProperty {
     HOST("host", null, String.class, "Firebolt host - null by default"),
     PORT("port", null, Integer.class, "Firebolt port - null by default"),
     ENGINE("engine", null, String.class, "engine - null by default", "engine_name"),
-    AGGRESSIVE_CANCEL("aggressive_cancel", false, Boolean.class,
-            "enable aggressive cancel. Permits to cancel queries by sending a query to Firebolt rather than calling the /cancel endpoint"),
     ACCOUNT("account", null, String.class, "account - null by default"),
 
     LOG_RESULT_SET("log_result_set", false, Boolean.class,
-            "When set to true, the result of the queries executed are logged with the log level INFO. This has a negative performance impact and should only be enabled for debugging purposes"),
+            "When set to true, the result of the queries executed are logged with the log level INFO. This has a negative performance impact and should be enabled only for debugging purposes"),
 
     //We keep all the deprecated properties to ensure backward compatibility - but they do not have any effect.
     @Deprecated
@@ -84,7 +82,9 @@ public enum FireboltSessionProperty {
             "The buffer for the Apache client used by the Driver (in bytes). It is the preferred buffer size for the body of the http response. A larger buffer allows more content to be written before anything is actually sent while a smaller buffer decreases server memory load and allows the client to start receiving data quicker.\n"
                     + "The buffer will be at least as large as the size requested.",
             "apache_buffer_size"),
-    ;
+    @Deprecated
+    AGGRESSIVE_CANCEL("aggressive_cancel", false, Boolean.class,
+            "enable aggressive cancel. Permits to cancel queries by sending a query to Firebolt rather than calling the /cancel endpoint");
     private final String key;
     private final Object defaultValue;
     private final Class<?> clazz;
