@@ -3,16 +3,20 @@ name: Build
 on:
   workflow_call:
     outputs:
-      jar-name:
+      uber-jar:
         description: Generated jar
-        value: ${{ jobs.build.outputs.jar-name }}
+        value: ${{ jobs.build.outputs.uber-jar }}
+      sources-jar:
+        description: Jar that contains only the source code
+        value: ${{ jobs.build.outputs.sources-jar }}
   push:
 jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.project-version.outputs.PROJECT_VERSION }}
-      jar-name: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
+      uber-jar: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
+      sources-jar: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}-sources.jar
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -30,8 +34,13 @@ jobs:
         run: |
           export PROJECT_VERSION=$(./gradlew printVersion | grep -A1 '> Configure project :'| grep -v "> Configure project :")
           echo ::set-output name=PROJECT_VERSION::"$(echo $PROJECT_VERSION)"
-      - name: Upload jar artifact
+      - name: Upload uber-jar
         uses: actions/upload-artifact@v2
         with:
           name: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
           path: build/libs/firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
+      - name: Upload sources-jar
+        uses: actions/upload-artifact@v2
+        with:
+          name: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}-sources.jar
+          path: build/libs/firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}-sources.jar

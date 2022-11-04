@@ -14,15 +14,19 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@v2
-    - name: Download jar file
+    - name: Download uber-jar
       uses: actions/download-artifact@v2
       with:
-        name: ${{ needs.build.outputs.jar-name }}
+        name: ${{ needs.build.outputs.uber-jar }}
+    - name: Download sources-jar
+      uses: actions/download-artifact@v2
+      with:
+        name: ${{ needs.build.outputs.sources-jar }}
     - uses: xresloader/upload-to-github-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        file: ${{ needs.build.outputs.jar-name }}
+        file: ${{ needs.build.outputs.uber-jar }}
         tags: true
         draft: false
     - name: Deploy to Repsy repository
