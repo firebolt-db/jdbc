@@ -1,5 +1,18 @@
 package com.firebolt.jdbc.connection;
 
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.sql.*;
+import java.util.*;
+import java.util.concurrent.Executor;
+
+import org.apache.commons.lang3.tuple.Pair;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.PropertyUtil;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
@@ -15,26 +28,16 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
+import com.firebolt.jdbc.metadata.FireboltSystemEngineDatabaseMetadata;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
+
 import lombok.CustomLog;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
-import org.apache.commons.lang3.tuple.Pair;
-
-import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.Executor;
-
-import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
 @CustomLog
 public class FireboltConnection implements Connection {
@@ -50,6 +53,8 @@ public class FireboltConnection implements Connection {
 	private FireboltProperties sessionProperties;
 	private int networkTimeout;
 
+	private boolean systemEngine;
+
 	public FireboltConnection(@NonNull String url, Properties connectionSettings,
 			FireboltAuthenticationService fireboltAuthenticationService, FireboltEngineService fireboltEngineService,
 			FireboltStatementService fireboltStatementService) throws FireboltException {
@@ -63,6 +68,7 @@ public class FireboltConnection implements Connection {
 		this.statements = new ArrayList<>();
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
+		this.systemEngine = loginProperties.isSystemEngine();
 		this.connect();
 	}
 
@@ -74,20 +80,20 @@ public class FireboltConnection implements Connection {
 		String clientVersions = loginProperties.getAdditionalProperties().remove("user_clients");
 		this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
 		OkHttpClient httpClient = getHttpClient(loginProperties);
+		this.systemEngine = this.loginProperties.isSystemEngine();
 		this.fireboltAuthenticationService = new FireboltAuthenticationService(
 				new FireboltAuthenticationClient(httpClient, objectMapper, this, driverVersions, clientVersions));
 		this.fireboltEngineService = new FireboltEngineService(
 				new FireboltAccountClient(httpClient, objectMapper, this, driverVersions, clientVersions));
 		this.fireboltStatementService = new FireboltStatementService(
-				new StatementClientImpl(httpClient, this, objectMapper, driverVersions, clientVersions));
+				new StatementClientImpl(httpClient, this, objectMapper, driverVersions, clientVersions), systemEngine);
 		this.statements = new ArrayList<>();
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
 		this.connect();
 	}
 
-	private static OkHttpClient getHttpClient(FireboltProperties fireboltProperties)
-			throws FireboltException {
+	private static OkHttpClient getHttpClient(FireboltProperties fireboltProperties) throws FireboltException {
 		try {
 			return HttpClientConfig.getInstance() == null ? HttpClientConfig.init(fireboltProperties)
 					: HttpClientConfig.getInstance();
@@ -151,7 +157,9 @@ public class FireboltConnection implements Connection {
 		return false;
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -167,7 +175,11 @@ public class FireboltConnection implements Connection {
 	@Override
 	public DatabaseMetaData getMetaData() throws SQLException {
 		this.validateConnectionIsNotClose();
-		return new FireboltDatabaseMetadata(this.httpConnectionUrl, this);
+		if (this.systemEngine) {
+			return new FireboltDatabaseMetadata(this.httpConnectionUrl, this);
+		} else {
+			return new FireboltSystemEngineDatabaseMetadata(this.httpConnectionUrl, this);
+		}
 	}
 
 	@Override
@@ -176,7 +188,9 @@ public class FireboltConnection implements Connection {
 		return sessionProperties.getDatabase();
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@NotImplemented
 	public void setCatalog(String catalog) throws SQLException {
@@ -194,7 +208,9 @@ public class FireboltConnection implements Connection {
 		return Connection.TRANSACTION_NONE;
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -332,7 +348,9 @@ public class FireboltConnection implements Connection {
 			return false;
 		}
 		try {
-			validateConnection(this.getSessionProperties(), true);
+			if (!this.systemEngine) {
+				validateConnection(this.getSessionProperties(), true);
+			}
 			return true;
 		} catch (Exception e) {
 			return false;
@@ -382,14 +400,18 @@ public class FireboltConnection implements Connection {
 		}
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@NotImplemented
 	public void commit() throws SQLException {
 		// no-op
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@NotImplemented
 	public void rollback() throws SQLException {
@@ -424,7 +446,9 @@ public class FireboltConnection implements Connection {
 		return this.connectionTimeout;
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -438,7 +462,9 @@ public class FireboltConnection implements Connection {
 		return false;
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -446,7 +472,9 @@ public class FireboltConnection implements Connection {
 		// no-op
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -454,7 +482,9 @@ public class FireboltConnection implements Connection {
 		return null;
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -462,7 +492,9 @@ public class FireboltConnection implements Connection {
 		// no-op
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -470,7 +502,9 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -478,7 +512,9 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -486,7 +522,9 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -494,7 +532,9 @@ public class FireboltConnection implements Connection {
 		return 0;
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -502,7 +542,9 @@ public class FireboltConnection implements Connection {
 		// No support for transaction
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -510,7 +552,9 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -518,7 +562,9 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -526,7 +572,9 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -534,7 +582,9 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -543,7 +593,9 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -551,7 +603,9 @@ public class FireboltConnection implements Connection {
 		return null;
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -559,7 +613,9 @@ public class FireboltConnection implements Connection {
 		return null;
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -567,7 +623,9 @@ public class FireboltConnection implements Connection {
 		return null;
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -575,7 +633,9 @@ public class FireboltConnection implements Connection {
 		return null;
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -583,7 +643,9 @@ public class FireboltConnection implements Connection {
 		// Not supported yet
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -591,7 +653,9 @@ public class FireboltConnection implements Connection {
 		return null;
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -599,7 +663,9 @@ public class FireboltConnection implements Connection {
 		return null;
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -607,7 +673,9 @@ public class FireboltConnection implements Connection {
 		// Not supported yet
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -615,7 +683,9 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
+	/**
+	 * @hidden
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented

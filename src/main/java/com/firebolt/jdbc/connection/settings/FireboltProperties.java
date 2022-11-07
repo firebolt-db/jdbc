@@ -20,6 +20,7 @@ public class FireboltProperties {
 	private static final Pattern DB_PATH_PATTERN = Pattern.compile("/([a-zA-Z0-9_*\\-]+)");
 	private static final int FIREBOLT_SSL_PROXY_PORT = 443;
 	private static final int FIREBOLT_NO_SSL_PROXY_PORT = 9090;
+	private static final String SYSTEM_ENGINE_NAME = "system";
 
 	private static final Set<String> sessionPropertyKeys = Arrays.stream(FireboltSessionProperty.values())
 			.map(property -> {
@@ -53,6 +54,8 @@ public class FireboltProperties {
 	Integer tcpKeepCount;
 	Integer tcpKeepInterval;
 	boolean logResultSet;
+	boolean systemEngine;
+
 	@Builder.Default
 	Map<String, String> additionalProperties = new HashMap<>();
 
@@ -61,11 +64,12 @@ public class FireboltProperties {
 		boolean ssl = getSetting(mergedProperties, FireboltSessionProperty.SSL);
 		String sslRootCertificate = getSetting(mergedProperties, FireboltSessionProperty.SSL_CERTIFICATE_PATH);
 		String sslMode = getSetting(mergedProperties, FireboltSessionProperty.SSL_MODE);
-		boolean compress = getSetting(mergedProperties, FireboltSessionProperty.COMPRESS);
 		String user = getSetting(mergedProperties, FireboltSessionProperty.USER);
 		String password = getSetting(mergedProperties, FireboltSessionProperty.PASSWORD);
 		String path = getSetting(mergedProperties, FireboltSessionProperty.PATH);
 		String engine = getSetting(mergedProperties, FireboltSessionProperty.ENGINE);
+		boolean isSystemEngine = isSystemEngine(engine);
+		boolean compress = ((Boolean)getSetting(mergedProperties, FireboltSessionProperty.COMPRESS)) && !isSystemEngine;
 		String account = getSetting(mergedProperties, FireboltSessionProperty.ACCOUNT);
 		int keepAliveMillis = getSetting(mergedProperties, FireboltSessionProperty.KEEP_ALIVE_TIMEOUT_MILLIS);
 		int maxTotal = getSetting(mergedProperties, FireboltSessionProperty.MAX_CONNECTIONS_TOTAL);
@@ -93,7 +97,8 @@ public class FireboltProperties {
 				.maxRetries(maxRetries).bufferSize(bufferSize)
 				.socketTimeoutMillis(socketTimeout).connectionTimeoutMillis(connectionTimeout)
 				.tcpKeepInterval(tcpKeepInterval).tcpKeepCount(tcpKeepCount)
-				.tcpKeepIdle(tcpKeepIdle).aggressiveCancel(aggressiveCancel).logResultSet(logResultSet).build();
+				.tcpKeepIdle(tcpKeepIdle).aggressiveCancel(aggressiveCancel).logResultSet(logResultSet)
+				.systemEngine(isSystemEngine).build();
 	}
 
 	private static String getHost(Properties properties) {
@@ -188,5 +193,9 @@ public class FireboltProperties {
 
 	public void addProperty(Pair<String, String> property) {
 		this.addProperty(property.getLeft(), property.getRight());
+	}
+
+	private static boolean isSystemEngine(String engine) {
+		return StringUtils.contains(SYSTEM_ENGINE_NAME, engine);
 	}
 }
