@@ -3,16 +3,8 @@ name: Run integration tests
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Environment to run tests against'
-        type: choice
-        required: true
-        default: 'dev'
-        options:
-          - dev
-          - staging
       database:
-        description: 'Database - a new one will be created if not provided'
+        description: 'Database (staging) - a new one will be created if not provided'
         required: false
         default: ''
 
@@ -37,7 +29,7 @@ jobs:
         with:
           firebolt-username: ${{ secrets.FIREBOLT_USERNAME }}
           firebolt-password: ${{ secrets.FIREBOLT_PASSWORD }}
-          api-endpoint: "api.${{ github.event.inputs.environment }}.firebolt.io"
+          api-endpoint: "api.staging.firebolt.io"
           region: "us-east-1"
           instance-type: "B2"
 
@@ -51,4 +43,4 @@ jobs:
           fi
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Dapi=api.${{ github.event.inputs.environment }}.firebolt.io -Dpassword="${{ secrets.FIREBOLT_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_USERNAME }}"
+        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Dapi=api.staging.firebolt.io -Dpassword="${{ secrets.FIREBOLT_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_USERNAME }}"
