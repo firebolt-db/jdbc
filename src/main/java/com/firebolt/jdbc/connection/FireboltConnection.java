@@ -53,7 +53,7 @@ public class FireboltConnection implements Connection {
 	private FireboltProperties sessionProperties;
 	private int networkTimeout;
 
-	private boolean systemEngine;
+	private final boolean systemEngine;
 
 	public FireboltConnection(@NonNull String url, Properties connectionSettings,
 			FireboltAuthenticationService fireboltAuthenticationService, FireboltEngineService fireboltEngineService,
@@ -175,7 +175,7 @@ public class FireboltConnection implements Connection {
 	@Override
 	public DatabaseMetaData getMetaData() throws SQLException {
 		this.validateConnectionIsNotClose();
-		if (this.systemEngine) {
+		if (!this.systemEngine) {
 			return new FireboltDatabaseMetadata(this.httpConnectionUrl, this);
 		} else {
 			return new FireboltSystemEngineDatabaseMetadata(this.httpConnectionUrl, this);

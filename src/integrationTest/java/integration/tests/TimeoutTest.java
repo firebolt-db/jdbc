@@ -2,6 +2,7 @@ package integration.tests;
 
 import integration.IntegrationTest;
 import lombok.CustomLog;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -12,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @CustomLog
+@Disabled
 class TimeoutTest extends IntegrationTest {
 
 	@Test

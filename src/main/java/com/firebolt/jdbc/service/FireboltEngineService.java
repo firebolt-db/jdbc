@@ -14,6 +14,13 @@ import java.util.Optional;
 public class FireboltEngineService {
 	private final FireboltAccountClient fireboltAccountClient;
 
+	/**
+	 * Returns the engine host
+	 * @param connectionUrl the connection url
+	 * @param loginProperties properties to login
+	 * @param accessToken the access token
+	 * @return the engine host
+	 */
 	public String getEngineHost(String connectionUrl, FireboltProperties loginProperties, String accessToken)
 			throws FireboltException {
 		String accountId = null;
@@ -36,6 +43,11 @@ public class FireboltEngineService {
 		}
 	}
 
+	/**
+	 * Extracts the engine name from host
+	 * @param engineHost engine host
+	 * @return the engine name
+	 */
 	public String getEngineNameFromHost(String engineHost) throws FireboltException {
 		return Optional.ofNullable(engineHost).filter(host -> host.contains(".")).map(host -> host.split("\\.")[0])
 				.map(host -> host.replace("-", "_")).orElseThrow(() -> new FireboltException(

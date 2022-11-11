@@ -12,9 +12,9 @@ import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 
+import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
-import lombok.CustomLog;
 import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
 
@@ -62,6 +62,11 @@ public class FireboltAuthenticationService {
 		return expireInSeconds > TOKEN_TTL_THRESHOLD ? expireInSeconds - TOKEN_EXPIRATION_OFFSET : expireInSeconds;
 	}
 
+	/**
+	 * Removes connection tokens from the cache.
+	 * @param host host
+	 * @param loginProperties the login properties linked to the tokens
+	 */
 	public void removeConnectionTokens(String host, FireboltProperties loginProperties) throws FireboltException {
 		try {
 			log.debug("Removing connection token for host {}", host);

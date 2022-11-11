@@ -41,7 +41,7 @@ class FireboltPreparedStatementTest {
 	@BeforeEach
 	void beforeEach() throws FireboltException {
 		lenient().when(properties.getBufferSize()).thenReturn(10);
-		lenient().when(fireboltStatementService.execute(any(), any(), any()))
+		lenient().when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
 				.thenReturn(Mockito.mock(InputStream.class));
 	}
 
@@ -54,7 +54,8 @@ class FireboltPreparedStatementTest {
 		statement.setObject(1, 500);
 		statement.setObject(2, "Ford");
 		statement.execute();
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties),
+				anyInt(), anyInt(), anyBoolean());
 
 		assertEquals("INSERT INTO cars (sales, make) VALUES (500,'Ford')",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
@@ -74,7 +75,7 @@ class FireboltPreparedStatementTest {
 		statement.addBatch();
 		statement.executeBatch();
 		verify(fireboltStatementService, times(2)).execute(queryInfoWrapperArgumentCaptor.capture(),
-				eq(this.properties), any());
+				eq(this.properties), anyInt(), anyInt(), anyBoolean());
 
 		assertEquals("INSERT INTO cars (sales, make) VALUES (150,'Ford')",
 				queryInfoWrapperArgumentCaptor.getAllValues().get(0).getSql());
@@ -110,7 +111,8 @@ class FireboltPreparedStatementTest {
 		String expectedSql = "INSERT INTO cars (model ,sales, make) VALUES ('?',' ?','(?:^|[^\\\\p{L}\\\\p{N}])(?i)(phone)(?:[^\\\\p{L}\\\\p{N}]|$)')";
 
 		statement.execute();
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties),
+				anyInt(), anyInt(), anyBoolean());
 		assertEquals(expectedSql, queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
@@ -145,7 +147,8 @@ class FireboltPreparedStatementTest {
 		statement.setNull(2, 0);
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties),
+				anyInt(), anyInt(), anyBoolean());
 		assertEquals("INSERT INTO cars (sales, make) VALUES (\\N,\\N)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
@@ -157,7 +160,8 @@ class FireboltPreparedStatementTest {
 		statement.setBoolean(1, true);
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties),
+				anyInt(), anyInt(), anyBoolean());
 		assertEquals("INSERT INTO cars(available) VALUES (1)", queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
@@ -180,7 +184,8 @@ class FireboltPreparedStatementTest {
 		statement.setInt(1, 50);
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties),
+				anyInt(), anyInt(), anyBoolean());
 	}
 
 	@Test
@@ -190,7 +195,8 @@ class FireboltPreparedStatementTest {
 		statement.setLong(1, 50L);
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties),
+				anyInt(), anyInt(), anyBoolean());
 		assertEquals("INSERT INTO cars(price) VALUES (50)", queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
@@ -201,7 +207,8 @@ class FireboltPreparedStatementTest {
 		statement.setFloat(1, 5.5F);
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties),
+				anyInt(), anyInt(), anyBoolean());
 
 		assertEquals("INSERT INTO cars(price) VALUES (5.5)", queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
@@ -213,7 +220,8 @@ class FireboltPreparedStatementTest {
 		statement.setDouble(1, 5.5);
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties),
+				anyInt(), anyInt(), anyBoolean());
 	}
 
 	@Test
@@ -223,7 +231,8 @@ class FireboltPreparedStatementTest {
 		statement.setBigDecimal(1, new BigDecimal("555555555555.55555555"));
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties),
+				anyInt(), anyInt(), anyBoolean());
 		assertEquals("INSERT INTO cars(price) VALUES (555555555555.55555555)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
@@ -236,7 +245,8 @@ class FireboltPreparedStatementTest {
 		statement.setDate(1, new Date(1564527600000L));
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties),
+				anyInt(), anyInt(), anyBoolean());
 		assertEquals("INSERT INTO cars(release_date) VALUES ('2019-07-31')",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
@@ -249,7 +259,8 @@ class FireboltPreparedStatementTest {
 		statement.setTimestamp(1, new Timestamp(1564571713000L));
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties),
+				anyInt(), anyInt(), anyBoolean());
 
 		assertEquals("INSERT INTO cars(release_date) VALUES ('2019-07-31 12:15:13')",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
@@ -273,7 +284,8 @@ class FireboltPreparedStatementTest {
 
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties),
+				anyInt(), anyInt(), anyBoolean());
 
 		assertEquals(
 				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,\\N,1,5)",
