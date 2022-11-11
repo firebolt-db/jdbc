@@ -10,7 +10,7 @@ on:
       threads:
         description: 'Number of threads/users'
         required: false
-        default: '50'
+        default: '10'
       loops:
         description: 'Number of iterations for every thread'
         required: false

@@ -32,7 +32,7 @@ import com.firebolt.jdbc.type.array.FireboltArray;
 import lombok.CustomLog;
 
 /**
- * ResultSet following the TabSeparatedWithNamesAndTypes format
+ * ResultSet for InputStream using the format "TabSeparatedWithNamesAndTypes"
  */
 @CustomLog
 public class FireboltResultSet implements ResultSet {

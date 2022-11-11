@@ -49,7 +49,7 @@ public class QueryResult {
 		return stringBuilder.toString();
 	}
 
-	private StringBuilder appendWithListValues(StringBuilder destination, List<?> values) {
+	private void appendWithListValues(StringBuilder destination, List<?> values) {
 		Iterator<?> iterator = values.iterator();
 		while (iterator.hasNext()) {
 			Object value = iterator.next();
@@ -61,7 +61,6 @@ public class QueryResult {
 				destination.append(TAB);
 			}
 		}
-		return destination;
 	}
 
 	@Builder

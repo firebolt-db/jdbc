@@ -175,7 +175,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	@Override
 	public boolean execute() throws SQLException {
 		this.validateStatementIsNotClosed();
-		return super.execute(prepareSQL(providedParameters));
+		return super.execute(prepareSQL(providedParameters)).isPresent();
 	}
 
 	@Override
