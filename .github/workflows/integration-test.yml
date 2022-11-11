@@ -37,9 +37,9 @@ jobs:
         id: find-database-name
         run: |
           if ! [[ -z "${{ github.event.inputs.database }}" ]]; then
-             echo ::set-output name=database_name::${{ github.event.inputs.database }}
+             echo "database_name=${{ github.event.inputs.database }}" >> $GITHUB_OUTPUT
           else
-             echo ::set-output name=database_name::${{ steps.setup.outputs.database_name }}
+             echo "database_name=${{ steps.setup.outputs.database_name }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Run integration tests
