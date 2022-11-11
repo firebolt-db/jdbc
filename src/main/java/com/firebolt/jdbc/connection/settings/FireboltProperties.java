@@ -196,6 +196,6 @@ public class FireboltProperties {
 	}
 
 	private static boolean isSystemEngine(String engine) {
-		return StringUtils.contains(SYSTEM_ENGINE_NAME, engine);
+		return StringUtils.equalsIgnoreCase(SYSTEM_ENGINE_NAME, engine);
 	}
 }

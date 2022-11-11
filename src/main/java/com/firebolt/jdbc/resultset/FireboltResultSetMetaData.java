@@ -21,9 +21,7 @@ import lombok.Value;
 public class FireboltResultSetMetaData implements ResultSetMetaData {
 
 	List<Column> columns;
-
 	String tableName;
-
 	String dbName;
 
 	@Override

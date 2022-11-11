@@ -1,18 +1,18 @@
 package com.firebolt.jdbc.exception;
 
-import lombok.Getter;
+import static com.firebolt.jdbc.exception.ExceptionType.*;
+import static java.net.HttpURLConnection.*;
 
 import java.sql.SQLException;
 
-import static com.firebolt.jdbc.exception.ExceptionType.*;
-import static java.net.HttpURLConnection.*;
+import lombok.Getter;
 
 public class FireboltException extends SQLException {
 
 	@Getter
 	private final ExceptionType type;
 
-	private static final int HTTP_MANY_REQUESTS = 429;
+	private static final int HTTP_TOO_MANY_REQUESTS = 429;
 
 	public FireboltException(ExceptionType type) {
 		super();
@@ -59,7 +59,7 @@ public class FireboltException extends SQLException {
 			return INVALID_REQUEST;
 		case HTTP_UNAUTHORIZED:
 			return UNAUTHORIZED;
-		case HTTP_MANY_REQUESTS:
+		case HTTP_TOO_MANY_REQUESTS:
 			return TOO_MANY_REQUESTS;
 		default:
 			return ERROR;
