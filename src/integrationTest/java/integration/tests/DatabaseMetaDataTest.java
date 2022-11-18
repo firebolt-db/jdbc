@@ -121,9 +121,9 @@ class DatabaseMetaDataTest extends IntegrationTest {
 		assertThat(result.get(SCOPE_SCHEMA), contains(null, null, null, null, null));
 		assertThat(result.get(ORDINAL_POSITION), Matchers.containsInAnyOrder("1", "2", "3", "4", "5"));
 		assertThat(result.get(TYPE_NAME),
-				Matchers.containsInAnyOrder("BIGINT", "TIMESTAMP", "STRING", "INTEGER", "INTEGER"));
-		assertThat(result.get(DATA_TYPE), Matchers.containsInAnyOrder("-5", "93", "12", "-6", "4"));
-		assertThat(result.get(COLUMN_SIZE), Matchers.containsInAnyOrder("20", "19", "0", "3", "11"));
+				Matchers.containsInAnyOrder("BIGINT", "TIMESTAMP", "STRING", "BOOLEAN", "INTEGER"));
+		assertThat(result.get(DATA_TYPE), Matchers.containsInAnyOrder("-5", "93", "12", "16", "4"));
+		assertThat(result.get(COLUMN_SIZE), Matchers.containsInAnyOrder("20", "19", "0", "0", "11"));
 	}
 
 }

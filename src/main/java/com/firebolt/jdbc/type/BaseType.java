@@ -58,8 +58,14 @@ public enum BaseType {
 	NULL(Object.class, conversion -> null), OTHER(String.class, conversion -> "Unknown"),
 	OBJECT(Object.class, StringToColumnTypeConversion::getValue),
 	DECIMAL(BigDecimal.class, conversion -> new BigDecimal(conversion.getValue())),
-	BOOLEAN(Boolean.class, conversion -> !"0".equals(conversion.getValue())),
-	ARRAY(Array.class,
+	BOOLEAN(Boolean.class, conversion -> {
+			if (StringUtils.equalsAnyIgnoreCase(conversion.getValue(), "0", "f")) {
+				return false;
+			} else if (StringUtils.equalsAnyIgnoreCase(conversion.getValue(), "1", "t")) {
+				return true;
+			}
+		throw new FireboltException(String.format("Cannot cast %s to type boolean", conversion.getValue()));
+	}), ARRAY(Array.class,
 			conversion -> SqlArrayUtil.transformToSqlArray(conversion.getValue(), conversion.getColumn().getType())),
 	BYTEA(byte[].class, conversion -> {
 		String s = conversion.getValue();

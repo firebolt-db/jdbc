@@ -237,7 +237,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 		List<List<?>> rows = new ArrayList<>();
 		List<FireboltDataType> usableTypes = Arrays.asList(INT_32, INT_64, FLOAT_32, FLOAT_64, STRING, DATE, DATE_32,
-				DATE_TIME, DATE_TIME_64, DECIMAL, ARRAY, U_INT_8, TUPLE, BYTEA);
+				DATE_TIME, DATE_TIME_64, DECIMAL, ARRAY, U_INT_8, TUPLE, BYTEA, BOOLEAN);
 		usableTypes
 				.forEach(type -> rows.add(Arrays.asList(type.getDisplayName(), type.getSqlType(),
 						type.getDefaultPrecision(), type.getSqlType() == VARCHAR ? "'" : null, // LITERAL_PREFIX - ' for

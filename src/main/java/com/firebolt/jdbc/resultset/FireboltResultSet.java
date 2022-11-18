@@ -294,8 +294,8 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public boolean getBoolean(int columnIndex) throws SQLException {
-		String value = this.getValueAtColumn(columnIndex);
-		return !"0".equals(value);
+		Boolean value = BaseType.BOOLEAN.transform(this.getValueAtColumn(columnIndex), this.resultSetMetaData.getColumn(columnIndex));
+		return value == null || value;
 	}
 
 	@Override
