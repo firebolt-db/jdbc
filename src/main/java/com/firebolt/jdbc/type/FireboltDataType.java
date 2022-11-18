@@ -1,9 +1,10 @@
 package com.firebolt.jdbc.type;
 
 import java.sql.Types;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 import lombok.Getter;
 
@@ -11,7 +12,7 @@ import lombok.Getter;
 @Getter
 public enum FireboltDataType {
 	U_INT_8(Types.TINYINT, "UInt8", BaseType.INTEGER.name(), BaseType.INTEGER, false, false, 3, 0, false),
-	BOOLEAN(Types.BOOLEAN, "Boolean", BaseType.BOOLEAN.name(), BaseType.BOOLEAN, false, false, 0, 0, false),
+	BOOLEAN(Types.BIT, "Boolean", BaseType.BOOLEAN.name(), BaseType.BOOLEAN, false, false, 1, 0, false, "BOOL"),
 	INT_32(Types.INTEGER, "Int32", BaseType.INTEGER.name(), BaseType.INTEGER, true, false, 11, 0, false, "INTEGER",
 			"INT", "Int8", "Int16", "UInt16", "UInt32"),
 	INT_64(Types.BIGINT, "Int64", BaseType.BIGINT.name(), BaseType.LONG, true, false, 20, 0, false, "LONG", "BIGINT"),
@@ -37,9 +38,6 @@ public enum FireboltDataType {
 	BYTEA(Types.BINARY, "ByteA", "BYTEA", BaseType.BYTEA, false, true, 0, 0, false);
 
 	public static final String NULLABLE_TYPE = "NULLABLE";
-
-	private static final Set<FireboltDataType> DATE_TYPES = Stream.of(DATE, DATE_TIME, DATE_TIME_64, DATE_32)
-			.collect(Collectors.toCollection(HashSet::new));
 
 	private static final Map<String, FireboltDataType> typeNameOrAliasToType;
 
@@ -80,10 +78,6 @@ public enum FireboltDataType {
 	public static FireboltDataType ofType(String type) {
 		String formattedType = type.trim().toUpperCase();
 		return Optional.ofNullable(typeNameOrAliasToType.get(formattedType)).orElse(UNKNOWN);
-	}
-
-	public static boolean isTimeType(FireboltDataType fireboltDataType) {
-		return DATE_TYPES.contains(fireboltDataType);
 	}
 
 }

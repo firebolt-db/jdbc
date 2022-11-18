@@ -195,4 +195,12 @@ class ColumnTypeTest {
 		assertFalse(columnType.isNullable());
 		assertEquals("ARRAY(INTEGER)", columnType.getCompactTypeName());
 	}
+
+	@Test
+	void shouldCreateColumnTypeForBoolean() {
+		String type = "Nullable(Boolean)";
+		ColumnType columnType = ColumnType.of(type);
+		assertEquals(FireboltDataType.BOOLEAN, columnType.getDataType());
+		assertTrue(columnType.isNullable());
+	}
 }

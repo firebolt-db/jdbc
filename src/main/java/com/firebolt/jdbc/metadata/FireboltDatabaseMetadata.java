@@ -136,8 +136,8 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 						columnDescription.getString("column_name"), // column name
 						String.valueOf(columnInfo.getType().getDataType().getSqlType()), // sql data type
 						columnInfo.getType().getCompactTypeName(), // shorter type name
-						String.valueOf(columnInfo.getType().getPrecision()), null, // buffer length (not used, see
-																					// Javadoc)
+						String.valueOf(columnInfo.getType().getPrecision()), // column size
+						null, // buffer length (not used, see Javadoc)
 						String.valueOf(columnInfo.getType().getScale()), String.valueOf(COMMON_RADIX), // radix
 						columnDescription.getInt("is_nullable") == 1 ? columnNullable : columnNoNulls, null, // description
 																												// of
@@ -148,7 +148,9 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 								: null, // default value for the column: null,
 						null, // SQL_DATA_TYPE - reserved for future use (see javadoc)
 						null, // SQL_DATETIME_SUB - reserved for future use (see javadoc)
-						null, // CHAR_OCTET_LENGTH - The maximum length of binary and character based
+						columnInfo.getType().getDataType() == BOOLEAN ? 1 : null, // CHAR_OCTET_LENGTH - The maximum
+																					// length of binary and character
+																					// based
 						// columns (null for others)
 						columnDescription.getInt("ordinal_position"), // The ordinal position starting from 1
 						columnDescription.getInt("is_nullable") == 1 ? "YES" : "NO", null, // "SCOPE_CATALOG - Unused
