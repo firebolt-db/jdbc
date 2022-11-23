@@ -13,3 +13,4 @@ DECIMAL	3	0	\N	\N	\N	2	0	2	1	0	0	\N	\N	0	\N	\N	10
 ARRAY	2003	0	\N	\N	\N	2	1	2	0	0	0	\N	\N	0	\N	\N	10
 INTEGER	-6	3	\N	\N	\N	2	0	2	0	0	0	\N	\N	0	\N	\N	10
 TUPLE	1111	0	\N	\N	\N	2	1	2	0	0	0	\N	\N	0	\N	\N	10
+BYTEA	-2	0	\N	\N	\N	2	1	2	0	0	0	\N	\N	0	\N	\N	10

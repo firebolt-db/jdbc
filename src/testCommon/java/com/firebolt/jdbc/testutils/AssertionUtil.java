@@ -1,10 +1,9 @@
 package com.firebolt.jdbc.testutils;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class AssertionUtil {
 
@@ -19,5 +18,6 @@ public class AssertionUtil {
 				assertEquals(expected.getObject(i + 1), actual.getObject(i + 1));
 			}
 		}
+		assertFalse(actual.next());
 	}
 }

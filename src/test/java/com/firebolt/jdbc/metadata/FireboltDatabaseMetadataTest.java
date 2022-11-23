@@ -56,8 +56,8 @@ class FireboltDatabaseMetadataTest {
 	@Test
 	void shouldReturnTableTypes() throws SQLException {
 		ResultSet expectedResultSet = FireboltResultSet.of(QueryResult.builder()
-				.columns(Collections.singletonList(Column.builder().name("TABLE_TYPE").type(STRING).build()))
-				.rows(Collections.singletonList(Arrays.asList("TABLE", "VIEW", "OTHER"))).build());
+				.columns(Collections.singletonList(QueryResult.Column.builder().name(TABLE_TYPE).type(STRING).build()))
+				.rows(Arrays.asList(Collections.singletonList("TABLE"), Collections.singletonList("VIEW"))).build());
 
 		ResultSet actualResultSet = fireboltDatabaseMetadata.getTableTypes();
 
