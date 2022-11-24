@@ -124,9 +124,7 @@ public abstract class FireboltClient {
         if (!isCallSuccessful(statusCode)) {
             if (statusCode == HTTP_UNAVAILABLE) {
                 throw new FireboltException(
-                        String.format("Could not query Firebolt at %s. The engine is not running. Status code: %d",
-                                host, HTTP_FORBIDDEN),
-                        statusCode);
+                        String.format("Could not query Firebolt at %s. The engine is not running.", host), statusCode);
             }
             String errorResponseMessage;
             try {
