@@ -7,13 +7,15 @@ com.firebolt.jdbc.client.account.response
 com.firebolt.jdbc.client.authentication
 com.firebolt.jdbc.client.authentication.response
 com.firebolt.jdbc.client.config
+com.firebolt.jdbc.client.config.socket
 com.firebolt.jdbc.client.query
-com.firebolt.jdbc.client.ssl
 com.firebolt.jdbc.connection
 com.firebolt.jdbc.connection.settings
 com.firebolt.jdbc.exception
+com.firebolt.jdbc.log
 com.firebolt.jdbc.metadata
 com.firebolt.jdbc.resultset
+com.firebolt.jdbc.resultset.column
 com.firebolt.jdbc.resultset.compress
 com.firebolt.jdbc.service
 com.firebolt.jdbc.statement
