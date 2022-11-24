@@ -1,12 +1,12 @@
 package com.firebolt.jdbc.connection.settings;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 class FireboltPropertiesTest {
 
@@ -16,9 +16,9 @@ class FireboltPropertiesTest {
 				.sslCertificatePath("").sslMode("strict").path("/").port(443) // 443 by default as SSL is enabled by
 																				// default
 				.compress(true).user(null).password(null).host("host").ssl(true).additionalProperties(new HashMap<>())
-				.account(null).engine(null).maxConnectionsPerRoute(500).timeToLiveMillis(60000)
-				.validateAfterInactivityMillis(3000).maxConnectionsTotal(10000).maxRetries(3).socketTimeoutMillis(0)
-				.connectionTimeoutMillis(60000).clientBufferSize(65536).tcpKeepInterval(30).tcpKeepIdle(60)
+				.account(null).engine(null).keepAliveTimeoutMillis(300000)
+				.maxConnectionsTotal(300).maxRetries(3).socketTimeoutMillis(0)
+				.connectionTimeoutMillis(60000).tcpKeepInterval(30).tcpKeepIdle(60)
 				.tcpKeepCount(10).build();
 
 		Properties properties = new Properties();
@@ -47,9 +47,9 @@ class FireboltPropertiesTest {
 		FireboltProperties expectedDefaultProperties = FireboltProperties.builder().bufferSize(51)
 				.sslCertificatePath("root_cert").sslMode("none").path("/example").database("myDb").compress(true)
 				.port(443).user(null).password(null).host("myDummyHost").ssl(true)
-				.additionalProperties(customProperties).account(null).engine(null).maxConnectionsPerRoute(500)
-				.timeToLiveMillis(60000).validateAfterInactivityMillis(3000).maxConnectionsTotal(10000).maxRetries(3)
-				.socketTimeoutMillis(20).connectionTimeoutMillis(60000).clientBufferSize(65536).tcpKeepInterval(30)
+				.additionalProperties(customProperties).account(null).engine(null)
+				.keepAliveTimeoutMillis(300000).maxConnectionsTotal(300).maxRetries(3)
+				.socketTimeoutMillis(20).connectionTimeoutMillis(60000).tcpKeepInterval(30)
 				.tcpKeepIdle(60).tcpKeepCount(10).build();
 		assertEquals(expectedDefaultProperties, FireboltProperties.of(properties));
 	}

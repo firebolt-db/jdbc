@@ -1,15 +1,15 @@
 package com.firebolt.jdbc;
 
+import lombok.CustomLog;
+import lombok.experimental.UtilityClass;
+
 import java.io.IOException;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
-
 @UtilityClass
-@Slf4j
+@CustomLog
 public class VersionUtil {
 
 	private static final Pattern VERSION_PATTERN = Pattern.compile("^\\s*(\\d+)\\.(\\d+).*");

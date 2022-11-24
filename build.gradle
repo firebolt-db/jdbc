@@ -9,7 +9,7 @@ plugins {
 }
 
 group 'com.firebolt'
-version = '2.2.4-SNAPSHOT'
+version = '2.2.4'
 
 repositories {
     mavenCentral()
@@ -19,6 +19,10 @@ project.ext {
     codeCoverageExclusionList = [
             "**/firebolt/jdbc/client/config/**"
     ]
+}
+
+java {
+    withSourcesJar()
 }
 
 compileJava {
@@ -58,11 +62,12 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.4.2'
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'net.jodah:expiringmap:0.5.10'
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.1.3'
-    implementation 'org.apache.httpcomponents.core5:httpcore5:5.1.4'
     implementation 'org.apache.commons:commons-text:1.10.0'
     implementation 'org.lz4:lz4-java:1.8.0'
+    implementation'dev.failsafe:failsafe:3.3.0'
+    implementation'dev.failsafe:failsafe-okhttp:3.3.0'
     implementation fileTree(dir: 'libs', includes: ['*.jar'])
+    compileOnly 'org.slf4j:slf4j-api:2.0.3'
 
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
@@ -76,8 +81,11 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.1'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.9.1'
     testImplementation 'org.junit.jupiter:junit-jupiter-params:5.9.1'
-    testImplementation group: 'org.junit-pioneer', name: 'junit-pioneer', version: '1.7.1'
+    testImplementation 'org.junit-pioneer:junit-pioneer:1.7.1'
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
+    testImplementation 'com.squareup.okhttp3:mockwebserver:4.10.0'
+    testImplementation 'com.squareup.okhttp3:okhttp-tls:4.10.0'
+    testCompileOnly 'org.slf4j:slf4j-api:2.0.3'
     testCommonImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
     testImplementation sourceSets.testCommon.output
     compileTestJava.dependsOn processTestResources

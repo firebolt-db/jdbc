@@ -1,21 +1,26 @@
 package com.firebolt.jdbc.service;
 
-import java.util.Optional;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.firebolt.jdbc.client.account.FireboltAccountClient;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
-
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Optional;
 
 @RequiredArgsConstructor
-@Slf4j
+@CustomLog
 public class FireboltEngineService {
 	private final FireboltAccountClient fireboltAccountClient;
 
+	/**
+	 * Returns the engine host
+	 * @param connectionUrl the connection url
+	 * @param loginProperties properties to login
+	 * @param accessToken the access token
+	 * @return the engine host
+	 */
 	public String getEngineHost(String connectionUrl, FireboltProperties loginProperties, String accessToken)
 			throws FireboltException {
 		String accountId = null;
@@ -38,6 +43,11 @@ public class FireboltEngineService {
 		}
 	}
 
+	/**
+	 * Extracts the engine name from host
+	 * @param engineHost engine host
+	 * @return the engine name
+	 */
 	public String getEngineNameFromHost(String engineHost) throws FireboltException {
 		return Optional.ofNullable(engineHost).filter(host -> host.contains(".")).map(host -> host.split("\\.")[0])
 				.map(host -> host.replace("-", "_")).orElseThrow(() -> new FireboltException(

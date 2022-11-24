@@ -1,19 +1,18 @@
 package integration.tests;
 
-import static com.firebolt.jdbc.type.date.SqlDateUtil.ONE_DAY_MILLIS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import integration.IntegrationTest;
+import lombok.CustomLog;
+import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.DefaultTimeZone;
 
 import java.sql.*;
 import java.time.ZonedDateTime;
 import java.util.TimeZone;
 
-import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.DefaultTimeZone;
+import static com.firebolt.jdbc.type.date.SqlDateUtil.ONE_DAY_MILLIS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import integration.IntegrationTest;
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
+@CustomLog
 @DefaultTimeZone("UTC")
 class TimestampTest extends IntegrationTest {
 

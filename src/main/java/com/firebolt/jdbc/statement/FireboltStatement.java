@@ -1,12 +1,5 @@
 package com.firebolt.jdbc.statement;
 
-import java.io.InputStream;
-import java.sql.*;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.firebolt.jdbc.CloseableUtil;
 import com.firebolt.jdbc.PropertyUtil;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
@@ -19,11 +12,16 @@ import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
-
 import lombok.Builder;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
+import org.apache.commons.lang3.StringUtils;
 
-@Slf4j
+import java.io.InputStream;
+import java.sql.*;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@CustomLog
 public class FireboltStatement implements Statement {
 
 	private static final String KILL_QUERY_SQL = "KILL QUERY ON CLUSTER sql_cluster WHERE initial_query_id='%s'";
@@ -37,7 +35,7 @@ public class FireboltStatement implements Statement {
 	private volatile boolean isClosed = false;
 	private StatementResultWrapper currentStatementResult;
 	private StatementResultWrapper firstUnclosedStatementResult;
-	private Integer queryTimeout;
+	private int queryTimeout = -1;
 	private String runningStatementId;
 
 	@Builder
@@ -56,21 +54,22 @@ public class FireboltStatement implements Statement {
 
 	protected ResultSet executeQuery(List<StatementInfoWrapper> statementInfoList) throws SQLException {
 		StatementInfoWrapper query = getOneQueryStatementInfo(statementInfoList);
-		Optional<ResultSet> resultSet = this.execute(Collections.singletonList(query), null);
+		Optional<ResultSet> resultSet = this.execute(Collections.singletonList(query));
 		synchronized (this) {
 			if (!resultSet.isPresent()) {
-				throw new FireboltException("Could not return ResultSet - the result object is null");
+				throw new FireboltException("Could not return ResultSet - the query returned no result.");
 			} else {
 				return resultSet.get();
 			}
 		}
 	}
 
-	private boolean execute(String sql, Map<String, String> params) throws SQLException {
-		return this.execute(StatementUtil.parseToStatementInfoWrappers(sql), params).isPresent();
+	@Override
+	public boolean execute(String sql) throws SQLException {
+		return this.execute(StatementUtil.parseToStatementInfoWrappers(sql)).isPresent();
 	}
 
-	private Optional<ResultSet> execute(List<StatementInfoWrapper> statements, Map<String, String> params)
+	protected Optional<ResultSet> execute(List<StatementInfoWrapper> statements)
 			throws SQLException {
 		Optional<ResultSet> resultSet = Optional.empty();
 		this.closeAllResults();
@@ -82,9 +81,9 @@ public class FireboltStatement implements Statement {
 			}
 			for (int i = 0; i < statements.size(); i++) {
 				if (i == 0) {
-					resultSet = execute(statements.get(i), params, true);
+					resultSet = execute(statements.get(i), true, true);
 				} else {
-					execute(statements.get(i), params, true);
+					execute(statements.get(i), true, true);
 				}
 			}
 		} finally {
@@ -95,8 +94,7 @@ public class FireboltStatement implements Statement {
 		return resultSet;
 	}
 
-	private Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper, Map<String, String> params,
-			boolean verifyNotCancelled) throws SQLException {
+	private Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper, boolean verifyNotCancelled, boolean isStandardSql) throws SQLException {
 		ResultSet resultSet = null;
 		if (!verifyNotCancelled || isStatementNotCancelled(statementInfoWrapper)) {
 			runningStatementId = statementInfoWrapper.getId();
@@ -111,9 +109,7 @@ public class FireboltStatement implements Statement {
 					this.connection.addProperty(statementInfoWrapper.getParam());
 					log.debug("The property from the query {} was stored", runningStatementId);
 				} else {
-					Map<String, String> statementParams = params != null ? params : this.getStatementParameters();
-					inputStream = statementService.execute(statementInfoWrapper, this.sessionProperties,
-							statementParams);
+					inputStream = statementService.execute(statementInfoWrapper, this.sessionProperties, this.queryTimeout, this.maxRows, isStandardSql);
 					if (statementInfoWrapper.getType() == StatementType.QUERY) {
 						resultSet = getResultSet(inputStream,
 								(QueryRawStatement) statementInfoWrapper.getInitialStatement());
@@ -126,7 +122,7 @@ public class FireboltStatement implements Statement {
 				}
 			} catch (Exception ex) {
 				CloseableUtil.close(inputStream);
-				log.error("An error happened while executing the statement with the id {}", runningStatementId, ex);
+				log.error(String.format("An error happened while executing the statement with the id %s", runningStatementId), ex);
 				throw ex;
 			} finally {
 				runningStatementId = null;
@@ -141,7 +137,7 @@ public class FireboltStatement implements Statement {
 				}
 			}
 		} else {
-			log.warn("Did not run cancelled query with id {}", statementInfoWrapper.getId());
+			log.warn("Aborted query with id {}", statementInfoWrapper.getId());
 		}
 		return Optional.ofNullable(resultSet);
 	}
@@ -167,18 +163,6 @@ public class FireboltStatement implements Statement {
 				this.firstUnclosedStatementResult = null;
 			}
 		}
-	}
-
-	private Map<String, String> getStatementParameters() {
-		Map<String, String> params = new HashMap<>();
-		if (this.queryTimeout != null) {
-			params.put("max_execution_time", String.valueOf(this.queryTimeout));
-		}
-		if (maxRows > 0) {
-			params.put("max_result_rows", String.valueOf(this.maxRows));
-			params.put("result_overflow_mode", "break");
-		}
-		return params;
 	}
 
 	@Override
@@ -219,10 +203,8 @@ public class FireboltStatement implements Statement {
 	}
 
 	private void abortStatementByQuery(String statementId) throws SQLException {
-		Map<String, String> statementParams = new HashMap<>(this.getStatementParameters());
-		statementParams.put("use_standard_sql", "0");
 		this.execute(StatementUtil.parseToStatementInfoWrappers(String.format(KILL_QUERY_SQL, statementId)).get(0),
-				statementParams, false);
+				false, false);
 	}
 
 	@Override
@@ -309,7 +291,7 @@ public class FireboltStatement implements Statement {
 	 * Closes the Statement and removes the object from the list of Statements kept
 	 * in the {@link FireboltConnection} if the param removeFromConnection is set to
 	 * true
-	 * 
+	 *
 	 * @param removeFromConnection whether the {@link FireboltStatement} must be
 	 *                             removed from the parent
 	 *                             {@link FireboltConnection}
@@ -365,15 +347,6 @@ public class FireboltStatement implements Statement {
 	}
 
 	@Override
-	public boolean execute(String sql) throws SQLException {
-		return this.execute(sql, (Map<String, String>) null);
-	}
-
-	public boolean execute(List<StatementInfoWrapper> statementInfoList) throws SQLException {
-		return this.execute(statementInfoList, null).isPresent();
-	}
-
-	@Override
 	public int getQueryTimeout() throws SQLException {
 		return queryTimeout;
 	}
@@ -413,7 +386,7 @@ public class FireboltStatement implements Statement {
 
 	/**
 	 * Returns true if the statement is currently running
-	 * 
+	 *
 	 * @return true if the statement is currently running
 	 */
 	public boolean isStatementRunning() {
@@ -662,7 +635,7 @@ public class FireboltStatement implements Statement {
 
 	/**
 	 * Returns true if the statement has more results
-	 * 
+	 *
 	 * @return true if the statement has more results
 	 */
 	public boolean hasMoreResults() {

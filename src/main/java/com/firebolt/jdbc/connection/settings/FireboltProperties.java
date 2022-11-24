@@ -1,26 +1,26 @@
 package com.firebolt.jdbc.connection.settings;
 
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
+import lombok.CustomLog;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.extern.slf4j.Slf4j;
-
 @Value
 @Builder(toBuilder = true)
-@Slf4j
+@CustomLog
 public class FireboltProperties {
 
 	private static final Pattern DB_PATH_PATTERN = Pattern.compile("/([a-zA-Z0-9_*\\-]+)");
 	private static final int FIREBOLT_SSL_PROXY_PORT = 443;
 	private static final int FIREBOLT_NO_SSL_PROXY_PORT = 9090;
+	private static final String SYSTEM_ENGINE_NAME = "system";
 
 	private static final Set<String> sessionPropertyKeys = Arrays.stream(FireboltSessionProperty.values())
 			.map(property -> {
@@ -30,9 +30,7 @@ public class FireboltProperties {
 				return keys;
 			}).flatMap(List::stream).collect(Collectors.toSet());
 
-	int timeToLiveMillis;
-	int validateAfterInactivityMillis;
-	int maxConnectionsPerRoute;
+	int keepAliveTimeoutMillis;
 	int maxConnectionsTotal;
 	int maxRetries;
 	int bufferSize;
@@ -56,6 +54,8 @@ public class FireboltProperties {
 	Integer tcpKeepCount;
 	Integer tcpKeepInterval;
 	boolean logResultSet;
+	boolean systemEngine;
+
 	@Builder.Default
 	Map<String, String> additionalProperties = new HashMap<>();
 
@@ -64,20 +64,17 @@ public class FireboltProperties {
 		boolean ssl = getSetting(mergedProperties, FireboltSessionProperty.SSL);
 		String sslRootCertificate = getSetting(mergedProperties, FireboltSessionProperty.SSL_CERTIFICATE_PATH);
 		String sslMode = getSetting(mergedProperties, FireboltSessionProperty.SSL_MODE);
-		boolean compress = getSetting(mergedProperties, FireboltSessionProperty.COMPRESS);
 		String user = getSetting(mergedProperties, FireboltSessionProperty.USER);
 		String password = getSetting(mergedProperties, FireboltSessionProperty.PASSWORD);
 		String path = getSetting(mergedProperties, FireboltSessionProperty.PATH);
 		String engine = getSetting(mergedProperties, FireboltSessionProperty.ENGINE);
+		boolean isSystemEngine = isSystemEngine(engine);
+		boolean compress = ((Boolean)getSetting(mergedProperties, FireboltSessionProperty.COMPRESS)) && !isSystemEngine;
 		String account = getSetting(mergedProperties, FireboltSessionProperty.ACCOUNT);
-		int maxConnectionsPerRoute = getSetting(mergedProperties, FireboltSessionProperty.MAX_CONNECTIONS_PER_ROUTE);
-		int timeToLiveMillis = getSetting(mergedProperties, FireboltSessionProperty.TIME_TO_LIVE_MILLIS);
-		int validateAfterInactivityMillis = getSetting(mergedProperties,
-				FireboltSessionProperty.VALIDATE_AFTER_INACTIVITY_MILLIS);
+		int keepAliveMillis = getSetting(mergedProperties, FireboltSessionProperty.KEEP_ALIVE_TIMEOUT_MILLIS);
 		int maxTotal = getSetting(mergedProperties, FireboltSessionProperty.MAX_CONNECTIONS_TOTAL);
 		int maxRetries = getSetting(mergedProperties, FireboltSessionProperty.MAX_RETRIES);
 		int bufferSize = getSetting(mergedProperties, FireboltSessionProperty.BUFFER_SIZE);
-		int clientBufferSize = getSetting(mergedProperties, FireboltSessionProperty.CLIENT_BUFFER_SIZE);
 		int socketTimeout = getSetting(mergedProperties, FireboltSessionProperty.SOCKET_TIMEOUT_MILLIS);
 		int connectionTimeout = getSetting(mergedProperties, FireboltSessionProperty.CONNECTION_TIMEOUT_MILLIS);
 		int tcpKeepInterval = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_INTERVAL);
@@ -95,12 +92,13 @@ public class FireboltProperties {
 		return FireboltProperties.builder().ssl(ssl).sslCertificatePath(sslRootCertificate).sslMode(sslMode).path(path)
 				.port(port).database(database).compress(compress).user(user).password(password).host(host)
 				.additionalProperties(additionalProperties).account(account).engine(engine)
-				.maxConnectionsPerRoute(maxConnectionsPerRoute).timeToLiveMillis(timeToLiveMillis)
-				.validateAfterInactivityMillis(validateAfterInactivityMillis).maxConnectionsTotal(maxTotal)
-				.maxRetries(maxRetries).clientBufferSize(clientBufferSize).bufferSize(bufferSize)
+				.keepAliveTimeoutMillis(keepAliveMillis)
+				.maxConnectionsTotal(maxTotal)
+				.maxRetries(maxRetries).bufferSize(bufferSize)
 				.socketTimeoutMillis(socketTimeout).connectionTimeoutMillis(connectionTimeout)
 				.tcpKeepInterval(tcpKeepInterval).tcpKeepCount(tcpKeepCount)
-				.tcpKeepIdle(tcpKeepIdle).aggressiveCancel(aggressiveCancel).logResultSet(logResultSet).build();
+				.tcpKeepIdle(tcpKeepIdle).aggressiveCancel(aggressiveCancel).logResultSet(logResultSet)
+				.systemEngine(isSystemEngine).build();
 	}
 
 	private static String getHost(Properties properties) {
@@ -195,5 +193,9 @@ public class FireboltProperties {
 
 	public void addProperty(Pair<String, String> property) {
 		this.addProperty(property.getLeft(), property.getRight());
+	}
+
+	private static boolean isSystemEngine(String engine) {
+		return StringUtils.equalsIgnoreCase(SYSTEM_ENGINE_NAME, engine);
 	}
 }

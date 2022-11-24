@@ -13,7 +13,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class MetadataUtil {
 
-	// Should enable once schemas are supported
+	// To uncomment once schemas are supported
 //	public String getSchemasQuery(String catalog, String schemaPattern) {
 //		Query.QueryBuilder queryBuilder = Query.builder();
 //		queryBuilder.select(String.format("table_schema AS %s, table_catalog AS %s", TABLE_SCHEM, TABLE_CATALOG));

@@ -12,7 +12,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
@@ -36,7 +35,7 @@ class FireboltStatementTest {
 	@Captor
 	ArgumentCaptor<StatementInfoWrapper> queryInfoWrapperArgumentCaptor;
 	@Captor
-	ArgumentCaptor<Map<String, String>> mapArgumentCaptor;
+	ArgumentCaptor<Boolean> booleanArgumentCaptor;
 	@Mock
 	private FireboltStatementService fireboltStatementService;
 	@Mock
@@ -50,11 +49,11 @@ class FireboltStatementTest {
 			FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
 					.sessionProperties(fireboltProperties).build();
 
-			when(fireboltStatementService.execute(any(), any(), any())).thenReturn(mock(InputStream.class));
+			when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean())).thenReturn(mock(InputStream.class));
 			fireboltStatement.executeQuery("show database");
 			assertTrue(fireboltProperties.getAdditionalProperties().isEmpty());
 			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(fireboltProperties),
-					any());
+					anyInt(), anyInt(), anyBoolean());
 			assertEquals(1, mocked.constructed().size());
 			assertEquals(-1, fireboltStatement.getUpdateCount());
 			assertEquals("show database", queryInfoWrapperArgumentCaptor.getValue().getSql());
@@ -96,11 +95,11 @@ class FireboltStatementTest {
 			runningStatementField.setAccessible(true);
 			runningStatementField.set(fireboltStatement, "1234");
 			fireboltStatement.cancel();
-			verify(fireboltStatementService, times(1)).execute(queryInfoWrapperArgumentCaptor.capture(),
-					fireboltPropertiesArgumentCaptor.capture(), mapArgumentCaptor.capture());
+			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
+					fireboltPropertiesArgumentCaptor.capture(), anyInt(), anyInt(), booleanArgumentCaptor.capture());
 			assertEquals("KILL QUERY ON CLUSTER sql_cluster WHERE initial_query_id='1234'",
 					queryInfoWrapperArgumentCaptor.getValue().getSql());
-			assertEquals(String.valueOf(0), mapArgumentCaptor.getValue().get("use_standard_sql"));
+			assertFalse(booleanArgumentCaptor.getValue());
 		}
 	}
 
@@ -134,7 +133,7 @@ class FireboltStatementTest {
 			FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
 					.sessionProperties(fireboltProperties).connection(connection).build();
 
-			when(fireboltStatementService.execute(any(), any(), any())).thenReturn(mock(InputStream.class));
+			when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean())).thenReturn(mock(InputStream.class));
 
 			fireboltStatement.executeQuery("show database");
 			fireboltStatement.close();
@@ -166,10 +165,10 @@ class FireboltStatementTest {
 		try (FireboltStatement fireboltStatement = FireboltStatement.builder()
 				.statementService(fireboltStatementService).connection(fireboltConnection)
 				.sessionProperties(fireboltProperties).build();) {
-			when(fireboltStatementService.execute(any(), any(), any())).thenReturn(mock(InputStream.class));
+			when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean())).thenReturn(mock(InputStream.class));
 			assertEquals(0, fireboltStatement.executeUpdate("INSERT INTO cars(sales, name) VALUES (500, 'Ford')"));
 			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(fireboltProperties),
-					any());
+					anyInt(), anyInt(), anyBoolean());
 			assertEquals("INSERT INTO cars(sales, name) VALUES (500, 'Ford')",
 					queryInfoWrapperArgumentCaptor.getValue().getSql());
 		}

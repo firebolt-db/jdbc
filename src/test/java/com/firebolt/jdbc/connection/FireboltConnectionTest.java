@@ -1,10 +1,19 @@
 package com.firebolt.jdbc.connection;
 
-import static java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.exception.ExceptionType;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.service.FireboltAuthenticationService;
+import com.firebolt.jdbc.service.FireboltEngineService;
+import com.firebolt.jdbc.service.FireboltStatementService;
+import com.firebolt.jdbc.statement.StatementInfoWrapper;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayInputStream;
 import java.sql.*;
@@ -14,21 +23,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.exception.ExceptionType;
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.service.FireboltAuthenticationService;
-import com.firebolt.jdbc.service.FireboltEngineService;
-import com.firebolt.jdbc.service.FireboltStatementService;
-import com.firebolt.jdbc.statement.StatementInfoWrapper;
+import static java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltConnectionTest {
@@ -76,7 +75,7 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldPrepareStatement() throws SQLException {
-		when(fireboltStatementService.execute(any(), any(), any())).thenReturn(new ByteArrayInputStream("".getBytes()));
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean())).thenReturn(new ByteArrayInputStream("".getBytes()));
 		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
 		PreparedStatement statement = fireboltConnection
@@ -86,7 +85,7 @@ class FireboltConnectionTest {
 		statement.execute();
 		assertNotNull(fireboltConnection);
 		assertNotNull(statement);
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), any(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), any(), anyInt(), anyInt(), anyBoolean());
 		assertEquals("INSERT INTO cars(sales, name) VALUES (500, 'Ford')",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
@@ -108,13 +107,13 @@ class FireboltConnectionTest {
 		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
 
-		when(fireboltStatementService.execute(any(), any(), any()))
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
 				.thenThrow(new FireboltException(ExceptionType.TOO_MANY_REQUESTS));
 		assertThrows(FireboltException.class,
 				() -> fireboltConnection.addProperty(new ImmutablePair<>("custom_1", "1")));
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
-				propertiesArgumentCaptor.capture(), any());
+				propertiesArgumentCaptor.capture(), anyInt(), anyInt(), anyBoolean());
 		assertEquals("1", propertiesArgumentCaptor.getValue().getAdditionalProperties().get("custom_1"));
 		assertEquals("SELECT 1", queryInfoWrapperArgumentCaptor.getValue().getSql());
 		assertNull(fireboltConnection.getSessionProperties().getAdditionalProperties().get("custom_1"));
@@ -122,7 +121,7 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldSetNewPropertyWhenConnectionIsValidWithTheNewProperty() throws SQLException {
-		when(fireboltStatementService.execute(any(), any(), any())).thenReturn(new ByteArrayInputStream("".getBytes()));
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean())).thenReturn(new ByteArrayInputStream("".getBytes()));
 		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
 
@@ -131,7 +130,7 @@ class FireboltConnectionTest {
 		fireboltConnection.addProperty(newProperties);
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
-				propertiesArgumentCaptor.capture(), any());
+				propertiesArgumentCaptor.capture(), anyInt(), anyInt(), anyBoolean());
 		assertEquals("1", propertiesArgumentCaptor.getValue().getAdditionalProperties().get("custom_1"));
 		assertEquals("1", fireboltConnection.getSessionProperties().getAdditionalProperties().get("custom_1"));
 		assertEquals("SELECT 1", queryInfoWrapperArgumentCaptor.getValue().getSql());
@@ -139,19 +138,30 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldValidateConnectionWhenCallingIsValid() throws SQLException {
-		when(fireboltStatementService.execute(any(), any(), any())).thenReturn(new ByteArrayInputStream("".getBytes()));
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean())).thenReturn(new ByteArrayInputStream("".getBytes()));
 		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
 		fireboltConnection.isValid(500);
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
-				propertiesArgumentCaptor.capture(), any());
+				propertiesArgumentCaptor.capture(), anyInt(), anyInt(), anyBoolean());
 		assertEquals("SELECT 1", queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
 	@Test
+	void shouldNotValidateConnectionWhenCallingIsValidWhenUsingSystemEngine() throws SQLException {
+		Properties propertiesWithSystemEngine = new Properties(connectionProperties);
+		propertiesWithSystemEngine.put("engine_name", "system");
+		FireboltConnection fireboltConnection = new FireboltConnection(URL, propertiesWithSystemEngine,
+				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
+		fireboltConnection.isValid(500);
+
+		verifyNoInteractions(fireboltStatementService);
+	}
+
+	@Test
 	void shouldIgnore429WhenValidatingConnection() throws SQLException {
-		when(fireboltStatementService.execute(any(), any(), any()))
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
 				.thenThrow(new FireboltException(ExceptionType.TOO_MANY_REQUESTS));
 		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
@@ -160,7 +170,7 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldReturnFalseWhenValidatingConnectionThrowsAnException() throws SQLException {
-		when(fireboltStatementService.execute(any(), any(), any()))
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
 				.thenThrow(new FireboltException(ExceptionType.ERROR));
 		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
@@ -184,7 +194,7 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldExtractConnectorOverrides() throws SQLException {
-		when(fireboltStatementService.execute(any(), any(), any())).thenReturn(new ByteArrayInputStream("".getBytes()));
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean())).thenReturn(new ByteArrayInputStream("".getBytes()));
 		connectionProperties.put("user_clients", "ConnA:1.0.9,ConnB:2.8.0");
 		connectionProperties.put("user_drivers", "DriverA:2.0.9,DriverB:3.8.0");
 
@@ -194,7 +204,7 @@ class FireboltConnectionTest {
 		PreparedStatement statement = fireboltConnectionImpl.prepareStatement("SELECT 1");
 		statement.execute();
 
-		verify(fireboltStatementService).execute(any(), propertiesArgumentCaptor.capture(), any());
+		verify(fireboltStatementService).execute(any(), propertiesArgumentCaptor.capture(), anyInt(), anyInt(), anyBoolean());
 		assertNull(propertiesArgumentCaptor.getValue().getAdditionalProperties().get("user_clients"));
 		assertNull(propertiesArgumentCaptor.getValue().getAdditionalProperties().get("user_drivers"));
 		assertNull(fireboltConnectionImpl.getSessionProperties().getAdditionalProperties().get("user_clients"));

@@ -1,15 +1,14 @@
 package com.firebolt.jdbc.statement;
 
+import lombok.CustomLog;
+import lombok.Data;
+
+import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.sql.ResultSet;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-
 @Data
-@Slf4j
+@CustomLog
 public class StatementResultWrapper implements Closeable {
 	private ResultSet resultSet;
 	private int updateCount;
