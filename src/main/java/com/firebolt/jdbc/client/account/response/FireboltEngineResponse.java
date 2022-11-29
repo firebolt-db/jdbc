@@ -1,5 +1,7 @@
 package com.firebolt.jdbc.client.account.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.Builder;
 import lombok.Value;
 
@@ -12,5 +14,7 @@ public class FireboltEngineResponse {
 	@Builder
 	public static class Engine {
 		String endpoint;
+		@JsonProperty("current_status")
+		String currentStatus;
 	}
 }

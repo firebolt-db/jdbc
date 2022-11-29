@@ -129,12 +129,12 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		getRunningCallWithId(id).ifPresent(Call::cancel);
 	}
 
-	Optional<Call> getQueuedCallWithId(String id) {
+	private Optional<Call> getQueuedCallWithId(String id) {
 		return getHttpClient().dispatcher().queuedCalls().stream().filter(call -> isCallWithId.test(call, id))
 				.findAny();
 	}
 
-	Optional<Call> getRunningCallWithId(String id) {
+	private Optional<Call> getRunningCallWithId(String id) {
 		return getHttpClient().dispatcher().runningCalls().stream().filter(call -> isCallWithId.test(call, id))
 				.findAny();
 	}

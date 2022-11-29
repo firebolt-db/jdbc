@@ -105,8 +105,9 @@ public class FireboltConnection implements Connection {
 	private void connect() throws FireboltException {
 		String accessToken = this.getConnectionTokens().map(FireboltConnectionTokens::getAccessToken).orElse("");
 		if (!PropertyUtil.isLocalDb(this.loginProperties)) {
-			String engineHost = fireboltEngineService.getEngineHost(httpConnectionUrl, loginProperties, accessToken);
-			this.sessionProperties = loginProperties.toBuilder().host(engineHost).build();
+			String endpoint = fireboltEngineService.getEngine(httpConnectionUrl, loginProperties, accessToken)
+					.getEndpoint();
+			this.sessionProperties = loginProperties.toBuilder().host(endpoint).build();
 		} else {
 			this.sessionProperties = loginProperties;
 		}
