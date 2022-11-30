@@ -81,7 +81,7 @@ public class FireboltEngineService {
 	private Engine getDefaultEngine(String connectionUrl, String accountId, String database, String accessToken)
 			throws FireboltException, IOException {
 		FireboltDefaultDatabaseEngineResponse defaultEngine = fireboltAccountClient
-				.getDbDefaultEngineAddressByDbName(connectionUrl, accountId, database, accessToken);
+				.getDefaultEngineByDatabaseName(connectionUrl, accountId, database, accessToken);
 		return Optional.ofNullable(defaultEngine).map(FireboltDefaultDatabaseEngineResponse::getEngineUrl)
 				.map(url -> Engine.builder().endpoint(url).build()).orElseThrow(
 						() -> new FireboltException(String.format(ERROR_NO_ENGINE_ATTACHED, connectionUrl, database)));

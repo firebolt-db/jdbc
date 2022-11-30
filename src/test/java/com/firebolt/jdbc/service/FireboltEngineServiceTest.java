@@ -45,12 +45,12 @@ class FireboltEngineServiceTest {
 
 		when(fireboltAccountClient.getAccount(properties.getHost(), properties.getAccount(), ACCESS_TOKEN))
 				.thenReturn(FireboltAccountResponse.builder().accountId(ACCOUNT_ID).build());
-		when(fireboltAccountClient.getDbDefaultEngineAddressByDbName(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN))
+		when(fireboltAccountClient.getDefaultEngineByDatabaseName(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN))
 				.thenReturn(FireboltDefaultDatabaseEngineResponse.builder().engineUrl("URL").build());
 		fireboltEngineService.getEngine(HOST, properties, ACCESS_TOKEN);
 
 		verify(fireboltAccountClient).getAccount(properties.getHost(), properties.getAccount(), ACCESS_TOKEN);
-		verify(fireboltAccountClient).getDbDefaultEngineAddressByDbName(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
+		verify(fireboltAccountClient).getDefaultEngineByDatabaseName(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
 		verifyNoMoreInteractions(fireboltAccountClient);
 	}
 
@@ -61,7 +61,7 @@ class FireboltEngineServiceTest {
 
 		when(fireboltAccountClient.getAccount(properties.getHost(), properties.getAccount(), ACCESS_TOKEN))
 				.thenReturn(FireboltAccountResponse.builder().accountId(ACCOUNT_ID).build());
-		when(fireboltAccountClient.getDbDefaultEngineAddressByDbName(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN))
+		when(fireboltAccountClient.getDefaultEngineByDatabaseName(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN))
 				.thenReturn(FireboltDefaultDatabaseEngineResponse.builder().engineUrl(null).build());
 		FireboltException exception = assertThrows(FireboltException.class,
 				() -> fireboltEngineService.getEngine(HOST, properties, ACCESS_TOKEN));
@@ -70,12 +70,12 @@ class FireboltEngineServiceTest {
 				exception.getMessage());
 
 		verify(fireboltAccountClient).getAccount(properties.getHost(), properties.getAccount(), ACCESS_TOKEN);
-		verify(fireboltAccountClient).getDbDefaultEngineAddressByDbName(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
+		verify(fireboltAccountClient).getDefaultEngineByDatabaseName(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
 		verifyNoMoreInteractions(fireboltAccountClient);
 	}
 
 	@Test
-	void shouldGetEngineAddressWhenEngineNameIsPresent() throws Exception {
+	void shouldGetEngineWhenEngineNameIsPresent() throws Exception {
 		FireboltProperties properties = FireboltProperties.builder().host(HOST).account(ACCOUNT_ID).database(DB_NAME)
 				.engine(ENGINE_NAME).compress(false).build();
 		when(fireboltAccountClient.getAccount(properties.getHost(), properties.getAccount(), ACCESS_TOKEN))
@@ -91,6 +91,24 @@ class FireboltEngineServiceTest {
 		verify(fireboltAccountClient).getAccount(properties.getHost(), ACCOUNT_ID, ACCESS_TOKEN);
 		verify(fireboltAccountClient).getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN);
 		verify(fireboltAccountClient).getEngine(HOST, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN);
+		verifyNoMoreInteractions(fireboltAccountClient);
+	}
+
+	@Test
+	void shouldNotGetAccountWhileGettingEngineIfAccountIdIsNotPresent() throws Exception {
+		FireboltProperties properties = FireboltProperties.builder().host(HOST).database(DB_NAME)
+				.engine(ENGINE_NAME).compress(false).build();
+		when(fireboltAccountClient.getEngineId(HOST, null, ENGINE_NAME, ACCESS_TOKEN))
+				.thenReturn(FireboltEngineIdResponse.builder()
+						.engine(FireboltEngineIdResponse.Engine.builder().engineId(ENGINE_ID).build()).build());
+		when(fireboltAccountClient.getEngine(HOST, null, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN))
+				.thenReturn(FireboltEngineResponse.builder()
+						.engine(FireboltEngineResponse.Engine.builder().endpoint("ANY").build()).build());
+		fireboltEngineService.getEngine(HOST, properties, ACCESS_TOKEN);
+
+		verify(fireboltAccountClient, times(0)).getAccount(any(), any(), any());
+		verify(fireboltAccountClient).getEngineId(HOST, null, ENGINE_NAME, ACCESS_TOKEN);
+		verify(fireboltAccountClient).getEngine(HOST, null, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN);
 		verifyNoMoreInteractions(fireboltAccountClient);
 	}
 

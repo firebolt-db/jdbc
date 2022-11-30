@@ -82,8 +82,8 @@ public class FireboltAccountClient extends FireboltClient {
 	 * @param accessToken the access token
 	 * @return the default engine for the database
 	 */
-	public FireboltDefaultDatabaseEngineResponse getDbDefaultEngineAddressByDbName(String host, String accountId, String dbName,
-																				   String accessToken) throws FireboltException, IOException {
+	public FireboltDefaultDatabaseEngineResponse getDefaultEngineByDatabaseName(String host, String accountId, String dbName,
+																				String accessToken) throws FireboltException, IOException {
 		String uri = createAccountUri(accountId, host, URI_SUFFIX_DATABASE_INFO_URL + dbName);
 		try {
 			return getResource(uri, host, accessToken, FireboltDefaultDatabaseEngineResponse.class);

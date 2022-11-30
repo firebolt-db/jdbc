@@ -140,7 +140,7 @@ class FireboltAccountClientTest {
 				.writeValueAsString(FireboltDefaultDatabaseEngineResponse.builder().engineUrl("http://dbAddress").build()));
 
 		FireboltDefaultDatabaseEngineResponse fireboltDefaultDatabaseEngineResponse = fireboltAccountClient
-				.getDbDefaultEngineAddressByDbName(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
+				.getDefaultEngineByDatabaseName(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
 		Map<String, String> expectedHeader = ImmutableMap.of("User-Agent",
 				"ConnB/2.0.9 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9", "Authorization",
 				"Bearer " + ACCESS_TOKEN);
@@ -205,7 +205,7 @@ class FireboltAccountClientTest {
 		when(response.body()).thenReturn(body);
 		when(call.execute()).thenReturn(response);
 		assertThrows(FireboltException.class,
-				() -> fireboltAccountClient.getDbDefaultEngineAddressByDbName(HOST, ACCOUNT, DB_NAME, ACCESS_TOKEN));
+				() -> fireboltAccountClient.getDefaultEngineByDatabaseName(HOST, ACCOUNT, DB_NAME, ACCESS_TOKEN));
 	}
 
 	@Test
