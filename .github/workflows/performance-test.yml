@@ -1,20 +1,21 @@
 name: Run performance tests
 
 on:
-  workflow_dispatch:
-    inputs:
-      database:
-        description: 'Database (staging) - a new one will be created if not provided'
-        required: false
-        default: ''
-      threads:
-        description: 'Number of threads/users'
-        required: false
-        default: '10'
-      loops:
-        description: 'Number of iterations for every thread'
-        required: false
-        default: '50'
+  push:
+#  workflow_dispatch:
+#    inputs:
+#      database:
+#        description: 'Database (staging) - a new one will be created if not provided'
+#        required: false
+#        default: ''
+#      threads:
+#        description: 'Number of threads/users'
+#        required: false
+#        default: '10'
+#      loops:
+#        description: 'Number of iterations for every thread'
+#        required: false
+#        default: '50'
 
 jobs:
   build:
@@ -34,25 +35,25 @@ jobs:
         with:
           name: ${{ needs.build.outputs.uber-jar }}
           path: dependencies
-      - name: Setup database and engine
-        id: setup
-        if: ${{ github.event.inputs.database == '' }}
-        uses: firebolt-db/integration-testing-setup@master
-        with:
-          firebolt-username: ${{ secrets.FIREBOLT_USERNAME }}
-          firebolt-password: ${{ secrets.FIREBOLT_PASSWORD }}
-          api-endpoint: "api.staging.firebolt.io"
-          region: "us-east-1"
-          instance-type: "B2"
+#      - name: Setup database and engine
+#        id: setup
+#        if: ${{ github.event.inputs.database == '' }}
+#        uses: firebolt-db/integration-testing-setup@master
+#        with:
+#          firebolt-username: ${{ secrets.FIREBOLT_USERNAME }}
+#          firebolt-password: ${{ secrets.FIREBOLT_PASSWORD }}
+#          api-endpoint: "api.staging.firebolt.io"
+#          region: "us-east-1"
+#          instance-type: "B2"
 
-      - name: Determine database name
-        id: find-database-name
-        run: |
-          if ! [[ -z "${{ github.event.inputs.database }}" ]]; then
-             echo "database_name=${{ github.event.inputs.database }}" >> $GITHUB_OUTPUT
-          else
-             echo "database_name=${{ steps.setup.outputs.database_name }}" >> $GITHUB_OUTPUT
-          fi
+#      - name: Determine database name
+#        id: find-database-name
+#        run: |
+#          if ! [[ -z "${{ github.event.inputs.database }}" ]]; then
+#             echo "database_name=${{ github.event.inputs.database }}" >> $GITHUB_OUTPUT
+#          else
+#             echo "database_name=${{ steps.setup.outputs.database_name }}" >> $GITHUB_OUTPUT
+#          fi
 
       - name: Run JMeter Tests
         uses: rbhadti94/apache-jmeter-action@v0.5.0
@@ -60,20 +61,42 @@ jobs:
           testFilePath: JDBC.jmx
           dependencyFolder: dependencies
           outputReportsFolder: reports/
-          args: -Jdatabase=${{ github.event.inputs.database }} -Jpassword=${{ secrets.FIREBOLT_PASSWORD }} -Jusername=${{ secrets.FIREBOLT_USERNAME }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
+          args: -Jdatabase=metabase_test -Jpassword=${{ secrets.FIREBOLT_PASSWORD }} -Jusername=${{ secrets.FIREBOLT_USERNAME }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=1
       - name: Upload results
         uses: actions/upload-artifact@v2
         with:
           name: performance_test_report
           path: reports
       - name: Adding summary
+        id: summary
         run: |
           echo "### Test result :rocket:" >> $GITHUB_STEP_SUMMARY
           echo "| Sample count  | Error count | Error % | Mean response time |Median response time | Min response time | Max response time | 1st percentile response time | 2nd percentile response time | 3nd percentile response time | Throughput |" >> $GITHUB_STEP_SUMMARY
           echo "| -------------  | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |" >> $GITHUB_STEP_SUMMARY
           echo "| $(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/') |" >> $GITHUB_STEP_SUMMARY
+          echo "SUMMARY=$(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/')" >> $GITHUB_OUTPUT
       - name: Upload logs
         uses: actions/upload-artifact@v2
         with:
           name: jmeter_log.log
           path: jmeter_log.log
+      - name: Remove reports
+        run : |
+          sudo rm -rf "/home/runner/work/jdbc/jdbc/reports"
+      - name: Checkout history branch
+        uses: actions/checkout@v3
+        with:
+          ref: performance-test-results
+      - name: Append history
+        uses: DamianReeves/write-file-action@master
+        with:
+          path: result.csv
+          contents: |
+            
+            ${{ steps.summary.outputs.summary }}
+          write-mode: append
+      - name: push
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Push history
+          branch: performance-test-results
