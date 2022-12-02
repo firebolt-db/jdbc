@@ -35,7 +35,7 @@ public class RetryPolicyTest extends IntegrationTest {
     @Test
     public void shouldThrowExceptionOn400WithoutRetry() throws SQLException {
         mockBackEnd.enqueue(new MockResponse().setResponseCode(400));
-        try (FireboltConnection fireboltConnection = (FireboltConnection) createLocalConnection(String.format("?ssl=0&port=%d&retries=%d", mockBackEnd.getPort(), 3)); Statement statement = fireboltConnection.createStatement()) {
+        try (FireboltConnection fireboltConnection = (FireboltConnection) createLocalConnection(String.format("?ssl=0&port=%d&max_retries=%d", mockBackEnd.getPort(), 3)); Statement statement = fireboltConnection.createStatement()) {
             FireboltException ex = assertThrows(FireboltException.class, () -> statement.execute("SELECT 1;"));
             assertEquals(ex.getType(), INVALID_REQUEST);
             assertEquals(1, mockBackEnd.getRequestCount());
@@ -47,7 +47,7 @@ public class RetryPolicyTest extends IntegrationTest {
         mockBackEnd.enqueue(new MockResponse().setResponseCode(502));
         mockBackEnd.enqueue(new MockResponse().setResponseCode(502));
         mockBackEnd.enqueue(new MockResponse().setResponseCode(200));
-        try (FireboltConnection fireboltConnection = (FireboltConnection) createLocalConnection(String.format("?ssl=0&port=%d&retries=%d", mockBackEnd.getPort(), 3)); Statement statement = fireboltConnection.createStatement()) {
+        try (FireboltConnection fireboltConnection = (FireboltConnection) createLocalConnection(String.format("?ssl=0&port=%d&max_retries=%d", mockBackEnd.getPort(), 3)); Statement statement = fireboltConnection.createStatement()) {
             statement.execute("SELECT 1;");
             assertEquals(3, mockBackEnd.getRequestCount());
         }
