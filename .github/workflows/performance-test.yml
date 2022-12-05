@@ -70,7 +70,7 @@ jobs:
       - name: Extract test results
         id: summary
         run: |
-          result="$(date +"%d-%m-%y %T %Z"),$(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/')"
+          result="$(date +"%d-%m-%y %T %Z"),${{ github.event.inputs.threads }},$(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/')"
           echo "SUMMARY=$(echo "$result" | tr '|' ',')" >> $GITHUB_OUTPUT
       - name: Upload logs
         uses: actions/upload-artifact@v2
@@ -96,6 +96,6 @@ jobs:
         run: |
           chmod u+x select.sh
           echo "### Test result :rocket:" >> $GITHUB_STEP_SUMMARY
-          echo "| Date  | Sample count  | Error count | Error % | Mean response time |Median response time | Min response time | Max response time | 1st percentile response time | 2nd percentile response time | 3nd percentile response time | Throughput |" >> $GITHUB_STEP_SUMMARY
-          echo "| -------------  | -------------  | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Date  | Thread count  | Sample count  | Error count | Error % | Mean response time |Median response time | Min response time | Max response time | 1st percentile response time | 2nd percentile response time | 3nd percentile response time | Throughput |" >> $GITHUB_STEP_SUMMARY
+          echo "| -------------  | -------------  | -------------  | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |" >> $GITHUB_STEP_SUMMARY
           ./select.sh
