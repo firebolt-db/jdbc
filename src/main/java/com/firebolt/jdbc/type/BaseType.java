@@ -1,18 +1,23 @@
 package com.firebolt.jdbc.type;
 
-import com.firebolt.jdbc.resultset.column.Column;
-import com.firebolt.jdbc.type.array.SqlArrayUtil;
-import com.firebolt.jdbc.type.date.SqlDateUtil;
-import lombok.Builder;
-import lombok.CustomLog;
-import lombok.Value;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.text.StringEscapeUtils;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.*;
 import java.util.TimeZone;
+
+import javax.xml.bind.DatatypeConverter;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
+
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.resultset.column.Column;
+import com.firebolt.jdbc.type.array.SqlArrayUtil;
+import com.firebolt.jdbc.type.date.SqlDateUtil;
+
+import lombok.Builder;
+import lombok.CustomLog;
+import lombok.Value;
 
 /** This class contains the java types the Firebolt datatypes are mapped to */
 @CustomLog
@@ -54,7 +59,19 @@ public enum BaseType {
 	OBJECT(Object.class, StringToColumnTypeConversion::getValue),
 	DECIMAL(BigDecimal.class, conversion -> new BigDecimal(conversion.getValue())),
 	BOOLEAN(Boolean.class, conversion -> !"0".equals(conversion.getValue())),
-	ARRAY(Array.class, conversion -> SqlArrayUtil.transformToSqlArray(conversion.getValue(), conversion.getColumn().getType()));
+	ARRAY(Array.class,
+			conversion -> SqlArrayUtil.transformToSqlArray(conversion.getValue(), conversion.getColumn().getType())),
+	BYTEA(byte[].class, conversion -> {
+		String s = conversion.getValue();
+		if (StringUtils.startsWith(s, "\\x")) {
+			return DatatypeConverter.parseHexBinary(s.substring(2));
+		} else if (StringUtils.isEmpty(s)) {
+			return new byte[] {};
+		} else {
+			// Cannot convert from other formats (such as 'Escape') for the moment
+			throw new FireboltException("Cannot convert binary string in non-hex format to byte array");
+		}
+	});
 
 	public static final String NULL_VALUE = "\\N";
 	private final Class<?> type;
@@ -106,8 +123,8 @@ public enum BaseType {
 		} else {
 			fromTimeZone = timeZone;
 		}
-		StringToColumnTypeConversion conversion = StringToColumnTypeConversion.builder().value(value)
-				.column(column).timeZone(fromTimeZone).build();
+		StringToColumnTypeConversion conversion = StringToColumnTypeConversion.builder().value(value).column(column)
+				.timeZone(fromTimeZone).build();
 		return this.transform(conversion);
 	}
 

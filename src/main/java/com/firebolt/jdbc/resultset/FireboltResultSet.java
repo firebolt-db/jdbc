@@ -23,6 +23,7 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.resultset.column.Column;
+import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.type.BaseType;
@@ -136,7 +137,14 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public String getString(int columnIndex) throws SQLException {
-		return BaseType.STRING.transform(this.getValueAtColumn(columnIndex));
+		Column columnInfo = this.columns.get(columnIndex - 1);
+		if (Optional.ofNullable(columnInfo).map(Column::getType).map(ColumnType::getDataType)
+				.filter(t -> t.equals(FireboltDataType.BYTEA)).isPresent()) {
+			// We do not need to escape when the type is BYTEA
+			return this.getValueAtColumn(columnIndex);
+		} else {
+			return BaseType.STRING.transform(this.getValueAtColumn(columnIndex));
+		}
 	}
 
 	@Override
@@ -230,7 +238,8 @@ public class FireboltResultSet implements ResultSet {
 			} catch (IOException e) {
 				throw new SQLException("Could not close data stream when closing ResultSet", e);
 			} finally {
-				if (this.statement != null && (this.statement.isCloseOnCompletion() && !this.statement.hasMoreResults())) {
+				if (this.statement != null
+						&& (this.statement.isCloseOnCompletion() && !this.statement.hasMoreResults())) {
 					this.statement.close();
 				}
 			}
@@ -558,7 +567,6 @@ public class FireboltResultSet implements ResultSet {
 	public InputStream getBinaryStream(int columnIndex) throws SQLException {
 		throw new FireboltUnsupportedOperationException();
 	}
-
 
 	/** @hidden */
 	@Override
@@ -1143,7 +1151,6 @@ public class FireboltResultSet implements ResultSet {
 	public Clob getClob(String columnLabel) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
-
 
 	/** @hidden */
 	@Override

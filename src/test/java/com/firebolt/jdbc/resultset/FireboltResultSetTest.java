@@ -548,6 +548,35 @@ class FireboltResultSetTest {
 		}
 	}
 
+	@Test
+	void shouldFindNullByteA() throws SQLException {
+		inputStream = getInputStreamWithByteA();
+		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
+		resultSet.next();
+		assertNull(resultSet.getObject("null_bytea"));
+	}
+
+	@Test
+	void shouldFindByteAWithValue() throws SQLException {
+		inputStream = getInputStreamWithByteA();
+		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
+		resultSet.next();
+		assertArrayEquals(new byte[] { -34, -83, -66, -17 }, (byte[]) resultSet.getObject("a_bytea"));
+		assertEquals("\\xdeadbeef", resultSet.getString("a_bytea"));
+		resultSet.next();
+		assertArrayEquals(new byte[] { 0, -85 }, (byte[]) resultSet.getObject("a_bytea"));
+		assertEquals("\\x00ab", resultSet.getString("a_bytea"));
+	}
+
+	@Test
+	void shouldFindEmptyByteA() throws SQLException {
+		inputStream = getInputStreamWithByteA();
+		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
+		resultSet.next();
+		assertArrayEquals(new byte[] {}, (byte[]) resultSet.getObject("an_empty_bytea"));
+		assertEquals("", resultSet.getString("an_empty_bytea"));
+	}
+
 	private InputStream getInputStreamWithArray() {
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-example");
 	}
@@ -562,5 +591,9 @@ class FireboltResultSetTest {
 
 	private InputStream getInputStreamWitExplain() {
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-escape-characters");
+	}
+
+	private InputStream getInputStreamWithByteA() {
+		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-bytea");
 	}
 }

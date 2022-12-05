@@ -81,7 +81,7 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 
 	@Override
 	public String getColumnClassName(int column) throws SQLException {
-		return getColumn(column).getType().getDataType().getBaseType().getType().getCanonicalName();
+		return getColumn(column).getType().getDataType().getBaseType().getType().getName();
 	}
 
 	public Column getColumn(int column) {

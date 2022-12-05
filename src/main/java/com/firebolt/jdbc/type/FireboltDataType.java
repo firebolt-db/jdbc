@@ -32,7 +32,8 @@ public enum FireboltDataType {
 	UNKNOWN(Types.OTHER, "Unknown", "UNKNOWN", BaseType.OTHER, false, false, 0, 0, false),
 	DECIMAL(Types.DECIMAL, "Decimal", BaseType.DECIMAL.name(), BaseType.DECIMAL, true, false, 0, 0, false, "DEC"),
 	ARRAY(Types.ARRAY, "Array", BaseType.ARRAY.name(), BaseType.ARRAY, false, true, 0, 0, false),
-	TUPLE(Types.OTHER, "Tuple", "TUPLE", BaseType.OBJECT, false, true, 0, 0, false);
+	TUPLE(Types.OTHER, "Tuple", "TUPLE", BaseType.OBJECT, false, true, 0, 0, false),
+	BYTEA(Types.BINARY, "ByteA", "BYTEA", BaseType.BYTEA, false, true, 0, 0, false);
 
 	public static final String NULLABLE_TYPE = "NULLABLE";
 
