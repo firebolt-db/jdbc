@@ -74,7 +74,7 @@ jobs:
           echo "| Sample count  | Error count | Error % | Mean response time |Median response time | Min response time | Max response time | 1st percentile response time | 2nd percentile response time | 3nd percentile response time | Throughput |" >> $GITHUB_STEP_SUMMARY
           echo "| -------------  | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |" >> $GITHUB_STEP_SUMMARY
           echo "| $(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/') |" >> $GITHUB_STEP_SUMMARY
-          echo "SUMMARY=$(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/')" >> $GITHUB_OUTPUT
+          echo "SUMMARY=$(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput' reports/statistics.json| tr '\n' ',' | sed 's/|$/\n/')" >> $GITHUB_OUTPUT
       - name: Upload logs
         uses: actions/upload-artifact@v2
         with:
@@ -89,7 +89,7 @@ jobs:
           ref: performance-test-results
       - name: Append history
         run: |
-          echo "$(date +"%d-%m-%y %T %Z") | ${{ steps.summary.outputs.summary }}" >> result.csv
+          echo "$(date +"%d-%m-%y %T %Z"),${{ steps.summary.outputs.summary }}" >> result.csv
       - name: push
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
