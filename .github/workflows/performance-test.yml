@@ -1,21 +1,20 @@
 name: Run performance tests
 
 on:
-  push:
-#  workflow_dispatch:
-#    inputs:
-#      database:
-#        description: 'Database (staging) - a new one will be created if not provided'
-#        required: false
-#        default: ''
-#      threads:
-#        description: 'Number of threads/users'
-#        required: false
-#        default: '10'
-#      loops:
-#        description: 'Number of iterations for every thread'
-#        required: false
-#        default: '50'
+  workflow_dispatch:
+    inputs:
+      database:
+        description: 'Database (staging) - a new one will be created if not provided'
+        required: false
+        default: ''
+      threads:
+        description: 'Number of threads/users'
+        required: false
+        default: '10'
+      loops:
+        description: 'Number of iterations for every thread'
+        required: false
+        default: '50'
 
 jobs:
   build:
@@ -35,25 +34,25 @@ jobs:
         with:
           name: ${{ needs.build.outputs.uber-jar }}
           path: dependencies
-#      - name: Setup database and engine
-#        id: setup
-#        if: ${{ github.event.inputs.database == '' }}
-#        uses: firebolt-db/integration-testing-setup@master
-#        with:
-#          firebolt-username: ${{ secrets.FIREBOLT_USERNAME }}
-#          firebolt-password: ${{ secrets.FIREBOLT_PASSWORD }}
-#          api-endpoint: "api.staging.firebolt.io"
-#          region: "us-east-1"
-#          instance-type: "B2"
+      - name: Setup database and engine
+        id: setup
+        if: ${{ github.event.inputs.database == '' }}
+        uses: firebolt-db/integration-testing-setup@master
+        with:
+          firebolt-username: ${{ secrets.FIREBOLT_USERNAME }}
+          firebolt-password: ${{ secrets.FIREBOLT_PASSWORD }}
+          api-endpoint: "api.staging.firebolt.io"
+          region: "us-east-1"
+          instance-type: "B2"
 
-#      - name: Determine database name
-#        id: find-database-name
-#        run: |
-#          if ! [[ -z "${{ github.event.inputs.database }}" ]]; then
-#             echo "database_name=${{ github.event.inputs.database }}" >> $GITHUB_OUTPUT
-#          else
-#             echo "database_name=${{ steps.setup.outputs.database_name }}" >> $GITHUB_OUTPUT
-#          fi
+      - name: Determine database name
+        id: find-database-name
+        run: |
+          if ! [[ -z "${{ github.event.inputs.database }}" ]]; then
+             echo "database_name=${{ github.event.inputs.database }}" >> $GITHUB_OUTPUT
+          else
+             echo "database_name=${{ steps.setup.outputs.database_name }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Run JMeter Tests
         uses: rbhadti94/apache-jmeter-action@v0.5.0
@@ -61,7 +60,7 @@ jobs:
           testFilePath: JDBC.jmx
           dependencyFolder: dependencies
           outputReportsFolder: reports/
-          args: -Jdatabase=metabase_test -Jpassword=${{ secrets.FIREBOLT_PASSWORD }} -Jusername=${{ secrets.FIREBOLT_USERNAME }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=1
+          args: -Jdatabase=${{ github.event.inputs.database }} -Jpassword=${{ secrets.FIREBOLT_PASSWORD }} -Jusername=${{ secrets.FIREBOLT_USERNAME }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
       - name: Upload results
         uses: actions/upload-artifact@v2
         with:
