@@ -30,7 +30,7 @@ jobs:
           mkdir dependencies
       - name: Download uber-jar
         id: download-jar
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ needs.build.outputs.uber-jar }}
           path: dependencies
