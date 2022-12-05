@@ -88,14 +88,8 @@ jobs:
         with:
           ref: performance-test-results
       - name: Append history
-        uses: DamianReeves/write-file-action@master
-        with:
-          path: result.csv
-          contents: |
-            
-            
-            echo "$(date +"%d-%m-%y %T %Z")" | ${{ steps.summary.outputs.summary }}
-          write-mode: append
+        run: |
+          echo "$(date +"%d-%m-%y %T %Z") | ${{ steps.summary.outputs.summary }}" >> result.csv
       - name: push
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
