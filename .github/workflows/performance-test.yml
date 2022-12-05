@@ -70,7 +70,7 @@ jobs:
       - name: Extract test results
         id: summary
         run: |
-          result="$(date +"%d-%m-%y %T %Z"),${{ github.event.inputs.threads }},$(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/')"
+          result="$(date +"%d-%m-%y %T %Z"),${{ github.event.inputs.threads }},$(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput[0:5]' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/')"
           echo "SUMMARY=$(echo "$result" | tr '|' ',')" >> $GITHUB_OUTPUT
       - name: Upload logs
         uses: actions/upload-artifact@v2
