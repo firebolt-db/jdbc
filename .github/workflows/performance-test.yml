@@ -93,7 +93,8 @@ jobs:
           path: result.csv
           contents: |
             
-            ${{ steps.summary.outputs.summary }}
+            
+            echo "$(date +"%d-%m-%y %T %Z")" | ${{ steps.summary.outputs.summary }}
           write-mode: append
       - name: push
         uses: stefanzweifel/git-auto-commit-action@v4
