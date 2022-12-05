@@ -66,10 +66,13 @@ jobs:
         with:
           name: performance_test_report
           path: reports
+      - name: Get short commit SHA
+        id: short-sha
+        run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
       - name: Extract test results
         id: summary
         run: |
-          result="$(date +"%d-%m-%y %T %Z"),${{ github.event.inputs.threads }},$(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput | round' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/'),$GITHUB_SHA,$GITHUB_REF"
+          result="$(date +"%d-%m-%y %T %Z"),${{ github.event.inputs.threads }},$(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput | round' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/'),${{ steps.short-sha.outputs.short_sha }},$GITHUB_REF"
           echo "SUMMARY=$(echo "$result" | tr '|' ',')" >> $GITHUB_OUTPUT
       - name: Upload logs
         uses: actions/upload-artifact@v3
@@ -77,7 +80,7 @@ jobs:
           name: jmeter_log.log
           path: jmeter_log.log
       - name: Remove reports
-        run : |
+        run: |
           sudo rm -rf "/home/runner/work/jdbc/jdbc/reports"
       - name: Checkout history branch
         uses: actions/checkout@v3
