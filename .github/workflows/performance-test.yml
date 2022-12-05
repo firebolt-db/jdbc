@@ -24,7 +24,7 @@ jobs:
     needs: build
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Create dependency folder for JMX
         run: |
           mkdir dependencies
@@ -62,7 +62,7 @@ jobs:
           outputReportsFolder: reports/
           args: -Jdatabase=${{ github.event.inputs.database }} -Jpassword=${{ secrets.FIREBOLT_PASSWORD }} -Jusername=${{ secrets.FIREBOLT_USERNAME }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
       - name: Upload results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: performance_test_report
           path: reports
@@ -72,7 +72,7 @@ jobs:
           result="$(date +"%d-%m-%y %T %Z"),${{ github.event.inputs.threads }},$(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput | round' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/')"
           echo "SUMMARY=$(echo "$result" | tr '|' ',')" >> $GITHUB_OUTPUT
       - name: Upload logs
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: jmeter_log.log
           path: jmeter_log.log
@@ -93,7 +93,7 @@ jobs:
           branch: performance-test-results
       - name: Publish results
         run: |
-          chmod u+x select.sh
+          chmod u+x export_performance_test_result.sh
           echo "### Test result :rocket:" >> $GITHUB_STEP_SUMMARY
           echo "| Date  | Thread count  | Sample count  | Error count | Error % | Mean response time |Median response time | Min response time | Max response time | 1st percentile response time | 2nd percentile response time | 3nd percentile response time | Throughput |" >> $GITHUB_STEP_SUMMARY
           echo "| -------------  | -------------  | -------------  | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |" >> $GITHUB_STEP_SUMMARY
