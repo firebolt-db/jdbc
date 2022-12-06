@@ -60,7 +60,7 @@ jobs:
           testFilePath: JDBC.jmx
           dependencyFolder: dependencies
           outputReportsFolder: reports/
-          args: -Jdatabase=${{ github.event.inputs.database }} -Jpassword=${{ secrets.FIREBOLT_PASSWORD }} -Jusername=${{ secrets.FIREBOLT_USERNAME }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
+          args: -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jpassword=${{ secrets.FIREBOLT_PASSWORD }} -Jusername=${{ secrets.FIREBOLT_USERNAME }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
       - name: Upload JMeter report
         uses: actions/upload-artifact@v3
         with:
@@ -83,7 +83,7 @@ jobs:
       - name: Checkout history branch
         uses: actions/checkout@v3
         with:
-          ref: performance-test-results
+          ref: performance-tests-history
       - name: Append history with test summary
         run: |
           echo "${{ steps.summary.outputs.summary }}" >> results.csv
@@ -91,11 +91,11 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Push history
-          branch: performance-test-results
+          branch: performance-tests-history
       - name: Publish results
         run: |
-          chmod u+x export_performance_test_result.sh
+          chmod u+x export_performance_tests_results.sh
           echo "### :rocket: Tests Results :rocket:" >> $GITHUB_STEP_SUMMARY
           echo "| Date  | Thread count  | Sample count  | Error count | Error % | Mean response time |Median response time | Min response time | Max response time | 1st percentile response time | 2nd percentile response time | 3nd percentile response time | Throughput | Commit | Branch" >> $GITHUB_STEP_SUMMARY
           echo "| -------------  | -------------  | -------------  | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |" >> $GITHUB_STEP_SUMMARY
-          ./export_performance_test_result.sh
+          ./export_performance_tests_results.sh
