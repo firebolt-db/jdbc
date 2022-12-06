@@ -19,9 +19,9 @@ jobs:
       sources-jar: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}-sources.jar
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Prepare java
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: '8'
@@ -34,12 +34,12 @@ jobs:
         run: |
           echo "PROJECT_VERSION=$(./gradlew printVersion | grep -A1 '> Configure project :'| grep -v "> Configure project :")" >> $GITHUB_OUTPUT
       - name: Upload uber-jar
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
           path: build/libs/firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
       - name: Upload sources-jar
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}-sources.jar
           path: build/libs/firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}-sources.jar

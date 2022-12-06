@@ -24,13 +24,13 @@ jobs:
     needs: build
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Create dependency folder for JMX
         run: |
           mkdir dependencies
       - name: Download uber-jar
         id: download-jar
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ needs.build.outputs.uber-jar }}
           path: dependencies
@@ -43,7 +43,7 @@ jobs:
           firebolt-password: ${{ secrets.FIREBOLT_PASSWORD }}
           api-endpoint: "api.staging.firebolt.io"
           region: "us-east-1"
-          instance-type: "B2"
+          instance-type: "B4"
 
       - name: Determine database name
         id: find-database-name
@@ -60,20 +60,42 @@ jobs:
           testFilePath: JDBC.jmx
           dependencyFolder: dependencies
           outputReportsFolder: reports/
-          args: -Jdatabase=${{ github.event.inputs.database }} -Jpassword=${{ secrets.FIREBOLT_PASSWORD }} -Jusername=${{ secrets.FIREBOLT_USERNAME }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
-      - name: Upload results
-        uses: actions/upload-artifact@v2
+          args: -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jpassword=${{ secrets.FIREBOLT_PASSWORD }} -Jusername=${{ secrets.FIREBOLT_USERNAME }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
+      - name: Upload JMeter report
+        uses: actions/upload-artifact@v3
         with:
           name: performance_test_report
           path: reports
-      - name: Adding summary
-        run: |
-          echo "### Test result :rocket:" >> $GITHUB_STEP_SUMMARY
-          echo "| Sample count  | Error count | Error % | Mean response time |Median response time | Min response time | Max response time | 1st percentile response time | 2nd percentile response time | 3nd percentile response time | Throughput |" >> $GITHUB_STEP_SUMMARY
-          echo "| -------------  | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |" >> $GITHUB_STEP_SUMMARY
-          echo "| $(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/') |" >> $GITHUB_STEP_SUMMARY
-      - name: Upload logs
-        uses: actions/upload-artifact@v2
+      - name: Upload JMeter logs
+        uses: actions/upload-artifact@v3
         with:
           name: jmeter_log.log
           path: jmeter_log.log
+      - name: Get short commit SHA
+        id: short-sha
+        run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Extract test summary
+        id: summary
+        run: |
+          result="$(date +"%d-%m-%y %T %Z"),${{ github.event.inputs.threads }},$(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput | round' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/'),${{ steps.short-sha.outputs.short_sha }},$GITHUB_REF"
+          echo "SUMMARY=$(echo "$result" | tr '|' ',')" >> $GITHUB_OUTPUT
+          sudo rm -rf "/home/runner/work/jdbc/jdbc/reports"
+      - name: Checkout history branch
+        uses: actions/checkout@v3
+        with:
+          ref: performance-tests-history
+      - name: Append history with test summary
+        run: |
+          echo "${{ steps.summary.outputs.summary }}" >> results.csv
+      - name: push
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Push history
+          branch: performance-tests-history
+      - name: Publish results
+        run: |
+          chmod u+x export_performance_tests_results.sh
+          echo "### :rocket: Tests Results :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "| Date  | Thread count  | Sample count  | Error count | Error % | Mean response time |Median response time | Min response time | Max response time | 1st percentile response time | 2nd percentile response time | 3nd percentile response time | Throughput | Commit | Branch" >> $GITHUB_STEP_SUMMARY
+          echo "| -------------  | -------------  | -------------  | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |" >> $GITHUB_STEP_SUMMARY
+          ./export_performance_tests_results.sh
