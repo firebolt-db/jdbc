@@ -61,34 +61,32 @@ jobs:
           dependencyFolder: dependencies
           outputReportsFolder: reports/
           args: -Jdatabase=${{ github.event.inputs.database }} -Jpassword=${{ secrets.FIREBOLT_PASSWORD }} -Jusername=${{ secrets.FIREBOLT_USERNAME }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
-      - name: Upload results
+      - name: Upload JMeter report
         uses: actions/upload-artifact@v3
         with:
           name: performance_test_report
           path: reports
-      - name: Get short commit SHA
-        id: short-sha
-        run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-      - name: Extract test results
-        id: summary
-        run: |
-          result="$(date +"%d-%m-%y %T %Z"),${{ github.event.inputs.threads }},$(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput | round' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/'),${{ steps.short-sha.outputs.short_sha }},$GITHUB_REF"
-          echo "SUMMARY=$(echo "$result" | tr '|' ',')" >> $GITHUB_OUTPUT
-      - name: Upload logs
+      - name: Upload JMeter logs
         uses: actions/upload-artifact@v3
         with:
           name: jmeter_log.log
           path: jmeter_log.log
-      - name: Remove reports
+      - name: Get short commit SHA
+        id: short-sha
+        run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Extract test summary
+        id: summary
         run: |
+          result="$(date +"%d-%m-%y %T %Z"),${{ github.event.inputs.threads }},$(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput | round' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/'),${{ steps.short-sha.outputs.short_sha }},$GITHUB_REF"
+          echo "SUMMARY=$(echo "$result" | tr '|' ',')" >> $GITHUB_OUTPUT
           sudo rm -rf "/home/runner/work/jdbc/jdbc/reports"
       - name: Checkout history branch
         uses: actions/checkout@v3
         with:
           ref: performance-test-results
-      - name: Append history
+      - name: Append history with test summary
         run: |
-          echo "${{ steps.summary.outputs.summary }}" >> result.csv
+          echo "${{ steps.summary.outputs.summary }}" >> results.csv
       - name: push
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
