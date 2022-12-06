@@ -148,10 +148,9 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 								: null, // default value for the column: null,
 						null, // SQL_DATA_TYPE - reserved for future use (see javadoc)
 						null, // SQL_DATETIME_SUB - reserved for future use (see javadoc)
-						columnInfo.getType().getDataType() == BOOLEAN ? 1 : null, // CHAR_OCTET_LENGTH - The maximum
-																					// length of binary and character
-																					// based
-						// columns (null for others)
+						null, // CHAR_OCTET_LENGTH - The maximum
+								// length of binary and character
+								// based columns (null for others)
 						columnDescription.getInt("ordinal_position"), // The ordinal position starting from 1
 						columnDescription.getInt("is_nullable") == 1 ? "YES" : "NO", null, // "SCOPE_CATALOG - Unused
 						null, // "SCOPE_SCHEMA" - Unused
