@@ -128,17 +128,17 @@ public abstract class FireboltClient {
             }
             String errorResponseMessage;
             try {
-                String errorFromResponse = extractErrorMessage(response, isCompress);
+                String errorMessageFromServer = extractErrorMessage(response, isCompress);
                 errorResponseMessage = String.format(
                         "Server failed to execute query with the following error:%n%s%ninternal error:%n%s",
-                        errorFromResponse, this.getInternalErrorWithHeadersText(response));
+                        errorMessageFromServer, this.getInternalErrorWithHeadersText(response));
                 if (statusCode == HTTP_UNAUTHORIZED) {
                     this.getConnection().removeExpiredTokens();
                     throw new FireboltException(String.format(
                             "Could not query Firebolt at %s. The operation is not authorized or the token is expired and has been cleared from the cache.%n%s",
-                            host, errorResponseMessage), statusCode);
+                            host, errorResponseMessage), statusCode, errorMessageFromServer);
                 }
-                throw new FireboltException(errorResponseMessage, statusCode);
+                throw new FireboltException(errorResponseMessage, statusCode, errorMessageFromServer);
             } catch (IOException e) {
                 log.warn("Could not parse response containing the error message from Firebolt", e);
                 errorResponseMessage = String.format("Server failed to execute query%ninternal error:%n%s",

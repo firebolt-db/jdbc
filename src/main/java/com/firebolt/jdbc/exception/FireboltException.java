@@ -11,22 +11,32 @@ public class FireboltException extends SQLException {
 
 	@Getter
 	private final ExceptionType type;
-
 	private static final int HTTP_TOO_MANY_REQUESTS = 429;
+	@Getter
+	private final String errorMessageFromServer;
 
 	public FireboltException(ExceptionType type) {
 		super();
 		this.type = type;
+		errorMessageFromServer = null;
 	}
 
 	public FireboltException(String message) {
 		super(message);
 		type = ExceptionType.ERROR;
+		errorMessageFromServer = null;
 	}
 
 	public FireboltException(String message, Integer httpStatusCode) {
 		super(message);
 		type = getExceptionType(httpStatusCode);
+		errorMessageFromServer = null;
+	}
+
+	public FireboltException(String message, Integer httpStatusCode, String errorMessageFromServer) {
+		super(message);
+		type = getExceptionType(httpStatusCode);
+		this.errorMessageFromServer = errorMessageFromServer;
 	}
 
 	public FireboltException(String message, Throwable cause) {
@@ -36,16 +46,19 @@ public class FireboltException extends SQLException {
 	public FireboltException(String message, ExceptionType type) {
 		super(message);
 		this.type = type;
+		errorMessageFromServer = null;
 	}
 
 	public FireboltException(String message, Integer httpStatusCode, Throwable cause) {
 		super(message, cause);
 		this.type = getExceptionType(httpStatusCode);
+		errorMessageFromServer = null;
 	}
 
 	public FireboltException(String message, Throwable cause, ExceptionType type) {
 		super(message, cause);
 		this.type = type;
+		errorMessageFromServer = null;
 	}
 
 	private ExceptionType getExceptionType(Integer httpStatusCode) {
