@@ -43,7 +43,7 @@ jobs:
           firebolt-password: ${{ secrets.FIREBOLT_PASSWORD }}
           api-endpoint: "api.staging.firebolt.io"
           region: "us-east-1"
-          instance-type: "B4"
+          instance-type: "B2"
 
       - name: Determine database name
         id: find-database-name
