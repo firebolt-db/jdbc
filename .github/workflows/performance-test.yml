@@ -37,7 +37,7 @@ jobs:
       - name: Setup database and engine
         id: setup
         if: ${{ github.event.inputs.database == '' }}
-        uses: firebolt-db/integration-testing-setup@master
+        uses: aymeric-dispa/integration-testing-setup@master
         with:
           firebolt-username: ${{ secrets.FIREBOLT_USERNAME }}
           firebolt-password: ${{ secrets.FIREBOLT_PASSWORD }}
@@ -54,13 +54,6 @@ jobs:
              echo "database_name=${{ steps.setup.outputs.database_name }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run JMeter Tests
-        uses: rbhadti94/apache-jmeter-action@v0.5.0
-        with:
-          testFilePath: JDBC.jmx
-          dependencyFolder: dependencies
-          outputReportsFolder: reports-to-ignore/
-          args: -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jpassword=${{ secrets.FIREBOLT_PASSWORD }} -Jusername=${{ secrets.FIREBOLT_USERNAME }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
       - name: Run JMeter Tests
         uses: rbhadti94/apache-jmeter-action@v0.5.0
         with:
