@@ -44,7 +44,6 @@ jobs:
           api-endpoint: "api.staging.firebolt.io"
           region: "us-east-1"
           instance-type: "M4"
-          engine-scale: 2
 
       - name: Determine database name
         id: find-database-name
