@@ -37,13 +37,14 @@ jobs:
       - name: Setup database and engine
         id: setup
         if: ${{ github.event.inputs.database == '' }}
-        uses: aymeric-dispa/integration-testing-setup@master
+        uses: firebolt-db/integration-testing-setup@feature/change-engine-scale
         with:
           firebolt-username: ${{ secrets.FIREBOLT_USERNAME }}
           firebolt-password: ${{ secrets.FIREBOLT_PASSWORD }}
           api-endpoint: "api.staging.firebolt.io"
           region: "us-east-1"
           instance-type: "M4"
+          engine-scale: 2
 
       - name: Determine database name
         id: find-database-name
