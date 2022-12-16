@@ -49,7 +49,8 @@ class StatementCancelTest extends IntegrationTest {
 
 				Thread thread = new Thread(() -> {
 					try {
-						insertStatement.execute("INSERT INTO first_statement_cancel_test SELECT * FROM ex_lineitem; INSERT INTO second_statement_cancel_test SELECT * FROM ex_lineitem;");
+						insertStatement.execute(
+								"INSERT INTO first_statement_cancel_test SELECT * FROM ex_lineitem; INSERT INTO second_statement_cancel_test SELECT * FROM ex_lineitem;");
 					} catch (FireboltException e) {
 						if (!e.getType().equals(ExceptionType.CANCELED)) {
 							throw new RuntimeException(e);
@@ -85,7 +86,8 @@ class StatementCancelTest extends IntegrationTest {
 			rs.next();
 			assertEquals(count, rs.getInt(1));
 			// The dataset is too small so all the data might already be ingested
-			//assertTrue(count <= totalRecordsToInsert, "No new records were added following the cancellation");
+			// assertTrue(count <= totalRecordsToInsert, "No new records were added
+			// following the cancellation");
 			rs.close();
 		}
 

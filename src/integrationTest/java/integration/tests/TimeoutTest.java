@@ -1,16 +1,17 @@
 package integration.tests;
 
-import integration.IntegrationTest;
-import lombok.CustomLog;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+
+import integration.IntegrationTest;
+import lombok.CustomLog;
 
 @CustomLog
 @Disabled

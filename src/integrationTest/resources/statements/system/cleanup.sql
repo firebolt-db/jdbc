@@ -1,1 +1,2 @@
-DROP DATABASE IF EXISTS jdbc_system_engine_integration_test
+DROP
+DATABASE IF EXISTS jdbc_system_engine_integration_test
