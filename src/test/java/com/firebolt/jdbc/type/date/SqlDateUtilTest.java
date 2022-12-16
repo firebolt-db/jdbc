@@ -142,8 +142,7 @@ class SqlDateUtilTest {
 	void shouldTransformDateWithZeroYear() {
 		String timeWithMissingMinutes = "0000-01-01";
 		Date date = Date.valueOf(LocalDate.of(0, 1, 1));
-		assertEquals(date,
-				SqlDateUtil.transformToDateFunction.apply(timeWithMissingMinutes, null));
+		assertEquals(date, SqlDateUtil.transformToDateFunction.apply(timeWithMissingMinutes, null));
 	}
 
 	@Test

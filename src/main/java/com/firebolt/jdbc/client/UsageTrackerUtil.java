@@ -1,13 +1,15 @@
 package com.firebolt.jdbc.client;
 
-import com.firebolt.jdbc.VersionUtil;
-import com.google.common.collect.ImmutableMap;
-import lombok.CustomLog;
-import lombok.experimental.UtilityClass;
-import org.apache.commons.lang3.StringUtils;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.firebolt.jdbc.VersionUtil;
+import com.google.common.collect.ImmutableMap;
+
+import lombok.CustomLog;
+import lombok.experimental.UtilityClass;
 
 @CustomLog
 @UtilityClass

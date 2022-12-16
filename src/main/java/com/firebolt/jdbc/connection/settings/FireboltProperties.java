@@ -1,16 +1,17 @@
 package com.firebolt.jdbc.connection.settings;
 
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.CustomLog;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+
+import lombok.Builder;
+import lombok.CustomLog;
+import lombok.NonNull;
+import lombok.Value;
 
 @Value
 @Builder(toBuilder = true)
@@ -69,7 +70,8 @@ public class FireboltProperties {
 		String path = getSetting(mergedProperties, FireboltSessionProperty.PATH);
 		String engine = getSetting(mergedProperties, FireboltSessionProperty.ENGINE);
 		boolean isSystemEngine = isSystemEngine(engine);
-		boolean compress = ((Boolean)getSetting(mergedProperties, FireboltSessionProperty.COMPRESS)) && !isSystemEngine;
+		boolean compress = ((Boolean) getSetting(mergedProperties, FireboltSessionProperty.COMPRESS))
+				&& !isSystemEngine;
 		String account = getSetting(mergedProperties, FireboltSessionProperty.ACCOUNT);
 		int keepAliveMillis = getSetting(mergedProperties, FireboltSessionProperty.KEEP_ALIVE_TIMEOUT_MILLIS);
 		int maxTotal = getSetting(mergedProperties, FireboltSessionProperty.MAX_CONNECTIONS_TOTAL);
@@ -92,13 +94,10 @@ public class FireboltProperties {
 		return FireboltProperties.builder().ssl(ssl).sslCertificatePath(sslRootCertificate).sslMode(sslMode).path(path)
 				.port(port).database(database).compress(compress).user(user).password(password).host(host)
 				.additionalProperties(additionalProperties).account(account).engine(engine)
-				.keepAliveTimeoutMillis(keepAliveMillis)
-				.maxConnectionsTotal(maxTotal)
-				.maxRetries(maxRetries).bufferSize(bufferSize)
-				.socketTimeoutMillis(socketTimeout).connectionTimeoutMillis(connectionTimeout)
-				.tcpKeepInterval(tcpKeepInterval).tcpKeepCount(tcpKeepCount)
-				.tcpKeepIdle(tcpKeepIdle).aggressiveCancel(aggressiveCancel).logResultSet(logResultSet)
-				.systemEngine(isSystemEngine).build();
+				.keepAliveTimeoutMillis(keepAliveMillis).maxConnectionsTotal(maxTotal).maxRetries(maxRetries)
+				.bufferSize(bufferSize).socketTimeoutMillis(socketTimeout).connectionTimeoutMillis(connectionTimeout)
+				.tcpKeepInterval(tcpKeepInterval).tcpKeepCount(tcpKeepCount).tcpKeepIdle(tcpKeepIdle)
+				.aggressiveCancel(aggressiveCancel).logResultSet(logResultSet).systemEngine(isSystemEngine).build();
 	}
 
 	private static String getHost(Properties properties) {
@@ -187,15 +186,15 @@ public class FireboltProperties {
 		return properties.toBuilder().additionalProperties(new HashMap<>(properties.getAdditionalProperties())).build();
 	}
 
+	private static boolean isSystemEngine(String engine) {
+		return StringUtils.equalsIgnoreCase(SYSTEM_ENGINE_NAME, engine);
+	}
+
 	public void addProperty(@NonNull String key, String value) {
 		additionalProperties.put(key, value);
 	}
 
 	public void addProperty(Pair<String, String> property) {
 		this.addProperty(property.getLeft(), property.getRight());
-	}
-
-	private static boolean isSystemEngine(String engine) {
-		return StringUtils.equalsIgnoreCase(SYSTEM_ENGINE_NAME, engine);
 	}
 }

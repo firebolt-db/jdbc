@@ -92,6 +92,8 @@ dependencies {
     compileTestJava.dependsOn processTestResources
     jar.dependsOn processTestResources
     compileTestCommonJava.dependsOn processTestResources
+    compileTestCommonJava.dependsOn processIntegrationTestResources
+    compileIntegrationTestJava.dependsOn processIntegrationTestResources
 }
 
 test {

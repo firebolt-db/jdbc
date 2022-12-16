@@ -1,9 +1,9 @@
 package com.firebolt.jdbc.resultset.column;
 
 import lombok.Builder;
+import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.CustomLog;
 
 @Builder
 @Getter

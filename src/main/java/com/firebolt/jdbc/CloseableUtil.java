@@ -3,8 +3,8 @@ package com.firebolt.jdbc;
 import java.io.Closeable;
 import java.io.IOException;
 
-import lombok.experimental.UtilityClass;
 import lombok.CustomLog;
+import lombok.experimental.UtilityClass;
 
 @CustomLog
 @UtilityClass

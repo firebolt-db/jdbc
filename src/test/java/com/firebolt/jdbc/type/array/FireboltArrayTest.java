@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.firebolt.jdbc.type.array.FireboltArray;
 import org.junit.jupiter.api.Test;
 
 import com.firebolt.jdbc.type.FireboltDataType;

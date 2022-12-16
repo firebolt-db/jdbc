@@ -132,7 +132,7 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	public int getColumnDisplaySize(int column) throws SQLException {
-		//Default value for backward compatibility
+		// Default value for backward compatibility
 		return 80;
 	}
 
@@ -143,7 +143,7 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
 	public String getSchemaName(int column) throws SQLException {
-		//Schemas are not implemented so N/A
+		// Schemas are not implemented so N/A
 		return StringUtils.EMPTY;
 	}
 

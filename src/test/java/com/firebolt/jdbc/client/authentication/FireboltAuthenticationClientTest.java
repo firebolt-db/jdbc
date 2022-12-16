@@ -1,24 +1,26 @@
 package com.firebolt.jdbc.client.authentication;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.firebolt.jdbc.VersionUtil;
-import com.firebolt.jdbc.client.authentication.response.FireboltAuthenticationResponse;
-import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.exception.FireboltException;
-import okhttp3.*;
+import static java.net.HttpURLConnection.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import java.io.IOException;
+
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junitpioneer.jupiter.SetSystemProperty;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.firebolt.jdbc.VersionUtil;
+import com.firebolt.jdbc.client.authentication.response.FireboltAuthenticationResponse;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.exception.FireboltException;
 
-import static java.net.HttpURLConnection.*;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import okhttp3.*;
 
 @SetSystemProperty(key = "java.version", value = "8.0.1")
 @SetSystemProperty(key = "os.version", value = "10.1")
@@ -66,8 +68,8 @@ class FireboltAuthenticationClientTest {
 	@Test
 	void shouldPostConnectionTokens() throws IOException, FireboltException {
 		Response response = mock(Response.class);
-        Call call = mock(Call.class);
-        ResponseBody body = mock(ResponseBody.class);
+		Call call = mock(Call.class);
+		ResponseBody body = mock(ResponseBody.class);
 		when(response.body()).thenReturn(body);
 		when(response.code()).thenReturn(HTTP_OK);
 		when(httpClient.newCall(any())).thenReturn(call);
@@ -81,7 +83,8 @@ class FireboltAuthenticationClientTest {
 		verify(httpClient).newCall(requestArgumentCaptor.capture());
 		Request actualPost = requestArgumentCaptor.getValue();
 		Assertions.assertEquals("User-Agent", actualPost.headers().iterator().next().getFirst());
-		Assertions.assertEquals("ConnB/2.0.9 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9", actualPost.headers().iterator().next().getSecond());
+		Assertions.assertEquals("ConnB/2.0.9 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
+				actualPost.headers().iterator().next().getSecond());
 		verify(objectMapper).readValue(tokensResponse, FireboltAuthenticationResponse.class);
 	}
 
@@ -105,8 +108,7 @@ class FireboltAuthenticationClientTest {
 		when(call.execute()).thenThrow(IOException.class);
 		when(httpClient.newCall(any())).thenReturn(call);
 
-		assertThrows(IOException.class,
-				() -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
+		assertThrows(IOException.class, () -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
 		verify(call).execute();
 		verify(call, times(0)).clone();
 	}

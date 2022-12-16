@@ -1,5 +1,12 @@
 package com.firebolt.jdbc.statement;
 
+import java.io.InputStream;
+import java.sql.*;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.StringUtils;
+
 import com.firebolt.jdbc.CloseableUtil;
 import com.firebolt.jdbc.PropertyUtil;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
@@ -12,14 +19,9 @@ import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
+
 import lombok.Builder;
 import lombok.CustomLog;
-import org.apache.commons.lang3.StringUtils;
-
-import java.io.InputStream;
-import java.sql.*;
-import java.util.*;
-import java.util.stream.Collectors;
 
 @CustomLog
 public class FireboltStatement implements Statement {
@@ -69,8 +71,7 @@ public class FireboltStatement implements Statement {
 		return this.execute(StatementUtil.parseToStatementInfoWrappers(sql)).isPresent();
 	}
 
-	protected Optional<ResultSet> execute(List<StatementInfoWrapper> statements)
-			throws SQLException {
+	protected Optional<ResultSet> execute(List<StatementInfoWrapper> statements) throws SQLException {
 		Optional<ResultSet> resultSet = Optional.empty();
 		this.closeAllResults();
 		Set<String> queryIds = statements.stream().map(StatementInfoWrapper::getId)
@@ -94,7 +95,8 @@ public class FireboltStatement implements Statement {
 		return resultSet;
 	}
 
-	private Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper, boolean verifyNotCancelled, boolean isStandardSql) throws SQLException {
+	private Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper, boolean verifyNotCancelled,
+			boolean isStandardSql) throws SQLException {
 		ResultSet resultSet = null;
 		if (!verifyNotCancelled || isStatementNotCancelled(statementInfoWrapper)) {
 			runningStatementId = statementInfoWrapper.getId();
@@ -109,7 +111,8 @@ public class FireboltStatement implements Statement {
 					this.connection.addProperty(statementInfoWrapper.getParam());
 					log.debug("The property from the query {} was stored", runningStatementId);
 				} else {
-					inputStream = statementService.execute(statementInfoWrapper, this.sessionProperties, this.queryTimeout, this.maxRows, isStandardSql);
+					inputStream = statementService.execute(statementInfoWrapper, this.sessionProperties,
+							this.queryTimeout, this.maxRows, isStandardSql);
 					if (statementInfoWrapper.getType() == StatementType.QUERY) {
 						resultSet = getResultSet(inputStream,
 								(QueryRawStatement) statementInfoWrapper.getInitialStatement());
@@ -122,7 +125,8 @@ public class FireboltStatement implements Statement {
 				}
 			} catch (Exception ex) {
 				CloseableUtil.close(inputStream);
-				log.error(String.format("An error happened while executing the statement with the id %s", runningStatementId), ex);
+				log.error(String.format("An error happened while executing the statement with the id %s",
+						runningStatementId), ex);
 				throw ex;
 			} finally {
 				runningStatementId = null;

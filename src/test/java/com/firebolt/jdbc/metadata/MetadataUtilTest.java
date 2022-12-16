@@ -6,19 +6,18 @@ import org.junit.jupiter.api.Test;
 
 class MetadataUtilTest {
 
-/*	@Test
-	void shouldGetSchemasQueryWhenGettingQueryWithoutArguments() {
-		assertEquals("SELECT 'public' AS TABLE_SCHEM, 'default' AS TABLE_CATALOG FROM information_schema.databases",
-				MetadataUtil.getSchemasQuery(null, null));
-	}
-
-	@Test
-	@Disabled // To enable once schemas are supported
-	void shouldGetSchemasQueryWhenGettingQueryWithArguments() {
-		assertEquals(
-				"SELECT 'public' AS TABLE_SCHEM, 'default' AS TABLE_CATALOG FROM information_schema.databases WHERE catalog_name = 'catalog'",
-				MetadataUtil.getSchemasQuery("catalog", "schema%"));
-	}*/
+	/*
+	 * @Test void shouldGetSchemasQueryWhenGettingQueryWithoutArguments() {
+	 * assertEquals("SELECT 'public' AS TABLE_SCHEM, 'default' AS TABLE_CATALOG FROM information_schema.databases"
+	 * , MetadataUtil.getSchemasQuery(null, null)); }
+	 * 
+	 * @Test
+	 * 
+	 * @Disabled // To enable once schemas are supported void
+	 * shouldGetSchemasQueryWhenGettingQueryWithArguments() { assertEquals(
+	 * "SELECT 'public' AS TABLE_SCHEM, 'default' AS TABLE_CATALOG FROM information_schema.databases WHERE catalog_name = 'catalog'"
+	 * , MetadataUtil.getSchemasQuery("catalog", "schema%")); }
+	 */
 
 	@Test
 	void shouldGetTablesQueryWhenGettingQueryWithArguments() {
@@ -43,8 +42,7 @@ class MetadataUtilTest {
 
 	@Test
 	void shouldGetViewsQueryWhenGettingQueryWithoutArguments() {
-		assertEquals(
-				"SELECT table_schema, table_name FROM information_schema.views order by table_schema, table_name",
+		assertEquals("SELECT table_schema, table_name FROM information_schema.views order by table_schema, table_name",
 				MetadataUtil.getViewsQuery(null, null, null));
 	}
 

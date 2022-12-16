@@ -1,18 +1,20 @@
 package com.firebolt.jdbc;
 
-import com.firebolt.jdbc.connection.FireboltJdbcUrlUtil;
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
-import lombok.CustomLog;
-import lombok.experimental.UtilityClass;
-import org.apache.commons.lang3.StringUtils;
-
 import java.sql.DriverPropertyInfo;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.firebolt.jdbc.connection.FireboltJdbcUrlUtil;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
+
+import lombok.CustomLog;
+import lombok.experimental.UtilityClass;
 
 @CustomLog
 @UtilityClass
