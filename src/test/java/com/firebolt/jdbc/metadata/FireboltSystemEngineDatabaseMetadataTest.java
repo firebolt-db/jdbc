@@ -12,21 +12,24 @@ class FireboltSystemEngineDatabaseMetadataTest {
 
 	@Test
 	void shouldReturnEmptyResultSetWhenGettingTable() throws SQLException {
-		FireboltSystemEngineDatabaseMetadata fireboltSystemEngineDatabaseMetadata = new FireboltSystemEngineDatabaseMetadata(null, null);
+		FireboltSystemEngineDatabaseMetadata fireboltSystemEngineDatabaseMetadata = new FireboltSystemEngineDatabaseMetadata(
+				null, null);
 		ResultSet resultSet = fireboltSystemEngineDatabaseMetadata.getTables(null, null, null, null);
 		AssertionUtil.assertResultSetEquality(FireboltResultSet.empty(), resultSet);
 	}
 
 	@Test
 	void shouldReturnEmptyResultSetWhenGettingColumns() throws SQLException {
-		FireboltSystemEngineDatabaseMetadata fireboltSystemEngineDatabaseMetadata = new FireboltSystemEngineDatabaseMetadata(null, null);
+		FireboltSystemEngineDatabaseMetadata fireboltSystemEngineDatabaseMetadata = new FireboltSystemEngineDatabaseMetadata(
+				null, null);
 		ResultSet resultSet = fireboltSystemEngineDatabaseMetadata.getColumns(null, null, null, null);
 		AssertionUtil.assertResultSetEquality(FireboltResultSet.empty(), resultSet);
 	}
 
 	@Test
 	void shouldReturnEmptyResultSetWhenGettingSchemas() throws SQLException {
-		FireboltSystemEngineDatabaseMetadata fireboltSystemEngineDatabaseMetadata = new FireboltSystemEngineDatabaseMetadata(null, null);
+		FireboltSystemEngineDatabaseMetadata fireboltSystemEngineDatabaseMetadata = new FireboltSystemEngineDatabaseMetadata(
+				null, null);
 		ResultSet resultSet = fireboltSystemEngineDatabaseMetadata.getSchemas();
 		AssertionUtil.assertResultSetEquality(FireboltResultSet.empty(), resultSet);
 	}

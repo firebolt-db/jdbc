@@ -110,6 +110,12 @@ public class FireboltResultSet implements ResultSet {
 		return new FireboltResultSet();
 	}
 
+	public static FireboltResultSet of(QueryResult queryResult) throws SQLException {
+		return new FireboltResultSet(new ByteArrayInputStream(queryResult.toString().getBytes()),
+				queryResult.getTableName(), queryResult.getDatabaseName());
+
+	}
+
 	private BufferedReader createStreamReader(InputStream is, Integer bufferSize, boolean isCompressed) {
 		InputStreamReader inputStreamReader;
 		if (isCompressed) {
@@ -436,20 +442,6 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	@Override
-	public void setFetchDirection(int direction) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
-	}
-
-	@Override
-	public void setFetchSize(int rows) throws SQLException {
-		checkStreamNotClosed();
-		if (rows < 0) {
-			throw new FireboltException("The number of rows cannot be less than 0");
-		}
-		// Not supported
-	}
-
-	@Override
 	public boolean first() throws SQLException {
 		throw new FireboltException("Cannot call first() for ResultSet of type TYPE_FORWARD_ONLY");
 	}
@@ -536,12 +528,6 @@ public class FireboltResultSet implements ResultSet {
 			return iface.cast(this);
 		}
 		throw new SQLException("Cannot unwrap to " + iface.getName());
-	}
-
-	public static FireboltResultSet of(QueryResult queryResult) throws SQLException {
-		return new FireboltResultSet(new ByteArrayInputStream(queryResult.toString().getBytes()),
-				queryResult.getTableName(), queryResult.getDatabaseName());
-
 	}
 
 	/** @hidden */
@@ -680,12 +666,26 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltUnsupportedOperationException();
 	}
 
+	@Override
+	public void setFetchDirection(int direction) throws SQLException {
+		throw new FireboltUnsupportedOperationException();
+	}
+
 	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
 	public int getFetchSize() throws SQLException {
 		throw new FireboltUnsupportedOperationException();
+	}
+
+	@Override
+	public void setFetchSize(int rows) throws SQLException {
+		checkStreamNotClosed();
+		if (rows < 0) {
+			throw new FireboltException("The number of rows cannot be less than 0");
+		}
+		// Not supported
 	}
 
 	/** @hidden */

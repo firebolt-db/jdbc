@@ -17,8 +17,7 @@ public interface StatementClient {
 	/**
 	 * Call endpoint to abort a running SQL statement
 	 */
-	void abortStatement(String id, FireboltProperties fireboltProperties)
-			throws FireboltException;
+	void abortStatement(String id, FireboltProperties fireboltProperties) throws FireboltException;
 
 	/**
 	 * Abort running HTTP request of a statement

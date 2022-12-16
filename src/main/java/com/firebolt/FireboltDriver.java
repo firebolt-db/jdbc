@@ -1,15 +1,17 @@
 package com.firebolt;
 
+import java.sql.*;
+import java.util.Properties;
+import java.util.logging.Logger;
+
+import org.apache.commons.lang3.StringUtils;
+
 import com.firebolt.jdbc.PropertyUtil;
 import com.firebolt.jdbc.VersionUtil;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
-import lombok.CustomLog;
-import org.apache.commons.lang3.StringUtils;
 
-import java.sql.*;
-import java.util.Properties;
-import java.util.logging.Logger;
+import lombok.CustomLog;
 
 @CustomLog
 public class FireboltDriver implements Driver {

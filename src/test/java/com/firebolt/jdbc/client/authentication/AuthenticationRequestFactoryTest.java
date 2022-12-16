@@ -10,8 +10,7 @@ class AuthenticationRequestFactoryTest {
 	void shouldGetServiceAccountRequestWhenUsernameDoesNotContainSpecialCharacter() {
 		String name = "265576ea-2478-4209-860c-f75f55e7c1f7";
 		String password = "hello";
-		AuthenticationRequest rq = AuthenticationRequestFactory.getAuthenticationRequest(name, password,
-				"localhost");
+		AuthenticationRequest rq = AuthenticationRequestFactory.getAuthenticationRequest(name, password, "localhost");
 		assertTrue(rq instanceof ServiceAccountAuthenticationRequest);
 	}
 
@@ -19,8 +18,7 @@ class AuthenticationRequestFactoryTest {
 	void shouldGetUsernamePasswordRqWhenUsernameIsAnEmailAddress() {
 		String name = "tester@firebolt.io";
 		String password = "hello";
-		AuthenticationRequest rq = AuthenticationRequestFactory.getAuthenticationRequest(name, password,
-				"localhost");
+		AuthenticationRequest rq = AuthenticationRequestFactory.getAuthenticationRequest(name, password, "localhost");
 		assertTrue(rq instanceof UsernamePasswordAuthenticationRequest);
 	}
 

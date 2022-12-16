@@ -1,17 +1,19 @@
 package com.firebolt.jdbc.resultset.column;
 
-import com.firebolt.jdbc.type.FireboltDataType;
-import lombok.*;
+import static com.firebolt.jdbc.type.FireboltDataType.*;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import com.firebolt.jdbc.type.FireboltDataType;
 
-import static com.firebolt.jdbc.type.FireboltDataType.*;
+import lombok.*;
 
 /**
  * This class represents a Column type returned by the server
@@ -20,6 +22,10 @@ import static com.firebolt.jdbc.type.FireboltDataType.*;
 @Builder
 @Value
 public class ColumnType {
+	private static final String NOT_NULLABLE_TYPE = "NOT NULL";
+	private static final String NULL_TYPE = "NULL";
+	private static final Set<String> TIMEZONES = Arrays.stream(TimeZone.getAvailableIDs())
+			.collect(Collectors.toCollection(HashSet::new));
 	String name;
 	FireboltDataType dataType;
 	boolean nullable;
@@ -27,11 +33,6 @@ public class ColumnType {
 	int scale;
 	TimeZone timeZone;
 	List<ColumnType> innerTypes;
-	private static final String NOT_NULLABLE_TYPE = "NOT NULL";
-	private static final String NULL_TYPE = "NULL";
-
-	private static final Set<String> TIMEZONES = Arrays.stream(TimeZone.getAvailableIDs())
-			.collect(Collectors.toCollection(HashSet::new));
 
 	public static ColumnType of(String columnType) {
 		List<ColumnType> innerDataTypes = null;
@@ -68,45 +69,6 @@ public class ColumnType {
 				.precision(scaleAndPrecisionPair.map(Pair::getRight).filter(Optional::isPresent).map(Optional::get)
 						.orElse(dataType.getDefaultPrecision()))
 				.timeZone(timeZone).innerTypes(Optional.ofNullable(innerDataTypes).orElse(new ArrayList<>())).build();
-	}
-
-	public String getCompactTypeName() {
-		if (this.isArray()) {
-			return getArrayCompactTypeName();
-		} else if (this.isTuple()) {
-			return getTupleCompactTypeName(this.innerTypes);
-		} else {
-			return dataType.getDisplayName();
-		}
-	}
-
-	private String getArrayCompactTypeName() {
-		StringBuilder compactType = new StringBuilder();
-		int depth = 0;
-		ColumnType columnType = this;
-		while (columnType != null && columnType.getDataType() == ARRAY) {
-			depth++;
-			compactType.append("ARRAY(");
-			columnType = columnType.getInnerTypes().isEmpty() ? null : columnType.getInnerTypes().get(0);
-		}
-		compactType.append(this.getArrayBaseColumnType().getCompactTypeName());
-		for (int i = 0; i < depth; i++) {
-			compactType.append(")");
-		}
-		return compactType.toString();
-	}
-
-	private String getTupleCompactTypeName(List<ColumnType> columnsTuple) {
-		return columnsTuple.stream().map(ColumnType::getCompactTypeName)
-				.collect(Collectors.joining(", ", TUPLE.getDisplayName() + "(", ")"));
-	}
-
-	private boolean isArray() {
-		return dataType.equals(ARRAY);
-	}
-
-	private boolean isTuple() {
-		return dataType.equals(TUPLE);
 	}
 
 	private static List<ColumnType> getInnerTypes(String columnType) {
@@ -176,18 +138,6 @@ public class ColumnType {
 		return timeZone;
 	}
 
-	public ColumnType getArrayBaseColumnType() {
-		if (innerTypes == null || innerTypes.isEmpty()) {
-			return null;
-		}
-		ColumnType currentInnerType = this.innerTypes.get(0);
-		while (currentInnerType.getInnerTypes() != null && !currentInnerType.getInnerTypes().isEmpty()
-				&& currentInnerType.getDataType() != TUPLE) {
-			currentInnerType = currentInnerType.getInnerTypes().get(0);
-		}
-		return currentInnerType;
-	}
-
 	@NonNull
 	private static String[] getTupleColumnTypes(String columnType) {
 		String types = RegExUtils.replaceFirst(columnType,
@@ -202,6 +152,57 @@ public class ColumnType {
 		String types = RegExUtils.replaceFirst(columnType, ARRAY.getInternalName().toUpperCase() + "\\(", "");
 		types = StringUtils.substring(types, 0, types.length() - 1);
 		return new String[] { types };
+	}
+
+	public String getCompactTypeName() {
+		if (this.isArray()) {
+			return getArrayCompactTypeName();
+		} else if (this.isTuple()) {
+			return getTupleCompactTypeName(this.innerTypes);
+		} else {
+			return dataType.getDisplayName();
+		}
+	}
+
+	private String getArrayCompactTypeName() {
+		StringBuilder compactType = new StringBuilder();
+		int depth = 0;
+		ColumnType columnType = this;
+		while (columnType != null && columnType.getDataType() == ARRAY) {
+			depth++;
+			compactType.append("ARRAY(");
+			columnType = columnType.getInnerTypes().isEmpty() ? null : columnType.getInnerTypes().get(0);
+		}
+		compactType.append(this.getArrayBaseColumnType().getCompactTypeName());
+		for (int i = 0; i < depth; i++) {
+			compactType.append(")");
+		}
+		return compactType.toString();
+	}
+
+	private String getTupleCompactTypeName(List<ColumnType> columnsTuple) {
+		return columnsTuple.stream().map(ColumnType::getCompactTypeName)
+				.collect(Collectors.joining(", ", TUPLE.getDisplayName() + "(", ")"));
+	}
+
+	private boolean isArray() {
+		return dataType.equals(ARRAY);
+	}
+
+	private boolean isTuple() {
+		return dataType.equals(TUPLE);
+	}
+
+	public ColumnType getArrayBaseColumnType() {
+		if (innerTypes == null || innerTypes.isEmpty()) {
+			return null;
+		}
+		ColumnType currentInnerType = this.innerTypes.get(0);
+		while (currentInnerType.getInnerTypes() != null && !currentInnerType.getInnerTypes().isEmpty()
+				&& currentInnerType.getDataType() != TUPLE) {
+			currentInnerType = currentInnerType.getInnerTypes().get(0);
+		}
+		return currentInnerType;
 	}
 
 	@Getter

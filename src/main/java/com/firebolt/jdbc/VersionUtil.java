@@ -1,12 +1,12 @@
 package com.firebolt.jdbc;
 
-import lombok.CustomLog;
-import lombok.experimental.UtilityClass;
-
 import java.io.IOException;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import lombok.CustomLog;
+import lombok.experimental.UtilityClass;
 
 @UtilityClass
 @CustomLog

@@ -363,22 +363,21 @@ class StatementUtilTest {
 
 	@Test
 	void shouldParseStatementWithQuestionMarksBetweenDoubleQuotes() {
-		String sql = "SELECT \"source\".\"id\"                AS \"id\",\n" +
-				"       \"source\".\"name\"              AS \"name\",\n" +
-				"       \"source\".\"category_id\"       AS \"category_id\",\n" +
-				"       \"source\".\"latitude\"          AS \"latitude\",\n" +
-				"       \"source\".\"longitude\"         AS \"longitude\",\n" +
-				"       \"source\".\"price\"             AS \"price\",\n" +
-				"       \"source\".\"Refund Amount (?)\" AS \"Refund Amount (?)\"\n" +
-				"FROM (SELECT \"test_data_venues\".\"id\"           AS \"id\",\n" +
-				"             \"test_data_venues\".\"name\"         AS \"name\",\n" +
-				"             \"test_data_venues\".\"category_id\"  AS \"category_id\",\n" +
-				"             \"test_data_venues\".\"latitude\"     AS \"latitude\",\n" +
-				"             \"test_data_venues\".\"longitude\"    AS \"longitude\",\n" +
-				"             \"test_data_venues\".\"price\"        AS \"price\",\n" +
-				"             (\"test_data_venues\".\"price\" * -1) AS \"Refund Amount (?)\"\n" +
-				"      FROM \"test_data_venues\") \"source\"\n" +
-				"ORDER BY \"source\".\"id\" ASC LIMIT 1";
+		String sql = "SELECT \"source\".\"id\"                AS \"id\",\n"
+				+ "       \"source\".\"name\"              AS \"name\",\n"
+				+ "       \"source\".\"category_id\"       AS \"category_id\",\n"
+				+ "       \"source\".\"latitude\"          AS \"latitude\",\n"
+				+ "       \"source\".\"longitude\"         AS \"longitude\",\n"
+				+ "       \"source\".\"price\"             AS \"price\",\n"
+				+ "       \"source\".\"Refund Amount (?)\" AS \"Refund Amount (?)\"\n"
+				+ "FROM (SELECT \"test_data_venues\".\"id\"           AS \"id\",\n"
+				+ "             \"test_data_venues\".\"name\"         AS \"name\",\n"
+				+ "             \"test_data_venues\".\"category_id\"  AS \"category_id\",\n"
+				+ "             \"test_data_venues\".\"latitude\"     AS \"latitude\",\n"
+				+ "             \"test_data_venues\".\"longitude\"    AS \"longitude\",\n"
+				+ "             \"test_data_venues\".\"price\"        AS \"price\",\n"
+				+ "             (\"test_data_venues\".\"price\" * -1) AS \"Refund Amount (?)\"\n"
+				+ "      FROM \"test_data_venues\") \"source\"\n" + "ORDER BY \"source\".\"id\" ASC LIMIT 1";
 		RawStatementWrapper rawStatementWrapper = StatementUtil.parseToRawStatementWrapper(sql);
 		assertEquals(0, rawStatementWrapper.getTotalParams());
 	}

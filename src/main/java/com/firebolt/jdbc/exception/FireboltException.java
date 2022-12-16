@@ -9,9 +9,9 @@ import lombok.Getter;
 
 public class FireboltException extends SQLException {
 
+	private static final int HTTP_TOO_MANY_REQUESTS = 429;
 	@Getter
 	private final ExceptionType type;
-	private static final int HTTP_TOO_MANY_REQUESTS = 429;
 	@Getter
 	private final String errorMessageFromServer;
 

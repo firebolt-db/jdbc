@@ -1,5 +1,15 @@
 package com.firebolt.jdbc.statement.preparedstatement;
 
+import static com.firebolt.jdbc.statement.StatementUtil.replaceParameterMarksWithValues;
+
+import java.io.InputStream;
+import java.io.Reader;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.sql.*;
+import java.sql.Date;
+import java.util.*;
+
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
@@ -13,19 +23,10 @@ import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementUtil;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
 import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
+
 import lombok.Builder;
 import lombok.CustomLog;
 import lombok.NonNull;
-
-import java.io.InputStream;
-import java.io.Reader;
-import java.math.BigDecimal;
-import java.net.URL;
-import java.sql.Date;
-import java.sql.*;
-import java.util.*;
-
-import static com.firebolt.jdbc.statement.StatementUtil.replaceParameterMarksWithValues;
 
 @CustomLog
 public class FireboltPreparedStatement extends FireboltStatement implements PreparedStatement {
@@ -243,8 +244,9 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 
 	private void validateParamIndex(int paramIndex) throws FireboltException {
 		if (this.rawStatement.getTotalParams() < paramIndex) {
-			throw new FireboltException(String.format(
-					"Cannot set parameter as there is no parameter at index: %d for statement: %s", paramIndex, rawStatement));
+			throw new FireboltException(
+					String.format("Cannot set parameter as there is no parameter at index: %d for statement: %s",
+							paramIndex, rawStatement));
 		}
 	}
 

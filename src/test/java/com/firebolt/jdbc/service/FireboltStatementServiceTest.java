@@ -28,8 +28,7 @@ class FireboltStatementServiceTest {
 				.compress(true).build();
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient, false);
 		fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, 10, -1, true);
-		verify(statementClient).postSqlStatement(statementInfoWrapper, fireboltProperties,
-				false, 10, -1, true);
+		verify(statementClient).postSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, -1, true);
 	}
 
 	@Test

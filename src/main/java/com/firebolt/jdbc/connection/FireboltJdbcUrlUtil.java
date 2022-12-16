@@ -8,8 +8,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
 
-import lombok.experimental.UtilityClass;
 import lombok.CustomLog;
+import lombok.experimental.UtilityClass;
 
 @CustomLog
 @UtilityClass

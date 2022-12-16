@@ -1,14 +1,16 @@
 package com.firebolt.jdbc.client;
 
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import okhttp3.OkHttpClient;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.lang.reflect.Field;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
+
+import okhttp3.OkHttpClient;
 
 class HttpClientConfigTest {
 
@@ -24,7 +26,7 @@ class HttpClientConfigTest {
 	void shouldInitHttpClient() throws Exception {
 		OkHttpClient client = HttpClientConfig
 				.init(FireboltProperties.builder().maxConnectionsTotal(1).keepAliveTimeoutMillis(1).build());
-			assertNotNull(client);
+		assertNotNull(client);
 	}
 
 	@Test
