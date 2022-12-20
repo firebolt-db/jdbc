@@ -50,23 +50,19 @@ public class UsageTrackerUtil {
 		return clients;
 	}
 
-	private static Map<String, String> extractVersionsByName(String namesAndVersions) {
+	private static Map<String, String> extractNameToVersion(String namesAndVersions) {
 		// Example: connectors=ConnA:1.0.2,ConnB:2.9.3
-		Map<String, String> drivers = new HashMap<>();
-		for (String connector : namesAndVersions.split(",")) {
-			if(connector.matches("\\w+:\\d(\\.\\d)*")) {
+		Map<String, String> nameToVersion = new HashMap<>();
+		if (namesAndVersions.matches("(\\w+:\\d+?\\.\\d+?\\.\\d+?,?){1,100}")) {
+			for (String connector : namesAndVersions.split(",")) {
 				String[] connectorInfo = connector.split(":");
 				// Name, Version
-				drivers.put(connectorInfo[0], connectorInfo[1]);
-			} else {
-				log.debug("Incorrect connector format is provided: " + namesAndVersions + " Expected: ConnA:1.0.2,ConnB:2.9.3");
-				return new HashMap<>();
+				nameToVersion.put(connectorInfo[0], connectorInfo[1]);
 			}
-			String[] connectorInfo = connector.split(":");
-			// Name, Version
-			drivers.put(connectorInfo[0], connectorInfo[1]);
+		} else {
+			log.debug(String.format("Incorrect connector format is provided: %s, Expected: ConnA:1.0.2,ConnB:2.9.3", namesAndVersions));
 		}
-		return drivers;
+		return nameToVersion;
 	}
 
 	private static String mapToString(Map<String, String> map) {
@@ -83,8 +79,8 @@ public class UsageTrackerUtil {
 	public static String getUserAgentString(String userDrivers, String userClients) {
 		Map<String, String> detectedDrivers = getClients(Thread.currentThread().getStackTrace(), DRIVER_MAP);
 		Map<String, String> detectedClients = getClients(Thread.currentThread().getStackTrace(), CLIENT_MAP);
-		detectedDrivers.putAll(extractVersionsByName(userDrivers));
-		detectedClients.putAll(extractVersionsByName(userClients));
+		detectedDrivers.putAll(extractNameToVersion(userDrivers));
+		detectedClients.putAll(extractNameToVersion(userClients));
 		String javaVersion = System.getProperty("java.version");
 		String systemVersion = System.getProperty("os.version");
 
