@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       database:
-        description: 'Database (staging) - a new one will be created if not provided'
+        description: 'Database (dev) - a new one will be created if not provided'
         required: false
         default: ''
       threads:
@@ -37,13 +37,14 @@ jobs:
       - name: Setup database and engine
         id: setup
         if: ${{ github.event.inputs.database == '' }}
-        uses: firebolt-db/integration-testing-setup@feature/change-engine-scale
+        uses: firebolt-db/integration-testing-setup@master
         with:
           firebolt-username: ${{ secrets.FIREBOLT_USERNAME }}
           firebolt-password: ${{ secrets.FIREBOLT_PASSWORD }}
-          api-endpoint: "api.staging.firebolt.io"
+          api-endpoint: "api.dev.firebolt.io"
           region: "us-east-1"
-          instance-type: "M4"
+          instance-type: "B4"
+          engine-scale: 2
 
       - name: Determine database name
         id: find-database-name
@@ -60,7 +61,7 @@ jobs:
           testFilePath: JDBC.jmx
           dependencyFolder: dependencies
           outputReportsFolder: reports/
-          args: -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jpassword=${{ secrets.FIREBOLT_PASSWORD }} -Jusername=${{ secrets.FIREBOLT_USERNAME }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
+          args: -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jpassword=${{ secrets.FIREBOLT_PASSWORD }} -Jusername=${{ secrets.FIREBOLT_USERNAME }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=dev -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
       - name: Upload JMeter report
         uses: actions/upload-artifact@v3
         with:
