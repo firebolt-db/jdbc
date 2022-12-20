@@ -39,9 +39,9 @@ jobs:
         if: ${{ github.event.inputs.database == '' }}
         uses: firebolt-db/integration-testing-setup@master
         with:
-          firebolt-username: ${{ secrets.FIREBOLT_USERNAME_STAGING }}
-          firebolt-password: ${{ secrets.FIREBOLT_PASSWORD_STAGING }}
-          api-endpoint: "api.staging.firebolt.io"
+          firebolt-username: ${{ secrets.FIREBOLT_USERNAME_DEV }}
+          firebolt-password: ${{ secrets.FIREBOLT_PASSWORD_DEV }}
+          api-endpoint: "api.dev.firebolt.io"
           region: "us-east-1"
           instance-type: "C2"
           engine-scale: 2
@@ -61,7 +61,7 @@ jobs:
           testFilePath: JDBC.jmx
           dependencyFolder: dependencies
           outputReportsFolder: reports/
-          args: -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jpassword=${{ secrets.FIREBOLT_PASSWORD_STAGING }} -Jusername=${{ secrets.FIREBOLT_USERNAME_STAGING }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
+          args: -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jpassword=${{ secrets.FIREBOLT_PASSWORD_DEV }} -Jusername=${{ secrets.FIREBOLT_USERNAME_DEV }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=dev -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
       - name: Upload JMeter report
         uses: actions/upload-artifact@v3
         with:
