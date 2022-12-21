@@ -1,0 +1,4 @@
+id	null_boolean	false_boolean	true_boolean	invalid_boolean
+Int64	Boolean	boolean	Boolean	Boolean
+1	\N	f	t	v
+1	\N	0	1	1

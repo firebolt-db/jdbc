@@ -7,7 +7,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -16,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -262,17 +267,18 @@ class FireboltDatabaseMetadataTest {
 				.getResourceAsStream("/responses/metadata/firebolt-response-get-tables-example");
 	}
 
-	private InputStream getInputStreamForGetSchemas() {
-		return FireboltDatabaseMetadata.class
-				.getResourceAsStream("/responses/metadata/firebolt-response-get-schemas-example");
-	}
-
 	private InputStream getInputStreamForGetVersion() {
 		return FireboltDatabaseMetadata.class
 				.getResourceAsStream("/responses/metadata/firebolt-response-get-version-example");
 	}
 
 	private InputStream getExpectedTypeInfo() {
-		return FireboltDatabaseMetadata.class.getResourceAsStream("/responses/metadata/expected-types");
+		InputStream is = FireboltDatabaseMetadata.class.getResourceAsStream("/responses/metadata/expected-types.csv");
+		String typesWithTabs = new BufferedReader(
+				new InputStreamReader(is, StandardCharsets.UTF_8))
+				.lines()
+				.collect(Collectors.joining("\n")).replaceAll(",","\t");
+		return new ByteArrayInputStream(typesWithTabs.getBytes());
+
 	}
 }

@@ -3,6 +3,7 @@ package integration.tests;
 import static com.firebolt.jdbc.metadata.MetadataColumns.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -12,7 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,9 +46,9 @@ class DatabaseMetaDataTest extends IntegrationTest {
 				}
 			}
 		}
-		assertThat(schemas, Matchers.containsInAnyOrder("public", "catalog", "information_schema"));
+		assertThat(schemas, containsInAnyOrder("public", "catalog", "information_schema"));
 		String dbName = ConnectionInfo.getInstance().getDatabase();
-		assertThat(catalogs, Matchers.containsInAnyOrder(dbName, dbName, dbName));
+		assertThat(catalogs, contains(dbName, dbName, dbName));
 	}
 
 	@Test
@@ -97,33 +97,33 @@ class DatabaseMetaDataTest extends IntegrationTest {
 		String tableName = "integration_test";
 		String schemaName = "public";
 		assertThat(result.get(SCOPE_TABLE), contains(null, null, null, null, null));
-		assertThat(result.get(IS_NULLABLE), Matchers.containsInAnyOrder("NO", "YES", "YES", "YES", "NO"));
+		assertThat(result.get(IS_NULLABLE), contains("NO", "YES", "YES", "YES", "NO"));
 		assertThat(result.get(BUFFER_LENGTH), contains(null, null, null, null, null));
 		assertThat(result.get(TABLE_CAT),
-				Matchers.containsInAnyOrder(database, database, database, database, database));
+				contains(database, database, database, database, database));
 		assertThat(result.get(SCOPE_CATALOG), contains(null, null, null, null, null));
 		assertThat(result.get(COLUMN_DEF), contains(null, null, null, null, null));
 		assertThat(result.get(TABLE_NAME),
-				Matchers.containsInAnyOrder(tableName, tableName, tableName, tableName, tableName));
-		assertThat(result.get(COLUMN_NAME), Matchers.containsInAnyOrder("id", "ts", "content", "success", "year"));
+				contains(tableName, tableName, tableName, tableName, tableName));
+		assertThat(result.get(COLUMN_NAME), contains("id", "ts", "content", "success", "year"));
 		assertThat(result.get(TABLE_SCHEM),
-				Matchers.containsInAnyOrder(schemaName, schemaName, schemaName, schemaName, schemaName));
+				contains(schemaName, schemaName, schemaName, schemaName, schemaName));
 		assertThat(result.get(REMARKS), contains(null, null, null, null, null));
-		assertThat(result.get(NULLABLE), Matchers.containsInAnyOrder("0", "1", "1", "1", "0"));
-		assertThat(result.get(DECIMAL_DIGITS), Matchers.containsInAnyOrder("0", "0", "0", "0", "0"));
+		assertThat(result.get(NULLABLE), contains("0", "1", "1", "1", "0"));
+		assertThat(result.get(DECIMAL_DIGITS), contains("0", "0", "0", "0", "0"));
 		assertThat(result.get(SQL_DATETIME_SUB), contains(null, null, null, null, null));
-		assertThat(result.get(NUM_PREC_RADIX), Matchers.containsInAnyOrder("10", "10", "10", "10", "10"));
-		assertThat(result.get(IS_GENERATEDCOLUMN), Matchers.containsInAnyOrder("NO", "NO", "NO", "NO", "NO"));
-		assertThat(result.get(IS_AUTOINCREMENT), Matchers.containsInAnyOrder("NO", "NO", "NO", "NO", "NO"));
+		assertThat(result.get(NUM_PREC_RADIX), contains("10", "10", "10", "10", "10"));
+		assertThat(result.get(IS_GENERATEDCOLUMN), contains("NO", "NO", "NO", "NO", "NO"));
+		assertThat(result.get(IS_AUTOINCREMENT), contains("NO", "NO", "NO", "NO", "NO"));
 		assertThat(result.get(SQL_DATA_TYPE), contains(null, null, null, null, null));
 		assertThat(result.get(CHAR_OCTET_LENGTH), contains(null, null, null, null, null));
 		assertThat(result.get(SOURCE_DATA_TYPE), contains(null, null, null, null, null));
 		assertThat(result.get(SCOPE_SCHEMA), contains(null, null, null, null, null));
-		assertThat(result.get(ORDINAL_POSITION), Matchers.containsInAnyOrder("1", "2", "3", "4", "5"));
+		assertThat(result.get(ORDINAL_POSITION), contains("1", "2", "3", "4", "5"));
 		assertThat(result.get(TYPE_NAME),
-				Matchers.containsInAnyOrder("BIGINT", "TIMESTAMP", "STRING", "INTEGER", "INTEGER"));
-		assertThat(result.get(DATA_TYPE), Matchers.containsInAnyOrder("-5", "93", "12", "-6", "4"));
-		assertThat(result.get(COLUMN_SIZE), Matchers.containsInAnyOrder("20", "19", "0", "3", "11"));
+				contains("BIGINT", "TIMESTAMP", "STRING", "BOOLEAN", "INTEGER"));
+		assertThat(result.get(DATA_TYPE), contains("-5", "93", "12", "-7", "4"));
+		assertThat(result.get(COLUMN_SIZE), contains("20", "19", "0", "1", "11"));
 	}
 
 }

@@ -136,8 +136,8 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 						columnDescription.getString("column_name"), // column name
 						String.valueOf(columnInfo.getType().getDataType().getSqlType()), // sql data type
 						columnInfo.getType().getCompactTypeName(), // shorter type name
-						String.valueOf(columnInfo.getType().getPrecision()), null, // buffer length (not used, see
-																					// Javadoc)
+						String.valueOf(columnInfo.getType().getPrecision()), // column size
+						null, // buffer length (not used, see Javadoc)
 						String.valueOf(columnInfo.getType().getScale()), String.valueOf(COMMON_RADIX), // radix
 						columnDescription.getInt("is_nullable") == 1 ? columnNullable : columnNoNulls, null, // description
 																												// of
@@ -148,8 +148,9 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 								: null, // default value for the column: null,
 						null, // SQL_DATA_TYPE - reserved for future use (see javadoc)
 						null, // SQL_DATETIME_SUB - reserved for future use (see javadoc)
-						null, // CHAR_OCTET_LENGTH - The maximum length of binary and character based
-						// columns (null for others)
+						null, // CHAR_OCTET_LENGTH - The maximum
+								// length of binary and character
+								// based columns (null for others)
 						columnDescription.getInt("ordinal_position"), // The ordinal position starting from 1
 						columnDescription.getInt("is_nullable") == 1 ? "YES" : "NO", null, // "SCOPE_CATALOG - Unused
 						null, // "SCOPE_SCHEMA" - Unused
@@ -223,11 +224,11 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 				QueryResult.Column.builder().name(LITERAL_SUFFIX).type(STRING).build(),
 				QueryResult.Column.builder().name(CREATE_PARAMS).type(STRING).build(),
 				QueryResult.Column.builder().name(NULLABLE).type(INT_32).build(),
-				QueryResult.Column.builder().name(CASE_SENSITIVE).type(U_INT_8).build(),
+				QueryResult.Column.builder().name(CASE_SENSITIVE).type(BOOLEAN).build(),
 				QueryResult.Column.builder().name(SEARCHABLE).type(INT_32).build(),
-				QueryResult.Column.builder().name(UNSIGNED_ATTRIBUTE).type(U_INT_8).build(),
-				QueryResult.Column.builder().name(FIXED_PREC_SCALE).type(U_INT_8).build(),
-				QueryResult.Column.builder().name(AUTO_INCREMENT).type(U_INT_8).build(),
+				QueryResult.Column.builder().name(UNSIGNED_ATTRIBUTE).type(BOOLEAN).build(),
+				QueryResult.Column.builder().name(FIXED_PREC_SCALE).type(BOOLEAN).build(),
+				QueryResult.Column.builder().name(AUTO_INCREMENT).type(BOOLEAN).build(),
 				QueryResult.Column.builder().name(LOCAL_TYPE_NAME).type(STRING).build(),
 				QueryResult.Column.builder().name(MINIMUM_SCALE).type(INT_32).build(),
 				QueryResult.Column.builder().name(MAXIMUM_SCALE).type(INT_32).build(),
@@ -237,7 +238,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 		List<List<?>> rows = new ArrayList<>();
 		List<FireboltDataType> usableTypes = Arrays.asList(INT_32, INT_64, FLOAT_32, FLOAT_64, STRING, DATE, DATE_32,
-				DATE_TIME, DATE_TIME_64, DECIMAL, ARRAY, U_INT_8, TUPLE, BYTEA);
+				DATE_TIME, DATE_TIME_64, DECIMAL, ARRAY, TUPLE, BYTEA, BOOLEAN);
 		usableTypes
 				.forEach(type -> rows.add(Arrays.asList(type.getDisplayName(), type.getSqlType(),
 						type.getDefaultPrecision(), type.getSqlType() == VARCHAR ? "'" : null, // LITERAL_PREFIX - ' for
@@ -247,14 +248,14 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 								// in the future)
 						typeNullableUnknown, // It depends - A type can be nullable or not depending on
 						// the presence of the additional keyword Nullable()
-						type.isCaseSensitive() ? 1 : 0, type.getSqlType() == VARCHAR ? typeSearchable
+						type.isCaseSensitive(), type.getSqlType() == VARCHAR ? typeSearchable
 								: typePredBasic, /*
 													 * SEARCHABLE - LIKE can only be used for VARCHAR
 													 */
-						type.isSigned() ? 1 : 0, 0, // FIXED_PREC_SCALE - indicates if the type can be a money value.
+						false, false, // FIXED_PREC_SCALE - indicates if the type can be a money value.
 													// Always
 													// false as we do not have a money type
-						0, // AUTO_INCREMENT
+						false, // AUTO_INCREMENT
 						null, // LOCAL_TYPE_NAME
 						null, // MINIMUM_SCALE - There is no minimum scale
 						type.getDefaultScale(), null, // SQL_DATA_TYPE - Not needed - reserved for future use
