@@ -186,12 +186,28 @@ public class UsageTrackerUtilTest {
 	}
 
 	@Test
+	void shouldNotOverrideConnectorsIf100NameVersionPairsAreSpecified() {
+		System.setProperty("os.name", "MacosX");
+		Map<String, String> connectors = new HashMap<>();
+		StringBuilder connectorsInfo = new StringBuilder("ConnB:2.0.1");
+		for (int i = 0; i < 99; i++) {
+			connectorsInfo.append(",ConnA:1.1.1");
+		}
+		connectors.put("ConnA", "1.2.0");
+		connectors.put("ConnB", "3.0.4");
+		try (MockedStatic<UsageTrackerUtil> mock = mockClients(new HashMap<>(), connectors)) {
+			String result = UsageTrackerUtil.getUserAgentString("", connectorsInfo.toString());
+			assertEquals("ConnA/1.1.1 ConnB/2.0.1 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; )", result);
+		}
+	}
+
+	@Test
 	void shouldNotOverrideConnectorsIfMoreThan100NameVersionPairsAreSpecified() {
 		System.setProperty("os.name", "MacosX");
 		Map<String, String> connectors = new HashMap<>();
-		StringBuilder connectorsInfo = new StringBuilder("ConnA:2.0.1");
-		for (int i = 0; i < 100; i ++) {
-			connectorsInfo.append(",ConnC:1.1.1");
+		StringBuilder connectorsInfo = new StringBuilder("ConnB:2.0.1");
+		for (int i = 0; i < 100; i++) {
+			connectorsInfo.append(",ConnA:1.1.1");
 		}
 		connectors.put("ConnA", "1.2.0");
 		connectors.put("ConnB", "3.0.4");
