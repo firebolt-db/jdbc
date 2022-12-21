@@ -25,6 +25,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.firebolt.jdbc.LoggerUtil;
+import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.FireboltStatement;
 
 @ExtendWith(MockitoExtension.class)
@@ -575,6 +576,47 @@ class FireboltResultSetTest {
 		assertEquals("", resultSet.getString("an_empty_bytea"));
 	}
 
+	@Test
+	void shouldReturnTrueWhenBooleanFoundIsFalse() throws SQLException {
+		inputStream = getInputStreamWithBooleans();
+		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
+		resultSet.next();
+		assertTrue((Boolean)resultSet.getObject("true_boolean"));
+		assertTrue(resultSet.getBoolean("true_boolean"));
+		resultSet.next();
+		assertTrue((Boolean)resultSet.getObject("true_boolean"));
+		assertTrue(resultSet.getBoolean("true_boolean"));
+	}
+
+	@Test
+	void shouldReturnFalseWhenBooleanFoundIsFalse() throws SQLException {
+		inputStream = getInputStreamWithBooleans();
+		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
+		resultSet.next();
+		assertFalse((Boolean)resultSet.getObject("false_boolean"));
+		assertFalse(resultSet.getBoolean("false_boolean"));
+		resultSet.next();
+		assertFalse((Boolean)resultSet.getObject("false_boolean"));
+		assertFalse(resultSet.getBoolean("false_boolean"));
+	}
+
+	@Test
+	void shouldReturnTrueWhenBooleanFoundIsNull() throws SQLException {
+		inputStream = getInputStreamWithBooleans();
+		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
+		resultSet.next();
+		assertNull(resultSet.getObject("null_boolean"));
+		assertTrue(resultSet.getBoolean("null_boolean"));
+	}
+
+	@Test
+	void shouldThrowExceptionWhenBooleanValueIsInvalid() throws SQLException {
+		inputStream = getInputStreamWithBooleans();
+		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
+		resultSet.next();
+		assertThrows(FireboltException.class, () -> resultSet.getObject("invalid_boolean"));
+	}
+
 	private InputStream getInputStreamWithArray() {
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-example");
 	}
@@ -593,5 +635,9 @@ class FireboltResultSetTest {
 
 	private InputStream getInputStreamWithByteA() {
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-bytea");
+	}
+
+	private InputStream getInputStreamWithBooleans() {
+		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-booleans");
 	}
 }
