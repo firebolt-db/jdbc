@@ -18,7 +18,6 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import com.firebolt.jdbc.VersionUtil;
-import com.google.common.collect.ImmutableMap;
 
 @SetSystemProperty(key = "java.version", value = "8.0.1")
 @SetSystemProperty(key = "os.version", value = "10.1")
@@ -102,7 +101,9 @@ public class UsageTrackerUtilTest {
 	@Test
 	void shouldDetectConnectorStack() {
 		System.setProperty("os.name", "MacosX");
-		Map<String, String> connectors = ImmutableMap.of("ConnA", "1.2.0", "ConnB", "3.0.4");
+		Map<String, String> connectors = new HashMap<>();
+		connectors.put("ConnA", "1.2.0");
+		connectors.put("ConnB", "3.0.4");
 		try (MockedStatic<UsageTrackerUtil> mock = mockClients(connectors, new HashMap<>())) {
 			String result = UsageTrackerUtil.getUserAgentString("", "");
 			assertEquals("JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.2.0 ConnB/3.0.4", result);
@@ -124,7 +125,7 @@ public class UsageTrackerUtilTest {
 		Map<String, String> connectors = new HashMap<>();
 		connectors.put("ConnA", "1.2.0");
 		connectors.put("ConnB", "3.0.4");
-		try (MockedStatic<UsageTrackerUtil> mock = mockClients(new HashMap<String, String>(), connectors)) {
+		try (MockedStatic<UsageTrackerUtil> mock = mockClients(new HashMap<>(), connectors)) {
 			String result = UsageTrackerUtil.getUserAgentString("", "ConnA:2.0.1,ConnC:1.1.1");
 			assertEquals("ConnA/2.0.1 ConnB/3.0.4 ConnC/1.1.1 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; )", result);
 		}
@@ -181,6 +182,38 @@ public class UsageTrackerUtilTest {
 			clients = UsageTrackerUtil.getClients(stack, CLIENT_MAP);
 			assertFalse(clients.isEmpty());
 			assertEquals(expected, clients);
+		}
+	}
+
+	@Test
+	void shouldNotOverrideConnectorsIf100NameVersionPairsAreSpecified() {
+		System.setProperty("os.name", "MacosX");
+		Map<String, String> connectors = new HashMap<>();
+		StringBuilder connectorsInfo = new StringBuilder("ConnB:2.0.1");
+		for (int i = 0; i < 99; i++) {
+			connectorsInfo.append(",ConnA:1.1.1");
+		}
+		connectors.put("ConnA", "1.2.0");
+		connectors.put("ConnB", "3.0.4");
+		try (MockedStatic<UsageTrackerUtil> mock = mockClients(new HashMap<>(), connectors)) {
+			String result = UsageTrackerUtil.getUserAgentString("", connectorsInfo.toString());
+			assertEquals("ConnA/1.1.1 ConnB/2.0.1 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; )", result);
+		}
+	}
+
+	@Test
+	void shouldNotOverrideConnectorsIfMoreThan100NameVersionPairsAreSpecified() {
+		System.setProperty("os.name", "MacosX");
+		Map<String, String> connectors = new HashMap<>();
+		StringBuilder connectorsInfo = new StringBuilder("ConnB:2.0.1");
+		for (int i = 0; i < 100; i++) {
+			connectorsInfo.append(",ConnA:1.1.1");
+		}
+		connectors.put("ConnA", "1.2.0");
+		connectors.put("ConnB", "3.0.4");
+		try (MockedStatic<UsageTrackerUtil> mock = mockClients(new HashMap<>(), connectors)) {
+			String result = UsageTrackerUtil.getUserAgentString("", connectorsInfo.toString());
+			assertEquals("ConnA/1.2.0 ConnB/3.0.4 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; )", result);
 		}
 	}
 }
