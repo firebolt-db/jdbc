@@ -56,7 +56,15 @@ public class QueryResult {
 			if (null == value) {
 				value = "\\N"; // null
 			}
-			destination.append(value);
+			if (value instanceof Boolean) {
+				if (Boolean.TRUE.equals(value)) {
+					destination.append('t');
+				} else {
+					destination.append('f');
+				}
+			} else {
+				destination.append(value);
+			}
 			if (iterator.hasNext()) {
 				destination.append(TAB);
 			}

@@ -11,6 +11,7 @@ import lombok.Getter;
 /** Supported data types. */
 @Getter
 public enum FireboltDataType {
+	// Not officially supported but U_INT_8 is still coming from Firebolt
 	U_INT_8(Types.TINYINT, "UInt8", BaseType.INTEGER.name(), BaseType.INTEGER, false, false, 3, 0, false),
 	BOOLEAN(Types.BIT, "Boolean", BaseType.BOOLEAN.name(), BaseType.BOOLEAN, false, false, 1, 0, false, "BOOL"),
 	INT_32(Types.INTEGER, "Int32", BaseType.INTEGER.name(), BaseType.INTEGER, true, false, 11, 0, false, "INTEGER",

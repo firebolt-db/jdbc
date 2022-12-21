@@ -3,6 +3,7 @@ package integration.tests;
 import static com.firebolt.jdbc.metadata.MetadataColumns.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -45,7 +46,7 @@ class DatabaseMetaDataTest extends IntegrationTest {
 				}
 			}
 		}
-		assertThat(schemas, contains("public", "catalog", "information_schema"));
+		assertThat(schemas, containsInAnyOrder("public", "catalog", "information_schema"));
 		String dbName = ConnectionInfo.getInstance().getDatabase();
 		assertThat(catalogs, contains(dbName, dbName, dbName));
 	}
