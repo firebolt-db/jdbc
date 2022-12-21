@@ -11,25 +11,25 @@ import lombok.Builder;
 import lombok.Value;
 
 /**
- * Class containing a query result that can be used to create a {@link com.firebolt.jdbc.resultset.FireboltResultSet}
+ * Class containing a query result that can be used to create a
+ * {@link com.firebolt.jdbc.resultset.FireboltResultSet}
  */
 @Builder
 @Value
 public class QueryResult {
 
-	String databaseName;
-
-	String tableName;
-
 	private static final String TAB = "\t";
 	private static final String NEXT_LINE = "\n";
+	String databaseName;
+	String tableName;
 	@Builder.Default
 	List<Column> columns = new ArrayList<>();
 	@Builder.Default
 	List<List<?>> rows = new ArrayList<>();
 
 	/**
-	 * @return the string representing a query response in the TabSeparatedWithNamesAndTypes format
+	 * @return the string representing a query response in the
+	 *         TabSeparatedWithNamesAndTypes format
 	 */
 	@Override
 	public String toString() {

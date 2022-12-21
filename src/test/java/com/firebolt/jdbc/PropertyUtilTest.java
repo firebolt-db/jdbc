@@ -1,17 +1,18 @@
 package com.firebolt.jdbc;
 
-import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
-import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.mockito.internal.matchers.apachecommons.ReflectionEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mockStatic;
 
 import java.sql.DriverPropertyInfo;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mockStatic;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.internal.matchers.apachecommons.ReflectionEquals;
+
+import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
 
 class PropertyUtilTest {
 

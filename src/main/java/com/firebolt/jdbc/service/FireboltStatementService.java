@@ -25,15 +25,16 @@ public class FireboltStatementService {
 	 *
 	 * @param statementInfoWrapper the statement
 	 * @param connectionProperties the connection properties
-	 * @param queryTimeout query timeout
-	 * @param maxRows max rows
-	 * @param standardSql indicates if standard sql should be used
+	 * @param queryTimeout         query timeout
+	 * @param maxRows              max rows
+	 * @param standardSql          indicates if standard sql should be used
 	 * @return an InputStream with the result
 	 */
 	public InputStream execute(@NonNull StatementInfoWrapper statementInfoWrapper,
 			@NonNull FireboltProperties connectionProperties, int queryTimeout, int maxRows, boolean standardSql)
 			throws FireboltException {
-		return statementClient.postSqlStatement(statementInfoWrapper, connectionProperties, systemEngine, queryTimeout, maxRows, standardSql);
+		return statementClient.postSqlStatement(statementInfoWrapper, connectionProperties, systemEngine, queryTimeout,
+				maxRows, standardSql);
 	}
 
 	public void abortStatement(@NonNull String statementId, @NonNull FireboltProperties properties)

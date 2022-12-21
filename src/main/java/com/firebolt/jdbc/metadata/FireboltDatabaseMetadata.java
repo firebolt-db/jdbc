@@ -26,12 +26,12 @@ import lombok.CustomLog;
 @CustomLog
 public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
-	private final String url;
-	private final FireboltConnection connection;
-	private String databaseVersion;
 	private static final String PUBLIC_SCHEMA_NAME = "public";
 	private static final String INFORMATION_SCHEMA_NAME = "information_schema";
 	private static final String CATALOG_SCHEMA_NAME = "catalog";
+	private final String url;
+	private final FireboltConnection connection;
+	private String databaseVersion;
 
 	public FireboltDatabaseMetadata(String url, FireboltConnection connection) {
 		this.url = url;

@@ -1,17 +1,7 @@
 package integration.tests;
 
-import com.firebolt.jdbc.QueryResult;
-import com.firebolt.jdbc.resultset.FireboltResultSet;
-import com.firebolt.jdbc.testutils.AssertionUtil;
-import com.firebolt.jdbc.type.FireboltDataType;
-import integration.ConnectionInfo;
-import integration.IntegrationTest;
-import lombok.Builder;
-import lombok.CustomLog;
-import lombok.Value;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static java.sql.Statement.SUCCESS_NO_INFO;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -19,8 +9,20 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static java.sql.Statement.SUCCESS_NO_INFO;
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.firebolt.jdbc.QueryResult;
+import com.firebolt.jdbc.resultset.FireboltResultSet;
+import com.firebolt.jdbc.testutils.AssertionUtil;
+import com.firebolt.jdbc.type.FireboltDataType;
+
+import integration.ConnectionInfo;
+import integration.IntegrationTest;
+import lombok.Builder;
+import lombok.CustomLog;
+import lombok.Value;
 
 @CustomLog
 class PreparedStatementTest extends IntegrationTest {

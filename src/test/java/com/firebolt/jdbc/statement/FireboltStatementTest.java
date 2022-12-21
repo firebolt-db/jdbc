@@ -49,7 +49,8 @@ class FireboltStatementTest {
 			FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
 					.sessionProperties(fireboltProperties).build();
 
-			when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean())).thenReturn(mock(InputStream.class));
+			when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
+					.thenReturn(mock(InputStream.class));
 			fireboltStatement.executeQuery("show database");
 			assertTrue(fireboltProperties.getAdditionalProperties().isEmpty());
 			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(fireboltProperties),
@@ -133,7 +134,8 @@ class FireboltStatementTest {
 			FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
 					.sessionProperties(fireboltProperties).connection(connection).build();
 
-			when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean())).thenReturn(mock(InputStream.class));
+			when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
+					.thenReturn(mock(InputStream.class));
 
 			fireboltStatement.executeQuery("show database");
 			fireboltStatement.close();
@@ -164,8 +166,9 @@ class FireboltStatementTest {
 
 		try (FireboltStatement fireboltStatement = FireboltStatement.builder()
 				.statementService(fireboltStatementService).connection(fireboltConnection)
-				.sessionProperties(fireboltProperties).build();) {
-			when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean())).thenReturn(mock(InputStream.class));
+				.sessionProperties(fireboltProperties).build()) {
+			when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
+					.thenReturn(mock(InputStream.class));
 			assertEquals(0, fireboltStatement.executeUpdate("INSERT INTO cars(sales, name) VALUES (500, 'Ford')"));
 			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(fireboltProperties),
 					anyInt(), anyInt(), anyBoolean());

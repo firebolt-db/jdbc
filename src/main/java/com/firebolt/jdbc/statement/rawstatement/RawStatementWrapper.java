@@ -1,11 +1,12 @@
 package com.firebolt.jdbc.statement.rawstatement;
 
-import lombok.CustomLog;
-import lombok.Value;
-import org.apache.commons.lang3.StringUtils;
-
 import java.util.Collection;
 import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+
+import lombok.CustomLog;
+import lombok.Value;
 
 @CustomLog
 @Value

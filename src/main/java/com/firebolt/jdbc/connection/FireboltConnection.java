@@ -49,11 +49,10 @@ public class FireboltConnection implements Connection {
 	private final String httpConnectionUrl;
 	private final List<FireboltStatement> statements;
 	private final int connectionTimeout;
+	private final boolean systemEngine;
 	private boolean closed = true;
 	private FireboltProperties sessionProperties;
 	private int networkTimeout;
-
-	private final boolean systemEngine;
 
 	public FireboltConnection(@NonNull String url, Properties connectionSettings,
 			FireboltAuthenticationService fireboltAuthenticationService, FireboltEngineService fireboltEngineService,

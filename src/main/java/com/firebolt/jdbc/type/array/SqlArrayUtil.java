@@ -1,27 +1,28 @@
 package com.firebolt.jdbc.type.array;
 
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.resultset.column.ColumnType;
-import com.firebolt.jdbc.type.FireboltDataType;
-import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
-import com.google.common.base.CharMatcher;
-import lombok.CustomLog;
-import lombok.NonNull;
-import lombok.experimental.UtilityClass;
-import org.apache.commons.lang3.StringUtils;
-
 import java.lang.reflect.Array;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
+
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.resultset.column.ColumnType;
+import com.firebolt.jdbc.type.FireboltDataType;
+import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
+import com.google.common.base.CharMatcher;
+
+import lombok.CustomLog;
+import lombok.NonNull;
+import lombok.experimental.UtilityClass;
+
 @UtilityClass
 @CustomLog
 public class SqlArrayUtil {
 
-	public static FireboltArray transformToSqlArray(String value, ColumnType columnType)
-			throws SQLException {
+	public static FireboltArray transformToSqlArray(String value, ColumnType columnType) throws SQLException {
 		log.debug("Transformer array with value {} and type {}", value, columnType);
 		int dimensions = 0;
 		for (int x = 0; x < value.length(); x++)
@@ -34,8 +35,7 @@ public class SqlArrayUtil {
 		return FireboltArray.builder().array(arr).type(columnType.getArrayBaseColumnType().getDataType()).build();
 	}
 
-	private static Object createArray(String arrayContent, int dimension, ColumnType columnType)
-			throws SQLException {
+	private static Object createArray(String arrayContent, int dimension, ColumnType columnType) throws SQLException {
 		if (dimension == 1) {
 			return extractArrayFromOneDimensionalArray(arrayContent, columnType);
 		} else {
@@ -44,12 +44,13 @@ public class SqlArrayUtil {
 	}
 
 	@NonNull
-	private static Object extractArrayFromMultiDimensionalArray(String str, int dimension,
-			ColumnType columnType) throws SQLException {
+	private static Object extractArrayFromMultiDimensionalArray(String str, int dimension, ColumnType columnType)
+			throws SQLException {
 		String[] s = str.split(getArraySeparator(dimension));
 		int[] lengths = new int[dimension];
 		lengths[0] = s.length;
-		Object currentArray = Array.newInstance(columnType.getArrayBaseColumnType().getDataType().getBaseType().getType(), lengths);
+		Object currentArray = Array
+				.newInstance(columnType.getArrayBaseColumnType().getDataType().getBaseType().getType(), lengths);
 
 		for (int x = 0; x < s.length; x++)
 			Array.set(currentArray, x, createArray(s[x], dimension - 1, columnType));
@@ -59,8 +60,8 @@ public class SqlArrayUtil {
 
 	private static Object extractArrayFromOneDimensionalArray(String arrayContent, ColumnType columnType)
 			throws SQLException {
-		List<String> elements = splitArrayContent(arrayContent, columnType.getArrayBaseColumnType().getDataType()).stream()
-				.filter(StringUtils::isNotEmpty).map(SqlArrayUtil::removeQuotesAndTransformNull)
+		List<String> elements = splitArrayContent(arrayContent, columnType.getArrayBaseColumnType().getDataType())
+				.stream().filter(StringUtils::isNotEmpty).map(SqlArrayUtil::removeQuotesAndTransformNull)
 				.collect(Collectors.toList());
 		FireboltDataType arrayBaseType = columnType.getArrayBaseColumnType().getDataType();
 		if (arrayBaseType != FireboltDataType.TUPLE) {
@@ -73,10 +74,9 @@ public class SqlArrayUtil {
 		}
 	}
 
-	private static Object[] getArrayOfTuples(ColumnType columnType, List<String> tuples)
-			throws SQLException {
-		List<FireboltDataType> types = columnType.getArrayBaseColumnType().getInnerTypes().stream().map(ColumnType::getDataType)
-				.collect(Collectors.toList());
+	private static Object[] getArrayOfTuples(ColumnType columnType, List<String> tuples) throws SQLException {
+		List<FireboltDataType> types = columnType.getArrayBaseColumnType().getInnerTypes().stream()
+				.map(ColumnType::getDataType).collect(Collectors.toList());
 
 		List<Object[]> list = new ArrayList<>();
 		for (String tupleContent : tuples) {

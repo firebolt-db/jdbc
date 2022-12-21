@@ -1,11 +1,12 @@
 package com.firebolt.jdbc.statement;
 
-import lombok.CustomLog;
-import lombok.Data;
-
-import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.sql.ResultSet;
+
+import javax.annotation.Nullable;
+
+import lombok.CustomLog;
+import lombok.Data;
 
 @Data
 @CustomLog

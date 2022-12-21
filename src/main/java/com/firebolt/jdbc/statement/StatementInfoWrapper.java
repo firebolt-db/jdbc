@@ -28,6 +28,7 @@ public class StatementInfoWrapper {
 
 	/**
 	 * Creates a StatementInfoWrapper from the {@link RawStatement}.
+	 * 
 	 * @param rawStatement the raw statement
 	 * @return the statement that will be sent to the server
 	 */
@@ -37,8 +38,9 @@ public class StatementInfoWrapper {
 
 	/**
 	 * Creates a StatementInfoWrapper from the {@link RawStatement}.
+	 * 
 	 * @param rawStatement the raw statement
-	 * @param id the id of the statement to execute
+	 * @param id           the id of the statement to execute
 	 * @return the statement that will be sent to the server
 	 */
 	public static StatementInfoWrapper of(@NonNull RawStatement rawStatement, String id) {

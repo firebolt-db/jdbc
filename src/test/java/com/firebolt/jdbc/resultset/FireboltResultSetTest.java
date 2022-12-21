@@ -33,14 +33,12 @@ import com.firebolt.jdbc.statement.FireboltStatement;
 class FireboltResultSetTest {
 
 	private static final TimeZone UTC_TZ = TimeZone.getTimeZone("UTC");
-	private InputStream inputStream;
-	private ResultSet resultSet;
-
-	@Mock
-	private FireboltStatement fireboltStatement;
-
 	private final static Calendar EST_CALENDAR = Calendar.getInstance(TimeZone.getTimeZone("EST"));
 	private final static Calendar UTC_CALENDAR = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+	private InputStream inputStream;
+	private ResultSet resultSet;
+	@Mock
+	private FireboltStatement fireboltStatement;
 
 	@AfterEach
 	void afterEach() throws SQLException {

@@ -1,19 +1,21 @@
 package com.firebolt.jdbc.statement;
 
-import com.firebolt.jdbc.statement.rawstatement.RawStatement;
-import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
-import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
-import lombok.CustomLog;
-import lombok.NonNull;
-import lombok.experimental.UtilityClass;
+import java.util.*;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.*;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import com.firebolt.jdbc.statement.rawstatement.RawStatement;
+import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
+import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
+
+import lombok.CustomLog;
+import lombok.NonNull;
+import lombok.experimental.UtilityClass;
 
 @UtilityClass
 @CustomLog
@@ -112,7 +114,8 @@ public class StatementUtil {
 						foundSubqueryEndingSemicolon = false;
 						cleanedSubQuery = new StringBuilder();
 					}
-				} else if (currentChar == '?' && !isCurrentSubstringBetweenQuotes && !isCurrentSubstringBetweenDoubleQuotes) {
+				} else if (currentChar == '?' && !isCurrentSubstringBetweenQuotes
+						&& !isCurrentSubstringBetweenDoubleQuotes) {
 					subStatementParamMarkersPositions
 							.add(new ParamMarker(++subQueryParamsCount, currentIndex - subQueryStart));
 				} else if (currentChar == '\'') {

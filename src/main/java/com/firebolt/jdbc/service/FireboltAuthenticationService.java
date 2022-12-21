@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.StringUtils;
 
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
@@ -24,10 +25,9 @@ public class FireboltAuthenticationService {
 
 	private static final ExpiringMap<ConnectParams, FireboltConnectionTokens> tokensMap = ExpiringMap.builder()
 			.variableExpiration().build();
-	private final FireboltAuthenticationClient fireboltAuthenticationClient;
-
 	private static final long TOKEN_EXPIRATION_OFFSET = 5L;
 	private static final long TOKEN_TTL_THRESHOLD = 60L;
+	private final FireboltAuthenticationClient fireboltAuthenticationClient;
 
 	public FireboltConnectionTokens getConnectionTokens(String host, FireboltProperties loginProperties)
 			throws FireboltException {
@@ -42,20 +42,32 @@ public class FireboltAuthenticationService {
 				} else {
 					FireboltConnectionTokens fireboltConnectionTokens = fireboltAuthenticationClient
 							.postConnectionTokens(host, loginProperties.getUser(), loginProperties.getPassword());
-					long durationInSeconds = getCachingDurationInSeconds(fireboltConnectionTokens.getExpiresInSeconds());
+					long durationInSeconds = getCachingDurationInSeconds(
+							fireboltConnectionTokens.getExpiresInSeconds());
 					tokensMap.put(connectionParams, fireboltConnectionTokens, ExpirationPolicy.CREATED,
 							durationInSeconds, TimeUnit.SECONDS);
 					return fireboltConnectionTokens;
 				}
 			}
 		} catch (Exception e) {
-			log.error("Could not get connection tokens", e);
-			throw new FireboltException("Could not get connection tokens", e);
+			log.error("Failed to connect to Firebolt", e);
+			if (e instanceof FireboltException
+					&& StringUtils.isNotEmpty(((FireboltException) e).getErrorMessageFromServer())) {
+				throw new FireboltException(String.format(
+						"Failed to connect to Firebolt with the error from the server: %s, see logs for more info.",
+						((FireboltException) e).getErrorMessageFromServer()), e);
+			} else {
+				throw new FireboltException(
+						String.format("Failed to connect to Firebolt with the error: %s, see logs for more info.",
+								e.getMessage()),
+						e);
+			}
 		}
 	}
 
 	/**
-	 * To avoid returning tokens that are about to expire, we store them {@link #TOKEN_EXPIRATION_OFFSET} seconds shorter than their expiry time
+	 * To avoid returning tokens that are about to expire, we store them
+	 * {@link #TOKEN_EXPIRATION_OFFSET} seconds shorter than their expiry time
 	 * unless the token lives for less than {@link #TOKEN_TTL_THRESHOLD} seconds.
 	 */
 	private long getCachingDurationInSeconds(long expireInSeconds) {
@@ -64,7 +76,8 @@ public class FireboltAuthenticationService {
 
 	/**
 	 * Removes connection tokens from the cache.
-	 * @param host host
+	 * 
+	 * @param host            host
 	 * @param loginProperties the login properties linked to the tokens
 	 */
 	public void removeConnectionTokens(String host, FireboltProperties loginProperties) throws FireboltException {
