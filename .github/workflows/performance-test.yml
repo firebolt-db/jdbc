@@ -1,6 +1,7 @@
 name: Run performance tests
 
 on:
+  push:
   workflow_dispatch:
     inputs:
       database:
@@ -14,7 +15,7 @@ on:
       loops:
         description: 'Number of iterations for every thread'
         required: false
-        default: '500'
+        default: '50'
 
 jobs:
   build:
@@ -39,11 +40,12 @@ jobs:
         if: ${{ github.event.inputs.database == '' }}
         uses: firebolt-db/integration-testing-setup@master
         with:
-          firebolt-username: ${{ secrets.FIREBOLT_USERNAME }}
-          firebolt-password: ${{ secrets.FIREBOLT_PASSWORD }}
+          firebolt-username: ${{ secrets.FIREBOLT_USERNAME_STAGING }}
+          firebolt-password: ${{ secrets.FIREBOLT_PASSWORD_STAGING }}
           api-endpoint: "api.staging.firebolt.io"
           region: "us-east-1"
-          instance-type: "B4"
+          instance-type: "C2"
+          engine-scale: 2
 
       - name: Determine database name
         id: find-database-name
@@ -60,7 +62,7 @@ jobs:
           testFilePath: JDBC.jmx
           dependencyFolder: dependencies
           outputReportsFolder: reports/
-          args: -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jpassword=${{ secrets.FIREBOLT_PASSWORD }} -Jusername=${{ secrets.FIREBOLT_USERNAME }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
+          args: -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jpassword=${{ secrets.FIREBOLT_PASSWORD_STAGING }} -Jusername=${{ secrets.FIREBOLT_USERNAME_STAGING }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
       - name: Upload JMeter report
         uses: actions/upload-artifact@v3
         with:

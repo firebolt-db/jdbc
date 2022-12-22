@@ -64,7 +64,7 @@
       <hashTree>
         <JDBCDataSource guiclass="TestBeanGUI" testclass="JDBCDataSource" testname="JDBC Connection Configuration" enabled="true">
           <boolProp name="autocommit">true</boolProp>
-          <stringProp name="checkQuery">SELECT 1</stringProp>
+          <stringProp name="checkQuery"></stringProp>
           <stringProp name="connectionAge">5000</stringProp>
           <stringProp name="connectionProperties"></stringProp>
           <stringProp name="dataSource">Firebolt</stringProp>
@@ -124,7 +124,7 @@ INSERT INTO lineitem SELECT * FROM ex_lineitem;</stringProp>
       <hashTree>
         <JDBCDataSource guiclass="TestBeanGUI" testclass="JDBCDataSource" testname="JDBC Connection Configuration" enabled="true">
           <boolProp name="autocommit">true</boolProp>
-          <stringProp name="checkQuery">SELECT 1</stringProp>
+          <stringProp name="checkQuery"></stringProp>
           <stringProp name="connectionAge">5000</stringProp>
           <stringProp name="connectionProperties"></stringProp>
           <stringProp name="dataSource">Firebolt</stringProp>
@@ -133,7 +133,7 @@ INSERT INTO lineitem SELECT * FROM ex_lineitem;</stringProp>
           <stringProp name="initQuery"></stringProp>
           <boolProp name="keepAlive">true</boolProp>
           <stringProp name="password">${password}</stringProp>
-          <stringProp name="poolMax">10000</stringProp>
+          <stringProp name="poolMax">${threads}</stringProp>
           <boolProp name="preinit">false</boolProp>
           <stringProp name="timeout">10000</stringProp>
           <stringProp name="transactionIsolation">DEFAULT</stringProp>
