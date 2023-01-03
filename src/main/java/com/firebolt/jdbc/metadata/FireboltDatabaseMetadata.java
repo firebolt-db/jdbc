@@ -353,12 +353,10 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return true;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public String getUserName() throws SQLException {
-		return null;
+		return connection.getSessionProperties().getUser();
 	}
 
 	@Override
@@ -923,10 +921,8 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public int getMaxConnections() throws SQLException {
 		return 0;
 	}
@@ -1212,19 +1208,15 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return false;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public ResultSet getProcedureColumns(String catalog, String schemaPattern, String procedureNamePattern,
 			String columnNamePattern) throws SQLException {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public ResultSet getUDTs(String catalog, String schemaPattern, String typeNamePattern, int[] types)
 			throws SQLException {
 		return FireboltResultSet.empty();
