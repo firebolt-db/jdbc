@@ -637,7 +637,6 @@ public class FireboltConnection implements Connection {
 	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public void setClientInfo(String name, String value) throws SQLClientInfoException {
 		// Not supported yet
 	}
@@ -659,7 +658,7 @@ public class FireboltConnection implements Connection {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public Properties getClientInfo() throws SQLException {
-		return null;
+		return new Properties();
 	}
 
 	/**
@@ -667,9 +666,8 @@ public class FireboltConnection implements Connection {
 	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public void setClientInfo(Properties properties) throws SQLClientInfoException {
-		// Not supported yet
+		// Not supported
 	}
 
 	/**
