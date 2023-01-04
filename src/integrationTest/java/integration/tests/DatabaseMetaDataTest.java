@@ -122,7 +122,7 @@ class DatabaseMetaDataTest extends IntegrationTest {
 		assertThat(result.get(ORDINAL_POSITION), contains("1", "2", "3", "4", "5"));
 		assertThat(result.get(TYPE_NAME),
 				contains("BIGINT", "TIMESTAMP", "STRING", "BOOLEAN", "INTEGER"));
-		assertThat(result.get(DATA_TYPE), contains("-5", "93", "12", "-7", "4"));
+		assertThat(result.get(DATA_TYPE), contains("-5", "93", "12", "16", "4"));
 		assertThat(result.get(COLUMN_SIZE), contains("20", "19", "0", "1", "11"));
 	}
 
