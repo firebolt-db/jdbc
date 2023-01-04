@@ -601,12 +601,12 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldReturnTrueWhenBooleanFoundIsNull() throws SQLException {
+	void shouldReturnFalseWhenBooleanFoundIsNull() throws SQLException {
 		inputStream = getInputStreamWithBooleans();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
 		resultSet.next();
 		assertNull(resultSet.getObject("null_boolean"));
-		assertTrue(resultSet.getBoolean("null_boolean"));
+		assertFalse(resultSet.getBoolean("null_boolean"));
 	}
 
 	@Test

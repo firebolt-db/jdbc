@@ -1,7 +1,6 @@
 name: Run performance tests
 
 on:
-  push:
   workflow_dispatch:
     inputs:
       database:
