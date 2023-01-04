@@ -193,7 +193,7 @@ public class FireboltConnection implements Connection {
 	@Override
 	@NotImplemented
 	public void setCatalog(String catalog) throws SQLException {
-		// no-op
+		// no-op as catalogs are not supported
 	}
 
 	public String getEngine() throws SQLException {
@@ -405,7 +405,7 @@ public class FireboltConnection implements Connection {
 	@Override
 	@NotImplemented
 	public void commit() throws SQLException {
-		// no-op
+		// no-op as transactions are not supported
 	}
 
 	/**
@@ -414,7 +414,7 @@ public class FireboltConnection implements Connection {
 	@Override
 	@NotImplemented
 	public void rollback() throws SQLException {
-		// no-op
+		// no-op as transactions are not supported
 	}
 
 	@Override
@@ -508,7 +508,8 @@ public class FireboltConnection implements Connection {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public Map<String, Class<?>> getTypeMap() throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		// Since setTypeMap is currently not supported, an empty map is returned (refer to the doc for more info)
+		return new HashMap<>();
 	}
 
 	/**
@@ -521,12 +522,7 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
-	@Override
 	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public int getHoldability() throws SQLException {
 		return 0;
 	}
@@ -548,6 +544,7 @@ public class FireboltConnection implements Connection {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public Savepoint setSavepoint() throws SQLException {
+		// No support for transaction
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
@@ -558,6 +555,7 @@ public class FireboltConnection implements Connection {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public Savepoint setSavepoint(String name) throws SQLException {
+		// No support for transaction
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
@@ -568,6 +566,7 @@ public class FireboltConnection implements Connection {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public void rollback(Savepoint savepoint) throws SQLException {
+		// No support for transaction
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
@@ -599,7 +598,7 @@ public class FireboltConnection implements Connection {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public Clob createClob() throws SQLException {
-		return null;
+		throw new SQLFeatureNotSupportedException();
 	}
 
 	/**
@@ -609,7 +608,7 @@ public class FireboltConnection implements Connection {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public Blob createBlob() throws SQLException {
-		return null;
+		throw new SQLFeatureNotSupportedException();
 	}
 
 	/**
@@ -619,7 +618,7 @@ public class FireboltConnection implements Connection {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public NClob createNClob() throws SQLException {
-		return null;
+		throw new SQLFeatureNotSupportedException();
 	}
 
 	/**
@@ -629,7 +628,7 @@ public class FireboltConnection implements Connection {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public SQLXML createSQLXML() throws SQLException {
-		return null;
+		throw new SQLFeatureNotSupportedException();
 	}
 
 	/**
@@ -637,9 +636,8 @@ public class FireboltConnection implements Connection {
 	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public void setClientInfo(String name, String value) throws SQLClientInfoException {
-		// Not supported yet
+		// Not supported
 	}
 
 	/**
@@ -659,7 +657,7 @@ public class FireboltConnection implements Connection {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public Properties getClientInfo() throws SQLException {
-		return null;
+		return new Properties();
 	}
 
 	/**
@@ -667,9 +665,8 @@ public class FireboltConnection implements Connection {
 	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public void setClientInfo(Properties properties) throws SQLClientInfoException {
-		// Not supported yet
+		// Not supported
 	}
 
 	/**
@@ -689,6 +686,6 @@ public class FireboltConnection implements Connection {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public Struct createStruct(String typeName, Object[] attributes) throws SQLException {
-		return null;
+		throw new FireboltSQLFeatureNotSupportedException();
 	}
 }

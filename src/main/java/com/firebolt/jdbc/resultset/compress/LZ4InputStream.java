@@ -25,6 +25,7 @@ OF THE COMPANY YANDEX LLC.
  *  - Package name
  *  - Formatting
  *  - Import several readInt and readFully methods from ru.yandex.clickhouse.util.Utils class
+ *  - Return an empty array instead of null
  */
 package com.firebolt.jdbc.resultset.compress;
 
@@ -45,7 +46,7 @@ public class LZ4InputStream extends InputStream {
 	private final InputStream stream;
 	private final DataInputStream dataWrapper;
 
-	private byte[] currentBlock;
+	private byte[] currentBlock = new byte[0];
 	private int pointer;
 
 	public LZ4InputStream(InputStream stream) {
@@ -140,18 +141,18 @@ public class LZ4InputStream extends InputStream {
 	}
 
 	private boolean checkNext() throws IOException {
-		if (currentBlock == null || pointer == currentBlock.length) {
+		if (currentBlock.length == 0 || pointer == currentBlock.length) {
 			currentBlock = readNextBlock();
 			pointer = 0;
 		}
-		return currentBlock != null;
+		return currentBlock.length != 0;
 	}
 
 	// every block is:
 	public byte[] readNextBlock() throws IOException {
 		int read = stream.read();
 		if (read < 0)
-			return null;
+			return new byte[0];
 
 		byte[] checksum = new byte[16];
 		checksum[0] = (byte) read;
