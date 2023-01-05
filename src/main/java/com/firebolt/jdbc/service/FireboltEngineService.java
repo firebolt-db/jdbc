@@ -98,7 +98,7 @@ public class FireboltEngineService {
 		if (StringUtils.isNotEmpty(engine.getId()) && StringUtils.isNotEmpty(engine.getStatus())
 				&& ENGINE_NOT_READY_STATUSES.contains(engine.getStatus())) {
 			throw new FireboltException(String.format(
-					"The engine %s is currently starting and should be ready in a few minutes.", engine.getName()));
+					"The engine %s is currently starting. Please wait until the engine is on and then execute the query again.", engine.getName()));
 		}
 	}
 

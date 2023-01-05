@@ -187,7 +187,7 @@ class FireboltEngineServiceTest {
 						.build());
 		FireboltException exception = assertThrows(FireboltException.class,
 				() -> fireboltEngineService.getEngine(HOST, properties, ACCESS_TOKEN));
-		assertEquals("The engine engineName is currently starting and should be ready in a few minutes.",
+		assertEquals("The engine engineName is currently starting. Please wait until the engine is on and then execute the query again.",
 				exception.getMessage());
 
 		verify(fireboltAccountClient).getAccount(properties.getHost(), ACCOUNT_ID, ACCESS_TOKEN);
