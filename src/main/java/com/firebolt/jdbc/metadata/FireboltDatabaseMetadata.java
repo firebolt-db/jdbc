@@ -237,7 +237,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 				QueryResult.Column.builder().name(NUM_PREC_RADIX).type(INT_32).build());
 
 		List<List<?>> rows = new ArrayList<>();
-		List<FireboltDataType> usableTypes = Arrays.asList(INT_32, INT_64, FLOAT_32, FLOAT_64, STRING, DATE, DATE_32,
+		List<FireboltDataType> usableTypes = Arrays.asList(INT_32, INT_64, FLOAT_32, FLOAT_64, STRING, DATE, DATE_32, // TODO: Merge Date/Date 32 and get rude of DATE_TIME_64
 				DATE_TIME, DATE_TIME_64, DECIMAL, ARRAY, TUPLE, BYTEA, BOOLEAN);
 		usableTypes
 				.forEach(type -> rows.add(Arrays.asList(type.getDisplayName(), type.getSqlType(),

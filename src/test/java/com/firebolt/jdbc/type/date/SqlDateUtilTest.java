@@ -152,4 +152,29 @@ class SqlDateUtilTest {
 		assertEquals(ts, SqlDateUtil.transformToTimestampFunction.apply(timeWithMissingMinutes, null));
 	}
 
+	@Test
+	void shouldTransformTimestampTz() {
+		String timeWithTimezone = "2023-01-05 16:04:42.123456+00";
+		Timestamp expectedTimestamp = new Timestamp(
+				ZonedDateTime.of(2023, 01, 05, 16, 4, 42, 123456000, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+		expectedTimestamp.setNanos(123456000);
+		assertEquals(expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(timeWithTimezone, null));
+	}
+
+	@Test
+	void shouldTransformTimestampTzWithOtherTz() {
+		String timeWithTimezone = "2023-01-05 16:04:42.123456+10";
+		Timestamp expectedTimestamp = new Timestamp(
+				ZonedDateTime.of(2023, 1, 5, 6, 4, 42, 123456000, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+		expectedTimestamp.setNanos(123456000);
+		assertEquals(expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(timeWithTimezone, null));
+	}
+	@Test
+	void shouldTransformTimestampTzWithoutTz() {
+		String timeWithTimezone = "2023-01-05 17:04:42.123456";
+		Timestamp expectedTimestamp = new Timestamp(
+				ZonedDateTime.of(2023, 1, 5, 17, 4, 42, 123456000, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+		expectedTimestamp.setNanos(123456000);
+		assertEquals(expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(timeWithTimezone, null));
+	}
 }

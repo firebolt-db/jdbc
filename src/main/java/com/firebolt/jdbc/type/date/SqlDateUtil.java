@@ -11,6 +11,8 @@ import java.util.Optional;
 import java.util.TimeZone;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -27,7 +29,11 @@ public class SqlDateUtil {
 	public static final DateTimeFormatter dateTimeFormatter = new DateTimeFormatterBuilder()
 			.appendValue(ChronoField.YEAR, 4).parseDefaulting(ChronoField.YEAR, 0)
 			.appendPattern("[-]MM-dd [HH:mm[:ss]]").appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true)
+			.appendPattern("[X]")
 			.toFormatter();
+
+	private static final Pattern timezonePattern = Pattern.compile("([+-])([0-2]\\d$)");
+
 	public static final Function<Timestamp, String> transformFromTimestampToSQLStringFunction = value -> String
 			.format("'%s'", dateTimeFormatter.format(value.toLocalDateTime()));
 	private static final TimeZone DEFAULT_TZ = TimeZone.getDefault();
@@ -56,8 +62,12 @@ public class SqlDateUtil {
 		}
 		ZoneId zoneId = fromTimeZone == null ? DEFAULT_TZ.toZoneId() : fromTimeZone.toZoneId();
 		try {
-			return Optional.of(LocalDateTime.parse(value, dateTimeFormatter).atZone(zoneId)
-					.withZoneSameInstant(DEFAULT_TZ.toZoneId()));
+			if (timestampValueContainsTz(value)) {
+				return Optional.of(ZonedDateTime.parse(value, dateTimeFormatter).withZoneSameInstant(DEFAULT_TZ.toZoneId()));
+			} else {
+				return Optional.of(LocalDateTime.parse(value, dateTimeFormatter).atZone(zoneId)
+						.withZoneSameInstant(DEFAULT_TZ.toZoneId()));
+			}
 		} catch (DateTimeException dateTimeException) {
 			LocalDate date = LocalDate.from(dateFormatter.parse(value));
 			return Optional.of(LocalDateTime.of(date.getYear(), date.getMonth(), date.getDayOfMonth(), 0, 0)
@@ -93,4 +103,8 @@ public class SqlDateUtil {
 		}
 	}
 
+	private static boolean timestampValueContainsTz(String value) {
+		Matcher timezoneMatcher = timezonePattern.matcher(value);
+		return timezoneMatcher.find();
+	}
 }
