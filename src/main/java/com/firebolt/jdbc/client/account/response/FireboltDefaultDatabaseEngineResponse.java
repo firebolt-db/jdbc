@@ -7,7 +7,7 @@ import lombok.Value;
 
 @Value
 @Builder
-public class FireboltDatabaseResponse {
+public class FireboltDefaultDatabaseEngineResponse {
 	@JsonProperty("engine_url")
 	String engineUrl;
 }

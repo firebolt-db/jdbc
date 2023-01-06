@@ -37,9 +37,9 @@ class FireboltConnectionTest {
 	private static final String LOCAL_URL = "jdbc:firebolt://localhost:8123/local_dev_db?ssl=false&max_query_size=10000000&use_standard_sql=1&mask_internal_errors=0&firebolt_enable_beta_functions=1&firebolt_case_insensitive_identifiers=1&rest_api_pull_timeout_sec=3600&rest_api_pull_interval_millisec=5000&rest_api_retry_times=10";
 	private final FireboltConnectionTokens fireboltConnectionTokens = FireboltConnectionTokens.builder().build();
 	@Captor
-	ArgumentCaptor<FireboltProperties> propertiesArgumentCaptor;
+	private ArgumentCaptor<FireboltProperties> propertiesArgumentCaptor;
 	@Captor
-	ArgumentCaptor<StatementInfoWrapper> queryInfoWrapperArgumentCaptor;
+	private ArgumentCaptor<StatementInfoWrapper> queryInfoWrapperArgumentCaptor;
 	@Mock
 	private FireboltAuthenticationService fireboltAuthenticationService;
 	@Mock
@@ -56,6 +56,7 @@ class FireboltConnectionTest {
 		connectionProperties.put("compress", "1");
 		lenient().when(fireboltAuthenticationService.getConnectionTokens(eq("https://api.dev.firebolt.io:443"), any()))
 				.thenReturn(fireboltConnectionTokens);
+		lenient().when(fireboltEngineService.getEngine(any(), any(), any())).thenReturn(mock(Engine.class));
 	}
 
 	@Test
