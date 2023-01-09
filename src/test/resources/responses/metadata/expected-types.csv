@@ -6,9 +6,8 @@ FLOAT,6,8,\N,\N,\N,2,f,2,f,f,f,\N,\N,8,\N,\N,10
 DOUBLE,8,17,\N,\N,\N,2,f,2,f,f,f,\N,\N,17,\N,\N,10
 STRING,12,0,',',\N,2,t,3,f,f,f,\N,\N,0,\N,\N,10
 DATE,91,10,\N,\N,\N,2,f,2,f,f,f,\N,\N,0,\N,\N,10
-DATE_EXT,91,10,\N,\N,\N,2,f,2,f,f,f,\N,\N,0,\N,\N,10
-TIMESTAMP,93,19,\N,\N,\N,2,f,2,f,f,f,\N,\N,0,\N,\N,10
-TIMESTAMP_EXT,93,19,\N,\N,\N,2,f,2,f,f,f,\N,\N,0,\N,\N,10
+TIMESTAMP,93,26,\N,\N,\N,2,f,2,f,f,f,\N,\N,6,\N,\N,10
+TIMESTAMP_WITH_TIMEZONE,2014,32,\N,\N,\N,2,f,2,f,f,f,\N,\N,6,\N,\N,10
 DECIMAL,3,0,\N,\N,\N,2,f,2,f,f,f,\N,\N,0,\N,\N,10
 ARRAY,2003,0,\N,\N,\N,2,t,2,f,f,f,\N,\N,0,\N,\N,10
 TUPLE,1111,0,\N,\N,\N,2,t,2,f,f,f,\N,\N,0,\N,\N,10

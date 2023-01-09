@@ -20,6 +20,7 @@ import org.junitpioneer.jupiter.DefaultTimeZone;
 class SqlDateUtilTest {
 
 	private static final TimeZone UTC_TZ = TimeZone.getTimeZone("UTC");
+	private static final TimeZone EST_TZ = TimeZone.getTimeZone("EST");
 
 	@Test
 	void shouldTransformTimestampWithDefaultTzWhenTimeZoneIsNotSpecified() {
@@ -74,17 +75,17 @@ class SqlDateUtilTest {
 
 	@Test
 	void shouldTransformTime() {
-		ZonedDateTime zdt = ZonedDateTime.of(2022, 5, 23, 12, 1, 13, 0, UTC_TZ.toZoneId());
-		String time = "2022-05-23 12:01:13";
+		String time = "2022-05-23 23:01:13";
+		ZonedDateTime zdt = ZonedDateTime.of(1970, 1, 2, 4, 1, 13, 0, UTC_TZ.toZoneId());
 		Time expectedTime = new Time(zdt.toInstant().toEpochMilli());
 
-		assertEquals(expectedTime, SqlDateUtil.transformToTimeFunction.apply(time, UTC_TZ));
+		assertEquals(expectedTime, SqlDateUtil.transformToTimeFunction.apply(time, EST_TZ));
 	}
 
 	@Test
 	void shouldTransformTimeWithUTCWhenTimeZoneIsNotSpecified() {
 		String time = "2022-08-23 12:01:13";
-		ZonedDateTime zdt = ZonedDateTime.of(2022, 8, 23, 12, 1, 13, 0, UTC_TZ.toZoneId());
+		ZonedDateTime zdt = ZonedDateTime.of(1970, 1, 1, 12, 1, 13, 0, UTC_TZ.toZoneId());
 		Time expectedTime = new Time(zdt.toInstant().toEpochMilli());
 		assertEquals(expectedTime, SqlDateUtil.transformToTimeFunction.apply(time, null));
 	}
@@ -92,7 +93,7 @@ class SqlDateUtilTest {
 	@Test
 	void shouldTransformTimeWithoutSeconds() {
 		String timeWithoutSeconds = "2022-05-23 12:01";
-		ZonedDateTime zdt = ZonedDateTime.of(2022, 5, 23, 12, 1, 0, 0, UTC_TZ.toZoneId());
+		ZonedDateTime zdt = ZonedDateTime.of(1970, 1, 1, 12, 1, 0, 0, UTC_TZ.toZoneId());
 		Time expectedTime = new Time(zdt.toInstant().toEpochMilli());
 		assertEquals(expectedTime, SqlDateUtil.transformToTimeFunction.apply(timeWithoutSeconds, null));
 	}
@@ -176,5 +177,47 @@ class SqlDateUtilTest {
 				ZonedDateTime.of(2023, 1, 5, 17, 4, 42, 123456000, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
 		expectedTimestamp.setNanos(123456000);
 		assertEquals(expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(timeWithTimezone, null));
+	}
+
+	@Test
+	void shouldTransformTimestamptzToDate() {
+		String date = "2022-05-10 21:01:02-05";
+		ZonedDateTime zonedDateTime = ZonedDateTime.of(2022, 5, 11, 0, 0, 0, 0, UTC_TZ.toZoneId());
+		assertEquals(new Date(zonedDateTime.toInstant().toEpochMilli()),
+				SqlDateUtil.transformToDateFunction.apply(date, null));
+	}
+	@Test
+	void shouldTransformTimestampntzToDate() {
+		String date = "2022-05-10 21:01:02";
+		ZonedDateTime zonedDateTime = ZonedDateTime.of(2022, 5, 10, 0, 0, 0, 0, UTC_TZ.toZoneId());
+		assertEquals(new Date(zonedDateTime.toInstant().toEpochMilli()),
+				SqlDateUtil.transformToDateFunction.apply(date, null));
+	}
+
+	@Test
+	void shouldTransformTimestamptzToTimestamp() {
+		String date = "2022-05-10 21:01:02-05";
+		Timestamp expectedTimestamp = new Timestamp(
+				ZonedDateTime.of(2022, 5, 11, 2, 1, 2, 123456000, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+		expectedTimestamp.setNanos(123);
+		assertEquals(new Timestamp(expectedTimestamp.toInstant().toEpochMilli()),
+				SqlDateUtil.transformToTimestampFunction.apply(date, null));
+		//The tz remains the same when the tz info is already is part of the response
+		assertEquals(new Timestamp(expectedTimestamp.toInstant().toEpochMilli()),
+				SqlDateUtil.transformToTimestampFunction.apply(date, EST_TZ));
+	}
+
+	@Test
+	void shouldTransformTimestampntzToTimestamp() {
+		String date = "2022-05-10 23:01:02.0";
+		Timestamp expectedTimestamp = new Timestamp(
+				ZonedDateTime.of(2022, 5, 10, 23, 1, 2, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+		assertEquals(new Timestamp(expectedTimestamp.toInstant().toEpochMilli()),
+				SqlDateUtil.transformToTimestampFunction.apply(date, null));
+
+		Timestamp expectedTimestampWithDifferentTz = new Timestamp(
+				ZonedDateTime.of(2022, 5, 11, 4, 1, 2, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+		assertEquals(new Timestamp(expectedTimestampWithDifferentTz.toInstant().toEpochMilli()),
+				SqlDateUtil.transformToTimestampFunction.apply(date, EST_TZ));
 	}
 }

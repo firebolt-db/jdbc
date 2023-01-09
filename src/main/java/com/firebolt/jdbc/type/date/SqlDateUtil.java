@@ -7,6 +7,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.function.BiFunction;
@@ -25,12 +26,15 @@ import lombok.experimental.UtilityClass;
 @CustomLog
 public class SqlDateUtil {
 
+	private enum dateTimeType {
+		TIME, DATE, TIMESTAMP
+	}
+
 	public static final long ONE_DAY_MILLIS = 86400000L;
 	public static final DateTimeFormatter dateTimeFormatter = new DateTimeFormatterBuilder()
 			.appendValue(ChronoField.YEAR, 4).parseDefaulting(ChronoField.YEAR, 0)
 			.appendPattern("[-]MM-dd [HH:mm[:ss]]").appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true)
-			.appendPattern("[X]")
-			.toFormatter();
+			.appendPattern("[X]").toFormatter();
 
 	private static final Pattern timezonePattern = Pattern.compile("([+-])([0-2]\\d$)");
 
@@ -46,33 +50,64 @@ public class SqlDateUtil {
 	public static final Function<Date, String> transformFromDateToSQLStringFunction = value -> String.format("'%s'",
 			dateFormatter.format(value.toLocalDate()));
 	public static final BiFunction<String, TimeZone, Timestamp> transformToTimestampFunction = (value,
-			fromTimeZone) -> parse(value, fromTimeZone).map(t -> {
+			fromTimeZone) -> parse(value, fromTimeZone, dateTimeType.TIMESTAMP).map(t -> {
 				Timestamp ts = new Timestamp(getEpochMilli(t));
 				ts.setNanos(t.getNano());
 				return ts;
 			}).orElse(null);
 	public static final BiFunction<String, TimeZone, Date> transformToDateFunction = (value,
-			fromTimeZone) -> parse(value, fromTimeZone).map(t -> new Date(getEpochMilli(t))).orElse(null);
+			fromTimeZone) -> parse(value, fromTimeZone, dateTimeType.DATE).map(t -> new Date(getEpochMilli(t)))
+					.orElse(null);
 	public static final BiFunction<String, TimeZone, Time> transformToTimeFunction = (value,
-			fromTimeZone) -> parse(value, fromTimeZone).map(t -> new Time(getEpochMilli(t))).orElse(null);
+			fromTimeZone) -> parse(value, fromTimeZone, dateTimeType.TIME).map(t -> new Time(getEpochMilli(t)))
+					.orElse(null);
 
-	private static Optional<ZonedDateTime> parse(String value, @Nullable TimeZone fromTimeZone) {
+	private static Optional<ZonedDateTime> parse(String value, @Nullable TimeZone fromTimeZone,
+			dateTimeType dateTimeType) {
 		if (StringUtils.isEmpty(value)) {
 			return Optional.empty();
 		}
 		ZoneId zoneId = fromTimeZone == null ? DEFAULT_TZ.toZoneId() : fromTimeZone.toZoneId();
 		try {
-			if (timestampValueContainsTz(value)) {
-				return Optional.of(ZonedDateTime.parse(value, dateTimeFormatter).withZoneSameInstant(DEFAULT_TZ.toZoneId()));
+			ZonedDateTime zdt;
+			boolean timestampContainsTz = timestampValueContainsTz(value);
+			if (timestampContainsTz) {
+				zdt = ZonedDateTime.parse(value, dateTimeFormatter);
 			} else {
-				return Optional.of(LocalDateTime.parse(value, dateTimeFormatter).atZone(zoneId)
-						.withZoneSameInstant(DEFAULT_TZ.toZoneId()));
+				zdt = LocalDateTime.parse(value, dateTimeFormatter).atZone(zoneId);
 			}
+			if (dateTimeType == SqlDateUtil.dateTimeType.DATE) {
+				zdt = truncateToDate(fromTimeZone, zdt);
+			} else if (dateTimeType == SqlDateUtil.dateTimeType.TIME) {
+				zdt = truncateToTime(timestampContainsTz, fromTimeZone, zdt);
+			}
+			return Optional.of(zdt.withZoneSameInstant(DEFAULT_TZ.toZoneId()));
 		} catch (DateTimeException dateTimeException) {
 			LocalDate date = LocalDate.from(dateFormatter.parse(value));
 			return Optional.of(LocalDateTime.of(date.getYear(), date.getMonth(), date.getDayOfMonth(), 0, 0)
 					.atZone(zoneId).withZoneSameInstant(DEFAULT_TZ.toZoneId()));
 		}
+	}
+
+	private static ZonedDateTime truncateToTime(boolean timestampContainsTz, TimeZone fromTimeZone, ZonedDateTime zdt) {
+		zdt = zdt.withDayOfMonth(1).withYear(1970).withMonth(1);
+		// We only convert based on the provided tz if the value is not stored in the db
+		if (fromTimeZone != null && !timestampContainsTz) {
+			zdt = zdt.withZoneSameLocal(fromTimeZone.toZoneId());
+		} else {
+			zdt = zdt.withZoneSameInstant(DEFAULT_TZ.toZoneId());
+		}
+		return zdt;
+	}
+
+	private static ZonedDateTime truncateToDate(TimeZone fromTimeZone, ZonedDateTime zdt) {
+		if (fromTimeZone != null) {
+			zdt = zdt.withZoneSameLocal(fromTimeZone.toZoneId());
+		} else {
+			zdt = zdt.withZoneSameInstant(DEFAULT_TZ.toZoneId());
+		}
+		zdt = zdt.truncatedTo(ChronoUnit.DAYS);
+		return zdt;
 	}
 
 	private static long getEpochMilli(ZonedDateTime t) {

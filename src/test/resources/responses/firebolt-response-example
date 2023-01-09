@@ -1,4 +1,4 @@
-id	arr	name	a_timestamp	a_date	is_online	a_double	an_integer	a_timestamp_with_tz
-Int64	Array(Array(Array(String)))	Nullable(String)	DateTime(6)	Date	Boolean	Float32	Int64	DateTime64(4, \'EST\')
-1	[[['1','2'],['3','4']]]	Taylor\'s Prime Steak House	2022-05-10 13:01:02.0	2022-05-10	1	14.6	5	2022-05-10 13:01:02.0
-2	[[['1','2'],['3','4']],[['5','6'],['7','8',NULL]]]	\N	2022-05-10 23:01:02.0	2022-05-10	0	\N	\N	2022-05-10 23:01:02.0
+id	arr	name	a_date	is_online	a_double	an_integer
+Int64	Array(Array(Array(String)))	Nullable(String)	Date	Boolean	Float32	Int64
+1	[[['1','2'],['3','4']]]	Taylor\'s Prime Steak House	2022-05-10	1	14.6	5
+2	[[['1','2'],['3','4']],[['5','6'],['7','8',NULL]]]	\N	2022-05-10	0	\N	\N
