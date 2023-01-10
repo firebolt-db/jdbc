@@ -83,9 +83,14 @@ public class SqlDateUtil {
 			}
 			return Optional.of(zdt.withZoneSameInstant(DEFAULT_TZ.toZoneId()));
 		} catch (DateTimeException dateTimeException) {
+			LocalDateTime localDateTime;
 			LocalDate date = LocalDate.from(dateFormatter.parse(value));
-			return Optional.of(LocalDateTime.of(date.getYear(), date.getMonth(), date.getDayOfMonth(), 0, 0)
-					.atZone(zoneId).withZoneSameInstant(DEFAULT_TZ.toZoneId()));
+			if (dateTimeType == SqlDateUtil.dateTimeType.TIME) {
+				localDateTime = LocalDateTime.of(1970, 1, 1, 0, 0);
+			} else {
+				localDateTime = LocalDateTime.of(date.getYear(), date.getMonth(), date.getDayOfMonth(), 0, 0);
+			}
+			return Optional.of(localDateTime.atZone(zoneId).withZoneSameInstant(DEFAULT_TZ.toZoneId()));
 		}
 	}
 
