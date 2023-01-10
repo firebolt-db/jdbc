@@ -106,13 +106,8 @@ public class SqlDateUtil {
 	}
 
 	private static ZonedDateTime truncateToDate(TimeZone fromTimeZone, ZonedDateTime zdt) {
-		if (fromTimeZone != null) {
-			zdt = zdt.withZoneSameLocal(fromTimeZone.toZoneId());
-		} else {
-			zdt = zdt.withZoneSameInstant(DEFAULT_TZ.toZoneId());
-		}
-		zdt = zdt.truncatedTo(ChronoUnit.DAYS);
-		return zdt;
+		ZoneId zoneId = fromTimeZone != null ? fromTimeZone.toZoneId() : DEFAULT_TZ.toZoneId();
+		return zdt.withZoneSameInstant(zoneId).truncatedTo(ChronoUnit.DAYS);
 	}
 
 	private static long getEpochMilli(ZonedDateTime t) {

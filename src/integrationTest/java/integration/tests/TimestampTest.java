@@ -47,13 +47,16 @@ class TimestampTest extends IntegrationTest {
 						.executeQuery("SELECT TO_TIMESTAMP_EXT('1975/01/01 23:01:01', 6, 'EST');")) {
 			resultSet.next();
 
-			ZonedDateTime zonedDateTime = ZonedDateTime.of(1975, 1, 2, 0, 0, 0, 0,
+			ZonedDateTime zonedDateTime = ZonedDateTime.of(1975, 1, 2, 4, 1, 1, 0,
 					TimeZone.getTimeZone("UTC").toZoneId());
-			ZonedDateTime expectedTimeZdt = ZonedDateTime.of(1970, 1, 1, 4, 1, 1, 0,
+			ZonedDateTime expectedTimeZdt = ZonedDateTime.of(1970, 1, 2, 4, 1, 1, 0,
+					TimeZone.getTimeZone("UTC").toZoneId());
+
+			ZonedDateTime expectedDateZdt = ZonedDateTime.of(1975, 1, 1, 5, 0, 0, 0,
 					TimeZone.getTimeZone("UTC").toZoneId());
 
 			Time expectedTime = new Time(expectedTimeZdt.toInstant().toEpochMilli());
-			Date expectedDate = new Date(zonedDateTime.toInstant().toEpochMilli());
+			Date expectedDate = new Date(expectedDateZdt.toInstant().toEpochMilli());
 
 			Timestamp expectedTimestamp = new Timestamp(zonedDateTime.toInstant().toEpochMilli());
 			assertEquals(expectedTimestamp, resultSet.getTimestamp(1));
@@ -73,7 +76,7 @@ class TimestampTest extends IntegrationTest {
 					TimeZone.getTimeZone("UTC").toZoneId());
 			ZonedDateTime expectedTimeZoneDateTime = ZonedDateTime.of(1970, 1, 1, 23, 1, 1, 0,
 					TimeZone.getTimeZone("UTC").toZoneId());
-			
+
 			Timestamp expectedTimestamp = new Timestamp(zonedDateTime.toInstant().toEpochMilli());
 			Time expectedTime = new Time(expectedTimeZoneDateTime.toInstant().toEpochMilli());
 			Date expectedDate = new Date(zonedDateTime.truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli());
@@ -95,13 +98,14 @@ class TimestampTest extends IntegrationTest {
 			ZonedDateTime expectedTimestampZdt = ZonedDateTime.of(1111, 11, 11, 12, 0, 3, 0,
 					TimeZone.getTimeZone("UTC").toZoneId());
 
-
 			ZonedDateTime expectedTimeZdt = ZonedDateTime.of(1970, 1, 1, 12, 0, 3, 0,
 					TimeZone.getTimeZone("UTC").toZoneId());
 			Time expectedTime = new Time(expectedTimeZdt.toInstant().toEpochMilli());
-			Date expectedDate = new Date(expectedTimestampZdt.truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli() + 7 * ONE_DAY_MILLIS);
+			Date expectedDate = new Date(
+					expectedTimestampZdt.truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli() + 7 * ONE_DAY_MILLIS);
 
-			Timestamp expectedTimestamp = new Timestamp(expectedTimestampZdt.toInstant().toEpochMilli() + 7 * ONE_DAY_MILLIS);
+			Timestamp expectedTimestamp = new Timestamp(
+					expectedTimestampZdt.toInstant().toEpochMilli() + 7 * ONE_DAY_MILLIS);
 			assertEquals(expectedTimestamp, resultSet.getTimestamp(1));
 			assertEquals(expectedTimestamp, resultSet.getObject(1));
 			assertEquals(expectedTime, resultSet.getTime(1));
@@ -118,7 +122,7 @@ class TimestampTest extends IntegrationTest {
 			resultSet.next();
 			ZonedDateTime expectedZdt = ZonedDateTime.of(2022, 5, 10, 23, 1, 2, 123, UTC_TZ.toZoneId());
 			Date expectedDate = new Date(expectedZdt.truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli());
-			Time expectedTime = new Time(82862123);
+			Time expectedTime = new Time(82862123); // 1970-01-01T23:01:02.123Z
 
 			Timestamp expectedTimestamp = new Timestamp(expectedZdt.toInstant().toEpochMilli());
 			expectedTimestamp.setNanos(123000000);
@@ -135,18 +139,19 @@ class TimestampTest extends IntegrationTest {
 	@Test
 	void shouldReturnTimestampFromTimestamptz() throws SQLException {
 		try (Connection connection = this.createConnection();
-		Statement statement = connection.createStatement();
-		Statement statementWithTzInQuery = connection.createStatement();
-		ResultSet resultSetWithTzInQuery = statementWithTzInQuery.executeQuery("SELECT '2022-05-10 23:01:02.123 Europe/Berlin'::timestamptz;"))
-		{
-			//Same as: SELECT '2022-05-10 23:01:02.123 Europe/Berlin'::timestamptz;
-			statement.execute("SET advanced_mode=1;SET time_zone = 'Europe/Berlin';");
-			ResultSet resultSetWithTzAsQueryParam = statement.executeQuery("SELECT '2022-05-10 23:01:02.123'::timestamptz;");
+				Statement statement = connection.createStatement();
+				Statement statementWithTzInQuery = connection.createStatement();
+				ResultSet resultSetWithTzInQuery = statementWithTzInQuery
+						.executeQuery("SELECT '1975-05-10 23:01:02.123 EST'::timestamptz;")) {
+			// Same as: SELECT '1975-05-10 23:01:02.123 Europe/Berlin'::timestamptz;
+			statement.execute("SET advanced_mode=1;SET time_zone = 'EST';");
+			ResultSet resultSetWithTzAsQueryParam = statement
+					.executeQuery("SELECT '1975-05-10 23:01:02.123'::timestamptz;");
 			resultSetWithTzInQuery.next();
 			resultSetWithTzAsQueryParam.next();
-			ZonedDateTime expectedZdt = ZonedDateTime.of(2022, 5, 10, 21, 1, 2, 123, UTC_TZ.toZoneId());
+			ZonedDateTime expectedZdt = ZonedDateTime.of(1975, 5, 11, 4, 1, 2, 123, UTC_TZ.toZoneId());
 			Date expectedDate = new Date(expectedZdt.truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli());
-			Time expectedTime = new Time(75662123); // milliseconds at 1970-01-01T21:01:02.123Z since January 1, 1970,
+			Time expectedTime = new Time(14462123); // milliseconds at 1970-01-01T04:01:02.123Z since January 1, 1970,
 													// 00:00:00 GMT
 
 			Timestamp expectedTimestamp = new Timestamp(expectedZdt.toInstant().toEpochMilli());
@@ -158,9 +163,11 @@ class TimestampTest extends IntegrationTest {
 			assertEquals(expectedTime, resultSetWithTzInQuery.getTime(1));
 			assertEquals(expectedDate, resultSetWithTzInQuery.getDate(1));
 			assertEquals(expectedTimestamp, resultSetWithTzInQuery.getTimestamp(1));
-			compareAllDateTimeResultSetValuesWithPostgres(resultSetWithTzInQuery, "SELECT '2022-05-10 23:01:02.123 Europe/Berlin'::timestamptz;");
+			compareAllDateTimeResultSetValuesWithPostgres(resultSetWithTzInQuery,
+					"SELECT '1975-05-10 23:01:02.123 EST'::timestamptz;");
 
-			//verifies that setting the timezone as a query param or directly within the SELECT statement gives the same result
+			// verifies that setting the timezone as a query param or directly within the
+			// SELECT statement gives the same result
 			AssertionUtil.assertResultSetValuesEquality(resultSetWithTzAsQueryParam, resultSetWithTzInQuery);
 			resultSetWithTzAsQueryParam.close();
 		}
@@ -168,8 +175,7 @@ class TimestampTest extends IntegrationTest {
 
 	@Test
 	void shouldReturnTimestampFromDate() throws SQLException {
-		try (Connection connection = this.createConnection();
-				Statement statement = connection.createStatement()) {
+		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
 			statement.execute("SET advanced_mode=1; SET time_zone='Europe/Berlin';");
 			ResultSet resultSet = statement.executeQuery("SELECT '2022-05-10'::pgdate;");
 			resultSet.next();
