@@ -47,13 +47,15 @@ class TimestampTest extends IntegrationTest {
 						.executeQuery("SELECT TO_TIMESTAMP_EXT('1975/01/01 23:01:01', 6, 'EST');")) {
 			resultSet.next();
 
-			ZonedDateTime zonedDateTime = ZonedDateTime.of(1975, 1, 2, 4, 1, 1, 0,
+			ZonedDateTime zonedDateTime = ZonedDateTime.of(1975, 1, 2, 0, 0, 0, 0,
+					TimeZone.getTimeZone("UTC").toZoneId());
+			ZonedDateTime expectedTimeZdt = ZonedDateTime.of(1970, 1, 1, 4, 1, 1, 0,
 					TimeZone.getTimeZone("UTC").toZoneId());
 
-			Timestamp expectedTimestamp = new Timestamp(zonedDateTime.toInstant().toEpochMilli());
-			Time expectedTime = new Time(zonedDateTime.toInstant().toEpochMilli());
+			Time expectedTime = new Time(expectedTimeZdt.toInstant().toEpochMilli());
 			Date expectedDate = new Date(zonedDateTime.toInstant().toEpochMilli());
 
+			Timestamp expectedTimestamp = new Timestamp(zonedDateTime.toInstant().toEpochMilli());
 			assertEquals(expectedTimestamp, resultSet.getTimestamp(1));
 			assertEquals(expectedTimestamp, resultSet.getObject(1));
 			assertEquals(expectedTime, resultSet.getTime(1));
@@ -69,10 +71,12 @@ class TimestampTest extends IntegrationTest {
 			resultSet.next();
 			ZonedDateTime zonedDateTime = ZonedDateTime.of(1975, 1, 1, 23, 1, 1, 0,
 					TimeZone.getTimeZone("UTC").toZoneId());
-
+			ZonedDateTime expectedTimeZoneDateTime = ZonedDateTime.of(1970, 1, 1, 23, 1, 1, 0,
+					TimeZone.getTimeZone("UTC").toZoneId());
+			
 			Timestamp expectedTimestamp = new Timestamp(zonedDateTime.toInstant().toEpochMilli());
-			Time expectedTime = new Time(zonedDateTime.toInstant().toEpochMilli());
-			Date expectedDate = new Date(zonedDateTime.toInstant().toEpochMilli());
+			Time expectedTime = new Time(expectedTimeZoneDateTime.toInstant().toEpochMilli());
+			Date expectedDate = new Date(zonedDateTime.truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli());
 
 			assertEquals(expectedTimestamp, resultSet.getTimestamp(1));
 			assertEquals(expectedTimestamp, resultSet.getObject(1));
@@ -88,13 +92,16 @@ class TimestampTest extends IntegrationTest {
 				ResultSet resultSet = statement
 						.executeQuery("SELECT CAST('1111-11-11 ' || '12:00:03' AS timestamp_ext);")) {
 			resultSet.next();
-			ZonedDateTime zonedDateTime = ZonedDateTime.of(1111, 11, 11, 12, 0, 3, 0,
+			ZonedDateTime expectedTimestampZdt = ZonedDateTime.of(1111, 11, 11, 12, 0, 3, 0,
 					TimeZone.getTimeZone("UTC").toZoneId());
 
-			Timestamp expectedTimestamp = new Timestamp(zonedDateTime.toInstant().toEpochMilli() + 7 * ONE_DAY_MILLIS);
-			Time expectedTime = new Time(zonedDateTime.toInstant().toEpochMilli() + 7 * ONE_DAY_MILLIS);
-			Date expectedDate = new Date(zonedDateTime.toInstant().toEpochMilli() + 7 * ONE_DAY_MILLIS);
 
+			ZonedDateTime expectedTimeZdt = ZonedDateTime.of(1970, 1, 1, 12, 0, 3, 0,
+					TimeZone.getTimeZone("UTC").toZoneId());
+			Time expectedTime = new Time(expectedTimeZdt.toInstant().toEpochMilli());
+			Date expectedDate = new Date(expectedTimestampZdt.truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli() + 7 * ONE_DAY_MILLIS);
+
+			Timestamp expectedTimestamp = new Timestamp(expectedTimestampZdt.toInstant().toEpochMilli() + 7 * ONE_DAY_MILLIS);
 			assertEquals(expectedTimestamp, resultSet.getTimestamp(1));
 			assertEquals(expectedTimestamp, resultSet.getObject(1));
 			assertEquals(expectedTime, resultSet.getTime(1));
