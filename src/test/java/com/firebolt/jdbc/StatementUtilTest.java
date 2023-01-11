@@ -48,7 +48,13 @@ class StatementUtilTest {
 	@Test
 	void shouldExtractAdditionalWithEmptyProperties() {
 		String query = "set my_custom_char=' '";
-		assertEquals(Optional.of(new ImmutablePair<>("my_custom_char", "' '")),
+		assertEquals(Optional.of(new ImmutablePair<>("my_custom_char", " ")),
+				StatementUtil.extractParamFromSetStatement(query, null));
+	}
+	@Test
+	void shouldExtractTimezone() {
+		String query = "set time_zone='Europe/Berlin';";
+		assertEquals(Optional.of(new ImmutablePair<>("time_zone", "Europe/Berlin")),
 				StatementUtil.extractParamFromSetStatement(query, null));
 	}
 

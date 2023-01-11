@@ -237,30 +237,33 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 				QueryResult.Column.builder().name(NUM_PREC_RADIX).type(INT_32).build());
 
 		List<List<?>> rows = new ArrayList<>();
-		List<FireboltDataType> usableTypes = Arrays.asList(INT_32, INT_64, FLOAT_32, FLOAT_64, STRING, DATE, DATE_32,
-				DATE_TIME, DATE_TIME_64, DECIMAL, ARRAY, TUPLE, BYTEA, BOOLEAN);
+		List<FireboltDataType> usableTypes = Arrays.asList(INT_32, INT_64, FLOAT_32, FLOAT_64, STRING, DATE,
+				TIMESTAMP, FireboltDataType.TIMESTAMP_WITH_TIMEZONE, DECIMAL, ARRAY, TUPLE, BYTEA, BOOLEAN);
 		usableTypes
-				.forEach(type -> rows.add(Arrays.asList(type.getDisplayName(), type.getSqlType(),
-						type.getDefaultPrecision(), type.getSqlType() == VARCHAR ? "'" : null, // LITERAL_PREFIX - ' for
-																								// VARCHAR
-						type.getSqlType() == VARCHAR ? "'" : null, // LITERAL_SUFFIX - ' for VARCHAR
-						null, // Description of the creation parameters - can be null (can set if needed
-								// in the future)
-						typeNullableUnknown, // It depends - A type can be nullable or not depending on
-						// the presence of the additional keyword Nullable()
-						type.isCaseSensitive(), type.getSqlType() == VARCHAR ? typeSearchable
-								: typePredBasic, /*
-													 * SEARCHABLE - LIKE can only be used for VARCHAR
-													 */
-						false, false, // FIXED_PREC_SCALE - indicates if the type can be a money value.
-													// Always
-													// false as we do not have a money type
-						false, // AUTO_INCREMENT
-						null, // LOCAL_TYPE_NAME
-						null, // MINIMUM_SCALE - There is no minimum scale
-						type.getDefaultScale(), null, // SQL_DATA_TYPE - Not needed - reserved for future use
-						null, // SQL_DATETIME_SUB - Not needed - reserved for future use
-						COMMON_RADIX)));
+				.forEach(
+						type -> rows.add(Arrays.asList(type.getDisplayName(), type.getSqlType(),
+								type.getDefaultPrecision(), type.getSqlType() == VARCHAR ? "'" : null, // LITERAL_PREFIX
+																										// - ' for
+																										// VARCHAR
+								type.getSqlType() == VARCHAR ? "'" : null, // LITERAL_SUFFIX - ' for VARCHAR
+								null, // Description of the creation parameters - can be null (can set if needed
+										// in the future)
+								typeNullableUnknown, // It depends - A type can be nullable or not depending on
+								// the presence of the additional keyword Nullable()
+								type.isCaseSensitive(), type.getSqlType() == VARCHAR ? typeSearchable
+										: typePredBasic, /*
+															 * SEARCHABLE - LIKE can only be used for VARCHAR
+															 */
+								false, false, // FIXED_PREC_SCALE - indicates if the type can be a money value.
+												// Always
+												// false as we do not have a money type
+								false, // AUTO_INCREMENT
+								null, // LOCAL_TYPE_NAME
+								null, // MINIMUM_SCALE - There is no minimum scale
+								type.getDefaultScale(), // MAXIMUM_SCALE
+								null, // SQL_DATA_TYPE - Not needed - reserved for future use
+								null, // SQL_DATETIME_SUB - Not needed - reserved for future use
+								COMMON_RADIX)));
 
 		return FireboltResultSet.of(QueryResult.builder().columns(columns).rows(rows).build());
 	}

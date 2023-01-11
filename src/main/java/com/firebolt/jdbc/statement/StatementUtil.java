@@ -295,7 +295,12 @@ public class StatementUtil {
 		String setQuery = RegExUtils.removeFirst(cleanStatement, SET_WITH_SPACE_REGEX);
 		String[] values = StringUtils.split(setQuery, "=");
 		if (values.length == 2) {
-			return Optional.of(Pair.of(values[0].trim(), StringUtils.removeEnd(values[1], ";").trim()));
+			String value = StringUtils.removeEnd(values[1], ";").trim();
+			if (StringUtils.isNumeric(value)){
+				return Optional.of(Pair.of(values[0].trim(), value.trim()));
+			} else {
+				return Optional.of(Pair.of(values[0].trim(), StringUtils.removeEnd(StringUtils.removeStart(value, "'"), "'")));
+			}
 		} else {
 			throw new IllegalArgumentException(
 					"Cannot parse the additional properties provided in the statement: " + sql);

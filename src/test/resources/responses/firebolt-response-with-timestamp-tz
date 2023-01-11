@@ -1,0 +1,3 @@
+CAST(\'2023-01-05 17:04:42.123456 Europe/Berlin\' AS timestamptz)
+TimestampTz
+2023-01-05 16:04:42.123456+00

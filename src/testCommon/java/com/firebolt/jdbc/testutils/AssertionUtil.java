@@ -10,8 +10,7 @@ public class AssertionUtil {
 	private AssertionUtil() {
 	}
 
-	public static void assertResultSetEquality(ResultSet expected, ResultSet actual) throws SQLException {
-		assertEquals(expected.getMetaData(), actual.getMetaData());
+	public static void assertResultSetValuesEquality(ResultSet expected, ResultSet actual) throws SQLException {
 		while (expected.next()) {
 			assertTrue(actual.next(), "The actual resultSet has less rows than expected");
 			for (int i = 0; i < expected.getMetaData().getColumnCount(); i++) {
@@ -19,5 +18,10 @@ public class AssertionUtil {
 			}
 		}
 		assertFalse(actual.next());
+	}
+
+	public static void assertResultSetEquality(ResultSet expected, ResultSet actual) throws SQLException {
+		assertEquals(expected.getMetaData(), actual.getMetaData());
+		assertResultSetValuesEquality(expected, actual);
 	}
 }

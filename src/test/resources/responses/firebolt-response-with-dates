@@ -1,0 +1,4 @@
+a_datetime64_with_tz	a_datetime	timestamptz	timestampntz
+DateTime64(4, \'EST\')	DateTime(6)	timestamptz	timestampntz
+2022-05-10 13:01:02.0	2022-05-10 13:01:02.0	2022-05-11 06:01:02+00	2022-05-10 23:01:02.0
+2022-05-10 23:01:02.0	2022-05-10 23:01:02.0	\N	\N
