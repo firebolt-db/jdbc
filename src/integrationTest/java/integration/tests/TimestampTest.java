@@ -201,7 +201,7 @@ class TimestampTest extends IntegrationTest {
 			assertEquals(expectedDate, resultSet.getDate(1));
 			assertEquals(expectedTimestamp, resultSet.getTimestamp(1));
 
-			compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '2022-05-10'::date;");
+			compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '2022-05-10'::date;", "Europe/Berlin");
 
 		}
 	}
