@@ -187,7 +187,7 @@ class TimestampTest extends IntegrationTest {
 	@Test
 	void shouldReturnTimestampFromDate() throws SQLException {
 		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
-			statement.execute("SET advanced_mode=1; SET time_zone='UTC';");
+			statement.execute("SET advanced_mode=1; SET time_zone='Europe/Berlin';");
 			ResultSet resultSet = statement.executeQuery("SELECT '2022-05-10'::pgdate;");
 			resultSet.next();
 			ZonedDateTime expectedZdt = ZonedDateTime.of(2022, 5, 10, 0, 0, 0, 0, UTC_TZ.toZoneId());
