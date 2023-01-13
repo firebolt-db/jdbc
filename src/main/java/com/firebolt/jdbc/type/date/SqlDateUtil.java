@@ -34,9 +34,10 @@ public class SqlDateUtil {
 	public static final DateTimeFormatter dateTimeFormatter = new DateTimeFormatterBuilder()
 			.appendValue(ChronoField.YEAR, 4).parseDefaulting(ChronoField.YEAR, 0)
 			.appendPattern("[-]MM-dd [HH:mm[:ss]]").appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true)
+			.appendPattern("[XXX]")
 			.appendPattern("[X]").toFormatter();
 
-	private static final Pattern timezonePattern = Pattern.compile("([+-])([0-2]\\d$)");
+	private static final Pattern timezonePattern = Pattern.compile("([+-])([0-2]\\d$)|([+-])([0-2]\\d:\\d\\d$)");
 
 	public static final Function<Timestamp, String> transformFromTimestampToSQLStringFunction = value -> String
 			.format("'%s'", dateTimeFormatter.format(value.toLocalDateTime()));
