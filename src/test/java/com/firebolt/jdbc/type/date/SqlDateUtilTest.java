@@ -163,10 +163,10 @@ class SqlDateUtilTest {
 	}
 
 	@Test
-	void shouldTransformTimestampTzWithOtherTz() {
-		String timeWithTimezone = "2023-01-05 16:04:42.123456+10";
+	void shouldTransformTimestampTzWithDifferentFormatTz() {
+		String timeWithTimezone = "2023-01-05 16:04:42.123456+05:30";
 		Timestamp expectedTimestamp = new Timestamp(
-				ZonedDateTime.of(2023, 1, 5, 6, 4, 42, 123456000, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+				ZonedDateTime.of(2023, 1, 5, 10, 34, 42, 123456000, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
 		expectedTimestamp.setNanos(123456000);
 		assertEquals(expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(timeWithTimezone, null));
 	}

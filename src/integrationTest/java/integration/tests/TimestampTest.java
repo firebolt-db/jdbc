@@ -174,6 +174,17 @@ class TimestampTest extends IntegrationTest {
 	}
 
 	@Test
+	void shouldReturnTimestampFromTimestamptzWithDifferentTzFormat() throws SQLException {
+		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
+			statement.execute("SET advanced_mode=1;SET time_zone = 'Asia/Calcutta';"); // The server will return a tz in the format +05:30
+			ResultSet resultSet = statement.executeQuery("SELECT '1975-05-10 23:01:02.123'::timestamptz;");
+			resultSet.next();
+			compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '1975-05-10 23:01:02.123'::timestamptz;",
+					"Asia/Calcutta");
+		}
+	}
+
+	@Test
 	void shouldReturnTimestampFromDate() throws SQLException {
 		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
 			statement.execute("SET advanced_mode=1; SET time_zone='Europe/Berlin';");
@@ -190,16 +201,24 @@ class TimestampTest extends IntegrationTest {
 			assertEquals(expectedDate, resultSet.getDate(1));
 			assertEquals(expectedTimestamp, resultSet.getTimestamp(1));
 
-			compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '2022-05-10'::date;");
+			compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '2022-05-10'::date;", "Europe/Berlin");
 
 		}
 	}
 
 	private void compareAllDateTimeResultSetValuesWithPostgres(ResultSet fireboltResultSet, String postgresQuery)
 			throws SQLException {
+		compareAllDateTimeResultSetValuesWithPostgres(fireboltResultSet, postgresQuery, null);
+	}
+
+	private void compareAllDateTimeResultSetValuesWithPostgres(ResultSet fireboltResultSet, String postgresQuery,
+			String timezone) throws SQLException {
 		try (Connection postgresConnection = embeddedPostgres.getPostgresDatabase().getConnection();
-				Statement pgStatement = postgresConnection.createStatement();
-				ResultSet postgresResultSet = pgStatement.executeQuery(postgresQuery)) {
+				Statement pgStatement = postgresConnection.createStatement()) {
+			if (timezone != null) {
+				pgStatement.execute(String.format("set timezone = '%s'", timezone));
+			}
+			ResultSet postgresResultSet = pgStatement.executeQuery(postgresQuery);
 			postgresResultSet.next();
 			assertEquals(postgresResultSet.getObject(1), fireboltResultSet.getObject(1));
 			assertEquals(postgresResultSet.getTime(1), fireboltResultSet.getTime(1));
