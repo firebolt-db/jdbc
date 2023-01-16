@@ -120,7 +120,7 @@ class TimestampTest extends IntegrationTest {
 				Statement statement = connection.createStatement();
 				ResultSet resultSet = statement.executeQuery("SELECT '2022-05-10 23:01:02.123'::timestampntz;")) {
 			resultSet.next();
-			ZonedDateTime expectedZdt = ZonedDateTime.of(2022, 5, 10, 23, 1, 2, 123, UTC_TZ.toZoneId());
+			ZonedDateTime expectedZdt = ZonedDateTime.of(2022, 5, 10, 23, 1, 2, 0, UTC_TZ.toZoneId());
 			Date expectedDate = new Date(expectedZdt.truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli());
 			Time expectedTime = new Time(82862123); // 1970-01-01T23:01:02.123Z
 
@@ -149,7 +149,7 @@ class TimestampTest extends IntegrationTest {
 					.executeQuery("SELECT '1975-05-10 23:01:02.123'::timestamptz;");
 			resultSetWithTzInQuery.next();
 			resultSetWithTzAsQueryParam.next();
-			ZonedDateTime expectedZdt = ZonedDateTime.of(1975, 5, 11, 4, 1, 2, 123, UTC_TZ.toZoneId());
+			ZonedDateTime expectedZdt = ZonedDateTime.of(1975, 5, 11, 4, 1, 2, 0, UTC_TZ.toZoneId());
 			Date expectedDate = new Date(expectedZdt.truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli());
 			Time expectedTime = new Time(14462123); // milliseconds at 1970-01-01T04:01:02.123Z since January 1, 1970,
 													// 00:00:00 GMT
@@ -174,12 +174,27 @@ class TimestampTest extends IntegrationTest {
 	}
 
 	@Test
-	void shouldReturnTimestampFromTimestamptzWithDifferentTzFormat() throws SQLException {
+	void shouldReturnTimestampFromTimestampTzWithTzWithHoursAndMinutes() throws SQLException {
 		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
 			statement.execute("SET advanced_mode=1;SET time_zone = 'Asia/Calcutta';"); // The server will return a tz in the format +05:30
 			ResultSet resultSet = statement.executeQuery("SELECT '1975-05-10 23:01:02.123'::timestamptz;");
 			resultSet.next();
 			compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '1975-05-10 23:01:02.123'::timestamptz;",
+					"Asia/Calcutta");
+		}
+	}
+
+	@Test
+	void shouldReturnTimestampFromTimestampTzWithTzWithHoursAndMinutesAndSeconds() throws SQLException {
+		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
+			statement.execute("SET advanced_mode=1;SET time_zone = 'Asia/Calcutta';"); // The server will return a tz in the format +05:30
+			ResultSet resultSet = statement.executeQuery("SELECT '1111-01-05 17:04:42.123456'::timestamptz");
+			resultSet.next();
+			Timestamp expectedTimestamp = new Timestamp(
+					ZonedDateTime.of(1111, 1, 5, 11, 11, 14, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli() + 7 * ONE_DAY_MILLIS);
+			expectedTimestamp.setNanos(123456000);
+			assertEquals(expectedTimestamp, resultSet.getObject(1));
+			compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '1111-01-05 17:04:42.123456'::timestamptz",
 					"Asia/Calcutta");
 		}
 	}
