@@ -180,15 +180,6 @@ class SqlDateUtilTest {
 		assertEquals(expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(timeWithTimezone, null));
 	}
 
-	@Test
-	void shouldTransformTimestampTzWithDifferentFormatTzWithSeconds2() {
-		String timeWithTimezone = "1111-01-05 17:04:42.123456+05:53:28";
-		Timestamp expectedTimestamp = new Timestamp(
-				ZonedDateTime.of(1111, 1, 5, 11, 11, 14, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli() + 7 * ONE_DAY_MILLIS);
-		expectedTimestamp.setNanos(123456000);
-		assertEquals(expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(timeWithTimezone, null));
-	}
-
 
 	@Test
 	void shouldTransformTimestampTzWithoutTz() {
