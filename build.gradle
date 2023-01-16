@@ -23,6 +23,9 @@ project.ext {
 
 java {
     withSourcesJar()
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
 }
 
 compileJava {
@@ -30,11 +33,6 @@ compileJava {
     targetCompatibility = '1.8'
 }
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
-    }
-}
 
 configurations {
     integrationTestImplementation.extendsFrom testImplementation
