@@ -37,7 +37,7 @@ public class SqlDateUtil {
 			.appendPattern("[XXX]")
 			.appendPattern("[X]").toFormatter();
 
-	private static final Pattern timezonePattern = Pattern.compile("([+-])([0-2]\\d$)|([+-])([0-2]\\d:\\d\\d$)");
+	private static final Pattern timezonePattern = Pattern.compile("([+-])([0-2]\\d$)|([+-])([0-2]\\d:\\d\\d$)|([+-])([0-2]\\d:\\d\\d:\\d\\d$)");
 
 	public static final Function<Timestamp, String> transformFromTimestampToSQLStringFunction = value -> String
 			.format("'%s'", dateTimeFormatter.format(value.toLocalDateTime()));

@@ -25,7 +25,7 @@ class SqlDateUtilTest {
 	@Test
 	void shouldTransformTimestampWithDefaultTzWhenTimeZoneIsNotSpecified() {
 		String timestamp = "1000-08-23 12:57:13.073456789";
-		ZonedDateTime zonedDateTime = ZonedDateTime.of(1000, 8, 23, 12, 57, 13, 73456789, UTC_TZ.toZoneId());
+		ZonedDateTime zonedDateTime = ZonedDateTime.of(1000, 8, 23, 12, 57, 13, 0, UTC_TZ.toZoneId());
 		Timestamp expectedTimestamp = new Timestamp(zonedDateTime.toInstant().toEpochMilli() + ONE_DAY_MILLIS * 6);
 		expectedTimestamp.setNanos(73456789);
 		assertEquals(expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(timestamp, null));
@@ -35,7 +35,7 @@ class SqlDateUtilTest {
 	void shouldTransformTimestampWithNanosToString() {
 		String expectedTimestamp = "'2022-05-23 12:57:13.000173456'";
 		Timestamp timestamp = new Timestamp(
-				ZonedDateTime.of(2022, 5, 23, 12, 57, 13, 173456, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+				ZonedDateTime.of(2022, 5, 23, 12, 57, 13, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
 		timestamp.setNanos(173456);
 		assertEquals(expectedTimestamp, SqlDateUtil.transformFromTimestampToSQLStringFunction.apply(timestamp));
 	}
@@ -157,7 +157,7 @@ class SqlDateUtilTest {
 	void shouldTransformTimestampTz() {
 		String timeWithTimezone = "2023-01-05 16:04:42.123456+00";
 		Timestamp expectedTimestamp = new Timestamp(
-				ZonedDateTime.of(2023, 01, 05, 16, 4, 42, 123456000, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+				ZonedDateTime.of(2023, 01, 05, 16, 4, 42, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
 		expectedTimestamp.setNanos(123456000);
 		assertEquals(expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(timeWithTimezone, null));
 	}
@@ -166,15 +166,35 @@ class SqlDateUtilTest {
 	void shouldTransformTimestampTzWithDifferentFormatTz() {
 		String timeWithTimezone = "2023-01-05 16:04:42.123456+05:30";
 		Timestamp expectedTimestamp = new Timestamp(
-				ZonedDateTime.of(2023, 1, 5, 10, 34, 42, 123456000, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+				ZonedDateTime.of(2023, 1, 5, 10, 34, 42, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
 		expectedTimestamp.setNanos(123456000);
 		assertEquals(expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(timeWithTimezone, null));
 	}
+
+	@Test
+	void shouldTransformTimestampTzWithDifferentFormatTzWithSeconds() {
+		String timeWithTimezone = "2023-01-05 16:04:42.123456+05:30:30";
+		Timestamp expectedTimestamp = new Timestamp(
+				ZonedDateTime.of(2023, 1, 5, 10, 34, 12, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+		expectedTimestamp.setNanos(123456000);
+		assertEquals(expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(timeWithTimezone, null));
+	}
+
+	@Test
+	void shouldTransformTimestampTzWithDifferentFormatTzWithSeconds2() {
+		String timeWithTimezone = "1111-01-05 17:04:42.123456+05:53:28";
+		Timestamp expectedTimestamp = new Timestamp(
+				ZonedDateTime.of(1111, 1, 5, 11, 11, 14, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli() + 7 * ONE_DAY_MILLIS);
+		expectedTimestamp.setNanos(123456000);
+		assertEquals(expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(timeWithTimezone, null));
+	}
+
+
 	@Test
 	void shouldTransformTimestampTzWithoutTz() {
 		String timeWithTimezone = "2023-01-05 17:04:42.123456";
 		Timestamp expectedTimestamp = new Timestamp(
-				ZonedDateTime.of(2023, 1, 5, 17, 4, 42, 123456000, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+				ZonedDateTime.of(2023, 1, 5, 17, 4, 42, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
 		expectedTimestamp.setNanos(123456000);
 		assertEquals(expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(timeWithTimezone, null));
 	}
@@ -198,7 +218,7 @@ class SqlDateUtilTest {
 	void shouldTransformTimestamptzToTimestamp() {
 		String date = "2022-05-10 21:01:02-05";
 		Timestamp expectedTimestamp = new Timestamp(
-				ZonedDateTime.of(2022, 5, 11, 2, 1, 2, 123456000, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+				ZonedDateTime.of(2022, 5, 11, 2, 1, 2, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
 		expectedTimestamp.setNanos(123);
 		assertEquals(new Timestamp(expectedTimestamp.toInstant().toEpochMilli()),
 				SqlDateUtil.transformToTimestampFunction.apply(date, null));
