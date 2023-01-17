@@ -8,3 +8,10 @@ updates:
       - dependency-name: "ch.qos.logback:logback-classic"
         # logback-classic 1.4 requires java 11+
         versions: ["1.4.x"]
+        # Mockito 5 requires java 11+
+      - dependency-name: "org.mockito:mockito-inline"
+        versions: ["5.x.x"]
+      - dependency-name: "org.mockito:mockito-junit-jupiter"
+        versions: ["5.x.x"]
+      - dependency-name: "org.mockito:mockito-core"
+        versions: ["5.x.x"]
