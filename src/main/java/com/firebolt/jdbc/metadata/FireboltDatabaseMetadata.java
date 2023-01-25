@@ -139,10 +139,8 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 						String.valueOf(columnInfo.getType().getPrecision()), // column size
 						null, // buffer length (not used, see Javadoc)
 						String.valueOf(columnInfo.getType().getScale()), String.valueOf(COMMON_RADIX), // radix
-						columnDescription.getInt("is_nullable") == 1 ? columnNullable : columnNoNulls, null, // description
-																												// of
-																												// the
-																												// column
+						isColumnNullable(columnDescription) ? columnNullable : columnNoNulls
+						, null, // description of the column
 						StringUtils.isNotBlank(columnDescription.getString("column_default"))
 								? columnDescription.getString("column_default")
 								: null, // default value for the column: null,
@@ -152,7 +150,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 								// length of binary and character
 								// based columns (null for others)
 						columnDescription.getInt("ordinal_position"), // The ordinal position starting from 1
-						columnDescription.getInt("is_nullable") == 1 ? "YES" : "NO", null, // "SCOPE_CATALOG - Unused
+						isColumnNullable(columnDescription) ? "YES" : "NO", null, // "SCOPE_CATALOG - Unused
 						null, // "SCOPE_SCHEMA" - Unused
 						null, // "SCOPE_TABLE" - Unused
 						null, // "SOURCE_DATA_TYPE" - Unused
@@ -161,6 +159,14 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 				rows.add(row);
 			}
 			return FireboltResultSet.of(QueryResult.builder().rows(rows).columns(columns).build());
+		}
+	}
+
+	private boolean isColumnNullable(ResultSet columnDescription) throws SQLException {
+		try {
+			return columnDescription.getInt("is_nullable") == 1;
+		} catch (Exception e) {
+			return columnDescription.getBoolean("is_nullable");
 		}
 	}
 
