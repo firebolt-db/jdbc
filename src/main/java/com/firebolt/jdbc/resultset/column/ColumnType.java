@@ -21,11 +21,13 @@ import lombok.*;
 @CustomLog
 @Builder
 @Value
+@EqualsAndHashCode
 public class ColumnType {
 	private static final String NOT_NULLABLE_TYPE = "NOT NULL";
 	private static final String NULL_TYPE = "NULL";
 	private static final Set<String> TIMEZONES = Arrays.stream(TimeZone.getAvailableIDs())
 			.collect(Collectors.toCollection(HashSet::new));
+	@EqualsAndHashCode.Exclude
 	String name;
 	FireboltDataType dataType;
 	boolean nullable;
