@@ -1,5 +1,7 @@
 package com.firebolt.jdbc.resultset;
 
+import static java.sql.DatabaseMetaData.columnNoNulls;
+import static java.sql.DatabaseMetaData.columnNullable;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -11,6 +13,7 @@ import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -53,8 +56,7 @@ class FireboltResultSetTest {
 	void shouldReturnMetadata() throws SQLException {
 		// This only tests that Metadata is available with the resultSet.
 		inputStream = getInputStreamWithCommonResponseExample();
-		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false,
-				fireboltStatement, false);
+		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false, fireboltStatement, false);
 		assertNotNull(resultSet.getMetaData());
 		assertEquals("any_name", resultSet.getMetaData().getTableName(1));
 		assertEquals("array_db", resultSet.getMetaData().getCatalogName(1));
@@ -444,8 +446,8 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithCommonResponseExample();
 		try (MockedStatic<LoggerUtil> loggerUtilMockedStatic = mockStatic(LoggerUtil.class)) {
 			loggerUtilMockedStatic.when(() -> LoggerUtil.logInputStream(inputStream)).thenReturn(inputStream);
-			resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false,
-					fireboltStatement, true);
+			resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false, fireboltStatement,
+					true);
 			loggerUtilMockedStatic.verify(() -> LoggerUtil.logInputStream(inputStream));
 		}
 	}
@@ -455,8 +457,8 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithDates();
 		try (MockedStatic<LoggerUtil> loggerUtilMockedStatic = mockStatic(LoggerUtil.class)) {
 			loggerUtilMockedStatic.when(() -> LoggerUtil.logInputStream(inputStream)).thenReturn(inputStream);
-			resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false,
-					fireboltStatement, true);
+			resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false, fireboltStatement,
+					true);
 			resultSet.next();
 
 			Time firstExpectedTime = new Time(
@@ -477,8 +479,8 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithDates();
 		try (MockedStatic<LoggerUtil> loggerUtilMockedStatic = mockStatic(LoggerUtil.class)) {
 			loggerUtilMockedStatic.when(() -> LoggerUtil.logInputStream(inputStream)).thenReturn(inputStream);
-			resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false,
-					fireboltStatement, true);
+			resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false, fireboltStatement,
+					true);
 			resultSet.next();
 			Timestamp firstTimeStampFromEST = Timestamp
 					.valueOf(ZonedDateTime.of(2022, 5, 10, 18, 1, 2, 0, UTC_TZ.toZoneId()).toLocalDateTime());
@@ -500,14 +502,15 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithDates();
 		try (MockedStatic<LoggerUtil> loggerUtilMockedStatic = mockStatic(LoggerUtil.class)) {
 			loggerUtilMockedStatic.when(() -> LoggerUtil.logInputStream(inputStream)).thenReturn(inputStream);
-			resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false,
-					fireboltStatement, false);
+			resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false, fireboltStatement,
+					false);
 			resultSet.next();
 			ZonedDateTime zonedDateTime = ZonedDateTime.of(2022, 5, 10, 18, 1, 2, 0, UTC_TZ.toZoneId());
 
 			Timestamp expectedTimestamp = new Timestamp(zonedDateTime.toInstant().toEpochMilli());
 
-			Time expectedTime = new Time(zonedDateTime.withYear(1970).withMonth(1).withDayOfMonth(1).toInstant().toEpochMilli());
+			Time expectedTime = new Time(
+					zonedDateTime.withYear(1970).withMonth(1).withDayOfMonth(1).toInstant().toEpochMilli());
 			Date expectedDate = new Date(ZonedDateTime
 					.of(2022, 5, 10, 5, 0, 0, 0, TimeZone.getTimeZone("UTC").toZoneId()).toInstant().toEpochMilli());
 
@@ -530,8 +533,8 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithDates();
 		try (MockedStatic<LoggerUtil> loggerUtilMockedStatic = mockStatic(LoggerUtil.class)) {
 			loggerUtilMockedStatic.when(() -> LoggerUtil.logInputStream(inputStream)).thenReturn(inputStream);
-			resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false,
-					fireboltStatement, true);
+			resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false, fireboltStatement,
+					true);
 			resultSet.next();
 			Date firstExpectedDateFromEST = new Date(ZonedDateTime
 					.of(2022, 5, 10, 5, 0, 0, 0, TimeZone.getTimeZone("UTC").toZoneId()).toInstant().toEpochMilli());
@@ -581,10 +584,10 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithBooleans();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
 		resultSet.next();
-		assertTrue((Boolean)resultSet.getObject("true_boolean"));
+		assertTrue((Boolean) resultSet.getObject("true_boolean"));
 		assertTrue(resultSet.getBoolean("true_boolean"));
 		resultSet.next();
-		assertTrue((Boolean)resultSet.getObject("true_boolean"));
+		assertTrue((Boolean) resultSet.getObject("true_boolean"));
 		assertTrue(resultSet.getBoolean("true_boolean"));
 	}
 
@@ -593,10 +596,10 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithBooleans();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
 		resultSet.next();
-		assertFalse((Boolean)resultSet.getObject("false_boolean"));
+		assertFalse((Boolean) resultSet.getObject("false_boolean"));
 		assertFalse(resultSet.getBoolean("false_boolean"));
 		resultSet.next();
-		assertFalse((Boolean)resultSet.getObject("false_boolean"));
+		assertFalse((Boolean) resultSet.getObject("false_boolean"));
 		assertFalse(resultSet.getBoolean("false_boolean"));
 	}
 
@@ -635,8 +638,8 @@ class FireboltResultSetTest {
 
 	@Test
 	void shouldReturnDateFromTimestampntz() throws SQLException {
-		Date expectedDate = new Date(ZonedDateTime
-				.of(2022, 5, 10, 0, 0, 0, 0,  UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+		Date expectedDate = new Date(
+				ZonedDateTime.of(2022, 5, 10, 0, 0, 0, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
 
 		inputStream = getInputStreamWithDates();
 		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
@@ -644,8 +647,8 @@ class FireboltResultSetTest {
 
 		assertEquals(expectedDate, resultSet.getDate("timestampntz"));
 
-		Date expectedDateEST = new Date(ZonedDateTime
-				.of(2022, 5, 10, 5, 0, 0, 0,  UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+		Date expectedDateEST = new Date(
+				ZonedDateTime.of(2022, 5, 10, 5, 0, 0, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
 		assertEquals(expectedDateEST, resultSet.getDate("timestampntz", EST_CALENDAR));
 	}
 
@@ -691,8 +694,8 @@ class FireboltResultSetTest {
 
 	@Test
 	void shouldReturnDateFromTimestamptz() throws SQLException {
-		Date expectedDate = new Date(ZonedDateTime
-				.of(2022, 5, 11, 0, 0, 0, 0,  UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+		Date expectedDate = new Date(
+				ZonedDateTime.of(2022, 5, 11, 0, 0, 0, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
 
 		inputStream = getInputStreamWithDates();
 		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
@@ -700,8 +703,8 @@ class FireboltResultSetTest {
 
 		assertEquals(expectedDate, resultSet.getDate("timestamptz"));
 
-		Date expectedDateEST = new Date(ZonedDateTime
-				.of(2022, 5, 11, 5, 0, 0, 0,  UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+		Date expectedDateEST = new Date(
+				ZonedDateTime.of(2022, 5, 11, 5, 0, 0, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
 		assertEquals(expectedDateEST, resultSet.getDate("timestamptz", EST_CALENDAR));
 	}
 
@@ -717,6 +720,95 @@ class FireboltResultSetTest {
 		assertNull(resultSet.getTimestamp("timestamptz", EST_CALENDAR));
 		assertNull(resultSet.getTime("timestamptz", EST_CALENDAR));
 		assertNull(resultSet.getDate("timestamptz", EST_CALENDAR));
+	}
+
+	@Test
+	void shouldReturnNewDataTypes() throws SQLException {
+		inputStream = getInputStreamWithNewTypes();
+		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
+		resultSet.next();
+		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(1));
+		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(2));
+		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(3));
+		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(4));
+		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(5));
+		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(6));
+		assertEquals(Types.BIGINT, resultSet.getMetaData().getColumnType(7));
+		assertEquals(Types.BIGINT, resultSet.getMetaData().getColumnType(8));
+		assertEquals(Types.FLOAT, resultSet.getMetaData().getColumnType(9));
+		assertEquals(Types.DOUBLE, resultSet.getMetaData().getColumnType(10));
+		assertEquals(Types.VARCHAR, resultSet.getMetaData().getColumnType(11));
+		assertEquals(Types.DATE, resultSet.getMetaData().getColumnType(12));
+		assertEquals(Types.DATE, resultSet.getMetaData().getColumnType(13));
+		assertEquals(Types.DATE, resultSet.getMetaData().getColumnType(14));
+		assertEquals(Types.TIMESTAMP, resultSet.getMetaData().getColumnType(15));
+		assertEquals(Types.TIMESTAMP, resultSet.getMetaData().getColumnType(16));
+		assertEquals(Types.TIMESTAMP, resultSet.getMetaData().getColumnType(17));
+		assertEquals(Types.TIMESTAMP_WITH_TIMEZONE, resultSet.getMetaData().getColumnType(18));
+		assertEquals(Types.ARRAY, resultSet.getMetaData().getColumnType(19));
+		assertEquals(Types.DECIMAL, resultSet.getMetaData().getColumnType(20));
+		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(21));
+		assertEquals(Types.NULL, resultSet.getMetaData().getColumnType(22));
+		assertEquals(Types.NULL, resultSet.getMetaData().getColumnType(23));
+	}
+
+	@Test
+	void shouldReturnDataForNewDataTypes() throws SQLException {
+		inputStream = getInputStreamWithNewTypes();
+		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
+		resultSet.next();
+		assertEquals(1, resultSet.getObject(1));
+		assertEquals(-1, resultSet.getObject(2));
+		assertEquals(257, resultSet.getObject(3));
+		assertEquals(-257, resultSet.getObject(4));
+		assertEquals(80000, resultSet.getObject(5));
+		assertEquals(-80000, resultSet.getObject(6));
+		assertEquals(30000000000L, resultSet.getObject(7));
+		assertEquals(-30000000000L, resultSet.getObject(8));
+		assertEquals(1.23F, resultSet.getObject(9));
+		assertEquals(new Double("1.23456789012"), resultSet.getObject(10));
+		assertEquals("text", resultSet.getObject(11));
+		assertEquals(Date.valueOf(LocalDate.of(1, 3, 28)), resultSet.getObject(12));
+		assertEquals(Date.valueOf(LocalDate.of(1860, 3, 4)), resultSet.getObject(13));
+		assertEquals(Date.valueOf(LocalDate.of(1, 1, 1)), resultSet.getObject(14));
+		assertEquals(Timestamp.valueOf(LocalDateTime.of(2019, 7, 31, 1, 1, 1, 123400000)), resultSet.getObject(16));
+		assertEquals(Timestamp.valueOf(LocalDateTime.of(1111, 1, 5, 17, 4, 42, 123456000)), resultSet.getObject(17));
+		assertEquals(Timestamp.valueOf(LocalDateTime.of(1111, 1, 5, 17, 4, 42, 123456000)), resultSet.getObject(18));
+		assertArrayEquals(new Integer[] { 1, 2, 3, 4 }, (Integer[]) resultSet.getObject(19));
+		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"), resultSet.getObject(20));
+		assertNull(resultSet.getObject(21));
+		assertNull(resultSet.getObject(22));
+		assertNull(resultSet.getObject(23));
+	}
+
+	@Test
+	void shouldReturnNullabilityForNewDataTypes() throws SQLException {
+		inputStream = getInputStreamWithNewTypes();
+		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
+		resultSet.next();
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(1));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(2));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(3));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(4));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(5));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(6));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(7));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(8));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(9));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(10));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(11));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(12));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(13));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(14));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(15));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(16));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(17));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(18));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(19));
+		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(20));
+		assertEquals(columnNullable, resultSet.getMetaData().isNullable(21));
+		assertEquals(columnNullable, resultSet.getMetaData().isNullable(22));
+		assertEquals(columnNullable, resultSet.getMetaData().isNullable(23));
 	}
 
 	private InputStream getInputStreamWithCommonResponseExample() {
@@ -746,4 +838,21 @@ class FireboltResultSetTest {
 	private InputStream getInputStreamWithDates() {
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-dates");
 	}
+
+	private InputStream getInputStreamWithNewTypes() {
+		// Result for the query 'Select 1 as uint8, -1 as int_8, 257 as uint16, -257 as
+		// int16, 80000 as uint32, -80000 as int32, 30000000000 as uint64,-30000000000
+		// as int64, cast(1.23 AS FLOAT) as float32, 1.2345678901234 as float64, 'text'
+		// as "string", CAST('2021-03-28' AS DATE) as "date", CAST('1860-03-04' AS
+		// DATE_EXT) as "date32", pgdate '0001-01-01' as pgdate, CAST('2019-07-31
+		// 01:01:01' AS DATETIME) as "datetime", CAST('2019-07-31 01:01:01.1234' AS
+		// TIMESTAMP_EXT(4)) as "datetime64", CAST('1111-01-05 17:04:42.123456' as
+		// timestampntz) as timestampntz, '1111-01-05 17:04:42.123456'::timestamptz as
+		// timestamptz,[1,2,3,4] as "array",
+		// cast('1231232.123459999990457054844258706536' as decimal(38,30)) as
+		// "decimal", cast(null as int) as nullable, null' + null type without "Nothing"
+		// keyword
+		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-new-types");
+	}
+
 }

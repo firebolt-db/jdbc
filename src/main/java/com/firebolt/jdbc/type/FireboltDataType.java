@@ -33,7 +33,7 @@ public enum FireboltDataType {
 	DATE_TIME(Types.TIMESTAMP, "DateTime", "TIMESTAMP", BaseType.TIMESTAMP, false, false, 19, 0, true, "TIMESTAMP"),
 	TIMESTAMP(Types.TIMESTAMP, "TimestampNtz", BaseType.TIMESTAMP.name(), BaseType.TIMESTAMP, false, false, 26, 6, true),
 	TIMESTAMP_WITH_TIMEZONE(Types.TIMESTAMP_WITH_TIMEZONE, "Timestamptz", BaseType.TIMESTAMP_WITH_TIMEZONE.name(), BaseType.TIMESTAMP_WITH_TIMEZONE, false, false, 32, 6, true),
-	NOTHING(Types.NULL, "Nothing", "NOTHING", BaseType.NULL, false, false, 0, 0, false),
+	NOTHING(Types.NULL, "Nothing", "NOTHING", BaseType.NULL, false, false, 0, 0, false, "NULL"),
 	UNKNOWN(Types.OTHER, "Unknown", "UNKNOWN", BaseType.OTHER, false, false, 0, 0, false),
 	DECIMAL(Types.DECIMAL, "Decimal", BaseType.DECIMAL.name(), BaseType.DECIMAL, true, false, 0, 0, false, "DEC"),
 	ARRAY(Types.ARRAY, "Array", BaseType.ARRAY.name(), BaseType.ARRAY, false, true, 0, 0, false),
