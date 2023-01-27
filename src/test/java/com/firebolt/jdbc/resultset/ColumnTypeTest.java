@@ -211,4 +211,12 @@ class ColumnTypeTest {
 		assertEquals(FireboltDataType.NOTHING, columnType.getDataType());
 		assertTrue(columnType.isNullable());
 	}
+
+	@Test
+	void shouldCreateColumnTypeForNothingNull() {
+		String type = "nothing null";
+		ColumnType columnType = ColumnType.of(type);
+		assertEquals(FireboltDataType.NOTHING, columnType.getDataType());
+		assertTrue(columnType.isNullable());
+	}
 }
