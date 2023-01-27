@@ -203,4 +203,20 @@ class ColumnTypeTest {
 		assertEquals(FireboltDataType.BOOLEAN, columnType.getDataType());
 		assertTrue(columnType.isNullable());
 	}
+
+	@Test
+	void shouldCreateColumnTypeForNull() {
+		String type = "null";
+		ColumnType columnType = ColumnType.of(type);
+		assertEquals(FireboltDataType.NOTHING, columnType.getDataType());
+		assertTrue(columnType.isNullable());
+	}
+
+	@Test
+	void shouldCreateColumnTypeForNothingNull() {
+		String type = "nothing null";
+		ColumnType columnType = ColumnType.of(type);
+		assertEquals(FireboltDataType.NOTHING, columnType.getDataType());
+		assertTrue(columnType.isNullable());
+	}
 }
