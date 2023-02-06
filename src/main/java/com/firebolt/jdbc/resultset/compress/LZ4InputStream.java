@@ -35,14 +35,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 
-import net.jpountz.lz4.LZ4Factory;
-import net.jpountz.lz4.LZ4FastDecompressor;
+import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.util.compress.LZ4;
 
 /** Reader from clickhouse in lz4 */
 public class LZ4InputStream extends InputStream {
 
 	public static final int MAGIC = 0x82;
-	private static final LZ4Factory factory = LZ4Factory.fastestInstance();
 	private final InputStream stream;
 	private final DataInputStream dataWrapper;
 
@@ -180,8 +179,7 @@ public class LZ4InputStream extends InputStream {
 		}
 
 		byte[] decompressed = new byte[uncompressedSize];
-		LZ4FastDecompressor decompressor = factory.fastDecompressor();
-		decompressor.decompress(block, 0, decompressed, 0, uncompressedSize);
+		LZ4.decompress(new ByteArrayDataInput(block), uncompressedSize, decompressed, 0);
 		return decompressed;
 	}
 }

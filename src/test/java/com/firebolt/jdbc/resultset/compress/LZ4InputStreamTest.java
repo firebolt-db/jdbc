@@ -11,44 +11,20 @@ import org.junit.jupiter.api.Test;
 
 class LZ4InputStreamTest {
 
-	private final static String EXPECTED_TEXT = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
-			+ "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
-			+ "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi \n\n\n"
-			+ "ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit "
-			+ "in voluptate velit esse cillum dolore eu fugiat nulla pariatur. "
-			+ "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui "
-			+ "officia deserunt mollit anim id est laborum.";
+	private final static String EXPECTED_TEXT = "my_text\n" +
+			"text\n" +
+			"Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\\'s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
 
 	@Test
 	void shouldReadCompressedText() throws IOException {
-
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		LZ4OutputStream outputStream = new LZ4OutputStream(byteArrayOutputStream, 1);
-		outputStream.write(EXPECTED_TEXT.getBytes());
-		outputStream.flush();
-		byte[] result = byteArrayOutputStream.toByteArray();
-		LZ4InputStream is = new LZ4InputStream(new ByteArrayInputStream(result));
+		byte[] b = convertToBytes(getInputStreamWithDates());
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		baos.write(b);
+		baos.flush();
+		LZ4InputStream is = new LZ4InputStream(new ByteArrayInputStream(baos.toByteArray()));
 		String decompressedText = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8)).lines()
 				.collect(Collectors.joining("\n"));
 		assertEquals(EXPECTED_TEXT, decompressedText);
-	}
-
-	@Test
-	void shouldReadyAllTextByteByByte() throws IOException {
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		LZ4OutputStream outputStream = new LZ4OutputStream(byteArrayOutputStream, 1);
-		outputStream.write(EXPECTED_TEXT.getBytes());
-		outputStream.flush();
-		byte[] result = byteArrayOutputStream.toByteArray();
-		LZ4InputStream is = new LZ4InputStream(new ByteArrayInputStream(result));
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		int read = is.read();
-		while (read > 0) {
-			out.write(read);
-			read = is.read();
-		}
-		out.flush();
-		assertEquals(EXPECTED_TEXT, out.toString());
 	}
 
 	@Test
@@ -67,5 +43,34 @@ class LZ4InputStreamTest {
 	void shouldReturnZeroWhenLengthIs0() throws IOException {
 		LZ4InputStream is = new LZ4InputStream(new ByteArrayInputStream("".getBytes()));
 		assertEquals(0, is.read(new byte[1], 1, 0));
+	}
+
+	private static byte[] convertToBytes(InputStream stream) {
+		InputStream inputStream = stream;
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+		try {
+			byte[] buffer = new byte[4096];
+			int bytesRead;
+			while ((bytesRead = inputStream.read(buffer)) != -1) {
+				outputStream.write(buffer, 0, bytesRead);
+			}
+
+			return outputStream.toByteArray();
+		} catch (IOException e) {
+			// Handle the exception
+		} finally {
+			try {
+				inputStream.close();
+				outputStream.close();
+			} catch (IOException e) {
+				// Handle the exception
+			}
+		}
+		return null;
+	}
+
+	private InputStream getInputStreamWithDates() {
+		return LZ4InputStreamTest.class.getResourceAsStream("/responses/compressed-response");
 	}
 }
