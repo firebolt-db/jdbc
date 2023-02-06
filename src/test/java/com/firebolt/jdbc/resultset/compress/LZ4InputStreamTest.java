@@ -11,13 +11,12 @@ import org.junit.jupiter.api.Test;
 
 class LZ4InputStreamTest {
 
-	private final static String EXPECTED_TEXT = "my_text\n" +
-			"text\n" +
-			"Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\\'s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
+	private final static String EXPECTED_TEXT = "my_text\n" + "text\n"
+			+ "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\\'s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
 
 	@Test
 	void shouldReadCompressedText() throws IOException {
-		byte[] b = convertToBytes(getInputStreamWithDates());
+		byte[] b = convertInputStreamToBytes(getInputStreamWithDates());
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		baos.write(b);
 		baos.flush();
@@ -45,29 +44,14 @@ class LZ4InputStreamTest {
 		assertEquals(0, is.read(new byte[1], 1, 0));
 	}
 
-	private static byte[] convertToBytes(InputStream stream) {
-		InputStream inputStream = stream;
+	private static byte[] convertInputStreamToBytes(InputStream stream) throws IOException {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-		try {
-			byte[] buffer = new byte[4096];
-			int bytesRead;
-			while ((bytesRead = inputStream.read(buffer)) != -1) {
-				outputStream.write(buffer, 0, bytesRead);
-			}
-
-			return outputStream.toByteArray();
-		} catch (IOException e) {
-			// Handle the exception
-		} finally {
-			try {
-				inputStream.close();
-				outputStream.close();
-			} catch (IOException e) {
-				// Handle the exception
-			}
+		byte[] buffer = new byte[4096];
+		int bytesRead;
+		while ((bytesRead = stream.read(buffer)) != -1) {
+			outputStream.write(buffer, 0, bytesRead);
 		}
-		return null;
+		return outputStream.toByteArray();
 	}
 
 	private InputStream getInputStreamWithDates() {
