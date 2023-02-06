@@ -29,8 +29,3 @@ jobs:
         file: ${{ needs.build.outputs.uber-jar }}
         tags: true
         draft: false
-    - name: Deploy to Repsy repository
-      run: ./gradlew publish
-      env:
-        REPSY_USERNAME: ${{ secrets.REPSY_USERNAME }}
-        REPSY_PASSWORD: ${{ secrets.REPSY_PASSWORD }}
