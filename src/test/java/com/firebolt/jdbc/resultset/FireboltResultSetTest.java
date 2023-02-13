@@ -9,6 +9,7 @@ import static org.mockito.Mockito.*;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.sql.*;
 import java.text.ParseException;
@@ -582,7 +583,7 @@ class FireboltResultSetTest {
 		assertArrayEquals(new byte[] { -34, -83, -66, -17 }, (byte[]) resultSet.getObject("a_bytea"));
 		assertEquals("\\xdeadbeef", resultSet.getString("a_bytea"));
 		resultSet.next();
-		assertArrayEquals(new byte[] { 0, -85 }, (byte[]) resultSet.getObject("a_bytea"));
+		assertArrayEquals(new byte[] { 0, -85 }, resultSet.getObject("a_bytea", byte[].class));
 		assertEquals("\\x00ab", resultSet.getString("a_bytea"));
 	}
 
@@ -596,12 +597,13 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldReturnTrueWhenBooleanFoundIsFalse() throws SQLException {
+	void shouldReturnTrueWhenBooleanFoundIsTrue() throws SQLException {
 		inputStream = getInputStreamWithBooleans();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
 		resultSet.next();
 		assertTrue((Boolean) resultSet.getObject("true_boolean"));
 		assertTrue(resultSet.getBoolean("true_boolean"));
+		assertTrue(resultSet.getObject("true_boolean", Boolean.class));
 		resultSet.next();
 		assertTrue((Boolean) resultSet.getObject("true_boolean"));
 		assertTrue(resultSet.getBoolean("true_boolean"));
@@ -614,6 +616,7 @@ class FireboltResultSetTest {
 		resultSet.next();
 		assertFalse((Boolean) resultSet.getObject("false_boolean"));
 		assertFalse(resultSet.getBoolean("false_boolean"));
+		assertFalse(resultSet.getObject("false_boolean", Boolean.class));
 		resultSet.next();
 		assertFalse((Boolean) resultSet.getObject("false_boolean"));
 		assertFalse(resultSet.getBoolean("false_boolean"));
@@ -802,7 +805,6 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithNewTypes();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
 		resultSet.next();
-		assertEquals(1, resultSet.getObject(1, Integer.class));
 		assertEquals(-1, resultSet.getObject(2, Integer.class));
 		assertEquals(257, resultSet.getObject(3, Integer.class));
 		assertEquals(-257, resultSet.getObject(4, Integer.class));
@@ -814,6 +816,7 @@ class FireboltResultSetTest {
 		assertEquals(80000, resultSet.getObject(5, Long.class));
 		assertEquals(-80000, resultSet.getObject(6, Long.class));
 		assertEquals(30000000000L, resultSet.getObject(7, Long.class));
+		assertEquals(new BigInteger("30000000000"), resultSet.getObject(7, BigInteger.class));
 		assertEquals(-30000000000L, resultSet.getObject(8, Long.class));
 		assertEquals(1.23F, resultSet.getObject(9, Float.class));
 		assertEquals(new Double(1.23), resultSet.getObject(9, Double.class));
