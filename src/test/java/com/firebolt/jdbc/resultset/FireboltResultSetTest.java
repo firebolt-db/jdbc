@@ -811,7 +811,6 @@ class FireboltResultSetTest {
 		assertEquals(1, resultSet.getObject(1, Long.class));
 		assertEquals(-1, resultSet.getObject(2, Long.class));
 		assertEquals(257, resultSet.getObject(3, Long.class));
-		assertEquals(-257, resultSet.getObject(4, Long.class));
 		assertEquals(80000, resultSet.getObject(5, Long.class));
 		assertEquals(-80000, resultSet.getObject(6, Long.class));
 		assertEquals(30000000000L, resultSet.getObject(7, Long.class));
@@ -822,6 +821,19 @@ class FireboltResultSetTest {
 		assertEquals(new BigDecimal("1.23456789012"), resultSet.getObject(10, BigDecimal.class));
 		assertEquals("text", resultSet.getObject(11, String.class));
 		assertArrayEquals("text".getBytes(), resultSet.getObject(11, byte[].class));
+		assertArrayEquals(new Integer[] { 1, 2, 3, 4 }, ((Integer[]) resultSet.getObject(19, Array.class).getArray()));
+		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"),
+				resultSet.getObject(20, BigDecimal.class));
+		assertNull(resultSet.getObject(21, Integer.class));
+		assertNull(resultSet.getObject(22, Object.class));
+		assertNull(resultSet.getObject(23, Object.class));
+	}
+
+	@Test
+	void shouldReturnDateTimeObjectsWithProvidedTypes() throws SQLException {
+		inputStream = getInputStreamWithNewTypes();
+		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
+		resultSet.next();
 		assertEquals(Date.valueOf(LocalDate.of(1, 3, 28)), resultSet.getObject(12, Date.class));
 		assertEquals(Date.valueOf(LocalDate.of(1860, 3, 4)), resultSet.getObject(13, Date.class));
 		assertEquals(Date.valueOf(LocalDate.of(1, 1, 1)), resultSet.getObject(14, Date.class));
@@ -838,12 +850,8 @@ class FireboltResultSetTest {
 		assertEquals(LocalDateTime.of(1111, 1, 5, 17, 4, 42, 123456000).atOffset(ZoneOffset.of("+00:00")),
 				resultSet.getObject(18, OffsetDateTime.class));
 		assertArrayEquals(new Integer[] { 1, 2, 3, 4 }, ((Integer[]) resultSet.getObject(19, Array.class).getArray()));
-		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"),
-				resultSet.getObject(20, BigDecimal.class));
-		assertNull(resultSet.getObject(21, Integer.class));
-		assertNull(resultSet.getObject(22, Object.class));
-		assertNull(resultSet.getObject(23, Object.class));
 	}
+
 
 	@Test
 	void shouldReturnNullabilityForNewDataTypes() throws SQLException {

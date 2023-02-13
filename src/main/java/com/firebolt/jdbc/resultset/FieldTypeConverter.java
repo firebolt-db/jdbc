@@ -20,7 +20,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class FieldTypeConverter {
 
-	private static final Map<Class, CheckedTriFunction<String, BaseType, Column, ?>> javaClassToConvertFunction;
+	private static final Map<Class<?>, CheckedTriFunction<String, BaseType, Column, ?>> javaClassToConvertFunction;
 
 	private static final String CONVERSION_NOT_SUPPORTED_EXCEPTION = "conversion to %s from %s not supported";
 
