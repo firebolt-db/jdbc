@@ -875,6 +875,24 @@ class FireboltResultSetTest {
 		assertEquals(columnNullable, resultSet.getMetaData().isNullable(23));
 	}
 
+	@Test
+	void shouldThrowExceptionWhenConvertingIncompatibleTypes() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
+		resultSet.next();
+		FireboltException exception = assertThrows(FireboltException.class, () -> resultSet.getObject(1, String.class));
+		assertEquals("conversion to class java.lang.String from java.lang.Long not supported", exception.getMessage());
+	}
+
+	@Test
+	void shouldThrowExceptionWhenConvertingUnsupportedTypes() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
+		resultSet.next();
+		FireboltException exception = assertThrows(FireboltException.class, () -> resultSet.getObject(1, TimeZone.class));
+		assertEquals("conversion to java.util.TimeZone from java.lang.Long not supported", exception.getMessage());
+	}
+
 	private InputStream getInputStreamWithCommonResponseExample() {
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-example");
 	}
