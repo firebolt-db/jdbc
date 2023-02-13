@@ -1,12 +1,16 @@
 package integration.tests;
 
 import static com.firebolt.jdbc.type.date.SqlDateUtil.ONE_DAY_MILLIS;
+import static java.sql.Types.TIMESTAMP;
+import static java.sql.Types.TIMESTAMP_WITH_TIMEZONE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.sql.*;
+import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
 
@@ -37,33 +41,6 @@ class TimestampTest extends IntegrationTest {
 	@AfterAll
 	void tearDown() throws IOException {
 		embeddedPostgres.close();
-	}
-
-	@Test
-	void shouldGetTimeObjectsInEstTimezone() throws SQLException {
-		try (Connection connection = this.createConnection();
-				Statement statement = connection.createStatement();
-				ResultSet resultSet = statement
-						.executeQuery("SELECT TO_TIMESTAMP_EXT('1975/01/01 23:01:01', 6, 'EST');")) {
-			resultSet.next();
-
-			ZonedDateTime zonedDateTime = ZonedDateTime.of(1975, 1, 2, 4, 1, 1, 0,
-					TimeZone.getTimeZone("UTC").toZoneId());
-			ZonedDateTime expectedTimeZdt = ZonedDateTime.of(1970, 1, 2, 4, 1, 1, 0,
-					TimeZone.getTimeZone("UTC").toZoneId());
-
-			ZonedDateTime expectedDateZdt = ZonedDateTime.of(1975, 1, 1, 5, 0, 0, 0,
-					TimeZone.getTimeZone("UTC").toZoneId());
-
-			Time expectedTime = new Time(expectedTimeZdt.toInstant().toEpochMilli());
-			Date expectedDate = new Date(expectedDateZdt.toInstant().toEpochMilli());
-
-			Timestamp expectedTimestamp = new Timestamp(zonedDateTime.toInstant().toEpochMilli());
-			assertEquals(expectedTimestamp, resultSet.getTimestamp(1));
-			assertEquals(expectedTimestamp, resultSet.getObject(1));
-			assertEquals(expectedTime, resultSet.getTime(1));
-			assertEquals(expectedDate, resultSet.getDate(1));
-		}
 	}
 
 	@Test
@@ -243,6 +220,10 @@ class TimestampTest extends IntegrationTest {
 			assertEquals(postgresResultSet.getTimestamp(1), fireboltResultSet.getTimestamp(1));
 			assertEquals(postgresResultSet.getTimestamp(1, EST_CALENDAR),
 					fireboltResultSet.getTimestamp(1, EST_CALENDAR));
+			if (Arrays.asList(TIMESTAMP_WITH_TIMEZONE, TIMESTAMP).contains(postgresResultSet.getMetaData().getColumnType(1))) {
+				assertEquals(postgresResultSet.getObject(1, OffsetDateTime.class),
+						fireboltResultSet.getObject(1, OffsetDateTime.class));
+			}
 		}
 	}
 

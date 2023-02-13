@@ -42,6 +42,7 @@ public enum FireboltDataType {
 
 	public static final String NULLABLE_TYPE = "NULLABLE";
 
+
 	private static final Map<String, FireboltDataType> typeNameOrAliasToType;
 
 	static {

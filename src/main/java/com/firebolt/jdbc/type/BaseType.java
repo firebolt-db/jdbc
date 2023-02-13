@@ -10,6 +10,7 @@ import javax.xml.bind.DatatypeConverter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
+import com.firebolt.jdbc.CheckedFunction;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.column.Column;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;

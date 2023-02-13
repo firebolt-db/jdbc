@@ -3,6 +3,7 @@ package com.firebolt.jdbc.resultset;
 import static java.sql.DatabaseMetaData.columnNoNulls;
 import static java.sql.DatabaseMetaData.columnNullable;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -12,14 +13,13 @@ import java.math.RoundingMode;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.Calendar;
 import java.util.TimeZone;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junitpioneer.jupiter.DefaultTimeZone;
@@ -85,7 +85,9 @@ class FireboltResultSetTest {
 		resultSet.next();
 		assertEquals(1L, resultSet.getObject(1));
 		String[][][] firstArray = { { { "1", "2" }, { "3", "4" } } };
-		assertArrayEquals(firstArray, ((String[][][]) resultSet.getObject(2)));
+		Array array = resultSet.getObject(2, Array.class);
+		Assertions.assertArrayEquals(firstArray, (String[][][]) array.getArray());
+		assertEquals(new Long("1"), resultSet.getObject(1, Long.class));
 
 		resultSet.next();
 		assertEquals(2L, resultSet.getObject(1));
@@ -176,9 +178,13 @@ class FireboltResultSetTest {
 		resultSet.next();
 		assertEquals(1, resultSet.getInt(1));
 		assertEquals(1, resultSet.getInt("id"));
+		assertEquals(1, resultSet.getObject(1, Long.class));
+
 		resultSet.next();
 		assertEquals(2, resultSet.getInt(1));
 		assertEquals(2, resultSet.getInt("id"));
+		assertEquals(2, resultSet.getObject(1, Long.class));
+
 	}
 
 	@Test
@@ -188,9 +194,13 @@ class FireboltResultSetTest {
 		resultSet.next();
 		assertEquals(14.6f, resultSet.getFloat(6));
 		assertEquals(14.6f, resultSet.getFloat("a_double"));
+		assertEquals(14.6f, resultSet.getObject(6, Float.class));
+
 		resultSet.next();
 		assertEquals(0, resultSet.getFloat(6));
 		assertEquals(0, resultSet.getFloat("a_double"));
+		assertEquals(null, resultSet.getObject(6, Float.class));
+
 	}
 
 	@Test
@@ -210,8 +220,11 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
 		resultSet.next();
-		assertEquals("Taylor's Prime Steak House", resultSet.getString(3));
-		assertEquals("Taylor's Prime Steak House", resultSet.getString("name"));
+		String expected = "Taylor's Prime Steak House";
+		assertEquals(expected, resultSet.getString(3));
+		assertEquals(expected, resultSet.getString("name"));
+		assertEquals(expected, resultSet.getObject(3, String.class));
+
 	}
 
 	@Test
@@ -238,8 +251,11 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
 		resultSet.next();
-		assertArrayEquals("Taylor\\'s Prime Steak House".getBytes(), resultSet.getBytes(3));
-		assertArrayEquals("Taylor\\'s Prime Steak House".getBytes(), resultSet.getBytes("name"));
+		byte[] expected = "Taylor\\'s Prime Steak House".getBytes();
+		assertArrayEquals(expected, resultSet.getBytes(3));
+		assertArrayEquals(expected, resultSet.getBytes("name"));
+		assertArrayEquals(expected, resultSet.getObject(3, byte[].class));
+		assertArrayEquals(expected, resultSet.getObject("name", byte[].class));
 		resultSet.next();
 		assertNull(resultSet.getBytes(3));
 	}
@@ -779,6 +795,54 @@ class FireboltResultSetTest {
 		assertNull(resultSet.getObject(21));
 		assertNull(resultSet.getObject(22));
 		assertNull(resultSet.getObject(23));
+	}
+
+	@Test
+	void shouldReturnDataWithProvidedTypes() throws SQLException {
+		inputStream = getInputStreamWithNewTypes();
+		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
+		resultSet.next();
+		assertEquals(1, resultSet.getObject(1, Integer.class));
+		assertEquals(-1, resultSet.getObject(2, Integer.class));
+		assertEquals(257, resultSet.getObject(3, Integer.class));
+		assertEquals(-257, resultSet.getObject(4, Integer.class));
+		assertEquals(80000, resultSet.getObject(5, Integer.class));
+		assertEquals(-80000, resultSet.getObject(6, Integer.class));
+		assertEquals(1, resultSet.getObject(1, Long.class));
+		assertEquals(-1, resultSet.getObject(2, Long.class));
+		assertEquals(257, resultSet.getObject(3, Long.class));
+		assertEquals(-257, resultSet.getObject(4, Long.class));
+		assertEquals(80000, resultSet.getObject(5, Long.class));
+		assertEquals(-80000, resultSet.getObject(6, Long.class));
+		assertEquals(30000000000L, resultSet.getObject(7, Long.class));
+		assertEquals(-30000000000L, resultSet.getObject(8, Long.class));
+		assertEquals(1.23F, resultSet.getObject(9, Float.class));
+		assertEquals(new Double(1.23), resultSet.getObject(9, Double.class));
+		assertEquals(new Double("1.23456789012"), resultSet.getObject(10, Double.class));
+		assertEquals(new BigDecimal("1.23456789012"), resultSet.getObject(10, BigDecimal.class));
+		assertEquals("text", resultSet.getObject(11, String.class));
+		assertArrayEquals("text".getBytes(), resultSet.getObject(11, byte[].class));
+		assertEquals(Date.valueOf(LocalDate.of(1, 3, 28)), resultSet.getObject(12, Date.class));
+		assertEquals(Date.valueOf(LocalDate.of(1860, 3, 4)), resultSet.getObject(13, Date.class));
+		assertEquals(Date.valueOf(LocalDate.of(1, 1, 1)), resultSet.getObject(14, Date.class));
+		assertEquals(Timestamp.valueOf(LocalDateTime.of(2019, 7, 31, 1, 1, 1, 123400000)),
+				resultSet.getObject(16, Timestamp.class));
+		assertEquals(LocalDateTime.of(2019, 7, 31, 1, 1, 1, 123400000).atOffset(ZoneOffset.of("+00:00")),
+				resultSet.getObject(16, OffsetDateTime.class));
+		assertEquals(Timestamp.valueOf(LocalDateTime.of(1111, 1, 5, 17, 4, 42, 123456000)),
+				resultSet.getObject(17, Timestamp.class));
+		assertEquals(LocalDateTime.of(1111, 1, 5, 17, 4, 42, 123456000).atOffset(ZoneOffset.of("+00:00")),
+				resultSet.getObject(17, OffsetDateTime.class));
+		assertEquals(Timestamp.valueOf(LocalDateTime.of(1111, 1, 5, 17, 4, 42, 123456000)),
+				resultSet.getObject(18, Timestamp.class));
+		assertEquals(LocalDateTime.of(1111, 1, 5, 17, 4, 42, 123456000).atOffset(ZoneOffset.of("+00:00")),
+				resultSet.getObject(18, OffsetDateTime.class));
+		assertArrayEquals(new Integer[] { 1, 2, 3, 4 }, ((Integer[]) resultSet.getObject(19, Array.class).getArray()));
+		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"),
+				resultSet.getObject(20, BigDecimal.class));
+		assertNull(resultSet.getObject(21, Integer.class));
+		assertNull(resultSet.getObject(22, Object.class));
+		assertNull(resultSet.getObject(23, Object.class));
 	}
 
 	@Test
