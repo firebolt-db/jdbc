@@ -56,6 +56,15 @@ public class SqlDateUtil {
 				ts.setNanos(t.getNano());
 				return ts;
 			}).orElse(null);
+
+	public static final Function<Timestamp, OffsetDateTime> transformFromTimestampToOffsetDateTime = timestamp -> {
+		if (timestamp == null) {
+			return null;
+		}
+		OffsetDateTime offsetDateTime = OffsetDateTime.now(DEFAULT_TZ.toZoneId());
+		return timestamp.toLocalDateTime().atOffset(offsetDateTime.getOffset());
+	};
+
 	public static final BiFunction<String, TimeZone, Date> transformToDateFunction = (value,
 			fromTimeZone) -> parse(value, fromTimeZone, dateTimeType.DATE).map(t -> new Date(getEpochMilli(t)))
 					.orElse(null);

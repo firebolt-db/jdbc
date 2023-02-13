@@ -1,15 +1,12 @@
 package com.firebolt.jdbc.type.date;
 
 import static com.firebolt.jdbc.type.date.SqlDateUtil.ONE_DAY_MILLIS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.format.DateTimeParseException;
 import java.util.TimeZone;
 
@@ -230,5 +227,18 @@ class SqlDateUtilTest {
 				ZonedDateTime.of(2022, 5, 11, 4, 1, 2, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
 		assertEquals(new Timestamp(expectedTimestampWithDifferentTz.toInstant().toEpochMilli()),
 				SqlDateUtil.transformToTimestampFunction.apply(date, EST_TZ));
+	}
+
+	@Test
+	void shouldTransformTimestampToOffsetDateTime() {
+		Timestamp timestamp = new Timestamp(
+				ZonedDateTime.of(2022, 5, 10, 23, 1, 2, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
+		OffsetDateTime expectedOffsetDateTime = OffsetDateTime.of(timestamp.toLocalDateTime(), ZoneOffset.of("+00:00"));
+		assertEquals(expectedOffsetDateTime, SqlDateUtil.transformFromTimestampToOffsetDateTime.apply(timestamp));
+	}
+
+	@Test
+	void shouldTransformTimestampToNullOffsetDateTimeWhenTimestampIsNull() {
+		assertNull(SqlDateUtil.transformFromTimestampToOffsetDateTime.apply(null));
 	}
 }

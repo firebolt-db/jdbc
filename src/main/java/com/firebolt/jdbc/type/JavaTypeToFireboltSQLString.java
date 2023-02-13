@@ -15,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.firebolt.jdbc.CheckedFunction;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import com.firebolt.jdbc.type.date.SqlDateUtil;

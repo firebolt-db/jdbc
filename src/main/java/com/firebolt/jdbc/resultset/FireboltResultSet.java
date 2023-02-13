@@ -356,6 +356,22 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	@Override
+	public <T> T getObject(int columnIndex, Class<T> type) throws SQLException {
+		if (type == null) {
+			throw new FireboltException("The type provided is null");
+		}
+		String value = this.getValueAtColumn(columnIndex);
+		Column column = this.resultSetMetaData.getColumn(columnIndex);
+		BaseType columnType = column.getType().getDataType().getBaseType();
+		return FieldTypeConverter.convert(type, value, columnType, column);
+	}
+
+	@Override
+	public <T> T getObject(String columnLabel, Class<T> type) throws SQLException {
+		return getObject(this.findColumn(columnLabel), type);
+	}
+
+	@Override
 	public Time getTime(String columnLabel) throws SQLException {
 		return getTime(this.findColumn(columnLabel));
 	}
@@ -1608,20 +1624,5 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
-	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public <T> T getObject(int columnIndex, Class<T> type) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
-	}
-
-	/** @hidden */
-	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public <T> T getObject(String columnLabel, Class<T> type) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
-	}
 
 }
