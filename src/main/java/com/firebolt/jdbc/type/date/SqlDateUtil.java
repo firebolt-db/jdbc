@@ -41,7 +41,7 @@ public class SqlDateUtil {
 
 	public static final Function<Timestamp, String> transformFromTimestampToSQLStringFunction = value -> String
 			.format("'%s'", dateTimeFormatter.format(value.toLocalDateTime()));
-	private static final TimeZone DEFAULT_TZ = TimeZone.getDefault();
+	private static final TimeZone DEFAULT_SERVER_TZ = TimeZone.getTimeZone("UTC");
 	// Number of milliseconds at the start of the introduction of the gregorian
 	// calendar(1582-10-05T00:00:00Z) from the epoch of 1970-01-01T00:00:00Z
 	private static final long GREGORIAN_START_DATE_IN_MILLIS = -12220156800000L;
@@ -61,7 +61,7 @@ public class SqlDateUtil {
 		if (timestamp == null) {
 			return null;
 		}
-		OffsetDateTime offsetDateTime = OffsetDateTime.now(DEFAULT_TZ.toZoneId());
+		OffsetDateTime offsetDateTime = OffsetDateTime.now(DEFAULT_SERVER_TZ.toZoneId());
 		return timestamp.toLocalDateTime().atOffset(offsetDateTime.getOffset());
 	};
 
@@ -77,7 +77,7 @@ public class SqlDateUtil {
 		if (StringUtils.isEmpty(value)) {
 			return Optional.empty();
 		}
-		ZoneId zoneId = fromTimeZone == null ? DEFAULT_TZ.toZoneId() : fromTimeZone.toZoneId();
+		ZoneId zoneId = fromTimeZone == null ? TimeZone.getDefault().toZoneId() : fromTimeZone.toZoneId();
 		try {
 			ZonedDateTime zdt;
 			boolean timestampContainsTz = timestampValueContainsTz(value);
@@ -91,7 +91,7 @@ public class SqlDateUtil {
 			} else if (dateTimeType == SqlDateUtil.dateTimeType.TIME) {
 				zdt = truncateToTime(timestampContainsTz, fromTimeZone, zdt);
 			}
-			return Optional.of(zdt.withZoneSameInstant(DEFAULT_TZ.toZoneId()));
+			return Optional.of(zdt);
 		} catch (DateTimeException dateTimeException) {
 			LocalDateTime localDateTime;
 			LocalDate date = LocalDate.from(dateFormatter.parse(value));
@@ -100,7 +100,7 @@ public class SqlDateUtil {
 			} else {
 				localDateTime = LocalDateTime.of(date.getYear(), date.getMonth(), date.getDayOfMonth(), 0, 0);
 			}
-			return Optional.of(localDateTime.atZone(zoneId).withZoneSameInstant(DEFAULT_TZ.toZoneId()));
+			return Optional.of(localDateTime.atZone(zoneId).withZoneSameInstant(TimeZone.getDefault().toZoneId()));
 		}
 	}
 
@@ -110,18 +110,23 @@ public class SqlDateUtil {
 		if (fromTimeZone != null && !timestampContainsTz) {
 			zdt = zdt.withZoneSameLocal(fromTimeZone.toZoneId());
 		} else {
-			zdt = zdt.withZoneSameInstant(DEFAULT_TZ.toZoneId());
+			zdt = zdt.withZoneSameInstant(TimeZone.getDefault().toZoneId());
 		}
 		return zdt;
 	}
 
 	private static ZonedDateTime truncateToDate(TimeZone fromTimeZone, ZonedDateTime zdt) {
-		ZoneId zoneId = fromTimeZone != null ? fromTimeZone.toZoneId() : DEFAULT_TZ.toZoneId();
+		ZoneId zoneId = fromTimeZone != null ? fromTimeZone.toZoneId() : TimeZone.getDefault().toZoneId();
 		return zdt.withZoneSameInstant(zoneId).truncatedTo(ChronoUnit.DAYS);
 	}
 
 	private static long getEpochMilli(ZonedDateTime t) {
-		return t.toInstant().toEpochMilli() + calculateJulianToGregorianDiffMillis(t);
+		// Timezone offsets may change over time.
+		// For instance, Asia/Kolkata had an offset of +05:21:10 in 1899 vs +05:30 today.
+		// The timestamp returned should not have a difference (so we need to remove the offset diff)
+		int tzOffsetDiff = (ZoneId.of(t.getZone().getId()).getRules().getOffset(Instant.now()).getTotalSeconds() -
+				ZoneId.of(t.getZone().getId()).getRules().getOffset(t.toInstant()).getTotalSeconds()) * 1000;
+		return t.toInstant().toEpochMilli() + calculateJulianToGregorianDiffMillis(t) - tzOffsetDiff;
 	}
 
 	/**

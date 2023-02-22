@@ -177,7 +177,6 @@ class SqlDateUtilTest {
 		assertEquals(expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(timeWithTimezone, null));
 	}
 
-
 	@Test
 	void shouldTransformTimestampTzWithoutTz() {
 		String timeWithTimezone = "2023-01-05 17:04:42.123456";
@@ -194,6 +193,7 @@ class SqlDateUtilTest {
 		assertEquals(new Date(zonedDateTime.toInstant().toEpochMilli()),
 				SqlDateUtil.transformToDateFunction.apply(date, null));
 	}
+
 	@Test
 	void shouldTransformTimestampntzToDate() {
 		String date = "2022-05-10 21:01:02";
@@ -210,7 +210,7 @@ class SqlDateUtilTest {
 		expectedTimestamp.setNanos(123);
 		assertEquals(new Timestamp(expectedTimestamp.toInstant().toEpochMilli()),
 				SqlDateUtil.transformToTimestampFunction.apply(date, null));
-		//The tz remains the same when the tz info is already is part of the response
+		// The tz remains the same when the tz info is already is part of the response
 		assertEquals(new Timestamp(expectedTimestamp.toInstant().toEpochMilli()),
 				SqlDateUtil.transformToTimestampFunction.apply(date, EST_TZ));
 	}
@@ -240,5 +240,18 @@ class SqlDateUtilTest {
 	@Test
 	void shouldTransformTimestampToNullOffsetDateTimeWhenTimestampIsNull() {
 		assertNull(SqlDateUtil.transformFromTimestampToOffsetDateTime.apply(null));
+	}
+
+	@Test
+	@DefaultTimeZone("Asia/Kolkata")
+	void shouldTransformTimestampWithoutOffsetDifference() {
+		// The tz offset was different in 1899 (+05:21:10) - compared to +05:30 today
+		String dateTime = "1899-01-01 00:00:00";
+		long offsetDiffInMillis = ((8 * 60) + 50) * 1000L; // 8:50 in millis
+		ZonedDateTime expectedTimestampZdt = ZonedDateTime.of(1899, 1, 1, 0, 0, 0, 0,
+				TimeZone.getTimeZone("Asia/Kolkata").toZoneId());
+		Timestamp expectedTimestamp = new Timestamp(
+				expectedTimestampZdt.toInstant().toEpochMilli() - offsetDiffInMillis);
+		assertEquals(expectedTimestamp, SqlDateUtil.transformToTimestampFunction.apply(dateTime, null));
 	}
 }
