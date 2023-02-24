@@ -1,18 +1,19 @@
 package integration.tests;
 
+import static com.firebolt.jdbc.type.BaseType.TIMESTAMP;
+import static com.firebolt.jdbc.type.BaseType.TIMESTAMP_WITH_TIMEZONE;
 import static com.firebolt.jdbc.type.date.SqlDateUtil.ONE_DAY_MILLIS;
-import static java.sql.Types.TIMESTAMP;
-import static java.sql.Types.TIMESTAMP_WITH_TIMEZONE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.sql.*;
+import java.sql.Date;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.TimeZone;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -30,6 +31,7 @@ import lombok.CustomLog;
 class TimestampTest extends IntegrationTest {
 	private static final TimeZone UTC_TZ = TimeZone.getTimeZone("UTC");
 	private static final Calendar EST_CALENDAR = Calendar.getInstance(TimeZone.getTimeZone("EST"));
+	private static final Calendar ECT_CALENDAR = Calendar.getInstance(TimeZone.getTimeZone("ECT"));
 
 	private EmbeddedPostgres embeddedPostgres;
 
@@ -112,6 +114,20 @@ class TimestampTest extends IntegrationTest {
 	}
 
 	@Test
+	@DefaultTimeZone("CET")
+	void shouldRemoveOffsetDIffWhenTimestampOffsetHasChangedCET() throws SQLException {
+		// Asia/Kolkata had an offset of +05:21:10 in 1899 vs +05:30 today. The
+		// timestamp returned should have the time 00:00:00 (so without the difference
+		// of 08:50).
+		try (Connection connection = this.createConnection();
+				Statement statement = connection.createStatement();
+				ResultSet resultSet = statement.executeQuery("SELECT CAST('2100-05-11 00:00:00' AS timestamp_ext);")) {
+			resultSet.next();
+			compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '2100-05-11 00:00:00'::timestamp");
+		}
+	}
+
+	@Test
 	void shouldReturnTimestampFromTimestampntz() throws SQLException {
 		try (Connection connection = this.createConnection();
 				Statement statement = connection.createStatement();
@@ -174,7 +190,7 @@ class TimestampTest extends IntegrationTest {
 	void shouldReturnTimestampFromTimestampTzWithTzWithHoursAndMinutes() throws SQLException {
 		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
 			statement.execute("SET advanced_mode=1;SET time_zone = 'Asia/Calcutta';"); // The server will return a tz in
-																						// the format +05:30
+			// the format +05:30
 			ResultSet resultSet = statement.executeQuery("SELECT '1975-05-10 23:01:02.123'::timestamptz;");
 			resultSet.next();
 			compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '1975-05-10 23:01:02.123'::timestamptz;",
@@ -186,7 +202,7 @@ class TimestampTest extends IntegrationTest {
 	void shouldReturnTimestampFromTimestampTzWithTzWithHoursAndMinutesAndSeconds() throws SQLException {
 		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
 			statement.execute("SET advanced_mode=1;SET time_zone = 'Asia/Calcutta';"); // The server will return a tz in
-																						// the format +05:30
+			// the format +05:30
 			ResultSet resultSet = statement.executeQuery("SELECT '1111-01-05 17:04:42.123456'::timestamptz");
 			resultSet.next();
 			Timestamp expectedTimestamp = new Timestamp(
@@ -221,6 +237,33 @@ class TimestampTest extends IntegrationTest {
 		}
 	}
 
+	@Test
+	void shouldCompareAllTimeStampsWithMultipleThreads() throws SQLException, InterruptedException, ExecutionException {
+		try (Connection connection = this.createConnection();
+				Statement statement = connection.createStatement();
+				ResultSet resultSet = statement.executeQuery("SELECT CAST('1899-01-01 00:00:00' AS timestamp_ext);")) {
+			resultSet.next();
+			AtomicInteger count = new AtomicInteger(0);
+			int expectedCount = 1000;
+			Callable<Void> callable = () -> {
+				compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '1899-01-01 00:00:00'::timestamp");
+				count.incrementAndGet();
+				return null;
+			};
+			List<Callable<Void>> callables = new ArrayList<>();
+			for (int i = 0; i < expectedCount; i++) {
+				callables.add(callable);
+			}
+			ExecutorService threadPool = Executors.newFixedThreadPool(10);
+			List<Future<Void>> futures = threadPool.invokeAll(callables);
+			for (Future<Void> future : futures) {
+				future.get();
+			}
+			assertEquals(expectedCount, count.get());
+			threadPool.shutdown();
+		}
+	}
+
 	private void compareAllDateTimeResultSetValuesWithPostgres(ResultSet fireboltResultSet, String postgresQuery)
 			throws SQLException {
 		compareAllDateTimeResultSetValuesWithPostgres(fireboltResultSet, postgresQuery, null);
@@ -236,15 +279,21 @@ class TimestampTest extends IntegrationTest {
 
 			ResultSet postgresResultSet = pgStatement.executeQuery(postgresQuery);
 			postgresResultSet.next();
-
 			assertEquals(postgresResultSet.getObject(1), fireboltResultSet.getObject(1));
 			assertEquals(postgresResultSet.getTime(1), fireboltResultSet.getTime(1));
 			assertEquals(postgresResultSet.getTime(1, EST_CALENDAR), fireboltResultSet.getTime(1, EST_CALENDAR));
+			assertEquals(postgresResultSet.getTime(1, ECT_CALENDAR), fireboltResultSet.getTime(1, ECT_CALENDAR));
+
 			assertEquals(postgresResultSet.getDate(1), fireboltResultSet.getDate(1));
 			assertEquals(postgresResultSet.getDate(1, EST_CALENDAR), fireboltResultSet.getDate(1, EST_CALENDAR));
+			assertEquals(postgresResultSet.getDate(1, ECT_CALENDAR), fireboltResultSet.getDate(1, ECT_CALENDAR));
+
 			assertEquals(postgresResultSet.getTimestamp(1), fireboltResultSet.getTimestamp(1));
 			assertEquals(postgresResultSet.getTimestamp(1, EST_CALENDAR),
 					fireboltResultSet.getTimestamp(1, EST_CALENDAR));
+
+			assertEquals(postgresResultSet.getTimestamp(1, ECT_CALENDAR),
+					fireboltResultSet.getTimestamp(1, ECT_CALENDAR));
 			if (Arrays.asList(TIMESTAMP_WITH_TIMEZONE, TIMESTAMP)
 					.contains(postgresResultSet.getMetaData().getColumnType(1))) {
 				assertEquals(postgresResultSet.getObject(1, OffsetDateTime.class),
