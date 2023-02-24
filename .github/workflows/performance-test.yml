@@ -61,7 +61,7 @@ jobs:
           testFilePath: JDBC.jmx
           dependencyFolder: dependencies
           outputReportsFolder: reports/
-          args: -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jpassword=${{ secrets.FIREBOLT_PASSWORD_STAGING }} -Jusername=${{ secrets.FIREBOLT_USERNAME_STAGING }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
+          args: -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jpassword=${{ secrets.SERVICE_ACCOUNT_SECRET_STAGING }} -Jusername=${{ secrets.SERVICE_ACCOUNT_ID_STAGING }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
       - name: Upload JMeter report
         uses: actions/upload-artifact@v3
         with:
