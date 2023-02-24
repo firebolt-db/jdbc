@@ -17,6 +17,8 @@
  * NOTICE: THIS FILE HAS BEEN COPIED BY Firebolt Analytics, Inc. from the PostgreSQL Database Management System repository
  * URLs :
  *  - Repository: https://github.com/postgres/postgres/
+ * Changes:
+ *  - Enum values (to match the regular expression '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$')
  */
 
 /*
@@ -50,8 +52,8 @@ package com.firebolt.jdbc;
 
 public enum JavaVersion {
   // Note: order is important,
-  v1_8,
-  other;
+  V1_8,
+  OTHER;
 
   private static final JavaVersion RUNTIME_VERSION = from(System.getProperty("java.version"));
 
@@ -73,8 +75,8 @@ public enum JavaVersion {
    */
   public static JavaVersion from(String version) {
     if (version.startsWith("1.8")) {
-      return v1_8;
+      return V1_8;
     }
-    return other;
+    return OTHER;
   }
 }

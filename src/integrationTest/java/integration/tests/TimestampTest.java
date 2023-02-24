@@ -47,7 +47,7 @@ class TimestampTest extends IntegrationTest {
 
 	@Test
 	void shouldGetTimeObjectsInDefaultUTCTimezone() throws SQLException {
-		try (Connection connection = this.createConnection("system");
+		try (Connection connection = this.createConnection();
 				Statement statement = connection.createStatement();
 				ResultSet resultSet = statement.executeQuery("SELECT TO_TIMESTAMP_EXT('1975/01/01 23:01:01', 6);")) {
 			resultSet.next();
@@ -69,7 +69,7 @@ class TimestampTest extends IntegrationTest {
 
 	@Test
 	void shouldGetParsedTimeStampExtTimeObjects() throws SQLException {
-		try (Connection connection = this.createConnection("system");
+		try (Connection connection = this.createConnection();
 				Statement statement = connection.createStatement();
 				ResultSet resultSet = statement
 						.executeQuery("SELECT CAST('1111-11-11 ' || '12:00:03' AS timestamp_ext);")) {
@@ -239,7 +239,7 @@ class TimestampTest extends IntegrationTest {
 
 	@Test
 	void shouldCompareAllTimeStampsWithMultipleThreads() throws SQLException, InterruptedException, ExecutionException {
-		try (Connection connection = this.createConnection("system");
+		try (Connection connection = this.createConnection();
 				Statement statement = connection.createStatement();
 				ResultSet resultSet = statement.executeQuery("SELECT CAST('1899-01-01 00:00:00' AS timestamp_ext);")) {
 			resultSet.next();

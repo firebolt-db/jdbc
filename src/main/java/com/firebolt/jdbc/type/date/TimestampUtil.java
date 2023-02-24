@@ -29,6 +29,9 @@
  *  - Class members have been reorganized
  *  - Access modifiers and non-access modifiers
  *  - Class name from TimestampUtils to TimestampUtil
+ *  - Type specification in the map constructor with the diamond operator
+ *  - Adding final keyword for constants
+ *  - Replacing isSpace() with isWhiteSpaced()
  */
 
 /*
@@ -79,9 +82,9 @@ import lombok.experimental.UtilityClass;
 public class TimestampUtil {
 
 	private static final char[][] NUMBERS;
-	private static final HashMap<String, TimeZone> GMT_ZONES = new HashMap<String, TimeZone>();
-	private static long DATE_POSITIVE_INFINITY = 9223372036825200000L;
-	private static long DATE_NEGATIVE_INFINITY = -9223372036832400000L;
+	private static final HashMap<String, TimeZone> GMT_ZONES = new HashMap<>();
+	private static final long DATE_POSITIVE_INFINITY = 9223372036825200000L;
+	private static final long DATE_NEGATIVE_INFINITY = -9223372036832400000L;
 	private static final @Nullable Field DEFAULT_TIME_ZONE_FIELD;
 	private static final int ONEDAY = 24 * 3600 * 1000;
 	private static @Nullable TimeZone prevDefaultZoneFieldValue;
@@ -131,7 +134,7 @@ public class TimestampUtil {
 		try {
 			tzField = null;
 			// Avoid reflective access in Java 9+
-			if (JavaVersion.getRuntimeVersion().compareTo(JavaVersion.v1_8) <= 0) {
+			if (JavaVersion.getRuntimeVersion().compareTo(JavaVersion.V1_8) <= 0) {
 				tzField = TimeZone.class.getDeclaredField("defaultTimeZone");
 				tzField.setAccessible(true);
 				TimeZone defaultTz = getDefaultTz();
@@ -318,7 +321,7 @@ public class TimestampUtil {
 	private static int skipWhitespace(char[] s, int start) {
 		int slen = s.length;
 		for (int i = start; i < slen; i++) {
-			if (!Character.isSpace(s[i])) {
+			if (!Character.isWhitespace(s[i])) {
 				return i;
 			}
 		}
