@@ -474,7 +474,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 				+ "TOP,TRIM,TRUNCATE,UNKNOWN_CHAR,UNTERMINATED_STRING,WEEK";
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -482,7 +481,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return "";
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -490,7 +488,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return "";
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -498,7 +495,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return "";
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -512,7 +508,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return "\\";
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -866,7 +861,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return false;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -874,7 +868,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -882,7 +875,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -890,7 +882,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -898,7 +889,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -906,7 +896,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -914,7 +903,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -922,7 +910,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -936,7 +923,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -944,7 +930,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -952,7 +937,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -960,7 +944,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -968,7 +951,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -976,7 +958,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -990,7 +971,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return false;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -998,7 +978,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1006,7 +985,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1014,7 +992,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1022,7 +999,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return 0;
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1231,7 +1207,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1239,7 +1214,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1247,7 +1221,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1256,7 +1229,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1265,7 +1237,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1274,7 +1245,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1283,7 +1253,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1292,7 +1261,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1300,7 +1268,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1308,7 +1275,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1316,7 +1282,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1324,7 +1289,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1333,7 +1297,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1342,7 +1305,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1350,7 +1312,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1359,7 +1320,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.empty();
 	}
 
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -1367,8 +1327,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 			String columnNamePattern) throws SQLException {
 		return FireboltResultSet.empty();
 	}
-
-	/** @hidden */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented

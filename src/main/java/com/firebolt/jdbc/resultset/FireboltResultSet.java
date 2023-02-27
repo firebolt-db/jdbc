@@ -546,7 +546,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new SQLException("Cannot unwrap to " + iface.getName());
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -554,7 +553,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -562,7 +560,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -570,7 +567,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -578,7 +574,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -586,7 +581,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -594,7 +588,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -602,7 +595,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -610,7 +602,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -618,7 +609,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -626,7 +616,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -634,7 +623,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -642,7 +630,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -650,7 +637,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -658,7 +644,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -666,7 +651,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -674,7 +658,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -687,7 +670,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -704,7 +686,6 @@ public class FireboltResultSet implements ResultSet {
 		// Not supported
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -712,7 +693,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -720,7 +700,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -728,7 +707,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -736,7 +714,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -744,7 +721,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -752,7 +728,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -760,7 +735,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -768,7 +742,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -776,7 +749,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -784,7 +756,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -792,7 +763,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -800,7 +770,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -808,7 +777,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -816,7 +784,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -824,7 +791,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -832,7 +798,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -840,7 +805,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -848,7 +812,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -856,7 +819,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -864,7 +826,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -872,7 +833,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -880,7 +840,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -888,7 +847,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -896,7 +854,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -904,7 +861,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -912,7 +868,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -920,7 +875,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -928,7 +882,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -936,7 +889,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -944,7 +896,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -952,7 +903,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -960,7 +910,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -968,7 +917,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -976,7 +924,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -984,7 +931,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -992,7 +938,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1000,7 +945,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1008,7 +952,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1016,7 +959,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1024,7 +966,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1032,7 +973,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1040,7 +980,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1048,7 +987,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1056,7 +994,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1064,7 +1001,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1072,7 +1008,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1080,7 +1015,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1088,7 +1022,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1096,7 +1029,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1104,7 +1036,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1112,7 +1043,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1120,7 +1050,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1128,7 +1057,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1136,7 +1064,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1144,7 +1071,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1152,7 +1078,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1160,7 +1085,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1168,7 +1092,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1176,7 +1099,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1184,7 +1106,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1192,7 +1113,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1200,7 +1120,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1208,7 +1127,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1216,7 +1134,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1224,7 +1141,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1232,7 +1148,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1240,7 +1155,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1248,7 +1162,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1256,7 +1169,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1264,7 +1176,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1272,7 +1183,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1280,7 +1190,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1288,7 +1197,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1296,7 +1204,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1304,7 +1211,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1312,7 +1218,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1320,7 +1225,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1328,7 +1232,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1336,7 +1239,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1344,7 +1246,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1352,7 +1253,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1360,7 +1260,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1368,7 +1267,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1376,7 +1274,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1384,7 +1281,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1392,7 +1288,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1400,7 +1295,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1408,7 +1302,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1416,7 +1309,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1424,7 +1316,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1432,7 +1323,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1440,7 +1330,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1448,7 +1337,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1456,7 +1344,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1464,7 +1351,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1472,7 +1358,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1480,7 +1365,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1488,7 +1372,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1496,7 +1379,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1504,7 +1386,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1512,7 +1393,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1520,7 +1400,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1528,7 +1407,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1536,7 +1414,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1544,7 +1421,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1552,7 +1428,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1560,7 +1435,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1568,7 +1442,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1576,7 +1449,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1584,7 +1456,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1592,7 +1463,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1600,7 +1470,6 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -1608,15 +1477,12 @@ public class FireboltResultSet implements ResultSet {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
 	public void updateNClob(int columnIndex, Reader reader) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
-
-	/** @hidden */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport

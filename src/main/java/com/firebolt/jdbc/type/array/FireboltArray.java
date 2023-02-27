@@ -50,9 +50,6 @@ public class FireboltArray implements Array {
 		array = null;
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -60,9 +57,6 @@ public class FireboltArray implements Array {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -70,9 +64,6 @@ public class FireboltArray implements Array {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -80,9 +71,6 @@ public class FireboltArray implements Array {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -90,9 +78,6 @@ public class FireboltArray implements Array {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -100,9 +85,6 @@ public class FireboltArray implements Array {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport

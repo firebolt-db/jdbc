@@ -397,9 +397,6 @@ public class FireboltStatement implements Statement {
 		return this.runningStatementId != null && statementService.isStatementRunning(this.runningStatementId);
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -407,9 +404,6 @@ public class FireboltStatement implements Statement {
 		return 0;
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -417,9 +411,6 @@ public class FireboltStatement implements Statement {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -427,9 +418,6 @@ public class FireboltStatement implements Statement {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -437,9 +425,6 @@ public class FireboltStatement implements Statement {
 		return null;
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -447,9 +432,6 @@ public class FireboltStatement implements Statement {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -469,9 +451,6 @@ public class FireboltStatement implements Statement {
 		// no-op
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -488,9 +467,6 @@ public class FireboltStatement implements Statement {
 		// Ignore
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -498,9 +474,6 @@ public class FireboltStatement implements Statement {
 		return 0;
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -508,9 +481,6 @@ public class FireboltStatement implements Statement {
 		return 0;
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -519,9 +489,6 @@ public class FireboltStatement implements Statement {
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -529,10 +496,6 @@ public class FireboltStatement implements Statement {
 		// Batch are not supported by the driver
 		throw new FireboltUnsupportedOperationException();
 	}
-
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -540,10 +503,7 @@ public class FireboltStatement implements Statement {
 		// Batch are not supported by the driver
 		throw new FireboltUnsupportedOperationException();
 	}
-
-	/**
-	 * @hidden
-	 */
+	
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -551,9 +511,6 @@ public class FireboltStatement implements Statement {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -561,9 +518,6 @@ public class FireboltStatement implements Statement {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -571,9 +525,6 @@ public class FireboltStatement implements Statement {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -581,9 +532,6 @@ public class FireboltStatement implements Statement {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -591,9 +539,6 @@ public class FireboltStatement implements Statement {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -601,9 +546,6 @@ public class FireboltStatement implements Statement {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -611,9 +553,6 @@ public class FireboltStatement implements Statement {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -627,9 +566,6 @@ public class FireboltStatement implements Statement {
 		return false;
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport

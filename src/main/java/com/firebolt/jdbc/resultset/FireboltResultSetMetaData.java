@@ -110,9 +110,6 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
-	/**
-	 * @hidden
-	 */
 	public boolean isAutoIncrement(int column) throws SQLException {
 		return false;
 	}
@@ -135,10 +132,6 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 		// Default value for backward compatibility
 		return 80;
 	}
-
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
