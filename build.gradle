@@ -3,9 +3,9 @@ import java.util.jar.JarFile
 plugins {
     id 'java'
     id 'jacoco'
-    id "org.sonarqube" version "3.5.0.2730"
+    id "org.sonarqube" version "4.0.0.2929"
     id 'maven-publish'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'com.github.johnrengelman.shadow' version '8.0.0'
 }
 
 group 'com.firebolt'
@@ -72,10 +72,10 @@ dependencies {
     implementation fileTree(dir: 'libs', includes: ['*.jar'])
     compileOnly 'org.slf4j:slf4j-api:2.0.6'
 
-    compileOnly 'org.projectlombok:lombok:1.18.24'
-    annotationProcessor 'org.projectlombok:lombok:1.18.24'
-    testCompileOnly 'org.projectlombok:lombok:1.18.24'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
+    compileOnly 'org.projectlombok:lombok:1.18.26'
+    annotationProcessor 'org.projectlombok:lombok:1.18.26'
+    testCompileOnly 'org.projectlombok:lombok:1.18.26'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.26'
 
     testImplementation 'ch.qos.logback:logback-classic:1.3.5'
     testImplementation 'org.mockito:mockito-junit-jupiter:4.11.0'
@@ -88,12 +88,13 @@ dependencies {
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
     testImplementation 'com.squareup.okhttp3:mockwebserver:4.10.0'
     testImplementation 'com.squareup.okhttp3:okhttp-tls:4.10.0'
-    testImplementation 'io.zonky.test:embedded-postgres:2.0.2'
+    testImplementation 'io.zonky.test:embedded-postgres:2.0.3'
     testCompileOnly 'org.slf4j:slf4j-api:2.0.6'
     testCommonImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
     testImplementation sourceSets.testCommon.output
     compileTestJava.dependsOn processTestResources
     jar.dependsOn processTestResources
+    jar.dependsOn processIntegrationTestResources
     compileTestCommonJava.dependsOn processTestResources
     compileTestCommonJava.dependsOn processIntegrationTestResources
     compileIntegrationTestJava.dependsOn processIntegrationTestResources
