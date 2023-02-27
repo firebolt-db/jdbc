@@ -15,3 +15,6 @@ updates:
         versions: ["5.x.x"]
       - dependency-name: "org.mockito:mockito-core"
         versions: ["5.x.x"]
+        # Pioneer 2 requires java 11+
+      - dependency-name: "org.junit-pioneer:junit-pioneer"
+        versions: [ "2.x.x" ]
