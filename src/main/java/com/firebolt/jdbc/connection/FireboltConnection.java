@@ -157,9 +157,6 @@ public class FireboltConnection implements Connection {
 		return false;
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -188,9 +185,6 @@ public class FireboltConnection implements Connection {
 		return sessionProperties.getDatabase();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	public void setCatalog(String catalog) throws SQLException {
@@ -208,9 +202,6 @@ public class FireboltConnection implements Connection {
 		return Connection.TRANSACTION_NONE;
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -400,18 +391,12 @@ public class FireboltConnection implements Connection {
 		}
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	public void commit() throws SQLException {
 		// no-op as transactions are not supported
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	public void rollback() throws SQLException {
@@ -446,9 +431,6 @@ public class FireboltConnection implements Connection {
 		return this.connectionTimeout;
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -462,9 +444,6 @@ public class FireboltConnection implements Connection {
 		return false;
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -472,9 +451,6 @@ public class FireboltConnection implements Connection {
 		// no-op
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -482,9 +458,6 @@ public class FireboltConnection implements Connection {
 		return null;
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -492,9 +465,6 @@ public class FireboltConnection implements Connection {
 		// no-op
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -502,9 +472,6 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -513,9 +480,6 @@ public class FireboltConnection implements Connection {
 		return new HashMap<>();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -528,9 +492,6 @@ public class FireboltConnection implements Connection {
 		return 0;
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -538,9 +499,6 @@ public class FireboltConnection implements Connection {
 		// No support for transaction
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -549,9 +507,6 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -560,9 +515,6 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -571,9 +523,6 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -581,9 +530,6 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -592,9 +538,6 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -602,9 +545,6 @@ public class FireboltConnection implements Connection {
 		throw new SQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -612,9 +552,6 @@ public class FireboltConnection implements Connection {
 		throw new SQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -622,9 +559,6 @@ public class FireboltConnection implements Connection {
 		throw new SQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -632,18 +566,12 @@ public class FireboltConnection implements Connection {
 		throw new SQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	public void setClientInfo(String name, String value) throws SQLClientInfoException {
 		// Not supported
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -651,9 +579,6 @@ public class FireboltConnection implements Connection {
 		return null;
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -661,18 +586,12 @@ public class FireboltConnection implements Connection {
 		return new Properties();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	public void setClientInfo(Properties properties) throws SQLClientInfoException {
 		// Not supported
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
@@ -680,9 +599,6 @@ public class FireboltConnection implements Connection {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented

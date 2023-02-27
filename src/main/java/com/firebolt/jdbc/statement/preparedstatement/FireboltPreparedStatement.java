@@ -255,9 +255,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltException("Cannot call execute(String) on a PreparedStatement");
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -265,9 +262,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -275,9 +269,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -285,9 +276,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -295,9 +283,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -305,9 +290,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -315,9 +297,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -325,9 +304,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -335,9 +311,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -345,9 +318,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -355,9 +325,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -365,9 +332,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -375,9 +339,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -385,9 +346,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -395,9 +353,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -405,9 +360,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -415,9 +367,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -425,9 +374,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -435,9 +381,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -445,9 +388,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -455,9 +395,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -465,9 +402,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -475,9 +409,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -485,9 +416,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -495,9 +423,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -505,9 +430,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -515,9 +437,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -525,9 +444,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltUnsupportedOperationException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -535,9 +451,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	/**
-	 * @hidden
-	 */
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
