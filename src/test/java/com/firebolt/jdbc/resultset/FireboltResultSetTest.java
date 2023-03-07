@@ -84,14 +84,14 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
 		resultSet.next();
-		assertEquals(1L, resultSet.getObject(1));
+		assertEquals(1, resultSet.getObject(1));
 		String[][][] firstArray = { { { "1", "2" }, { "3", "4" } } };
 		Array array = resultSet.getObject(2, Array.class);
 		Assertions.assertArrayEquals(firstArray, (String[][][]) array.getArray());
 		assertEquals(new Long("1"), resultSet.getObject(1, Long.class));
 
 		resultSet.next();
-		assertEquals(2L, resultSet.getObject(1));
+		assertEquals(2, resultSet.getObject(1));
 		String[][][] secondArray = { { { "1", "2" }, { "3", "4" } }, { { "5", "6" }, { "7", "8", null } } };
 		assertArrayEquals(secondArray, ((String[][][]) resultSet.getObject(2)));
 	}
@@ -754,7 +754,7 @@ class FireboltResultSetTest {
 		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(6));
 		assertEquals(Types.BIGINT, resultSet.getMetaData().getColumnType(7));
 		assertEquals(Types.BIGINT, resultSet.getMetaData().getColumnType(8));
-		assertEquals(Types.FLOAT, resultSet.getMetaData().getColumnType(9));
+		assertEquals(Types.REAL, resultSet.getMetaData().getColumnType(9));
 		assertEquals(Types.DOUBLE, resultSet.getMetaData().getColumnType(10));
 		assertEquals(Types.VARCHAR, resultSet.getMetaData().getColumnType(11));
 		assertEquals(Types.DATE, resultSet.getMetaData().getColumnType(12));
@@ -765,7 +765,7 @@ class FireboltResultSetTest {
 		assertEquals(Types.TIMESTAMP, resultSet.getMetaData().getColumnType(17));
 		assertEquals(Types.TIMESTAMP_WITH_TIMEZONE, resultSet.getMetaData().getColumnType(18));
 		assertEquals(Types.ARRAY, resultSet.getMetaData().getColumnType(19));
-		assertEquals(Types.DECIMAL, resultSet.getMetaData().getColumnType(20));
+		assertEquals(Types.NUMERIC, resultSet.getMetaData().getColumnType(20));
 		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(21));
 		assertEquals(Types.NULL, resultSet.getMetaData().getColumnType(22));
 		assertEquals(Types.NULL, resultSet.getMetaData().getColumnType(23));
@@ -833,6 +833,22 @@ class FireboltResultSetTest {
 	}
 
 	@Test
+	void shouldReturnDataAndTypesForNewDataTypes() throws SQLException {
+		inputStream = getInputStreamWithNewTypes2();
+		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
+		resultSet.next();
+		assertEquals(1, resultSet.getObject(1));
+		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(1));
+		assertEquals(30000000000L, resultSet.getObject(2));
+		assertEquals(Types.BIGINT, resultSet.getMetaData().getColumnType(2));
+		assertEquals(new Float(1.23), resultSet.getObject(3));
+		assertEquals(Types.REAL, resultSet.getMetaData().getColumnType(3));
+		assertEquals(1.23456789012, resultSet.getObject(4));
+		assertEquals(Types.DOUBLE, resultSet.getMetaData().getColumnType(4));
+		assertEquals(Types.NUMERIC, resultSet.getMetaData().getColumnType(5));
+	}
+
+	@Test
 	void shouldReturnDateTimeObjectsWithProvidedTypes() throws SQLException {
 		inputStream = getInputStreamWithNewTypes();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
@@ -892,7 +908,7 @@ class FireboltResultSetTest {
 		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
 		resultSet.next();
 		FireboltException exception = assertThrows(FireboltException.class, () -> resultSet.getObject(1, String.class));
-		assertEquals("conversion to class java.lang.String from java.lang.Long not supported", exception.getMessage());
+		assertEquals("conversion to class java.lang.String from java.lang.Integer not supported", exception.getMessage());
 	}
 
 	@Test
@@ -901,7 +917,17 @@ class FireboltResultSetTest {
 		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
 		resultSet.next();
 		FireboltException exception = assertThrows(FireboltException.class, () -> resultSet.getObject(1, TimeZone.class));
-		assertEquals("conversion to java.util.TimeZone from java.lang.Long not supported", exception.getMessage());
+		assertEquals("conversion to java.util.TimeZone from java.lang.Integer not supported", exception.getMessage());
+	}
+
+	@Test
+	void shouldConvertInt64s() throws SQLException {
+		inputStream = getInputStreamWithBigInt64();
+		resultSet = new FireboltResultSet(inputStream);
+		resultSet.next();
+		assertEquals(new BigInteger("18446744073709551615"), resultSet.getObject(1, BigInteger.class));
+		assertEquals(new BigInteger("-9223372036854775807"), resultSet.getObject(2, BigInteger.class));
+
 	}
 
 	private InputStream getInputStreamWithCommonResponseExample() {
@@ -932,6 +958,10 @@ class FireboltResultSetTest {
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-dates");
 	}
 
+	private InputStream getInputStreamWithBigInt64() {
+		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-bigint-64");
+	}
+
 	private InputStream getInputStreamWithNewTypes() {
 		// Result for the query 'Select 1 as uint8, -1 as int_8, 257 as uint16, -257 as
 		// int16, 80000 as uint32, -80000 as int32, 30000000000 as uint64,-30000000000
@@ -946,6 +976,10 @@ class FireboltResultSetTest {
 		// "decimal", cast(null as int) as nullable, null' + null type without "Nothing"
 		// keyword
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-new-types");
+	}
+
+	private InputStream getInputStreamWithNewTypes2() {
+		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-new-types-2.csv");
 	}
 
 }

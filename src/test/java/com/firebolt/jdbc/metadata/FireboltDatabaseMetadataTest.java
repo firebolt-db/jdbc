@@ -1,8 +1,8 @@
 package com.firebolt.jdbc.metadata;
 
 import static com.firebolt.jdbc.metadata.MetadataColumns.*;
-import static com.firebolt.jdbc.type.FireboltDataType.INT_32;
-import static com.firebolt.jdbc.type.FireboltDataType.STRING;
+import static com.firebolt.jdbc.type.FireboltDataType.INTEGER;
+import static com.firebolt.jdbc.type.FireboltDataType.TEXT;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -61,7 +61,7 @@ class FireboltDatabaseMetadataTest {
 	@Test
 	void shouldReturnTableTypes() throws SQLException {
 		ResultSet expectedResultSet = FireboltResultSet.of(QueryResult.builder()
-				.columns(Collections.singletonList(QueryResult.Column.builder().name(TABLE_TYPE).type(STRING).build()))
+				.columns(Collections.singletonList(QueryResult.Column.builder().name(TABLE_TYPE).type(TEXT).build()))
 				.rows(Arrays.asList(Collections.singletonList("TABLE"), Collections.singletonList("VIEW"))).build());
 
 		ResultSet actualResultSet = fireboltDatabaseMetadata.getTableTypes();
@@ -72,7 +72,7 @@ class FireboltDatabaseMetadataTest {
 	@Test
 	void shouldReturnCatalogs() throws SQLException {
 		ResultSet expectedResultSet = FireboltResultSet.of(QueryResult.builder()
-				.columns(Collections.singletonList(Column.builder().name(TABLE_CAT).type(STRING).build()))
+				.columns(Collections.singletonList(Column.builder().name(TABLE_CAT).type(TEXT).build()))
 				.rows(Collections.singletonList(Collections.singletonList("db_name"))).build());
 
 		ResultSet actualResultSet = fireboltDatabaseMetadata.getCatalogs();
@@ -128,38 +128,38 @@ class FireboltDatabaseMetadataTest {
 		String expectedQuery = "SELECT table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns WHERE table_name LIKE 'c' AND column_name LIKE 'd' AND table_schema LIKE 'b'";
 
 		ResultSet expectedResultSet = FireboltResultSet.of(QueryResult.builder()
-				.columns(Arrays.asList(Column.builder().name(TABLE_CAT).type(STRING).build(),
-						Column.builder().name(TABLE_SCHEM).type(STRING).build(),
-						Column.builder().name(TABLE_NAME).type(STRING).build(),
-						Column.builder().name(COLUMN_NAME).type(STRING).build(),
-						Column.builder().name(DATA_TYPE).type(INT_32).build(),
-						Column.builder().name(TYPE_NAME).type(STRING).build(),
-						Column.builder().name(COLUMN_SIZE).type(INT_32).build(),
-						Column.builder().name(BUFFER_LENGTH).type(INT_32).build(),
-						Column.builder().name(DECIMAL_DIGITS).type(INT_32).build(),
-						Column.builder().name(NUM_PREC_RADIX).type(INT_32).build(),
-						Column.builder().name(NULLABLE).type(INT_32).build(),
-						Column.builder().name(REMARKS).type(STRING).build(),
-						Column.builder().name(COLUMN_DEF).type(STRING).build(),
-						Column.builder().name(SQL_DATA_TYPE).type(INT_32).build(),
-						Column.builder().name(SQL_DATETIME_SUB).type(INT_32).build(),
-						Column.builder().name(CHAR_OCTET_LENGTH).type(INT_32).build(),
-						Column.builder().name(ORDINAL_POSITION).type(INT_32).build(),
-						Column.builder().name(IS_NULLABLE).type(STRING).build(),
-						Column.builder().name(SCOPE_CATALOG).type(STRING).build(),
-						Column.builder().name(SCOPE_SCHEMA).type(STRING).build(),
-						Column.builder().name(SCOPE_TABLE).type(STRING).build(),
-						Column.builder().name(SOURCE_DATA_TYPE).type(INT_32).build(),
-						Column.builder().name(IS_AUTOINCREMENT).type(STRING).build(),
-						Column.builder().name(IS_GENERATEDCOLUMN).type(STRING).build()))
+				.columns(Arrays.asList(Column.builder().name(TABLE_CAT).type(TEXT).build(),
+						Column.builder().name(TABLE_SCHEM).type(TEXT).build(),
+						Column.builder().name(TABLE_NAME).type(TEXT).build(),
+						Column.builder().name(COLUMN_NAME).type(TEXT).build(),
+						Column.builder().name(DATA_TYPE).type(INTEGER).build(),
+						Column.builder().name(TYPE_NAME).type(TEXT).build(),
+						Column.builder().name(COLUMN_SIZE).type(INTEGER).build(),
+						Column.builder().name(BUFFER_LENGTH).type(INTEGER).build(),
+						Column.builder().name(DECIMAL_DIGITS).type(INTEGER).build(),
+						Column.builder().name(NUM_PREC_RADIX).type(INTEGER).build(),
+						Column.builder().name(NULLABLE).type(INTEGER).build(),
+						Column.builder().name(REMARKS).type(TEXT).build(),
+						Column.builder().name(COLUMN_DEF).type(TEXT).build(),
+						Column.builder().name(SQL_DATA_TYPE).type(INTEGER).build(),
+						Column.builder().name(SQL_DATETIME_SUB).type(INTEGER).build(),
+						Column.builder().name(CHAR_OCTET_LENGTH).type(INTEGER).build(),
+						Column.builder().name(ORDINAL_POSITION).type(INTEGER).build(),
+						Column.builder().name(IS_NULLABLE).type(TEXT).build(),
+						Column.builder().name(SCOPE_CATALOG).type(TEXT).build(),
+						Column.builder().name(SCOPE_SCHEMA).type(TEXT).build(),
+						Column.builder().name(SCOPE_TABLE).type(TEXT).build(),
+						Column.builder().name(SOURCE_DATA_TYPE).type(INTEGER).build(),
+						Column.builder().name(IS_AUTOINCREMENT).type(TEXT).build(),
+						Column.builder().name(IS_GENERATEDCOLUMN).type(TEXT).build()))
 				.rows(Collections.singletonList(Arrays.asList("db_name", "Tutorial_11_04", // schema
 						"D2_TIMESTAMP", // table name
 						"id", // column name
 						Types.INTEGER, // sql data type
-						"INTEGER", // shorter type name
+						"integer", // shorter type name
 						11, // Precision of INT
 						null, // buffer length (not used, see Javadoc)
-						0, 10, // base of a number system / radix
+						null, 10, // base of a number system / radix
 						0, null, // description of the column
 						null, null, // SQL_DATA_TYPE - reserved for future use (see javadoc)
 						null, // SQL_DATETIME_SUB - reserved for future use (see javadoc)
@@ -212,16 +212,16 @@ class FireboltDatabaseMetadataTest {
 				null, null));
 
 		ResultSet expectedResultSet = FireboltResultSet.of(QueryResult.builder()
-				.columns(Arrays.asList(Column.builder().name(TABLE_CAT).type(STRING).build(),
-						Column.builder().name(TABLE_SCHEM).type(STRING).build(),
-						Column.builder().name(TABLE_NAME).type(STRING).build(),
-						Column.builder().name(TABLE_TYPE).type(STRING).build(),
-						Column.builder().name(REMARKS).type(STRING).build(),
-						Column.builder().name(TYPE_CAT).type(STRING).build(),
-						Column.builder().name(TYPE_SCHEM).type(STRING).build(),
-						Column.builder().name(TYPE_NAME).type(STRING).build(),
-						Column.builder().name(SELF_REFERENCING_COL_NAME).type(STRING).build(),
-						Column.builder().name(REF_GENERATION).type(STRING).build()))
+				.columns(Arrays.asList(Column.builder().name(TABLE_CAT).type(TEXT).build(),
+						Column.builder().name(TABLE_SCHEM).type(TEXT).build(),
+						Column.builder().name(TABLE_NAME).type(TEXT).build(),
+						Column.builder().name(TABLE_TYPE).type(TEXT).build(),
+						Column.builder().name(REMARKS).type(TEXT).build(),
+						Column.builder().name(TYPE_CAT).type(TEXT).build(),
+						Column.builder().name(TYPE_SCHEM).type(TEXT).build(),
+						Column.builder().name(TYPE_NAME).type(TEXT).build(),
+						Column.builder().name(SELF_REFERENCING_COL_NAME).type(TEXT).build(),
+						Column.builder().name(REF_GENERATION).type(TEXT).build()))
 				.rows(expectedRows).build());
 
 		AssertionUtil.assertResultSetEquality(expectedResultSet, resultSet);

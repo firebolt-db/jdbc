@@ -16,7 +16,7 @@ class SqlArrayUtilTest {
 	@Test
 	void shouldTransformToEmptyArray() throws SQLException {
 		String value = "[]";
-		FireboltArray emptyArray = FireboltArray.builder().array(new Integer[] {}).type(FireboltDataType.INT_32)
+		FireboltArray emptyArray = FireboltArray.builder().array(new Integer[] {}).type(FireboltDataType.INTEGER)
 				.build();
 
 		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(INT32)"));
@@ -29,7 +29,7 @@ class SqlArrayUtilTest {
 	void shouldTransformIntArray() throws SQLException {
 		String value = "[1,2,3,\\N,5]";
 		FireboltArray expectedArray = FireboltArray.builder().array(new Integer[] { 1, 2, 3, null, 5 })
-				.type(FireboltDataType.INT_32).build();
+				.type(FireboltDataType.INTEGER).build();
 
 		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(INT32)"));
 
@@ -41,7 +41,7 @@ class SqlArrayUtilTest {
 	void shouldTransformStringArray() throws SQLException {
 		String value = "['1','2','3','',\\N,'5']";
 		FireboltArray expectedArray = FireboltArray.builder().array(new String[] { "1", "2", "3", "", null, "5" })
-				.type(FireboltDataType.STRING).build();
+				.type(FireboltDataType.TEXT).build();
 
 		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(TEXT)"));
 
@@ -53,7 +53,7 @@ class SqlArrayUtilTest {
 	void shouldTransformStringArrayWithComma() throws SQLException {
 		String value = "['1','2,','3','',\\N,'5']";
 		FireboltArray expectedArray = FireboltArray.builder().array(new String[] { "1", "2,", "3", "", null, "5" })
-				.type(FireboltDataType.STRING).build();
+				.type(FireboltDataType.TEXT).build();
 
 		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(TEXT)"));
 

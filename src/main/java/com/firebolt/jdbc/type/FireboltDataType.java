@@ -12,71 +12,72 @@ import lombok.Getter;
 @Getter
 public enum FireboltDataType {
 	// Not officially supported but U_INT_8 is still coming from Firebolt
-	U_INT_8(Types.TINYINT, "UInt8", BaseType.INTEGER.name(), BaseType.INTEGER, false, false, 3, 0, false),
-	BOOLEAN(Types.BOOLEAN, "Boolean", BaseType.BOOLEAN.name(), BaseType.BOOLEAN, false, false, 1, 0, false, "BOOL"),
-	INT_32(Types.INTEGER, "Int32", BaseType.INTEGER.name(), BaseType.INTEGER, true, false, 11, 0, false, "INTEGER",
+	U_INT_8(Types.TINYINT, FireboltDataTypeDisplayNames.INTEGER, BaseType.INTEGER, false, false, 3, null, null, false, "UInt8"),
+	BOOLEAN(Types.BOOLEAN, FireboltDataTypeDisplayNames.BOOLEAN, BaseType.BOOLEAN, false, false, 1, null, null, false, "Boolean", "BOOL"),
+	INTEGER(Types.INTEGER, FireboltDataTypeDisplayNames.INTEGER, BaseType.INTEGER, true, false, 11, null, null, false, "Int32", "INTEGER",
 			"INT", "Int8", "Int16", "UInt16", "UInt32"),
-	INT_64(Types.BIGINT, "Int64", BaseType.BIGINT.name(), BaseType.LONG, true, false, 20, 0, false, "LONG", "BIGINT"),
+	BIG_INT(Types.BIGINT, FireboltDataTypeDisplayNames.BIGINT, BaseType.LONG, true, false, 20, null, null, false, "LONG", "BIGINT"),
+
 	// Although not supported, U_INT_64 is still coming from Firebolt and needs to
 	// be handled for now
-	U_INT_64(Types.BIGINT, "UInt64", BaseType.BIGINT.name(), BaseType.BIGINT, false, false, 20, 0, false),
+	BIG_INT_64(Types.BIGINT, FireboltDataTypeDisplayNames.BIGINT, BaseType.BIGINT, false, false, 20, null, null, false, "Int64", "UInt64"),
+	// Although not supported, U_INT_64 is still coming from Firebolt and needs to
+	// be handled for now
+	UNISGNED_BIG_INT_64(Types.BIGINT, FireboltDataTypeDisplayNames.BIGINT, BaseType.BIGINT, false, false, 20, null, null, false, "UInt64"),
 
-	FLOAT_32(Types.FLOAT, "Float32", BaseType.FLOAT.name(), BaseType.FLOAT, true, false, 8, 8, false, "FLOAT"),
-	FLOAT_64(Types.DOUBLE, "Float64", BaseType.DOUBLE.name(), BaseType.DOUBLE, true, false, 17, 17, false,
-			BaseType.DOUBLE.name()),
-	STRING(Types.VARCHAR, "String", BaseType.STRING.name(), BaseType.STRING, false, true, 0, 0, false, "VARCHAR",
+	REAL(Types.REAL, FireboltDataTypeDisplayNames.REAL, BaseType.REAL, true, false, 24, null, null, false, "Float32", "FLOAT", "REAL"),
+	DOUBLE_PRECISION(Types.DOUBLE, FireboltDataTypeDisplayNames.DOUBLE_PRECISION, BaseType.DOUBLE, true, false, 53, null, null, false,
+			BaseType.DOUBLE.name(), "Float64", "DOUBLE PRECISION"),
+	TEXT(Types.VARCHAR, FireboltDataTypeDisplayNames.TEXT, BaseType.TEXT, false, true, 0, null, null, false, "String", "VARCHAR",
 			"TEXT"),
-	DATE(Types.DATE, "Date", BaseType.DATE.name(), BaseType.DATE, false, false, 10, 0, true, "PGDate"),
-	DATE_32(Types.DATE, "Date32", "DATE_EXT", BaseType.DATE, false, false, 10, 0, true, "DATE_EXT"),
-	DATE_TIME_64(Types.TIMESTAMP, "DateTime64", "TIMESTAMP_EXT", BaseType.TIMESTAMP, false, false, 19, 0, true,
-			"TIMESTAMP_EXT"),
-	DATE_TIME(Types.TIMESTAMP, "DateTime", "TIMESTAMP", BaseType.TIMESTAMP, false, false, 19, 0, true, "TIMESTAMP"),
-	TIMESTAMP(Types.TIMESTAMP, "TimestampNtz", BaseType.TIMESTAMP.name(), BaseType.TIMESTAMP, false, false, 26, 6, true),
-	TIMESTAMP_WITH_TIMEZONE(Types.TIMESTAMP_WITH_TIMEZONE, "Timestamptz", BaseType.TIMESTAMP_WITH_TIMEZONE.name(), BaseType.TIMESTAMP_WITH_TIMEZONE, false, false, 32, 6, true),
-	NOTHING(Types.NULL, "Nothing", BaseType.NULL.name(), BaseType.NULL, false, false, 0, 0, false, "NULL"),
-	UNKNOWN(Types.OTHER, "Unknown", "UNKNOWN", BaseType.OTHER, false, false, 0, 0, false),
-	DECIMAL(Types.DECIMAL, "Decimal", BaseType.DECIMAL.name(), BaseType.DECIMAL, true, false, 0, 0, false, "DEC"),
-	ARRAY(Types.ARRAY, "Array", BaseType.ARRAY.name(), BaseType.ARRAY, false, true, 0, 0, false),
-	TUPLE(Types.OTHER, "Tuple", "TUPLE", BaseType.OBJECT, false, true, 0, 0, false),
-	BYTEA(Types.BINARY, "ByteA", "BYTEA", BaseType.BYTEA, false, true, 0, 0, false);
-
-	public static final String NULLABLE_TYPE = "NULLABLE";
-
+	DATE(Types.DATE, FireboltDataTypeDisplayNames.DATE, BaseType.DATE, false, false, 10, null, null, true, "Date", "PGDate"),
+	DATE_32(Types.DATE, "date ext", BaseType.DATE, false, false, 10, null, null, true, "Date32", "DATE_EXT"),
+	DATE_TIME_64(Types.TIMESTAMP, FireboltDataTypeDisplayNames.TIMESTAMP_EXT, BaseType.TIMESTAMP, false, false, 19, null, 6, true,
+			"DateTime64", "TIMESTAMP_EXT"),
+	DATE_TIME(Types.TIMESTAMP,  FireboltDataTypeDisplayNames.TIMESTAMP, BaseType.TIMESTAMP, false, false, 19, null, 6, true, "DateTime", "TIMESTAMP"),
+	TIMESTAMP(Types.TIMESTAMP, FireboltDataTypeDisplayNames.TIMESTAMP, BaseType.TIMESTAMP, false, false, 26, null, 6, true, "TimestampNtz"),
+	TIMESTAMP_WITH_TIMEZONE(Types.TIMESTAMP_WITH_TIMEZONE, FireboltDataTypeDisplayNames.TIMESTAMP_WITH_TIMEZONE, BaseType.TIMESTAMP_WITH_TIMEZONE, false, false, 32, null, 6, true, "Timestamptz"),
+	NOTHING(Types.NULL, FireboltDataTypeDisplayNames.NULL, BaseType.NULL, false, false, 0, null, null, false, "Nothing", "NULL"),
+	UNKNOWN(Types.OTHER, FireboltDataTypeDisplayNames.UNKNOWN, BaseType.OTHER, false, false, 0, null, null, false, "Unknown"),
+	NUMERIC(Types.NUMERIC, FireboltDataTypeDisplayNames.NUMERIC, BaseType.NUMERIC, true, false, 1000, null, 999, false, "Decimal", "DEC", "NUMERIC"),
+	ARRAY(Types.ARRAY, FireboltDataTypeDisplayNames.ARRAY, BaseType.ARRAY, false, true, 0, null, null, false, "Array"),
+	TUPLE(Types.OTHER, FireboltDataTypeDisplayNames.TUPLE, BaseType.OBJECT, false, true, 0, null, null, false, "Tuple"),
+	BYTEA(Types.BINARY, FireboltDataTypeDisplayNames.BYTEA, BaseType.BYTEA, false, true, 2147483647, null, null, false, "ByteA");
 
 	private static final Map<String, FireboltDataType> typeNameOrAliasToType;
 
 	static {
 		typeNameOrAliasToType = new HashMap<>();
 		for (FireboltDataType dataType : values()) {
-			typeNameOrAliasToType.put(dataType.internalName.toUpperCase(), dataType);
 			Arrays.stream(dataType.aliases).forEach(alias -> typeNameOrAliasToType.put(alias.toUpperCase(), dataType));
 		}
 	}
 
 	private final int sqlType;
-	private final String internalName;
 	private final String displayName;
 	private final BaseType baseType;
 	private final boolean signed;
 	private final boolean caseSensitive;
-	private final int defaultPrecision;
-	private final int defaultScale;
+	private final Integer precision;
+
+	private final Integer minScale;
+	private final Integer maxScale;
 
 	private final boolean time;
 	private final String[] aliases;
 
-	FireboltDataType(int sqlType, String internalName, String displayName, BaseType baseType, boolean signed,
-			boolean caseSensitive, int defaultPrecision, int defaultScale, boolean isTime, String... aliases) {
+	FireboltDataType(int sqlType, String displayName, BaseType baseType, boolean signed,
+					 boolean caseSensitive, Integer precision, Integer minScale, Integer maxScale, boolean isTime, String... aliases) {
 		this.sqlType = sqlType;
-		this.internalName = internalName;
 		this.displayName = displayName;
 		this.baseType = baseType;
 		this.signed = signed;
 		this.caseSensitive = caseSensitive;
-		this.defaultPrecision = defaultPrecision;
-		this.defaultScale = defaultScale;
+		this.precision = precision;
+		this.maxScale = maxScale;
 		this.aliases = aliases;
 		this.time = isTime;
+		this.minScale = minScale;
 	}
 
 	public static FireboltDataType ofType(String type) {

@@ -37,7 +37,7 @@ public class QueryResult {
 		this.appendWithListValues(stringBuilder, columns.stream().map(Column::getName).collect(Collectors.toList()));
 		stringBuilder.append(NEXT_LINE);
 		this.appendWithListValues(stringBuilder, columns.stream().map(Column::getType)
-				.map(FireboltDataType::getInternalName).collect(Collectors.toList()));
+				.map(FireboltDataType::getAliases).map( aliases -> aliases[0]).collect(Collectors.toList()));
 		stringBuilder.append(NEXT_LINE);
 
 		for (int i = 0; i < rows.size(); i++) {

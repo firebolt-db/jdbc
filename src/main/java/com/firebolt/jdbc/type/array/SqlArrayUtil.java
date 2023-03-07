@@ -81,7 +81,7 @@ public class SqlArrayUtil {
 		List<Object[]> list = new ArrayList<>();
 		for (String tupleContent : tuples) {
 			List<Object> subList = new ArrayList<>();
-			List<String> tupleValues = splitArrayContent(removeParenthesis(tupleContent), FireboltDataType.STRING);
+			List<String> tupleValues = splitArrayContent(removeParenthesis(tupleContent), FireboltDataType.TEXT);
 			for (int j = 0; j < types.size(); j++) {
 				subList.add(types.get(j).getBaseType().transform(removeQuotesAndTransformNull(tupleValues.get(j))));
 			}
