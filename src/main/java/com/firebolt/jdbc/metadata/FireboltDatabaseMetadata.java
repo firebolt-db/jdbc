@@ -29,6 +29,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	private static final String PUBLIC_SCHEMA_NAME = "public";
 	private static final String INFORMATION_SCHEMA_NAME = "information_schema";
 	private static final String CATALOG_SCHEMA_NAME = "catalog";
+	private static final String QUOTE = "'";
 	private final String url;
 	private final FireboltConnection connection;
 	private String databaseVersion;
@@ -131,14 +132,16 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 				List<?> row;
 				Column columnInfo = Column.of(columnDescription.getString("data_type"),
 						columnDescription.getString("column_name"));
-				row = Arrays.asList(connection.getCatalog(), columnDescription.getString("table_schema"), // schema
+				row = Arrays.asList(connection.getCatalog(), // TABLE_CAT
+						columnDescription.getString("table_schema"), // schema
 						columnDescription.getString("table_name"), // table name
 						columnDescription.getString("column_name"), // column name
 						String.valueOf(columnInfo.getType().getDataType().getSqlType()), // sql data type
 						columnInfo.getType().getCompactTypeName(), // shorter type name
 						Optional.ofNullable(columnInfo.getType().getPrecision()).map(String::valueOf).orElse(null),// column size
 						null, // buffer length (not used, see Javadoc)
-						Optional.ofNullable(columnInfo.getType().getScale()).map(String::valueOf).orElse(null), String.valueOf(COMMON_RADIX), // radix
+						Optional.ofNullable(columnInfo.getType().getScale()).map(String::valueOf).orElse(null), // DECIMAL_DIGITS
+						String.valueOf(COMMON_RADIX), // radix
 						isColumnNullable(columnDescription) ? columnNullable : columnNoNulls
 						, null, // description of the column
 						StringUtils.isNotBlank(columnDescription.getString("column_default"))
@@ -244,14 +247,12 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 		List<List<?>> rows = new ArrayList<>();
 		List<FireboltDataType> usableTypes = Arrays.asList(INTEGER, BIG_INT, REAL, DOUBLE_PRECISION, TEXT, DATE,
-				TIMESTAMP, FireboltDataType.TIMESTAMP_WITH_TIMEZONE, NUMERIC, ARRAY, TUPLE, BYTEA, BOOLEAN);
+				TIMESTAMP, NUMERIC, ARRAY, TUPLE, BYTEA, BOOLEAN);
 		usableTypes
 				.forEach(
 						type -> rows.add(Arrays.asList(type.getDisplayName(), type.getSqlType(),
-								type.getPrecision(), type.getSqlType() == VARCHAR ? "'" : null, // LITERAL_PREFIX
-																										// - ' for
-																										// VARCHAR
-								type.getSqlType() == VARCHAR ? "'" : null, // LITERAL_SUFFIX - ' for VARCHAR
+								type.getPrecision(), QUOTE, // LITERAL_PREFIX
+								QUOTE, // LITERAL_SUFFIX
 								null, // Description of the creation parameters - can be null (can set if needed
 										// in the future)
 								typeNullableUnknown, // It depends - A type can be nullable or not depending on
@@ -260,7 +261,8 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 										: typePredBasic, /*
 															 * SEARCHABLE - LIKE can only be used for VARCHAR
 															 */
-								false, false, // FIXED_PREC_SCALE - indicates if the type can be a money value.
+								!type.isSigned(),
+								false, // FIXED_PREC_SCALE - indicates if the type can be a money value.
 												// Always
 												// false as we do not have a money type
 								false, // AUTO_INCREMENT

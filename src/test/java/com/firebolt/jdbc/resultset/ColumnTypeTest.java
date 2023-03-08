@@ -140,7 +140,7 @@ class ColumnTypeTest {
 		String type = "DateTime(\\'EST\\')";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
-		assertEquals(FireboltDataType.DATE_TIME, columnType.getDataType());
+		assertEquals(FireboltDataType.TIMESTAMP, columnType.getDataType());
 		assertEquals(TimeZone.getTimeZone("EST"), columnType.getTimeZone());
 	}
 
@@ -149,7 +149,7 @@ class ColumnTypeTest {
 		String type = "Nullable(DateTime(\\'EST\\'))";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
-		assertEquals(FireboltDataType.DATE_TIME, columnType.getDataType());
+		assertEquals(FireboltDataType.TIMESTAMP, columnType.getDataType());
 		assertEquals(TimeZone.getTimeZone("EST"), columnType.getTimeZone());
 	}
 
@@ -158,7 +158,7 @@ class ColumnTypeTest {
 		String type = "array(Nullable(DateTime(\\'EST\\')))";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
-		assertEquals(FireboltDataType.DATE_TIME, columnType.getArrayBaseColumnType().getDataType());
+		assertEquals(FireboltDataType.TIMESTAMP, columnType.getArrayBaseColumnType().getDataType());
 		assertEquals(TimeZone.getTimeZone("EST"), columnType.getArrayBaseColumnType().getTimeZone());
 	}
 
@@ -167,7 +167,7 @@ class ColumnTypeTest {
 		String type = "DateTime(\\'HelloTz\\')";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
-		assertEquals(FireboltDataType.DATE_TIME, columnType.getDataType());
+		assertEquals(FireboltDataType.TIMESTAMP, columnType.getDataType());
 		assertNull(columnType.getTimeZone());
 	}
 
