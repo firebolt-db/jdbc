@@ -110,7 +110,7 @@ class DatabaseMetaDataTest extends IntegrationTest {
 				contains(schemaName, schemaName, schemaName, schemaName, schemaName));
 		assertThat(result.get(REMARKS), contains(null, null, null, null, null));
 		assertThat(result.get(NULLABLE), contains("0", "1", "1", "1", "0"));
-		assertThat(result.get(DECIMAL_DIGITS), contains("0", "0", "0", "0", "0"));
+		assertThat(result.get(DECIMAL_DIGITS), contains(null, null, null, null, null));
 		assertThat(result.get(SQL_DATETIME_SUB), contains(null, null, null, null, null));
 		assertThat(result.get(NUM_PREC_RADIX), contains("10", "10", "10", "10", "10"));
 		assertThat(result.get(IS_GENERATEDCOLUMN), contains("NO", "NO", "NO", "NO", "NO"));
