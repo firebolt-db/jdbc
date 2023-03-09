@@ -1,3 +1,0 @@
-uint8	uint64	float32	float64	decimal
-integer	bigint	real	double precision null	numeric(38, 30)
-1	30000000000	1.23	1.23456789012	1231232.123459999990457054844258706536

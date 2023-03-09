@@ -1,0 +1,3 @@
+uint8	uint64	float32	float64	decimal	an_int	a_long	a_float	a_double	a_decimal
+integer	bigint	real	double precision	numeric(38, 30)	int	long	float	double	Decimal(38, 30)
+1	30000000000	1.23	1.23456789012	1231232.123459999990457054844258706536	80000	30000000000	1.23	1.23456789012	1231232.123459999990457054844258706536

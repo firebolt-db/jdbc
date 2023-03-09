@@ -746,29 +746,19 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithNewTypes();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
 		resultSet.next();
-		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(1));
-		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(2));
-		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(3));
-		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(4));
-		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(5));
-		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(6));
-		assertEquals(Types.BIGINT, resultSet.getMetaData().getColumnType(7));
-		assertEquals(Types.BIGINT, resultSet.getMetaData().getColumnType(8));
-		assertEquals(Types.REAL, resultSet.getMetaData().getColumnType(9));
-		assertEquals(Types.DOUBLE, resultSet.getMetaData().getColumnType(10));
-		assertEquals(Types.VARCHAR, resultSet.getMetaData().getColumnType(11));
-		assertEquals(Types.DATE, resultSet.getMetaData().getColumnType(12));
-		assertEquals(Types.DATE, resultSet.getMetaData().getColumnType(13));
-		assertEquals(Types.DATE, resultSet.getMetaData().getColumnType(14));
-		assertEquals(Types.TIMESTAMP, resultSet.getMetaData().getColumnType(15));
-		assertEquals(Types.TIMESTAMP, resultSet.getMetaData().getColumnType(16));
-		assertEquals(Types.TIMESTAMP, resultSet.getMetaData().getColumnType(17));
-		assertEquals(Types.TIMESTAMP, resultSet.getMetaData().getColumnType(18));
-		assertEquals(Types.ARRAY, resultSet.getMetaData().getColumnType(19));
-		assertEquals(Types.NUMERIC, resultSet.getMetaData().getColumnType(20));
-		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(21));
-		assertEquals(Types.NULL, resultSet.getMetaData().getColumnType(22));
-		assertEquals(Types.NULL, resultSet.getMetaData().getColumnType(23));
+		assertEquals(Types.VARCHAR, resultSet.getMetaData().getColumnType(1));
+		assertEquals(Types.DATE, resultSet.getMetaData().getColumnType(2));
+		assertEquals(Types.DATE, resultSet.getMetaData().getColumnType(3));
+		assertEquals(Types.DATE, resultSet.getMetaData().getColumnType(4));
+		assertEquals(Types.TIMESTAMP, resultSet.getMetaData().getColumnType(5));
+		assertEquals(Types.TIMESTAMP, resultSet.getMetaData().getColumnType(6));
+		assertEquals(Types.TIMESTAMP, resultSet.getMetaData().getColumnType(7));
+		assertEquals(Types.TIMESTAMP, resultSet.getMetaData().getColumnType(8));
+		assertEquals(Types.ARRAY, resultSet.getMetaData().getColumnType(9));
+		assertEquals(Types.NUMERIC, resultSet.getMetaData().getColumnType(10));
+		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(11));
+		assertEquals(Types.NULL, resultSet.getMetaData().getColumnType(12));
+		assertEquals(Types.NULL, resultSet.getMetaData().getColumnType(13));
 	}
 
 	@Test
@@ -776,28 +766,35 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithNewTypes();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
 		resultSet.next();
-		assertEquals(1, resultSet.getObject(1));
-		assertEquals(-1, resultSet.getObject(2));
-		assertEquals(257, resultSet.getObject(3));
-		assertEquals(-257, resultSet.getObject(4));
-		assertEquals(80000, resultSet.getObject(5));
-		assertEquals(-80000, resultSet.getObject(6));
-		assertEquals(30000000000L, resultSet.getObject(7));
-		assertEquals(-30000000000L, resultSet.getObject(8));
-		assertEquals(1.23F, resultSet.getObject(9));
-		assertEquals(new Double("1.23456789012"), resultSet.getObject(10));
-		assertEquals("text", resultSet.getObject(11));
-		assertEquals(Date.valueOf(LocalDate.of(1, 3, 28)), resultSet.getObject(12));
-		assertEquals(Date.valueOf(LocalDate.of(1860, 3, 4)), resultSet.getObject(13));
-		assertEquals(Date.valueOf(LocalDate.of(1, 1, 1)), resultSet.getObject(14));
-		assertEquals(Timestamp.valueOf(LocalDateTime.of(2019, 7, 31, 1, 1, 1, 123400000)), resultSet.getObject(16));
-		assertEquals(Timestamp.valueOf(LocalDateTime.of(1111, 1, 5, 17, 4, 42, 123456000)), resultSet.getObject(17));
-		assertEquals(Timestamp.valueOf(LocalDateTime.of(1111, 1, 5, 17, 4, 42, 123456000)), resultSet.getObject(18));
-		assertArrayEquals(new Integer[] { 1, 2, 3, 4 }, (Integer[]) resultSet.getObject(19));
-		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"), resultSet.getObject(20));
-		assertNull(resultSet.getObject(21));
-		assertNull(resultSet.getObject(22));
-		assertNull(resultSet.getObject(23));
+		assertEquals("text", resultSet.getObject(1));
+		assertEquals(Date.valueOf(LocalDate.of(1, 3, 28)), resultSet.getObject(2));
+		assertEquals(Date.valueOf(LocalDate.of(1860, 3, 4)), resultSet.getObject(3));
+		assertEquals(Date.valueOf(LocalDate.of(1, 1, 1)), resultSet.getObject(4));
+		assertEquals(Timestamp.valueOf(LocalDateTime.of(2019, 7, 31, 1, 1, 1, 123400000)), resultSet.getObject(6));
+		assertEquals(Timestamp.valueOf(LocalDateTime.of(1111, 1, 5, 17, 4, 42, 123456000)), resultSet.getObject(7));
+		assertEquals(Timestamp.valueOf(LocalDateTime.of(1111, 1, 5, 17, 4, 42, 123456000)), resultSet.getObject(8));
+		assertArrayEquals(new Integer[] { 1, 2, 3, 4 }, (Integer[]) resultSet.getObject(9));
+		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"), resultSet.getObject(10));
+		assertNull(resultSet.getObject(11));
+		assertNull(resultSet.getObject(12));
+		assertNull(resultSet.getObject(13));
+	}
+
+	@Test
+	void shouldReturnDataWithProvidedTypesForNumericTypes() throws SQLException {
+		inputStream = getInputStreamWithNumericTypes();
+		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
+		resultSet.next();
+		assertEquals(1, resultSet.getObject(1, Integer.class));
+		assertEquals(new BigInteger("1"), resultSet.getObject(1, BigInteger.class));
+		assertEquals(1, resultSet.getObject(1, Long.class));
+		assertEquals(30000000000L, resultSet.getObject(2, Long.class));
+		assertEquals(new BigInteger("30000000000"), resultSet.getObject(2, BigInteger.class));
+		assertEquals(new Float(1.23), resultSet.getObject(3, Float.class));
+		assertEquals(new BigDecimal("1.23"), resultSet.getObject(3, BigDecimal.class));
+		assertEquals(1.23456789012, resultSet.getObject(4, Double.class));
+		assertEquals(new BigDecimal("1.23456789012"), resultSet.getObject(4, BigDecimal.class));
+		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"), resultSet.getObject(5, BigDecimal.class));
 	}
 
 	@Test
@@ -805,36 +802,48 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithNewTypes();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
 		resultSet.next();
-		assertEquals(-1, resultSet.getObject(2, Integer.class));
-		assertEquals(257, resultSet.getObject(3, Integer.class));
-		assertEquals(-257, resultSet.getObject(4, Integer.class));
-		assertEquals(80000, resultSet.getObject(5, Integer.class));
-		assertEquals(-80000, resultSet.getObject(6, Integer.class));
-		assertEquals(1, resultSet.getObject(1, Long.class));
-		assertEquals(-1, resultSet.getObject(2, Long.class));
-		assertEquals(257, resultSet.getObject(3, Long.class));
-		assertEquals(80000, resultSet.getObject(5, Long.class));
-		assertEquals(-80000, resultSet.getObject(6, Long.class));
-		assertEquals(30000000000L, resultSet.getObject(7, Long.class));
-		assertEquals(new BigInteger("30000000000"), resultSet.getObject(7, BigInteger.class));
-		assertEquals(-30000000000L, resultSet.getObject(8, Long.class));
-		assertEquals(1.23F, resultSet.getObject(9, Float.class));
-		assertEquals(new Double(1.23), resultSet.getObject(9, Double.class));
-		assertEquals(new Double("1.23456789012"), resultSet.getObject(10, Double.class));
-		assertEquals(new BigDecimal("1.23456789012"), resultSet.getObject(10, BigDecimal.class));
-		assertEquals("text", resultSet.getObject(11, String.class));
-		assertArrayEquals("text".getBytes(), resultSet.getObject(11, byte[].class));
-		assertArrayEquals(new Integer[] { 1, 2, 3, 4 }, ((Integer[]) resultSet.getObject(19, Array.class).getArray()));
+		assertEquals("text", resultSet.getObject(1, String.class));
+		assertArrayEquals("text".getBytes(), resultSet.getObject(1, byte[].class));
+		assertArrayEquals(new Integer[] { 1, 2, 3, 4 }, ((Integer[]) resultSet.getObject(9, Array.class).getArray()));
 		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"),
-				resultSet.getObject(20, BigDecimal.class));
-		assertNull(resultSet.getObject(21, Integer.class));
-		assertNull(resultSet.getObject(22, Object.class));
-		assertNull(resultSet.getObject(23, Object.class));
+				resultSet.getObject(10, BigDecimal.class));
+		assertNull(resultSet.getObject(11, Integer.class));
+		assertNull(resultSet.getObject(12, Object.class));
+		assertNull(resultSet.getObject(13, Object.class));
+	}
+
+	@Test
+	void shouldReturnDataAndTypesForNumericTypes() throws SQLException {
+		inputStream = getInputStreamWithNumericTypes();
+		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
+		resultSet.next();
+		assertEquals(1, resultSet.getObject(1));
+		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(1));
+		assertEquals(30000000000L, resultSet.getObject(2));
+		assertEquals(Types.BIGINT, resultSet.getMetaData().getColumnType(2));
+		assertEquals(new Float(1.23), resultSet.getObject(3));
+		assertEquals(Types.REAL, resultSet.getMetaData().getColumnType(3));
+		assertEquals(1.23456789012, resultSet.getObject(4));
+		assertEquals(Types.DOUBLE, resultSet.getMetaData().getColumnType(4));
+		assertEquals(Types.NUMERIC, resultSet.getMetaData().getColumnType(5));
+		assertEquals(38, resultSet.getMetaData().getPrecision(5));
+		assertEquals(30, resultSet.getMetaData().getScale(5));
+		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"), resultSet.getObject(5));
+		assertEquals(80000, resultSet.getObject(6));
+		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(6));
+		assertEquals(30000000000L, resultSet.getObject(7));
+		assertEquals(Types.BIGINT, resultSet.getMetaData().getColumnType(7));
+		assertEquals(new Float(1.23), resultSet.getObject(8));
+		assertEquals(Types.REAL, resultSet.getMetaData().getColumnType(8));
+		assertEquals(Types.DOUBLE, resultSet.getMetaData().getColumnType(9));
+		assertEquals(1.23456789012, resultSet.getObject(9));
+		assertEquals(Types.NUMERIC, resultSet.getMetaData().getColumnType(10));
+		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"), resultSet.getObject(10));
 	}
 
 	@Test
 	void shouldReturnDataAndTypesForNewDataTypes() throws SQLException {
-		inputStream = getInputStreamWithNewTypes2();
+		inputStream = getInputStreamWithNumericTypes();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
 		resultSet.next();
 		assertEquals(1, resultSet.getObject(1));
@@ -853,22 +862,22 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithNewTypes();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
 		resultSet.next();
-		assertEquals(Date.valueOf(LocalDate.of(1, 3, 28)), resultSet.getObject(12, Date.class));
-		assertEquals(Date.valueOf(LocalDate.of(1860, 3, 4)), resultSet.getObject(13, Date.class));
-		assertEquals(Date.valueOf(LocalDate.of(1, 1, 1)), resultSet.getObject(14, Date.class));
+		assertEquals(Date.valueOf(LocalDate.of(1, 3, 28)), resultSet.getObject(2, Date.class));
+		assertEquals(Date.valueOf(LocalDate.of(1860, 3, 4)), resultSet.getObject(3, Date.class));
+		assertEquals(Date.valueOf(LocalDate.of(1, 1, 1)), resultSet.getObject(4, Date.class));
 		assertEquals(Timestamp.valueOf(LocalDateTime.of(2019, 7, 31, 1, 1, 1, 123400000)),
-				resultSet.getObject(16, Timestamp.class));
+				resultSet.getObject(6, Timestamp.class));
 		assertEquals(LocalDateTime.of(2019, 7, 31, 1, 1, 1, 123400000).atOffset(ZoneOffset.of("+00:00")),
-				resultSet.getObject(16, OffsetDateTime.class));
+				resultSet.getObject(6, OffsetDateTime.class));
 		assertEquals(Timestamp.valueOf(LocalDateTime.of(1111, 1, 5, 17, 4, 42, 123456000)),
-				resultSet.getObject(17, Timestamp.class));
+				resultSet.getObject(7, Timestamp.class));
 		assertEquals(LocalDateTime.of(1111, 1, 5, 17, 4, 42, 123456000).atOffset(ZoneOffset.of("+00:00")),
-				resultSet.getObject(17, OffsetDateTime.class));
+				resultSet.getObject(7, OffsetDateTime.class));
 		assertEquals(Timestamp.valueOf(LocalDateTime.of(1111, 1, 5, 17, 4, 42, 123456000)),
-				resultSet.getObject(18, Timestamp.class));
+				resultSet.getObject(8, Timestamp.class));
 		assertEquals(LocalDateTime.of(1111, 1, 5, 17, 4, 42, 123456000).atOffset(ZoneOffset.of("+00:00")),
-				resultSet.getObject(18, OffsetDateTime.class));
-		assertArrayEquals(new Integer[] { 1, 2, 3, 4 }, ((Integer[]) resultSet.getObject(19, Array.class).getArray()));
+				resultSet.getObject(8, OffsetDateTime.class));
+		assertArrayEquals(new Integer[] { 1, 2, 3, 4 }, ((Integer[]) resultSet.getObject(9, Array.class).getArray()));
 	}
 
 
@@ -887,19 +896,9 @@ class FireboltResultSetTest {
 		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(8));
 		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(9));
 		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(10));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(11));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(12));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(13));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(14));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(15));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(16));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(17));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(18));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(19));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(20));
-		assertEquals(columnNullable, resultSet.getMetaData().isNullable(21));
-		assertEquals(columnNullable, resultSet.getMetaData().isNullable(22));
-		assertEquals(columnNullable, resultSet.getMetaData().isNullable(23));
+		assertEquals(columnNullable, resultSet.getMetaData().isNullable(11));
+		assertEquals(columnNullable, resultSet.getMetaData().isNullable(12));
+		assertEquals(columnNullable, resultSet.getMetaData().isNullable(13));
 	}
 
 	@Test
@@ -978,8 +977,8 @@ class FireboltResultSetTest {
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-new-types");
 	}
 
-	private InputStream getInputStreamWithNewTypes2() {
-		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-new-types-2.csv");
+	private InputStream getInputStreamWithNumericTypes() {
+		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-numeric-types.csv");
 	}
 
 }
