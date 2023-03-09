@@ -138,9 +138,9 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 						columnDescription.getString("column_name"), // column name
 						String.valueOf(columnInfo.getType().getDataType().getSqlType()), // sql data type
 						columnInfo.getType().getCompactTypeName(), // shorter type name
-						Optional.ofNullable(columnInfo.getType().getPrecision()).map(String::valueOf).orElse(null),// column size
+						String.valueOf(columnInfo.getType().getPrecision()),// column size
 						null, // buffer length (not used, see Javadoc)
-						Optional.ofNullable(columnInfo.getType().getScale()).map(String::valueOf).orElse(null), // DECIMAL_DIGITS
+						String.valueOf(columnInfo.getType().getScale()), // DECIMAL_DIGITS
 						String.valueOf(COMMON_RADIX), // radix
 						isColumnNullable(columnDescription) ? columnNullable : columnNoNulls
 						, null, // description of the column

@@ -32,8 +32,8 @@ public class ColumnType {
 	String name;
 	FireboltDataType dataType;
 	boolean nullable;
-	Integer precision;
-	Integer scale;
+	int precision;
+	int scale;
 	TimeZone timeZone;
 	List<ColumnType> innerTypes;
 

@@ -57,16 +57,16 @@ public enum FireboltDataType {
 	private final BaseType baseType;
 	private final boolean signed;
 	private final boolean caseSensitive;
-	private final Integer precision;
+	private final int precision;
 
-	private final Integer minScale;
-	private final Integer maxScale;
+	private final int minScale;
+	private final int maxScale;
 
 	private final boolean time;
 	private final String[] aliases;
 
 	FireboltDataType(int sqlType, String displayName, BaseType baseType, boolean signed,
-					 boolean caseSensitive, Integer precision, Integer minScale, Integer maxScale, boolean isTime, String... aliases) {
+					 boolean caseSensitive, int precision, int minScale, int maxScale, boolean isTime, String... aliases) {
 		this.sqlType = sqlType;
 		this.displayName = displayName;
 		this.baseType = baseType;

@@ -51,12 +51,12 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 
 	@Override
 	public int getPrecision(int column) throws SQLException {
-		return getColumn(column).getType().getPrecision() == null ? 0 : getColumn(column).getType().getPrecision();
+		return getColumn(column).getType().getPrecision();
 	}
 
 	@Override
 	public int getScale(int column) throws SQLException {
-		return getColumn(column).getType().getScale() == null ? 0 : getColumn(column).getType().getScale();
+		return getColumn(column).getType().getScale();
 	}
 
 	@Override
