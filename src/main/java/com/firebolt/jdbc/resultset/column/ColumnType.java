@@ -165,7 +165,7 @@ public class ColumnType {
 	public String getCompactTypeName() {
 		if (this.isArray()) {
 			return getArrayCompactTypeName();
-		} else if (this.isType()) {
+		} else if (this.isTuple()) {
 			return getTupleCompactTypeName(this.innerTypes);
 		} else {
 			return dataType.getDisplayName();
@@ -197,7 +197,7 @@ public class ColumnType {
 		return dataType.equals(ARRAY);
 	}
 
-	private boolean isType() {
+	private boolean isTuple() {
 		return dataType.equals(TUPLE);
 	}
 
