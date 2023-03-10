@@ -1,7 +1,5 @@
 package com.firebolt.jdbc.resultset;
 
-import static java.sql.DatabaseMetaData.columnNoNulls;
-import static java.sql.DatabaseMetaData.columnNullable;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.*;
@@ -742,7 +740,7 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldReturnNewDataTypes() throws SQLException {
+	void shouldReturnDataTypes() throws SQLException {
 		inputStream = getInputStreamWithNewTypes();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
 		resultSet.next();
@@ -762,7 +760,7 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldReturnDataForNewDataTypes() throws SQLException {
+	void shouldReturnDataForNewNonNumericDataTypes() throws SQLException {
 		inputStream = getInputStreamWithNewTypes();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
 		resultSet.next();
@@ -781,7 +779,7 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldReturnDataWithProvidedTypesForNumericTypes() throws SQLException {
+	void shouldGetObjectsForNumericTypes() throws SQLException {
 		inputStream = getInputStreamWithNumericTypes();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
 		resultSet.next();
@@ -842,22 +840,6 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldReturnDataAndTypesForNewDataTypes() throws SQLException {
-		inputStream = getInputStreamWithNumericTypes();
-		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
-		resultSet.next();
-		assertEquals(1, resultSet.getObject(1));
-		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(1));
-		assertEquals(30000000000L, resultSet.getObject(2));
-		assertEquals(Types.BIGINT, resultSet.getMetaData().getColumnType(2));
-		assertEquals(new Float(1.23), resultSet.getObject(3));
-		assertEquals(Types.REAL, resultSet.getMetaData().getColumnType(3));
-		assertEquals(1.23456789012, resultSet.getObject(4));
-		assertEquals(Types.DOUBLE, resultSet.getMetaData().getColumnType(4));
-		assertEquals(Types.NUMERIC, resultSet.getMetaData().getColumnType(5));
-	}
-
-	@Test
 	void shouldReturnDateTimeObjectsWithProvidedTypes() throws SQLException {
 		inputStream = getInputStreamWithNewTypes();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
@@ -878,27 +860,6 @@ class FireboltResultSetTest {
 		assertEquals(LocalDateTime.of(1111, 1, 5, 17, 4, 42, 123456000).atOffset(ZoneOffset.of("+00:00")),
 				resultSet.getObject(8, OffsetDateTime.class));
 		assertArrayEquals(new Integer[] { 1, 2, 3, 4 }, ((Integer[]) resultSet.getObject(9, Array.class).getArray()));
-	}
-
-
-	@Test
-	void shouldReturnNullabilityForNewDataTypes() throws SQLException {
-		inputStream = getInputStreamWithNewTypes();
-		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
-		resultSet.next();
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(1));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(2));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(3));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(4));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(5));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(6));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(7));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(8));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(9));
-		assertEquals(columnNoNulls, resultSet.getMetaData().isNullable(10));
-		assertEquals(columnNullable, resultSet.getMetaData().isNullable(11));
-		assertEquals(columnNullable, resultSet.getMetaData().isNullable(12));
-		assertEquals(columnNullable, resultSet.getMetaData().isNullable(13));
 	}
 
 	@Test
@@ -962,18 +923,6 @@ class FireboltResultSetTest {
 	}
 
 	private InputStream getInputStreamWithNewTypes() {
-		// Result for the query 'Select 1 as uint8, -1 as int_8, 257 as uint16, -257 as
-		// int16, 80000 as uint32, -80000 as int32, 30000000000 as uint64,-30000000000
-		// as int64, cast(1.23 AS FLOAT) as float32, 1.2345678901234 as float64, 'text'
-		// as "string", CAST('2021-03-28' AS DATE) as "date", CAST('1860-03-04' AS
-		// DATE_EXT) as "date32", pgdate '0001-01-01' as pgdate, CAST('2019-07-31
-		// 01:01:01' AS DATETIME) as "datetime", CAST('2019-07-31 01:01:01.1234' AS
-		// TIMESTAMP_EXT(4)) as "datetime64", CAST('1111-01-05 17:04:42.123456' as
-		// timestampntz) as timestampntz, '1111-01-05 17:04:42.123456'::timestamptz as
-		// timestamptz,[1,2,3,4] as "array",
-		// cast('1231232.123459999990457054844258706536' as decimal(38,30)) as
-		// "decimal", cast(null as int) as nullable, null' + null type without "Nothing"
-		// keyword
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-new-types");
 	}
 

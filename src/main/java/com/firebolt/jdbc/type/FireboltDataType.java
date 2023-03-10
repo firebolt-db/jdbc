@@ -41,7 +41,7 @@ public enum FireboltDataType {
 	NUMERIC(Types.NUMERIC, FireboltDataTypeDisplayNames.NUMERIC, BaseType.NUMERIC, true, false, 38, 0, 37, false, "Decimal", "DEC", "NUMERIC"),
 	ARRAY(Types.ARRAY, FireboltDataTypeDisplayNames.ARRAY, BaseType.ARRAY, false, true, 0, 0, 0, false,"Array"),
 	TUPLE(Types.OTHER, FireboltDataTypeDisplayNames.TUPLE, BaseType.OBJECT, false, true, 0, 0, 0, false,"Tuple"),
-	BYTEA(Types.BINARY, FireboltDataTypeDisplayNames.BYTEA, BaseType.BYTEA, false, true, 2147483647, 0, 0, false,"ByteA");
+	BYTEA(Types.BINARY, FireboltDataTypeDisplayNames.BYTEA, BaseType.BYTEA, false, true, 0, 0, 0, false,"ByteA");
 
 	private static final Map<String, FireboltDataType> typeNameOrAliasToType;
 
