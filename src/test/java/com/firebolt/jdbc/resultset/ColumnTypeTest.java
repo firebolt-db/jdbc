@@ -15,32 +15,32 @@ class ColumnTypeTest {
 
 	@Test
 	void shouldCreateColumDataForNullableString() {
-		String type = "Nullable(String)";
+		String type = "Nullable(text)";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
-		assertEquals(FireboltDataType.STRING, columnType.getDataType());
-		assertEquals("STRING", columnType.getCompactTypeName());
+		assertEquals(FireboltDataType.TEXT, columnType.getDataType());
+		assertEquals("text", columnType.getCompactTypeName());
 	}
 
 	@Test
 	void shouldCreateColumDataForArray() {
-		String type = "Array(Array(Nullable(DateTime64(4, \\'EST\\'))))";
+		String type = "array(array(Nullable(DateTime64(4, \\'EST\\'))))";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
 		assertEquals(FireboltDataType.ARRAY, columnType.getDataType());
 		assertEquals(FireboltDataType.DATE_TIME_64, columnType.getArrayBaseColumnType().getDataType());
 		assertEquals(TimeZone.getTimeZone("EST"), columnType.getArrayBaseColumnType().getTimeZone());
-		assertEquals("ARRAY(ARRAY(TIMESTAMP_EXT))", columnType.getCompactTypeName());
+		assertEquals("array(array(timestamp ext))", columnType.getCompactTypeName());
 	}
 
 	@Test
 	void shouldCreateColumDataForArrayOfArrayOfInteger() {
-		String type = "Array(Array(integer))";
+		String type = "array(array(integer))";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
 		assertEquals(FireboltDataType.ARRAY, columnType.getDataType());
-		assertEquals(FireboltDataType.INT_32, columnType.getArrayBaseColumnType().getDataType());
-		assertEquals("ARRAY(ARRAY(INTEGER))", columnType.getCompactTypeName());
+		assertEquals(FireboltDataType.INTEGER, columnType.getArrayBaseColumnType().getDataType());
+		assertEquals("array(array(integer))", columnType.getCompactTypeName());
 	}
 
 	@Test
@@ -48,44 +48,44 @@ class ColumnTypeTest {
 		String type = "Nullable(Decimal(1,2))";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
-		assertEquals(FireboltDataType.DECIMAL, columnType.getDataType());
+		assertEquals(FireboltDataType.NUMERIC, columnType.getDataType());
 		assertEquals(1, columnType.getPrecision());
 		assertEquals(2, columnType.getScale());
-		assertEquals("DECIMAL", columnType.getCompactTypeName());
+		assertEquals("numeric", columnType.getCompactTypeName());
 	}
 
 	@Test
 	void shouldCreateColumDataForArrayOfArrayOfNullableDouble() {
-		String type = "Array(Array(Nullable(double)))";
+		String type = "array(array(Nullable(double)))";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
 		assertEquals(FireboltDataType.ARRAY, columnType.getDataType());
-		assertEquals(FireboltDataType.FLOAT_64, columnType.getArrayBaseColumnType().getDataType());
-		assertEquals("ARRAY(ARRAY(DOUBLE))", columnType.getCompactTypeName());
+		assertEquals(FireboltDataType.DOUBLE_PRECISION, columnType.getArrayBaseColumnType().getDataType());
+		assertEquals("array(array(double precision))", columnType.getCompactTypeName());
 	}
 
 	@Test
 	void shouldCreateColumDataForNullableArrayOfNullableArrayOfNullableDouble() {
-		String type = "Nullable(Array(Nullable(Array(Nullable(double)))))";
+		String type = "Nullable(array(Nullable(array(Nullable(double)))))";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
 		assertEquals(FireboltDataType.ARRAY, columnType.getDataType());
-		assertEquals(FireboltDataType.FLOAT_64, columnType.getArrayBaseColumnType().getDataType());
-		assertEquals("ARRAY(ARRAY(DOUBLE))", columnType.getCompactTypeName());
+		assertEquals(FireboltDataType.DOUBLE_PRECISION, columnType.getArrayBaseColumnType().getDataType());
+		assertEquals("array(array(double precision))", columnType.getCompactTypeName());
 	}
 
 	@Test
 	void shouldCreateColumDataForBoolean() {
-		String type = "Nullable(String)";
+		String type = "Nullable(text)";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
-		assertEquals(FireboltDataType.STRING, columnType.getDataType());
-		assertEquals("STRING", columnType.getCompactTypeName());
+		assertEquals(FireboltDataType.TEXT, columnType.getDataType());
+		assertEquals("text", columnType.getCompactTypeName());
 	}
 
 	@ParameterizedTest
 	@CsvSource(value = {
-			"Tuple(Array(Tuple(int,int)), int);TUPLE(ARRAY(TUPLE(INTEGER, INTEGER)), INTEGER)" }, delimiter = ';')
+			"tuple(array(tuple(int,int)), int);tuple(array(tuple(integer, integer)), integer)" }, delimiter = ';')
 	void shouldCreateColumDataForTupleOfArrayOfTuple(String inputType, String expectedType) {
 		ColumnType type = ColumnType.of(inputType);
 		assertEquals(inputType.toUpperCase(), type.getName());
@@ -94,10 +94,10 @@ class ColumnTypeTest {
 	}
 
 	@ParameterizedTest
-	@CsvSource(value = { "ARRAY(ARRAY(ARRAY(TEXT)));ARRAY(ARRAY(ARRAY(STRING)))",
-			"Array(Tuple(Array(Tuple(UInt8, String)),Array(Tuple(UInt8, String))));ARRAY(TUPLE(ARRAY(TUPLE(INTEGER, STRING)), ARRAY(TUPLE(INTEGER, STRING))))",
-			"Array(Tuple(UInt8, String));ARRAY(TUPLE(INTEGER, STRING))",
-			"Array(Array(Tuple(UInt8, String)));ARRAY(ARRAY(TUPLE(INTEGER, STRING)))" }, delimiter = ';')
+	@CsvSource(value = { "array(array(array(text)));array(array(array(text)))",
+			"array(tuple(array(tuple(UInt8, text)),array(tuple(UInt8, text))));array(tuple(array(tuple(integer, text)), array(tuple(integer, text))))",
+			"array(tuple(UInt8, text));array(tuple(integer, text))",
+			"array(array(tuple(UInt8, text)));array(array(tuple(integer, text)))" }, delimiter = ';')
 	void shouldCreateColumDataForArrayOfArrayOfArray(String inputType, String expectedType) {
 		ColumnType columnType = ColumnType.of(inputType);
 		assertEquals(inputType.toUpperCase(), columnType.getName());
@@ -114,7 +114,7 @@ class ColumnTypeTest {
 		assertEquals(TimeZone.getTimeZone("EST"), columnType.getTimeZone());
 		assertEquals(4, columnType.getScale());
 		assertEquals(23, columnType.getPrecision());
-		assertEquals("TIMESTAMP_EXT", columnType.getCompactTypeName());
+		assertEquals("timestamp ext", columnType.getCompactTypeName());
 	}
 
 	@Test
@@ -140,7 +140,7 @@ class ColumnTypeTest {
 		String type = "DateTime(\\'EST\\')";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
-		assertEquals(FireboltDataType.DATE_TIME, columnType.getDataType());
+		assertEquals(FireboltDataType.TIMESTAMP, columnType.getDataType());
 		assertEquals(TimeZone.getTimeZone("EST"), columnType.getTimeZone());
 	}
 
@@ -149,16 +149,16 @@ class ColumnTypeTest {
 		String type = "Nullable(DateTime(\\'EST\\'))";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
-		assertEquals(FireboltDataType.DATE_TIME, columnType.getDataType());
+		assertEquals(FireboltDataType.TIMESTAMP, columnType.getDataType());
 		assertEquals(TimeZone.getTimeZone("EST"), columnType.getTimeZone());
 	}
 
 	@Test
 	void shouldCreateColumDataForArrayOfDateTimeWithTimeZone() {
-		String type = "Array(Nullable(DateTime(\\'EST\\')))";
+		String type = "array(Nullable(DateTime(\\'EST\\')))";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
-		assertEquals(FireboltDataType.DATE_TIME, columnType.getArrayBaseColumnType().getDataType());
+		assertEquals(FireboltDataType.TIMESTAMP, columnType.getArrayBaseColumnType().getDataType());
 		assertEquals(TimeZone.getTimeZone("EST"), columnType.getArrayBaseColumnType().getTimeZone());
 	}
 
@@ -167,33 +167,33 @@ class ColumnTypeTest {
 		String type = "DateTime(\\'HelloTz\\')";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
-		assertEquals(FireboltDataType.DATE_TIME, columnType.getDataType());
+		assertEquals(FireboltDataType.TIMESTAMP, columnType.getDataType());
 		assertNull(columnType.getTimeZone());
 	}
 
 	@Test
 	void shouldCreateColumDataForArrayWithoutNullKeywordWhenIntInArrayIsNullable() {
-		String type = "Array(INTEGER NULL)";
+		String type = "array(INTEGER NULL)";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
 		assertEquals(FireboltDataType.ARRAY, columnType.getDataType());
-		assertEquals(FireboltDataType.INT_32, columnType.getInnerTypes().get(0).getDataType());
+		assertEquals(FireboltDataType.INTEGER, columnType.getInnerTypes().get(0).getDataType());
 		assertTrue(columnType.getInnerTypes().get(0).isNullable());
 		assertFalse(columnType.isNullable());
-		assertEquals("ARRAY(INTEGER)", columnType.getCompactTypeName());
+		assertEquals("array(integer)", columnType.getCompactTypeName());
 
 	}
 
 	@Test
 	void shouldCreateColumDataForArrayWithoutNullKeywordWhenIntInArrayIsNotNullable() {
-		String type = "Array(INTEGER NOT NULL)";
+		String type = "array(INTEGER NOT NULL)";
 		ColumnType columnType = ColumnType.of(type);
 		assertEquals(type.toUpperCase(), columnType.getName());
 		assertEquals(FireboltDataType.ARRAY, columnType.getDataType());
-		assertEquals(FireboltDataType.INT_32, columnType.getInnerTypes().get(0).getDataType());
+		assertEquals(FireboltDataType.INTEGER, columnType.getInnerTypes().get(0).getDataType());
 		assertFalse(columnType.getInnerTypes().get(0).isNullable());
 		assertFalse(columnType.isNullable());
-		assertEquals("ARRAY(INTEGER)", columnType.getCompactTypeName());
+		assertEquals("array(integer)", columnType.getCompactTypeName());
 	}
 
 	@Test

@@ -27,8 +27,8 @@ public enum BaseType {
 	INTEGER(Integer.class, conversion -> Integer.parseInt(conversion.getValue())),
 	SHORT(Short.class, conversion -> Short.parseShort(conversion.getValue())),
 	BIGINT(BigInteger.class, conversion -> new BigInteger(conversion.getValue())),
-	STRING(String.class, conversion -> StringEscapeUtils.unescapeJava(conversion.getValue())),
-	FLOAT(Float.class, conversion -> {
+	TEXT(String.class, conversion -> StringEscapeUtils.unescapeJava(conversion.getValue())),
+	REAL(Float.class, conversion -> {
 		if (isNan(conversion.getValue())) {
 			return Float.NaN;
 		} else if (isPositiveInf(conversion.getValue())) {
@@ -61,7 +61,7 @@ public enum BaseType {
 			conversion -> SqlDateUtil.transformToTimeFunction.apply(conversion.getValue(), conversion.getTimeZone())),
 	NULL(Object.class, conversion -> null), OTHER(String.class, conversion -> "Unknown"),
 	OBJECT(Object.class, StringToColumnTypeConversion::getValue),
-	DECIMAL(BigDecimal.class, conversion -> new BigDecimal(conversion.getValue())),
+	NUMERIC(BigDecimal.class, conversion -> new BigDecimal(conversion.getValue())),
 	BOOLEAN(Boolean.class, conversion -> {
 			if (StringUtils.equalsAnyIgnoreCase(conversion.getValue(), "0", "f")) {
 				return false;

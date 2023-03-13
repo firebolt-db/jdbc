@@ -149,7 +149,7 @@ public class FireboltResultSet implements ResultSet {
 			// We do not need to escape when the type is BYTEA
 			return this.getValueAtColumn(columnIndex);
 		} else {
-			return BaseType.STRING.transform(this.getValueAtColumn(columnIndex));
+			return BaseType.TEXT.transform(this.getValueAtColumn(columnIndex));
 		}
 	}
 
@@ -177,7 +177,7 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public float getFloat(int columnIndex) throws SQLException {
-		Float value = BaseType.FLOAT.transform(getValueAtColumn(columnIndex));
+		Float value = BaseType.REAL.transform(getValueAtColumn(columnIndex));
 		return value == null ? 0 : value;
 	}
 
@@ -263,7 +263,7 @@ public class FireboltResultSet implements ResultSet {
 		if (StringUtils.isEmpty(value)) {
 			return null;
 		}
-		return BaseType.DECIMAL.transform(value);
+		return BaseType.NUMERIC.transform(value);
 	}
 
 	@Override

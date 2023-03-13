@@ -28,8 +28,8 @@ public class FieldTypeConverter {
 		CLASS_TO_CONVERT_FUNCTION = new HashMap<>();
 
 		CLASS_TO_CONVERT_FUNCTION.put(String.class, (value, columnType, column) -> {
-			verify(String.class, columnType, BaseType.STRING);
-			return BaseType.STRING.transform(value, column);
+			verify(String.class, columnType, BaseType.TEXT);
+			return BaseType.TEXT.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(Integer.class, (value, columnType, column) -> {
 			verify(Integer.class, columnType, BaseType.INTEGER, BaseType.SHORT);
@@ -40,7 +40,7 @@ public class FieldTypeConverter {
 			return BaseType.LONG.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(Double.class, (value, columnType, column) -> {
-			verify(Double.class, columnType, BaseType.DOUBLE, BaseType.FLOAT);
+			verify(Double.class, columnType, BaseType.DOUBLE, BaseType.REAL);
 			return BaseType.DOUBLE.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(Boolean.class, (value, columnType, column) -> {
@@ -56,13 +56,13 @@ public class FieldTypeConverter {
 			return BaseType.BIGINT.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(Float.class, (value, columnType, column) -> {
-			verify(Float.class, columnType, BaseType.FLOAT);
-			return BaseType.FLOAT.transform(value, column);
+			verify(Float.class, columnType, BaseType.REAL);
+			return BaseType.REAL.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(BigDecimal.class, (value, columnType, column) -> {
-			verify(BigDecimal.class, columnType, BaseType.BIGINT, BaseType.DECIMAL, BaseType.INTEGER, BaseType.FLOAT,
+			verify(BigDecimal.class, columnType, BaseType.BIGINT, BaseType.NUMERIC, BaseType.INTEGER, BaseType.REAL,
 					BaseType.DOUBLE);
-			return BaseType.DECIMAL.transform(value, column);
+			return BaseType.NUMERIC.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(Date.class, (value, columnType, column) -> {
 			verify(Date.class, columnType, BaseType.DATE);

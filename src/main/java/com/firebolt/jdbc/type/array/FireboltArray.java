@@ -21,7 +21,7 @@ public class FireboltArray implements Array {
 
 	@Override
 	public String getBaseTypeName() {
-		return type.getInternalName();
+		return type.getDisplayName();
 	}
 
 	@Override

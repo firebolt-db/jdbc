@@ -29,6 +29,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	private static final String PUBLIC_SCHEMA_NAME = "public";
 	private static final String INFORMATION_SCHEMA_NAME = "information_schema";
 	private static final String CATALOG_SCHEMA_NAME = "catalog";
+	private static final String QUOTE = "'";
 	private final String url;
 	private final FireboltConnection connection;
 	private String databaseVersion;
@@ -50,22 +51,22 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		List<String> informationSchemaRow = Arrays.asList(INFORMATION_SCHEMA_NAME, dbName);
 		List<String> catalogRow = Arrays.asList(CATALOG_SCHEMA_NAME, dbName);
 		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Arrays.asList(QueryResult.Column.builder().name(TABLE_SCHEM).type(STRING).build(),
-						QueryResult.Column.builder().name(TABLE_CATALOG).type(STRING).build()))
+				.columns(Arrays.asList(QueryResult.Column.builder().name(TABLE_SCHEM).type(TEXT).build(),
+						QueryResult.Column.builder().name(TABLE_CATALOG).type(TEXT).build()))
 				.rows(Arrays.asList(publicRow, informationSchemaRow, catalogRow)).build());
 	}
 
 	@Override
 	public ResultSet getTableTypes() throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Collections.singletonList(QueryResult.Column.builder().name(TABLE_TYPE).type(STRING).build()))
+				.columns(Collections.singletonList(QueryResult.Column.builder().name(TABLE_TYPE).type(TEXT).build()))
 				.rows(Arrays.asList(Arrays.asList("TABLE"), Arrays.asList("VIEW"))).build());
 	}
 
 	@Override
 	public ResultSet getCatalogs() throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Collections.singletonList(QueryResult.Column.builder().name(TABLE_CAT).type(STRING).build()))
+				.columns(Collections.singletonList(QueryResult.Column.builder().name(TABLE_CAT).type(TEXT).build()))
 				.rows(Collections.singletonList(Collections.singletonList(connection.getCatalog()))).build());
 	}
 
@@ -98,30 +99,30 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public ResultSet getColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern)
 			throws SQLException {
 		List<QueryResult.Column> columns = Arrays.asList(
-				QueryResult.Column.builder().name(TABLE_CAT).type(STRING).build(),
-				QueryResult.Column.builder().name(TABLE_SCHEM).type(STRING).build(),
-				QueryResult.Column.builder().name(TABLE_NAME).type(STRING).build(),
-				QueryResult.Column.builder().name(COLUMN_NAME).type(STRING).build(),
-				QueryResult.Column.builder().name(DATA_TYPE).type(INT_32).build(),
-				QueryResult.Column.builder().name(TYPE_NAME).type(STRING).build(),
-				QueryResult.Column.builder().name(COLUMN_SIZE).type(INT_32).build(),
-				QueryResult.Column.builder().name(BUFFER_LENGTH).type(INT_32).build(),
-				QueryResult.Column.builder().name(DECIMAL_DIGITS).type(INT_32).build(),
-				QueryResult.Column.builder().name(NUM_PREC_RADIX).type(INT_32).build(),
-				QueryResult.Column.builder().name(NULLABLE).type(INT_32).build(),
-				QueryResult.Column.builder().name(REMARKS).type(STRING).build(),
-				QueryResult.Column.builder().name(COLUMN_DEF).type(STRING).build(),
-				QueryResult.Column.builder().name(SQL_DATA_TYPE).type(INT_32).build(),
-				QueryResult.Column.builder().name(SQL_DATETIME_SUB).type(INT_32).build(),
-				QueryResult.Column.builder().name(CHAR_OCTET_LENGTH).type(INT_32).build(),
-				QueryResult.Column.builder().name(ORDINAL_POSITION).type(INT_32).build(),
-				QueryResult.Column.builder().name(IS_NULLABLE).type(STRING).build(),
-				QueryResult.Column.builder().name(SCOPE_CATALOG).type(STRING).build(),
-				QueryResult.Column.builder().name(SCOPE_SCHEMA).type(STRING).build(),
-				QueryResult.Column.builder().name(SCOPE_TABLE).type(STRING).build(),
-				QueryResult.Column.builder().name(SOURCE_DATA_TYPE).type(INT_32).build(),
-				QueryResult.Column.builder().name(IS_AUTOINCREMENT).type(STRING).build(),
-				QueryResult.Column.builder().name(IS_GENERATEDCOLUMN).type(STRING).build());
+				QueryResult.Column.builder().name(TABLE_CAT).type(TEXT).build(),
+				QueryResult.Column.builder().name(TABLE_SCHEM).type(TEXT).build(),
+				QueryResult.Column.builder().name(TABLE_NAME).type(TEXT).build(),
+				QueryResult.Column.builder().name(COLUMN_NAME).type(TEXT).build(),
+				QueryResult.Column.builder().name(DATA_TYPE).type(INTEGER).build(),
+				QueryResult.Column.builder().name(TYPE_NAME).type(TEXT).build(),
+				QueryResult.Column.builder().name(COLUMN_SIZE).type(INTEGER).build(),
+				QueryResult.Column.builder().name(BUFFER_LENGTH).type(INTEGER).build(),
+				QueryResult.Column.builder().name(DECIMAL_DIGITS).type(INTEGER).build(),
+				QueryResult.Column.builder().name(NUM_PREC_RADIX).type(INTEGER).build(),
+				QueryResult.Column.builder().name(NULLABLE).type(INTEGER).build(),
+				QueryResult.Column.builder().name(REMARKS).type(TEXT).build(),
+				QueryResult.Column.builder().name(COLUMN_DEF).type(TEXT).build(),
+				QueryResult.Column.builder().name(SQL_DATA_TYPE).type(INTEGER).build(),
+				QueryResult.Column.builder().name(SQL_DATETIME_SUB).type(INTEGER).build(),
+				QueryResult.Column.builder().name(CHAR_OCTET_LENGTH).type(INTEGER).build(),
+				QueryResult.Column.builder().name(ORDINAL_POSITION).type(INTEGER).build(),
+				QueryResult.Column.builder().name(IS_NULLABLE).type(TEXT).build(),
+				QueryResult.Column.builder().name(SCOPE_CATALOG).type(TEXT).build(),
+				QueryResult.Column.builder().name(SCOPE_SCHEMA).type(TEXT).build(),
+				QueryResult.Column.builder().name(SCOPE_TABLE).type(TEXT).build(),
+				QueryResult.Column.builder().name(SOURCE_DATA_TYPE).type(INTEGER).build(),
+				QueryResult.Column.builder().name(IS_AUTOINCREMENT).type(TEXT).build(),
+				QueryResult.Column.builder().name(IS_GENERATEDCOLUMN).type(TEXT).build());
 
 		List<List<?>> rows = new ArrayList<>();
 		String query = MetadataUtil.getColumnsQuery(schemaPattern, tableNamePattern, columnNamePattern);
@@ -131,14 +132,16 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 				List<?> row;
 				Column columnInfo = Column.of(columnDescription.getString("data_type"),
 						columnDescription.getString("column_name"));
-				row = Arrays.asList(connection.getCatalog(), columnDescription.getString("table_schema"), // schema
+				row = Arrays.asList(connection.getCatalog(), // TABLE_CAT
+						columnDescription.getString("table_schema"), // schema
 						columnDescription.getString("table_name"), // table name
 						columnDescription.getString("column_name"), // column name
 						String.valueOf(columnInfo.getType().getDataType().getSqlType()), // sql data type
 						columnInfo.getType().getCompactTypeName(), // shorter type name
-						String.valueOf(columnInfo.getType().getPrecision()), // column size
+						String.valueOf(columnInfo.getType().getPrecision()),// column size
 						null, // buffer length (not used, see Javadoc)
-						String.valueOf(columnInfo.getType().getScale()), String.valueOf(COMMON_RADIX), // radix
+						String.valueOf(columnInfo.getType().getScale()), // DECIMAL_DIGITS
+						String.valueOf(COMMON_RADIX), // radix
 						isColumnNullable(columnDescription) ? columnNullable : columnNoNulls
 						, null, // description of the column
 						StringUtils.isNotBlank(columnDescription.getString("column_default"))
@@ -179,16 +182,16 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 				.flatMap(Collection::stream).collect(Collectors.toList());
 
 		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Arrays.asList(QueryResult.Column.builder().name(TABLE_CAT).type(STRING).build(),
-						QueryResult.Column.builder().name(TABLE_SCHEM).type(STRING).build(),
-						QueryResult.Column.builder().name(TABLE_NAME).type(STRING).build(),
-						QueryResult.Column.builder().name(TABLE_TYPE).type(STRING).build(),
-						QueryResult.Column.builder().name(REMARKS).type(STRING).build(),
-						QueryResult.Column.builder().name(TYPE_CAT).type(STRING).build(),
-						QueryResult.Column.builder().name(TYPE_SCHEM).type(STRING).build(),
-						QueryResult.Column.builder().name(TYPE_NAME).type(STRING).build(),
-						QueryResult.Column.builder().name(SELF_REFERENCING_COL_NAME).type(STRING).build(),
-						QueryResult.Column.builder().name(REF_GENERATION).type(STRING).build()))
+				.columns(Arrays.asList(QueryResult.Column.builder().name(TABLE_CAT).type(TEXT).build(),
+						QueryResult.Column.builder().name(TABLE_SCHEM).type(TEXT).build(),
+						QueryResult.Column.builder().name(TABLE_NAME).type(TEXT).build(),
+						QueryResult.Column.builder().name(TABLE_TYPE).type(TEXT).build(),
+						QueryResult.Column.builder().name(REMARKS).type(TEXT).build(),
+						QueryResult.Column.builder().name(TYPE_CAT).type(TEXT).build(),
+						QueryResult.Column.builder().name(TYPE_SCHEM).type(TEXT).build(),
+						QueryResult.Column.builder().name(TYPE_NAME).type(TEXT).build(),
+						QueryResult.Column.builder().name(SELF_REFERENCING_COL_NAME).type(TEXT).build(),
+						QueryResult.Column.builder().name(REF_GENERATION).type(TEXT).build()))
 				.rows(rows).build());
 	}
 
@@ -223,35 +226,33 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	@Override
 	public ResultSet getTypeInfo() throws SQLException {
 		List<QueryResult.Column> columns = Arrays.asList(
-				QueryResult.Column.builder().name(TYPE_NAME).type(STRING).build(),
-				QueryResult.Column.builder().name(DATA_TYPE).type(INT_32).build(),
-				QueryResult.Column.builder().name(PRECISION).type(INT_32).build(),
-				QueryResult.Column.builder().name(LITERAL_PREFIX).type(STRING).build(),
-				QueryResult.Column.builder().name(LITERAL_SUFFIX).type(STRING).build(),
-				QueryResult.Column.builder().name(CREATE_PARAMS).type(STRING).build(),
-				QueryResult.Column.builder().name(NULLABLE).type(INT_32).build(),
+				QueryResult.Column.builder().name(TYPE_NAME).type(TEXT).build(),
+				QueryResult.Column.builder().name(DATA_TYPE).type(INTEGER).build(),
+				QueryResult.Column.builder().name(PRECISION).type(INTEGER).build(),
+				QueryResult.Column.builder().name(LITERAL_PREFIX).type(TEXT).build(),
+				QueryResult.Column.builder().name(LITERAL_SUFFIX).type(TEXT).build(),
+				QueryResult.Column.builder().name(CREATE_PARAMS).type(TEXT).build(),
+				QueryResult.Column.builder().name(NULLABLE).type(INTEGER).build(),
 				QueryResult.Column.builder().name(CASE_SENSITIVE).type(BOOLEAN).build(),
-				QueryResult.Column.builder().name(SEARCHABLE).type(INT_32).build(),
+				QueryResult.Column.builder().name(SEARCHABLE).type(INTEGER).build(),
 				QueryResult.Column.builder().name(UNSIGNED_ATTRIBUTE).type(BOOLEAN).build(),
 				QueryResult.Column.builder().name(FIXED_PREC_SCALE).type(BOOLEAN).build(),
 				QueryResult.Column.builder().name(AUTO_INCREMENT).type(BOOLEAN).build(),
-				QueryResult.Column.builder().name(LOCAL_TYPE_NAME).type(STRING).build(),
-				QueryResult.Column.builder().name(MINIMUM_SCALE).type(INT_32).build(),
-				QueryResult.Column.builder().name(MAXIMUM_SCALE).type(INT_32).build(),
-				QueryResult.Column.builder().name(SQL_DATA_TYPE).type(INT_32).build(),
-				QueryResult.Column.builder().name(SQL_DATETIME_SUB).type(INT_32).build(),
-				QueryResult.Column.builder().name(NUM_PREC_RADIX).type(INT_32).build());
+				QueryResult.Column.builder().name(LOCAL_TYPE_NAME).type(TEXT).build(),
+				QueryResult.Column.builder().name(MINIMUM_SCALE).type(INTEGER).build(),
+				QueryResult.Column.builder().name(MAXIMUM_SCALE).type(INTEGER).build(),
+				QueryResult.Column.builder().name(SQL_DATA_TYPE).type(INTEGER).build(),
+				QueryResult.Column.builder().name(SQL_DATETIME_SUB).type(INTEGER).build(),
+				QueryResult.Column.builder().name(NUM_PREC_RADIX).type(INTEGER).build());
 
 		List<List<?>> rows = new ArrayList<>();
-		List<FireboltDataType> usableTypes = Arrays.asList(INT_32, INT_64, FLOAT_32, FLOAT_64, STRING, DATE,
-				TIMESTAMP, FireboltDataType.TIMESTAMP_WITH_TIMEZONE, DECIMAL, ARRAY, TUPLE, BYTEA, BOOLEAN);
+		List<FireboltDataType> usableTypes = Arrays.asList(INTEGER, BIG_INT, REAL, DOUBLE_PRECISION, TEXT, DATE,
+				TIMESTAMP, NUMERIC, ARRAY, TUPLE, BYTEA, BOOLEAN);
 		usableTypes
 				.forEach(
 						type -> rows.add(Arrays.asList(type.getDisplayName(), type.getSqlType(),
-								type.getDefaultPrecision(), type.getSqlType() == VARCHAR ? "'" : null, // LITERAL_PREFIX
-																										// - ' for
-																										// VARCHAR
-								type.getSqlType() == VARCHAR ? "'" : null, // LITERAL_SUFFIX - ' for VARCHAR
+								type.getPrecision(), QUOTE, // LITERAL_PREFIX
+								QUOTE, // LITERAL_SUFFIX
 								null, // Description of the creation parameters - can be null (can set if needed
 										// in the future)
 								typeNullableUnknown, // It depends - A type can be nullable or not depending on
@@ -260,13 +261,14 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 										: typePredBasic, /*
 															 * SEARCHABLE - LIKE can only be used for VARCHAR
 															 */
-								false, false, // FIXED_PREC_SCALE - indicates if the type can be a money value.
+								!type.isSigned(),
+								false, // FIXED_PREC_SCALE - indicates if the type can be a money value.
 												// Always
 												// false as we do not have a money type
 								false, // AUTO_INCREMENT
 								null, // LOCAL_TYPE_NAME
-								null, // MINIMUM_SCALE - There is no minimum scale
-								type.getDefaultScale(), // MAXIMUM_SCALE
+								type.getMinScale(), // MINIMUM_SCALE
+								type.getMaxScale(), // MAXIMUM_SCALE
 								null, // SQL_DATA_TYPE - Not needed - reserved for future use
 								null, // SQL_DATETIME_SUB - Not needed - reserved for future use
 								COMMON_RADIX)));

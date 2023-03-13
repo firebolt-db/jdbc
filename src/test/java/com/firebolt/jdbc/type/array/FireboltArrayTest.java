@@ -17,32 +17,32 @@ class FireboltArrayTest {
 
 	@Test
 	void shouldReturnBaseTypeName() {
-		FireboltArray fireboltArray = FireboltArray.builder().type(FireboltDataType.STRING).array(ARRAY).build();
-		assertEquals("String", fireboltArray.getBaseTypeName());
+		FireboltArray fireboltArray = FireboltArray.builder().type(FireboltDataType.TEXT).array(ARRAY).build();
+		assertEquals("text", fireboltArray.getBaseTypeName());
 	}
 
 	@Test
 	void shouldReturnBaseType() {
-		FireboltArray fireboltArray = FireboltArray.builder().type(FireboltDataType.STRING).array(ARRAY).build();
-		assertEquals(FireboltDataType.STRING.getSqlType(), fireboltArray.getBaseType());
+		FireboltArray fireboltArray = FireboltArray.builder().type(FireboltDataType.TEXT).array(ARRAY).build();
+		assertEquals(FireboltDataType.TEXT.getSqlType(), fireboltArray.getBaseType());
 	}
 
 	@Test
 	void shouldThrowExceptionIfGettingArrayWhenItIsFree() {
-		FireboltArray fireboltArray = FireboltArray.builder().type(FireboltDataType.STRING).array(ARRAY).build();
+		FireboltArray fireboltArray = FireboltArray.builder().type(FireboltDataType.TEXT).array(ARRAY).build();
 		fireboltArray.free();
 		assertThrows(SQLException.class, fireboltArray::getArray);
 	}
 
 	@Test
 	void shouldReturnArrayWhenNoMapIsGiven() throws SQLException {
-		FireboltArray fireboltArray = FireboltArray.builder().type(FireboltDataType.STRING).array(ARRAY).build();
+		FireboltArray fireboltArray = FireboltArray.builder().type(FireboltDataType.TEXT).array(ARRAY).build();
 		assertEquals(ARRAY, fireboltArray.getArray(null));
 	}
 
 	@Test
 	void shouldThrowExceptionIfAMapIsGiven() throws SQLException {
-		FireboltArray fireboltArray = FireboltArray.builder().type(FireboltDataType.STRING).array(ARRAY).build();
+		FireboltArray fireboltArray = FireboltArray.builder().type(FireboltDataType.TEXT).array(ARRAY).build();
 		Map<String, Class<?>> map = new HashMap<>();
 		map.put("test", String.class);
 		assertThrows(SQLException.class, () -> fireboltArray.getArray(map));
