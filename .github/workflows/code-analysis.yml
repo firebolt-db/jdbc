@@ -10,6 +10,11 @@ jobs:
   code-analysis:
     runs-on: ubuntu-latest
     steps:
+      - name: Collect Workflow Telemetry
+        uses: runforesight/foresight-workflow-kit-action@v1
+        if: ${{ always() }}
+        with:
+          api_key: ${{ secrets.FORESIGHT_KEY }}
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -32,6 +37,14 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Generate Jacoco Test Report
         run: ./gradlew jacocoTestReport
+      - name: Analyze Test and/or Coverage Results
+        uses: runforesight/foresight-test-kit-action@v1
+        if: ${{ always() }}
+        with:
+          api_key: ${{ secrets.FORESIGHT_KEY }}
+          test_format: JUNIT
+          test_framework: JUNIT
+          coverage_format: JACOCO/XML
       - name: Build and analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
