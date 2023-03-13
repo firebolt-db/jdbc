@@ -108,6 +108,12 @@ test {
 tasks.register('integrationTest', Test) {
     description = 'Runs integration tests.'
     useJUnitPlatform()
+    reports {
+        junitXml {
+            outputPerTestCase = true // defaults to false
+            mergeReruns = true // defaults to false
+        }
+    }
     options {
         systemProperties(System.getProperties())
     }
