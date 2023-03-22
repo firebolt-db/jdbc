@@ -30,6 +30,14 @@ class StatementTest extends IntegrationTest {
 	}
 
 	@Test
+	void shouldSelect1() throws SQLException {
+		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
+			statement.executeQuery("SELECT 1;");
+			assertNotNull(statement.executeQuery("SELECT 1;"));
+		}
+	}
+
+	@Test
 	void shouldReuseStatementWhenNotCloseOnCompletion() throws SQLException {
 		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
 			statement.executeQuery("SELECT 1;");

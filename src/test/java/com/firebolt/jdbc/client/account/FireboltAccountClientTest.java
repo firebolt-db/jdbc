@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 package com.firebolt.jdbc.client.account;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -204,3 +205,5 @@ class FireboltAccountClientTest {
 		return headers;
 	}
 }
+=======
+>>>>>>> 5242315 (Start adding support for new identity)

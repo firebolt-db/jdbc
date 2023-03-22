@@ -18,10 +18,10 @@ import lombok.Value;
 @CustomLog
 public class FireboltProperties {
 
-	private static final Pattern DB_PATH_PATTERN = Pattern.compile("/([a-zA-Z0-9_*\\-]+)");
+	public static final String SYSTEM_ENGINE_NAME = "system";
+	private static final Pattern DB_PATH_PATTERN = Pattern.compile("([a-zA-Z0-9_*\\-]+)");
 	private static final int FIREBOLT_SSL_PROXY_PORT = 443;
 	private static final int FIREBOLT_NO_SSL_PROXY_PORT = 9090;
-	private static final String SYSTEM_ENGINE_NAME = "system";
 
 	private static final Set<String> sessionPropertyKeys = Arrays.stream(FireboltSessionProperty.values())
 			.map(property -> {
@@ -55,6 +55,8 @@ public class FireboltProperties {
 	Integer tcpKeepInterval;
 	boolean logResultSet;
 	boolean systemEngine;
+	String organization;
+	String environment;
 	String userDrivers;
 	String userClients;
 
@@ -69,7 +71,8 @@ public class FireboltProperties {
 		String user = getSetting(mergedProperties, FireboltSessionProperty.USER);
 		String password = getSetting(mergedProperties, FireboltSessionProperty.PASSWORD);
 		String path = getSetting(mergedProperties, FireboltSessionProperty.PATH);
-		String engine = getSetting(mergedProperties, FireboltSessionProperty.ENGINE);
+		String database = getDatabase(mergedProperties, path);
+		String engine = getEngine(mergedProperties, database);
 		boolean isSystemEngine = isSystemEngine(engine);
 		boolean compress = ((Boolean) getSetting(mergedProperties, FireboltSessionProperty.COMPRESS))
 				&& !isSystemEngine;
@@ -84,12 +87,13 @@ public class FireboltProperties {
 		int tcpKeepIdle = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_IDLE);
 		int tcpKeepCount = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_COUNT);
 		boolean logResultSet = getSetting(mergedProperties, FireboltSessionProperty.LOG_RESULT_SET);
+		String environment = getSetting(mergedProperties, FireboltSessionProperty.ENVIRONMENT);
 		String driverVersions = getSetting(mergedProperties, FireboltSessionProperty.USER_DRIVERS);
 		String clientVersions = getSetting(mergedProperties, FireboltSessionProperty.USER_CLIENTS);
 
-		String host = getHost(mergedProperties);
+		String host = getHost(environment, mergedProperties);
 		Integer port = getPort(mergedProperties, ssl);
-		String database = getDatabase(mergedProperties, path);
+
 		Map<String, String> additionalProperties = getFireboltCustomProperties(mergedProperties);
 
 		return FireboltProperties.builder().ssl(ssl).sslCertificatePath(sslRootCertificate).sslMode(sslMode).path(path)
@@ -99,15 +103,25 @@ public class FireboltProperties {
 				.bufferSize(bufferSize).socketTimeoutMillis(socketTimeout).connectionTimeoutMillis(connectionTimeout)
 				.tcpKeepInterval(tcpKeepInterval).tcpKeepCount(tcpKeepCount).tcpKeepIdle(tcpKeepIdle)
 				.logResultSet(logResultSet).systemEngine(isSystemEngine)
+				.environment(environment)
 				.userDrivers(driverVersions)
 				.userClients(clientVersions)
 				.build();
 	}
 
-	private static String getHost(Properties properties) {
+	private static String getEngine(Properties mergedProperties, String database) {
+		String engine = getSetting(mergedProperties, FireboltSessionProperty.ENGINE);
+		if (StringUtils.isEmpty(engine) && StringUtils.isEmpty(database)) {
+			return SYSTEM_ENGINE_NAME;
+		} else {
+			return engine;
+		}
+	}
+
+	private static String getHost(String environment, Properties properties ) {
 		String host = getSetting(properties, FireboltSessionProperty.HOST);
 		if (StringUtils.isEmpty(host)) {
-			throw new IllegalArgumentException("Invalid host: The host is missing or empty");
+			return String.format("api.%s.firebolt.io", environment);
 		} else {
 			return host;
 		}
@@ -125,8 +139,8 @@ public class FireboltProperties {
 	private static String getDatabase(Properties properties, String path) throws IllegalArgumentException {
 		String database = getSetting(properties, FireboltSessionProperty.DATABASE);
 		if (StringUtils.isEmpty(database)) {
-			if ("/".equals(path)) {
-				throw new IllegalArgumentException("A database must be provided");
+			if ("/".equals(path) || StringUtils.isEmpty(path)) {
+				return null;
 			} else {
 				Matcher m = DB_PATH_PATTERN.matcher(path);
 				if (m.matches()) {
@@ -201,4 +215,9 @@ public class FireboltProperties {
 	public void addProperty(Pair<String, String> property) {
 		this.addProperty(property.getLeft(), property.getRight());
 	}
+
+	public static FireboltProperties toSystemEngineProperties(FireboltProperties properties) {
+		return properties.toBuilder().additionalProperties(new HashMap<>(properties.getAdditionalProperties())).build();
+	}
+
 }
