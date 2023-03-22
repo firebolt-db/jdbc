@@ -165,8 +165,9 @@ class PreparedStatementTest extends IntegrationTest {
 	private QueryResult createExpectedResult(List<List<?>> expectedRows) {
 		return QueryResult.builder().databaseName(ConnectionInfo.getInstance().getDatabase())
 				.tableName("prepared_statement_test")
-				.columns(Arrays.asList(QueryResult.Column.builder().name("sales").type(FireboltDataType.BIG_INT).build(),
-						QueryResult.Column.builder().name("make").type(FireboltDataType.TEXT).build()))
+				.columns(
+						Arrays.asList(QueryResult.Column.builder().name("sales").type(FireboltDataType.BIG_INT).build(),
+								QueryResult.Column.builder().name("make").type(FireboltDataType.TEXT).build()))
 				.rows(expectedRows).build();
 
 	}

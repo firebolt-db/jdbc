@@ -28,7 +28,6 @@ public class FireboltStatementService {
 
 	private static final String UNKNOWN_TABLE_NAME = "unknown";
 	private final StatementClient statementClient;
-	private final boolean systemEngine;
 
 	/**
 	 * Executes statement
@@ -38,12 +37,12 @@ public class FireboltStatementService {
 	 * @param queryTimeout         query timeout
 	 * @param maxRows              max rows
 	 * @param standardSql          indicates if standard sql should be used
+	 * @param systemEngine         indicates if system engine is used
 	 * @param statement           the statement
 	 * @return an InputStream with the result
 	 */
 	public Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper,
-									   FireboltProperties properties, int queryTimeout, int maxRows, boolean standardSql,
-									   FireboltStatement statement)
+									   FireboltProperties properties, int queryTimeout, int maxRows, boolean standardSql, boolean systemEngine, FireboltStatement statement)
 			throws SQLException {
 		InputStream is = statementClient.executeSqlStatement(statementInfoWrapper, properties, systemEngine, queryTimeout, standardSql);
 		if (statementInfoWrapper.getType() == StatementType.QUERY) {
@@ -59,7 +58,7 @@ public class FireboltStatementService {
 
 	public void abortStatement(@NonNull String statementId, @NonNull FireboltProperties properties)
 			throws FireboltException {
-		if (systemEngine) {
+		if (properties.isSystemEngine()) {
 			throw new FireboltException("Cannot cancel a statement using a system engine", INVALID_REQUEST);
 		} else {
 			statementClient.abortStatement(statementId, properties);

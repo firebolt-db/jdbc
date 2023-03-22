@@ -1,27 +1,29 @@
 package com.firebolt.jdbc.connection.settings;
 
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-
 import lombok.Builder;
 import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.lang.String.format;
 
 @Value
 @Builder(toBuilder = true)
 @CustomLog
 public class FireboltProperties {
 
-	private static final Pattern DB_PATH_PATTERN = Pattern.compile("/([a-zA-Z0-9_*\\-]+)");
+	private static final Pattern DB_PATH_PATTERN = Pattern.compile("([a-zA-Z0-9_*\\-]+)");
 	private static final int FIREBOLT_SSL_PROXY_PORT = 443;
 	private static final int FIREBOLT_NO_SSL_PROXY_PORT = 9090;
-	private static final String SYSTEM_ENGINE_NAME = "system";
 
 	private static final Set<String> sessionPropertyKeys = Arrays.stream(FireboltSessionProperty.values())
 			.map(property -> {
@@ -46,15 +48,17 @@ public class FireboltProperties {
 	String sslCertificatePath;
 	String sslMode;
 	boolean compress;
-	String user;
-	String password;
+	String principal;
+	String secret;
 	String engine;
 	String account;
+	String accountId;
 	Integer tcpKeepIdle;
 	Integer tcpKeepCount;
 	Integer tcpKeepInterval;
 	boolean logResultSet;
 	boolean systemEngine;
+	String environment;
 	String userDrivers;
 	String userClients;
 	String accessToken;
@@ -67,10 +71,11 @@ public class FireboltProperties {
 		boolean ssl = getSetting(mergedProperties, FireboltSessionProperty.SSL);
 		String sslRootCertificate = getSetting(mergedProperties, FireboltSessionProperty.SSL_CERTIFICATE_PATH);
 		String sslMode = getSetting(mergedProperties, FireboltSessionProperty.SSL_MODE);
-		String user = getSetting(mergedProperties, FireboltSessionProperty.USER);
-		String password = getSetting(mergedProperties, FireboltSessionProperty.PASSWORD);
+		String principal = getSetting(mergedProperties, FireboltSessionProperty.CLIENT_ID);
+		String secret = getSetting(mergedProperties, FireboltSessionProperty.CLIENT_SECRET);
 		String path = getSetting(mergedProperties, FireboltSessionProperty.PATH);
-		String engine = getSetting(mergedProperties, FireboltSessionProperty.ENGINE);
+		String database = getDatabase(mergedProperties, path);
+		String engine = getEngine(mergedProperties);
 		boolean isSystemEngine = isSystemEngine(engine);
 		boolean compress = ((Boolean) getSetting(mergedProperties, FireboltSessionProperty.COMPRESS))
 				&& !isSystemEngine;
@@ -85,35 +90,74 @@ public class FireboltProperties {
 		int tcpKeepIdle = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_IDLE);
 		int tcpKeepCount = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_COUNT);
 		boolean logResultSet = getSetting(mergedProperties, FireboltSessionProperty.LOG_RESULT_SET);
+		String configuredEnvironment = getSetting(mergedProperties, FireboltSessionProperty.ENVIRONMENT);
 		String driverVersions = getSetting(mergedProperties, FireboltSessionProperty.USER_DRIVERS);
 		String clientVersions = getSetting(mergedProperties, FireboltSessionProperty.USER_CLIENTS);
 
-		String host = getHost(mergedProperties);
+		String environment = getEnvironment(configuredEnvironment, mergedProperties);
+		String host = getHost(configuredEnvironment, mergedProperties);
 		Integer port = getPort(mergedProperties, ssl);
-		String database = getDatabase(mergedProperties, path);
 		String accessToken =  getSetting(mergedProperties, FireboltSessionProperty.ACCESS_TOKEN);
+
 		Map<String, String> additionalProperties = getFireboltCustomProperties(mergedProperties);
 
 		return FireboltProperties.builder().ssl(ssl).sslCertificatePath(sslRootCertificate).sslMode(sslMode).path(path)
-				.port(port).database(database).compress(compress).user(user).password(password).host(host)
+				.port(port).database(database).compress(compress).principal(principal).secret(secret).host(host)
 				.additionalProperties(additionalProperties).account(account).engine(engine)
 				.keepAliveTimeoutMillis(keepAliveMillis).maxConnectionsTotal(maxTotal).maxRetries(maxRetries)
 				.bufferSize(bufferSize).socketTimeoutMillis(socketTimeout).connectionTimeoutMillis(connectionTimeout)
 				.tcpKeepInterval(tcpKeepInterval).tcpKeepCount(tcpKeepCount).tcpKeepIdle(tcpKeepIdle)
 				.logResultSet(logResultSet).systemEngine(isSystemEngine)
+				.environment(environment)
 				.userDrivers(driverVersions)
 				.userClients(clientVersions)
 				.accessToken(accessToken)
 				.build();
 	}
 
-	private static String getHost(Properties properties) {
+	private static String getEngine(Properties mergedProperties) {
+		return getSetting(mergedProperties, FireboltSessionProperty.ENGINE);
+	}
+
+	private static String getHost(String environment, Properties properties ) {
 		String host = getSetting(properties, FireboltSessionProperty.HOST);
 		if (StringUtils.isEmpty(host)) {
-			throw new IllegalArgumentException("Invalid host: The host is missing or empty");
+			return format("api.%s.firebolt.io", environment);
 		} else {
 			return host;
 		}
+	}
+
+	/**
+	 * Discovers environment name from host if it matches pattern {@code api.ENV.firebolt.io}
+	 * @param environment - the environment from properties or default value as defined in {@link FireboltSessionProperty#ENVIRONMENT}
+	 * @param properties - configuration properties
+	 * @return the environment value
+	 * @throws IllegalStateException if environment extracted from host is not equal to given one.
+	 */
+	private static String getEnvironment(String environment, @NotNull Properties properties) {
+		Pattern environmentalHost = Pattern.compile("api\\.(.+?)\\.firebolt\\.io");
+		String envFromProps = Stream.concat(Stream.of(FireboltSessionProperty.ENVIRONMENT.getKey()), Stream.of(FireboltSessionProperty.ENVIRONMENT.getAliases()))
+				.map(properties::getProperty)
+				.filter(Objects::nonNull).findFirst()
+				.orElse(null);
+		String envFromHost = null;
+		String host = getSetting(properties, FireboltSessionProperty.HOST);
+		if (host != null) {
+			Matcher m = environmentalHost.matcher(host);
+			if (m.find() && m.group(1) != null) {
+				envFromHost = m.group(1);
+			}
+		}
+		if (envFromHost != null) {
+			if (envFromProps == null) {
+				return envFromHost;
+			}
+			if (!Objects.equals(environment, envFromHost)) {
+				throw new IllegalStateException(format("Environment %s does not match host %s", environment, host));
+			}
+		}
+		return environment;
 	}
 
 	@NonNull
@@ -128,14 +172,14 @@ public class FireboltProperties {
 	private static String getDatabase(Properties properties, String path) throws IllegalArgumentException {
 		String database = getSetting(properties, FireboltSessionProperty.DATABASE);
 		if (StringUtils.isEmpty(database)) {
-			if ("/".equals(path)) {
-				throw new IllegalArgumentException("A database must be provided");
+			if ("/".equals(path) || StringUtils.isEmpty(path)) {
+				return null;
 			} else {
 				Matcher m = DB_PATH_PATTERN.matcher(path);
 				if (m.matches()) {
 					return m.group(1);
 				} else {
-					throw new IllegalArgumentException(String.format("The database provided is invalid %s", path));
+					throw new IllegalArgumentException(format("The database provided is invalid %s", path));
 				}
 			}
 		} else {
@@ -194,7 +238,7 @@ public class FireboltProperties {
 	}
 
 	private static boolean isSystemEngine(String engine) {
-		return StringUtils.equalsIgnoreCase(SYSTEM_ENGINE_NAME, engine);
+		return engine == null;
 	}
 
 	public void addProperty(@NonNull String key, String value) {

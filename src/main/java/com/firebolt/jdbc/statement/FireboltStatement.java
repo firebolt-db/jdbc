@@ -114,7 +114,7 @@ public class FireboltStatement implements Statement {
 					log.debug("The property from the query {} was stored", runningStatementId);
 				} else {
 					Optional<ResultSet> currentRs = statementService.execute(statementInfoWrapper,
-							this.sessionProperties, this.queryTimeout, this.maxRows, isStandardSql, this);
+							this.sessionProperties, this.queryTimeout, this.maxRows, isStandardSql, sessionProperties.isSystemEngine(), this);
 					if (currentRs.isPresent()) {
 						resultSet = currentRs.get();
 						currentUpdateCount = -1; // Always -1 when returning a ResultSet

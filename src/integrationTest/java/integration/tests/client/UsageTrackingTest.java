@@ -1,39 +1,19 @@
 package integration.tests.client;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.util.VersionUtil;
+import integration.MockWebServerAwareIntegrationTest;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.RecordedRequest;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.util.VersionUtil;
-
-import integration.IntegrationTest;
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
-
-public class UsageTrackingTest extends IntegrationTest {
-
-	private MockWebServer mockBackEnd;
-
-	@BeforeEach
-	void setUp() throws IOException {
-		mockBackEnd = new MockWebServer();
-		mockBackEnd.start();
-	}
-
-	@AfterEach
-	void tearDown() throws IOException {
-		mockBackEnd.close();
-	}
-
+public class UsageTrackingTest extends MockWebServerAwareIntegrationTest {
 	@Test
 	public void shouldSendRequestWithUserAgentHeaderContainingDriverAndClientInfo()
 			throws SQLException, InterruptedException {
