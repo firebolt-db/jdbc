@@ -30,6 +30,8 @@ class FireboltAuthenticationClientTest {
 	private static final String USER = "usr";
 	private static final String PASSWORD = "PA§§WORD";
 
+	private static final String ENV = "ENV";
+
 	@Spy
 	private final ObjectMapper objectMapper = new ObjectMapper()
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -62,7 +64,7 @@ class FireboltAuthenticationClientTest {
 				FireboltAuthenticationResponse.builder().accessToken("a").refreshToken("r").expiresIn(1).build());
 		when(body.string()).thenReturn(tokensResponse);
 
-		fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD);
+		fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD, ENV);
 
 		verify(httpClient).newCall(requestArgumentCaptor.capture());
 		Request actualPost = requestArgumentCaptor.getValue();
@@ -82,7 +84,7 @@ class FireboltAuthenticationClientTest {
 		when(httpClient.newCall(any())).thenReturn(call);
 
 		assertThrows(FireboltException.class,
-				() -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
+				() -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD, ENV));
 	}
 
 	@Test
@@ -91,7 +93,7 @@ class FireboltAuthenticationClientTest {
 		when(call.execute()).thenThrow(IOException.class);
 		when(httpClient.newCall(any())).thenReturn(call);
 
-		assertThrows(IOException.class, () -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
+		assertThrows(IOException.class, () -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD, ENV));
 		verify(call).execute();
 		verify(call, times(0)).clone();
 	}
@@ -107,6 +109,6 @@ class FireboltAuthenticationClientTest {
 		when(httpClient.newCall(any())).thenReturn(call);
 
 		assertThrows(FireboltException.class,
-				() -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
+				() -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD, ENV));
 	}
 }
