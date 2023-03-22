@@ -17,7 +17,6 @@ import lombok.CustomLog;
 public class FireboltDriver implements Driver {
 
 	public static final String JDBC_FIREBOLT = "jdbc:firebolt:";
-	private static final String JDBC_FIREBOLT_PREFIX = JDBC_FIREBOLT + "//";
 
 	static {
 		try {
@@ -30,20 +29,16 @@ public class FireboltDriver implements Driver {
 
 	@Override
 	public Connection connect(String url, Properties connectionSettings) throws SQLException {
-		if (!acceptsURL(url)) {
-			return null;
-		} else {
-			return new FireboltConnection(url, connectionSettings);
-		}
+		return acceptsURL(url) ? new FireboltConnection(url, connectionSettings) : null;
 	}
 
 	@Override
 	public boolean acceptsURL(String url) {
-		return StringUtils.isNotEmpty(url) && url.startsWith(JDBC_FIREBOLT_PREFIX);
+		return StringUtils.isNotEmpty(url) && url.startsWith(JDBC_FIREBOLT);
 	}
 
 	@Override
-	public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
+	public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) {
 		return PropertyUtil.getPropertyInfo(url, info);
 	}
 

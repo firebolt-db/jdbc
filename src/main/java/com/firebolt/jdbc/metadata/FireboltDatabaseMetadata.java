@@ -354,7 +354,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	public String getUserName() throws SQLException {
-		return connection.getSessionProperties().getUser();
+		return connection.getSessionProperties().getPrincipal();
 	}
 
 	@Override
