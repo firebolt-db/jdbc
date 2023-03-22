@@ -300,17 +300,17 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void shouldGetDriverMajorVersion() {
-		assertEquals(2, fireboltDatabaseMetadata.getDriverMajorVersion());
+		assertEquals(3, fireboltDatabaseMetadata.getDriverMajorVersion());
 	}
 
 	@Test
 	void shouldGetDriverMinorVersion() {
-		assertEquals(4, fireboltDatabaseMetadata.getDriverMinorVersion());
+		assertEquals(0, fireboltDatabaseMetadata.getDriverMinorVersion());
 	}
 
 	@Test
 	void shouldGetDriverVersion() throws SQLException {
-		assertEquals("2.4.5-SNAPSHOT", fireboltDatabaseMetadata.getDriverVersion());
+		assertEquals("3.0.0-SNAPSHOT", fireboltDatabaseMetadata.getDriverVersion());
 	}
 
 	@Test

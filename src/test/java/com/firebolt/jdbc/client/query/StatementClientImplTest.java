@@ -8,10 +8,7 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementUtil;
 import lombok.NonNull;
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import okhttp3.*;
 import okio.Buffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,10 +18,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 
 import static com.firebolt.jdbc.client.UserAgentFormatter.userAgent;
@@ -46,12 +43,30 @@ class StatementClientImplTest {
 
 	@Test
 	void shouldPostSqlQueryWithExpectedUrl() throws FireboltException, IOException {
+		Entry<String, String> result = shouldPostSqlQueryForSystemEngine(false);
+		String requestId = result.getKey();
+		String url = result.getValue();
+		assertEquals(
+				format("http://firebolt1:555/?database=db1&output_format=TabSeparatedWithNamesAndTypes&query_id=%s&compress=1&max_execution_time=15", requestId),
+				url);
+	}
+
+	@Test
+	void shouldPostSqlQueryForSystemEngine() throws FireboltException, IOException {
+		String url = shouldPostSqlQueryForSystemEngine(true).getValue();
+		assertEquals(
+				"http://firebolt1:555/?account_id=12345&output_format=TabSeparatedWithNamesAndTypes",
+				url);
+	}
+
+	private Entry<String, String> shouldPostSqlQueryForSystemEngine(boolean systemEngine) throws FireboltException, IOException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
-				.host("firebolt1").port(555).build();
+				.host("firebolt1").port(555).accountId("12345").systemEngine(systemEngine).build();
 		when(connection.getAccessToken())
 				.thenReturn(Optional.of("token"));
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, mock(ObjectMapper.class),
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(ObjectMapper.class), connection,
 				"ConnA:1.0.9", "ConnB:2.0.9");
+		injectMockedResponse(okHttpClient, 200);
 		Call call = getMockedCallWithResponse(200);
 		when(okHttpClient.newCall(any())).thenReturn(call);
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
@@ -66,39 +81,16 @@ class StatementClientImplTest {
 
 		assertEquals(expectedHeaders, extractHeadersMap(actualRequest));
 		assertEquals("show databases;", actualQuery);
-		assertEquals(format(
-				"http://firebolt1:555/?database=db1&output_format=TabSeparatedWithNamesAndTypes&query_id=%s&compress=1&max_execution_time=15",
-				statementInfoWrapper.getId()), actualRequest.url().toString());
-	}
-
-	@Test
-	void shouldPostSqlQueryForSystemEngine() throws FireboltException, IOException, URISyntaxException {
-		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
-				.host("firebolt1").port(555).build();
-		when(connection.getAccessToken())
-				.thenReturn(Optional.of("token"));
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, mock(ObjectMapper.class),
-				"ConnA:1.0.9", "ConnB:2.0.9");
-		Call call = getMockedCallWithResponse(200);
-		when(okHttpClient.newCall(any())).thenReturn(call);
-		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
-		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, true, 15, true);
-
-		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
-		Request actualRequest = requestArgumentCaptor.getValue();
-		String actualQuery = getActualRequestString(actualRequest);
-
-		assertEquals("show databases;", actualQuery);
-		assertEquals("http://firebolt1:555/?output_format=TabSeparatedWithNamesAndTypes",
-				actualRequest.url().toString());
+		return Map.entry(statementInfoWrapper.getId(), actualRequest.url().toString());
 	}
 
 	@Test
 	void shouldCancelSqlQuery() throws FireboltException, IOException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
 				.host("firebolt1").port(555).build();
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection,
-				mock(ObjectMapper.class), "", "");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(ObjectMapper.class), connection,
+				"", "");
+		injectMockedResponse(okHttpClient, 200);
 		Call call = getMockedCallWithResponse(200);
 		when(okHttpClient.newCall(any())).thenReturn(call);
 		statementClient.abortStatement("12345", fireboltProperties);
@@ -116,7 +108,7 @@ class StatementClientImplTest {
 		Call okCall = getMockedCallWithResponse(200);
 		Call unauthorizedCall = getMockedCallWithResponse(401);
 		when(okHttpClient.newCall(any())).thenReturn(unauthorizedCall).thenReturn(okCall);
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, mock(ObjectMapper.class),
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(ObjectMapper.class), connection,
 				"ConnA:1.0.9", "ConnB:2.0.9");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
 		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 5, true);
@@ -133,7 +125,7 @@ class StatementClientImplTest {
 		Call okCall = getMockedCallWithResponse(200);
 		Call unauthorizedCall = getMockedCallWithResponse(401);
 		when(okHttpClient.newCall(any())).thenReturn(unauthorizedCall).thenReturn(unauthorizedCall).thenReturn(okCall);
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, mock(ObjectMapper.class),
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(ObjectMapper.class), connection,
 				"ConnA:1.0.9", "ConnB:2.0.9");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
 		FireboltException ex = assertThrows(FireboltException.class, () -> statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 5, true));
@@ -154,6 +146,17 @@ class StatementClientImplTest {
 		Map<String, String> headers = new HashMap<>();
 		request.headers().forEach(header -> headers.put(header.getFirst(), header.getSecond()));
 		return headers;
+	}
+
+
+	private void injectMockedResponse(OkHttpClient httpClient, int code) throws IOException {
+		Response response = mock(Response.class);
+		Call call = mock(Call.class);
+		lenient().when(httpClient.newCall(any())).thenReturn(call);
+		lenient().when(call.execute()).thenReturn(response);
+		ResponseBody body = mock(ResponseBody.class);
+		lenient().when(response.body()).thenReturn(body);
+		lenient().when(response.code()).thenReturn(code);
 	}
 
 	@NonNull

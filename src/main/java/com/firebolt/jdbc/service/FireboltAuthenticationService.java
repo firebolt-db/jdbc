@@ -7,15 +7,16 @@ import com.firebolt.jdbc.exception.FireboltException;
 import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
-import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.xml.bind.DatatypeConverter;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static net.jodah.expiringmap.ExpirationPolicy.CREATED;
 
 @RequiredArgsConstructor
 @CustomLog
@@ -30,36 +31,29 @@ public class FireboltAuthenticationService {
 	public FireboltConnectionTokens getConnectionTokens(String host, FireboltProperties loginProperties)
 			throws FireboltException {
 		try {
-			ConnectParams connectionParams = new ConnectParams(host, loginProperties.getUser(),
-					loginProperties.getPassword());
+			ConnectParams connectionParams = new ConnectParams(host, loginProperties.getPrincipal(), loginProperties.getSecret());
 			synchronized (this) {
 				FireboltConnectionTokens foundToken = tokensMap.get(connectionParams);
 				if (foundToken != null) {
 					log.debug("Using the token of {} from the cache", host);
 					return foundToken;
-				} else {
-					FireboltConnectionTokens fireboltConnectionTokens = fireboltAuthenticationClient
-							.postConnectionTokens(host, loginProperties.getUser(), loginProperties.getPassword());
-					long durationInSeconds = getCachingDurationInSeconds(
-							fireboltConnectionTokens.getExpiresInSeconds());
-					tokensMap.put(connectionParams, fireboltConnectionTokens, ExpirationPolicy.CREATED,
-							durationInSeconds, TimeUnit.SECONDS);
-					return fireboltConnectionTokens;
 				}
+				FireboltConnectionTokens fireboltConnectionTokens = fireboltAuthenticationClient
+						.postConnectionTokens(host, loginProperties.getPrincipal(), loginProperties.getSecret(), loginProperties.getEnvironment());
+				long durationInSeconds = getCachingDurationInSeconds(fireboltConnectionTokens.getExpiresInSeconds());
+				tokensMap.put(connectionParams, fireboltConnectionTokens, CREATED, durationInSeconds, SECONDS);
+				return fireboltConnectionTokens;
 			}
 		} catch (Exception e) {
 			log.error("Failed to connect to Firebolt", e);
-			if (e instanceof FireboltException
-					&& StringUtils.isNotEmpty(((FireboltException) e).getErrorMessageFromServer())) {
-				throw new FireboltException(String.format(
-						"Failed to connect to Firebolt with the error from the server: %s, see logs for more info.",
-						((FireboltException) e).getErrorMessageFromServer()), e);
-			} else {
-				throw new FireboltException(
-						String.format("Failed to connect to Firebolt with the error: %s, see logs for more info.",
-								e.getMessage()),
-						e);
+			String errorMessageTemplate = "Failed to connect to Firebolt with the error%s: %s, see logs for more info.";
+			if (e instanceof FireboltException) {
+				String server = ((FireboltException) e).getErrorMessageFromServer();
+				if (server != null) {
+					throw new FireboltException(format(errorMessageTemplate, " from the server", server), e);
+				}
 			}
+			throw new FireboltException(format(errorMessageTemplate, "", e.getMessage()), e);
 		}
 	}
 
@@ -81,8 +75,7 @@ public class FireboltAuthenticationService {
 	public void removeConnectionTokens(String host, FireboltProperties loginProperties) throws FireboltException {
 		try {
 			log.debug("Removing connection token for host {}", host);
-			ConnectParams connectionParams = new ConnectParams(host, loginProperties.getUser(),
-					loginProperties.getPassword());
+			ConnectParams connectionParams = new ConnectParams(host, loginProperties.getPrincipal(), loginProperties.getSecret());
 			tokensMap.remove(connectionParams);
 		} catch (NoSuchAlgorithmException e) {
 			throw new FireboltException("Could not remove connection tokens", e);
@@ -94,11 +87,11 @@ public class FireboltAuthenticationService {
 		public final String fireboltHost;
 		public final String credentialsHash;
 
-		public ConnectParams(String fireboltHost, String user, String password) throws NoSuchAlgorithmException {
+		public ConnectParams(String fireboltHost, String principal, String secret) throws NoSuchAlgorithmException {
 			this.fireboltHost = fireboltHost;
 			MessageDigest sha256Instance = MessageDigest.getInstance("SHA-256");
-			Optional.ofNullable(user).map(String::getBytes).ifPresent(sha256Instance::update);
-			Optional.ofNullable(password).map(String::getBytes).ifPresent(sha256Instance::update);
+			Optional.ofNullable(principal).map(String::getBytes).ifPresent(sha256Instance::update);
+			Optional.ofNullable(secret).map(String::getBytes).ifPresent(sha256Instance::update);
 			this.credentialsHash = DatatypeConverter.printHexBinary(sha256Instance.digest());
 		}
 	}
