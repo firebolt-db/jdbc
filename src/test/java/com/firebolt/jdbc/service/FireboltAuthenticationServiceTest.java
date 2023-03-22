@@ -26,7 +26,9 @@ class FireboltAuthenticationServiceTest {
 	private static final String USER = "usr";
 	private static final String PASSWORD = "PA§§WORD";
 
-	private static final FireboltProperties PROPERTIES = FireboltProperties.builder().user(USER).password(PASSWORD)
+	private static final String ENV = "ENV";
+
+	private static final FireboltProperties PROPERTIES = FireboltProperties.builder().user(USER).password(PASSWORD).environment(ENV)
 			.compress(true).build();
 
 	@Mock
@@ -44,10 +46,10 @@ class FireboltAuthenticationServiceTest {
 		String randomHost = UUID.randomUUID().toString();
 		FireboltConnectionTokens tokens = FireboltConnectionTokens.builder().expiresInSeconds(52)
 				.refreshToken("refresh").accessToken("access").build();
-		when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD)).thenReturn(tokens);
+		when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD, ENV)).thenReturn(tokens);
 
 		assertEquals(tokens, fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES));
-		verify(fireboltAuthenticationClient).postConnectionTokens(randomHost, USER, PASSWORD);
+		verify(fireboltAuthenticationClient).postConnectionTokens(randomHost, USER, PASSWORD, ENV);
 	}
 
 	@Test
@@ -55,17 +57,17 @@ class FireboltAuthenticationServiceTest {
 		String randomHost = UUID.randomUUID().toString();
 		FireboltConnectionTokens tokens = FireboltConnectionTokens.builder().expiresInSeconds(52)
 				.refreshToken("refresh").accessToken("access").build();
-		when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD)).thenReturn(tokens);
+		when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD, ENV)).thenReturn(tokens);
 
 		fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES);
 		assertEquals(tokens, fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES));
-		verify(fireboltAuthenticationClient).postConnectionTokens(randomHost, USER, PASSWORD);
+		verify(fireboltAuthenticationClient).postConnectionTokens(randomHost, USER, PASSWORD, ENV);
 	}
 
 	@Test
 	void shouldThrowExceptionWithServerResponseWhenAResponseIsAvailable() throws IOException, FireboltException {
 		String randomHost = UUID.randomUUID().toString();
-		Mockito.when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD))
+		Mockito.when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD, ENV))
 				.thenThrow(new FireboltException("An error happened during authentication", 403, "INVALID PASSWORD"));
 
 		FireboltException ex = assertThrows(FireboltException.class,
@@ -78,7 +80,7 @@ class FireboltAuthenticationServiceTest {
 	@Test
 	void shouldThrowExceptionWithExceptionMessageWhenAResponseIsNotAvailable() throws IOException, FireboltException {
 		String randomHost = UUID.randomUUID().toString();
-		Mockito.when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD))
+		Mockito.when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD, ENV))
 				.thenThrow(new NullPointerException("NULL!"));
 
 		FireboltException ex = assertThrows(FireboltException.class,

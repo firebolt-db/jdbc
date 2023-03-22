@@ -46,6 +46,11 @@ public abstract class FireboltClient {
 				customClients != null ? customClients : "");
 	}
 
+	protected <T> T getResource(String uri, String accessToken, Class<T> valueType)
+			throws IOException, FireboltException {
+		return getResource(uri, uri, accessToken, valueType);
+	}
+
 	protected <T> T getResource(String uri, String host, String accessToken, Class<T> valueType)
 			throws IOException, FireboltException {
 		Request rq = createGetRequest(uri, accessToken);

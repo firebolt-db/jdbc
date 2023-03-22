@@ -31,7 +31,7 @@ class FireboltAuthenticationClientTest {
 	private static final String USER = "usr";
 	private static final String PASSWORD = "PA§§WORD";
 
-	private static final int RETRIES = 3;
+	private static final String ENV = "ENV";
 
 	private static MockedStatic<VersionUtil> mockedProjectVersionUtil;
 
@@ -78,7 +78,7 @@ class FireboltAuthenticationClientTest {
 				FireboltAuthenticationResponse.builder().accessToken("a").refreshToken("r").expiresIn(1).build());
 		when(body.string()).thenReturn(tokensResponse);
 
-		fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD);
+		fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD, ENV);
 
 		verify(httpClient).newCall(requestArgumentCaptor.capture());
 		Request actualPost = requestArgumentCaptor.getValue();
@@ -99,7 +99,7 @@ class FireboltAuthenticationClientTest {
 		when(httpClient.newCall(any())).thenReturn(call);
 
 		assertThrows(FireboltException.class,
-				() -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
+				() -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD, ENV));
 	}
 
 	@Test
@@ -108,7 +108,7 @@ class FireboltAuthenticationClientTest {
 		when(call.execute()).thenThrow(IOException.class);
 		when(httpClient.newCall(any())).thenReturn(call);
 
-		assertThrows(IOException.class, () -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
+		assertThrows(IOException.class, () -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD, ENV));
 		verify(call).execute();
 		verify(call, times(0)).clone();
 	}
@@ -124,6 +124,6 @@ class FireboltAuthenticationClientTest {
 		when(httpClient.newCall(any())).thenReturn(call);
 
 		assertThrows(FireboltException.class,
-				() -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD));
+				() -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD, ENV));
 	}
 }

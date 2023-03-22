@@ -20,27 +20,29 @@ import lombok.SneakyThrows;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class IntegrationTest {
 
+	private static final String JDBC_URL_PREFIX = "jdbc:firebolt:";
+
 	protected Connection createLocalConnection(String queryParams) throws SQLException {
 		return DriverManager.getConnection(
-				"jdbc:firebolt://localhost" + "/" + integration.ConnectionInfo.getInstance().getDatabase()
-						+ queryParams,
+				JDBC_URL_PREFIX + integration.ConnectionInfo.getInstance().getDatabase()
+						+ queryParams + "&host=localhost" + getAccountParam(),
 				integration.ConnectionInfo.getInstance().getUser(),
 				integration.ConnectionInfo.getInstance().getPassword());
 	}
 
 	protected Connection createConnection() throws SQLException {
 		return DriverManager.getConnection(
-				"jdbc:firebolt://" + integration.ConnectionInfo.getInstance().getApi() + "/"
-						+ integration.ConnectionInfo.getInstance().getDatabase(),
+				JDBC_URL_PREFIX
+						+ integration.ConnectionInfo.getInstance().getDatabase() + "?" + getEnvParam() + getAccountParam() ,
 				integration.ConnectionInfo.getInstance().getUser(),
 				integration.ConnectionInfo.getInstance().getPassword());
 	}
 
 	protected Connection createConnection(String engine) throws SQLException {
 		return DriverManager.getConnection(
-				"jdbc:firebolt://" + integration.ConnectionInfo.getInstance().getApi() + "/"
-						+ integration.ConnectionInfo.getInstance().getDatabase()
-						+ Optional.ofNullable(engine).map(e -> "?engine=" + e).orElse(""),
+				JDBC_URL_PREFIX +
+						 integration.ConnectionInfo.getInstance().getDatabase()
+						+ Optional.ofNullable(engine).map(e -> "?" + getEnvParam() +"&engine=" + e + getAccountParam() ).orElse("?" + getEnvParam() + getAccountParam()),
 				integration.ConnectionInfo.getInstance().getUser(),
 				integration.ConnectionInfo.getInstance().getPassword());
 	}
@@ -68,6 +70,14 @@ public abstract class IntegrationTest {
 		Field field = HttpClientConfig.class.getDeclaredField("instance");
 		field.setAccessible(true);
 		field.set(null, null);
+	}
+
+	private String getAccountParam() {
+		return "&account=" + integration.ConnectionInfo.getInstance().getAccount();
+	}
+
+	private String getEnvParam() {
+		return "&env=" + integration.ConnectionInfo.getInstance().getEnv();
 	}
 
 }

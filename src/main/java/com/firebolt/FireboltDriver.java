@@ -17,7 +17,7 @@ import lombok.CustomLog;
 public class FireboltDriver implements Driver {
 
 	public static final String JDBC_FIREBOLT = "jdbc:firebolt:";
-	private static final String JDBC_FIREBOLT_PREFIX = JDBC_FIREBOLT + "//";
+	private static final String JDBC_FIREBOLT_PREFIX = JDBC_FIREBOLT;
 
 	static {
 		try {

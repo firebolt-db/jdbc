@@ -10,7 +10,7 @@ import lombok.Getter;
 
 @Getter
 public enum FireboltSessionProperty {
-	PATH("path", "/", String.class, "Path component of the URI"),
+	PATH("path", "", String.class, "Path component of the URI"),
 	BUFFER_SIZE("buffer_size", 65536, Integer.class, "The buffer used to create the ResultSet in bytes"),
 	SSL("ssl", true, Boolean.class, "Enable SSL/TLS for the connection"),
 	SSL_CERTIFICATE_PATH("ssl_certificate_path", "", String.class, "SSL/TLS root certificate", "sslrootcert"),
@@ -49,12 +49,12 @@ public enum FireboltSessionProperty {
 	HOST("host", null, String.class, "Firebolt host - null by default"),
 	PORT("port", null, Integer.class, "Firebolt port - null by default"),
 	ENGINE("engine", null, String.class, "engine - null by default", "engine_name"),
-	ACCOUNT("account", null, String.class, "account - null by default"),
+	ACCOUNT("account", "firebolt", String.class, "account - null by default"),
 	LOG_RESULT_SET("log_result_set", false, Boolean.class,
 			"When set to true, the result of the queries executed are logged with the log level INFO. This has a negative performance impact and should be enabled only for debugging purposes"),
 	USER_DRIVERS("user_drivers", null, String.class, "user drivers"),
 	USER_CLIENTS("user_clients", null, String.class, "user clients"),
-
+	ENVIRONMENT("environment", "app", String.class, "Firebolt environment", "env"),
 	// We keep all the deprecated properties to ensure backward compatibility - but
 	// they do not have any effect.
 	@Deprecated

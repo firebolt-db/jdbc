@@ -1,20 +1,16 @@
 package com.firebolt.jdbc.service;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Optional;
-import java.util.Set;
+
+import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.firebolt.jdbc.client.account.FireboltAccountClient;
-import com.firebolt.jdbc.client.account.response.FireboltAccountResponse;
-import com.firebolt.jdbc.client.account.response.FireboltDefaultDatabaseEngineResponse;
-import com.firebolt.jdbc.client.account.response.FireboltEngineIdResponse;
-import com.firebolt.jdbc.client.account.response.FireboltEngineResponse;
 import com.firebolt.jdbc.connection.Engine;
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
 
 import lombok.CustomLog;
@@ -23,95 +19,78 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @CustomLog
 public class FireboltEngineService {
-	private static final Set<String> ENGINE_NOT_READY_STATUSES = new HashSet<>(
-			Arrays.asList("ENGINE_STATUS_PROVISIONING_STARTED", "ENGINE_STATUS_PROVISIONING_PENDING",
-					"ENGINE_STATUS_PROVISIONING_FINISHED", "ENGINE_STATUS_RUNNING_REVISION_STARTING"));
-	private static final String ERROR_NO_ENGINE_ATTACHED = "There is no Firebolt engine running on %s attached to the database %s. To connect first make sure there is a running engine and then try again.";
-	private static final String ERROR_NO_ENGINE_WITH_NAME = "There is no Firebolt engine running on %s with the name %s. To connect first make sure there is a running engine and then try again.";
-	private final FireboltAccountClient fireboltAccountClient;
+    private static final String ENGINE_URL = "engine_url";
+    private static final String ENGINE_NAME = "engine_name";
+    private static final String STATUS_FIELD_NAME = "status";
+    private static final String DEFAULT_ENGINE_QUERY = "SELECT engs.engine_url, engs.status, engs.engine_name\n" +
+            "FROM information_schema.databases AS dbs\n" +
+            "INNER JOIN information_schema.engines AS engs\n" +
+            "ON engs.attached_to = dbs.database_name\n" +
+            "AND engs.engine_name = NULLIF(SPLIT_PART(ARRAY_FIRST(\n" +
+            "        eng_name -> eng_name LIKE '%%(default)',\n" +
+            "        SPLIT(',', attached_engines)\n" +
+            "    ), ' ', 1), '')\n" +
+            "WHERE database_name = '%s'";
+    private static final String ENGINE_QUERY = "SELECT engine_url, attached_to, status FROM information_schema.engines \n" +
+            "WHERE engine_name='%s'";
+    private static final String RUNNING_STATUS = "running";
+    private final FireboltConnection fireboltConnection;
 
-	/**
-	 * Returns the engine
-	 *
-	 * @param connectionUrl   the connection url
-	 * @param loginProperties properties to login
-	 * @param accessToken     the access token
-	 * @return the engine
-	 */
-	public Engine getEngine(String connectionUrl, FireboltProperties loginProperties, String accessToken)
-			throws FireboltException {
-		String accountId = null;
-		Engine engine;
-		try {
-			if (StringUtils.isNotEmpty(loginProperties.getAccount())) {
-				accountId = getAccountId(connectionUrl, loginProperties.getAccount(), accessToken).orElse(null);
-			}
-			if (StringUtils.isEmpty(loginProperties.getEngine())) {
-				engine = getDefaultEngine(connectionUrl, accountId, loginProperties.getDatabase(), accessToken);
-			} else {
-				engine = getEngineWithName(connectionUrl, accountId, loginProperties.getEngine(), accessToken);
-			}
-		} catch (FireboltException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new FireboltException("Failed to get engine", e);
-		}
-		validateEngineIsNotStarting(engine);
-		return engine;
-	}
+    /**
+     * Extracts the engine name from host
+     *
+     * @param engineHost engine host
+     * @return the engine name
+     */
+    public String getEngineNameByHost(String engineHost) throws FireboltException {
+        return Optional.ofNullable(engineHost).filter(host -> host.contains(".")).map(host -> host.split("\\.")[0])
+                .map(host -> host.replace("-", "_")).orElseThrow(() -> new FireboltException(
+                        String.format("Could not establish the engine from the host: %s", engineHost)));
+    }
 
-	private Engine getEngineWithName(String connectionUrl, String accountId, String engineName, String accessToken)
-			throws FireboltException, IOException {
-		FireboltEngineIdResponse response = fireboltAccountClient.getEngineId(connectionUrl, accountId, engineName,
-				accessToken);
-		String engineID = Optional.ofNullable(response).map(FireboltEngineIdResponse::getEngine)
-				.map(FireboltEngineIdResponse.Engine::getEngineId).orElseThrow(() -> new FireboltException(
-						"Failed to extract engine id field from the server response: the response from the server is invalid."));
-		FireboltEngineResponse fireboltEngineResponse = fireboltAccountClient.getEngine(connectionUrl, accountId,
-				engineName, engineID, accessToken);
+    public Engine getEngine(@Nullable String name, @Nullable String database) throws FireboltException {
+        if (StringUtils.isEmpty(name)) {
+            return this.getDefaultEngine(database);
+        } else {
+            return Engine.builder().name(name).endpoint(getEngineEndpoint(name)).build();
+        }
+    }
 
-		return Optional.ofNullable(fireboltEngineResponse).map(FireboltEngineResponse::getEngine)
-				.filter(e -> StringUtils.isNotEmpty(e.getEndpoint()))
-				.map(e -> Engine.builder().endpoint(e.getEndpoint()).id(engineID).status(e.getCurrentStatus())
-						.name(engineName).build())
-				.orElseThrow(() -> new FireboltException(
-						String.format(ERROR_NO_ENGINE_WITH_NAME, connectionUrl, engineName)));
-	}
+    private Engine getDefaultEngine(String database) throws FireboltException {
+        try (Statement statement = this.fireboltConnection.createSystemEngineStatementStatement();
+             ResultSet resultSet = statement.executeQuery(String.format(DEFAULT_ENGINE_QUERY, database))) {
+            if (!resultSet.next()) {
+                throw new FireboltException(String.format("The default engine for the database %s could not be found", database));
+            }
+            String status = resultSet.getString(STATUS_FIELD_NAME);
+            if (isEngineNotRunning(status)) {
+                throw new FireboltException(String.format("The default engine for the database %s is not running. Status: %s", database, status));
+            }
+            return Engine.builder().endpoint(resultSet.getString(ENGINE_URL)).name(resultSet.getString(ENGINE_NAME)).build();
+        } catch (SQLException sqlException) {
+            throw new FireboltException(String.format("Could not get default engine url for database %s", database), sqlException);
+        }
+    }
 
-	private Engine getDefaultEngine(String connectionUrl, String accountId, String database, String accessToken)
-			throws FireboltException, IOException {
-		FireboltDefaultDatabaseEngineResponse defaultEngine = fireboltAccountClient
-				.getDefaultEngineByDatabaseName(connectionUrl, accountId, database, accessToken);
-		return Optional.ofNullable(defaultEngine).map(FireboltDefaultDatabaseEngineResponse::getEngineUrl)
-				.map(url -> Engine.builder().endpoint(url).build()).orElseThrow(
-						() -> new FireboltException(String.format(ERROR_NO_ENGINE_ATTACHED, connectionUrl, database)));
-	}
+    private String getEngineEndpoint(String engine) throws FireboltException {
+        try (Statement statement = this.fireboltConnection.createSystemEngineStatementStatement();
+             ResultSet resultSet = statement.executeQuery(String.format(ENGINE_QUERY, engine))) {
+            if (!resultSet.next()) {
+                throw new FireboltException(String.format("The engine with the name %s could not be found", engine));
+            }
+            String status = resultSet.getString(STATUS_FIELD_NAME);
+            if (isEngineNotRunning(status)) {
+                throw new FireboltException(String.format("The engine with the name %s is not running. Status: %s", engine, status));
+            }
+            return resultSet.getString(ENGINE_URL);
+        } catch (SQLException sqlException) {
+            throw new FireboltException(String.format("Could not get engine url for engine %s", engine), sqlException);
+        }
+    }
 
-	private Optional<String> getAccountId(String connectionUrl, String account, String accessToken)
-			throws FireboltException, IOException {
-		FireboltAccountResponse fireboltAccountResponse = fireboltAccountClient.getAccount(connectionUrl, account,
-				accessToken);
-		return Optional.ofNullable(fireboltAccountResponse).map(FireboltAccountResponse::getAccountId);
-	}
+    private boolean isEngineNotRunning(String status) {
+        return !StringUtils.equalsIgnoreCase(RUNNING_STATUS, status);
+    }
 
-	private void validateEngineIsNotStarting(Engine engine) throws FireboltException {
-		if (StringUtils.isNotEmpty(engine.getId()) && StringUtils.isNotEmpty(engine.getStatus())
-				&& ENGINE_NOT_READY_STATUSES.contains(engine.getStatus())) {
-			throw new FireboltException(String.format(
-					"The engine %s is currently starting. Please wait until the engine is on and then execute the query again.", engine.getName()));
-		}
-	}
-
-	/**
-	 * Extracts the engine name from host
-	 *
-	 * @param engineHost engine host
-	 * @return the engine name
-	 */
-	public String getEngineNameFromHost(String engineHost) throws FireboltException {
-		return Optional.ofNullable(engineHost).filter(host -> host.contains(".")).map(host -> host.split("\\.")[0])
-				.map(host -> host.replace("-", "_")).orElseThrow(() -> new FireboltException(
-						String.format("Could not establish the engine from the host: %s", engineHost)));
-	}
 
 }

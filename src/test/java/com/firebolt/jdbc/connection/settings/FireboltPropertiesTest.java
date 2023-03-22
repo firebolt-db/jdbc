@@ -13,12 +13,12 @@ class FireboltPropertiesTest {
 	@Test
 	void shouldHaveDefaultPropertiesWhenOnlyTheRequiredFieldsAreSpecified() {
 		FireboltProperties expectedDefaultProperties = FireboltProperties.builder().database("db").bufferSize(65536)
-				.sslCertificatePath("").sslMode("strict").path("/").port(443) // 443 by default as SSL is enabled by
-																				// default
-				.compress(true).user(null).password(null).host("host").ssl(true).additionalProperties(new HashMap<>())
-				.account(null).engine(null).keepAliveTimeoutMillis(300000).maxConnectionsTotal(300).maxRetries(3)
-				.socketTimeoutMillis(0).connectionTimeoutMillis(60000).tcpKeepInterval(30).tcpKeepIdle(60)
-				.tcpKeepCount(10).build();
+				.sslCertificatePath("").sslMode("strict").path("").port(443) // 443 by default as SSL is enabled by
+				.systemEngine(false).compress(true)													// default
+				.user(null).password(null).host("host").ssl(true).additionalProperties(new HashMap<>())
+				.account(null).keepAliveTimeoutMillis(300000).maxConnectionsTotal(300).maxRetries(3)
+				.socketTimeoutMillis(0).connectionTimeoutMillis(60000).tcpKeepInterval(30).environment("app").tcpKeepIdle(60)
+				.tcpKeepCount(10).account("firebolt").build();
 
 		Properties properties = new Properties();
 		properties.put("host", "host");
@@ -36,7 +36,7 @@ class FireboltPropertiesTest {
 		properties.put("database", "myDb");
 		properties.put("ssl_certificate_path", "root_cert");
 		properties.put("ssl_mode", "none");
-		properties.put("path", "/example");
+		properties.put("path", "example");
 		properties.put("someCustomProperties", "custom_value");
 		properties.put("compress", "1");
 
@@ -44,18 +44,18 @@ class FireboltPropertiesTest {
 		customProperties.put("someCustomProperties", "custom_value");
 
 		FireboltProperties expectedDefaultProperties = FireboltProperties.builder().bufferSize(51)
-				.sslCertificatePath("root_cert").sslMode("none").path("/example").database("myDb").compress(true)
-				.port(443).user(null).password(null).host("myDummyHost").ssl(true)
-				.additionalProperties(customProperties).account(null).engine(null).keepAliveTimeoutMillis(300000)
+				.sslCertificatePath("root_cert").sslMode("none").path("example").database("myDb").compress(true)
+				.port(443).user(null).password(null).host("myDummyHost").ssl(true).systemEngine(false)
+				.additionalProperties(customProperties).account(null).keepAliveTimeoutMillis(300000)
 				.maxConnectionsTotal(300).maxRetries(3).socketTimeoutMillis(20).connectionTimeoutMillis(60000)
-				.tcpKeepInterval(30).tcpKeepIdle(60).tcpKeepCount(10).build();
+				.tcpKeepInterval(30).tcpKeepIdle(60).tcpKeepCount(10).environment("app").account("firebolt").build();
 		assertEquals(expectedDefaultProperties, FireboltProperties.of(properties));
 	}
 
 	@Test
 	void shouldUsePathParamAsDb() {
 		Properties properties = new Properties();
-		properties.put("path", "/example");
+		properties.put("path", "example");
 		properties.put("host", "host");
 
 		assertEquals("example", FireboltProperties.of(properties).getDatabase());
@@ -64,7 +64,7 @@ class FireboltPropertiesTest {
 	@Test
 	void shouldSupportBooleansForBooleanProperties() {
 		Properties properties = new Properties();
-		properties.put("path", "/example");
+		properties.put("path", "example");
 		properties.put("host", "host");
 		properties.put("ssl", "true");
 		properties.put("compress", "false");
@@ -76,7 +76,7 @@ class FireboltPropertiesTest {
 	@Test
 	void shouldSupportIntForBooleanProperties() {
 		Properties properties = new Properties();
-		properties.put("path", "/example");
+		properties.put("path", "example");
 		properties.put("host", "host");
 		properties.put("ssl", "2");
 		properties.put("compress", "0");
@@ -88,7 +88,7 @@ class FireboltPropertiesTest {
 	@Test
 	void shouldUseCustomPortWhenProvided() {
 		Properties properties = new Properties();
-		properties.put("path", "/example");
+		properties.put("path", "example");
 		properties.put("host", "host");
 		properties.put("port", "999");
 
@@ -96,35 +96,46 @@ class FireboltPropertiesTest {
 	}
 
 	@Test
-	void shouldThrowExceptionWhenNoDbProvided() {
+	void shouldUseSystemEngineWhenNoDbOrEngineProvided() {
 		Properties properties = new Properties();
-		properties.put("host", "host");
-
-		assertThrows(IllegalArgumentException.class, () -> FireboltProperties.of(properties));
+		FireboltProperties fireboltProperties = FireboltProperties.of(properties);
+		assertTrue(FireboltProperties.of(properties).isSystemEngine());
+		assertEquals("system", fireboltProperties.getEngine());
+		assertNull(fireboltProperties.getDatabase());
+		assertFalse(fireboltProperties.isCompress());
 	}
 
 	@Test
-	void shouldThrowExceptionWhenHostIsNotProvided() {
+	void shouldNotUseSystemEngineWhenDbAsPathIsProvided() {
 		Properties properties = new Properties();
-		assertThrows(IllegalArgumentException.class, () -> FireboltProperties.of(properties));
+		properties.put("path", "example");
+		FireboltProperties fireboltProperties = FireboltProperties.of(properties);
+		assertFalse(FireboltProperties.of(properties).isSystemEngine());
+		assertNull(fireboltProperties.getEngine());
+		assertEquals("example", fireboltProperties.getDatabase());
+		assertTrue(fireboltProperties.isCompress());
 	}
 
 	@Test
-	void shouldThrowExceptionWhenDbPathFormatIsInvalid() {
+	void shouldNotUseSystemEngineWhenDbAsQueryParamIsProvided() {
 		Properties properties = new Properties();
-		properties.put("path", "");
-		properties.put("host", "host");
-
-		assertThrows(IllegalArgumentException.class, () -> FireboltProperties.of(properties));
+		properties.put("database", "example");
+		FireboltProperties fireboltProperties = FireboltProperties.of(properties);
+		assertFalse(FireboltProperties.of(properties).isSystemEngine());
+		assertNull(fireboltProperties.getEngine());
+		assertEquals("example", fireboltProperties.getDatabase());
+		assertTrue(fireboltProperties.isCompress());
 	}
 
 	@Test
-	void shouldNotReturnAliasAsCustomProperty() {
+	void shouldNotUseSystemEngineWhenEngineIsProvided() {
 		Properties properties = new Properties();
-		properties.put("path", "");
-		properties.put("host", "host");
-
-		assertThrows(IllegalArgumentException.class, () -> FireboltProperties.of(properties));
+		properties.put("engine", "example");
+		FireboltProperties fireboltProperties = FireboltProperties.of(properties);
+		assertFalse(FireboltProperties.of(properties).isSystemEngine());
+		assertNull(fireboltProperties.getDatabase());
+		assertEquals("example", fireboltProperties.getEngine());
+		assertTrue(fireboltProperties.isCompress());
 	}
 
 	@Test
@@ -140,4 +151,5 @@ class FireboltPropertiesTest {
 		assertEquals(clients, FireboltProperties.of(properties).getUserClients());
 		assertEquals(drivers, FireboltProperties.of(properties).getUserDrivers());
 	}
+
 }

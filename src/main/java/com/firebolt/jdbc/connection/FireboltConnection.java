@@ -1,8 +1,10 @@
 package com.firebolt.jdbc.connection;
 
+import static com.firebolt.jdbc.connection.settings.FireboltProperties.SYSTEM_ENGINE_NAME;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
 import java.io.IOException;
+import java.net.URI;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -11,6 +13,9 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.Executor;
 
+import com.firebolt.jdbc.client.gateway.FireboltGatewayUrlClient;
+import com.firebolt.jdbc.service.FireboltEngineService;
+import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -20,7 +25,6 @@ import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.client.FireboltObjectMapper;
 import com.firebolt.jdbc.client.HttpClientConfig;
-import com.firebolt.jdbc.client.account.FireboltAccountClient;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.client.query.StatementClientImpl;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
@@ -31,7 +35,6 @@ import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
 import com.firebolt.jdbc.metadata.FireboltSystemEngineDatabaseMetadata;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
-import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
@@ -44,47 +47,52 @@ import okhttp3.OkHttpClient;
 public class FireboltConnection implements Connection {
 
 	private final FireboltAuthenticationService fireboltAuthenticationService;
-	private final FireboltEngineService fireboltEngineService;
 	private final FireboltStatementService fireboltStatementService;
+
+	private final FireboltEngineService fireboltEngineService;
+
+	private final FireboltGatewayUrlService fireboltGatewayUrlService;
 	private final String httpConnectionUrl;
 	private final List<FireboltStatement> statements;
 	private final int connectionTimeout;
 	private final boolean systemEngine;
 	private boolean closed = true;
 	private FireboltProperties sessionProperties;
+	private FireboltProperties internalSystemEngineProperties;
 	private int networkTimeout;
 
 	//Properties that are used at the beginning of the connection for authentication
 	private final FireboltProperties loginProperties;
 
 	public FireboltConnection(@NonNull String url, Properties connectionSettings,
-			FireboltAuthenticationService fireboltAuthenticationService, FireboltEngineService fireboltEngineService,
-			FireboltStatementService fireboltStatementService) throws FireboltException {
+			FireboltAuthenticationService fireboltAuthenticationService,
+			FireboltGatewayUrlService fireboltGatewayUrlService, FireboltStatementService fireboltStatementService, FireboltEngineService fireboltEngineService) throws FireboltException {
 		this.fireboltAuthenticationService = fireboltAuthenticationService;
-		this.fireboltEngineService = fireboltEngineService;
-		loginProperties = this.extractFireboltProperties(url, connectionSettings);
+		this.fireboltGatewayUrlService = fireboltGatewayUrlService;
+		this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
 		this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
 		this.fireboltStatementService = fireboltStatementService;
 		this.statements = new ArrayList<>();
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
 		this.systemEngine = loginProperties.isSystemEngine();
+		this.fireboltEngineService = fireboltEngineService;
 		this.connect();
 	}
 
 	@ExcludeFromJacocoGeneratedReport
 	public FireboltConnection(@NonNull String url, Properties connectionSettings) throws FireboltException {
 		ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
-		loginProperties = this.extractFireboltProperties(url, connectionSettings);
+		this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
 		this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
 		OkHttpClient httpClient = getHttpClient(loginProperties);
 		this.systemEngine = loginProperties.isSystemEngine();
+		this.fireboltGatewayUrlService = new FireboltGatewayUrlService(new FireboltGatewayUrlClient(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
 		this.fireboltAuthenticationService = new FireboltAuthenticationService(
 				new FireboltAuthenticationClient(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
-		this.fireboltEngineService = new FireboltEngineService(
-				new FireboltAccountClient(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
+		this.fireboltEngineService = new FireboltEngineService(this);
 		this.fireboltStatementService = new FireboltStatementService(
-				new StatementClientImpl(httpClient, this, objectMapper, loginProperties.getUserDrivers(), loginProperties.getUserClients()), systemEngine);
+				new StatementClientImpl(httpClient, this, objectMapper, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
 		this.statements = new ArrayList<>();
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
@@ -103,15 +111,39 @@ public class FireboltConnection implements Connection {
 
 	private void connect() throws FireboltException {
 		String accessToken = this.getAccessToken(loginProperties).orElse(StringUtils.EMPTY);
-		if (!PropertyUtil.isLocalDb(loginProperties)) {
-			String endpoint = fireboltEngineService.getEngine(httpConnectionUrl, loginProperties, accessToken)
-					.getEndpoint();
-			this.sessionProperties = loginProperties.toBuilder().host(endpoint).build();
-		} else {
-			this.sessionProperties = loginProperties;
-		}
 		closed = false;
+		if (!PropertyUtil.isLocalDb(loginProperties)) {
+			internalSystemEngineProperties = createInternalSystemEngineProperties(accessToken, this.loginProperties.getAccount());
+			if (!this.loginProperties.isSystemEngine()) {
+				sessionProperties = getSessionPropertiesForNonSystemEngine();
+			} else {
+				//When using system engine, the system engine properties are the same as the session properties
+				sessionProperties = internalSystemEngineProperties.toBuilder().build();
+			}
+		} else {
+			//When running packdb locally, the login properties are the session properties
+			sessionProperties = loginProperties;
+		}
 		log.debug("Connection opened");
+	}
+
+	private FireboltProperties getSessionPropertiesForNonSystemEngine() {
+
+/*		This is currently not supported
+		Engine engine = fireboltEngineService.getEngine(this.loginProperties.getEngine(), this.loginProperties.getDatabase());
+		return loginProperties.toBuilder().host(engine.getEndpoint()).engine(engine.getName()).build();*/
+		//temporary workaround
+		return internalSystemEngineProperties.toBuilder().build();
+	}
+
+	private FireboltProperties createInternalSystemEngineProperties(String accessToken, String account) throws FireboltException {
+		String systemEngineEndpoint = fireboltGatewayUrlService.getUrl(accessToken, account);
+		return this.loginProperties
+				.toBuilder()
+				.systemEngine(true)
+				.engine(SYSTEM_ENGINE_NAME)
+				.compress(false)
+				.host(URI.create(systemEngineEndpoint).getHost()).database(null).build();
 	}
 
 	public void removeExpiredTokens() throws FireboltException {
@@ -145,6 +177,10 @@ public class FireboltConnection implements Connection {
 				.sessionProperties(fireboltProperties).connection(this).build();
 		this.addStatement(fireboltStatement);
 		return fireboltStatement;
+	}
+
+	public Statement createSystemEngineStatementStatement() throws SQLException {
+		return createStatement(internalSystemEngineProperties);
 	}
 
 	private void addStatement(FireboltStatement statement) throws SQLException {
@@ -194,9 +230,8 @@ public class FireboltConnection implements Connection {
 		// no-op as catalogs are not supported
 	}
 
-	public String getEngine() throws SQLException {
-		this.validateConnectionIsNotClose();
-		return fireboltEngineService.getEngineNameFromHost(this.getSessionProperties().getHost());
+	public String getEngine()  {
+		return this.getSessionProperties().getEngine();
 	}
 
 	@Override
@@ -266,7 +301,7 @@ public class FireboltConnection implements Connection {
 	}
 
 	private FireboltProperties extractFireboltProperties(String jdbcUri, Properties connectionProperties) {
-		Properties propertiesFromUrl = FireboltJdbcUrlUtil.extractProperties(jdbcUri);
+		Properties propertiesFromUrl = UrlUtil.extractProperties(jdbcUri);
 		return FireboltProperties.of(propertiesFromUrl, connectionProperties);
 	}
 

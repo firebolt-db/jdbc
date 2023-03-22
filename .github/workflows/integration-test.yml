@@ -7,6 +7,9 @@ on:
         description: 'Database - a new one will be created if not provided'
         required: false
         default: ''
+      account:
+        description: 'Account'
+        required: true
       environment:
         description: 'Environment to run the tests against'
         type: choice
@@ -66,7 +69,7 @@ jobs:
           fi
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Dapi=api.${{ github.event.inputs.environment }}.firebolt.io -Dpassword="${{ env.SERVICE_ACCOUNT_SECRET }}" -Duser="${{ env.SERVICE_ACCOUNT_ID }}"
+        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=${{ github.event.inputs.environment }} -Dpassword="${{ env.SERVICE_ACCOUNT_SECRET }}" -Duser="${{ env.SERVICE_ACCOUNT_ID }} -Daccount=${{ github.event.inputs.account }}"
 
       - name: "Foresight: Analyze Test Results"
         uses: runforesight/foresight-test-kit-action@v1

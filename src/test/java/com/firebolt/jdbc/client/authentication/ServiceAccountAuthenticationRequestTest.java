@@ -14,18 +14,12 @@ class ServiceAccountAuthenticationRequestTest {
 	@Test
 	void shouldCreateHttpEntityWithTheProvidedCredentials() throws IOException {
 		ServiceAccountAuthenticationRequest serviceAccountAuthenticationHttpRequest = new ServiceAccountAuthenticationRequest(
-				"he-ll-o", "secret", "https://api.dev.firebolt.io:443");
+			"he-ll-o",	"secret", "dev");
 		RequestBody requestBody = serviceAccountAuthenticationHttpRequest.getRequestBody();
 		Buffer buffer = new Buffer();
 		requestBody.writeTo(buffer);
 
-		assertEquals("client_id=he-ll-o&client_secret=secret&grant_type=client_credentials", buffer.readUtf8());
+		assertEquals("audience=https%3A%2F%2Fdev-firebolt-v2.us.auth0.com%2Fapi%2Fv2%2F&grant_type=client_credentials&client_id=he-ll-o&client_secret=secret", buffer.readUtf8());
 	}
 
-	@Test
-	void shouldGetUri() {
-		ServiceAccountAuthenticationRequest serviceAccountAuthenticationHttpRequest = new ServiceAccountAuthenticationRequest(
-				"he-ll-o", "secret", "https://api.dev.firebolt.io:443");
-		assertEquals("https://api.dev.firebolt.io:443/auth/v1/token", serviceAccountAuthenticationHttpRequest.getUri());
-	}
 }

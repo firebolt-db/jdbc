@@ -32,10 +32,9 @@ public class FireboltAuthenticationClient extends FireboltClient {
 	 * @param password the password
 	 * @return the connection tokens
 	 */
-	public FireboltConnectionTokens postConnectionTokens(String host, String user, String password)
+	public FireboltConnectionTokens postConnectionTokens(String host, String user, String password, String environment)
 			throws IOException, FireboltException {
-		AuthenticationRequest authenticationRequest = AuthenticationRequestFactory.getAuthenticationRequest(user,
-				password, host);
+		AuthenticationRequest authenticationRequest = new ServiceAccountAuthenticationRequest(user, password, environment);
 		String uri = authenticationRequest.getUri();
 		log.debug("Creating connection with url {}", uri);
 		Request request = this.createPostRequest(uri, authenticationRequest.getRequestBody());
