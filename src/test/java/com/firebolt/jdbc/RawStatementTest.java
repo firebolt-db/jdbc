@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.Arrays;
 import java.util.Collections;
 
+import com.firebolt.jdbc.metadata.MetadataUtil.Query;
 import org.junit.jupiter.api.Test;
 
 class RawStatementTest {

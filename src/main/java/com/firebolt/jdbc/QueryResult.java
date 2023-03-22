@@ -13,6 +13,7 @@ import lombok.Value;
 /**
  * Class containing a query result that can be used to create a
  * {@link com.firebolt.jdbc.resultset.FireboltResultSet}
+ * It is particularly useful for metadata methods as a ResulSet containing metadata info must be returned.
  */
 @Builder
 @Value
@@ -36,8 +37,8 @@ public class QueryResult {
 		StringBuilder stringBuilder = new StringBuilder();
 		this.appendWithListValues(stringBuilder, columns.stream().map(Column::getName).collect(Collectors.toList()));
 		stringBuilder.append(NEXT_LINE);
-		this.appendWithListValues(stringBuilder, columns.stream().map(Column::getType)
-				.map(FireboltDataType::getAliases).map( aliases -> aliases[0]).collect(Collectors.toList()));
+		this.appendWithListValues(stringBuilder, columns.stream().map(Column::getType).map(FireboltDataType::getAliases)
+				.map(aliases -> aliases[0]).collect(Collectors.toList()));
 		stringBuilder.append(NEXT_LINE);
 
 		for (int i = 0; i < rows.size(); i++) {

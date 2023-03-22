@@ -1,13 +1,13 @@
 package com.firebolt.jdbc.connection;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
-@Builder
+@AllArgsConstructor
 @Data
+@EqualsAndHashCode
 public class Engine {
-	private String endpoint;
-	private String id;
-	private String status;
-	private String name;
+	private final String endpoint;
+	private final String status;
+	private final String name;
+	private final String database;
 }

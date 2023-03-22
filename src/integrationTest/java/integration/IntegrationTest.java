@@ -12,7 +12,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -20,29 +19,29 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class IntegrationTest {
 
+	private static final String JDBC_URL_PREFIX = "jdbc:firebolt:";
+
 	protected Connection createLocalConnection(String queryParams) throws SQLException {
 		return DriverManager.getConnection(
-				"jdbc:firebolt://localhost" + "/" + integration.ConnectionInfo.getInstance().getDatabase()
-						+ queryParams,
-				integration.ConnectionInfo.getInstance().getUser(),
-				integration.ConnectionInfo.getInstance().getPassword());
+				JDBC_URL_PREFIX + integration.ConnectionInfo.getInstance().getDatabase()
+						+ queryParams + "&host=localhost" + getAccountParam(),
+				integration.ConnectionInfo.getInstance().getPrincipal(),
+				integration.ConnectionInfo.getInstance().getSecret());
 	}
 
 	protected Connection createConnection() throws SQLException {
-		return DriverManager.getConnection(
-				"jdbc:firebolt://" + integration.ConnectionInfo.getInstance().getApi() + "/"
-						+ integration.ConnectionInfo.getInstance().getDatabase(),
-				integration.ConnectionInfo.getInstance().getUser(),
-				integration.ConnectionInfo.getInstance().getPassword());
+		return DriverManager.getConnection(integration.ConnectionInfo.getInstance().toJdbcUrl(),
+				integration.ConnectionInfo.getInstance().getPrincipal(),
+				integration.ConnectionInfo.getInstance().getSecret());
 	}
 
 	protected Connection createConnection(String engine) throws SQLException {
-		return DriverManager.getConnection(
-				"jdbc:firebolt://" + integration.ConnectionInfo.getInstance().getApi() + "/"
-						+ integration.ConnectionInfo.getInstance().getDatabase()
-						+ Optional.ofNullable(engine).map(e -> "?engine=" + e).orElse(""),
-				integration.ConnectionInfo.getInstance().getUser(),
-				integration.ConnectionInfo.getInstance().getPassword());
+		ConnectionInfo current = integration.ConnectionInfo.getInstance();
+		ConnectionInfo updated = new ConnectionInfo(current.getPrincipal(), current.getSecret(),
+				current.getEnv(), current.getDatabase(), current.getAccount(), engine);
+		return DriverManager.getConnection(updated.toJdbcUrl(),
+				integration.ConnectionInfo.getInstance().getPrincipal(),
+				integration.ConnectionInfo.getInstance().getSecret());
 	}
 
 	protected void setParam(Connection connection, String name, String value) throws SQLException {
@@ -53,7 +52,7 @@ public abstract class IntegrationTest {
 
 	@SneakyThrows
 	protected void executeStatementFromFile(String path) {
-		executeStatementFromFile(path, null);
+		executeStatementFromFile(path, integration.ConnectionInfo.getInstance().getEngine());
 	}
 
 	@SneakyThrows
@@ -71,4 +70,7 @@ public abstract class IntegrationTest {
 		field.set(null, null);
 	}
 
+	private String getAccountParam() {
+		return "&account=" + integration.ConnectionInfo.getInstance().getAccount();
+	}
 }
