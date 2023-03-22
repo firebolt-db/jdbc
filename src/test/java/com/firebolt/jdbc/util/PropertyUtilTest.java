@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mockStatic;
 
@@ -23,14 +24,14 @@ class PropertyUtilTest {
 					FireboltSessionProperty.BUFFER_SIZE);
 			mocked.when(FireboltSessionProperty::getNonDeprecatedProperties).thenReturn(existingProperties);
 			DriverPropertyInfo accountDriverInfo = createExpectedDriverInfo(FireboltSessionProperty.ACCOUNT.getKey(),
-					FireboltSessionProperty.ACCOUNT.getDescription(), null);
+					FireboltSessionProperty.ACCOUNT.getDescription(), "myAccount");
 			DriverPropertyInfo bufferDriverInfo = createExpectedDriverInfo(FireboltSessionProperty.BUFFER_SIZE.getKey(),
 					FireboltSessionProperty.BUFFER_SIZE.getDescription(), "1");
 			DriverPropertyInfo[] expected = new DriverPropertyInfo[] { accountDriverInfo, bufferDriverInfo };
 
 			for (int i = 0; i < expected.length; i++) {
 				assertTrue(new ReflectionEquals(
-						PropertyUtil.getPropertyInfo("jdbc:firebolt://api.dev.firebolt.io/Tutorial_11_04?buffer_size=1",
+						PropertyUtil.getPropertyInfo("jdbc:firebolt:Tutorial_11_04/?buffer_size=1&account=myAccount",
 								new Properties())[i]).matches(expected[i]));
 			}
 		}

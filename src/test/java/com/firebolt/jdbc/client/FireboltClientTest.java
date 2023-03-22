@@ -128,7 +128,7 @@ class FireboltClientTest {
 			Call call = mock();
 			when(call.execute()).thenReturn(response);
 			when(okHttpClient.newCall(any())).thenReturn(call);
-			FireboltClient client = new FireboltClient(okHttpClient, mock(), null, null, new ObjectMapper()) {};
+			FireboltClient client = new FireboltClient(okHttpClient, new ObjectMapper(), mock(), null, null) {};
 			assertEquals("Cannot get resource: the response from the server is empty", assertThrows(FireboltException.class, () -> client.getResource("http://foo", "foo", "token", String.class)).getMessage());
 		}
 	}

@@ -35,9 +35,9 @@ class FireboltStatementServiceTest {
 			StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1").get(0);
 			FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("firebolt1")
 					.ssl(true).compress(false).build();
-			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient, false);
+			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 
-			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, 10, -1, true,
+			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, 10, -1, true, false,
 					mock(FireboltStatement.class));
 			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true);
 			Assertions.assertEquals(1, mocked.constructed().size());
@@ -50,8 +50,8 @@ class FireboltStatementServiceTest {
 			StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1").get(0);
 			FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("localhost")
 					.ssl(true).compress(false).build();
-			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient, false);
-			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, -1, 10, true,
+			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
+			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, -1, 10, true, false,
 					mock(FireboltStatement.class));
 			Assertions.assertEquals(1, mocked.constructed().size());
 			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, -1, true);
@@ -63,7 +63,7 @@ class FireboltStatementServiceTest {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("http://firebolt1")
 				.ssl(true).compress(false).build();
 
-		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient, false);
+		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 		fireboltStatementService.abortStatement("123", fireboltProperties);
 		verify(statementClient).abortStatement("123", fireboltProperties);
 	}
@@ -71,9 +71,9 @@ class FireboltStatementServiceTest {
 	@Test
 	void shouldThrowExceptionWhenTryingToCancelQueryWithASystemEngine() throws FireboltException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("http://firebolt1")
-				.ssl(true).compress(false).build();
+				.ssl(true).compress(false).systemEngine(true).build();
 
-		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient, true);
+		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 		assertThrows(FireboltException.class, () -> fireboltStatementService.abortStatement("123", fireboltProperties));
 		verifyNoInteractions(statementClient);
 	}
@@ -84,8 +84,8 @@ class FireboltStatementServiceTest {
 			StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1").get(0);
 			FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("firebolt1")
 					.ssl(true).compress(false).build();
-			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient, true);
-			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, 10, 10, true,
+			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
+			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, 10, 10, true, true,
 					mock(FireboltStatement.class));
 			Assertions.assertEquals(1, mocked.constructed().size());
 			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, true, 10, true);
@@ -100,8 +100,8 @@ class FireboltStatementServiceTest {
 			FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("localhost")
 					.ssl(true).compress(false).build();
 
-			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient, true);
-			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, -1, 0, false,
+			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
+			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, -1, 0, false, true,
 					mock(FireboltStatement.class));
 			Assertions.assertEquals(1, mocked.constructed().size());
 			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, true, -1, false);
@@ -115,9 +115,9 @@ class FireboltStatementServiceTest {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("localhost").ssl(true)
 				.compress(false).build();
 
-		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient, false);
+		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 		Assertions.assertEquals(Optional.empty(), fireboltStatementService.execute(statementInfoWrapper,
-				fireboltProperties, -1, 10, true, mock(FireboltStatement.class)));
+				fireboltProperties, -1, 10, true, false, mock(FireboltStatement.class)));
 		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, -1, true);
 	}
 

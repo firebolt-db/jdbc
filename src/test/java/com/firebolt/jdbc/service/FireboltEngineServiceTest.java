@@ -1,198 +1,102 @@
 package com.firebolt.jdbc.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
-
-import java.sql.SQLException;
-
+import com.firebolt.jdbc.connection.Engine;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.exception.FireboltException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.firebolt.jdbc.client.account.FireboltAccountClient;
-import com.firebolt.jdbc.client.account.response.FireboltAccountResponse;
-import com.firebolt.jdbc.client.account.response.FireboltDefaultDatabaseEngineResponse;
-import com.firebolt.jdbc.client.account.response.FireboltEngineIdResponse;
-import com.firebolt.jdbc.client.account.response.FireboltEngineResponse;
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.exception.FireboltException;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.regex.Pattern;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltEngineServiceTest {
 
-	private static final String HOST = "https://host";
-	private static final String ACCOUNT_ID = "account_id";
-	private static final String DB_NAME = "dbName";
-	private static final String ENGINE_NAME = "engineName";
-	private static final String ENGINE_ID = "engineId";
-	private static final String ACCESS_TOKEN = "token";
-
-	@Mock
-	private FireboltAccountClient fireboltAccountClient;
-
 	@InjectMocks
 	private FireboltEngineService fireboltEngineService;
 
-	@Test
-	void shouldGetDefaultDbEngineWhenEngineNameIsNullOrEmpty() throws Exception {
-		FireboltProperties properties = FireboltProperties.builder().host(HOST).account(ACCOUNT_ID).database(DB_NAME)
-				.compress(false).build();
-
-		when(fireboltAccountClient.getAccount(properties.getHost(), properties.getAccount(), ACCESS_TOKEN))
-				.thenReturn(FireboltAccountResponse.builder().accountId(ACCOUNT_ID).build());
-		when(fireboltAccountClient.getDefaultEngineByDatabaseName(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN))
-				.thenReturn(FireboltDefaultDatabaseEngineResponse.builder().engineUrl("URL").build());
-		fireboltEngineService.getEngine(HOST, properties, ACCESS_TOKEN);
-
-		verify(fireboltAccountClient).getAccount(properties.getHost(), properties.getAccount(), ACCESS_TOKEN);
-		verify(fireboltAccountClient).getDefaultEngineByDatabaseName(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
-		verifyNoMoreInteractions(fireboltAccountClient);
-	}
-
-	@Test
-	void shouldGThrowExceptionWhenGettingDefaultEngineAndTheUrlReturnedFromTheServerIsNull() throws Exception {
-		FireboltProperties properties = FireboltProperties.builder().host(HOST).account(ACCOUNT_ID).database(DB_NAME)
-				.compress(false).build();
-
-		when(fireboltAccountClient.getAccount(properties.getHost(), properties.getAccount(), ACCESS_TOKEN))
-				.thenReturn(FireboltAccountResponse.builder().accountId(ACCOUNT_ID).build());
-		when(fireboltAccountClient.getDefaultEngineByDatabaseName(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN))
-				.thenReturn(FireboltDefaultDatabaseEngineResponse.builder().engineUrl(null).build());
-		FireboltException exception = assertThrows(FireboltException.class,
-				() -> fireboltEngineService.getEngine(HOST, properties, ACCESS_TOKEN));
-		assertEquals(
-				"There is no Firebolt engine running on https://host attached to the database dbName. To connect first make sure there is a running engine and then try again.",
-				exception.getMessage());
-
-		verify(fireboltAccountClient).getAccount(properties.getHost(), properties.getAccount(), ACCESS_TOKEN);
-		verify(fireboltAccountClient).getDefaultEngineByDatabaseName(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
-		verifyNoMoreInteractions(fireboltAccountClient);
-	}
-
-	@Test
-	void shouldGetEngineWhenEngineNameIsPresent() throws Exception {
-		FireboltProperties properties = FireboltProperties.builder().host(HOST).account(ACCOUNT_ID).database(DB_NAME)
-				.engine(ENGINE_NAME).compress(false).build();
-		when(fireboltAccountClient.getAccount(properties.getHost(), properties.getAccount(), ACCESS_TOKEN))
-				.thenReturn(FireboltAccountResponse.builder().accountId(ACCOUNT_ID).build());
-		when(fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN))
-				.thenReturn(FireboltEngineIdResponse.builder()
-						.engine(FireboltEngineIdResponse.Engine.builder().engineId(ENGINE_ID).build()).build());
-		when(fireboltAccountClient.getEngine(HOST, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN))
-				.thenReturn(FireboltEngineResponse.builder()
-						.engine(FireboltEngineResponse.Engine.builder().endpoint("ANY").build()).build());
-		fireboltEngineService.getEngine(HOST, properties, ACCESS_TOKEN);
-
-		verify(fireboltAccountClient).getAccount(properties.getHost(), ACCOUNT_ID, ACCESS_TOKEN);
-		verify(fireboltAccountClient).getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN);
-		verify(fireboltAccountClient).getEngine(HOST, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN);
-		verifyNoMoreInteractions(fireboltAccountClient);
-	}
-
-	@Test
-	void shouldNotGetAccountWhileGettingEngineIfAccountIdIsNotPresent() throws Exception {
-		FireboltProperties properties = FireboltProperties.builder().host(HOST).database(DB_NAME)
-				.engine(ENGINE_NAME).compress(false).build();
-		when(fireboltAccountClient.getEngineId(HOST, null, ENGINE_NAME, ACCESS_TOKEN))
-				.thenReturn(FireboltEngineIdResponse.builder()
-						.engine(FireboltEngineIdResponse.Engine.builder().engineId(ENGINE_ID).build()).build());
-		when(fireboltAccountClient.getEngine(HOST, null, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN))
-				.thenReturn(FireboltEngineResponse.builder()
-						.engine(FireboltEngineResponse.Engine.builder().endpoint("ANY").build()).build());
-		fireboltEngineService.getEngine(HOST, properties, ACCESS_TOKEN);
-
-		verify(fireboltAccountClient, times(0)).getAccount(any(), any(), any());
-		verify(fireboltAccountClient).getEngineId(HOST, null, ENGINE_NAME, ACCESS_TOKEN);
-		verify(fireboltAccountClient).getEngine(HOST, null, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN);
-		verifyNoMoreInteractions(fireboltAccountClient);
-	}
-
-	@Test
-	void shouldThrowExceptionWhenEngineNameIsSpecifiedButUrlIsNotPresentInTheResponse() throws Exception {
-		FireboltProperties properties = FireboltProperties.builder().host(HOST).account(ACCOUNT_ID).database(DB_NAME)
-				.engine(ENGINE_NAME).compress(false).build();
-		when(fireboltAccountClient.getAccount(properties.getHost(), properties.getAccount(), ACCESS_TOKEN))
-				.thenReturn(FireboltAccountResponse.builder().accountId(ACCOUNT_ID).build());
-		when(fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN))
-				.thenReturn(FireboltEngineIdResponse.builder()
-						.engine(FireboltEngineIdResponse.Engine.builder().engineId(ENGINE_ID).build()).build());
-		when(fireboltAccountClient.getEngine(HOST, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN))
-				.thenReturn(FireboltEngineResponse.builder()
-						.engine(FireboltEngineResponse.Engine.builder().endpoint(null).build()).build());
-		FireboltException exception = assertThrows(FireboltException.class,
-				() -> fireboltEngineService.getEngine(HOST, properties, ACCESS_TOKEN));
-		assertEquals(
-				"There is no Firebolt engine running on https://host with the name engineName. To connect first make sure there is a running engine and then try again.",
-				exception.getMessage());
-
-		verify(fireboltAccountClient).getAccount(properties.getHost(), ACCOUNT_ID, ACCESS_TOKEN);
-		verify(fireboltAccountClient).getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN);
-		verify(fireboltAccountClient).getEngine(HOST, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN);
-		verifyNoMoreInteractions(fireboltAccountClient);
-	}
-
-	@Test
-	void shouldThrowExceptionWhenEngineNameIsSpecifiedButEngineIdIsNotPresentInTheServerResponse() throws Exception {
-		FireboltProperties properties = FireboltProperties.builder().host(HOST).account(ACCOUNT_ID).database(DB_NAME)
-				.engine(ENGINE_NAME).compress(false).build();
-		when(fireboltAccountClient.getAccount(properties.getHost(), properties.getAccount(), ACCESS_TOKEN))
-				.thenReturn(FireboltAccountResponse.builder().accountId(ACCOUNT_ID).build());
-		when(fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN))
-				.thenReturn(FireboltEngineIdResponse.builder()
-						.engine(FireboltEngineIdResponse.Engine.builder().engineId(null).build()).build());
-		FireboltException exception = assertThrows(FireboltException.class,
-				() -> fireboltEngineService.getEngine(HOST, properties, ACCESS_TOKEN));
-		assertEquals(
-				"Failed to extract engine id field from the server response: the response from the server is invalid.",
-				exception.getMessage());
-		verify(fireboltAccountClient).getAccount(properties.getHost(), ACCOUNT_ID, ACCESS_TOKEN);
-		verify(fireboltAccountClient).getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN);
-		verifyNoMoreInteractions(fireboltAccountClient);
-	}
+	@Mock
+	private FireboltConnection fireboltConnection;
 
 	@Test
 	void shouldGetEngineNameFromEngineHost() throws SQLException {
-		assertEquals("myHost_345", fireboltEngineService.getEngineNameFromHost("myHost-345.firebolt.io"));
+		assertEquals("myHost_345", fireboltEngineService.getEngineNameByHost("myHost-345.firebolt.io"));
 	}
 
 	@Test
 	void shouldThrowExceptionWhenThEngineCannotBeEstablishedFromTheHost() {
-		assertThrows(FireboltException.class, () -> fireboltEngineService.getEngineNameFromHost("myHost-345"));
+		assertThrows(FireboltException.class, () -> fireboltEngineService.getEngineNameByHost("myHost-345"));
 	}
 
 	@Test
 	void shouldThrowExceptionWhenThEngineCannotBeEstablishedFromNullHost() {
-		assertThrows(FireboltException.class, () -> fireboltEngineService.getEngineNameFromHost(null));
+		assertThrows(FireboltException.class, () -> fireboltEngineService.getEngineNameByHost(null));
+	}
+
+	@Test
+	void shouldGetDefaultEngineWhenEngineNameIsNotProvided() throws SQLException {
+		assertThrows(IllegalArgumentException.class, () -> fireboltEngineService.getEngine(null, "db"));
+	}
+
+	@Test
+	void shouldGetEngineWhenEngineNameIsProvided() throws SQLException {
+		PreparedStatement statement = mock(PreparedStatement.class);
+		ResultSet resultSet = mockedResultSet(Map.of("status", "running", "url", "https://url", "attached_to", "db", "engine_name", "some-engine"));
+		when(fireboltConnection.prepareStatement(anyString())).thenReturn(statement);
+		when(statement.executeQuery()).thenReturn(resultSet);
+		assertEquals(new Engine("https://url", "running", "some-engine", "db"), fireboltEngineService.getEngine("some-engine", "db"));
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = { "ENGINE_STATUS_PROVISIONING_STARTED", "ENGINE_STATUS_PROVISIONING_FINISHED",
-			"ENGINE_STATUS_PROVISIONING_PENDING" })
-	void shouldThrowExceptionWhenEngineStatusIndicatesEngineIsStarting(String status) throws Exception {
-		FireboltProperties properties = FireboltProperties.builder().host(HOST).account(ACCOUNT_ID).database(DB_NAME)
-				.engine(ENGINE_NAME).compress(false).build();
-		when(fireboltAccountClient.getAccount(properties.getHost(), properties.getAccount(), ACCESS_TOKEN))
-				.thenReturn(FireboltAccountResponse.builder().accountId(ACCOUNT_ID).build());
-		when(fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN))
-				.thenReturn(FireboltEngineIdResponse.builder()
-						.engine(FireboltEngineIdResponse.Engine.builder().engineId(ENGINE_ID).build()).build());
-		when(fireboltAccountClient.getEngine(HOST, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN))
-				.thenReturn(FireboltEngineResponse.builder()
-						.engine(FireboltEngineResponse.Engine.builder().endpoint("ANY").currentStatus(status).build())
-						.build());
-		FireboltException exception = assertThrows(FireboltException.class,
-				() -> fireboltEngineService.getEngine(HOST, properties, ACCESS_TOKEN));
-		assertEquals("The engine engineName is currently starting. Please wait until the engine is on and then execute the query again.",
-				exception.getMessage());
+	@CsvSource(value = {
+			"engine1;db1;http://url1;running;;The engine with the name engine1 is not attached to any database",
+			"engine1;db1;http://url1;running;db2;The engine with the name engine1 is not attached to database db1",
+			"engine1;db1;http://url1;starting;;The engine with the name engine1 is not running. Status: starting",
+			"engine2;;;;;The engine with the name engine2 could not be found",
+	}, delimiter = ';')
+	void shouldThrowExceptionWhenSomethingIsWrong(String engineName, String db, String endpoint, String status, String attachedDb, String errorMessage) throws SQLException {
+		PreparedStatement statement = mock(PreparedStatement.class);
+		Map<String, String> rsData = null;
+		if (endpoint != null || status != null || attachedDb != null) {
+			rsData = new HashMap<>();
+			rsData.put("url", endpoint);
+			rsData.put("status", status);
+			rsData.put("attached_to", attachedDb);
+			rsData.put("engine_name", engineName);
+		}
+		ResultSet resultSet = mockedResultSet(rsData);
+		when(fireboltConnection.prepareStatement(Mockito.matches(Pattern.compile("SELECT.+JOIN", Pattern.MULTILINE | Pattern.DOTALL)))).thenReturn(statement);
+		when(statement.executeQuery()).thenReturn(resultSet);
+		assertEquals(errorMessage, assertThrows(FireboltException.class, () -> fireboltEngineService.getEngine(engineName, db)).getMessage());
+		Mockito.verify(statement, Mockito.times(1)).setString(1, engineName);
+	}
 
-		verify(fireboltAccountClient).getAccount(properties.getHost(), ACCOUNT_ID, ACCESS_TOKEN);
-		verify(fireboltAccountClient).getEngineId(HOST, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN);
-		verify(fireboltAccountClient).getEngine(HOST, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN);
-		verifyNoMoreInteractions(fireboltAccountClient);
+	private ResultSet mockedResultSet(Map<String, String> values) throws SQLException {
+		ResultSet resultSet = mock(ResultSet.class);
+		if (values == null) {
+			when(resultSet.next()).thenReturn(false);
+		} else {
+			when(resultSet.next()).thenReturn(true, false);
+			for (Entry<String, String> column : values.entrySet()) {
+				lenient().when(resultSet.getString(column.getKey())).thenReturn(column.getValue());
+			}
+		}
+		return resultSet;
 	}
 }

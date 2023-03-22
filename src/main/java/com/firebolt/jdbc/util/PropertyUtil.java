@@ -7,9 +7,9 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import com.firebolt.jdbc.connection.UrlUtil;
 import org.apache.commons.lang3.StringUtils;
 
-import com.firebolt.jdbc.connection.FireboltJdbcUrlUtil;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
 
@@ -31,7 +31,7 @@ public class PropertyUtil {
 	 */
 	public DriverPropertyInfo[] getPropertyInfo(String url, Properties properties) {
 		try {
-			Properties propertiesFromUrl = FireboltJdbcUrlUtil.extractProperties(url);
+			Properties propertiesFromUrl = UrlUtil.extractProperties(url);
 			for (Object key : propertiesFromUrl.keySet()) {
 				properties.put(key, propertiesFromUrl.get(key.toString()));
 			}

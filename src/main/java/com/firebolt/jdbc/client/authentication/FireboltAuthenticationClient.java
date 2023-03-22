@@ -18,7 +18,7 @@ public class FireboltAuthenticationClient extends FireboltClient {
 
 	public FireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper,
 			FireboltConnection connection, String customDrivers, String customClients) {
-		super(httpClient, connection, customDrivers, customClients, objectMapper);
+		super(httpClient, objectMapper, connection, customDrivers, customClients);
 	}
 
 	/**
@@ -27,12 +27,12 @@ public class FireboltAuthenticationClient extends FireboltClient {
 	 * @param host     the host
 	 * @param user     the username
 	 * @param password the password
+	 * @param environment the environment
 	 * @return the connection tokens
 	 */
-	public FireboltConnectionTokens postConnectionTokens(String host, String user, String password)
+	public FireboltConnectionTokens postConnectionTokens(String host, String user, String password, String environment)
 			throws IOException, FireboltException {
-		AuthenticationRequest authenticationRequest = AuthenticationRequestFactory.getAuthenticationRequest(user,
-				password, host);
+		AuthenticationRequest authenticationRequest = new ServiceAccountAuthenticationRequest(user, password, environment);
 		String uri = authenticationRequest.getUri();
 		log.debug("Creating connection with url {}", uri);
 		Request request = this.createPostRequest(uri, authenticationRequest.getRequestBody());

@@ -10,7 +10,7 @@ import lombok.Getter;
 
 @Getter
 public enum FireboltSessionProperty {
-	PATH("path", "/", String.class, "Path component of the URI"),
+	PATH("path", "", String.class, "Path component of the URI"),
 	BUFFER_SIZE("buffer_size", 65536, Integer.class, "The buffer used to create the ResultSet in bytes"),
 	SSL("ssl", true, Boolean.class, "Enable SSL/TLS for the connection"),
 	SSL_CERTIFICATE_PATH("ssl_certificate_path", "", String.class, "SSL/TLS root certificate", "sslrootcert"),
@@ -44,18 +44,21 @@ public enum FireboltSessionProperty {
 				 */
 			"compress", true, Boolean.class, "Whether to compress transferred data or not. Compressed by default"),
 	DATABASE("database", null, String.class, "default database name"),
-	PASSWORD("password", null, String.class, "user password - null by default"),
-	USER("user", null, String.class, "user name - null by default"),
+	// Typically client_secret property should be used, but password is the standard JDBC property supported by all tools, so it is silently defined here as alias. Also see CLIENT_ID.
+	CLIENT_SECRET("client_secret", null, String.class, "client secret - null by default", "password"),
+	// Typically client_id property should be used, but user is the standard JDBC property supported by all tools, so it is silently defined here as alias. Also see CLIENT_SECRET
+	CLIENT_ID("client_id", null, String.class, "client ID - null by default", "user"),
 	HOST("host", null, String.class, "Firebolt host - null by default"),
 	PORT("port", null, Integer.class, "Firebolt port - null by default"),
 	ENGINE("engine", null, String.class, "engine - null by default", "engine_name"),
-	ACCOUNT("account", null, String.class, "account - null by default"),
+	ACCOUNT("account", "firebolt", String.class, "account - null by default"),
+	ACCOUNT_ID("account_id", "firebolt", String.class, "accountId - null by default"),
 	LOG_RESULT_SET("log_result_set", false, Boolean.class,
 			"When set to true, the result of the queries executed are logged with the log level INFO. This has a negative performance impact and should be enabled only for debugging purposes"),
 	USER_DRIVERS("user_drivers", null, String.class, "user drivers"),
 	USER_CLIENTS("user_clients", null, String.class, "user clients"),
 	ACCESS_TOKEN("access_token", null, String.class, "access token"),
-
+	ENVIRONMENT("environment", "app", String.class, "Firebolt environment", "env"),
 	// We keep all the deprecated properties to ensure backward compatibility - but
 	// they do not have any effect.
 	@Deprecated
