@@ -14,7 +14,7 @@ import java.util.concurrent.Executor;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.firebolt.jdbc.PropertyUtil;
+import com.firebolt.jdbc.util.PropertyUtil;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.client.FireboltObjectMapper;

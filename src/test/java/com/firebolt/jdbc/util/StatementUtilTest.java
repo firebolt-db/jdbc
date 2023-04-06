@@ -1,4 +1,4 @@
-package com.firebolt.jdbc;
+package com.firebolt.jdbc.util;
 
 import static com.firebolt.jdbc.statement.StatementType.PARAM_SETTING;
 import static com.firebolt.jdbc.statement.StatementUtil.isQuery;

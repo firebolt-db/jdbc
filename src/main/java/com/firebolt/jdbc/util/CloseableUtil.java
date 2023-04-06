@@ -1,4 +1,4 @@
-package com.firebolt.jdbc;
+package com.firebolt.jdbc.util;
 
 import java.io.Closeable;
 import java.io.IOException;

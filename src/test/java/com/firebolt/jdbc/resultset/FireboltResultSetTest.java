@@ -26,7 +26,7 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.firebolt.jdbc.LoggerUtil;
+import com.firebolt.jdbc.util.LoggerUtil;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.FireboltStatement;
 

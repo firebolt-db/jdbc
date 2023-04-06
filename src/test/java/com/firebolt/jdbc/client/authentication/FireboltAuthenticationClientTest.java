@@ -15,7 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.firebolt.jdbc.VersionUtil;
+import com.firebolt.jdbc.util.VersionUtil;
 import com.firebolt.jdbc.client.authentication.response.FireboltAuthenticationResponse;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;

@@ -17,7 +17,7 @@ import org.junitpioneer.jupiter.SetSystemProperty;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-import com.firebolt.jdbc.VersionUtil;
+import com.firebolt.jdbc.util.VersionUtil;
 
 @SetSystemProperty(key = "java.version", value = "8.0.1")
 @SetSystemProperty(key = "os.version", value = "10.1")

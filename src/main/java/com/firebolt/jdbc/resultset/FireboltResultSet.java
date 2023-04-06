@@ -15,7 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
-import com.firebolt.jdbc.LoggerUtil;
+import com.firebolt.jdbc.util.LoggerUtil;
 import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
@@ -123,7 +123,7 @@ public class FireboltResultSet implements ResultSet {
 		} else {
 			inputStreamReader = new InputStreamReader(is, StandardCharsets.UTF_8);
 		}
-		return bufferSize != null ? new BufferedReader(inputStreamReader, bufferSize)
+		return bufferSize != null && bufferSize != 0 ? new BufferedReader(inputStreamReader, bufferSize)
 				: new BufferedReader(inputStreamReader);
 	}
 

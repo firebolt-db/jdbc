@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-import java.io.ByteArrayInputStream;
 import java.sql.*;
 import java.util.Optional;
 import java.util.Properties;
@@ -77,8 +76,8 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldPrepareStatement() throws SQLException {
-		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
-				.thenReturn(new ByteArrayInputStream("".getBytes()));
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), any()))
+				.thenReturn(Optional.empty());
 		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
 		PreparedStatement statement = fireboltConnection
@@ -89,7 +88,7 @@ class FireboltConnectionTest {
 		assertNotNull(fireboltConnection);
 		assertNotNull(statement);
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), any(), anyInt(), anyInt(),
-				anyBoolean());
+				anyBoolean(), any());
 		assertEquals("INSERT INTO cars(sales, name) VALUES (500, 'Ford')",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
@@ -111,13 +110,13 @@ class FireboltConnectionTest {
 		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
 
-		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), any()))
 				.thenThrow(new FireboltException(ExceptionType.TOO_MANY_REQUESTS));
 		assertThrows(FireboltException.class,
 				() -> fireboltConnection.addProperty(new ImmutablePair<>("custom_1", "1")));
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
-				propertiesArgumentCaptor.capture(), anyInt(), anyInt(), anyBoolean());
+				propertiesArgumentCaptor.capture(), anyInt(), anyInt(), anyBoolean(), any());
 		assertEquals("1", propertiesArgumentCaptor.getValue().getAdditionalProperties().get("custom_1"));
 		assertEquals("SELECT 1", queryInfoWrapperArgumentCaptor.getValue().getSql());
 		assertNull(fireboltConnection.getSessionProperties().getAdditionalProperties().get("custom_1"));
@@ -125,8 +124,8 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldSetNewPropertyWhenConnectionIsValidWithTheNewProperty() throws SQLException {
-		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
-				.thenReturn(new ByteArrayInputStream("".getBytes()));
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), any()))
+				.thenReturn(Optional.empty());
 		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
 
@@ -135,7 +134,7 @@ class FireboltConnectionTest {
 		fireboltConnection.addProperty(newProperties);
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
-				propertiesArgumentCaptor.capture(), anyInt(), anyInt(), anyBoolean());
+				propertiesArgumentCaptor.capture(), anyInt(), anyInt(), anyBoolean(), any());
 		assertEquals("1", propertiesArgumentCaptor.getValue().getAdditionalProperties().get("custom_1"));
 		assertEquals("1", fireboltConnection.getSessionProperties().getAdditionalProperties().get("custom_1"));
 		assertEquals("SELECT 1", queryInfoWrapperArgumentCaptor.getValue().getSql());
@@ -143,14 +142,14 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldValidateConnectionWhenCallingIsValid() throws SQLException {
-		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
-				.thenReturn(new ByteArrayInputStream("".getBytes()));
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), any()))
+				.thenReturn(Optional.empty());
 		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
 		fireboltConnection.isValid(500);
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
-				propertiesArgumentCaptor.capture(), anyInt(), anyInt(), anyBoolean());
+				propertiesArgumentCaptor.capture(), anyInt(), anyInt(), anyBoolean(), any());
 		assertEquals("SELECT 1", queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
@@ -167,7 +166,7 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldIgnore429WhenValidatingConnection() throws SQLException {
-		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), any()))
 				.thenThrow(new FireboltException(ExceptionType.TOO_MANY_REQUESTS));
 		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
@@ -176,7 +175,7 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldReturnFalseWhenValidatingConnectionThrowsAnException() throws SQLException {
-		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), any()))
 				.thenThrow(new FireboltException(ExceptionType.ERROR));
 		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
@@ -200,8 +199,8 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldExtractConnectorOverrides() throws SQLException {
-		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
-				.thenReturn(new ByteArrayInputStream("".getBytes()));
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), any()))
+				.thenReturn(Optional.empty());
 		connectionProperties.put("user_clients", "ConnA:1.0.9,ConnB:2.8.0");
 		connectionProperties.put("user_drivers", "DriverA:2.0.9,DriverB:3.8.0");
 
@@ -212,7 +211,7 @@ class FireboltConnectionTest {
 		statement.execute();
 
 		verify(fireboltStatementService).execute(any(), propertiesArgumentCaptor.capture(), anyInt(), anyInt(),
-				anyBoolean());
+				anyBoolean(), any());
 		assertNull(propertiesArgumentCaptor.getValue().getAdditionalProperties().get("user_clients"));
 		assertNull(propertiesArgumentCaptor.getValue().getAdditionalProperties().get("user_drivers"));
 		assertNull(fireboltConnectionImpl.getSessionProperties().getAdditionalProperties().get("user_clients"));

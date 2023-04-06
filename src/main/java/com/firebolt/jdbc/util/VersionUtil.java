@@ -1,4 +1,4 @@
-package com.firebolt.jdbc;
+package com.firebolt.jdbc.util;
 
 import java.io.IOException;
 import java.util.Properties;

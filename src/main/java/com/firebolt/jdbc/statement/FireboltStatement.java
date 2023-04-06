@@ -7,8 +7,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.firebolt.jdbc.CloseableUtil;
-import com.firebolt.jdbc.PropertyUtil;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
@@ -16,9 +14,9 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
-import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.service.FireboltStatementService;
-import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
+import com.firebolt.jdbc.util.CloseableUtil;
+import com.firebolt.jdbc.util.PropertyUtil;
 
 import lombok.Builder;
 import lombok.CustomLog;
@@ -111,15 +109,13 @@ public class FireboltStatement implements Statement {
 					this.connection.addProperty(statementInfoWrapper.getParam());
 					log.debug("The property from the query {} was stored", runningStatementId);
 				} else {
-					inputStream = statementService.execute(statementInfoWrapper, this.sessionProperties,
-							this.queryTimeout, this.maxRows, isStandardSql);
-					if (statementInfoWrapper.getType() == StatementType.QUERY) {
-						resultSet = getResultSet(inputStream,
-								(QueryRawStatement) statementInfoWrapper.getInitialStatement());
+					Optional<ResultSet> currentRs = statementService.execute(statementInfoWrapper,
+							this.sessionProperties, this.queryTimeout, this.maxRows, isStandardSql, this);
+					if (currentRs.isPresent()) {
+						resultSet = currentRs.get();
 						currentUpdateCount = -1; // Always -1 when returning a ResultSet
 					} else {
 						currentUpdateCount = 0;
-						CloseableUtil.close(inputStream);
 					}
 					log.info("The query with the id {} was executed with success", runningStatementId);
 				}
@@ -150,14 +146,6 @@ public class FireboltStatement implements Statement {
 		synchronized (statementsToExecuteIds) {
 			return statementsToExecuteIds.contains(statementInfoWrapper.getId());
 		}
-	}
-
-	private FireboltResultSet getResultSet(InputStream inputStream, QueryRawStatement initialQuery)
-			throws SQLException {
-		return new FireboltResultSet(inputStream, Optional.ofNullable(initialQuery.getTable()).orElse("unknown"),
-				Optional.ofNullable(initialQuery.getDatabase()).orElse(this.sessionProperties.getDatabase()),
-				this.sessionProperties.getBufferSize(), this.sessionProperties.isCompress(), this,
-				this.sessionProperties.isLogResultSet());
 	}
 
 	private void closeAllResults() {
@@ -496,6 +484,7 @@ public class FireboltStatement implements Statement {
 		// Batch are not supported by the driver
 		throw new FireboltUnsupportedOperationException();
 	}
+
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
@@ -503,7 +492,7 @@ public class FireboltStatement implements Statement {
 		// Batch are not supported by the driver
 		throw new FireboltUnsupportedOperationException();
 	}
-	
+
 	@Override
 	@NotImplemented
 	@ExcludeFromJacocoGeneratedReport
