@@ -1,4 +1,4 @@
-package com.firebolt.jdbc;
+package com.firebolt.jdbc.util;
 
 import java.sql.DriverPropertyInfo;
 import java.util.ArrayList;

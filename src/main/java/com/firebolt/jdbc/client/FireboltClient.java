@@ -15,7 +15,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.firebolt.jdbc.CloseableUtil;
+import com.firebolt.jdbc.util.CloseableUtil;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;

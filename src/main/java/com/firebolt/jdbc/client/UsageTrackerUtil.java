@@ -5,7 +5,7 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.firebolt.jdbc.VersionUtil;
+import com.firebolt.jdbc.util.VersionUtil;
 import com.google.common.collect.ImmutableMap;
 
 import lombok.CustomLog;

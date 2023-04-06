@@ -5,18 +5,19 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
+import java.util.Optional;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.firebolt.jdbc.connection.FireboltConnection;
@@ -42,121 +43,83 @@ class FireboltStatementTest {
 	private FireboltConnection fireboltConnection;
 
 	@Test
-	void shouldExecuteQueryAndCreateResultSet() throws SQLException {
-		try (MockedConstruction<FireboltResultSet> mocked = Mockito.mockConstruction(FireboltResultSet.class)) {
-			FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-					.build();
-			FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-					.sessionProperties(fireboltProperties).build();
+	void shouldExtractAdditionalPropertiesAndNotExecuteQueryWhenSetParamIsUsed() throws SQLException {
+		FireboltConnection connection = mock(FireboltConnection.class);
+		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
+				.build();
+		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
+				.sessionProperties(fireboltProperties).connection(connection).build();
 
-			when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
-					.thenReturn(mock(InputStream.class));
-			fireboltStatement.executeQuery("show database");
-			assertTrue(fireboltProperties.getAdditionalProperties().isEmpty());
-			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(fireboltProperties),
-					anyInt(), anyInt(), anyBoolean());
-			assertEquals(1, mocked.constructed().size());
-			assertEquals(-1, fireboltStatement.getUpdateCount());
-			assertEquals("show database", queryInfoWrapperArgumentCaptor.getValue().getSql());
-			assertEquals(StatementType.QUERY, queryInfoWrapperArgumentCaptor.getValue().getType());
-		}
-	}
-
-	@Test
-	void shouldExtractAdditionalProperties() throws SQLException {
-		try (MockedConstruction<FireboltResultSet> mockedResultSet = Mockito
-				.mockConstruction(FireboltResultSet.class)) {
-			FireboltConnection connection = mock(FireboltConnection.class);
-			FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-					.build();
-
-			FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-					.sessionProperties(fireboltProperties).connection(connection).build();
-
-			fireboltStatement.execute("set custom_1 = 1");
-			verifyNoMoreInteractions(fireboltStatementService);
-			verify(connection).addProperty(new ImmutablePair<>("custom_1", "1"));
-			assertEquals(0, mockedResultSet.constructed().size());
-		}
+		fireboltStatement.execute("set custom_1 = 1");
+		verifyNoMoreInteractions(fireboltStatementService);
+		verify(connection).addProperty(new ImmutablePair<>("custom_1", "1"));
 	}
 
 	@SneakyThrows
 	@Test
-	void shouldCancelByQueryWhenAggressiveCancelIsEnabled() throws SQLException, IOException, NoSuchFieldException {
-		try (MockedConstruction<FireboltResultSet> mockedResultSet = Mockito
-				.mockConstruction(FireboltResultSet.class)) {
+	void shouldCancelByQueryWhenAggressiveCancelIsEnabled() {
+		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").aggressiveCancel(true)
+				.additionalProperties(new HashMap<>()).build();
 
-			FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").aggressiveCancel(true)
-					.additionalProperties(new HashMap<>()).build();
+		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
+				.sessionProperties(fireboltProperties).connection(fireboltConnection).build();
 
-			FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-					.sessionProperties(fireboltProperties).connection(fireboltConnection).build();
-
-			Field runningStatementField = FireboltStatement.class.getDeclaredField("runningStatementId");
-			runningStatementField.setAccessible(true);
-			runningStatementField.set(fireboltStatement, "1234");
-			fireboltStatement.cancel();
-			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
-					fireboltPropertiesArgumentCaptor.capture(), anyInt(), anyInt(), booleanArgumentCaptor.capture());
-			assertEquals("KILL QUERY ON CLUSTER sql_cluster WHERE initial_query_id='1234'",
-					queryInfoWrapperArgumentCaptor.getValue().getSql());
-			assertFalse(booleanArgumentCaptor.getValue());
-		}
+		Field runningStatementField = FireboltStatement.class.getDeclaredField("runningStatementId");
+		runningStatementField.setAccessible(true);
+		runningStatementField.set(fireboltStatement, "1234");
+		fireboltStatement.cancel();
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
+				fireboltPropertiesArgumentCaptor.capture(), anyInt(), anyInt(), booleanArgumentCaptor.capture(), any());
+		assertEquals("KILL QUERY ON CLUSTER sql_cluster WHERE initial_query_id='1234'",
+				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertFalse(booleanArgumentCaptor.getValue());
 	}
 
 	@SneakyThrows
 	@Test
-	void shouldCancelByApiCallWhenAggressiveCancelIsDisabled() throws SQLException, IOException {
-		try (MockedConstruction<FireboltResultSet> mockedResultSet = Mockito
-				.mockConstruction(FireboltResultSet.class)) {
+	void shouldCancelByApiCallWhenAggressiveCancelIsDisabled() {
+		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db")
+				.additionalProperties(new HashMap<>()).build();
 
-			FireboltProperties fireboltProperties = FireboltProperties.builder().database("db")
-					.additionalProperties(new HashMap<>()).build();
+		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
+				.sessionProperties(fireboltProperties).connection(fireboltConnection).build();
 
-			FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-					.sessionProperties(fireboltProperties).connection(fireboltConnection).build();
-
-			Field runningStatementField = FireboltStatement.class.getDeclaredField("runningStatementId");
-			runningStatementField.setAccessible(true);
-			runningStatementField.set(fireboltStatement, "1234");
-			fireboltStatement.cancel();
-			verify(fireboltStatementService).abortStatement(any(), eq(fireboltProperties));
-		}
+		Field runningStatementField = FireboltStatement.class.getDeclaredField("runningStatementId");
+		runningStatementField.setAccessible(true);
+		runningStatementField.set(fireboltStatement, "1234");
+		fireboltStatement.cancel();
+		verify(fireboltStatementService).abortStatement(any(), eq(fireboltProperties));
 	}
 
 	@Test
-	void shouldCloseInputStreamOnClose() throws SQLException, IOException {
-		try (MockedConstruction<FireboltResultSet> mockedResultSet = Mockito
-				.mockConstruction(FireboltResultSet.class)) {
-			FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-					.build();
-			FireboltConnection connection = mock(FireboltConnection.class);
-			FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-					.sessionProperties(fireboltProperties).connection(connection).build();
+	void shouldCloseInputStreamOnClose() throws SQLException {
+		ResultSet rs = mock(ResultSet.class);
+		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
+				.build();
+		FireboltConnection connection = mock(FireboltConnection.class);
+		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
+				.sessionProperties(fireboltProperties).connection(connection).build();
 
-			when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
-					.thenReturn(mock(InputStream.class));
-
-			fireboltStatement.executeQuery("show database");
-			fireboltStatement.close();
-			verify(mockedResultSet.constructed().get(0)).close();
-			verify(connection).removeClosedStatement(fireboltStatement);
-		}
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), any()))
+				.thenReturn(Optional.empty());
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), any()))
+				.thenReturn(Optional.of(rs));
+		fireboltStatement.executeQuery("show database");
+		fireboltStatement.close();
+		verify(rs).close();
+		verify(connection).removeClosedStatement(fireboltStatement);
 	}
 
 	@Test
 	void shouldThrowAnExceptionWhenExecutingQueryOnANonQueryStatement() {
-		try (MockedConstruction<FireboltResultSet> mockedResultSet = Mockito
-				.mockConstruction(FireboltResultSet.class)) {
-			FireboltConnection connection = mock(FireboltConnection.class);
-			FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-					.build();
+		FireboltConnection connection = mock(FireboltConnection.class);
+		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
+				.build();
 
-			FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-					.sessionProperties(fireboltProperties).connection(connection).build();
+		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
+				.sessionProperties(fireboltProperties).connection(connection).build();
 
-			assertThrows(FireboltException.class, () -> fireboltStatement.executeQuery("set custom_1 = 1"));
-		}
+		assertThrows(FireboltException.class, () -> fireboltStatement.executeQuery("set custom_1 = 1"));
 	}
 
 	@Test
@@ -167,90 +130,98 @@ class FireboltStatementTest {
 		try (FireboltStatement fireboltStatement = FireboltStatement.builder()
 				.statementService(fireboltStatementService).connection(fireboltConnection)
 				.sessionProperties(fireboltProperties).build()) {
-			when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean()))
-					.thenReturn(mock(InputStream.class));
+			when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), any()))
+					.thenReturn(Optional.empty());
 			assertEquals(0, fireboltStatement.executeUpdate("INSERT INTO cars(sales, name) VALUES (500, 'Ford')"));
 			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(fireboltProperties),
-					anyInt(), anyInt(), anyBoolean());
+					anyInt(), anyInt(), anyBoolean(), any());
 			assertEquals("INSERT INTO cars(sales, name) VALUES (500, 'Ford')",
 					queryInfoWrapperArgumentCaptor.getValue().getSql());
+			assertEquals(0, fireboltStatement.getUpdateCount());
 		}
 
 	}
 
 	@Test
 	void shouldCloseCurrentAndGetMoreResultsForMultiStatementQuery() throws SQLException {
-		try (MockedConstruction<FireboltResultSet> mockedResultSet = Mockito
-				.mockConstruction(FireboltResultSet.class)) {
-			FireboltConnection connection = mock(FireboltConnection.class);
-			FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-					.build();
-			FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-					.sessionProperties(fireboltProperties).connection(connection).build();
-			fireboltStatement.execute("SELECT 1; SELECT 2;");
-			ResultSet rs = fireboltStatement.getResultSet();
-			assertEquals(mockedResultSet.constructed().get(0), fireboltStatement.getResultSet());
-			fireboltStatement.getMoreResults();
-			verify(rs).close();
-			assertEquals(mockedResultSet.constructed().get(1), fireboltStatement.getResultSet());
-			rs = fireboltStatement.getResultSet();
-			fireboltStatement.getMoreResults();
-			verify(rs).close();
-			assertNull(fireboltStatement.getResultSet());
-		}
+		ResultSet rs = mock(FireboltResultSet.class);
+		ResultSet rs2 = mock(FireboltResultSet.class);
+		FireboltConnection connection = mock(FireboltConnection.class);
+		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
+				.build();
+		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
+				.sessionProperties(fireboltProperties).connection(connection).build();
+
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), any()))
+				.thenReturn(Optional.of(rs)).thenReturn(Optional.of(rs2));
+		fireboltStatement.execute("SELECT 1; SELECT 2;");
+		assertEquals(rs, fireboltStatement.getResultSet());
+		assertEquals(-1, fireboltStatement.getUpdateCount());
+		fireboltStatement.getMoreResults();
+		verify(rs).close();
+		assertEquals(rs2, fireboltStatement.getResultSet());
+		rs = fireboltStatement.getResultSet();
+		fireboltStatement.getMoreResults();
+		verify(rs).close();
+		assertEquals(-1, fireboltStatement.getUpdateCount());
+		assertNull(fireboltStatement.getResultSet());
 	}
 
 	@Test
 	void shouldCloseCurrentAndGetMoreResultWhenCallingGetMoreResultsWithCloseCurrentFlag() throws SQLException {
-		try (MockedConstruction<FireboltResultSet> mockedResultSet = Mockito
-				.mockConstruction(FireboltResultSet.class)) {
-			FireboltConnection connection = mock(FireboltConnection.class);
-			FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-					.build();
-			FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-					.sessionProperties(fireboltProperties).connection(connection).build();
-			fireboltStatement.execute("SELECT 1; SELECT 2;");
-			ResultSet resultSet = fireboltStatement.getResultSet();
-			fireboltStatement.getMoreResults(CLOSE_CURRENT_RESULT);
-			verify(resultSet).close();
-		}
+		FireboltConnection connection = mock(FireboltConnection.class);
+		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
+				.build();
+		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
+				.sessionProperties(fireboltProperties).connection(connection).build();
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), any()))
+				.thenReturn(Optional.of(mock(FireboltResultSet.class)));
+		fireboltStatement.execute("SELECT 1; SELECT 2;");
+		ResultSet resultSet = fireboltStatement.getResultSet();
+		fireboltStatement.getMoreResults(CLOSE_CURRENT_RESULT);
+		verify(resultSet).close();
 	}
 
 	@Test
 	void shouldKeepCurrentAndGetMoreResultWhenCallingGetMoreResultsWithKeepCurrentResultFlag() throws SQLException {
-		try (MockedConstruction<FireboltResultSet> mockedResultSet = Mockito
-				.mockConstruction(FireboltResultSet.class)) {
-			FireboltConnection connection = mock(FireboltConnection.class);
-			FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-					.build();
-			FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-					.sessionProperties(fireboltProperties).connection(connection).build();
-			fireboltStatement.execute("SELECT 1; SELECT 2;");
-			ResultSet resultSet = fireboltStatement.getResultSet();
-			fireboltStatement.getMoreResults(Statement.KEEP_CURRENT_RESULT);
-			verify(resultSet, never()).close();
-		}
+		FireboltConnection connection = mock(FireboltConnection.class);
+		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
+				.build();
+		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
+				.sessionProperties(fireboltProperties).connection(connection).build();
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), any()))
+				.thenReturn(Optional.of(mock(ResultSet.class)));
+
+		fireboltStatement.execute("SELECT 1; SELECT 2;");
+		ResultSet resultSet = fireboltStatement.getResultSet();
+		fireboltStatement.getMoreResults(Statement.KEEP_CURRENT_RESULT);
+		verify(resultSet, never()).close();
 	}
 
 	@Test
 	void shouldCloseUnclosedAndGetMoreResultWhenCallingGetMoreResultsWithCloseAllResultFlag() throws SQLException {
-		try (MockedConstruction<FireboltResultSet> mockedResultSet = Mockito
-				.mockConstruction(FireboltResultSet.class)) {
-			FireboltConnection connection = mock(FireboltConnection.class);
-			FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-					.build();
-			FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-					.sessionProperties(fireboltProperties).connection(connection).build();
-			fireboltStatement.execute("SELECT 1; SELECT 2; SELECT 3;");
-			ResultSet firstRs = fireboltStatement.getResultSet();
-			fireboltStatement.getMoreResults(Statement.KEEP_CURRENT_RESULT);
-			verify(firstRs, never()).close();
-			ResultSet secondRs = fireboltStatement.getResultSet();
-			fireboltStatement.getMoreResults(Statement.KEEP_CURRENT_RESULT);
-			verify(secondRs, never()).close();
-			fireboltStatement.getMoreResults(Statement.CLOSE_ALL_RESULTS);
-			verify(firstRs).close();
-			verify(secondRs).close();
-		}
+		ResultSet rs = mock(FireboltResultSet.class);
+		ResultSet rs2 = mock(FireboltResultSet.class);
+		ResultSet rs3 = mock(FireboltResultSet.class);
+		FireboltConnection connection = mock(FireboltConnection.class);
+		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
+				.build();
+		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
+				.sessionProperties(fireboltProperties).connection(connection).build();
+
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), any()))
+				.thenReturn(Optional.of(rs)).thenReturn(Optional.of(rs2)).thenReturn(Optional.of(rs3));
+
+		fireboltStatement.execute("SELECT 1; SELECT 2; SELECT 3;");
+		ResultSet firstRs = fireboltStatement.getResultSet();
+		fireboltStatement.getMoreResults(Statement.KEEP_CURRENT_RESULT);
+		verify(firstRs, never()).close();
+		ResultSet secondRs = fireboltStatement.getResultSet();
+		fireboltStatement.getMoreResults(Statement.KEEP_CURRENT_RESULT);
+		verify(secondRs, never()).close();
+		fireboltStatement.getMoreResults(Statement.CLOSE_ALL_RESULTS);
+		verify(firstRs).close();
+		verify(secondRs).close();
+
 	}
 }

@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 
 import com.firebolt.jdbc.QueryResult;
-import com.firebolt.jdbc.VersionUtil;
+import com.firebolt.jdbc.util.VersionUtil;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
