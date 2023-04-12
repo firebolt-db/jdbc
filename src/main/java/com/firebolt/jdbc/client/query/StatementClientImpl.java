@@ -1,5 +1,8 @@
 package com.firebolt.jdbc.client.query;
 
+import static com.firebolt.jdbc.exception.ExceptionType.UNAUTHORIZED;
+
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.*;
@@ -8,13 +11,11 @@ import java.util.function.BiPredicate;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.NotNull;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.firebolt.jdbc.util.CloseableUtil;
-import com.firebolt.jdbc.util.PropertyUtil;
 import com.firebolt.jdbc.client.FireboltClient;
 import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey;
 import com.firebolt.jdbc.exception.ExceptionType;
@@ -22,6 +23,8 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementType;
 import com.firebolt.jdbc.statement.rawstatement.RawStatement;
+import com.firebolt.jdbc.util.CloseableUtil;
+import com.firebolt.jdbc.util.PropertyUtil;
 import com.google.common.collect.ImmutableMap;
 
 import lombok.CustomLog;
@@ -63,12 +66,19 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 		try {
 			String uri = this.buildQueryUri(connectionProperties, params).toString();
-			Request post = this.createPostRequest(uri, formattedStatement, this.getConnection().getConnectionTokens()
-					.map(FireboltConnectionTokens::getAccessToken).orElse(null), statementInfoWrapper.getId());
-			log.debug("Posting statement with id {} to URI: {}", statementInfoWrapper.getId(), uri);
-			Response response = this.execute(post, connectionProperties.getHost(), connectionProperties.isCompress());
-
-			return response.body() != null ? response.body().byteStream() : null;
+			InputStream responseInputStream;
+			try {
+				log.debug("Posting statement with id {} to URI: {}", statementInfoWrapper.getId(), uri);
+				responseInputStream = postSqlStatement(statementInfoWrapper, connectionProperties, formattedStatement, uri);
+			}  catch (Exception exception) {
+				if (exception instanceof FireboltException && ((FireboltException) exception).getType() == UNAUTHORIZED) {
+					log.debug("Retrying to post statement with id {} following a 401 status code to URI: {}", statementInfoWrapper.getId(), uri);
+					responseInputStream = postSqlStatement(statementInfoWrapper, connectionProperties, formattedStatement, uri);
+				} else {
+					throw exception;
+				}
+			}
+			return responseInputStream;
 		} catch (FireboltException e) {
 			throw e;
 		} catch (Exception e) {
@@ -80,6 +90,20 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			throw new FireboltException(errorMessage, e);
 		}
 
+	}
+
+	private InputStream postSqlStatement(@NotNull StatementInfoWrapper statementInfoWrapper,
+			@NotNull FireboltProperties connectionProperties, String formattedStatement, String uri)
+			throws FireboltException, IOException {
+		Response response;
+		Request post = this.createPostRequest(uri, formattedStatement,
+				this.getConnection().getAccessToken().orElse(null), statementInfoWrapper.getId());
+		response = this.execute(post, connectionProperties.getHost(), connectionProperties.isCompress());
+		InputStream is = Optional.ofNullable(response.body()).map(ResponseBody::byteStream).orElse(null);
+		if (is == null) {
+			CloseableUtil.close(response);
+		}
+		return is;
 	}
 
 	private String formatStatement(StatementInfoWrapper statementInfoWrapper) {
@@ -101,8 +125,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	public void abortStatement(String id, FireboltProperties fireboltProperties) throws FireboltException {
 		try {
 			String uri = this.buildCancelUri(fireboltProperties, id).toString();
-			Request rq = this.createPostRequest(uri, this.getConnection().getConnectionTokens()
-					.map(FireboltConnectionTokens::getAccessToken).orElse(null), null);
+			Request rq = this.createPostRequest(uri, this.getConnection().getAccessToken().orElse(null), null);
 			try (Response response = this.execute(rq, fireboltProperties.getHost())) {
 				CloseableUtil.close(response);
 			}
