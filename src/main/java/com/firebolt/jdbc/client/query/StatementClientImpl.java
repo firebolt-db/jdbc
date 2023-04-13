@@ -11,7 +11,6 @@ import java.util.function.BiPredicate;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.jetbrains.annotations.NotNull;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltClient;
@@ -46,7 +45,8 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	/**
-	 * Sends SQL statement to Firebolt
+	 * Sends SQL statement to Firebolt Retries to send the statement if the first
+	 * execution is unauthorized
 	 *
 	 * @param statementInfoWrapper the statement wrapper
 	 * @param connectionProperties the connection properties
@@ -57,28 +57,16 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	 * @return the server response
 	 */
 	@Override
-	public InputStream postSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
-			@NonNull FireboltProperties connectionProperties, boolean systemEngine, int queryTimeout, int maxRows,
-			boolean standardSql) throws FireboltException {
+	public InputStream executeSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
+										   @NonNull FireboltProperties connectionProperties, boolean systemEngine, int queryTimeout, int maxRows,
+										   boolean standardSql) throws FireboltException {
 		String formattedStatement = formatStatement(statementInfoWrapper);
 		Map<String, String> params = getAllParameters(connectionProperties, statementInfoWrapper, systemEngine,
 				queryTimeout, maxRows, standardSql);
-
 		try {
 			String uri = this.buildQueryUri(connectionProperties, params).toString();
-			InputStream responseInputStream;
-			try {
-				log.debug("Posting statement with id {} to URI: {}", statementInfoWrapper.getId(), uri);
-				responseInputStream = postSqlStatement(statementInfoWrapper, connectionProperties, formattedStatement, uri);
-			}  catch (Exception exception) {
-				if (exception instanceof FireboltException && ((FireboltException) exception).getType() == UNAUTHORIZED) {
-					log.debug("Retrying to post statement with id {} following a 401 status code to URI: {}", statementInfoWrapper.getId(), uri);
-					responseInputStream = postSqlStatement(statementInfoWrapper, connectionProperties, formattedStatement, uri);
-				} else {
-					throw exception;
-				}
-			}
-			return responseInputStream;
+			return executeSqlStatementWithRetryOnUnauthorized(statementInfoWrapper, connectionProperties,
+					formattedStatement, uri);
 		} catch (FireboltException e) {
 			throw e;
 		} catch (Exception e) {
@@ -92,8 +80,25 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 	}
 
-	private InputStream postSqlStatement(@NotNull StatementInfoWrapper statementInfoWrapper,
-			@NotNull FireboltProperties connectionProperties, String formattedStatement, String uri)
+	private InputStream executeSqlStatementWithRetryOnUnauthorized(@NonNull StatementInfoWrapper statementInfoWrapper,
+																   @NonNull FireboltProperties connectionProperties, String formattedStatement, String uri)
+			throws IOException, FireboltException {
+		try {
+			log.debug("Posting statement with id {} to URI: {}", statementInfoWrapper.getId(), uri);
+			return postSqlStatement(statementInfoWrapper, connectionProperties, formattedStatement, uri);
+		} catch (FireboltException exception) {
+			if (exception.getType() == UNAUTHORIZED) {
+				log.debug("Retrying to post statement with id {} following a 401 status code to URI: {}",
+						statementInfoWrapper.getId(), uri);
+				return postSqlStatement(statementInfoWrapper, connectionProperties, formattedStatement, uri);
+			} else {
+				throw exception;
+			}
+		}
+	}
+
+	private InputStream postSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
+			@NonNull FireboltProperties connectionProperties, String formattedStatement, String uri)
 			throws FireboltException, IOException {
 		Response response;
 		Request post = this.createPostRequest(uri, formattedStatement,

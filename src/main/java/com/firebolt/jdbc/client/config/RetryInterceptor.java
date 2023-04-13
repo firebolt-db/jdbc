@@ -7,8 +7,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
 
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -25,9 +25,9 @@ public class RetryInterceptor implements Interceptor {
 
 	private final int maxRetries;
 
-	@NotNull
+	@NonNull
 	@Override
-	public Response intercept(@NotNull Chain chain) throws IOException {
+	public Response intercept(@NonNull Chain chain) throws IOException {
 		Request request = chain.request();
 		Response response = chain.proceed(request);
 		int tryCount = 0;

@@ -10,7 +10,7 @@ import java.net.URISyntaxException;
 import java.util.*;
 
 import com.firebolt.jdbc.exception.ExceptionType;
-import org.jetbrains.annotations.NotNull;
+import lombok.NonNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -70,7 +70,7 @@ class StatementClientImplTest {
 		Call call = getMockedCallWithResponse(200);
 		when(okHttpClient.newCall(any())).thenReturn(call);
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
-		statementClient.postSqlStatement(statementInfoWrapper, fireboltProperties, false, 15, 1, true);
+		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 15, 1, true);
 
 		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
 		Request actualRequest = requestArgumentCaptor.getValue();
@@ -97,7 +97,7 @@ class StatementClientImplTest {
 		Call call = getMockedCallWithResponse(200);
 		when(okHttpClient.newCall(any())).thenReturn(call);
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
-		statementClient.postSqlStatement(statementInfoWrapper, fireboltProperties, true, 15, 1, true);
+		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, true, 15, 1, true);
 
 		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
 		Request actualRequest = requestArgumentCaptor.getValue();
@@ -119,7 +119,7 @@ class StatementClientImplTest {
 		Call call = getMockedCallWithResponse(200);
 		when(okHttpClient.newCall(any())).thenReturn(call);
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
-		statementClient.postSqlStatement(statementInfoWrapper, fireboltProperties, true, 15, 1, false);
+		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, true, 15, 1, false);
 
 		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
 		Request actualRequest = requestArgumentCaptor.getValue();
@@ -156,7 +156,7 @@ class StatementClientImplTest {
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, mock(ObjectMapper.class),
 				"ConnA:1.0.9", "ConnB:2.0.9");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
-		statementClient.postSqlStatement(statementInfoWrapper, fireboltProperties, false, 5, 5, true);
+		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 5, 5, true);
 		verify(okHttpClient, times(2)).newCall(requestArgumentCaptor.capture());
 		assertEquals("Bearer oldToken" ,requestArgumentCaptor.getAllValues().get(0).headers().get("Authorization"));
 		assertEquals("Bearer newToken" ,requestArgumentCaptor.getAllValues().get(1).headers().get("Authorization"));
@@ -173,7 +173,7 @@ class StatementClientImplTest {
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, mock(ObjectMapper.class),
 				"ConnA:1.0.9", "ConnB:2.0.9");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
-		FireboltException ex = assertThrows(FireboltException.class, () -> statementClient.postSqlStatement(statementInfoWrapper, fireboltProperties, false, 5, 5, true));
+		FireboltException ex = assertThrows(FireboltException.class, () -> statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 5, 5, true));
 		assertEquals(ExceptionType.UNAUTHORIZED, ex.getType());
 		verify(okHttpClient, times(2)).newCall(any());
 		verify(connection, times(2)).removeExpiredTokens();
@@ -193,7 +193,7 @@ class StatementClientImplTest {
 		return headers;
 	}
 
-	@NotNull
+	@NonNull
 	private String getActualRequestString(Request actualRequest) throws IOException {
 		Buffer buffer = new Buffer();
 		actualRequest.body().writeTo(buffer);
