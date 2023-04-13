@@ -263,7 +263,7 @@ class FireboltConnectionTest {
 			FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 					fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
 			fireboltConnection.removeExpiredTokens();
-			verify(fireboltAuthenticationService).removeConnectionTokens("http://host:8080", fireboltProperties);
+			verify(fireboltAuthenticationService).removeConnectionTokens(eq("http://host:8080"), any());
 		}
 	}
 
@@ -275,7 +275,7 @@ class FireboltConnectionTest {
 		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
 			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
 			FireboltConnectionTokens connectionTokens = FireboltConnectionTokens.builder().accessToken(accessToken).build();
-			when(fireboltAuthenticationService.getConnectionTokens("http://host:8080", fireboltProperties))
+			when(fireboltAuthenticationService.getConnectionTokens(eq("http://host:8080"), any()))
 					.thenReturn(connectionTokens);
 			FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 					fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);

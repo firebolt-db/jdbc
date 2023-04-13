@@ -46,7 +46,6 @@ public class FireboltConnection implements Connection {
 	private final FireboltAuthenticationService fireboltAuthenticationService;
 	private final FireboltEngineService fireboltEngineService;
 	private final FireboltStatementService fireboltStatementService;
-	private final FireboltProperties loginProperties;
 	private final String httpConnectionUrl;
 	private final List<FireboltStatement> statements;
 	private final int connectionTimeout;
@@ -60,33 +59,33 @@ public class FireboltConnection implements Connection {
 			FireboltStatementService fireboltStatementService) throws FireboltException {
 		this.fireboltAuthenticationService = fireboltAuthenticationService;
 		this.fireboltEngineService = fireboltEngineService;
-		this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
+		FireboltProperties loginProperties = this.extractFireboltProperties(url, connectionSettings);
 		this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
 		this.fireboltStatementService = fireboltStatementService;
 		this.statements = new ArrayList<>();
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
 		this.systemEngine = loginProperties.isSystemEngine();
-		this.connect();
+		this.connect(loginProperties);
 	}
 
 	@ExcludeFromJacocoGeneratedReport
 	public FireboltConnection(@NonNull String url, Properties connectionSettings) throws FireboltException {
 		ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
-		this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
+		FireboltProperties loginProperties = this.extractFireboltProperties(url, connectionSettings);
 		this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
 		OkHttpClient httpClient = getHttpClient(loginProperties);
-		this.systemEngine = this.loginProperties.isSystemEngine();
+		this.systemEngine = loginProperties.isSystemEngine();
 		this.fireboltAuthenticationService = new FireboltAuthenticationService(
-				new FireboltAuthenticationClient(httpClient, objectMapper, this, this.loginProperties.getUserDrivers(), this.loginProperties.getUserClients()));
+				new FireboltAuthenticationClient(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
 		this.fireboltEngineService = new FireboltEngineService(
-				new FireboltAccountClient(httpClient, objectMapper, this, this.loginProperties.getUserDrivers(), this.loginProperties.getUserClients()));
+				new FireboltAccountClient(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
 		this.fireboltStatementService = new FireboltStatementService(
-				new StatementClientImpl(httpClient, this, objectMapper, this.loginProperties.getUserDrivers(), this.loginProperties.getUserClients()), systemEngine);
+				new StatementClientImpl(httpClient, this, objectMapper, loginProperties.getUserDrivers(), loginProperties.getUserClients()), systemEngine);
 		this.statements = new ArrayList<>();
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
-		this.connect();
+		this.connect(loginProperties);
 	}
 
 	private static OkHttpClient getHttpClient(FireboltProperties fireboltProperties) throws FireboltException {
@@ -99,9 +98,9 @@ public class FireboltConnection implements Connection {
 		}
 	}
 
-	private void connect() throws FireboltException {
-		String accessToken = this.getAccessToken().orElse(StringUtils.EMPTY);
-		if (!PropertyUtil.isLocalDb(this.loginProperties)) {
+	private void connect(FireboltProperties loginProperties) throws FireboltException {
+		String accessToken = this.getAccessToken(loginProperties).orElse(StringUtils.EMPTY);
+		if (!PropertyUtil.isLocalDb(loginProperties)) {
 			String endpoint = fireboltEngineService.getEngine(httpConnectionUrl, loginProperties, accessToken)
 					.getEndpoint();
 			this.sessionProperties = loginProperties.toBuilder().host(endpoint).build();
@@ -113,12 +112,16 @@ public class FireboltConnection implements Connection {
 	}
 
 	public void removeExpiredTokens() throws FireboltException {
-		fireboltAuthenticationService.removeConnectionTokens(httpConnectionUrl, loginProperties);
+		fireboltAuthenticationService.removeConnectionTokens(httpConnectionUrl, sessionProperties);
 	}
 
 	public Optional<String> getAccessToken() throws FireboltException {
-		if (!PropertyUtil.isLocalDb(loginProperties)) {
-			return Optional.of(fireboltAuthenticationService.getConnectionTokens(httpConnectionUrl, loginProperties)).map(FireboltConnectionTokens::getAccessToken);
+		return this.getAccessToken(sessionProperties);
+	}
+
+	private Optional<String> getAccessToken(FireboltProperties fireboltProperties) throws FireboltException {
+		if (!PropertyUtil.isLocalDb(fireboltProperties)) {
+			return Optional.of(fireboltAuthenticationService.getConnectionTokens(httpConnectionUrl, fireboltProperties)).map(FireboltConnectionTokens::getAccessToken);
 		}
 		return Optional.empty();
 	}
