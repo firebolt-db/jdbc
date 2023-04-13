@@ -11,6 +11,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.Executor;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -103,7 +104,7 @@ public class FireboltConnection implements Connection {
 	}
 
 	private void connect() throws FireboltException {
-		String accessToken = this.getConnectionTokens().map(FireboltConnectionTokens::getAccessToken).orElse("");
+		String accessToken = this.getAccessToken().orElse(StringUtils.EMPTY);
 		if (!PropertyUtil.isLocalDb(this.loginProperties)) {
 			String endpoint = fireboltEngineService.getEngine(httpConnectionUrl, loginProperties, accessToken)
 					.getEndpoint();
@@ -119,9 +120,9 @@ public class FireboltConnection implements Connection {
 		fireboltAuthenticationService.removeConnectionTokens(httpConnectionUrl, loginProperties);
 	}
 
-	public Optional<FireboltConnectionTokens> getConnectionTokens() throws FireboltException {
+	public Optional<String> getAccessToken() throws FireboltException {
 		if (!PropertyUtil.isLocalDb(loginProperties)) {
-			return Optional.of(fireboltAuthenticationService.getConnectionTokens(httpConnectionUrl, loginProperties));
+			return Optional.of(fireboltAuthenticationService.getConnectionTokens(httpConnectionUrl, loginProperties)).map(FireboltConnectionTokens::getAccessToken);
 		}
 		return Optional.empty();
 	}

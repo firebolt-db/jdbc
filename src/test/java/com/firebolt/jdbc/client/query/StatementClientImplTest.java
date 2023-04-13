@@ -1,17 +1,16 @@
 package com.firebolt.jdbc.client.query;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
-import org.jetbrains.annotations.NotNull;
+import com.firebolt.jdbc.exception.ExceptionType;
+import lombok.NonNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -26,7 +25,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.util.VersionUtil;
 import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
@@ -47,6 +45,9 @@ class StatementClientImplTest {
 	@Mock
 	private OkHttpClient okHttpClient;
 
+	@Mock
+	private FireboltConnection connection;
+
 	@BeforeAll
 	static void init() {
 		mockedProjectVersionUtil = mockStatic(VersionUtil.class);
@@ -59,23 +60,17 @@ class StatementClientImplTest {
 	}
 
 	@Test
-	void shouldPostSqlQueryWithExpectedUrl() throws FireboltException, IOException, URISyntaxException {
+	void shouldPostSqlQueryWithExpectedUrl() throws FireboltException, IOException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
 				.host("firebolt1").port(555).build();
-		FireboltConnection connection = mock(FireboltConnection.class);
-		when(connection.getConnectionTokens())
-				.thenReturn(Optional.of(FireboltConnectionTokens.builder().accessToken("token").build()));
+		when(connection.getAccessToken())
+				.thenReturn(Optional.of("token"));
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, mock(ObjectMapper.class),
 				"ConnA:1.0.9", "ConnB:2.0.9");
-		Response response = mock(Response.class);
-		ResponseBody responseBody = mock(ResponseBody.class);
-		when(response.code()).thenReturn(200);
-		when(response.body()).thenReturn(responseBody);
-		Call call = mock(Call.class);
+		Call call = getMockedCallWithResponse(200);
 		when(okHttpClient.newCall(any())).thenReturn(call);
-		when(call.execute()).thenReturn(response);
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
-		statementClient.postSqlStatement(statementInfoWrapper, fireboltProperties, false, 15, 1, true);
+		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 15, 1, true);
 
 		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
 		Request actualRequest = requestArgumentCaptor.getValue();
@@ -95,20 +90,14 @@ class StatementClientImplTest {
 	void shouldPostSqlQueryForSystemEngine() throws FireboltException, IOException, URISyntaxException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
 				.host("firebolt1").port(555).build();
-		FireboltConnection connection = mock(FireboltConnection.class);
-		when(connection.getConnectionTokens())
-				.thenReturn(Optional.of(FireboltConnectionTokens.builder().accessToken("token").build()));
+		when(connection.getAccessToken())
+				.thenReturn(Optional.of("token"));
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, mock(ObjectMapper.class),
 				"ConnA:1.0.9", "ConnB:2.0.9");
-		Response response = mock(Response.class);
-		ResponseBody responseBody = mock(ResponseBody.class);
-		when(response.code()).thenReturn(200);
-		when(response.body()).thenReturn(responseBody);
-		Call call = mock(Call.class);
+		Call call = getMockedCallWithResponse(200);
 		when(okHttpClient.newCall(any())).thenReturn(call);
-		when(call.execute()).thenReturn(response);
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
-		statementClient.postSqlStatement(statementInfoWrapper, fireboltProperties, true, 15, 1, true);
+		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, true, 15, 1, true);
 
 		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
 		Request actualRequest = requestArgumentCaptor.getValue();
@@ -120,23 +109,17 @@ class StatementClientImplTest {
 	}
 
 	@Test
-	void shouldPostSqlQueryForNonStandardSql() throws FireboltException, IOException, URISyntaxException {
+	void shouldPostSqlQueryForNonStandardSql() throws FireboltException, IOException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
 				.host("firebolt1").port(555).build();
-		FireboltConnection connection = mock(FireboltConnection.class);
-		when(connection.getConnectionTokens())
-				.thenReturn(Optional.of(FireboltConnectionTokens.builder().accessToken("token").build()));
+		when(connection.getAccessToken())
+				.thenReturn(Optional.of("token"));
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, mock(ObjectMapper.class),
 				"ConnA:1.0.9", "ConnB:2.0.9");
-		Response response = mock(Response.class);
-		ResponseBody responseBody = mock(ResponseBody.class);
-		when(response.code()).thenReturn(200);
-		when(response.body()).thenReturn(responseBody);
-		Call call = mock(Call.class);
+		Call call = getMockedCallWithResponse(200);
 		when(okHttpClient.newCall(any())).thenReturn(call);
-		when(call.execute()).thenReturn(response);
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
-		statementClient.postSqlStatement(statementInfoWrapper, fireboltProperties, true, 15, 1, false);
+		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, true, 15, 1, false);
 
 		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
 		Request actualRequest = requestArgumentCaptor.getValue();
@@ -147,33 +130,73 @@ class StatementClientImplTest {
 				actualRequest.url().toString());
 	}
 
-	@NotNull
-	private String getActualRequestString(Request actualRequest) throws IOException {
-		Buffer buffer = new Buffer();
-		actualRequest.body().writeTo(buffer);
-		return buffer.readUtf8();
-	}
-
 	@Test
 	void shouldCancelSqlQuery() throws FireboltException, IOException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
 				.host("firebolt1").port(555).build();
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(FireboltConnection.class),
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection,
 				mock(ObjectMapper.class), "", "");
-		Response response = mock(Response.class);
-		when(response.code()).thenReturn(200);
-		Call call = mock(Call.class);
+		Call call = getMockedCallWithResponse(200);
 		when(okHttpClient.newCall(any())).thenReturn(call);
-		when(call.execute()).thenReturn(response);
 		statementClient.abortStatement("12345", fireboltProperties);
 		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
 		assertEquals("http://firebolt1:555/cancel?query_id=12345",
 				requestArgumentCaptor.getValue().url().uri().toString());
 	}
 
+	@Test
+	void shouldRetryOnUnauthorized() throws IOException, FireboltException {
+		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
+				.host("firebolt1").port(555).build();
+		when(connection.getAccessToken()).thenReturn(Optional.of("oldToken"))
+				.thenReturn(Optional.of("newToken"));
+		Call okCall = getMockedCallWithResponse(200);
+		Call unauthorizedCall = getMockedCallWithResponse(401);
+		when(okHttpClient.newCall(any())).thenReturn(unauthorizedCall).thenReturn(okCall);
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, mock(ObjectMapper.class),
+				"ConnA:1.0.9", "ConnB:2.0.9");
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
+		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 5, 5, true);
+		verify(okHttpClient, times(2)).newCall(requestArgumentCaptor.capture());
+		assertEquals("Bearer oldToken" ,requestArgumentCaptor.getAllValues().get(0).headers().get("Authorization"));
+		assertEquals("Bearer newToken" ,requestArgumentCaptor.getAllValues().get(1).headers().get("Authorization"));
+		verify(connection).removeExpiredTokens();
+	}
+
+	@Test
+	void shouldNotRetryNoMoreThanOnceOnUnauthorized() throws IOException, FireboltException {
+		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
+				.host("firebolt1").port(555).build();
+		Call okCall = getMockedCallWithResponse(200);
+		Call unauthorizedCall = getMockedCallWithResponse(401);
+		when(okHttpClient.newCall(any())).thenReturn(unauthorizedCall).thenReturn(unauthorizedCall).thenReturn(okCall);
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, mock(ObjectMapper.class),
+				"ConnA:1.0.9", "ConnB:2.0.9");
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
+		FireboltException ex = assertThrows(FireboltException.class, () -> statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 5, 5, true));
+		assertEquals(ExceptionType.UNAUTHORIZED, ex.getType());
+		verify(okHttpClient, times(2)).newCall(any());
+		verify(connection, times(2)).removeExpiredTokens();
+	}
+
+	private Call getMockedCallWithResponse(int statusCode) throws IOException {
+		Call call = mock(Call.class);
+		Response response = mock(Response.class);
+		lenient().when(response.code()).thenReturn(statusCode);
+		lenient().when(call.execute()).thenReturn(response);
+		return call;
+	}
+
 	private Map<String, String> extractHeadersMap(Request request) {
 		Map<String, String> headers = new HashMap<>();
 		request.headers().forEach(header -> headers.put(header.getFirst(), header.getSecond()));
 		return headers;
+	}
+
+	@NonNull
+	private String getActualRequestString(Request actualRequest) throws IOException {
+		Buffer buffer = new Buffer();
+		actualRequest.body().writeTo(buffer);
+		return buffer.readUtf8();
 	}
 }

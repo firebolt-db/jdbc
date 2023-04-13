@@ -269,18 +269,18 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldReturnConnectionTokenWhenAvailable() throws SQLException {
+		String accessToken = "hello";
 		FireboltProperties fireboltProperties = FireboltProperties.builder().host("host").path("/db").port(8080)
 				.build();
 		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
 			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
-			FireboltConnectionTokens connectionTokens = FireboltConnectionTokens.builder().accessToken("hello").build();
+			FireboltConnectionTokens connectionTokens = FireboltConnectionTokens.builder().accessToken(accessToken).build();
 			when(fireboltAuthenticationService.getConnectionTokens("http://host:8080", fireboltProperties))
 					.thenReturn(connectionTokens);
 			FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 					fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
 			verify(fireboltAuthenticationService).getConnectionTokens("http://host:8080", fireboltProperties);
-			assertEquals(connectionTokens, fireboltConnection.getConnectionTokens().get());
-
+			assertEquals(accessToken, fireboltConnection.getAccessToken().get());
 		}
 	}
 
@@ -292,7 +292,7 @@ class FireboltConnectionTest {
 			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
 			FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 					fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
-			assertEquals(Optional.empty(), fireboltConnection.getConnectionTokens());
+			assertEquals(Optional.empty(), fireboltConnection.getAccessToken());
 			verifyNoInteractions(fireboltAuthenticationService);
 		}
 	}
