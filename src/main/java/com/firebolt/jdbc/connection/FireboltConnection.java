@@ -61,8 +61,6 @@ public class FireboltConnection implements Connection {
 		this.fireboltAuthenticationService = fireboltAuthenticationService;
 		this.fireboltEngineService = fireboltEngineService;
 		this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
-		loginProperties.getAdditionalProperties().remove("user_clients");
-		loginProperties.getAdditionalProperties().remove("user_drivers");
 		this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
 		this.fireboltStatementService = fireboltStatementService;
 		this.statements = new ArrayList<>();
@@ -76,17 +74,15 @@ public class FireboltConnection implements Connection {
 	public FireboltConnection(@NonNull String url, Properties connectionSettings) throws FireboltException {
 		ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
 		this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
-		String driverVersions = loginProperties.getAdditionalProperties().remove("user_drivers");
-		String clientVersions = loginProperties.getAdditionalProperties().remove("user_clients");
 		this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
 		OkHttpClient httpClient = getHttpClient(loginProperties);
 		this.systemEngine = this.loginProperties.isSystemEngine();
 		this.fireboltAuthenticationService = new FireboltAuthenticationService(
-				new FireboltAuthenticationClient(httpClient, objectMapper, this, driverVersions, clientVersions));
+				new FireboltAuthenticationClient(httpClient, objectMapper, this, this.loginProperties.getUserDrivers(), this.loginProperties.getUserClients()));
 		this.fireboltEngineService = new FireboltEngineService(
-				new FireboltAccountClient(httpClient, objectMapper, this, driverVersions, clientVersions));
+				new FireboltAccountClient(httpClient, objectMapper, this, this.loginProperties.getUserDrivers(), this.loginProperties.getUserClients()));
 		this.fireboltStatementService = new FireboltStatementService(
-				new StatementClientImpl(httpClient, this, objectMapper, driverVersions, clientVersions), systemEngine);
+				new StatementClientImpl(httpClient, this, objectMapper, this.loginProperties.getUserDrivers(), this.loginProperties.getUserClients()), systemEngine);
 		this.statements = new ArrayList<>();
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();

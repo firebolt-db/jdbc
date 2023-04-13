@@ -56,6 +56,8 @@ public class FireboltProperties {
 	Integer tcpKeepInterval;
 	boolean logResultSet;
 	boolean systemEngine;
+	String userDrivers;
+	String userClients;
 
 	@Builder.Default
 	Map<String, String> additionalProperties = new HashMap<>();
@@ -83,8 +85,9 @@ public class FireboltProperties {
 		int tcpKeepIdle = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_IDLE);
 		int tcpKeepCount = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_COUNT);
 		boolean aggressiveCancel = getSetting(mergedProperties, FireboltSessionProperty.AGGRESSIVE_CANCEL);
-
 		boolean logResultSet = getSetting(mergedProperties, FireboltSessionProperty.LOG_RESULT_SET);
+		String driverVersions = getSetting(mergedProperties, FireboltSessionProperty.USER_DRIVERS);
+		String clientVersions = getSetting(mergedProperties, FireboltSessionProperty.USER_CLIENTS);
 
 		String host = getHost(mergedProperties);
 		Integer port = getPort(mergedProperties, ssl);
@@ -97,7 +100,10 @@ public class FireboltProperties {
 				.keepAliveTimeoutMillis(keepAliveMillis).maxConnectionsTotal(maxTotal).maxRetries(maxRetries)
 				.bufferSize(bufferSize).socketTimeoutMillis(socketTimeout).connectionTimeoutMillis(connectionTimeout)
 				.tcpKeepInterval(tcpKeepInterval).tcpKeepCount(tcpKeepCount).tcpKeepIdle(tcpKeepIdle)
-				.aggressiveCancel(aggressiveCancel).logResultSet(logResultSet).systemEngine(isSystemEngine).build();
+				.aggressiveCancel(aggressiveCancel).logResultSet(logResultSet).systemEngine(isSystemEngine)
+				.userDrivers(driverVersions)
+				.userClients(clientVersions)
+				.build();
 	}
 
 	private static String getHost(Properties properties) {
