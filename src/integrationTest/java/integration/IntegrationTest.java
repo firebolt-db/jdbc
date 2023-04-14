@@ -31,7 +31,7 @@ public abstract class IntegrationTest {
 	protected Connection createConnection() throws SQLException {
 		return DriverManager.getConnection(
 				"jdbc:firebolt://" + integration.ConnectionInfo.getInstance().getApi() + "/"
-						+ integration.ConnectionInfo.getInstance().getDatabase(),
+						+ integration.ConnectionInfo.getInstance().getDatabase() + "?compress=0&log_result_set=1",
 				integration.ConnectionInfo.getInstance().getUser(),
 				integration.ConnectionInfo.getInstance().getPassword());
 	}
