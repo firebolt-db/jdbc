@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.*;
 
+import okhttp3.Protocol;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.apache.commons.lang3.StringUtils;
 
@@ -71,6 +72,7 @@ public class OkHttpClientCreator {
 		OkHttpClient.Builder builder = new OkHttpClient.Builder()
 				.connectTimeout(properties.getConnectionTimeoutMillis(), TimeUnit.MILLISECONDS)
 				.addNetworkInterceptor(loggingInterceptor)
+				.protocols(Arrays.asList(Protocol.HTTP_1_1))
 				.addInterceptor(new RetryInterceptor(properties.getMaxRetries()))
 				.socketFactory(new FireboltSocketFactory(properties))
 				.readTimeout(properties.getSocketTimeoutMillis(), TimeUnit.MILLISECONDS)

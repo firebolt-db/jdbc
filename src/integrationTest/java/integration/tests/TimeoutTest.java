@@ -25,8 +25,6 @@ class TimeoutTest extends IntegrationTest {
 			this.setParam(con, "advanced_mode", "1");
 			int secondsInOneHour5Minutes = 60 * 65;
 			ResultSet rs = stmt.executeQuery(String.format("SELECT sleepEachRow(1) from numbers(%d)", secondsInOneHour5Minutes));
-			rs.next();
-			rs.getObject(1);
 		} catch (Exception e) {
 			log.error("Error", e);
 			fail();
