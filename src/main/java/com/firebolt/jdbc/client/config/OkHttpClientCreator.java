@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.*;
 
+import okhttp3.logging.HttpLoggingInterceptor;
 import org.apache.commons.lang3.StringUtils;
 
 import com.firebolt.jdbc.client.config.socket.FireboltSSLSocketFactory;
@@ -33,6 +34,13 @@ import okhttp3.OkHttpClient;
 @UtilityClass
 @CustomLog
 public class OkHttpClientCreator {
+
+	private static final HttpLoggingInterceptor loggingInterceptor =
+			new HttpLoggingInterceptor(log::info);
+
+	static {
+		loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+	}
 
 	private static final String SSL_STRICT_MODE = "strict";
 	private static final String SSL_NONE_MODE = "none";
@@ -60,6 +68,7 @@ public class OkHttpClientCreator {
 			NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException {
 		OkHttpClient.Builder builder = new OkHttpClient.Builder()
 				.connectTimeout(properties.getConnectionTimeoutMillis(), TimeUnit.MILLISECONDS)
+				.addNetworkInterceptor(loggingInterceptor)
 				.addInterceptor(new RetryInterceptor(properties.getMaxRetries()))
 				.socketFactory(new FireboltSocketFactory(properties))
 				.readTimeout(properties.getSocketTimeoutMillis(), TimeUnit.MILLISECONDS)
@@ -163,5 +172,7 @@ public class OkHttpClientCreator {
 		KeyManager[] keyManagers;
 		SecureRandom secureRandom;
 	}
+
+
 
 }
