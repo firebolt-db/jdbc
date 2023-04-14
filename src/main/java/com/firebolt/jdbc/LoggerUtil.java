@@ -2,6 +2,7 @@ package com.firebolt.jdbc;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import com.firebolt.jdbc.log.FireboltLogger;
@@ -50,11 +51,9 @@ public class LoggerUtil {
 				baos.write(buffer, 0, len);
 			}
 			baos.flush();
-			InputStream streamToLog = new ByteArrayInputStream(baos.toByteArray());
-			String text = new BufferedReader(new InputStreamReader(streamToLog, StandardCharsets.UTF_8)).lines()
-					.collect(Collectors.joining("\n"));
+			byte[] bytes = baos.toByteArray();
 			log.info("======================================");
-			log.info(text);
+			log.info(Arrays.toString(bytes));
 			log.info("======================================");
 			return new ByteArrayInputStream(baos.toByteArray());
 		} catch (Exception ex) {
