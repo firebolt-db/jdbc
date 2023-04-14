@@ -3,6 +3,7 @@ package integration.tests;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
@@ -23,7 +24,9 @@ class TimeoutTest extends IntegrationTest {
 			this.setParam(con, "use_standard_sql", "0");
 			this.setParam(con, "advanced_mode", "1");
 			int secondsInOneHour5Minutes = 60 * 65;
-			stmt.executeQuery(String.format("SELECT sleepEachRow(1) from numbers(%d)", secondsInOneHour5Minutes));
+			ResultSet rs = stmt.executeQuery(String.format("SELECT sleepEachRow(1) from numbers(%d)", secondsInOneHour5Minutes));
+			rs.next();
+			rs.getObject(1);
 		} catch (Exception e) {
 			log.error("Error", e);
 			fail();
