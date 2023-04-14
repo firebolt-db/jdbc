@@ -66,6 +66,8 @@ public class OkHttpClientCreator {
 
 	public static OkHttpClient createClient(FireboltProperties properties) throws CertificateException,
 			NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException {
+		OkHttpDebugLogging.enableHttp2();
+		OkHttpDebugLogging.enableTaskRunner();
 		OkHttpClient.Builder builder = new OkHttpClient.Builder()
 				.connectTimeout(properties.getConnectionTimeoutMillis(), TimeUnit.MILLISECONDS)
 				.addNetworkInterceptor(loggingInterceptor)
