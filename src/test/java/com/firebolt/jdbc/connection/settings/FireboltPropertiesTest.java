@@ -131,4 +131,18 @@ class FireboltPropertiesTest {
 
 		assertThrows(IllegalArgumentException.class, () -> FireboltProperties.of(properties));
 	}
+
+	@Test
+	void shouldSupportUserClientsAndDrivers() {
+		String clients = "ConnA:1.0.9,ConnB:2.8.0";
+		String drivers = "DriverA:2.0.9,DriverB:3.8.0";
+		Properties properties = new Properties();
+		properties.put("user_clients", clients);
+		properties.put("user_drivers", drivers);
+		properties.put("host", "host");
+		properties.put("database", "db");
+
+		assertEquals(clients, FireboltProperties.of(properties).getUserClients());
+		assertEquals(drivers, FireboltProperties.of(properties).getUserDrivers());
+	}
 }

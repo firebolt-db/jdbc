@@ -1,8 +1,7 @@
 package integration.tests.client;
 
 import static com.firebolt.jdbc.exception.ExceptionType.INVALID_REQUEST;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.sql.SQLException;
