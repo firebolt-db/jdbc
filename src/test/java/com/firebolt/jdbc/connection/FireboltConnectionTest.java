@@ -263,7 +263,7 @@ class FireboltConnectionTest {
 			FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 					fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
 			fireboltConnection.removeExpiredTokens();
-			verify(fireboltAuthenticationService).removeConnectionTokens(eq("http://host:8080"), any());
+			verify(fireboltAuthenticationService).removeConnectionTokens("http://host:8080", fireboltProperties);
 		}
 	}
 
