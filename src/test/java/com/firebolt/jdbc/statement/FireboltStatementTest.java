@@ -32,11 +32,7 @@ import lombok.SneakyThrows;
 class FireboltStatementTest {
 
 	@Captor
-	ArgumentCaptor<FireboltProperties> fireboltPropertiesArgumentCaptor;
-	@Captor
 	ArgumentCaptor<StatementInfoWrapper> queryInfoWrapperArgumentCaptor;
-	@Captor
-	ArgumentCaptor<Boolean> booleanArgumentCaptor;
 	@Mock
 	private FireboltStatementService fireboltStatementService;
 	@Mock
