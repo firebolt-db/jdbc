@@ -109,28 +109,6 @@ class StatementClientImplTest {
 	}
 
 	@Test
-	void shouldPostSqlQueryForNonStandardSql() throws FireboltException, IOException {
-		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
-				.host("firebolt1").port(555).build();
-		when(connection.getAccessToken())
-				.thenReturn(Optional.of("token"));
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, mock(ObjectMapper.class),
-				"ConnA:1.0.9", "ConnB:2.0.9");
-		Call call = getMockedCallWithResponse(200);
-		when(okHttpClient.newCall(any())).thenReturn(call);
-		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
-		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, true, 15, 1, false);
-
-		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
-		Request actualRequest = requestArgumentCaptor.getValue();
-		String actualQuery = getActualRequestString(actualRequest);
-
-		assertEquals("show databases;", actualQuery);
-		assertEquals("http://firebolt1:555/?output_format=TabSeparatedWithNamesAndTypes&use_standard_sql=0",
-				actualRequest.url().toString());
-	}
-
-	@Test
 	void shouldCancelSqlQuery() throws FireboltException, IOException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
 				.host("firebolt1").port(555).build();

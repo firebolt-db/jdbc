@@ -16,7 +16,6 @@ import com.firebolt.jdbc.util.VersionUtil;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.resultset.column.Column;
 import com.firebolt.jdbc.type.FireboltDataType;
@@ -278,16 +277,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 	private Statement createStatementWithRequiredPropertiesToQuerySystem() throws SQLException {
 		FireboltConnection fireboltConnection = (FireboltConnection) this.getConnection();
-		String useStandardSql = fireboltConnection.getSessionProperties().getAdditionalProperties()
-				.get("use_standard_sql");
-		if ("0".equals(useStandardSql)) {
-			FireboltProperties properties = fireboltConnection.getSessionProperties();
-			FireboltProperties tmpProperties = FireboltProperties.copy(properties);
-			tmpProperties.addProperty("use_standard_sql", "1");
-			return fireboltConnection.createStatement(tmpProperties);
-		} else {
-			return fireboltConnection.createStatement();
-		}
+		return fireboltConnection.createStatement();
 	}
 
 	@Override

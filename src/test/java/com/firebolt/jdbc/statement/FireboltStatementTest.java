@@ -57,27 +57,7 @@ class FireboltStatementTest {
 
 	@SneakyThrows
 	@Test
-	void shouldCancelByQueryWhenAggressiveCancelIsEnabled() {
-		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").aggressiveCancel(true)
-				.additionalProperties(new HashMap<>()).build();
-
-		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-				.sessionProperties(fireboltProperties).connection(fireboltConnection).build();
-
-		Field runningStatementField = FireboltStatement.class.getDeclaredField("runningStatementId");
-		runningStatementField.setAccessible(true);
-		runningStatementField.set(fireboltStatement, "1234");
-		fireboltStatement.cancel();
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
-				fireboltPropertiesArgumentCaptor.capture(), anyInt(), anyInt(), booleanArgumentCaptor.capture(), any());
-		assertEquals("KILL QUERY ON CLUSTER sql_cluster WHERE initial_query_id='1234'",
-				queryInfoWrapperArgumentCaptor.getValue().getSql());
-		assertFalse(booleanArgumentCaptor.getValue());
-	}
-
-	@SneakyThrows
-	@Test
-	void shouldCancelByApiCallWhenAggressiveCancelIsDisabled() {
+	void shouldAbortStatementOnCancel() {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db")
 				.additionalProperties(new HashMap<>()).build();
 
