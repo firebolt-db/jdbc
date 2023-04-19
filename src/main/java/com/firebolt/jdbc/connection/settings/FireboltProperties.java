@@ -51,7 +51,6 @@ public class FireboltProperties {
 	String engine;
 	String account;
 	Integer tcpKeepIdle;
-	boolean aggressiveCancel;
 	Integer tcpKeepCount;
 	Integer tcpKeepInterval;
 	boolean logResultSet;
@@ -84,7 +83,6 @@ public class FireboltProperties {
 		int tcpKeepInterval = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_INTERVAL);
 		int tcpKeepIdle = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_IDLE);
 		int tcpKeepCount = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_COUNT);
-		boolean aggressiveCancel = getSetting(mergedProperties, FireboltSessionProperty.AGGRESSIVE_CANCEL);
 		boolean logResultSet = getSetting(mergedProperties, FireboltSessionProperty.LOG_RESULT_SET);
 		String driverVersions = getSetting(mergedProperties, FireboltSessionProperty.USER_DRIVERS);
 		String clientVersions = getSetting(mergedProperties, FireboltSessionProperty.USER_CLIENTS);
@@ -100,7 +98,7 @@ public class FireboltProperties {
 				.keepAliveTimeoutMillis(keepAliveMillis).maxConnectionsTotal(maxTotal).maxRetries(maxRetries)
 				.bufferSize(bufferSize).socketTimeoutMillis(socketTimeout).connectionTimeoutMillis(connectionTimeout)
 				.tcpKeepInterval(tcpKeepInterval).tcpKeepCount(tcpKeepCount).tcpKeepIdle(tcpKeepIdle)
-				.aggressiveCancel(aggressiveCancel).logResultSet(logResultSet).systemEngine(isSystemEngine)
+				.logResultSet(logResultSet).systemEngine(isSystemEngine)
 				.userDrivers(driverVersions)
 				.userClients(clientVersions)
 				.build();

@@ -24,7 +24,6 @@ import lombok.CustomLog;
 @CustomLog
 public class FireboltStatement implements Statement {
 
-	private static final String KILL_QUERY_SQL = "KILL QUERY ON CLUSTER sql_cluster WHERE initial_query_id='%s'";
 	private final FireboltStatementService statementService;
 	private final FireboltProperties sessionProperties;
 	private final FireboltConnection connection;
@@ -175,13 +174,7 @@ public class FireboltStatement implements Statement {
 
 	private void abortStatementRunningOnFirebolt(String statementId) throws SQLException {
 		try {
-			if (PropertyUtil.isLocalDb(this.sessionProperties)
-					|| StringUtils.isEmpty(this.sessionProperties.getDatabase())
-					|| this.sessionProperties.isAggressiveCancel()) {
-				abortStatementByQuery(statementId);
-			} else {
-				statementService.abortStatement(statementId, this.sessionProperties);
-			}
+			statementService.abortStatement(statementId, this.sessionProperties);
 			log.debug("Statement with id {} was aborted", statementId);
 		} catch (FireboltException e) {
 			throw e;
@@ -192,11 +185,6 @@ public class FireboltStatement implements Statement {
 				connection.notifyAll();
 			}
 		}
-	}
-
-	private void abortStatementByQuery(String statementId) throws SQLException {
-		this.execute(StatementUtil.parseToStatementInfoWrappers(String.format(KILL_QUERY_SQL, statementId)).get(0),
-				false, false);
 	}
 
 	@Override

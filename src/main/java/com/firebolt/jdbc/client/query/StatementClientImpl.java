@@ -62,7 +62,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 										   boolean standardSql) throws FireboltException {
 		String formattedStatement = formatStatement(statementInfoWrapper);
 		Map<String, String> params = getAllParameters(connectionProperties, statementInfoWrapper, systemEngine,
-				queryTimeout, maxRows, standardSql);
+				queryTimeout, maxRows);
 		try {
 			String uri = this.buildQueryUri(connectionProperties, params).toString();
 			return executeSqlStatementWithRetryOnUnauthorized(statementInfoWrapper, connectionProperties,
@@ -194,8 +194,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	private Map<String, String> getAllParameters(FireboltProperties fireboltProperties,
-			StatementInfoWrapper statementInfoWrapper, boolean systemEngine, int queryTimeout, int maxRows,
-			boolean standardSql) {
+			StatementInfoWrapper statementInfoWrapper, boolean systemEngine, int queryTimeout, int maxRows) {
 		boolean isLocalDb = PropertyUtil.isLocalDb(fireboltProperties);
 
 		Map<String, String> params = new HashMap<>(fireboltProperties.getAdditionalProperties());
@@ -216,9 +215,6 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 				params.put("max_result_rows", String.valueOf(maxRows));
 				params.put("result_overflow_mode", "break");
 			}
-		}
-		if (!standardSql) {
-			params.put("use_standard_sql", "0");
 		}
 
 		return params;
