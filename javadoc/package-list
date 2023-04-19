@@ -24,3 +24,4 @@ com.firebolt.jdbc.statement.rawstatement
 com.firebolt.jdbc.type
 com.firebolt.jdbc.type.array
 com.firebolt.jdbc.type.date
+com.firebolt.jdbc.util
