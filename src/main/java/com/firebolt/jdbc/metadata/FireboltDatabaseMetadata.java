@@ -125,7 +125,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 		List<List<?>> rows = new ArrayList<>();
 		String query = MetadataUtil.getColumnsQuery(schemaPattern, tableNamePattern, columnNamePattern);
-		try (Statement statement = this.createStatementWithRequiredPropertiesToQuerySystem();
+		try (Statement statement = this.connection.createStatement();
 				ResultSet columnDescription = statement.executeQuery(query)) {
 			while (columnDescription.next()) {
 				List<?> row;
@@ -200,7 +200,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 		String query = isView ? MetadataUtil.getViewsQuery(catalog, schemaPattern, tableNamePattern)
 				: MetadataUtil.getTablesQuery(catalog, schemaPattern, tableNamePattern);
-		try (Statement statement = this.createStatementWithRequiredPropertiesToQuerySystem();
+		try (Statement statement = this.connection.createStatement();
 				ResultSet tables = statement.executeQuery(query)) {
 
 			Set<String> types = typesArr != null ? new HashSet<>(Arrays.asList(typesArr)) : null;
@@ -275,11 +275,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return FireboltResultSet.of(QueryResult.builder().columns(columns).rows(rows).build());
 	}
 
-	private Statement createStatementWithRequiredPropertiesToQuerySystem() throws SQLException {
-		FireboltConnection fireboltConnection = (FireboltConnection) this.getConnection();
-		return fireboltConnection.createStatement();
-	}
-
 	@Override
 	public int getDriverMajorVersion() {
 		return VersionUtil.getMajorDriverVersion();
@@ -294,7 +289,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public String getDatabaseProductVersion() throws SQLException {
 		if (this.databaseVersion == null) {
 			String engine = this.connection.getEngine();
-			try (Statement statement = createStatementWithRequiredPropertiesToQuerySystem()) {
+			try (Statement statement = this.connection.createStatement()) {
 				String query = MetadataUtil.getDatabaseVersionQuery(engine);
 				ResultSet rs = statement.executeQuery(query);
 				rs.next();
