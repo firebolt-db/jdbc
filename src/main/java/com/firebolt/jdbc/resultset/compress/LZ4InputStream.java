@@ -43,6 +43,7 @@ public class LZ4InputStream extends InputStream {
 
 	public static final int MAGIC = 0x82;
 	private static final LZ4Factory factory = LZ4Factory.fastestInstance();
+	private static final BlockChecksum keepalive = new BlockChecksum(0, 0);
 	private final InputStream stream;
 	private final DataInputStream dataWrapper;
 
@@ -159,6 +160,12 @@ public class LZ4InputStream extends InputStream {
 		// checksum - 16 bytes.
 		readFully(dataWrapper, checksum, 1, 15);
 		BlockChecksum expected = BlockChecksum.fromBytes(checksum);
+
+		// ALB keepalive
+		if (expected.equals(keepalive)) {
+			return new byte[]{0x20};
+		}
+
 		// header:
 		// 1 byte - 0x82 (shows this is LZ4)
 		int magic = dataWrapper.readUnsignedByte();
