@@ -163,7 +163,7 @@ public class LZ4InputStream extends InputStream {
 
 		// ALB keepalive
 		if (expected.equals(keepalive)) {
-			return new byte[]{0x20};
+			return new byte[]{0x20}; // space, same as uncompressed path
 		}
 
 		// header:
