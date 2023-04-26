@@ -33,6 +33,7 @@ import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import net.jpountz.lz4.LZ4Factory;
@@ -43,7 +44,9 @@ public class LZ4InputStream extends InputStream {
 
 	public static final int MAGIC = 0x82;
 	private static final LZ4Factory factory = LZ4Factory.fastestInstance();
-	private static final BlockChecksum keepalive = new BlockChecksum(0, 0);
+	public static final int SPACE = 0x20;
+	private static final BlockChecksum keepalive =
+		BlockChecksum.fromBytes("keepalivekeepali".getBytes(StandardCharsets.UTF_8));
 	private final InputStream stream;
 	private final DataInputStream dataWrapper;
 
@@ -161,16 +164,16 @@ public class LZ4InputStream extends InputStream {
 		readFully(dataWrapper, checksum, 1, 15);
 		BlockChecksum expected = BlockChecksum.fromBytes(checksum);
 
-		// ALB keepalive
-		if (expected.equals(keepalive)) {
-			return new byte[]{0x20}; // space, same as uncompressed path
-		}
-
 		// header:
 		// 1 byte - 0x82 (shows this is LZ4)
 		int magic = dataWrapper.readUnsignedByte();
-		if (magic != MAGIC)
+		if (magic != MAGIC) {
+			// ALB keepalive checksum + special magic
+			if (expected.equals(keepalive) && magic == SPACE) {
+				return new byte[]{SPACE}; // space, same as uncompressed path
+			}
 			throw new IOException("Magic is not correct: " + magic);
+		}
 		// 4 bytes - size of the compressed data including 9 bytes of the header
 		int compressedSizeWithHeader = readInt(dataWrapper);
 		// 4 bytes - size of uncompressed data
