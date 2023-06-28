@@ -1,26 +1,7 @@
 package com.firebolt.jdbc.client.account;
 
-import static java.net.HttpURLConnection.*;
-import static org.junit.Assert.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junitpioneer.jupiter.SetSystemProperty;
-import org.mockito.*;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.firebolt.jdbc.util.VersionUtil;
 import com.firebolt.jdbc.client.account.response.FireboltAccountResponse;
 import com.firebolt.jdbc.client.account.response.FireboltDefaultDatabaseEngineResponse;
 import com.firebolt.jdbc.client.account.response.FireboltEngineIdResponse;
@@ -28,22 +9,36 @@ import com.firebolt.jdbc.client.account.response.FireboltEngineResponse;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.google.common.collect.ImmutableMap;
-
 import okhttp3.*;
+import org.junit.function.ThrowingRunnable;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@SetSystemProperty(key = "java.version", value = "8.0.1")
-@SetSystemProperty(key = "os.version", value = "10.1")
-@SetSystemProperty(key = "os.name", value = "MacosX")
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.firebolt.jdbc.client.UserAgentFormatter.userAgent;
+import static java.lang.String.format;
+import static java.net.HttpURLConnection.*;
+import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 @ExtendWith(MockitoExtension.class)
 class FireboltAccountClientTest {
-
 	private static final String ACCESS_TOKEN = "token";
 	private static final String HOST = "https://host";
 	private static final String ACCOUNT = "account";
 	private static final String ACCOUNT_ID = "account_id";
 	private static final String DB_NAME = "dbName";
 	private static final String ENGINE_NAME = "engineName";
-	private static MockedStatic<VersionUtil> mockedProjectVersionUtil;
 
 	@Spy
 	private final ObjectMapper objectMapper = new ObjectMapper()
@@ -61,19 +56,8 @@ class FireboltAccountClientTest {
 	@Mock
 	private FireboltConnection fireboltConnection;
 
-	@BeforeAll
-	static void init() {
-		mockedProjectVersionUtil = mockStatic(VersionUtil.class);
-		mockedProjectVersionUtil.when(VersionUtil::getDriverVersion).thenReturn("1.0-TEST");
-	}
-
-	@AfterAll
-	public static void close() {
-		mockedProjectVersionUtil.close();
-	}
-
 	@BeforeEach
-	void setUp() throws FireboltException {
+	void setUp() {
 		fireboltAccountClient = new FireboltAccountClient(httpClient, objectMapper, fireboltConnection, "ConnA:1.0.9",
 				"ConnB:2.0.9");
 		when(httpClient.newCall(any())).thenReturn(call);
@@ -91,7 +75,7 @@ class FireboltAccountClientTest {
 		FireboltAccountResponse account = fireboltAccountClient.getAccount(HOST, ACCOUNT, ACCESS_TOKEN);
 
 		Map<String, String> expectedHeader = ImmutableMap.of("User-Agent",
-				"ConnB/2.0.9 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9", "Authorization",
+				userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; ) ConnA/1.0.9"), "Authorization",
 				"Bearer " + ACCESS_TOKEN);
 
 		verify(httpClient).newCall(requestArgumentCaptor.capture());
@@ -116,7 +100,7 @@ class FireboltAccountClientTest {
 		FireboltEngineResponse engine = fireboltAccountClient.getEngine(HOST, ENGINE_NAME, DB_NAME, ACCOUNT_ID,
 				ACCESS_TOKEN);
 		Map<String, String> expectedHeader = ImmutableMap.of("User-Agent",
-				"ConnB/2.0.9 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9", "Authorization",
+				userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; ) ConnA/1.0.9"), "Authorization",
 				"Bearer " + ACCESS_TOKEN);
 
 		verify(httpClient).newCall(requestArgumentCaptor.capture());
@@ -142,12 +126,12 @@ class FireboltAccountClientTest {
 		FireboltDefaultDatabaseEngineResponse fireboltDefaultDatabaseEngineResponse = fireboltAccountClient
 				.getDefaultEngineByDatabaseName(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
 		Map<String, String> expectedHeader = ImmutableMap.of("User-Agent",
-				"ConnB/2.0.9 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9", "Authorization",
+				userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; ) ConnA/1.0.9"), "Authorization",
 				"Bearer " + ACCESS_TOKEN);
 
 		verify(httpClient).newCall(requestArgumentCaptor.capture());
 		verify(objectMapper).readValue("{\"engine_url\":\"http://dbAddress\"}", FireboltDefaultDatabaseEngineResponse.class);
-		assertEquals(String.format("https://host/core/v1/accounts/%s/engines:getURLByDatabaseName?databaseName=%s",
+		assertEquals(format("https://host/core/v1/accounts/%s/engines:getURLByDatabaseName?databaseName=%s",
 				ACCOUNT_ID, DB_NAME), requestArgumentCaptor.getValue().url().toString());
 		assertEquals(expectedHeader, extractHeadersMap(requestArgumentCaptor.getValue()));
 		assertEquals("http://dbAddress", fireboltDefaultDatabaseEngineResponse.getEngineUrl());
@@ -166,12 +150,12 @@ class FireboltAccountClientTest {
 		FireboltEngineIdResponse fireboltEngineIdResponse = fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID,
 				ENGINE_NAME, ACCESS_TOKEN);
 		Map<String, String> expectedHeader = ImmutableMap.of("User-Agent",
-				"ConnB/2.0.9 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9", "Authorization",
+				userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; ) ConnA/1.0.9"), "Authorization",
 				"Bearer " + ACCESS_TOKEN);
 
 		verify(httpClient).newCall(requestArgumentCaptor.capture());
 		verify(objectMapper).readValue("{\"engine_id\":{\"engine_id\":\"13\"}}", FireboltEngineIdResponse.class);
-		assertEquals(String.format("https://host/core/v1/accounts/%s/engines:getIdByName?engine_name=%s", ACCOUNT_ID,
+		assertEquals(format("https://host/core/v1/accounts/%s/engines:getIdByName?engine_name=%s", ACCOUNT_ID,
 				ENGINE_NAME), requestArgumentCaptor.getValue().url().toString());
 		assertEquals(expectedHeader, extractHeadersMap(requestArgumentCaptor.getValue()));
 		assertEquals("13", fireboltEngineIdResponse.getEngine().getEngineId());
@@ -179,58 +163,39 @@ class FireboltAccountClientTest {
 
 	@Test
 	void shouldThrowExceptionWhenStatusCodeIsNotFound() throws Exception {
-		Response response = mock(Response.class);
-		when(response.code()).thenReturn(HTTP_NOT_FOUND);
-		ResponseBody body = mock(ResponseBody.class);
-		when(response.body()).thenReturn(body);
-		when(call.execute()).thenReturn(response);
-		assertThrows(FireboltException.class, () -> fireboltAccountClient.getAccount(HOST, ACCOUNT, ACCESS_TOKEN));
+		shouldThrowException(HTTP_NOT_FOUND, () -> fireboltAccountClient.getAccount(HOST, ACCOUNT, ACCESS_TOKEN), null);
 	}
 
 	@Test
 	void shouldThrowExceptionWhenStatusCodeIsNotOk() throws Exception {
-		Response response = mock(Response.class);
-		when(response.code()).thenReturn(HTTP_BAD_GATEWAY);
-		ResponseBody body = mock(ResponseBody.class);
-		when(response.body()).thenReturn(body);
-		when(call.execute()).thenReturn(response);
-		assertThrows(FireboltException.class, () -> fireboltAccountClient.getAccount(HOST, ACCOUNT, ACCESS_TOKEN));
+		shouldThrowException(HTTP_BAD_GATEWAY, () -> fireboltAccountClient.getAccount(HOST, ACCOUNT, ACCESS_TOKEN), null);
 	}
 
 	@Test
 	void shouldThrowExceptionWithDBNotFoundErrorMessageWhenDBIsNotFound() throws Exception {
-		Response response = mock(Response.class);
-		when(response.code()).thenReturn(HTTP_NOT_FOUND);
-		ResponseBody body = mock(ResponseBody.class);
-		when(response.body()).thenReturn(body);
-		when(call.execute()).thenReturn(response);
-		assertThrows(FireboltException.class,
-				() -> fireboltAccountClient.getDefaultEngineByDatabaseName(HOST, ACCOUNT, DB_NAME, ACCESS_TOKEN));
+		shouldThrowException(HTTP_NOT_FOUND, () -> fireboltAccountClient.getDefaultEngineByDatabaseName(HOST, ACCOUNT, DB_NAME, ACCESS_TOKEN), "The database with the name dbName could not be found");
 	}
 
 	@Test
 	void shouldThrowExceptionWithEngineNotFoundErrorMessageWhenEngineAddressIsNotFound() throws Exception {
-		Response response = mock(Response.class);
-		when(response.code()).thenReturn(HTTP_NOT_FOUND);
-		ResponseBody body = mock(ResponseBody.class);
-		when(response.body()).thenReturn(body);
-		when(call.execute()).thenReturn(response);
-		FireboltException fireboltException = assertThrows(FireboltException.class,
-				() -> fireboltAccountClient.getEngine(HOST, ACCOUNT, ENGINE_NAME, "123", ACCESS_TOKEN));
-		assertEquals("The address of the engine with name engineName and id 123 could not be found",
-				fireboltException.getMessage());
+		shouldThrowException(HTTP_NOT_FOUND, () -> fireboltAccountClient.getEngine(HOST, ACCOUNT, ENGINE_NAME, "123", ACCESS_TOKEN), "The address of the engine with name engineName and id 123 could not be found");
 	}
 
 	@Test
 	void shouldThrowExceptionWithEngineNotFoundErrorMessageWhenEngineIdIsNotFound() throws Exception {
+		shouldThrowException(HTTP_NOT_FOUND, () -> fireboltAccountClient.getEngineId(HOST, ACCOUNT, ENGINE_NAME, ACCESS_TOKEN), "The engine engineName could not be found");
+	}
+
+	private void shouldThrowException(int httpStatus, ThrowingRunnable runnable, String expectedMessage) throws Exception {
 		Response response = mock(Response.class);
-		when(response.code()).thenReturn(HTTP_NOT_FOUND);
+		when(response.code()).thenReturn(httpStatus);
 		ResponseBody body = mock(ResponseBody.class);
 		when(response.body()).thenReturn(body);
 		when(call.execute()).thenReturn(response);
-		FireboltException fireboltException = assertThrows(FireboltException.class,
-				() -> fireboltAccountClient.getEngineId(HOST, ACCOUNT, ENGINE_NAME, ACCESS_TOKEN));
-		assertEquals("The engine engineName could not be found", fireboltException.getMessage());
+		FireboltException fireboltException = assertThrows(FireboltException.class, runnable);
+		if (expectedMessage != null) {
+			assertEquals(expectedMessage, fireboltException.getMessage());
+		}
 	}
 
 	private Map<String, String> extractHeadersMap(Request request) {

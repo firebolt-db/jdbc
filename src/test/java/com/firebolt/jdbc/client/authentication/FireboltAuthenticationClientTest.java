@@ -1,39 +1,34 @@
 package com.firebolt.jdbc.client.authentication;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.firebolt.jdbc.client.authentication.response.FireboltAuthenticationResponse;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.exception.FireboltException;
+import okhttp3.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.IOException;
+
+import static com.firebolt.jdbc.client.UserAgentFormatter.userAgent;
 import static java.net.HttpURLConnection.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import java.io.IOException;
-
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junitpioneer.jupiter.SetSystemProperty;
-import org.mockito.*;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.firebolt.jdbc.util.VersionUtil;
-import com.firebolt.jdbc.client.authentication.response.FireboltAuthenticationResponse;
-import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.exception.FireboltException;
-
-import okhttp3.*;
-
-@SetSystemProperty(key = "java.version", value = "8.0.1")
-@SetSystemProperty(key = "os.version", value = "10.1")
-@SetSystemProperty(key = "os.name", value = "MacosX")
 @ExtendWith(MockitoExtension.class)
 class FireboltAuthenticationClientTest {
 	private static final String HOST = "https://host";
 	private static final String USER = "usr";
 	private static final String PASSWORD = "PA§§WORD";
-
-	private static final int RETRIES = 3;
-
-	private static MockedStatic<VersionUtil> mockedProjectVersionUtil;
 
 	@Spy
 	private final ObjectMapper objectMapper = new ObjectMapper()
@@ -47,17 +42,6 @@ class FireboltAuthenticationClientTest {
 
 	@Mock
 	private FireboltConnection connection;
-
-	@BeforeAll
-	static void init() {
-		mockedProjectVersionUtil = mockStatic(VersionUtil.class);
-		mockedProjectVersionUtil.when(VersionUtil::getDriverVersion).thenReturn("1.0-TEST");
-	}
-
-	@AfterAll
-	public static void close() {
-		mockedProjectVersionUtil.close();
-	}
 
 	@BeforeEach
 	void setUp() {
@@ -82,9 +66,8 @@ class FireboltAuthenticationClientTest {
 
 		verify(httpClient).newCall(requestArgumentCaptor.capture());
 		Request actualPost = requestArgumentCaptor.getValue();
-		Assertions.assertEquals("User-Agent", actualPost.headers().iterator().next().getFirst());
-		Assertions.assertEquals("ConnB/2.0.9 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9",
-				actualPost.headers().iterator().next().getSecond());
+		assertEquals("User-Agent", actualPost.headers().iterator().next().getFirst());
+		assertEquals(userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; ) ConnA/1.0.9"), actualPost.headers().iterator().next().getSecond());
 		verify(objectMapper).readValue(tokensResponse, FireboltAuthenticationResponse.class);
 	}
 
