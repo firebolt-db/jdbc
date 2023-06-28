@@ -1,41 +1,31 @@
 package com.firebolt.jdbc.client;
 
-import static com.firebolt.jdbc.client.UsageTrackerUtil.CLIENT_MAP;
-import static com.firebolt.jdbc.client.UsageTrackerUtil.DRIVER_MAP;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.ClearSystemProperty;
-import org.junitpioneer.jupiter.SetSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-import com.firebolt.jdbc.util.VersionUtil;
+import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
-@SetSystemProperty(key = "java.version", value = "8.0.1")
-@SetSystemProperty(key = "os.version", value = "10.1")
-@ClearSystemProperty(key = "os.name")
-public class UsageTrackerUtilTest {
+import static com.firebolt.jdbc.client.DriverVersionRetriever.getDriverVersion;
+import static com.firebolt.jdbc.client.UsageTrackerUtil.CLIENT_MAP;
+import static com.firebolt.jdbc.client.UsageTrackerUtil.DRIVER_MAP;
+import static com.firebolt.jdbc.client.UserAgentFormatter.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-	private static MockedStatic<VersionUtil> mockedProjectVersionUtil;
+class UsageTrackerUtilTest {
+	private static final String REAL_OS_NAME = System.getProperty("os.name");
 
-	@BeforeAll
-	static void init() {
-		mockedProjectVersionUtil = mockStatic(VersionUtil.class);
-		mockedProjectVersionUtil.when(VersionUtil::getDriverVersion).thenReturn("1.0-TEST");
-	}
-
-	@AfterAll
-	public static void close() {
-		mockedProjectVersionUtil.reset();
-		mockedProjectVersionUtil.close();
+	@AfterEach
+	void afterEach() {
+		System.setProperty("os.name", REAL_OS_NAME);
 	}
 
 	private MockedStatic<UsageTrackerUtil> mockClients(Map<String, String> drivers, Map<String, String> clients) {
@@ -54,81 +44,65 @@ public class UsageTrackerUtilTest {
 		});
 	}
 
-	@Test
-	void shouldGetUserAgentNoOverride() {
-		System.setProperty("os.name", "MacosX");
+	@ParameterizedTest(name = "{0} -> {1}")
+	@CsvSource(value = {
+			"MacosX, Darwin",
+			"Windows, Windows",
+			"linux, Linux",
+			"HackintoSh, hackintosh"
+	}, delimiter = ',')
+	void shouldGetUserAgentNoOverride(String osName, String expectedOsInUserAgent) {
+		System.setProperty("os.name", osName);
 		String result = UsageTrackerUtil.getUserAgentString("", "");
-		assertEquals("JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; )", result);
-		System.setProperty("os.name", "Windows");
-		result = UsageTrackerUtil.getUserAgentString("", "");
-		assertEquals("JDBC/1.0-TEST (Java 8.0.1; Windows 10.1; )", result);
-		System.setProperty("os.name", "linux");
-		result = UsageTrackerUtil.getUserAgentString("", "");
-		assertEquals("JDBC/1.0-TEST (Java 8.0.1; Linux 10.1; )", result);
-		System.setProperty("os.name", "HackintoSh");
-		result = UsageTrackerUtil.getUserAgentString("", "");
-		assertEquals("JDBC/1.0-TEST (Java 8.0.1; hackintosh 10.1; )", result);
+		assertEquals(userAgent("JDBC/%s (Java %s; %s %s; )", getDriverVersion(), javaVersion(), expectedOsInUserAgent, osVersion()), result);
 	}
 
-	@Test
-	void shouldGetUserAgentCustomConnectors() {
+	@ParameterizedTest(name = "userClients: {0}")
+	@CsvSource(value = {
+			"'',''",
+			"AwesomeClient:2.0.1,'AwesomeClient/2.0.1 '",
+	}, delimiter = ',')
+	void shouldGetUserAgentCustomConnectors(String userClients, String expectedPrefix) {
 		System.setProperty("os.name", "MacosX");
-		String result = UsageTrackerUtil.getUserAgentString("AwesomeDriver:1.0.1,BadConnector:0.1.4", "");
-		assertEquals("JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) AwesomeDriver/1.0.1 BadConnector/0.1.4", result);
-		result = UsageTrackerUtil.getUserAgentString("AwesomeDriver:1.0.1,BadConnector:0.1.4", "AwesomeClient:2.0.1");
-		assertEquals(
-				"AwesomeClient/2.0.1 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) AwesomeDriver/1.0.1 BadConnector/0.1.4",
-				result);
+		String result = UsageTrackerUtil.getUserAgentString("AwesomeDriver:1.0.1,BadConnector:0.1.4", userClients);
+		assertEquals(expectedPrefix + userAgent("JDBC/%s (Java %s; %s %s; ) AwesomeDriver/1.0.1 BadConnector/0.1.4", getDriverVersion(), javaVersion(), "Darwin", osVersion()), result);
 	}
 
-	@Test
-	void shouldIgnoreIncorrectCustomConnectors() {
+	@ParameterizedTest(name = "{0} -> {1}")
+	@CsvSource(value = {
+			"BadConnector%0.1.4,''",
+			"'',BadConnector%0.1.4",
+			"'',BadConnector",
+			"BadConnector%0.1.5, BadConnector%0.1.4",
+			"VeryBadConnector, BadConnector",
+	}, delimiter = ',')
+	void shouldIgnoreIncorrectCustomConnectors(String userDrivers, String userClients) {
 		System.setProperty("os.name", "MacosX");
-		String result = UsageTrackerUtil.getUserAgentString("BadConnector%0.1.4", "");
-		assertEquals("JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; )", result);
-		result = UsageTrackerUtil.getUserAgentString("BadConnector", "");
-		assertEquals("JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; )", result);
-		result = UsageTrackerUtil.getUserAgentString("", "BadConnector%0.1.4");
-		assertEquals("JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; )", result);
-		result = UsageTrackerUtil.getUserAgentString("", "BadConnector");
-		assertEquals("JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; )", result);
-		result = UsageTrackerUtil.getUserAgentString("BadConnector%0.1.5", "BadConnector%0.1.4");
-		assertEquals("JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; )", result);
-		result = UsageTrackerUtil.getUserAgentString("VeryBadConnector", "BadConnector");
-		assertEquals("JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; )", result);
+		String result = UsageTrackerUtil.getUserAgentString(userDrivers, userClients);
+		assertEquals(userAgent("JDBC/%s (Java %s; %s %s; )", getDriverVersion(), javaVersion(), "Darwin", osVersion()), result);
 	}
 
 	@Test
 	void shouldDetectConnectorStack() {
-		System.setProperty("os.name", "MacosX");
-		Map<String, String> connectors = new HashMap<>();
-		connectors.put("ConnA", "1.2.0");
-		connectors.put("ConnB", "3.0.4");
-		try (MockedStatic<UsageTrackerUtil> mock = mockClients(connectors, new HashMap<>())) {
-			String result = UsageTrackerUtil.getUserAgentString("", "");
-			assertEquals("JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.2.0 ConnB/3.0.4", result);
-		}
+		userAgentWithConnectors(new HashMap<>(Map.of("ConnA", "1.2.0", "ConnB", "3.0.4")), new HashMap<>(),"", "", userAgent("JDBC/%s (Java %s; %s %s; ) ConnA/1.2.0 ConnB/3.0.4"));
 	}
 
 	@Test
 	void shouldWorkWithNoConnectorsDetected() {
-		System.setProperty("os.name", "MacosX");
-		try (MockedStatic<UsageTrackerUtil> mock = mockClients(new HashMap<String, String>(), new HashMap<>())) {
-			String result = UsageTrackerUtil.getUserAgentString("", "");
-			assertEquals("JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; )", result);
+		userAgentWithConnectors(new HashMap<>(), new HashMap<>(), "", "", userAgent("JDBC/%s (Java %s; %s %s; )"));
+	}
+
+	private void userAgentWithConnectors(Map<String, String> drivers, Map<String, String> connectors, String userDrivers, String userClients, String expectedUserAgent) {
+		//noinspection unused required by syntax of try-with-resource
+		try (MockedStatic<UsageTrackerUtil> mock = mockClients(drivers, connectors)) {
+			String result = UsageTrackerUtil.getUserAgentString(userDrivers, userClients);
+			assertEquals(expectedUserAgent, result);
 		}
 	}
 
 	@Test
 	void shouldOverrideConnectors() {
-		System.setProperty("os.name", "MacosX");
-		Map<String, String> connectors = new HashMap<>();
-		connectors.put("ConnA", "1.2.0");
-		connectors.put("ConnB", "3.0.4");
-		try (MockedStatic<UsageTrackerUtil> mock = mockClients(new HashMap<>(), connectors)) {
-			String result = UsageTrackerUtil.getUserAgentString("", "ConnA:2.0.1,ConnC:1.1.1");
-			assertEquals("ConnA/2.0.1 ConnB/3.0.4 ConnC/1.1.1 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; )", result);
-		}
+		userAgentWithConnectors(new HashMap<>(), new HashMap<>(Map.of("ConnA", "1.2.0", "ConnB", "3.0.4")), "", "ConnA:2.0.1,ConnC:1.1.1", userAgent("ConnA/2.0.1 ConnB/3.0.4 ConnC/1.1.1 JDBC/%s (Java %s; %s %s; )"));
 	}
 
 	@Test
@@ -171,6 +145,7 @@ public class UsageTrackerUtilTest {
 		expected.put("Tableau", "1.0.2");
 
 		// Can't mock Class so have to mock the outer function
+		//noinspection unused required by syntax of try-with-resource
 		try (MockedStatic<UsageTrackerUtil> fooUtilsMocked = Mockito.mockStatic(UsageTrackerUtil.class, invocation -> {
 			Method method = invocation.getMethod();
 			if ("getVersionForClass".equals(method.getName())) {
@@ -185,35 +160,16 @@ public class UsageTrackerUtilTest {
 		}
 	}
 
-	@Test
-	void shouldNotOverrideConnectorsIf100NameVersionPairsAreSpecified() {
-		System.setProperty("os.name", "MacosX");
-		Map<String, String> connectors = new HashMap<>();
-		StringBuilder connectorsInfo = new StringBuilder("ConnB:2.0.1");
-		for (int i = 0; i < 99; i++) {
-			connectorsInfo.append(",ConnA:1.1.1");
-		}
-		connectors.put("ConnA", "1.2.0");
-		connectors.put("ConnB", "3.0.4");
-		try (MockedStatic<UsageTrackerUtil> mock = mockClients(new HashMap<>(), connectors)) {
-			String result = UsageTrackerUtil.getUserAgentString("", connectorsInfo.toString());
-			assertEquals("ConnA/1.1.1 ConnB/2.0.1 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; )", result);
-		}
-	}
-
-	@Test
-	void shouldNotOverrideConnectorsIfMoreThan100NameVersionPairsAreSpecified() {
-		System.setProperty("os.name", "MacosX");
-		Map<String, String> connectors = new HashMap<>();
-		StringBuilder connectorsInfo = new StringBuilder("ConnB:2.0.1");
-		for (int i = 0; i < 100; i++) {
-			connectorsInfo.append(",ConnA:1.1.1");
-		}
-		connectors.put("ConnA", "1.2.0");
-		connectors.put("ConnB", "3.0.4");
-		try (MockedStatic<UsageTrackerUtil> mock = mockClients(new HashMap<>(), connectors)) {
-			String result = UsageTrackerUtil.getUserAgentString("", connectorsInfo.toString());
-			assertEquals("ConnA/1.2.0 ConnB/3.0.4 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; )", result);
-		}
+	@ParameterizedTest(name = "{1}")
+	@CsvSource(value = {
+			"98,less than 100,ConnA/1.1.1 ConnB/2.0.1",
+			"99,equals to 100,ConnA/1.1.1 ConnB/2.0.1",
+			"100, greater than 100,ConnA/1.2.0 ConnB/3.0.4",
+			"101, seriously greater than 100,ConnA/1.2.0 ConnB/3.0.4"
+	}, delimiter = ',')
+	void shouldNotOverrideConnectorsIfMoreThanSeveralNameVersionPairsAreSpecified(int n, String name, String expectedUserAgentPrefix) {
+		String connectorsInfo = "ConnB:2.0.1," + String.join(",", Collections.nCopies(n, "ConnA:1.1.1"));
+		Map<String, String> connectors = new HashMap<>(Map.of("ConnA", "1.2.0", "ConnB", "3.0.4"));
+		userAgentWithConnectors(new HashMap<>(), connectors, "", connectorsInfo, userAgent(expectedUserAgentPrefix + " JDBC/%s (Java %s; %s %s; )"));
 	}
 }

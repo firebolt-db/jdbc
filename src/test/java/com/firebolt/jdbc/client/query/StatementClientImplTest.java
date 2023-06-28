@@ -1,45 +1,41 @@
 package com.firebolt.jdbc.client.query;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.exception.ExceptionType;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.statement.StatementInfoWrapper;
+import com.firebolt.jdbc.statement.StatementUtil;
+import lombok.NonNull;
+import okhttp3.Call;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okio.Buffer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import static com.firebolt.jdbc.client.UserAgentFormatter.userAgent;
+import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.*;
-
-import com.firebolt.jdbc.exception.ExceptionType;
-import lombok.NonNull;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junitpioneer.jupiter.SetSystemProperty;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.firebolt.jdbc.util.VersionUtil;
-import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.statement.StatementInfoWrapper;
-import com.firebolt.jdbc.statement.StatementUtil;
-
-import okhttp3.*;
-import okio.Buffer;
-
-@SetSystemProperty(key = "java.version", value = "8.0.1")
-@SetSystemProperty(key = "os.version", value = "10.1")
-@SetSystemProperty(key = "os.name", value = "MacosX")
 @ExtendWith(MockitoExtension.class)
 class StatementClientImplTest {
-
-	private static MockedStatic<VersionUtil> mockedProjectVersionUtil;
 	@Captor
 	private ArgumentCaptor<Request> requestArgumentCaptor;
 	@Mock
@@ -47,17 +43,6 @@ class StatementClientImplTest {
 
 	@Mock
 	private FireboltConnection connection;
-
-	@BeforeAll
-	static void init() {
-		mockedProjectVersionUtil = mockStatic(VersionUtil.class);
-		mockedProjectVersionUtil.when(VersionUtil::getDriverVersion).thenReturn("1.0-TEST");
-	}
-
-	@AfterAll
-	static void close() {
-		mockedProjectVersionUtil.close();
-	}
 
 	@Test
 	void shouldPostSqlQueryWithExpectedUrl() throws FireboltException, IOException {
@@ -77,11 +62,11 @@ class StatementClientImplTest {
 		String actualQuery = getActualRequestString(actualRequest);
 		Map<String, String> expectedHeaders = new LinkedHashMap<>();
 		expectedHeaders.put("Authorization", "Bearer token");
-		expectedHeaders.put("User-Agent", "ConnB/2.0.9 JDBC/1.0-TEST (Java 8.0.1; Darwin 10.1; ) ConnA/1.0.9");
+		expectedHeaders.put("User-Agent", userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; ) ConnA/1.0.9"));
 
 		assertEquals(expectedHeaders, extractHeadersMap(actualRequest));
 		assertEquals("show databases;", actualQuery);
-		assertEquals(String.format(
+		assertEquals(format(
 				"http://firebolt1:555/?result_overflow_mode=break&database=db1&output_format=TabSeparatedWithNamesAndTypes&query_id=%s&compress=1&max_result_rows=1&max_execution_time=15",
 				statementInfoWrapper.getId()), actualRequest.url().toString());
 	}
