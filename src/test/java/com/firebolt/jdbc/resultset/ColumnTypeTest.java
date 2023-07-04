@@ -30,7 +30,7 @@ class ColumnTypeTest {
 		assertEquals(FireboltDataType.ARRAY, columnType.getDataType());
 		assertEquals(FireboltDataType.DATE_TIME_64, columnType.getArrayBaseColumnType().getDataType());
 		assertEquals(TimeZone.getTimeZone("EST"), columnType.getArrayBaseColumnType().getTimeZone());
-		assertEquals("array(array(timestamp ext))", columnType.getCompactTypeName());
+		assertEquals("array(array(timestamp))", columnType.getCompactTypeName());
 	}
 
 	@Test
@@ -114,7 +114,7 @@ class ColumnTypeTest {
 		assertEquals(TimeZone.getTimeZone("EST"), columnType.getTimeZone());
 		assertEquals(4, columnType.getScale());
 		assertEquals(23, columnType.getPrecision());
-		assertEquals("timestamp ext", columnType.getCompactTypeName());
+		assertEquals("timestamp", columnType.getCompactTypeName());
 	}
 
 	@Test

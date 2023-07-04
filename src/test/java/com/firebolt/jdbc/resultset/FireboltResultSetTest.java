@@ -1,10 +1,18 @@
 package com.firebolt.jdbc.resultset;
 
-import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.statement.FireboltStatement;
+import com.firebolt.jdbc.util.LoggerUtil;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junitpioneer.jupiter.DefaultTimeZone;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -16,19 +24,9 @@ import java.time.*;
 import java.util.Calendar;
 import java.util.TimeZone;
 
-import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junitpioneer.jupiter.DefaultTimeZone;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import com.firebolt.jdbc.util.LoggerUtil;
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.statement.FireboltStatement;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DefaultTimeZone("UTC")
@@ -43,11 +41,8 @@ class FireboltResultSetTest {
 	private FireboltStatement fireboltStatement;
 
 	@AfterEach
-	void afterEach() throws SQLException {
-		try {
-			inputStream.close();
-		} catch (Exception e) {
-		}
+	void afterEach() throws SQLException, IOException {
+		inputStream.close();
 		resultSet.close();
 	}
 
@@ -85,8 +80,8 @@ class FireboltResultSetTest {
 		assertEquals(1, resultSet.getObject(1));
 		String[][][] firstArray = { { { "1", "2" }, { "3", "4" } } };
 		Array array = resultSet.getObject(2, Array.class);
-		Assertions.assertArrayEquals(firstArray, (String[][][]) array.getArray());
-		assertEquals(new Long("1"), resultSet.getObject(1, Long.class));
+		assertArrayEquals(firstArray, (String[][][]) array.getArray());
+		assertEquals(1L, resultSet.getObject(1, Long.class));
 
 		resultSet.next();
 		assertEquals(2, resultSet.getObject(1));
@@ -113,6 +108,7 @@ class FireboltResultSetTest {
 	}
 
 	@Test
+	@SuppressWarnings("deprecation") // ResultSet.getBigDecimal() is deprecated but  still has to be tested.
 	void shouldGetBigDecimalWithScale() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
@@ -127,14 +123,19 @@ class FireboltResultSetTest {
 		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
 		resultSet.next();
 		assertTrue(resultSet.isFirst());
+		resultSet.next();
+		assertFalse(resultSet.isFirst());
 	}
 
 	@Test
 	void shouldBeAfterReadingTheLast() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
+		assertFalse(resultSet.isAfterLast());
+		assertFalse(resultSet.isLast());
 		while (resultSet.next()) {
 			// just read everything
+			assertFalse(resultSet.isAfterLast());
 		}
 		assertTrue(resultSet.isAfterLast());
 		assertFalse(resultSet.isLast());
@@ -198,7 +199,7 @@ class FireboltResultSetTest {
 		resultSet.next();
 		assertEquals(0, resultSet.getFloat(6));
 		assertEquals(0, resultSet.getFloat("a_double"));
-		assertEquals(null, resultSet.getObject(6, Float.class));
+		assertNull(resultSet.getObject(6, Float.class));
 
 	}
 
@@ -696,7 +697,7 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldReturnTimestampFromTimestamptz() throws SQLException, ParseException {
+	void shouldReturnTimestampFromTimestamptz() throws SQLException {
 		Timestamp expectedTimestamp = new Timestamp(
 				ZonedDateTime.of(2022, 5, 11, 6, 1, 2, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
 
@@ -726,7 +727,7 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldReturnNullForTimeTypesWithNullValues() throws SQLException, ParseException {
+	void shouldReturnNullForTimeTypesWithNullValues() throws SQLException {
 		inputStream = getInputStreamWithDates();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
 		resultSet.next();
@@ -788,7 +789,7 @@ class FireboltResultSetTest {
 		assertEquals(1, resultSet.getObject(1, Long.class));
 		assertEquals(30000000000L, resultSet.getObject(2, Long.class));
 		assertEquals(new BigInteger("30000000000"), resultSet.getObject(2, BigInteger.class));
-		assertEquals(new Float(1.23), resultSet.getObject(3, Float.class));
+		assertEquals(1.23f, resultSet.getObject(3, Float.class));
 		assertEquals(new BigDecimal("1.23"), resultSet.getObject(3, BigDecimal.class));
 		assertEquals(1.23456789012, resultSet.getObject(4, Double.class));
 		assertEquals(new BigDecimal("1.23456789012"), resultSet.getObject(4, BigDecimal.class));
@@ -819,7 +820,7 @@ class FireboltResultSetTest {
 		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(1));
 		assertEquals(30000000000L, resultSet.getObject(2));
 		assertEquals(Types.BIGINT, resultSet.getMetaData().getColumnType(2));
-		assertEquals(new Float(1.23), resultSet.getObject(3));
+		assertEquals(1.23f, resultSet.getObject(3));
 		assertEquals(Types.REAL, resultSet.getMetaData().getColumnType(3));
 		assertEquals(1.23456789012, resultSet.getObject(4));
 		assertEquals(Types.DOUBLE, resultSet.getMetaData().getColumnType(4));
@@ -831,7 +832,7 @@ class FireboltResultSetTest {
 		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(6));
 		assertEquals(30000000000L, resultSet.getObject(7));
 		assertEquals(Types.BIGINT, resultSet.getMetaData().getColumnType(7));
-		assertEquals(new Float(1.23), resultSet.getObject(8));
+		assertEquals(1.23f, resultSet.getObject(8));
 		assertEquals(Types.REAL, resultSet.getMetaData().getColumnType(8));
 		assertEquals(Types.DOUBLE, resultSet.getMetaData().getColumnType(9));
 		assertEquals(1.23456789012, resultSet.getObject(9));
