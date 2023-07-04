@@ -11,8 +11,8 @@ public class FireboltDataTypeDisplayNames {
 	static final String DOUBLE_PRECISION = "double precision";
 	static final String TEXT = "text";
 	static final String DATE = "date";
+	static final String PGDATE = "pgdate";
 	static final String TIMESTAMP = "timestamp";
-	static final String TIMESTAMP_EXT = "timestamp ext";
 	static final String NULL = "null";
 	static final String UNKNOWN = "unknown";
 	static final String NUMERIC = "numeric";
