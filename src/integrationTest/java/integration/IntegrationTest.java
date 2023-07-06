@@ -26,16 +26,16 @@ public abstract class IntegrationTest {
 		return DriverManager.getConnection(
 				JDBC_URL_PREFIX + integration.ConnectionInfo.getInstance().getDatabase()
 						+ queryParams + "&host=localhost" + getAccountParam(),
-				integration.ConnectionInfo.getInstance().getUser(),
-				integration.ConnectionInfo.getInstance().getPassword());
+				integration.ConnectionInfo.getInstance().getPrincipal(),
+				integration.ConnectionInfo.getInstance().getSecret());
 	}
 
 	protected Connection createConnection() throws SQLException {
 		return DriverManager.getConnection(
 				JDBC_URL_PREFIX
 						+ integration.ConnectionInfo.getInstance().getDatabase() + "?" + getEnvParam() + getAccountParam() ,
-				integration.ConnectionInfo.getInstance().getUser(),
-				integration.ConnectionInfo.getInstance().getPassword());
+				integration.ConnectionInfo.getInstance().getPrincipal(),
+				integration.ConnectionInfo.getInstance().getSecret());
 	}
 
 	protected Connection createConnection(String engine) throws SQLException {
@@ -43,8 +43,8 @@ public abstract class IntegrationTest {
 				JDBC_URL_PREFIX +
 						 integration.ConnectionInfo.getInstance().getDatabase()
 						+ Optional.ofNullable(engine).map(e -> "?" + getEnvParam() +"&engine=" + e + getAccountParam() ).orElse("?" + getEnvParam() + getAccountParam()),
-				integration.ConnectionInfo.getInstance().getUser(),
-				integration.ConnectionInfo.getInstance().getPassword());
+				integration.ConnectionInfo.getInstance().getPrincipal(),
+				integration.ConnectionInfo.getInstance().getSecret());
 	}
 
 	protected void setParam(Connection connection, String name, String value) throws SQLException {
@@ -55,7 +55,7 @@ public abstract class IntegrationTest {
 
 	@SneakyThrows
 	protected void executeStatementFromFile(String path) {
-		executeStatementFromFile(path, null);
+		executeStatementFromFile(path, integration.ConnectionInfo.getInstance().getEngine());
 	}
 
 	@SneakyThrows

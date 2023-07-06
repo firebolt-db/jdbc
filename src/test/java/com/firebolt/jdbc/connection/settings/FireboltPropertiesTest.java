@@ -15,7 +15,7 @@ class FireboltPropertiesTest {
 		FireboltProperties expectedDefaultProperties = FireboltProperties.builder().database("db").bufferSize(65536)
 				.sslCertificatePath("").sslMode("strict").path("").port(443) // 443 by default as SSL is enabled by
 				.systemEngine(false).compress(true)													// default
-				.user(null).password(null).host("host").ssl(true).additionalProperties(new HashMap<>())
+				.principal(null).secret(null).host("host").ssl(true).additionalProperties(new HashMap<>())
 				.account(null).keepAliveTimeoutMillis(300000).maxConnectionsTotal(300).maxRetries(3)
 				.socketTimeoutMillis(0).connectionTimeoutMillis(60000).tcpKeepInterval(30).environment("app").tcpKeepIdle(60)
 				.tcpKeepCount(10).account("firebolt").build();
@@ -45,7 +45,7 @@ class FireboltPropertiesTest {
 
 		FireboltProperties expectedDefaultProperties = FireboltProperties.builder().bufferSize(51)
 				.sslCertificatePath("root_cert").sslMode("none").path("example").database("myDb").compress(true)
-				.port(443).user(null).password(null).host("myDummyHost").ssl(true).systemEngine(false)
+				.port(443).principal(null).secret(null).host("myDummyHost").ssl(true).systemEngine(false)
 				.additionalProperties(customProperties).account(null).keepAliveTimeoutMillis(300000)
 				.maxConnectionsTotal(300).maxRetries(3).socketTimeoutMillis(20).connectionTimeoutMillis(60000)
 				.tcpKeepInterval(30).tcpKeepIdle(60).tcpKeepCount(10).environment("app").account("firebolt").build();

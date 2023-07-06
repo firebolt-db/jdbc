@@ -74,7 +74,7 @@ class StatementClientImplTest {
 	@Test
 	void shouldPostSqlQueryForSystemEngine() throws FireboltException, IOException, URISyntaxException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
-				.host("firebolt1").port(555).build();
+				.host("firebolt1").port(555).accountId("12345").build();
 		when(connection.getAccessToken())
 				.thenReturn(Optional.of("token"));
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, mock(ObjectMapper.class),
@@ -90,7 +90,7 @@ class StatementClientImplTest {
 		String actualQuery = getActualRequestString(actualRequest);
 
 		assertEquals("show databases;", actualQuery);
-		assertEquals("http://firebolt1:555/dynamic/query?output_format=TabSeparatedWithNamesAndTypes",
+		assertEquals("http://firebolt1:555/?account_id=12345&output_format=TabSeparatedWithNamesAndTypes",
 				actualRequest.url().toString());
 	}
 

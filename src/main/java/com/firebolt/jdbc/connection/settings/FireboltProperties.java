@@ -1,17 +1,16 @@
 package com.firebolt.jdbc.connection.settings;
 
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-
 import lombok.Builder;
 import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Value
 @Builder(toBuilder = true)
@@ -46,10 +45,11 @@ public class FireboltProperties {
 	String sslCertificatePath;
 	String sslMode;
 	boolean compress;
-	String user;
-	String password;
+	String principal;
+	String secret;
 	String engine;
 	String account;
+	String accountId;
 	Integer tcpKeepIdle;
 	Integer tcpKeepCount;
 	Integer tcpKeepInterval;
@@ -68,8 +68,8 @@ public class FireboltProperties {
 		boolean ssl = getSetting(mergedProperties, FireboltSessionProperty.SSL);
 		String sslRootCertificate = getSetting(mergedProperties, FireboltSessionProperty.SSL_CERTIFICATE_PATH);
 		String sslMode = getSetting(mergedProperties, FireboltSessionProperty.SSL_MODE);
-		String user = getSetting(mergedProperties, FireboltSessionProperty.USER);
-		String password = getSetting(mergedProperties, FireboltSessionProperty.PASSWORD);
+		String principal = getSetting(mergedProperties, FireboltSessionProperty.CLIENT_ID);
+		String secret = getSetting(mergedProperties, FireboltSessionProperty.CLIENT_SECRET);
 		String path = getSetting(mergedProperties, FireboltSessionProperty.PATH);
 		String database = getDatabase(mergedProperties, path);
 		String engine = getEngine(mergedProperties, database);
@@ -97,7 +97,7 @@ public class FireboltProperties {
 		Map<String, String> additionalProperties = getFireboltCustomProperties(mergedProperties);
 
 		return FireboltProperties.builder().ssl(ssl).sslCertificatePath(sslRootCertificate).sslMode(sslMode).path(path)
-				.port(port).database(database).compress(compress).user(user).password(password).host(host)
+				.port(port).database(database).compress(compress).principal(principal).secret(secret).host(host)
 				.additionalProperties(additionalProperties).account(account).engine(engine)
 				.keepAliveTimeoutMillis(keepAliveMillis).maxConnectionsTotal(maxTotal).maxRetries(maxRetries)
 				.bufferSize(bufferSize).socketTimeoutMillis(socketTimeout).connectionTimeoutMillis(connectionTimeout)

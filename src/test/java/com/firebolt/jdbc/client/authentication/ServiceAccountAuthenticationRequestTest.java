@@ -1,8 +1,11 @@
 package com.firebolt.jdbc.client.authentication;
 
+import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +22,7 @@ class ServiceAccountAuthenticationRequestTest {
 		Buffer buffer = new Buffer();
 		requestBody.writeTo(buffer);
 
-		assertEquals("audience=https%3A%2F%2Fdev-firebolt-v2.us.auth0.com%2Fapi%2Fv2%2F&grant_type=client_credentials&client_id=he-ll-o&client_secret=secret", buffer.readUtf8());
+		assertEquals(format("audience=%s&grant_type=client_credentials&client_id=he-ll-o&client_secret=secret", URLEncoder.encode("https://api.firebolt.io", StandardCharsets.UTF_8)), buffer.readUtf8());
 	}
 
 }

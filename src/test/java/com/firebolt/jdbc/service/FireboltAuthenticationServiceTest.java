@@ -28,8 +28,7 @@ class FireboltAuthenticationServiceTest {
 
 	private static final String ENV = "ENV";
 
-	private static final FireboltProperties PROPERTIES = FireboltProperties.builder().user(USER).password(PASSWORD).environment(ENV)
-			.compress(true).build();
+	private static final FireboltProperties PROPERTIES = FireboltProperties.builder().principal(USER).secret(PASSWORD).environment(ENV).compress(true).build();
 
 	@Mock
 	private FireboltAuthenticationClient fireboltAuthenticationClient;

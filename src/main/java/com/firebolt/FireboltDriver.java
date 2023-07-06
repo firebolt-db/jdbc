@@ -30,11 +30,7 @@ public class FireboltDriver implements Driver {
 
 	@Override
 	public Connection connect(String url, Properties connectionSettings) throws SQLException {
-		if (!acceptsURL(url)) {
-			return null;
-		} else {
-			return new FireboltConnection(url, connectionSettings);
-		}
+		return acceptsURL(url) ? new FireboltConnection(url, connectionSettings) : null;
 	}
 
 	@Override
@@ -43,7 +39,7 @@ public class FireboltDriver implements Driver {
 	}
 
 	@Override
-	public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
+	public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) {
 		return PropertyUtil.getPropertyInfo(url, info);
 	}
 

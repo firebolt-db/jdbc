@@ -1,17 +1,5 @@
 package com.firebolt.jdbc.client.query;
 
-import static com.firebolt.jdbc.exception.ExceptionType.UNAUTHORIZED;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.util.*;
-import java.util.function.BiPredicate;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltClient;
 import com.firebolt.jdbc.connection.FireboltConnection;
@@ -24,12 +12,24 @@ import com.firebolt.jdbc.statement.StatementType;
 import com.firebolt.jdbc.statement.rawstatement.RawStatement;
 import com.firebolt.jdbc.util.CloseableUtil;
 import com.firebolt.jdbc.util.PropertyUtil;
-import com.google.common.collect.ImmutableMap;
-
 import lombok.CustomLog;
 import lombok.NonNull;
 import okhttp3.*;
 import okhttp3.internal.http2.StreamResetException;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.util.*;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
+
+import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.DEFAULT_FORMAT;
+import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.OUTPUT_FORMAT;
+import static com.firebolt.jdbc.exception.ExceptionType.UNAUTHORIZED;
+import static java.lang.String.format;
 
 @CustomLog
 public class StatementClientImpl extends FireboltClient implements StatementClient {
@@ -68,12 +68,11 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 				queryTimeout, maxRows);
 		try {
 			String uri = this.buildQueryUri(connectionProperties, params).toString();
-			return executeSqlStatementWithRetryOnUnauthorized(statementInfoWrapper, connectionProperties,
-					formattedStatement, uri);
+			return executeSqlStatementWithRetryOnUnauthorized(statementInfoWrapper, connectionProperties, formattedStatement, uri);
 		} catch (FireboltException e) {
 			throw e;
 		} catch (Exception e) {
-			String errorMessage = String.format("Error executing statement with id %s: %s",
+			String errorMessage = format("Error executing statement with id %s: %s",
 					statementInfoWrapper.getId(), formattedStatement);
 			if (e instanceof StreamResetException) {
 				throw new FireboltException(errorMessage, e, ExceptionType.CANCELED);
@@ -145,8 +144,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 				throw e;
 			}
 		} catch (Exception e) {
-			throw new FireboltException(
-					String.format("Could not cancel query: %s at %s", id, fireboltProperties.getHost()), e);
+			throw new FireboltException(format("Could not cancel query: %s at %s", id, fireboltProperties.getHost()), e);
 		}
 	}
 
@@ -161,13 +159,15 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	private Optional<Call> getQueuedCallWithId(String id) {
-		return getHttpClient().dispatcher().queuedCalls().stream().filter(call -> isCallWithId.test(call, id))
-				.findAny();
+		return getSelectedCallWithId(id, Dispatcher::queuedCalls);
 	}
 
 	private Optional<Call> getRunningCallWithId(String id) {
-		return getHttpClient().dispatcher().runningCalls().stream().filter(call -> isCallWithId.test(call, id))
-				.findAny();
+		return getSelectedCallWithId(id, Dispatcher::runningCalls);
+	}
+
+	private Optional<Call> getSelectedCallWithId(String id, Function<Dispatcher, List<Call>> callsGetter) {
+		return callsGetter.apply(getHttpClient().dispatcher()).stream().filter(call -> isCallWithId.test(call, id)).findAny();
 	}
 
 	@Override
@@ -176,7 +176,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	private URI buildQueryUri(FireboltProperties fireboltProperties, Map<String, String> parameters) {
-		return buildURI(fireboltProperties, parameters, PropertyUtil.isLocalDb(fireboltProperties) ? Collections.emptyList() : URI_QUERY_SEGMENTS);
+		return buildURI(fireboltProperties, parameters, PropertyUtil.isLocalDb(fireboltProperties) || !fireboltProperties.isSystemEngine() ? Collections.emptyList() : URI_QUERY_SEGMENTS);
 	}
 
 	private URI buildCancelUri(FireboltProperties fireboltProperties, String id) {
@@ -187,8 +187,9 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	private URI buildURI(FireboltProperties fireboltProperties, Map<String, String> parameters,
 			List<String> pathSegments) {
 		HttpUrl.Builder httpUrlBuilder = new HttpUrl.Builder()
-				.scheme(Boolean.TRUE.equals(fireboltProperties.isSsl()) ? "https" : "http")
-				.host(fireboltProperties.getHost()).port(fireboltProperties.getPort());
+				.scheme(fireboltProperties.isSsl() ? "https" : "http")
+				.host(fireboltProperties.getHost())
+				.port(fireboltProperties.getPort());
 		parameters.forEach(httpUrlBuilder::addQueryParameter);
 
 		pathSegments.forEach(httpUrlBuilder::addPathSegment);
@@ -204,12 +205,13 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 		getResponseFormatParameter(statementInfoWrapper.getType() == StatementType.QUERY, isLocalDb)
 				.ifPresent(format -> params.put(format.getLeft(), format.getRight()));
-		// System engines do not support the following query params
-		if (!systemEngine) {
+		if (systemEngine) {
+			params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId()); // "01h11x0zmecanh1vp2q1mar5nh"
+		} else {
+			// System engines do not support the following query params
 			params.put(FireboltQueryParameterKey.DATABASE.getKey(), fireboltProperties.getDatabase());
 			params.put(FireboltQueryParameterKey.QUERY_ID.getKey(), statementInfoWrapper.getId());
-			params.put(FireboltQueryParameterKey.COMPRESS.getKey(),
-					String.format("%d", fireboltProperties.isCompress() ? 1 : 0));
+			params.put(FireboltQueryParameterKey.COMPRESS.getKey(), fireboltProperties.isCompress() ? "1" : "0");
 
 			if (queryTimeout > -1) {
 				params.put("max_execution_time", String.valueOf(queryTimeout));
@@ -224,20 +226,10 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	private Optional<Pair<String, String>> getResponseFormatParameter(boolean isQuery, boolean isLocalDb) {
-		if (isQuery) {
-			if (isLocalDb) {
-				return Optional.of(new ImmutablePair<>(FireboltQueryParameterKey.DEFAULT_FORMAT.getKey(),
-						TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT));
-			} else {
-				return Optional.of(new ImmutablePair<>(FireboltQueryParameterKey.OUTPUT_FORMAT.getKey(),
-						TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT));
-			}
-		}
-		return Optional.empty();
+		return isQuery ? Optional.of(Pair.of((isLocalDb ? DEFAULT_FORMAT : OUTPUT_FORMAT).getKey(), TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT)) : Optional.empty();
 	}
 
 	private Map<String, String> getCancelParameters(String statementId) {
-		return ImmutableMap.of(FireboltQueryParameterKey.QUERY_ID.getKey(), statementId);
+		return Map.of(FireboltQueryParameterKey.QUERY_ID.getKey(), statementId);
 	}
-
 }
