@@ -73,7 +73,7 @@ jobs:
           fi
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=${{ github.event.inputs.environment }} -Dclient_secret="${{ env.SERVICE_ACCOUNT_SECRET }}" -Dclient_id="${{ env.SERVICE_ACCOUNT_ID }} -Daccount=${{ github.event.inputs.account }}" -Dengine=${{ github.event.inputs.engine }}"
+        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=${{ github.event.inputs.environment }} -Dclient_secret="${{ env.SERVICE_ACCOUNT_SECRET }}" -Dclient_id="${{ env.SERVICE_ACCOUNT_ID }} -Daccount="${{ github.event.inputs.account }}" -Dengine="${{ github.event.inputs.engine }}"
 
       - name: "Foresight: Analyze Test Results"
         uses: runforesight/foresight-test-kit-action@v1
