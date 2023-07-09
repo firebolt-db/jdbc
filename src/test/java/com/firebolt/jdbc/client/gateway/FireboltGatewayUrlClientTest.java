@@ -43,8 +43,8 @@ class FireboltAccountRetrieverTest {
 
     @BeforeEach
     void setUp() {
-        fireboltGatewayUrlClient = new FireboltAccountRetriever<>(httpClient, fireboltConnection, null, null, objectMapper, "engineUrl", GatewayUrlResponse.class);
-        fireboltAccountIdResolver = new FireboltAccountRetriever<>(httpClient, fireboltConnection, null, null, objectMapper, "resolve", FireboltAccount.class);
+        fireboltGatewayUrlClient = new FireboltAccountRetriever<>(httpClient, objectMapper, fireboltConnection, null, null, "http://test-firebolt.io", "engineUrl", GatewayUrlResponse.class);
+        fireboltAccountIdResolver = new FireboltAccountRetriever<>(httpClient, objectMapper, fireboltConnection, null, null, "http://test-firebolt.io", "resolve", FireboltAccount.class);
     }
 
 	@Test

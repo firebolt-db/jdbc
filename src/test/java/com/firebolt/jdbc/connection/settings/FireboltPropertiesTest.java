@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class FireboltPropertiesTest {
 
@@ -150,6 +152,28 @@ class FireboltPropertiesTest {
 
 		assertEquals(clients, FireboltProperties.of(properties).getUserClients());
 		assertEquals(drivers, FireboltProperties.of(properties).getUserDrivers());
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			"env, qa,,api.qa.firebolt.io,qa",
+			"environment, test,,api.test.firebolt.io,test",
+			"env, staging,super-host.com,super-host.com,staging",
+			"env,,my-host.com,my-host.com,app",
+			"env,,api.dev.firebolt.io,api.dev.firebolt.io,dev",
+			"env,,something.io,something.io,app", // not standard host, no configured environment -> default environment
+			",,,api.app.firebolt.io,app", // no host, no environment -> default environment (app) and default host api.app.firebolt.io
+	}, delimiter = ',')
+	void hostAndEnvironment(String envKey, String envValue, String host, String expectedHost, String expectedEnvironment) {
+		Properties properties = new Properties();
+		if (envValue != null) {
+			properties.put(envKey, envValue);
+		}
+		if (host != null) {
+			properties.put("host", host);
+		}
+		assertEquals(expectedHost, FireboltProperties.of(properties).getHost());
+		assertEquals(expectedEnvironment, FireboltProperties.of(properties).getEnvironment());
 	}
 
 }

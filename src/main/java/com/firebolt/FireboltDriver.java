@@ -17,7 +17,6 @@ import lombok.CustomLog;
 public class FireboltDriver implements Driver {
 
 	public static final String JDBC_FIREBOLT = "jdbc:firebolt:";
-	private static final String JDBC_FIREBOLT_PREFIX = JDBC_FIREBOLT;
 
 	static {
 		try {
@@ -35,7 +34,7 @@ public class FireboltDriver implements Driver {
 
 	@Override
 	public boolean acceptsURL(String url) {
-		return StringUtils.isNotEmpty(url) && url.startsWith(JDBC_FIREBOLT_PREFIX);
+		return StringUtils.isNotEmpty(url) && url.startsWith(JDBC_FIREBOLT);
 	}
 
 	@Override

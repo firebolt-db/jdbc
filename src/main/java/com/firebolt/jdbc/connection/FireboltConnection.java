@@ -78,7 +78,7 @@ public class FireboltConnection implements Connection {
 		this.connect();
 	}
 
-	// This ugly code duplication between constructors is done because of back reference: dependent services require reference to current instance of FireboltConnection that prevents using constructor chaining or factory method.
+	// This code duplication between constructors is done because of back reference: dependent services require reference to current instance of FireboltConnection that prevents using constructor chaining or factory method.
 	@ExcludeFromJacocoGeneratedReport
 	public FireboltConnection(@NonNull String url, Properties connectionSettings) throws FireboltException {
 		this.loginProperties = extractFireboltProperties(url, connectionSettings);
@@ -86,16 +86,16 @@ public class FireboltConnection implements Connection {
 		ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
 
 		this.fireboltAuthenticationService = new FireboltAuthenticationService(new FireboltAuthenticationClient(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
-		this.fireboltGatewayUrlService = new FireboltGatewayUrlService(new FireboltAccountRetriever<>(httpClient, this, loginProperties.getUserDrivers(), loginProperties.getUserClients(), objectMapper, "engineUrl", GatewayUrlResponse.class));
+		this.fireboltGatewayUrlService = new FireboltGatewayUrlService(createFireboltAccountRetriever(httpClient, objectMapper, "engineUrl", GatewayUrlResponse.class));
 		this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
-		this.fireboltStatementService = new FireboltStatementService(new StatementClientImpl(httpClient, this, objectMapper, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
+		this.fireboltStatementService = new FireboltStatementService(new StatementClientImpl(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
 
 		this.statements = new ArrayList<>();
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
 		this.systemEngine = loginProperties.isSystemEngine();
 		this.fireboltEngineService = new FireboltEngineService(this);
-		this.fireboltAccountIdService = new FireboltAccountIdService(new FireboltAccountRetriever<>(httpClient, this, loginProperties.getUserDrivers(), loginProperties.getUserClients(), objectMapper, "resolve", FireboltAccount.class));
+		this.fireboltAccountIdService = new FireboltAccountIdService(createFireboltAccountRetriever(httpClient, objectMapper, "resolve", FireboltAccount.class));
 
 		this.connect();
 	}
@@ -106,6 +106,10 @@ public class FireboltConnection implements Connection {
 		} catch (GeneralSecurityException | IOException e) {
 			throw new FireboltException("Could not instantiate http client", e);
 		}
+	}
+
+	private <T> FireboltAccountRetriever<T> createFireboltAccountRetriever(OkHttpClient httpClient, ObjectMapper objectMapper, String path, Class<T> type) {
+		return new FireboltAccountRetriever<>(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients(), loginProperties.getHost(), path, type);
 	}
 
 	private void connect() throws FireboltException {

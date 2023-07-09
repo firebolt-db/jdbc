@@ -11,6 +11,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Value
 @Builder(toBuilder = true)
@@ -87,11 +88,12 @@ public class FireboltProperties {
 		int tcpKeepIdle = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_IDLE);
 		int tcpKeepCount = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_COUNT);
 		boolean logResultSet = getSetting(mergedProperties, FireboltSessionProperty.LOG_RESULT_SET);
-		String environment = getSetting(mergedProperties, FireboltSessionProperty.ENVIRONMENT);
+		String configuredEnvironment = getSetting(mergedProperties, FireboltSessionProperty.ENVIRONMENT);
 		String driverVersions = getSetting(mergedProperties, FireboltSessionProperty.USER_DRIVERS);
 		String clientVersions = getSetting(mergedProperties, FireboltSessionProperty.USER_CLIENTS);
 
-		String host = getHost(environment, mergedProperties);
+		String environment = getEnvironment(configuredEnvironment, mergedProperties);
+		String host = getHost(configuredEnvironment, mergedProperties);
 		Integer port = getPort(mergedProperties, ssl);
 
 		Map<String, String> additionalProperties = getFireboltCustomProperties(mergedProperties);
@@ -125,6 +127,22 @@ public class FireboltProperties {
 		} else {
 			return host;
 		}
+	}
+
+	private static String getEnvironment(String environment, Properties properties ) {
+		Pattern environmentalHost = Pattern.compile("api\\.(.+?)\\.firebolt\\.io");
+		if (Objects.equals(environment, FireboltSessionProperty.ENVIRONMENT.getDefaultValue())) {
+			if (Stream.concat(Stream.of(FireboltSessionProperty.ENVIRONMENT.getKey()), Stream.of(FireboltSessionProperty.ENVIRONMENT.getAliases())).noneMatch(properties::containsKey)) {
+				String host = getSetting(properties, FireboltSessionProperty.HOST);
+				if (host != null) {
+					Matcher m = environmentalHost.matcher(host);
+					if (m.find() && m.group(1) != null) {
+						return m.group(1);
+					}
+				}
+			}
+		}
+		return environment;
 	}
 
 	@NonNull

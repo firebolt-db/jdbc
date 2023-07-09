@@ -32,16 +32,15 @@ public abstract class FireboltClient {
 	public static final String HEADER_AUTHORIZATION = "Authorization";
 	public static final String HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE = "Bearer ";
 	public static final String HEADER_USER_AGENT = "User-Agent";
+	private final OkHttpClient httpClient;
 	protected final ObjectMapper objectMapper;
 	private final String headerUserAgentValue;
-	private final OkHttpClient httpClient;
 	private final FireboltConnection connection;
 
-	protected FireboltClient(OkHttpClient httpClient, FireboltConnection connection, String customDrivers,
-			String customClients, ObjectMapper objectMapper) {
+	protected FireboltClient(OkHttpClient httpClient, ObjectMapper objectMapper, FireboltConnection connection, String customDrivers, String customClients) {
 		this.httpClient = httpClient;
-		this.connection = connection;
 		this.objectMapper = objectMapper;
+		this.connection = connection;
 		this.headerUserAgentValue = UsageTrackerUtil.getUserAgentString(customDrivers != null ? customDrivers : "",
 				customClients != null ? customClients : "");
 	}

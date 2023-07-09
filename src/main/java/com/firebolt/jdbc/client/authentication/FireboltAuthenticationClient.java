@@ -21,7 +21,7 @@ public class FireboltAuthenticationClient extends FireboltClient {
 
 	public FireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper,
 			FireboltConnection connection, String customDrivers, String customClients) {
-		super(httpClient, connection, customDrivers, customClients, objectMapper);
+		super(httpClient, objectMapper, connection, customDrivers, customClients);
 	}
 
 	/**

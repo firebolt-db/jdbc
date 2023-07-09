@@ -42,9 +42,8 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	private final BiPredicate<Call, String> isCallWithId = (call, id) -> call.request().tag() instanceof String
 			&& StringUtils.equals((String) call.request().tag(), id);
 
-	public StatementClientImpl(OkHttpClient httpClient, FireboltConnection connection, ObjectMapper objectMapper,
-			String customDrivers, String customClients) {
-		super(httpClient, connection, customDrivers, customClients, objectMapper);
+	public StatementClientImpl(OkHttpClient httpClient, ObjectMapper objectMapper, FireboltConnection connection, String customDrivers, String customClients) {
+		super(httpClient, objectMapper, connection, customDrivers, customClients);
 	}
 
 	/**
@@ -208,7 +207,6 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		if (systemEngine) {
 			params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId()); // "01h11x0zmecanh1vp2q1mar5nh"
 		} else {
-			// System engines do not support the following query params
 			params.put(FireboltQueryParameterKey.DATABASE.getKey(), fireboltProperties.getDatabase());
 			params.put(FireboltQueryParameterKey.QUERY_ID.getKey(), statementInfoWrapper.getId());
 			params.put(FireboltQueryParameterKey.COMPRESS.getKey(), fireboltProperties.isCompress() ? "1" : "0");

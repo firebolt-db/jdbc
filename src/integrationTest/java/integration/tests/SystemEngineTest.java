@@ -41,7 +41,7 @@ public class SystemEngineTest extends IntegrationTest {
 	@Test
 	void shouldExecuteQueriesUsingSystemEngine() throws SQLException {
 		try (Connection connection = this.createConnection(SYSTEM_ENGINE_NAME)) {
-			List<String> queries = Arrays.asList(String.format("CREATE DATABASE %s", DATABASE_NAME),
+			List<String> queries = Arrays.asList(String.format("CREATE DATABASE IF NOT EXISTS %s", DATABASE_NAME),
 					String.format("CREATE ENGINE %s", ENGINE_NAME),
 					String.format("ATTACH ENGINE %s TO %s;", ENGINE_NAME, DATABASE_NAME),
 					String.format("ALTER DATABASE %s WITH DESCRIPTION = 'JDBC Integration test'", DATABASE_NAME),
