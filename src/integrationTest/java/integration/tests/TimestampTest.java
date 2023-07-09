@@ -47,11 +47,10 @@ class TimestampTest extends IntegrationTest {
 	}
 
 	@Test
-	@Disabled("FIR-24712")
 	void shouldGetTimeObjectsInDefaultUTCTimezone() throws SQLException {
 		try (Connection connection = this.createConnection();
 				Statement statement = connection.createStatement();
-				ResultSet resultSet = statement.executeQuery("SELECT TO_TIMESTAMP('1975/01/01 23:01:01', 'yyyy/MM/DD hh24:mm:ss');")) {
+				ResultSet resultSet = statement.executeQuery("SELECT TO_TIMESTAMP('1975/01/01 23:01:01', 'yyyy/MM/DD hh24:mi:ss');")) {
 			resultSet.next();
 			ZonedDateTime zonedDateTime = ZonedDateTime.of(1975, 1, 1, 23, 1, 1, 0,
 					TimeZone.getTimeZone("UTC").toZoneId());
@@ -70,12 +69,11 @@ class TimestampTest extends IntegrationTest {
 	}
 
 	@Test
-	@Disabled("FIR-24712")
 	void shouldGetParsedTimeStampExtTimeObjects() throws SQLException {
 		try (Connection connection = this.createConnection();
 				Statement statement = connection.createStatement();
 				ResultSet resultSet = statement
-						.executeQuery("SELECT CAST('1111-11-11 ' || '12:00:03' AS timestamp);")) {
+						.executeQuery("SELECT CAST('1111-11-11 ' || '12:00:03' AS timestamptz);")) {
 			resultSet.next();
 			ZonedDateTime expectedTimestampZdt = ZonedDateTime.of(1111, 11, 11, 12, 0, 3, 0,
 					TimeZone.getTimeZone("UTC").toZoneId());
@@ -105,7 +103,7 @@ class TimestampTest extends IntegrationTest {
 		// of 08:50).
 		try (Connection connection = this.createConnection();
 				Statement statement = connection.createStatement();
-				ResultSet resultSet = statement.executeQuery("SELECT CAST('1899-01-01 00:00:00' AS timestamp);")) {
+				ResultSet resultSet = statement.executeQuery("SELECT CAST('1899-01-01 00:00:00' AS timestamptz);")) {
 			resultSet.next();
 			long offsetDiffInMillis = ((8 * 60) + 50) * 1000L; // 8:50 in millis
 			ZonedDateTime expectedTimestampZdt = ZonedDateTime.of(1899, 1, 1, 0, 0, 0, 0,
@@ -113,7 +111,7 @@ class TimestampTest extends IntegrationTest {
 			Timestamp expectedTimestamp = new Timestamp(
 					expectedTimestampZdt.toInstant().toEpochMilli() - offsetDiffInMillis);
 			assertEquals(expectedTimestamp, resultSet.getTimestamp(1));
-			compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '1899-01-01 00:00:00'::timestamp");
+			compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '1899-01-01 00:00:00'::timestamptz");
 		}
 	}
 
@@ -242,16 +240,15 @@ class TimestampTest extends IntegrationTest {
 	}
 
 	@Test
-	@Disabled("FIR-24712")
 	void shouldCompareAllTimeStampsWithMultipleThreads() throws SQLException, InterruptedException, ExecutionException {
 		try (Connection connection = this.createConnection();
 				Statement statement = connection.createStatement();
-				ResultSet resultSet = statement.executeQuery("SELECT CAST('1899-01-01 00:00:00' AS timestamp);")) {
+				ResultSet resultSet = statement.executeQuery("SELECT CAST('1899-01-01 00:00:00' AS timestamptz);")) {
 			resultSet.next();
 			AtomicInteger count = new AtomicInteger(0);
 			int expectedCount = 1000;
 			Callable<Void> callable = () -> {
-				compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '1899-01-01 00:00:00'::timestamp");
+				compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '1899-01-01 00:00:00'::timestamptz");
 				count.incrementAndGet();
 				return null;
 			};
