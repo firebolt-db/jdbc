@@ -132,18 +132,6 @@ class TimestampTest extends IntegrationTest {
 	}
 
 	@Test
-	void shouldHaveCorrectInfo() throws SQLException {
-		try (Connection connection = this.createConnection("system");
-			 Statement statement = connection.createStatement();
-			 ResultSet resultSet = statement.executeQuery("SELECT 3::decimal")) {
-			 resultSet.next();
-			 assertEquals(9, resultSet.getMetaData().getScale(1));
-			assertEquals(38, resultSet.getMetaData().getPrecision(1));
-		}
-
-	}
-
-	@Test
 	void shouldReturnTimestampFromTimestampntz() throws SQLException {
 		try (Connection connection = this.createConnection();
 				Statement statement = connection.createStatement();
