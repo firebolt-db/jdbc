@@ -205,7 +205,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		getResponseFormatParameter(statementInfoWrapper.getType() == StatementType.QUERY, isLocalDb)
 				.ifPresent(format -> params.put(format.getLeft(), format.getRight()));
 		if (systemEngine) {
-			params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId()); // "01h11x0zmecanh1vp2q1mar5nh"
+			params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId());
 		} else {
 			params.put(FireboltQueryParameterKey.DATABASE.getKey(), fireboltProperties.getDatabase());
 			params.put(FireboltQueryParameterKey.QUERY_ID.getKey(), statementInfoWrapper.getId());
