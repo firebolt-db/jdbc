@@ -6,6 +6,7 @@ import static java.lang.System.getProperty;
 
 public class ConnectionInfo {
 	private static volatile ConnectionInfo INSTANCE;
+	// principal and secret are used here instead of client_id and client_secret respectively as more common term also used in java security API.
 	private final String principal;
 	private final String secret;
 	private final String env;

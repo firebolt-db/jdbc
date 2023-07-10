@@ -6,12 +6,15 @@ import lombok.NonNull;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.lang.String.format;
 
 @Value
 @Builder(toBuilder = true)
@@ -56,7 +59,6 @@ public class FireboltProperties {
 	Integer tcpKeepInterval;
 	boolean logResultSet;
 	boolean systemEngine;
-	String organization;
 	String environment;
 	String userDrivers;
 	String userClients;
@@ -123,23 +125,39 @@ public class FireboltProperties {
 	private static String getHost(String environment, Properties properties ) {
 		String host = getSetting(properties, FireboltSessionProperty.HOST);
 		if (StringUtils.isEmpty(host)) {
-			return String.format("api.%s.firebolt.io", environment);
+			return format("api.%s.firebolt.io", environment);
 		} else {
 			return host;
 		}
 	}
 
-	private static String getEnvironment(String environment, Properties properties ) {
+	/**
+	 * Discovers environment name from host if it matches pattern {@code api.ENV.firebolt.io}
+	 * @param environment - the environment from properties or default value as defined in {@link FireboltSessionProperty#ENVIRONMENT}
+	 * @param properties - configuration properties
+	 * @return the environment value
+	 * @throws IllegalStateException if environment extracted from host is not equal to given one.
+	 */
+	private static String getEnvironment(String environment, @NotNull Properties properties) {
 		Pattern environmentalHost = Pattern.compile("api\\.(.+?)\\.firebolt\\.io");
-		if (Objects.equals(environment, FireboltSessionProperty.ENVIRONMENT.getDefaultValue())) {
-			if (Stream.concat(Stream.of(FireboltSessionProperty.ENVIRONMENT.getKey()), Stream.of(FireboltSessionProperty.ENVIRONMENT.getAliases())).noneMatch(properties::containsKey)) {
-				String host = getSetting(properties, FireboltSessionProperty.HOST);
-				if (host != null) {
-					Matcher m = environmentalHost.matcher(host);
-					if (m.find() && m.group(1) != null) {
-						return m.group(1);
-					}
-				}
+		String envFromProps = Stream.concat(Stream.of(FireboltSessionProperty.ENVIRONMENT.getKey()), Stream.of(FireboltSessionProperty.ENVIRONMENT.getAliases()))
+				.map(properties::getProperty)
+				.filter(Objects::nonNull).findFirst()
+				.orElse(null);
+		String envFromHost = null;
+		String host = getSetting(properties, FireboltSessionProperty.HOST);
+		if (host != null) {
+			Matcher m = environmentalHost.matcher(host);
+			if (m.find() && m.group(1) != null) {
+				envFromHost = m.group(1);
+			}
+		}
+		if (envFromHost != null) {
+			if (envFromProps == null) {
+				return envFromHost;
+			}
+			if (!Objects.equals(environment, envFromHost)) {
+				throw new IllegalStateException(format("Environment %s does not match host %s", environment, host));
 			}
 		}
 		return environment;
@@ -164,7 +182,7 @@ public class FireboltProperties {
 				if (m.matches()) {
 					return m.group(1);
 				} else {
-					throw new IllegalArgumentException(String.format("The database provided is invalid %s", path));
+					throw new IllegalArgumentException(format("The database provided is invalid %s", path));
 				}
 			}
 		} else {
@@ -233,9 +251,4 @@ public class FireboltProperties {
 	public void addProperty(Pair<String, String> property) {
 		this.addProperty(property.getLeft(), property.getRight());
 	}
-
-	public static FireboltProperties toSystemEngineProperties(FireboltProperties properties) {
-		return properties.toBuilder().additionalProperties(new HashMap<>(properties.getAdditionalProperties())).build();
-	}
-
 }

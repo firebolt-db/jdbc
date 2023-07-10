@@ -117,7 +117,7 @@ public class FireboltConnection implements Connection {
 		closed = false;
 		if (!PropertyUtil.isLocalDb(loginProperties)) {
 			internalSystemEngineProperties = createInternalSystemEngineProperties(accessToken, loginProperties.getAccount());
-			String accountId =  fireboltAccountIdService.getValue(accessToken, loginProperties.getAccount());
+			String accountId = fireboltAccountIdService.getValue(accessToken, loginProperties.getAccount());
 			if (!loginProperties.isSystemEngine()) {
 				sessionProperties = internalSystemEngineProperties.toBuilder()
 						.engine(loginProperties.getEngine())

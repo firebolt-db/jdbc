@@ -49,7 +49,7 @@ public class FireboltEngineService {
 
     public Engine getEngine(@Nullable String name, @Nullable String database) throws FireboltException {
         if (StringUtils.isEmpty(name)) {
-            return this.getDefaultEngine(database);
+            return getDefaultEngine(database);
         } else {
             return Engine.builder().name(name).endpoint(getEngineEndpoint(name)).build();
         }

@@ -1,14 +1,14 @@
 package com.firebolt.jdbc.connection.settings;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import static org.junit.jupiter.api.Assertions.*;
 
 class FireboltPropertiesTest {
 
@@ -154,6 +154,11 @@ class FireboltPropertiesTest {
 		assertEquals(drivers, FireboltProperties.of(properties).getUserDrivers());
 	}
 
+	@Test
+	void noEngineNoDbSystemEngine() {
+		assertEquals("system", FireboltProperties.of(new Properties()).getEngine());
+	}
+
 	@ParameterizedTest
 	@CsvSource(value = {
 			"env, qa,,api.qa.firebolt.io,qa",
@@ -163,8 +168,26 @@ class FireboltPropertiesTest {
 			"env,,api.dev.firebolt.io,api.dev.firebolt.io,dev",
 			"env,,something.io,something.io,app", // not standard host, no configured environment -> default environment
 			",,,api.app.firebolt.io,app", // no host, no environment -> default environment (app) and default host api.app.firebolt.io
+			",,api.app.firebolt.io,api.app.firebolt.io,app", // no configured environment, discover default environment from host
+			",,api.dev.firebolt.io,api.dev.firebolt.io,dev", // no configured environment, discover not default environment from host
 	}, delimiter = ',')
 	void hostAndEnvironment(String envKey, String envValue, String host, String expectedHost, String expectedEnvironment) {
+		Properties properties = properties(envKey, envValue, host);
+		assertEquals(expectedHost, FireboltProperties.of(properties).getHost());
+		assertEquals(expectedEnvironment, FireboltProperties.of(properties).getEnvironment());
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			"env,app,api.dev.firebolt.io",
+			"env,qa,api.app.firebolt.io",
+	}, delimiter = ',')
+	void environmentDoesNotMatch(String envKey, String envValue, String host) {
+		Properties properties = properties(envKey, envValue, host);
+		assertThrows(IllegalStateException.class, () -> FireboltProperties.of(properties));
+	}
+
+	private Properties properties(String envKey, String envValue, String host) {
 		Properties properties = new Properties();
 		if (envValue != null) {
 			properties.put(envKey, envValue);
@@ -172,8 +195,7 @@ class FireboltPropertiesTest {
 		if (host != null) {
 			properties.put("host", host);
 		}
-		assertEquals(expectedHost, FireboltProperties.of(properties).getHost());
-		assertEquals(expectedEnvironment, FireboltProperties.of(properties).getEnvironment());
+		return properties;
 	}
 
 }

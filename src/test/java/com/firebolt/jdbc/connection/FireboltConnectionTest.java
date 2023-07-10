@@ -409,6 +409,18 @@ class FireboltConnectionTest {
 		}
 	}
 
+	@Test
+	void noEngineAndDb() throws SQLException {
+		when(fireboltGatewayUrlService.getUrl(any(), any())).thenReturn("http://my_endpoint");
+
+		try (FireboltConnection connection = createConnection("jdbc:firebolt:?env=dev", connectionProperties)) {
+			assertEquals("my_endpoint", connection.getSessionProperties().getHost());
+			assertEquals("system", connection.getSessionProperties().getEngine());
+			assertTrue(connection.getSessionProperties().isSystemEngine());
+		}
+	}
+
+
 	private FireboltConnection createConnection(String url, Properties props) throws FireboltException {
 		return new FireboltConnection(url, props, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService);
 	}
