@@ -21,7 +21,6 @@ import static java.lang.String.format;
 @CustomLog
 public class FireboltProperties {
 
-	public static final String SYSTEM_ENGINE_NAME = "system";
 	private static final Pattern DB_PATH_PATTERN = Pattern.compile("([a-zA-Z0-9_*\\-]+)");
 	private static final int FIREBOLT_SSL_PROXY_PORT = 443;
 	private static final int FIREBOLT_NO_SSL_PROXY_PORT = 9090;
@@ -115,11 +114,7 @@ public class FireboltProperties {
 
 	private static String getEngine(Properties mergedProperties, String database) {
 		String engine = getSetting(mergedProperties, FireboltSessionProperty.ENGINE);
-		if (StringUtils.isEmpty(engine) && StringUtils.isEmpty(database)) {
-			return SYSTEM_ENGINE_NAME;
-		} else {
-			return engine;
-		}
+		return StringUtils.isEmpty(engine) && StringUtils.isEmpty(database) ? null : engine;
 	}
 
 	private static String getHost(String environment, Properties properties ) {
@@ -241,7 +236,7 @@ public class FireboltProperties {
 	}
 
 	private static boolean isSystemEngine(String engine) {
-		return StringUtils.equalsIgnoreCase(SYSTEM_ENGINE_NAME, engine);
+		return engine == null;
 	}
 
 	public void addProperty(@NonNull String key, String value) {

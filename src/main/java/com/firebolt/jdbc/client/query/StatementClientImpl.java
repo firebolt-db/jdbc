@@ -207,17 +207,27 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		if (systemEngine) {
 			params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId());
 		} else {
-			params.put(FireboltQueryParameterKey.DATABASE.getKey(), fireboltProperties.getDatabase());
+//			params.put(FireboltQueryParameterKey.DATABASE.getKey(), fireboltProperties.getDatabase());
 			params.put(FireboltQueryParameterKey.QUERY_ID.getKey(), statementInfoWrapper.getId());
 			params.put(FireboltQueryParameterKey.COMPRESS.getKey(), fireboltProperties.isCompress() ? "1" : "0");
+//
+//			if (queryTimeout > -1) {
+//				params.put("max_execution_time", String.valueOf(queryTimeout));
+//			}
+//			if (maxRows > 0) {
+//				params.put("max_result_rows", String.valueOf(maxRows));
+//				params.put("result_overflow_mode", "break");
+//			}
+		}
 
-			if (queryTimeout > -1) {
-				params.put("max_execution_time", String.valueOf(queryTimeout));
-			}
-			if (maxRows > 0) {
-				params.put("max_result_rows", String.valueOf(maxRows));
-				params.put("result_overflow_mode", "break");
-			}
+		params.put(FireboltQueryParameterKey.DATABASE.getKey(), fireboltProperties.getDatabase());
+
+		if (queryTimeout > -1) {
+			params.put("max_execution_time", String.valueOf(queryTimeout));
+		}
+		if (maxRows > 0) {
+			params.put("max_result_rows", String.valueOf(maxRows));
+			params.put("resulresult_overflow_modet_overflow_mode", "break");
 		}
 
 		return params;

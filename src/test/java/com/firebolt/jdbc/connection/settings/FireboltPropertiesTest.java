@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection.settings;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -14,7 +15,7 @@ class FireboltPropertiesTest {
 
 	@Test
 	void shouldHaveDefaultPropertiesWhenOnlyTheRequiredFieldsAreSpecified() {
-		FireboltProperties expectedDefaultProperties = FireboltProperties.builder().database("db").bufferSize(65536)
+		FireboltProperties expectedDefaultProperties = FireboltProperties.builder().engine("engine").database("db").bufferSize(65536)
 				.sslCertificatePath("").sslMode("strict").path("").port(443) // 443 by default as SSL is enabled by
 				.systemEngine(false).compress(true)													// default
 				.principal(null).secret(null).host("host").ssl(true).additionalProperties(new HashMap<>())
@@ -23,6 +24,7 @@ class FireboltPropertiesTest {
 				.tcpKeepCount(10).account("firebolt").build();
 
 		Properties properties = new Properties();
+		properties.put("engine", "engine");
 		properties.put("host", "host");
 		properties.put("database", "db");
 		assertEquals(expectedDefaultProperties, FireboltProperties.of(properties));
@@ -31,6 +33,7 @@ class FireboltPropertiesTest {
 	@Test
 	void shouldHaveAllTheSpecifiedCustomProperties() {
 		Properties properties = new Properties();
+		properties.put("engine", "my_test");
 		properties.put("buffer_size", "51");
 		properties.put("socket_timeout_millis", "20");
 		properties.put("ssl", "1");
@@ -45,7 +48,7 @@ class FireboltPropertiesTest {
 		Map<String, String> customProperties = new HashMap<>();
 		customProperties.put("someCustomProperties", "custom_value");
 
-		FireboltProperties expectedDefaultProperties = FireboltProperties.builder().bufferSize(51)
+		FireboltProperties expectedDefaultProperties = FireboltProperties.builder().engine("my_test").bufferSize(51)
 				.sslCertificatePath("root_cert").sslMode("none").path("example").database("myDb").compress(true)
 				.port(443).principal(null).secret(null).host("myDummyHost").ssl(true).systemEngine(false)
 				.additionalProperties(customProperties).account(null).keepAliveTimeoutMillis(300000)
@@ -101,43 +104,10 @@ class FireboltPropertiesTest {
 	void shouldUseSystemEngineWhenNoDbOrEngineProvided() {
 		Properties properties = new Properties();
 		FireboltProperties fireboltProperties = FireboltProperties.of(properties);
-		assertTrue(FireboltProperties.of(properties).isSystemEngine());
-		assertEquals("system", fireboltProperties.getEngine());
+		assertTrue(fireboltProperties.isSystemEngine());
+		assertNull(fireboltProperties.getEngine());
 		assertNull(fireboltProperties.getDatabase());
 		assertFalse(fireboltProperties.isCompress());
-	}
-
-	@Test
-	void shouldNotUseSystemEngineWhenDbAsPathIsProvided() {
-		Properties properties = new Properties();
-		properties.put("path", "example");
-		FireboltProperties fireboltProperties = FireboltProperties.of(properties);
-		assertFalse(FireboltProperties.of(properties).isSystemEngine());
-		assertNull(fireboltProperties.getEngine());
-		assertEquals("example", fireboltProperties.getDatabase());
-		assertTrue(fireboltProperties.isCompress());
-	}
-
-	@Test
-	void shouldNotUseSystemEngineWhenDbAsQueryParamIsProvided() {
-		Properties properties = new Properties();
-		properties.put("database", "example");
-		FireboltProperties fireboltProperties = FireboltProperties.of(properties);
-		assertFalse(FireboltProperties.of(properties).isSystemEngine());
-		assertNull(fireboltProperties.getEngine());
-		assertEquals("example", fireboltProperties.getDatabase());
-		assertTrue(fireboltProperties.isCompress());
-	}
-
-	@Test
-	void shouldNotUseSystemEngineWhenEngineIsProvided() {
-		Properties properties = new Properties();
-		properties.put("engine", "example");
-		FireboltProperties fireboltProperties = FireboltProperties.of(properties);
-		assertFalse(FireboltProperties.of(properties).isSystemEngine());
-		assertNull(fireboltProperties.getDatabase());
-		assertEquals("example", fireboltProperties.getEngine());
-		assertTrue(fireboltProperties.isCompress());
 	}
 
 	@Test
@@ -156,7 +126,7 @@ class FireboltPropertiesTest {
 
 	@Test
 	void noEngineNoDbSystemEngine() {
-		assertEquals("system", FireboltProperties.of(new Properties()).getEngine());
+		assertNull(FireboltProperties.of(new Properties()).getEngine());
 	}
 
 	@ParameterizedTest

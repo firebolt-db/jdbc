@@ -33,7 +33,6 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.Executor;
 
-import static com.firebolt.jdbc.connection.settings.FireboltProperties.SYSTEM_ENGINE_NAME;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
 @CustomLog
@@ -50,7 +49,6 @@ public class FireboltConnection implements Connection {
 	private final boolean systemEngine;
 	private boolean closed = true;
 	private FireboltProperties sessionProperties;
-	private FireboltProperties internalSystemEngineProperties;
 	private int networkTimeout;
 
 	//Properties that are used at the beginning of the connection for authentication
@@ -116,18 +114,18 @@ public class FireboltConnection implements Connection {
 		String accessToken = this.getAccessToken(loginProperties).orElse(StringUtils.EMPTY);
 		closed = false;
 		if (!PropertyUtil.isLocalDb(loginProperties)) {
-			internalSystemEngineProperties = createInternalSystemEngineProperties(accessToken, loginProperties.getAccount());
+			FireboltProperties internalSystemEngineProperties = createInternalSystemEngineProperties(accessToken, loginProperties.getAccount());
 			String accountId = fireboltAccountIdService.getValue(accessToken, loginProperties.getAccount());
-			if (!loginProperties.isSystemEngine()) {
+			if (systemEngine) {
+				//When using system engine, the system engine properties are the same as the session properties
+				sessionProperties = internalSystemEngineProperties.toBuilder().accountId(accountId).build();
+			} else {
 				sessionProperties = internalSystemEngineProperties.toBuilder()
 						.engine(loginProperties.getEngine())
 						.systemEngine(true)
 						.accountId(accountId)
 						.build();
 				sessionProperties = getSessionPropertiesForNonSystemEngine();
-			} else {
-				//When using system engine, the system engine properties are the same as the session properties
-				sessionProperties = internalSystemEngineProperties.toBuilder().accountId(accountId).build();
 			}
 		} else {
 			//When running packdb locally, the login properties are the session properties
@@ -146,7 +144,6 @@ public class FireboltConnection implements Connection {
 		return this.loginProperties
 				.toBuilder()
 				.systemEngine(true)
-				.engine(SYSTEM_ENGINE_NAME)
 				.compress(false)
 				.host(UrlUtil.createUrl(systemEngineEndpoint).getHost()).database(null).build();
 	}

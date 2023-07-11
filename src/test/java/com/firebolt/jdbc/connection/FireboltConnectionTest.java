@@ -22,8 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import static java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -399,12 +398,11 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldNotGetEngineUrlOrDefaultEngineUrlWhenUsingSystemEngine() throws SQLException {
-		connectionProperties.put("engine", "system");
 		connectionProperties.put("database", "my_db");
 		when(fireboltGatewayUrlService.getUrl(any(), any())).thenReturn("http://my_endpoint");
 
 		try (FireboltConnection connection = createConnection(URL, connectionProperties)) {
-			verify(fireboltEngineService, times(0)).getEngine(eq("system"), eq("my_db"));
+			verify(fireboltEngineService, times(0)).getEngine(isNull(), eq("my_db"));
 			assertEquals("my_endpoint", connection.getSessionProperties().getHost());
 		}
 	}
@@ -415,7 +413,7 @@ class FireboltConnectionTest {
 
 		try (FireboltConnection connection = createConnection("jdbc:firebolt:?env=dev", connectionProperties)) {
 			assertEquals("my_endpoint", connection.getSessionProperties().getHost());
-			assertEquals("system", connection.getSessionProperties().getEngine());
+			assertNull(connection.getSessionProperties().getEngine());
 			assertTrue(connection.getSessionProperties().isSystemEngine());
 		}
 	}

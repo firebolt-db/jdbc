@@ -18,12 +18,11 @@ public class SystemEngineTest extends IntegrationTest {
 	private static final String DATABASE_NAME = "jdbc_system_engine_integration_test";
 	private static final String ENGINE_NAME = "jdbc_system_engine_integration_test_engine";
 	private static final String ENGINE_NEW_NAME = "jdbc_system_engine_integration_test_engine_2";
-	private static final String SYSTEM_ENGINE_NAME = "system";
 
 	@BeforeAll
 	void beforeAll() {
 		try {
-			executeStatementFromFile("/statements/system/ddl.sql", SYSTEM_ENGINE_NAME);
+			executeStatementFromFile("/statements/system/ddl.sql", null);
 		} catch (Exception e) {
 			log.warn("Could not execute statement", e);
 		}
@@ -32,15 +31,15 @@ public class SystemEngineTest extends IntegrationTest {
 	@AfterAll
 	void afterAll() {
 		try {
-			executeStatementFromFile("/statements/system/cleanup.sql", SYSTEM_ENGINE_NAME);
+			executeStatementFromFile("/statements/system/cleanup.sql", null);
 		} catch (Exception e) {
 			log.warn("Could not execute statement", e);
 		}
 	}
 
 	@Test
-	void shouldExecuteQueriesUsingSystemEngine() throws SQLException {
-		try (Connection connection = this.createConnection(SYSTEM_ENGINE_NAME)) {
+	void shouldExecuteEngineManagementQueries() throws SQLException {
+		try (Connection connection = this.createConnection(null)) {
 			List<String> queries = Arrays.asList(String.format("CREATE DATABASE IF NOT EXISTS %s", DATABASE_NAME),
 					String.format("CREATE ENGINE %s", ENGINE_NAME),
 					String.format("ATTACH ENGINE %s TO %s;", ENGINE_NAME, DATABASE_NAME),
