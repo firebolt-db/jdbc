@@ -1,20 +1,20 @@
 package integration;
 
+import com.firebolt.jdbc.client.HttpClientConfig;
+import com.google.common.io.Resources;
+import lombok.CustomLog;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.TestInstance;
+
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Optional;
+import java.util.Objects;
 
-import org.junit.jupiter.api.TestInstance;
-
-import com.firebolt.jdbc.client.HttpClientConfig;
-import com.google.common.io.Resources;
-
-import lombok.CustomLog;
-import lombok.SneakyThrows;
+import static java.util.Objects.requireNonNull;
 
 @CustomLog
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -31,18 +31,16 @@ public abstract class IntegrationTest {
 	}
 
 	protected Connection createConnection() throws SQLException {
-		return DriverManager.getConnection(
-				JDBC_URL_PREFIX
-						+ integration.ConnectionInfo.getInstance().getDatabase() + "?" + getEnvParam() + getAccountParam() ,
+		return DriverManager.getConnection(integration.ConnectionInfo.getInstance().toJdbcUrl(),
 				integration.ConnectionInfo.getInstance().getPrincipal(),
 				integration.ConnectionInfo.getInstance().getSecret());
 	}
 
 	protected Connection createConnection(String engine) throws SQLException {
-		return DriverManager.getConnection(
-				JDBC_URL_PREFIX +
-						 integration.ConnectionInfo.getInstance().getDatabase()
-						+ Optional.ofNullable(engine).map(e -> "?" + getEnvParam() +"&engine=" + e + getAccountParam() ).orElse("?" + getEnvParam() + getAccountParam()),
+		ConnectionInfo current = integration.ConnectionInfo.getInstance();
+		ConnectionInfo updated = new ConnectionInfo(current.getPrincipal(), current.getSecret(),
+				current.getEnv(), current.getDatabase(), current.getAccount(), engine);
+		return DriverManager.getConnection(updated.toJdbcUrl(),
 				integration.ConnectionInfo.getInstance().getPrincipal(),
 				integration.ConnectionInfo.getInstance().getSecret());
 	}
@@ -61,7 +59,7 @@ public abstract class IntegrationTest {
 	@SneakyThrows
 	protected void executeStatementFromFile(String path, String engine) {
 		try (Connection connection = createConnection(engine); Statement statement = connection.createStatement()) {
-			String sql = Resources.toString(IntegrationTest.class.getResource(path), StandardCharsets.UTF_8);
+			String sql = Resources.toString(requireNonNull(IntegrationTest.class.getResource(path)), StandardCharsets.UTF_8);
 			statement.execute(sql);
 		}
 	}
@@ -75,9 +73,4 @@ public abstract class IntegrationTest {
 	private String getAccountParam() {
 		return "&account=" + integration.ConnectionInfo.getInstance().getAccount();
 	}
-
-	private String getEnvParam() {
-		return "&env=" + integration.ConnectionInfo.getInstance().getEnv();
-	}
-
 }

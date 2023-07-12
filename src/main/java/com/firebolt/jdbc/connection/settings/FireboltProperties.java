@@ -74,7 +74,7 @@ public class FireboltProperties {
 		String secret = getSetting(mergedProperties, FireboltSessionProperty.CLIENT_SECRET);
 		String path = getSetting(mergedProperties, FireboltSessionProperty.PATH);
 		String database = getDatabase(mergedProperties, path);
-		String engine = getEngine(mergedProperties, database);
+		String engine = getEngine(mergedProperties);
 		boolean isSystemEngine = isSystemEngine(engine);
 		boolean compress = ((Boolean) getSetting(mergedProperties, FireboltSessionProperty.COMPRESS))
 				&& !isSystemEngine;
@@ -112,9 +112,8 @@ public class FireboltProperties {
 				.build();
 	}
 
-	private static String getEngine(Properties mergedProperties, String database) {
-		String engine = getSetting(mergedProperties, FireboltSessionProperty.ENGINE);
-		return StringUtils.isEmpty(engine) && StringUtils.isEmpty(database) ? null : engine;
+	private static String getEngine(Properties mergedProperties) {
+		return getSetting(mergedProperties, FireboltSessionProperty.ENGINE);
 	}
 
 	private static String getHost(String environment, Properties properties ) {

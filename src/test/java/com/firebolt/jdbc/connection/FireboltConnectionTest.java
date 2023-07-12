@@ -30,7 +30,7 @@ class FireboltConnectionTest {
 
 	private static final String URL = "jdbc:firebolt:db?env=dev&engine=eng";
 
-	private static final String SYSTEM_ENGINE_URL = "jdbc:firebolt:db?env=dev&engine=system";
+	private static final String SYSTEM_ENGINE_URL = "jdbc:firebolt:db?env=dev";
 
 	private static final String LOCAL_URL = "jdbc:firebolt:local_dev_db?ssl=false&max_query_size=10000000&use_standard_sql=1&mask_internal_errors=0&firebolt_enable_beta_functions=1&firebolt_case_insensitive_identifiers=1&rest_api_pull_timeout_sec=3600&rest_api_pull_interval_millisec=5000&rest_api_retry_times=10&host=localhost";
 	private final FireboltConnectionTokens fireboltConnectionTokens = FireboltConnectionTokens.builder().build();
@@ -376,17 +376,6 @@ class FireboltConnectionTest {
 	}
 
 	@Test
-	void shouldGetDefaultEngineWhenEngineIsNotProvided() throws SQLException {
-		connectionProperties.put("engine", "");
-		when(fireboltEngineService.getEngine(any(), any())).thenReturn(Engine.builder().name("default_engine").endpoint("http://my-endpoint").build());
-		try (FireboltConnection  connection = createConnection(URL, connectionProperties)) {
-			verify(fireboltEngineService).getEngine("", "db");
-			assertEquals("default_engine", connection.getSessionProperties().getEngine());
-			assertEquals("http://my-endpoint", connection.getSessionProperties().getHost());
-		}
-	}
-
-	@Test
 	void shouldGetEngineUrlWhenEngineIsProvided() throws SQLException {
 		connectionProperties.put("engine", "engine");
 		when(fireboltEngineService.getEngine(any(), any())).thenReturn(Engine.builder().endpoint("http://my_endpoint").build());
@@ -401,7 +390,7 @@ class FireboltConnectionTest {
 		connectionProperties.put("database", "my_db");
 		when(fireboltGatewayUrlService.getUrl(any(), any())).thenReturn("http://my_endpoint");
 
-		try (FireboltConnection connection = createConnection(URL, connectionProperties)) {
+		try (FireboltConnection connection = createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
 			verify(fireboltEngineService, times(0)).getEngine(isNull(), eq("my_db"));
 			assertEquals("my_endpoint", connection.getSessionProperties().getHost());
 		}
@@ -417,7 +406,6 @@ class FireboltConnectionTest {
 			assertTrue(connection.getSessionProperties().isSystemEngine());
 		}
 	}
-
 
 	private FireboltConnection createConnection(String url, Properties props) throws FireboltException {
 		return new FireboltConnection(url, props, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService);
