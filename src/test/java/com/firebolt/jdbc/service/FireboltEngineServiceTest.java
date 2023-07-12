@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -22,8 +23,7 @@ import java.util.regex.Pattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltEngineServiceTest {
@@ -51,43 +51,51 @@ class FireboltEngineServiceTest {
 
 	@Test
 	void shouldGetDefaultEngineWhenEngineNameIsNotProvided() throws SQLException {
-		PreparedStatement statement = mock(PreparedStatement.class);
-		ResultSet resultSet = mockedResultSet(Map.of("status", "running", "url", "https://url", "engine_name", "hello-engine"));
-		when(fireboltConnection.prepareStatement(anyString())).thenReturn(statement);
-		when(statement.executeQuery()).thenReturn(resultSet);
-		assertEquals(Engine.builder().endpoint("https://url").name("hello-engine").build(),
-				fireboltEngineService.getEngine(null, "db"));
+		assertThrows(IllegalArgumentException.class, () -> fireboltEngineService.getEngine(null, "db"));
 	}
 
 	@Test
 	void shouldGetEngineWhenEngineNameIsProvided() throws SQLException {
 		PreparedStatement statement = mock(PreparedStatement.class);
-		ResultSet resultSet = mockedResultSet(Map.of("status", "running", "url", "https://url"));
+		ResultSet resultSet = mockedResultSet(Map.of("status", "running", "url", "https://url", "attached_to", "db", "engine_name", "some-engine"));
 		when(fireboltConnection.prepareStatement(anyString())).thenReturn(statement);
 		when(statement.executeQuery()).thenReturn(resultSet);
-		assertEquals(Engine.builder().endpoint("https://url").name("some-engine").build(),
-				fireboltEngineService.getEngine("some-engine", "db"));
+		assertEquals(new Engine("https://url", "running", "some-engine", "db"), fireboltEngineService.getEngine("some-engine", "db"));
 	}
 
 	@ParameterizedTest
 	@CsvSource(value = {
-			"down;some-engine;db;SELECT url, status",
-			"down;;db;SELECT.+JOIN",
-			"failed;'';db;SELECT.+JOIN",
+			"engine1;db1;http://url1;running;;The engine with the name engine1 is not attached to any database",
+			"engine1;db1;http://url1;running;db2;The engine with the name engine1 is not attached to database db1",
+			"engine1;db1;http://url1;starting;;The engine with the name engine1 is not running. Status: starting",
+			"engine2;;;;;The engine with the name engine2 could not be found",
 	}, delimiter = ';')
-	void shouldThrowExceptionWhenEngineNotRunning(String status, String engineName, String db, String queryRegex) throws SQLException {
+	void shouldThrowExceptionWhenSomethingIsWrong(String engineName, String db, String endpoint, String status, String attachedDb, String errorMessage) throws SQLException {
 		PreparedStatement statement = mock(PreparedStatement.class);
-		ResultSet resultSet = mockedResultSet(Map.of("status", status));
-		when(fireboltConnection.prepareStatement(Mockito.matches(Pattern.compile(queryRegex, Pattern.MULTILINE | Pattern.DOTALL)))).thenReturn(statement);
+		Map<String, String> rsData = null;
+		if (endpoint != null || status != null || attachedDb != null) {
+			rsData = new HashMap<>();
+			rsData.put("url", endpoint);
+			rsData.put("status", status);
+			rsData.put("attached_to", attachedDb);
+			rsData.put("engine_name", engineName);
+		}
+		ResultSet resultSet = mockedResultSet(rsData);
+		when(fireboltConnection.prepareStatement(Mockito.matches(Pattern.compile("SELECT.+JOIN", Pattern.MULTILINE | Pattern.DOTALL)))).thenReturn(statement);
 		when(statement.executeQuery()).thenReturn(resultSet);
-		assertThrows(FireboltException.class, () -> fireboltEngineService.getEngine(engineName, db));
+		assertEquals(errorMessage, assertThrows(FireboltException.class, () -> fireboltEngineService.getEngine(engineName, db)).getMessage());
+		Mockito.verify(statement, Mockito.times(1)).setString(1, engineName);
 	}
 
 	private ResultSet mockedResultSet(Map<String, String> values) throws SQLException {
 		ResultSet resultSet = mock(ResultSet.class);
-		when(resultSet.next()).thenReturn(true);
-		for (Entry<String, String> column : values.entrySet()) {
-			when(resultSet.getString(column.getKey())).thenReturn(column.getValue());
+		if (values == null) {
+			when(resultSet.next()).thenReturn(false);
+		} else {
+			when(resultSet.next()).thenReturn(true, false);
+			for (Entry<String, String> column : values.entrySet()) {
+				lenient().when(resultSet.getString(column.getKey())).thenReturn(column.getValue());
+			}
 		}
 		return resultSet;
 	}

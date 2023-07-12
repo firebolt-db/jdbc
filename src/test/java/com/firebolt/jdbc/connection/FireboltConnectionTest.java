@@ -54,7 +54,7 @@ class FireboltConnectionTest {
 
 
 	@BeforeEach
-	void init() throws FireboltException {
+	void init() throws SQLException {
 		connectionProperties = new Properties();
 		connectionProperties.put("client_id", "somebody");
 		connectionProperties.put("client_secret", "pa$$word");
@@ -64,6 +64,7 @@ class FireboltConnectionTest {
 		lenient().when(fireboltGatewayUrlService.getUrl(any(), any())).thenReturn("http://foo:8080/bar");
 		engine = new Engine("endpoint", "id123", "OK", "noname");
 		lenient().when(fireboltEngineService.getEngine(any(), any())).thenReturn(engine);
+		lenient().when(fireboltEngineService.doesDatabaseExist(any())).thenReturn(true);
 	}
 
 	@Test
@@ -261,7 +262,7 @@ class FireboltConnectionTest {
 			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
 			when(fireboltAuthenticationService.getConnectionTokens("http://host:8080", fireboltProperties))
 					.thenReturn(FireboltConnectionTokens.builder().build());
-			lenient().when(fireboltEngineService.getEngine(any(), any())).thenReturn(Engine.builder().endpoint("https://hello").build());
+			lenient().when(fireboltEngineService.getEngine(any(), any())).thenReturn(new Engine("http://hello", null, null, null));
 
 			try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
 				fireboltConnection.removeExpiredTokens();
@@ -273,14 +274,12 @@ class FireboltConnectionTest {
 	@Test
 	void shouldReturnConnectionTokenWhenAvailable() throws SQLException {
 		String accessToken = "hello";
-		FireboltProperties fireboltProperties = FireboltProperties.builder().host("host").path("/db").port(8080)
-				.build();
+		FireboltProperties fireboltProperties = FireboltProperties.builder().host("host").path("/db").port(8080).build();
 		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
 			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
 			FireboltConnectionTokens connectionTokens = FireboltConnectionTokens.builder().accessToken(accessToken).build();
-			when(fireboltAuthenticationService.getConnectionTokens(eq("http://host:8080"), any()))
-					.thenReturn(connectionTokens);
-			lenient().when(fireboltEngineService.getEngine(any(), any())).thenReturn(Engine.builder().endpoint("https://engineHost").build());
+			when(fireboltAuthenticationService.getConnectionTokens(eq("http://host:8080"), any())).thenReturn(connectionTokens);
+			lenient().when(fireboltEngineService.getEngine(any(), any())).thenReturn(new Engine("http://engineHost", null, null, null));
 			try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
 				verify(fireboltAuthenticationService).getConnectionTokens("http://host:8080", fireboltProperties);
 				assertEquals(accessToken, fireboltConnection.getAccessToken().get());
@@ -290,8 +289,7 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldNotReturnConnectionTokenWithLocalDb() throws SQLException {
-		FireboltProperties fireboltProperties = FireboltProperties.builder().host("localhost").path("/db").port(8080)
-				.build();
+		FireboltProperties fireboltProperties = FireboltProperties.builder().host("localhost").path("/db").port(8080).build();
 		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
 			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
 			try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
@@ -354,7 +352,7 @@ class FireboltConnectionTest {
 	void shouldGetDatabaseWhenGettingCatalog() throws SQLException {
 		connectionProperties.put("database", "db");
 		try (Connection connection = createConnection(URL, connectionProperties)) {
-			assertEquals("db", connection.getCatalog());
+			assertEquals("noname", connection.getCatalog()); // retrieved engine's DB's name is "noname". Firebolt treats DB as catalog
 		}
 	}
 
@@ -378,7 +376,7 @@ class FireboltConnectionTest {
 	@Test
 	void shouldGetEngineUrlWhenEngineIsProvided() throws SQLException {
 		connectionProperties.put("engine", "engine");
-		when(fireboltEngineService.getEngine(any(), any())).thenReturn(Engine.builder().endpoint("http://my_endpoint").build());
+		when(fireboltEngineService.getEngine(any(), any())).thenReturn(new Engine("http://my_endpoint", null, null, null));
 		try (FireboltConnection connection = createConnection(URL, connectionProperties)) {
 			verify(fireboltEngineService).getEngine("engine", "db");
 			assertEquals("http://my_endpoint", connection.getSessionProperties().getHost());
@@ -407,7 +405,7 @@ class FireboltConnectionTest {
 		}
 	}
 
-	private FireboltConnection createConnection(String url, Properties props) throws FireboltException {
+	private FireboltConnection createConnection(String url, Properties props) throws SQLException {
 		return new FireboltConnection(url, props, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService);
 	}
 }

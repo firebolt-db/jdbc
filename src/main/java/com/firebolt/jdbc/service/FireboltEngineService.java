@@ -1,12 +1,10 @@
 package com.firebolt.jdbc.service;
 
-import com.firebolt.jdbc.CheckedFunction;
 import com.firebolt.jdbc.connection.Engine;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nullable;
 import java.sql.PreparedStatement;
@@ -20,19 +18,16 @@ import static java.lang.String.format;
 @CustomLog
 public class FireboltEngineService {
     private static final String ENGINE_URL = "url";
-    private static final String ENGINE_NAME = "engine_name";
-    private static final String STATUS_FIELD_NAME = "status";
-    private static final String DEFAULT_ENGINE_QUERY = "SELECT engs.url, engs.status, engs.engine_name\n" +
-            "FROM information_schema.databases AS dbs\n" +
-            "INNER JOIN information_schema.engines AS engs\n" +
-            "ON engs.attached_to = dbs.database_name\n" +
-            "AND engs.engine_name = NULLIF(SPLIT_PART(ARRAY_FIRST(\n" +
-            "        eng_name -> eng_name LIKE '%%(default)',\n" +
-            "        SPLIT(',', attached_engines)\n" +
-            "    ), ' ', 1), '')\n" +
-            "WHERE database_name = ?";
-    private static final String ENGINE_QUERY = "SELECT url, status FROM information_schema.engines WHERE engine_name=?";
+    private static final String STATUS_FIELD = "status";
+    private static final String ENGINE_NAME_FIELD = "engine_name";
     private static final String RUNNING_STATUS = "running";
+    private static final String ENGINE_QUERY =
+            "SELECT engs.url, engs.attached_to, dbs.database_name, engs.status, engs.engine_name " +
+            "FROM information_schema.engines as engs " +
+            "LEFT JOIN information_schema.databases as dbs ON engs.attached_to = dbs.database_name " +
+            "WHERE engs.engine_name = ?";
+    private static final String DATABASE_QUERY = "SELECT database_name FROM information_schema.databases WHERE database_name=?";
+
     private final FireboltConnection fireboltConnection;
 
     /**
@@ -47,47 +42,42 @@ public class FireboltEngineService {
                         format("Could not establish the engine from the host: %s", engineHost)));
     }
 
-    public Engine getEngine(@Nullable String name, @Nullable String database) throws FireboltException {
-        if (StringUtils.isEmpty(name)) {
-            return getDefaultEngine(database);
-        } else {
-            return Engine.builder().name(name).endpoint(getEngineEndpoint(name)).build();
+    public boolean doesDatabaseExist(String database) throws SQLException {
+        try (PreparedStatement ps = fireboltConnection.prepareStatement(DATABASE_QUERY)) {
+            ps.setString(1, database);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
         }
     }
 
-    private Engine getDefaultEngine(String database) throws FireboltException {
-        return getRowValue(DEFAULT_ENGINE_QUERY, database, rs -> Engine.builder().endpoint(rs.getString(ENGINE_URL)).name(rs.getString(ENGINE_NAME)).build(),
-                "The default engine for the database %s could not be found",
-                "The default engine for the database %s is not running. Status: %s",
-                "Could not get default engine url for database %s");
-    }
-
-    private String getEngineEndpoint(String engine) throws FireboltException {
-        return getRowValue(ENGINE_QUERY, engine, rs -> rs.getString(ENGINE_URL),
-                "The engine with the name %s could not be found",
-                "The engine with the name %s is not running. Status: %s",
-                "Could not get engine url for engine %s");
-    }
-
-    private <T> T getRowValue(String query, String queryArg, CheckedFunction<ResultSet, T> valueExtractor, String noDataMessage, String engineNotRunningMessage, String sqlFailureMessage) throws FireboltException {
-        try (PreparedStatement ps = fireboltConnection.prepareStatement(query)) {
-            ps.setString(1, queryArg);
+    public Engine getEngine(String engine, @Nullable String database) throws SQLException {
+        if (engine == null) {
+            throw new IllegalArgumentException("Cannot retrieve engine parameters because its name is null");
+        }
+        try (PreparedStatement ps = fireboltConnection.prepareStatement(ENGINE_QUERY)) {
+            ps.setString(1, engine);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
-                    throw new FireboltException(format(noDataMessage, queryArg));
+                    throw new FireboltException(format("The engine with the name %s could not be found", engine));
                 }
-                String status = rs.getString(STATUS_FIELD_NAME);
-                if (isEngineNotRunning(status)) {
-                    throw new FireboltException(format(engineNotRunningMessage, queryArg, status));
+                String status = rs.getString(STATUS_FIELD);
+                if (!isEngineRunning(status)) {
+                    throw new FireboltException(format("The engine with the name %s is not running. Status: %s", engine, status));
                 }
-                return valueExtractor.apply(rs);
+                String attachedDatabase = rs.getString("attached_to");
+                if (attachedDatabase == null) {
+                    throw new FireboltException(format("The engine with the name %s is not attached to any database", engine));
+                }
+                if (database != null && !database.equals(attachedDatabase)) {
+                    throw new FireboltException(format("The engine with the name %s is not attached to database %s", engine, database));
+                }
+                return new Engine(rs.getString(ENGINE_URL), status, rs.getString(ENGINE_NAME_FIELD), attachedDatabase);
             }
-        } catch (SQLException e) {
-            throw new FireboltException(format(sqlFailureMessage, queryArg), e);
         }
     }
 
-    private boolean isEngineNotRunning(String status) {
-        return !RUNNING_STATUS.equalsIgnoreCase(status);
+    private boolean isEngineRunning(String status) {
+        return RUNNING_STATUS.equalsIgnoreCase(status);
     }
 }

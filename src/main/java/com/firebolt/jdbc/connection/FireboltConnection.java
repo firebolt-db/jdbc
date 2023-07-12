@@ -33,6 +33,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.Executor;
 
+import static java.lang.String.format;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
 @CustomLog
@@ -59,7 +60,7 @@ public class FireboltConnection implements Connection {
 							  FireboltGatewayUrlService fireboltGatewayUrlService,
 							  FireboltStatementService fireboltStatementService,
 							  FireboltEngineService fireboltEngineService,
-							  FireboltAccountIdService fireboltAccountIdService) throws FireboltException {
+							  FireboltAccountIdService fireboltAccountIdService) throws SQLException {
 		this.loginProperties = this.extractFireboltProperties(url, connectionSettings);
 
 		this.fireboltAuthenticationService = fireboltAuthenticationService;
@@ -78,7 +79,7 @@ public class FireboltConnection implements Connection {
 
 	// This code duplication between constructors is done because of back reference: dependent services require reference to current instance of FireboltConnection that prevents using constructor chaining or factory method.
 	@ExcludeFromJacocoGeneratedReport
-	public FireboltConnection(@NonNull String url, Properties connectionSettings) throws FireboltException {
+	public FireboltConnection(@NonNull String url, Properties connectionSettings) throws SQLException {
 		this.loginProperties = extractFireboltProperties(url, connectionSettings);
 		OkHttpClient httpClient = getHttpClient(loginProperties);
 		ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
@@ -110,7 +111,7 @@ public class FireboltConnection implements Connection {
 		return new FireboltAccountRetriever<>(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients(), loginProperties.getHost(), path, type);
 	}
 
-	private void connect() throws FireboltException {
+	private void connect() throws SQLException {
 		String accessToken = this.getAccessToken(loginProperties).orElse(StringUtils.EMPTY);
 		closed = false;
 		if (!PropertyUtil.isLocalDb(loginProperties)) {
@@ -131,12 +132,20 @@ public class FireboltConnection implements Connection {
 			//When running packdb locally, the login properties are the session properties
 			sessionProperties = loginProperties;
 		}
+		assertDatabaseExisting(sessionProperties.getDatabase());
+
 		log.debug("Connection opened");
 	}
 
-	private FireboltProperties getSessionPropertiesForNonSystemEngine() throws FireboltException {
+	private FireboltProperties getSessionPropertiesForNonSystemEngine() throws SQLException {
 		Engine engine = fireboltEngineService.getEngine(loginProperties.getEngine(), loginProperties.getDatabase());
-		return loginProperties.toBuilder().host(engine.getEndpoint()).engine(engine.getName()).systemEngine(false).build();
+		return loginProperties.toBuilder().host(engine.getEndpoint()).engine(engine.getName()).systemEngine(false).database(engine.getDatabase()).build();
+	}
+
+	private void assertDatabaseExisting(String database) throws SQLException {
+		if (database !=  null && !fireboltEngineService.doesDatabaseExist(database)) {
+			throw new FireboltException(format("Database %s does not exist", database));
+		}
 	}
 
 	private FireboltProperties createInternalSystemEngineProperties(String accessToken, String account) throws FireboltException {
@@ -422,8 +431,7 @@ public class FireboltConnection implements Connection {
 		} catch (FireboltException e) {
 			throw e;
 		} catch (Exception e) {
-			throw new FireboltException(
-					String.format("Could not set property %s=%s", property.getLeft(), property.getRight()), e);
+			throw new FireboltException(format("Could not set property %s=%s", property.getLeft(), property.getRight()), e);
 		}
 	}
 
