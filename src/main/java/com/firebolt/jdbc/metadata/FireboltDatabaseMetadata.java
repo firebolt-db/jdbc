@@ -29,6 +29,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	private static final String INFORMATION_SCHEMA_NAME = "information_schema";
 	private static final String CATALOG_SCHEMA_NAME = "catalog";
 	private static final String QUOTE = "'";
+	private static final int MAX_IDENTIFIER_LENGTH = 63;
 	private final String url;
 	private final FireboltConnection connection;
 	private String databaseVersion;
@@ -866,7 +867,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public int getMaxColumnNameLength() throws SQLException {
-		return 0;
+		return MAX_IDENTIFIER_LENGTH;
 	}
 
 	@Override
@@ -901,7 +902,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public int getMaxColumnsInTable() throws SQLException {
-		return 0;
+		return 1000;
 	}
 
 	@Override
@@ -928,7 +929,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public int getMaxSchemaNameLength() throws SQLException {
-		return 0;
+		return MAX_IDENTIFIER_LENGTH;
 	}
 
 	@Override
@@ -976,7 +977,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public int getMaxTableNameLength() throws SQLException {
-		return 0;
+		return MAX_IDENTIFIER_LENGTH;
 	}
 
 	@Override
