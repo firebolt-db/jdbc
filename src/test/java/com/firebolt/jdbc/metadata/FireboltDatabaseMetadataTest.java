@@ -1,34 +1,6 @@
 package com.firebolt.jdbc.metadata;
 
-import static com.firebolt.jdbc.metadata.MetadataColumns.*;
-import static com.firebolt.jdbc.type.FireboltDataType.INTEGER;
-import static com.firebolt.jdbc.type.FireboltDataType.TEXT;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
+import com.firebolt.jdbc.CheckedFunction;
 import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.QueryResult.Column;
 import com.firebolt.jdbc.connection.FireboltConnection;
@@ -36,6 +8,34 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.testutils.AssertionUtil;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.firebolt.jdbc.metadata.MetadataColumns.*;
+import static com.firebolt.jdbc.type.FireboltDataType.INTEGER;
+import static com.firebolt.jdbc.type.FireboltDataType.TEXT;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltDatabaseMetadataTest {
@@ -257,6 +257,50 @@ class FireboltDatabaseMetadataTest {
 		assertEquals(0, fireboltDatabaseMetadata.getDatabaseMinorVersion());
 	}
 
+	@Test
+	void getStringFunctions() throws SQLException {
+		getFunctions(DatabaseMetaData::getStringFunctions);
+	}
+
+	@Test
+	void getNumericFunctions() throws SQLException {
+		getFunctions(DatabaseMetaData::getNumericFunctions);
+	}
+
+	@Test
+	void getSystemFunctions() throws SQLException {
+		getFunctions(DatabaseMetaData::getSystemFunctions);
+	}
+
+	@Test
+	void getTimeDateFunctions() throws SQLException {
+		getFunctions(DatabaseMetaData::getTimeDateFunctions);
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {",true", "'',true", "abs,true", "SIN,true", "ThisFunctionDoesNotExist,false"}, delimiter = ',')
+	void getFunctions(String functionNamePattern, boolean filled) throws SQLException {
+		String previousFunction = null;
+		int count = 0;
+		for (ResultSet rs = fireboltDatabaseMetadata.getFunctions(null, null, functionNamePattern); rs.next();) {
+			count++;
+			String functionName = rs.getString("FUNCTION_NAME");
+			System.out.println(functionName);
+			String specificName = rs.getString("SPECIFIC_NAME");
+			assertNotNull(functionName);
+			assertNotNull(specificName);
+			assertEquals(functionName, specificName);
+			if (functionNamePattern != null) {
+				assertTrue(StringUtils.containsIgnoreCase(functionName, functionNamePattern));
+			}
+			if (previousFunction != null) {
+				assertTrue(previousFunction.compareToIgnoreCase(functionName) < 0);
+			}
+			previousFunction = functionName;
+		}
+		assertEquals(filled, count > 0);
+	}
+
 	private InputStream getInputStreamForGetColumns() {
 		return FireboltDatabaseMetadata.class
 				.getResourceAsStream("/responses/metadata/firebolt-response-get-columns-example");
@@ -280,5 +324,11 @@ class FireboltDatabaseMetadataTest {
 				.collect(Collectors.joining("\n")).replaceAll(",","\t");
 		return new ByteArrayInputStream(typesWithTabs.getBytes());
 
+	}
+
+	private void getFunctions(CheckedFunction<DatabaseMetaData, String> getter) throws SQLException {
+		String functions = getter.apply(fireboltDatabaseMetadata);
+		assertNotNull(functions);
+		assertTrue(functions.length() > 0);
 	}
 }

@@ -3,10 +3,12 @@ package com.firebolt.jdbc.metadata;
 import static com.firebolt.jdbc.metadata.MetadataColumns.*;
 import static com.firebolt.jdbc.type.FireboltDataType.*;
 import static java.sql.Types.VARCHAR;
+import static java.util.stream.Collectors.toList;
+import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
 
 import java.sql.*;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
@@ -179,7 +181,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		List<List<?>> rows = Stream
 				.of(this.getTables(catalog, schemaPattern, tableNamePattern, typesArr, false),
 						this.getTables(catalog, schemaPattern, tableNamePattern, typesArr, true))
-				.flatMap(Collection::stream).collect(Collectors.toList());
+				.flatMap(Collection::stream).collect(toList());
 
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Arrays.asList(QueryResult.Column.builder().name(TABLE_CAT).type(TEXT).build(),
@@ -1305,9 +1307,23 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
-	public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern)
-			throws SQLException {
-		return FireboltResultSet.empty();
+	public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern) throws SQLException {
+		List<QueryResult.Column> columns = Arrays.asList(
+				QueryResult.Column.builder().name(FUNCTION_CAT).type(TEXT).build(),
+				QueryResult.Column.builder().name(FUNCTION_SCHEM).type(TEXT).build(),
+				QueryResult.Column.builder().name(FUNCTION_NAME).type(TEXT).build(),
+				QueryResult.Column.builder().name(REMARKS).type(TEXT).build(),
+				QueryResult.Column.builder().name(FUNCTION_TYPE).type(INTEGER).build(),
+				QueryResult.Column.builder().name(SPECIFIC_NAME).type(TEXT).build());
+		Predicate<String> functionFilter = functionNamePattern == null ? f -> true : f -> containsIgnoreCase(f, functionNamePattern);
+
+		List<List<?>> rows = Arrays.stream(String.join(",", getStringFunctions(), getNumericFunctions(), getTimeDateFunctions(), getSystemFunctions()).split("\\s*,\\s*"))
+				.filter(functionFilter)
+				.sorted()
+				.distinct() // some functions beolong to different categories, e.g. TO_DATE is both date-time and string function
+				.map(function -> Arrays.asList(null, null, function, null, functionNoTable, function))
+				.collect(toList());
+		return FireboltResultSet.of(QueryResult.builder().columns(columns).rows(rows).build());
 	}
 
 	@Override
