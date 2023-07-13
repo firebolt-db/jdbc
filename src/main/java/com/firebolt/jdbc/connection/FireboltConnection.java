@@ -157,7 +157,7 @@ public class FireboltConnection implements Connection {
 	@Override
 	public boolean getAutoCommit() throws SQLException {
 		this.validateConnectionIsNotClose();
-		return false;
+		return true;
 	}
 
 	@Override
