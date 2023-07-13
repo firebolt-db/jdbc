@@ -466,28 +466,30 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public String getNumericFunctions() throws SQLException {
-		return "";
+		return "ABS,ACOS,ASIN,ATAN,ATAN2,CBRT,CEIL,CEILING,COS,COT,DEGREES,EXP,FLOOR,LOG,MOD,PI,POW,,POWER,RADIANS,RANDOM,ROUND,SIGN,SIN,SQRT,TAN,TRUNC";
 	}
 
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public String getStringFunctions() throws SQLException {
-		return "";
+		return "BASE64_ENCODE,CONCAT,EXTRACT_ALL,GEN_RANDOM_UUID,ILIKE,LENGTH,LIKE,LOWER,LPAD,LTRIM,MATCH,MATCH_ANY,"
+				+ "MD5,MD5_NUMBER_LOWER64,MD5_NUMBER_UPPER64,REGEXP_LIKE,REGEXP_MATCHES,REGEXP_REPLACE,REPEAT,REPLACE,REVERSE,"
+				+ "RPAD,RTRIM,SPLIT,SPLIT_PART,STRPOS,SUBSTRING,TO_DATE,TO_DOUBLE,TO_FLOAT,TO_INT,TO_TIMESTAMP,TRIM,UPPER";
 	}
 
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public String getSystemFunctions() throws SQLException {
-		return "";
+		return "IFNULL";
 	}
 
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public String getTimeDateFunctions() throws SQLException {
-		return "";
+		return "CURRENT_DATE,CURRENT_TIMESTAMP,DATE_ADD,DATE_DIFF,DATE_TRUNC,EXTRACT,LOCALTIMESTAMP,TO_CHAR,TO_DATE,TO_TIMESTAMP";
 	}
 
 	@Override
