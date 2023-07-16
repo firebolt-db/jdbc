@@ -280,9 +280,19 @@ class FireboltDatabaseMetadataTest {
 	@ParameterizedTest
 	@CsvSource(value = {",true", "'',true", "abs,true", "SIN,true", "ThisFunctionDoesNotExist,false"}, delimiter = ',')
 	void getFunctions(String functionNamePattern, boolean filled) throws SQLException {
+		getFunctions(md -> md.getFunctions(null, null, functionNamePattern), functionNamePattern, filled, false);
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {",true", "'',true", "abs,true", "SIN,true", "ThisFunctionDoesNotExist,false"}, delimiter = ',')
+	void getFunctionColumns(String functionNamePattern, boolean filled) throws SQLException {
+		getFunctions(md -> md.getFunctionColumns(null, null, functionNamePattern, null), functionNamePattern, filled, true);
+	}
+
+	void getFunctions(CheckedFunction<DatabaseMetaData, ResultSet> getter, String functionNamePattern, boolean filled, boolean allowDuplicates) throws SQLException {
 		String previousFunction = null;
 		int count = 0;
-		for (ResultSet rs = fireboltDatabaseMetadata.getFunctions(null, null, functionNamePattern); rs.next();) {
+		for (ResultSet rs = getter.apply(fireboltDatabaseMetadata); rs.next();) {
 			count++;
 			String functionName = rs.getString("FUNCTION_NAME");
 			String specificName = rs.getString("SPECIFIC_NAME");
@@ -293,7 +303,12 @@ class FireboltDatabaseMetadataTest {
 				assertTrue(StringUtils.containsIgnoreCase(functionName, functionNamePattern));
 			}
 			if (previousFunction != null) {
-				assertTrue(previousFunction.compareToIgnoreCase(functionName) < 0);
+				int functionNameComparison = previousFunction.compareToIgnoreCase(functionName);
+				if (allowDuplicates) {
+					assertTrue(functionNameComparison <= 0);
+				} else {
+					assertTrue(functionNameComparison < 0);
+				}
 			}
 			previousFunction = functionName;
 		}

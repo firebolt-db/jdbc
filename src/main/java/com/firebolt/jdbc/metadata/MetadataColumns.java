@@ -56,5 +56,8 @@ public class MetadataColumns {
 	public static final String FUNCTION_NAME = "FUNCTION_NAME";
 	public static final String FUNCTION_TYPE = "FUNCTION_TYPE";
 	public static final String SPECIFIC_NAME = "SPECIFIC_NAME";
-
+	public static final String COLUMN_TYPE = "COLUMN_TYPE";
+	public static final String LENGTH = "LENGTH";
+	public static final String SCALE = "SCALE";
+	public static final String RADIX = "RADIX";
 }
