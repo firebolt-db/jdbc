@@ -455,7 +455,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public String getSQLKeywords() throws SQLException {
 		// Firebolt reserved words minus SQL:2003 keywords
 		return "BOOL,CONCAT,COPY,DATABASE,DATETIME,DOUBLECOLON,DOW,"
@@ -465,15 +464,11 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public String getNumericFunctions() throws SQLException {
 		return "ABS,ACOS,ASIN,ATAN,ATAN2,CBRT,CEIL,CEILING,COS,COT,DEGREES,EXP,FLOOR,LOG,MOD,PI,POW,,POWER,RADIANS,RANDOM,ROUND,SIGN,SIN,SQRT,TAN,TRUNC";
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public String getStringFunctions() throws SQLException {
 		return "BASE64_ENCODE,CONCAT,EXTRACT_ALL,GEN_RANDOM_UUID,ILIKE,LENGTH,LIKE,LOWER,LPAD,LTRIM,MATCH,MATCH_ANY,"
 				+ "MD5,MD5_NUMBER_LOWER64,MD5_NUMBER_UPPER64,REGEXP_LIKE,REGEXP_MATCHES,REGEXP_REPLACE,REPEAT,REPLACE,REVERSE,"
@@ -481,15 +476,11 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public String getSystemFunctions() throws SQLException {
 		return "IFNULL";
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public String getTimeDateFunctions() throws SQLException {
 		return "CURRENT_DATE,CURRENT_TIMESTAMP,DATE_ADD,DATE_DIFF,DATE_TRUNC,EXTRACT,LOCALTIMESTAMP,TO_CHAR,TO_DATE,TO_TIMESTAMP";
 	}
@@ -500,9 +491,13 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return "\\";
 	}
 
+	/**
+	 * Returns empty string for compatibility with PostgreSQL.
+	 * @return empty string
+	 * @throws SQLException - if fact does not throw exception because the implementation is trivial
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public String getExtraNameCharacters() throws SQLException {
 		return "";
 	}

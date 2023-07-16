@@ -285,7 +285,6 @@ class FireboltDatabaseMetadataTest {
 		for (ResultSet rs = fireboltDatabaseMetadata.getFunctions(null, null, functionNamePattern); rs.next();) {
 			count++;
 			String functionName = rs.getString("FUNCTION_NAME");
-			System.out.println(functionName);
 			String specificName = rs.getString("SPECIFIC_NAME");
 			assertNotNull(functionName);
 			assertNotNull(specificName);
