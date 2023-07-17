@@ -142,8 +142,8 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 						null, // buffer length (not used, see Javadoc)
 						String.valueOf(columnInfo.getType().getScale()), // DECIMAL_DIGITS
 						String.valueOf(COMMON_RADIX), // radix
-						isColumnNullable(columnDescription) ? columnNullable : columnNoNulls
-						, null, // description of the column
+						isColumnNullable(columnDescription) ? columnNullable : columnNoNulls,
+						null, // description of the column
 						StringUtils.isNotBlank(columnDescription.getString("column_default"))
 								? columnDescription.getString("column_default")
 								: null, // default value for the column: null,
@@ -153,7 +153,8 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 								// length of binary and character
 								// based columns (null for others)
 						columnDescription.getInt("ordinal_position"), // The ordinal position starting from 1
-						isColumnNullable(columnDescription) ? "YES" : "NO", null, // "SCOPE_CATALOG - Unused
+						isColumnNullable(columnDescription) ? "YES" : "NO",
+						null, // "SCOPE_CATALOG - Unused
 						null, // "SCOPE_SCHEMA" - Unused
 						null, // "SCOPE_TABLE" - Unused
 						null, // "SOURCE_DATA_TYPE" - Unused

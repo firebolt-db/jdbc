@@ -752,7 +752,7 @@ class FireboltResultSetTest {
 		assertEquals(Types.TIMESTAMP, resultSet.getMetaData().getColumnType(5));
 		assertEquals(Types.TIMESTAMP, resultSet.getMetaData().getColumnType(6));
 		assertEquals(Types.TIMESTAMP, resultSet.getMetaData().getColumnType(7));
-		assertEquals(Types.TIMESTAMP, resultSet.getMetaData().getColumnType(8));
+		assertEquals(Types.TIMESTAMP_WITH_TIMEZONE, resultSet.getMetaData().getColumnType(8));
 		assertEquals(Types.ARRAY, resultSet.getMetaData().getColumnType(9));
 		assertEquals(Types.NUMERIC, resultSet.getMetaData().getColumnType(10));
 		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(11));
