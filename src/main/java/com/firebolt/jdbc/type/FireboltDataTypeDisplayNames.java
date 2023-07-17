@@ -13,6 +13,7 @@ public class FireboltDataTypeDisplayNames {
 	static final String DATE = "date";
 	static final String PGDATE = "pgdate";
 	static final String TIMESTAMP = "timestamp";
+	static final String TIMESTAMPTZ = "timestamptz";
 	static final String NULL = "null";
 	static final String UNKNOWN = "unknown";
 	static final String NUMERIC = "numeric";
