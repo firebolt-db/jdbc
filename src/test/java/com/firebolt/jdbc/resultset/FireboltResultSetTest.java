@@ -891,6 +891,17 @@ class FireboltResultSetTest {
 
 	}
 
+	@Test
+	void shouldReadArray() throws SQLException {
+		inputStream = getInputStreamWithArray();
+		resultSet = new FireboltResultSet(inputStream);
+		assertTrue(resultSet.next());
+		Object intArray = resultSet.getObject(1);
+		assertEquals(Integer[].class, intArray.getClass());
+		assertArrayEquals(new Integer[]{1, 2, 3}, (Integer[]) intArray);
+		assertFalse(resultSet.next());
+	}
+
 	private InputStream getInputStreamWithCommonResponseExample() {
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-example");
 	}
@@ -931,4 +942,7 @@ class FireboltResultSetTest {
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-numeric-types.csv");
 	}
 
+	private InputStream getInputStreamWithArray() {
+		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-array");
+	}
 }
