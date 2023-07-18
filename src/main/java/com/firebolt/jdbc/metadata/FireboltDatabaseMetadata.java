@@ -1,26 +1,26 @@
 package com.firebolt.jdbc.metadata;
 
-import static com.firebolt.jdbc.metadata.MetadataColumns.*;
-import static com.firebolt.jdbc.type.FireboltDataType.*;
-import static java.sql.Types.VARCHAR;
-
-import java.sql.*;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.firebolt.jdbc.QueryResult;
-import com.firebolt.jdbc.util.VersionUtil;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.resultset.column.Column;
 import com.firebolt.jdbc.type.FireboltDataType;
-
+import com.firebolt.jdbc.util.VersionUtil;
 import lombok.CustomLog;
+import org.apache.commons.lang3.StringUtils;
+
+import java.sql.*;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import static com.firebolt.jdbc.metadata.MetadataColumns.*;
+import static com.firebolt.jdbc.type.FireboltDataType.*;
+import static java.sql.Types.VARCHAR;
+import static java.util.stream.Collectors.toList;
+import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
 
 @CustomLog
 public class FireboltDatabaseMetadata implements DatabaseMetaData {
@@ -29,6 +29,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	private static final String INFORMATION_SCHEMA_NAME = "information_schema";
 	private static final String CATALOG_SCHEMA_NAME = "catalog";
 	private static final String QUOTE = "'";
+	private static final int MAX_IDENTIFIER_LENGTH = 63;
 	private final String url;
 	private final FireboltConnection connection;
 	private String databaseVersion;
@@ -58,8 +59,8 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	@Override
 	public ResultSet getTableTypes() throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Collections.singletonList(QueryResult.Column.builder().name(TABLE_TYPE).type(TEXT).build()))
-				.rows(Arrays.asList(Arrays.asList("TABLE"), Arrays.asList("VIEW"))).build());
+				.columns(List.of(QueryResult.Column.builder().name(TABLE_TYPE).type(TEXT).build()))
+				.rows(List.of(List.of("TABLE"), List.of("VIEW"))).build());
 	}
 
 	@Override
@@ -178,7 +179,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		List<List<?>> rows = Stream
 				.of(this.getTables(catalog, schemaPattern, tableNamePattern, typesArr, false),
 						this.getTables(catalog, schemaPattern, tableNamePattern, typesArr, true))
-				.flatMap(Collection::stream).collect(Collectors.toList());
+				.flatMap(Collection::stream).collect(toList());
 
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Arrays.asList(QueryResult.Column.builder().name(TABLE_CAT).type(TEXT).build(),
@@ -452,8 +453,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	public String getSQLKeywords() throws SQLException {
+	public String getSQLKeywords() {
 		// Firebolt reserved words minus SQL:2003 keywords
 		return "BOOL,CONCAT,COPY,DATABASE,DATETIME,DOUBLECOLON,DOW,"
 				+ "DOY,EMPTY_IDENTIFIER,EPOCH,EXPLAIN,EXTRACT,FIRST,GENERATE,ILIKE,ISNULL,"
@@ -462,31 +462,25 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
-	public String getNumericFunctions() throws SQLException {
-		return "";
+	public String getNumericFunctions() {
+		return "ABS,ACOS,ASIN,ATAN,ATAN2,CBRT,CEIL,CEILING,COS,COT,DEGREES,EXP,FLOOR,LOG,MOD,PI,POW,,POWER,RADIANS,RANDOM,ROUND,SIGN,SIN,SQRT,TAN,TRUNC";
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
-	public String getStringFunctions() throws SQLException {
-		return "";
+	public String getStringFunctions() {
+		return "BASE64_ENCODE,CONCAT,EXTRACT_ALL,GEN_RANDOM_UUID,ILIKE,LENGTH,LIKE,LOWER,LPAD,LTRIM,MATCH,MATCH_ANY,"
+				+ "MD5,MD5_NUMBER_LOWER64,MD5_NUMBER_UPPER64,REGEXP_LIKE,REGEXP_MATCHES,REGEXP_REPLACE,REPEAT,REPLACE,REVERSE,"
+				+ "RPAD,RTRIM,SPLIT,SPLIT_PART,STRPOS,SUBSTRING,TO_DATE,TO_DOUBLE,TO_FLOAT,TO_INT,TO_TIMESTAMP,TO_TIMESTAMPTZ,TRIM,UPPER";
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
-	public String getSystemFunctions() throws SQLException {
-		return "";
+	public String getSystemFunctions() {
+		return "IFNULL";
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
-	public String getTimeDateFunctions() throws SQLException {
-		return "";
+	public String getTimeDateFunctions() {
+		return "CURRENT_DATE,CURRENT_TIMESTAMP,DATE_ADD,DATE_DIFF,DATE_TRUNC,EXTRACT,LOCALTIMESTAMP,TO_CHAR,TO_DATE,TO_TIMESTAMP,TO_TIMESTAMPTZ";
 	}
 
 	@Override
@@ -495,9 +489,13 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return "\\";
 	}
 
+	/**
+	 * Returns empty string for compatibility with PostgreSQL.
+	 * @return empty string
+	 * @throws SQLException - if fact does not throw exception because the implementation is trivial
+	 */
 	@Override
 	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public String getExtraNameCharacters() throws SQLException {
 		return "";
 	}
@@ -866,7 +864,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public int getMaxColumnNameLength() throws SQLException {
-		return 0;
+		return MAX_IDENTIFIER_LENGTH;
 	}
 
 	@Override
@@ -901,7 +899,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public int getMaxColumnsInTable() throws SQLException {
-		return 0;
+		return 1000;
 	}
 
 	@Override
@@ -928,7 +926,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public int getMaxSchemaNameLength() throws SQLException {
-		return 0;
+		return MAX_IDENTIFIER_LENGTH;
 	}
 
 	@Override
@@ -976,7 +974,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public int getMaxTableNameLength() throws SQLException {
-		return 0;
+		return MAX_IDENTIFIER_LENGTH;
 	}
 
 	@Override
@@ -1300,25 +1298,89 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
-	public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern)
-			throws SQLException {
-		return FireboltResultSet.empty();
+	public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern) throws SQLException {
+		List<QueryResult.Column> columns = Arrays.asList(
+				QueryResult.Column.builder().name(FUNCTION_CAT).type(TEXT).build(),
+				QueryResult.Column.builder().name(FUNCTION_SCHEM).type(TEXT).build(),
+				QueryResult.Column.builder().name(FUNCTION_NAME).type(TEXT).build(),
+				QueryResult.Column.builder().name(REMARKS).type(TEXT).build(),
+				QueryResult.Column.builder().name(FUNCTION_TYPE).type(INTEGER).build(),
+				QueryResult.Column.builder().name(SPECIFIC_NAME).type(TEXT).build());
+		Predicate<String> functionFilter = functionNamePattern == null ? f -> true : f -> containsIgnoreCase(f, functionNamePattern);
+
+		List<List<?>> rows = Arrays.stream(String.join(",", getStringFunctions(), getNumericFunctions(), getTimeDateFunctions(), getSystemFunctions()).split(","))
+				.map(String::trim) // instead of split("\\s*,\\s") blocked by Sonar according to its opinion "can lead denial of service" (?!)
+				.filter(functionFilter)
+				.sorted()
+				.distinct() // some functions belong to different categories, e.g. TO_DATE is both date-time and string function
+				.map(function -> Arrays.asList(null, null, function, null, functionNoTable, function))
+				.collect(toList());
+		return FireboltResultSet.of(QueryResult.builder().columns(columns).rows(rows).build());
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
-	public ResultSet getFunctionColumns(String catalog, String schemaPattern, String functionNamePattern,
-			String columnNamePattern) throws SQLException {
-		return FireboltResultSet.empty();
+	public ResultSet getFunctionColumns(String catalog, String schemaPattern, String functionNamePattern, String columnNamePattern) throws SQLException {
+
+		List<QueryResult.Column> columns = Arrays.asList(
+				QueryResult.Column.builder().name(FUNCTION_CAT).type(TEXT).build(),
+				QueryResult.Column.builder().name(FUNCTION_SCHEM).type(TEXT).build(),
+				QueryResult.Column.builder().name(FUNCTION_NAME).type(TEXT).build(),
+				QueryResult.Column.builder().name(COLUMN_NAME).type(TEXT).build(),
+				QueryResult.Column.builder().name(COLUMN_TYPE).type(INTEGER).build(),
+				QueryResult.Column.builder().name(DATA_TYPE).type(INTEGER).build(),
+				QueryResult.Column.builder().name(TYPE_NAME).type(TEXT).build(),
+				QueryResult.Column.builder().name(PRECISION).type(INTEGER).build(),
+				QueryResult.Column.builder().name(LENGTH).type(INTEGER).build(),
+				QueryResult.Column.builder().name(SCALE).type(INTEGER).build(),
+				QueryResult.Column.builder().name(RADIX).type(INTEGER).build(),
+				QueryResult.Column.builder().name(NULLABLE).type(INTEGER).build(),
+				QueryResult.Column.builder().name(REMARKS).type(TEXT).build(),
+				QueryResult.Column.builder().name(CHAR_OCTET_LENGTH).type(INTEGER).build(),
+				QueryResult.Column.builder().name(ORDINAL_POSITION).type(INTEGER).build(),
+				QueryResult.Column.builder().name(IS_NULLABLE).type(TEXT).build(),
+				QueryResult.Column.builder().name(SPECIFIC_NAME).type(TEXT).build()
+		);
+		Predicate<String> functionFilter = functionNamePattern == null ? f -> true : f -> containsIgnoreCase(f, functionNamePattern);
+
+		List<List<?>> stringFunctions = Arrays.stream(String.join(",", getStringFunctions()).split(",")).map(String::trim).filter(functionFilter)
+				.map(function -> Arrays.asList(null, null, function, null, functionColumnUnknown, Types.VARCHAR, JDBCType.VARCHAR.getName(), null, null, null, null, functionNullable, null, null, null, "YES", function))
+				.collect(toList());
+
+		List<List<?>> numericFunctions = Arrays.stream(String.join(",", getNumericFunctions()).split(",")).map(String::trim).filter(functionFilter)
+				.map(function -> Arrays.asList(null, null, function, null, functionColumnUnknown, Types.INTEGER, JDBCType.INTEGER, null, null, null, null, functionNullableUnknown, null, null, null, "", function))
+				.collect(toList());
+
+		List<List<?>> timeDateFunctions = Arrays.stream(String.join(",", getTimeDateFunctions()).split(",")).map(String::trim).filter(functionFilter)
+				.map(function -> {
+					int type = Types.OTHER;
+					if (function.contains("TZ")) {
+						type = Types.TIMESTAMP_WITH_TIMEZONE;
+					} else if (function.contains("TIMESTAMP")) {
+						type = Types.TIMESTAMP;
+					} else if (function.contains("DATE")) {
+						type = Types.DATE;
+					}
+					return Arrays.asList(null, null, function, null, functionColumnUnknown, type, JDBCType.valueOf(type), null, null, null, null, functionNullableUnknown, null, null, null, "", function);
+				})
+				.collect(toList());
+
+		List<List<?>> systemFunctions = Arrays.stream(String.join(",", getSystemFunctions()).split(",")).map(String::trim).filter(functionFilter)
+				.map(function -> Arrays.asList(null, null, function, null, functionColumnUnknown, VARCHAR, JDBCType.VARCHAR.getName(), null, null, null, null, functionNullableUnknown, null, null, null, "", function))
+				.collect(toList());
+
+		Comparator<List<?>> comparator = (row1, row2) -> {
+			String function1 = (String)row1.get(2);
+			String function2 = (String)row2.get(2);
+			return function1.compareToIgnoreCase(function2);
+		};
+		List<List<?>> allFunctions = Stream.of(stringFunctions, numericFunctions, timeDateFunctions, systemFunctions).flatMap(Collection::stream).sorted(comparator).collect(toList());
+
+		return FireboltResultSet.of(QueryResult.builder().columns(columns).rows(allFunctions).build());
 	}
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
-	public ResultSet getPseudoColumns(String catalog, String schemaPattern, String tableNamePattern,
-			String columnNamePattern) throws SQLException {
+	public ResultSet getPseudoColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern) {
 		return FireboltResultSet.empty();
 	}
 

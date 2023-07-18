@@ -51,5 +51,13 @@ public class MetadataColumns {
 	public static final String SQL_DATA_TYPE = "SQL_DATA_TYPE";
 	public static final String SQL_DATETIME_SUB = "SQL_DATETIME_SUB";
 	public static final String NUM_PREC_RADIX = "NUM_PREC_RADIX";
-
+	public static final String FUNCTION_CAT = "FUNCTION_CAT";
+	public static final String FUNCTION_SCHEM = "FUNCTION_SCHEM";
+	public static final String FUNCTION_NAME = "FUNCTION_NAME";
+	public static final String FUNCTION_TYPE = "FUNCTION_TYPE";
+	public static final String SPECIFIC_NAME = "SPECIFIC_NAME";
+	public static final String COLUMN_TYPE = "COLUMN_TYPE";
+	public static final String LENGTH = "LENGTH";
+	public static final String SCALE = "SCALE";
+	public static final String RADIX = "RADIX";
 }
