@@ -1,31 +1,41 @@
 package integration.tests;
 
-import static com.firebolt.jdbc.type.BaseType.TIMESTAMP;
-import static com.firebolt.jdbc.type.BaseType.TIMESTAMP_WITH_TIMEZONE;
-import static com.firebolt.jdbc.type.date.SqlDateUtil.ONE_DAY_MILLIS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.io.IOException;
-import java.sql.*;
-import java.sql.Date;
-import java.time.OffsetDateTime;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.DefaultTimeZone;
-
 import com.firebolt.jdbc.testutils.AssertionUtil;
-
 import integration.IntegrationTest;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import lombok.CustomLog;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.DefaultTimeZone;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.List;
+import java.util.TimeZone;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.firebolt.jdbc.type.date.SqlDateUtil.ONE_DAY_MILLIS;
+import static java.sql.Types.TIMESTAMP;
+import static java.sql.Types.TIMESTAMP_WITH_TIMEZONE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @CustomLog
 @DefaultTimeZone("UTC")
@@ -278,7 +288,7 @@ class TimestampTest extends IntegrationTest {
 		try (Connection postgresConnection = embeddedPostgres.getPostgresDatabase().getConnection();
 				Statement pgStatement = postgresConnection.createStatement()) {
 			if (timezone != null) {
-				pgStatement.execute(String.format("set timezone '%s'", timezone));
+				pgStatement.execute(String.format("set timezone = '%s'", timezone));
 			}
 
 			ResultSet postgresResultSet = pgStatement.executeQuery(postgresQuery);
