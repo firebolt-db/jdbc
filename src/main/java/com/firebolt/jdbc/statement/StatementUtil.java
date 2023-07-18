@@ -75,6 +75,9 @@ public class StatementUtil {
 	 * @return a list of {@link StatementInfoWrapper}
 	 */
 	public RawStatementWrapper parseToRawStatementWrapper(String sql) {
+		if (sql.isEmpty()) {
+			return new RawStatementWrapper(List.of());
+		}
 		List<RawStatement> subStatements = new ArrayList<>();
 		List<ParamMarker> subStatementParamMarkersPositions = new ArrayList<>();
 		int subQueryStart = 0;

@@ -15,6 +15,8 @@ import com.firebolt.jdbc.exception.FireboltException;
 
 import integration.IntegrationTest;
 import lombok.CustomLog;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @CustomLog
 class StatementTest extends IntegrationTest {
@@ -131,6 +133,20 @@ class StatementTest extends IntegrationTest {
 				assertFalse(resultSet.getBoolean(3));
 			}
 
+		}
+	}
+
+	@ParameterizedTest(name = "query:{0};")
+	@ValueSource(strings = {
+			"",
+			"     ",
+			"--",
+			"-- SELECT 1",
+			"/* {\"app\": \"dbt\", \"dbt_version\": \"0.20.0\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"fb_app\", \"connection_name\": \"macro_stage_external_sources\"} */"
+	})
+	void empty(String sql) throws SQLException {
+		try (Connection connection = createConnection()) {
+			assertFalse(connection.createStatement().execute(sql));
 		}
 	}
 
