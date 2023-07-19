@@ -1,9 +1,27 @@
 package com.firebolt.jdbc.client;
 
-import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
-import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
+import com.firebolt.jdbc.util.CloseableUtil;
+import lombok.CustomLog;
+import lombok.Getter;
+import lombok.NonNull;
+import okhttp3.Call;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,19 +29,8 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.firebolt.jdbc.util.CloseableUtil;
-import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
-
-import lombok.CustomLog;
-import lombok.Getter;
-import lombok.NonNull;
-import okhttp3.*;
+import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
+import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 
 @Getter
 @CustomLog
@@ -153,19 +160,16 @@ public abstract class FireboltClient {
 	protected String getResponseAsString(Response response) throws FireboltException, IOException {
 		if (response.body() == null) {
 			throw new FireboltException("Cannot get resource: the response from the server is empty");
-		} else {
-			return response.body().string();
 		}
+		return response.body().string();
 	}
 
 	private String extractErrorMessage(Response response, boolean isCompress) throws IOException {
-		byte[] entityBytes;
-		if (response.body() != null) {
-			entityBytes = response.body().bytes();
-		} else {
-			entityBytes = null;
+		byte[] entityBytes = response.body() !=  null ? response.body().bytes() : null;
+		if (entityBytes == null) {
+			return null;
 		}
-		if (isCompress && entityBytes != null) {
+		if (isCompress) {
 			try {
 				InputStream is = new LZ4InputStream(new ByteArrayInputStream(entityBytes));
 				return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8)).lines()
@@ -174,7 +178,7 @@ public abstract class FireboltClient {
 				log.warn("Could not decompress error from server");
 			}
 		}
-		return entityBytes != null ? new String(entityBytes, StandardCharsets.UTF_8) : null;
+		return new String(entityBytes, StandardCharsets.UTF_8);
 	}
 
 	private boolean isCallSuccessful(int statusCode) {
