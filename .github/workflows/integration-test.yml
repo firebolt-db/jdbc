@@ -8,8 +8,8 @@ on:
         required: false
         default: ''
       engine:
-        description: 'Engine'
-        required: true
+        description: 'Engine - a new one will be created if not provided'
+        required: false
       account:
         description: 'Account'
         required: true
@@ -68,8 +68,17 @@ jobs:
              echo "database_name=${{ steps.setup.outputs.database_name }}" >> $GITHUB_OUTPUT
           fi
 
+      - name: Determine engine name
+        id: find-engine-name
+        run: |
+          if ! [[ -z "${{ github.event.inputs.engine }}" ]]; then
+             echo "engine_name=${{ github.event.inputs.engine }}" >> $GITHUB_OUTPUT
+          else
+             echo "engine_name=${{ steps.setup.outputs.engine_name }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=${{ github.event.inputs.environment }} -Dclient_secret="${{ env.SERVICE_ACCOUNT_SECRET }}" -Dclient_id="${{ env.SERVICE_ACCOUNT_ID }}" -Daccount="${{ github.event.inputs.account }}" -Dengine="${{ github.event.inputs.engine }}"
+        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=${{ github.event.inputs.environment }} -Dclient_secret="${{ env.SERVICE_ACCOUNT_SECRET }}" -Dclient_id="${{ env.SERVICE_ACCOUNT_ID }}" -Daccount="${{ github.event.inputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}"
 
       - name: "Foresight: Analyze Test Results"
         uses: runforesight/foresight-test-kit-action@v1
