@@ -1,4 +1,4 @@
-name: Run integration tests
+qname: Run integration tests
 
 on:
   workflow_dispatch:
@@ -42,8 +42,8 @@ jobs:
       - name: Determine env variables
         run: |
           if [ "${{ github.event.inputs.environment }}" == 'staging' ]; then
-             echo "SERVICE_ACCOUNT_ID==${{ secrets.SERVICE_ID_STG_NEW_IDN }}" >> "$GITHUB_ENV"
-             echo "SERVICE_ACCOUNT_SECRET=${{ secrets.SERVICE_SECRET_STG_NEW_IDN }}" >> "$GITHUB_ENV"
+             echo "SERVICE_ACCOUNT_ID==${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" >> "$GITHUB_ENV"
+             echo "SERVICE_ACCOUNT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" >> "$GITHUB_ENV"
           else
              echo "SERVICE_ACCOUNT_ID==${{ secrets.FIREBOLT_CLIENT_ID_NEW_IDN }}" >> "$GITHUB_ENV"
              echo "SERVICE_ACCOUNT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_NEW_IDN }}" >> "$GITHUB_ENV"
