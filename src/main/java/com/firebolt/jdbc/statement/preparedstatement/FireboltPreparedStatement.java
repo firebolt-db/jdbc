@@ -65,7 +65,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public void setNull(int parameterIndex, int sqlType) throws SQLException {
 		this.validateStatementIsNotClosed();
 		this.validateParamIndex(parameterIndex);
-		this.providedParameters.put(parameterIndex, "\\N");
+		this.providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.NULL_VALUE);
 	}
 
 	@Override
@@ -199,7 +199,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public void setNull(int parameterIndex, int sqlType, String typeName) throws SQLException {
 		this.validateStatementIsNotClosed();
 		this.validateParamIndex(parameterIndex);
-		this.providedParameters.put(parameterIndex, "\\N");
+		this.providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.NULL_VALUE);
 	}
 
 	@Override
@@ -218,7 +218,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public void setArray(int parameterIndex, Array x) throws SQLException {
 		this.validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		setString(parameterIndex, x.toString());
+		this.providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.ARRAY.transform(x));
 	}
 
 	@Override

@@ -1,32 +1,30 @@
 package com.firebolt.jdbc.type;
 
-import static com.firebolt.jdbc.exception.ExceptionType.TYPE_NOT_SUPPORTED;
-import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.resultset.column.ColumnType;
+import com.firebolt.jdbc.type.array.FireboltArray;
+import com.firebolt.jdbc.type.array.SqlArrayUtil;
+import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.DefaultTimeZone;
 
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.DefaultTimeZone;
-
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.resultset.column.ColumnType;
-import com.firebolt.jdbc.type.array.FireboltArray;
-import com.firebolt.jdbc.type.array.SqlArrayUtil;
+import static com.firebolt.jdbc.exception.ExceptionType.TYPE_NOT_SUPPORTED;
+import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class JavaTypeToFireboltSQLStringTest {
 
 	@Test
 	void shouldTransformNullToString() throws FireboltException {
-		assertEquals("\\N", JavaTypeToFireboltSQLString.transformAny(null));
+		assertEquals("NULL", JavaTypeToFireboltSQLString.transformAny(null));
 	}
 
 	@Test
@@ -35,7 +33,7 @@ class JavaTypeToFireboltSQLStringTest {
 
 		assertEquals("0", JavaTypeToFireboltSQLString.BOOLEAN.transform(false));
 
-		assertEquals("\\N", JavaTypeToFireboltSQLString.BOOLEAN.transform(null));
+		assertEquals("NULL", JavaTypeToFireboltSQLString.BOOLEAN.transform(null));
 	}
 
 	@Test
@@ -46,7 +44,7 @@ class JavaTypeToFireboltSQLStringTest {
 
 		assertEquals(uuidValue, JavaTypeToFireboltSQLString.transformAny(uuid));
 
-		assertEquals("\\N", JavaTypeToFireboltSQLString.UUID.transform(null));
+		assertEquals("NULL", JavaTypeToFireboltSQLString.UUID.transform(null));
 	}
 
 	@Test
@@ -56,7 +54,7 @@ class JavaTypeToFireboltSQLStringTest {
 
 		assertEquals("123", JavaTypeToFireboltSQLString.transformAny(s));
 
-		assertEquals("\\N", JavaTypeToFireboltSQLString.BOOLEAN.transform(null));
+		assertEquals("NULL", JavaTypeToFireboltSQLString.BOOLEAN.transform(null));
 	}
 
 	@Test
@@ -72,7 +70,7 @@ class JavaTypeToFireboltSQLStringTest {
 
 		assertEquals("105", JavaTypeToFireboltSQLString.transformAny(105L));
 
-		assertEquals("\\N", JavaTypeToFireboltSQLString.LONG.transform(null));
+		assertEquals("NULL", JavaTypeToFireboltSQLString.LONG.transform(null));
 	}
 
 	@Test
@@ -81,7 +79,7 @@ class JavaTypeToFireboltSQLStringTest {
 
 		assertEquals("105", JavaTypeToFireboltSQLString.transformAny(105));
 
-		assertEquals("\\N", JavaTypeToFireboltSQLString.INTEGER.transform(null));
+		assertEquals("NULL", JavaTypeToFireboltSQLString.INTEGER.transform(null));
 	}
 
 	@Test
@@ -90,7 +88,7 @@ class JavaTypeToFireboltSQLStringTest {
 
 		assertEquals("1111111111", JavaTypeToFireboltSQLString.transformAny(1111111111));
 
-		assertEquals("\\N", JavaTypeToFireboltSQLString.BIG_INTEGER.transform(null));
+		assertEquals("NULL", JavaTypeToFireboltSQLString.BIG_INTEGER.transform(null));
 	}
 
 	@Test
@@ -99,7 +97,7 @@ class JavaTypeToFireboltSQLStringTest {
 
 		assertEquals("1.5", JavaTypeToFireboltSQLString.transformAny(1.50f));
 
-		assertEquals("\\N", JavaTypeToFireboltSQLString.FLOAT.transform(null));
+		assertEquals("NULL", JavaTypeToFireboltSQLString.FLOAT.transform(null));
 	}
 
 	@Test
@@ -108,7 +106,7 @@ class JavaTypeToFireboltSQLStringTest {
 
 		assertEquals("105", JavaTypeToFireboltSQLString.transformAny(105));
 
-		assertEquals("\\N", JavaTypeToFireboltSQLString.DOUBLE.transform(null));
+		assertEquals("NULL", JavaTypeToFireboltSQLString.DOUBLE.transform(null));
 	}
 
 	@Test
@@ -126,7 +124,7 @@ class JavaTypeToFireboltSQLStringTest {
 
 		assertEquals("105", JavaTypeToFireboltSQLString.transformAny(105));
 
-		assertEquals("\\N", JavaTypeToFireboltSQLString.DOUBLE.transform(null));
+		assertEquals("NULL", JavaTypeToFireboltSQLString.DOUBLE.transform(null));
 	}
 
 	@Test
@@ -134,12 +132,12 @@ class JavaTypeToFireboltSQLStringTest {
 		Timestamp ts = Timestamp.valueOf(LocalDateTime.of(2022, 5, 23, 12, 57, 13, 173456789));
 		assertEquals("'2022-05-23 12:57:13.173456789'", JavaTypeToFireboltSQLString.TIMESTAMP.transform(ts));
 		assertEquals("'2022-05-23 12:57:13.173456789'", JavaTypeToFireboltSQLString.transformAny(ts));
-		assertEquals("\\N", JavaTypeToFireboltSQLString.TIMESTAMP.transform(null));
+		assertEquals("NULL", JavaTypeToFireboltSQLString.TIMESTAMP.transform(null));
 	}
 
 	@Test
 	void shouldTransformSqlArray() throws SQLException {
-		String value = "[1,2,3,\\N,5]";
+		String value = "[1,2,3,NULL,5]";
 		ColumnType columnType = ColumnType.of("Array(INT32)");
 		FireboltArray fireboltArray = SqlArrayUtil.transformToSqlArray(value, columnType);
 		assertEquals(value, JavaTypeToFireboltSQLString.ARRAY.transform(fireboltArray));
@@ -161,29 +159,23 @@ class JavaTypeToFireboltSQLStringTest {
 
 	@Test
 	void shouldTransformJavaArrayOfPrimitives() throws FireboltException {
-		int[] arr = { 5 };
-		assertEquals("[5]", JavaTypeToFireboltSQLString.ARRAY.transform(arr));
+		assertEquals("[5]", JavaTypeToFireboltSQLString.ARRAY.transform(new int[] {5}));
 	}
 
 	@Test
 	void shouldTransformEmptyArray() throws FireboltException {
-		int[] arr = {};
-		assertEquals("[]", JavaTypeToFireboltSQLString.ARRAY.transform(arr));
+		assertEquals("[]", JavaTypeToFireboltSQLString.ARRAY.transform(new int[0]));
 	}
 
 	@Test
 	void shouldThrowExceptionWhenObjectTypeIsNotSupported() {
-		Map map = new HashMap<>();
-		FireboltException ex = assertThrows(FireboltException.class,
-				() -> JavaTypeToFireboltSQLString.transformAny(map));
+		FireboltException ex = assertThrows(FireboltException.class, () -> JavaTypeToFireboltSQLString.transformAny(Map.of()));
 		assertEquals(TYPE_NOT_SUPPORTED, ex.getType());
 	}
 
 	@Test
 	void shouldThrowExceptionWhenObjectCouldNotBeTransformed() {
-		Map map = new HashMap<>();
-		FireboltException ex = assertThrows(FireboltException.class,
-				() -> JavaTypeToFireboltSQLString.ARRAY.transform(map));
+		FireboltException ex = assertThrows(FireboltException.class, () -> JavaTypeToFireboltSQLString.ARRAY.transform(Map.of()));
 		assertEquals(TYPE_TRANSFORMATION_ERROR, ex.getType());
 	}
 }

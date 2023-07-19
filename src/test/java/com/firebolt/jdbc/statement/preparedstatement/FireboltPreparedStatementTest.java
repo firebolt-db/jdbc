@@ -1,19 +1,9 @@
 package com.firebolt.jdbc.statement.preparedstatement;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.sql.Timestamp;
-import java.util.Optional;
-
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.service.FireboltStatementService;
+import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,13 +11,24 @@ import org.junitpioneer.jupiter.DefaultTimeZone;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.service.FireboltStatementService;
-import com.firebolt.jdbc.statement.StatementInfoWrapper;
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.Timestamp;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltPreparedStatementTest {
@@ -150,7 +151,7 @@ class FireboltPreparedStatementTest {
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties),
 				anyInt(), anyInt(), anyBoolean(), any());
-		assertEquals("INSERT INTO cars (sales, make) VALUES (\\N,\\N)",
+		assertEquals("INSERT INTO cars (sales, make) VALUES (NULL,NULL)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
@@ -289,7 +290,7 @@ class FireboltPreparedStatementTest {
 				anyInt(), anyInt(), anyBoolean(), any());
 
 		assertEquals(
-				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,\\N,1,5)",
+				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,1,5)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 

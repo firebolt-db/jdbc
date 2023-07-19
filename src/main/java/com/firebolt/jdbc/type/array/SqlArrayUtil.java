@@ -141,6 +141,9 @@ public class SqlArrayUtil {
 	}
 
 	public static String arrayToString(Object o) throws SQLException {
+		if (o == null) {
+			return null;
+		}
 		Object[] arr;
 		if (o instanceof java.sql.Array) {
 			o = ((java.sql.Array) o).getArray();
@@ -155,6 +158,9 @@ public class SqlArrayUtil {
 	}
 
 	private static String toString(Object[] arr) throws FireboltException {
+		if (arr == null) {
+			return null;
+		}
 		List<String> values = new ArrayList<>();
 		for (Object element : arr) {
 			values.add(JavaTypeToFireboltSQLString.transformAny(element));
@@ -163,6 +169,9 @@ public class SqlArrayUtil {
 	}
 
 	private static Object[] toObjectArray(Object array) {
+		if (array == null) {
+			return null;
+		}
 		int length = Array.getLength(array);
 		Object[] ret = new Object[length];
 		for (int i = 0; i < length; i++)

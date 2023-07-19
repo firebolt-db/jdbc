@@ -1,7 +1,12 @@
 package com.firebolt.jdbc.type;
 
-import static com.firebolt.jdbc.exception.ExceptionType.TYPE_NOT_SUPPORTED;
-import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
+import com.firebolt.jdbc.CheckedFunction;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.type.array.SqlArrayUtil;
+import com.firebolt.jdbc.type.date.SqlDateUtil;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -11,21 +16,18 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.UUID;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-
-import com.firebolt.jdbc.CheckedFunction;
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.type.array.SqlArrayUtil;
-import com.firebolt.jdbc.type.date.SqlDateUtil;
+import static com.firebolt.jdbc.exception.ExceptionType.TYPE_NOT_SUPPORTED;
+import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
 
 public enum JavaTypeToFireboltSQLString {
 	BOOLEAN(Boolean.class, value -> Boolean.TRUE.equals(value) ? "1" : "0"),
 	UUID(java.util.UUID.class, value -> ((UUID) value).toString()),
-	SHORT(Short.class, value -> Short.toString((short) value)), STRING(String.class, getSQLStringValueOfString()),
-	LONG(Long.class, String::valueOf), INTEGER(Integer.class, String::valueOf),
-	BIG_INTEGER(BigInteger.class, String::valueOf), FLOAT(Float.class, String::valueOf),
+	SHORT(Short.class, value -> Short.toString((short) value)),
+	STRING(String.class, getSQLStringValueOfString()),
+	LONG(Long.class, String::valueOf),
+	INTEGER(Integer.class, String::valueOf),
+	BIG_INTEGER(BigInteger.class, String::valueOf),
+	FLOAT(Float.class, String::valueOf),
 	DOUBLE(Double.class, String::valueOf),
 	DATE(Date.class, date -> SqlDateUtil.transformFromDateToSQLStringFunction.apply((Date) date)),
 	TIMESTAMP(Timestamp.class, time -> SqlDateUtil.transformFromTimestampToSQLStringFunction.apply((Timestamp) time)),
@@ -36,6 +38,7 @@ public enum JavaTypeToFireboltSQLString {
 			new String[] { "\0", "\\", "'" }, new String[] { "\\0", "\\\\", "\\'" });
 	private final Class<?> sourceType;
 	private final CheckedFunction<Object, String> transformToJavaTypeFunction;
+	public static final String NULL_VALUE = "NULL";
 
 	JavaTypeToFireboltSQLString(Class<?> sourceType, CheckedFunction<Object, String> transformToSqlStringFunction) {
 		this.sourceType = sourceType;
@@ -45,7 +48,7 @@ public enum JavaTypeToFireboltSQLString {
 	public static String transformAny(Object object) throws FireboltException {
 		Class<?> objectType;
 		if (object == null) {
-			return BaseType.NULL_VALUE;
+			return NULL_VALUE;
 		} else if (object.getClass().isArray()) {
 			objectType = Array.class;
 		} else {
@@ -73,7 +76,7 @@ public enum JavaTypeToFireboltSQLString {
 
 	public String transform(Object object) throws FireboltException {
 		if (object == null) {
-			return BaseType.NULL_VALUE;
+			return NULL_VALUE;
 		} else {
 			try {
 				return this.transformToJavaTypeFunction.apply(object);
