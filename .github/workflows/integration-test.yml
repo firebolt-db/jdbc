@@ -51,7 +51,7 @@ jobs:
 
       - name: Validate database and engine
         if: ${{ (github.event.inputs.database == '') != (github.event.inputs.engine == '') }}
-        id: validate-database-engine
+        uses: actions/github-script@v3
         with:
           script: |
             core.setFailed("Database and Engine parameters should be provided simultaneously")
