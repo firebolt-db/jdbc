@@ -19,19 +19,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class NullableValuesTest extends IntegrationTest {
     @BeforeEach
     void beforeAll() {
-        executeStatementFromFile("/statements/metadata/ddl.sql");
+        executeStatementFromFile("/statements/nullable-types/ddl.sql");
     }
 
     @AfterEach
     void afterEach() {
-        executeStatementFromFile("/statements/metadata/cleanup.sql");
+        executeStatementFromFile("/statements/nullable-types/cleanup.sql");
     }
 
     @Test
     void preparedStatementUsingDefaultNulls() throws SQLException {
         try (Connection connection = createConnection();
-             PreparedStatement insert = connection.prepareStatement("insert into integration_test (id, year) values (?, ?)");
-             PreparedStatement select = connection.prepareStatement("select * from integration_test where id = ?")) {
+             PreparedStatement insert = connection.prepareStatement("insert into nullable_types_test (id, year) values (?, ?)");
+             PreparedStatement select = connection.prepareStatement("select * from nullable_types_test where id = ?")) {
             insert.setInt(1, 1);
             insert.setInt(2, 2023);
             assertFalse(insert.execute());
@@ -45,8 +45,8 @@ public class NullableValuesTest extends IntegrationTest {
     @Test
     void preparedStatementUsingExplicitNulls() throws SQLException {
         try (Connection connection = createConnection();
-             PreparedStatement insert = connection.prepareStatement("insert into integration_test (id, year, ts, tstz, tsntz, content, success) values (?, ?, ?, ?, ?, ?, ?)");
-             PreparedStatement select = connection.prepareStatement("select * from integration_test where id = ?")) {
+             PreparedStatement insert = connection.prepareStatement("insert into nullable_types_test (id, year, ts, tstz, tsntz, content, success) values (?, ?, ?, ?, ?, ?, ?)");
+             PreparedStatement select = connection.prepareStatement("select * from nullable_types_test where id = ?")) {
             insert.setInt(1, 1);
             insert.setInt(2, 2023);
             insert.setNull(3, Types.TIMESTAMP);
@@ -66,8 +66,8 @@ public class NullableValuesTest extends IntegrationTest {
     @Test
     void preparedStatementUsingExplicitTypedNulls() throws SQLException {
         try (Connection connection = createConnection();
-             PreparedStatement insert = connection.prepareStatement("insert into integration_test (id, year, ts, tstz, tsntz, content) values (?, ?, ?, ?, ?, ?)");
-             PreparedStatement select = connection.prepareStatement("select * from integration_test where id = ?")) {
+             PreparedStatement insert = connection.prepareStatement("insert into nullable_types_test (id, year, ts, tstz, tsntz, content) values (?, ?, ?, ?, ?, ?)");
+             PreparedStatement select = connection.prepareStatement("select * from nullable_types_test where id = ?")) {
             insert.setInt(1, 1);
             insert.setInt(2, 2023);
 
@@ -88,11 +88,11 @@ public class NullableValuesTest extends IntegrationTest {
     @Test
     void preparedStatementUsingStringValueContainsStringNull() throws SQLException {
         try (Connection connection = createConnection();
-             PreparedStatement insert = connection.prepareStatement("insert into integration_test (id, year, content) values (?, ?, ?");
-             PreparedStatement select = connection.prepareStatement("select * from integration_test where id = ?")) {
+             PreparedStatement insert = connection.prepareStatement("insert into nullable_types_test (id, year, content) values (?, ?, ?)");
+             PreparedStatement select = connection.prepareStatement("select * from nullable_types_test where id = ?")) {
             insert.setInt(1, 1);
             insert.setInt(2, 2023);
-            insert.setString(6, "null"); // string "null" - not null value!
+            insert.setString(3, "null"); // string "null" - not null value!
             assertFalse(insert.execute());
 
             select.setInt(1, 1);

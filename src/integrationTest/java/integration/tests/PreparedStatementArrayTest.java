@@ -1,5 +1,7 @@
 package integration.tests;
 
+import com.firebolt.jdbc.type.FireboltDataType;
+import com.firebolt.jdbc.type.array.FireboltArray;
 import integration.IntegrationTest;
 import lombok.CustomLog;
 import org.junit.jupiter.api.AfterEach;
@@ -24,18 +26,29 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class PreparedStatementArrayTest extends IntegrationTest {
 	enum PreparedStatementValueSetter {
 		ARRAY {
+			Object create(FireboltDataType type, Object data) {
+				return data == null ? null : FireboltArray.builder().type(type).array(data).build();
+			}
+
 			@Override
 			void set(PreparedStatement ps, int index, Object value) throws SQLException {
 				ps.setArray(index, (Array)value);
 			}
 		},
+
 		OBJECT {
+			Object create(FireboltDataType type, Object data) {
+				return data;
+			}
+
 			@Override
 			void set(PreparedStatement ps, int index, Object value) throws SQLException {
 				ps.setObject(index, value);
 			}
 		},
 		;
+
+		abstract Object create(FireboltDataType type, Object data);
 
 		abstract void set(PreparedStatement ps, int index, Object value) throws SQLException;
 	}
@@ -54,39 +67,37 @@ class PreparedStatementArrayTest extends IntegrationTest {
 	}
 
 
-	@ParameterizedTest
+	@ParameterizedTest(name = "set {0}")
 	@EnumSource(value = PreparedStatementValueSetter.class)
-	void integerAndStringValues() throws SQLException {
-		arrays(PreparedStatementValueSetter.OBJECT, INT_ARRAY, STRING_ARRAY, INTEGER_ARRAY, STRING_ARRAY);
+	void integerAndStringValues(PreparedStatementValueSetter setter) throws SQLException {
+		arrays(setter, INT_ARRAY, STRING_ARRAY, INTEGER_ARRAY, STRING_ARRAY);
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest(name = "set {0}")
 	@EnumSource(value = PreparedStatementValueSetter.class)
-	void intAndStringValues() throws SQLException {
-		arrays(PreparedStatementValueSetter.OBJECT, INTEGER_ARRAY, STRING_ARRAY, INTEGER_ARRAY, STRING_ARRAY);
+	void intAndStringValues(PreparedStatementValueSetter setter) throws SQLException {
+		arrays(setter, INTEGER_ARRAY, STRING_ARRAY, INTEGER_ARRAY, STRING_ARRAY);
 	}
 
-
-	@ParameterizedTest
+	@ParameterizedTest(name = "set {0}")
 	@EnumSource(value = PreparedStatementValueSetter.class)
-	void emptyIntegerAndStringValues() throws SQLException {
-		arrays(PreparedStatementValueSetter.OBJECT, new int[0], new String[0], new Integer[0], new String[0]);
+	void emptyIntegerAndStringValues(PreparedStatementValueSetter setter) throws SQLException {
+		arrays(setter, new int[0], new String[0], new Integer[0], new String[0]);
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest(name = "set {0}")
 	@EnumSource(value = PreparedStatementValueSetter.class)
-	void emptyIntAndStringValues() throws SQLException {
-		arrays(PreparedStatementValueSetter.OBJECT, new Integer[0], new String[0], new Integer[0], new String[0]);
+	void emptyIntAndStringValues(PreparedStatementValueSetter setter) throws SQLException {
+		arrays(setter, new Integer[0], new String[0], new Integer[0], new String[0]);
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest(name = "set {0}")
 	@EnumSource(value = PreparedStatementValueSetter.class)
-	void integerAndStringWithNullValues() throws SQLException {
-		arrays(PreparedStatementValueSetter.OBJECT, new Integer[] {5, null, 6}, new String[] {"hi", null}, new Integer[] {5, null, 6}, new String[] {"hi", null});
+	void integerAndStringWithNullValues(PreparedStatementValueSetter setter) throws SQLException {
+		arrays(setter, new Integer[] {5, null, 6}, new String[] {"hi", null}, new Integer[] {5, null, 6}, new String[] {"hi", null});
 	}
 
-
-	@ParameterizedTest
+	@ParameterizedTest(name = "set {0}")
 	@EnumSource(value = PreparedStatementValueSetter.class)
 	void nullArrays(PreparedStatementValueSetter setter) throws SQLException {
 		arrays(setter, null, null, null, null);
@@ -95,13 +106,13 @@ class PreparedStatementArrayTest extends IntegrationTest {
 	private void arrays(PreparedStatementValueSetter setter, Object intArray, Object stringArray, Integer[] expectedIntArray, String[] expectedStringArray) throws SQLException {
 		try (Connection connection = createConnection()) {
 
-			try (PreparedStatement insert = connection.prepareStatement("INSERT INTO prepared_statement_test(intarray, textarray) VALUES (?, ?)")) {
-				setter.set(insert, 1, intArray);
-				setter.set(insert, 2, stringArray);
+			try (PreparedStatement insert = connection.prepareStatement("INSERT INTO prepared_statement_test_array(intarray, textarray) VALUES (?, ?)")) {
+				setter.set(insert, 1, setter.create(FireboltDataType.INTEGER, intArray));
+				setter.set(insert, 2, setter.create(FireboltDataType.TEXT, stringArray));
 				assertFalse(insert.execute());
 			}
 
-			try (PreparedStatement select = connection.prepareStatement("SELECT intarray, textarray FROM prepared_statement_test")) {
+			try (PreparedStatement select = connection.prepareStatement("SELECT intarray, textarray FROM prepared_statement_test_array")) {
 				try (ResultSet rs = select.executeQuery()) {
 					while(rs.next()) {
 						validateArrayUsingGetObject(rs, 1, expectedIntArray);
