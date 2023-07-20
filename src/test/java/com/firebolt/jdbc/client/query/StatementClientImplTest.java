@@ -55,7 +55,7 @@ class StatementClientImplTest {
 	void shouldPostSqlQueryForSystemEngine() throws FireboltException, IOException {
 		String url = shouldPostSqlQueryForSystemEngine(true).getValue();
 		assertEquals(
-				"http://firebolt1:555/dynamic/query?result_overflow_mode=break&database=db1&account_id=12345&output_format=TabSeparatedWithNamesAndTypes&max_result_rows=1&max_execution_time=15",
+				"http://firebolt1:555/?result_overflow_mode=break&database=db1&account_id=12345&output_format=TabSeparatedWithNamesAndTypes&max_result_rows=1&max_execution_time=15",
 				url);
 	}
 
