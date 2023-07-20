@@ -48,6 +48,14 @@ jobs:
              echo "SERVICE_ACCOUNT_ID=${{ secrets.FIREBOLT_CLIENT_ID_NEW_IDN }}" >> "$GITHUB_ENV"
              echo "SERVICE_ACCOUNT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_NEW_IDN }}" >> "$GITHUB_ENV"
           fi
+
+      - name: Validate database and engine
+        if: ${{ (github.event.inputs.database == '') != (github.event.inputs.engine == '') }}
+        id: validate-database-engine
+        with:
+          script: |
+            core.setFailed("Database and Engine parameters should be provided simultaneously")
+
       - name: Setup database and engine
         id: setup
         if: ${{ github.event.inputs.database == '' }}
