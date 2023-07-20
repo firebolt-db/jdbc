@@ -8,12 +8,12 @@ on:
         required: false
         default: ''
       engine:
-        description: 'Engine'
-        required: true
+        description: 'Engine - a new one will be created if not provided'
+        required: false
       account:
         description: 'Account'
         required: true
-        default: 'integration'
+        default: 'developer'
       environment:
         description: 'Environment to run the tests against'
         type: choice
@@ -28,6 +28,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Validate database and engine
+        if: ${{ (github.event.inputs.database == '') != (github.event.inputs.engine == '') }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed("Database and Engine parameters should be provided simultaneously")
+
       - name: "Foresight: Collect Workflow Telemetry"
         uses: runforesight/foresight-workflow-kit-action@v1
         if: ${{ always() }}
@@ -42,25 +49,22 @@ jobs:
       - name: Determine env variables
         run: |
           if [ "${{ github.event.inputs.environment }}" == 'staging' ]; then
-             echo "USERNAME=${{ secrets.FIREBOLT_USERNAME_STAGING }}" >> "$GITHUB_ENV"
-             echo "PASSWORD=${{ secrets.FIREBOLT_PASSWORD_STAGING }}" >> "$GITHUB_ENV"
-             echo "SERVICE_ACCOUNT_ID=${{ secrets.SERVICE_ACCOUNT_ID_STAGING }}" >> "$GITHUB_ENV"
-             echo "SERVICE_ACCOUNT_SECRET=${{ secrets.SERVICE_ACCOUNT_SECRET_STAGING }}" >> "$GITHUB_ENV"
+             echo "SERVICE_ACCOUNT_ID=${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" >> "$GITHUB_ENV"
+             echo "SERVICE_ACCOUNT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" >> "$GITHUB_ENV"
           else
-             echo "USERNAME=${{ secrets.FIREBOLT_USERNAME_DEV }}" >> "$GITHUB_ENV"
-             echo "PASSWORD=${{ secrets.FIREBOLT_PASSWORD_DEV }}" >> "$GITHUB_ENV"
-             echo "SERVICE_ACCOUNT_ID=${{ secrets.SERVICE_ACCOUNT_ID_DEV }}" >> "$GITHUB_ENV"
-             echo "SERVICE_ACCOUNT_SECRET=${{ secrets.SERVICE_ACCOUNT_SECRET_DEV }}" >> "$GITHUB_ENV"
+             echo "SERVICE_ACCOUNT_ID=${{ secrets.FIREBOLT_CLIENT_ID_NEW_IDN }}" >> "$GITHUB_ENV"
+             echo "SERVICE_ACCOUNT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_NEW_IDN }}" >> "$GITHUB_ENV"
           fi
+
       - name: Setup database and engine
         id: setup
         if: ${{ github.event.inputs.database == '' }}
-        uses: firebolt-db/integration-testing-setup@v1
+        uses: firebolt-db/integration-testing-setup@v2
         with:
-          firebolt-username: ${{ env.USERNAME }}
-          firebolt-password: ${{ env.PASSWORD }}
+          firebolt-client-id: ${{ env.SERVICE_ACCOUNT_ID }}
+          firebolt-client-secret: ${{ env.SERVICE_ACCOUNT_SECRET }}
+          account: ${{ github.event.inputs.account }}
           api-endpoint: "api.${{ github.event.inputs.environment }}.firebolt.io"
-          region: "us-east-1"
           instance-type: "B2"
 
       - name: Determine database name
@@ -72,8 +76,17 @@ jobs:
              echo "database_name=${{ steps.setup.outputs.database_name }}" >> $GITHUB_OUTPUT
           fi
 
+      - name: Determine engine name
+        id: find-engine-name
+        run: |
+          if ! [[ -z "${{ github.event.inputs.engine }}" ]]; then
+             echo "engine_name=${{ github.event.inputs.engine }}" >> $GITHUB_OUTPUT
+          else
+             echo "engine_name=${{ steps.setup.outputs.engine_name }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=${{ github.event.inputs.environment }} -Dclient_secret="${{ env.SERVICE_ACCOUNT_SECRET }}" -Dclient_id="${{ env.SERVICE_ACCOUNT_ID }}" -Daccount="${{ github.event.inputs.account }}" -Dengine="${{ github.event.inputs.engine }}"
+        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=${{ github.event.inputs.environment }} -Dclient_secret="${{ env.SERVICE_ACCOUNT_SECRET }}" -Dclient_id="${{ env.SERVICE_ACCOUNT_ID }}" -Daccount="${{ github.event.inputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}"
 
       - name: "Foresight: Analyze Test Results"
         uses: runforesight/foresight-test-kit-action@v1
