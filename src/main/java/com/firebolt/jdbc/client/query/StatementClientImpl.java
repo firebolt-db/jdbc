@@ -36,9 +36,6 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 	private static final String TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT = "TabSeparatedWithNamesAndTypes";
 
-	private static final List<String> URI_QUERY_SEGMENTS = Arrays.asList("dynamic","query");
-
-
 	private final BiPredicate<Call, String> isCallWithId = (call, id) -> call.request().tag() instanceof String
 			&& StringUtils.equals((String) call.request().tag(), id);
 
@@ -175,7 +172,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	private URI buildQueryUri(FireboltProperties fireboltProperties, Map<String, String> parameters) {
-		return buildURI(fireboltProperties, parameters, PropertyUtil.isLocalDb(fireboltProperties) || !fireboltProperties.isSystemEngine() ? Collections.emptyList() : URI_QUERY_SEGMENTS);
+		return buildURI(fireboltProperties, parameters, Collections.emptyList());
 	}
 
 	private URI buildCancelUri(FireboltProperties fireboltProperties, String id) {
