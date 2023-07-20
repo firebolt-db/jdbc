@@ -28,6 +28,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Validate database and engine
+        if: ${{ (github.event.inputs.database == '') != (github.event.inputs.engine == '') }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed("Database and Engine parameters should be provided simultaneously")
+
       - name: "Foresight: Collect Workflow Telemetry"
         uses: runforesight/foresight-workflow-kit-action@v1
         if: ${{ always() }}
@@ -48,13 +55,6 @@ jobs:
              echo "SERVICE_ACCOUNT_ID=${{ secrets.FIREBOLT_CLIENT_ID_NEW_IDN }}" >> "$GITHUB_ENV"
              echo "SERVICE_ACCOUNT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_NEW_IDN }}" >> "$GITHUB_ENV"
           fi
-
-      - name: Validate database and engine
-        if: ${{ (github.event.inputs.database == '') != (github.event.inputs.engine == '') }}
-        uses: actions/github-script@v3
-        with:
-          script: |
-            core.setFailed("Database and Engine parameters should be provided simultaneously")
 
       - name: Setup database and engine
         id: setup
