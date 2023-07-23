@@ -45,9 +45,11 @@ public class VersionUtil {
 				}
 			}
 		}
-		Properties properties = new Properties();
-		properties.load(new FileInputStream("gradle.properties"));
-		return properties.getProperty("version");
+		try (InputStream in = new FileInputStream("gradle.properties")) {
+			Properties properties = new Properties();
+			properties.load(in);
+			return properties.getProperty("version");
+		}
 	}
 
 	/**
