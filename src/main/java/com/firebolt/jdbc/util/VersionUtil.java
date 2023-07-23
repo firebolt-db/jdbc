@@ -1,31 +1,53 @@
 package com.firebolt.jdbc.util;
 
-import java.io.IOException;
-import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.Enumeration;
+import java.util.Properties;
+import java.util.jar.Attributes.Name;
+import java.util.jar.Manifest;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @UtilityClass
 @CustomLog
 public class VersionUtil {
 
 	private static final Pattern VERSION_PATTERN = Pattern.compile("^\\s*(\\d+)\\.(\\d+).*");
+	private static final String IMPLEMENTATION_TITLE = "Implementation-Title";
+	private static final String IMPLEMENTATION_VERSION = "Implementation-Version";
+	private static final String FIREBOLT_IMPLEMENTATION_TITLE = "Firebolt JDBC driver"; // This value must be the same as one defined in build.gradle/jar/manifest/attributes
 
 	private static String driverVersion;
 
 	static {
-		Properties properties = new Properties();
-		driverVersion = null;
 		try {
-			properties.load(VersionUtil.class.getResourceAsStream("/version.properties"));
-			driverVersion = properties.getProperty("version");
+			driverVersion = retrieveVersion();
 			log.info("Firebolt driver version used: {}", driverVersion);
 		} catch (IOException e) {
 			log.error("Could not get Project Version defined in the build.gradle file", e);
 		}
+	}
+
+	private static String retrieveVersion() throws IOException {
+		for(Enumeration<URL> eurl = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF"); eurl.hasMoreElements();) {
+			URL url = eurl.nextElement();
+			try (InputStream in = url.openStream()) {
+				Manifest manifest = new Manifest(in);
+				String implementationTitle = (String)manifest.getMainAttributes().get(new Name(IMPLEMENTATION_TITLE));
+				if (FIREBOLT_IMPLEMENTATION_TITLE.equals(implementationTitle)) {
+					return (String)manifest.getMainAttributes().get(new Name(IMPLEMENTATION_VERSION));
+				}
+			}
+		}
+		Properties properties = new Properties();
+		properties.load(new FileInputStream("gradle.properties"));
+		return properties.getProperty("version");
 	}
 
 	/**
