@@ -1,17 +1,5 @@
 package com.firebolt.jdbc.client.query;
 
-import static com.firebolt.jdbc.exception.ExceptionType.UNAUTHORIZED;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.util.*;
-import java.util.function.BiPredicate;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltClient;
 import com.firebolt.jdbc.connection.FireboltConnection;
@@ -25,11 +13,32 @@ import com.firebolt.jdbc.statement.rawstatement.RawStatement;
 import com.firebolt.jdbc.util.CloseableUtil;
 import com.firebolt.jdbc.util.PropertyUtil;
 import com.google.common.collect.ImmutableMap;
-
 import lombok.CustomLog;
 import lombok.NonNull;
-import okhttp3.*;
+import okhttp3.Call;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 import okhttp3.internal.http2.StreamResetException;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.BiPredicate;
+
+import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.DEFAULT_FORMAT;
+import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.OUTPUT_FORMAT;
+import static com.firebolt.jdbc.exception.ExceptionType.UNAUTHORIZED;
 
 @CustomLog
 public class StatementClientImpl extends FireboltClient implements StatementClient {
@@ -222,13 +231,8 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 	private Optional<Pair<String, String>> getResponseFormatParameter(boolean isQuery, boolean isLocalDb) {
 		if (isQuery) {
-			if (isLocalDb) {
-				return Optional.of(new ImmutablePair<>(FireboltQueryParameterKey.DEFAULT_FORMAT.getKey(),
-						TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT));
-			} else {
-				return Optional.of(new ImmutablePair<>(FireboltQueryParameterKey.OUTPUT_FORMAT.getKey(),
-						TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT));
-			}
+			FireboltQueryParameterKey key =  isLocalDb ? DEFAULT_FORMAT : OUTPUT_FORMAT;
+			return Optional.of(new ImmutablePair<>(key.getKey(), TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT));
 		}
 		return Optional.empty();
 	}

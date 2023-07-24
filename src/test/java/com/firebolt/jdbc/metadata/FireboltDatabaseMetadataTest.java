@@ -14,28 +14,74 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.mockito.InjectMocks;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.Driver;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
+import java.sql.Wrapper;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.firebolt.jdbc.metadata.MetadataColumns.*;
+import static com.firebolt.jdbc.metadata.MetadataColumns.BUFFER_LENGTH;
+import static com.firebolt.jdbc.metadata.MetadataColumns.CHAR_OCTET_LENGTH;
+import static com.firebolt.jdbc.metadata.MetadataColumns.COLUMN_DEF;
+import static com.firebolt.jdbc.metadata.MetadataColumns.COLUMN_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.COLUMN_SIZE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.DATA_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.DECIMAL_DIGITS;
+import static com.firebolt.jdbc.metadata.MetadataColumns.IS_AUTOINCREMENT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.IS_GENERATEDCOLUMN;
+import static com.firebolt.jdbc.metadata.MetadataColumns.IS_NULLABLE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.NULLABLE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.NUM_PREC_RADIX;
+import static com.firebolt.jdbc.metadata.MetadataColumns.ORDINAL_POSITION;
+import static com.firebolt.jdbc.metadata.MetadataColumns.REF_GENERATION;
+import static com.firebolt.jdbc.metadata.MetadataColumns.REMARKS;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SCOPE_CATALOG;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SCOPE_SCHEMA;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SCOPE_TABLE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SELF_REFERENCING_COL_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SOURCE_DATA_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SQL_DATA_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SQL_DATETIME_SUB;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_CAT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_CATALOG;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_SCHEM;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_CAT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_SCHEM;
 import static com.firebolt.jdbc.type.FireboltDataType.INTEGER;
 import static com.firebolt.jdbc.type.FireboltDataType.TEXT;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltDatabaseMetadataTest {
@@ -46,15 +92,16 @@ class FireboltDatabaseMetadataTest {
 	@Mock
 	private FireboltStatement statement;
 
-	@InjectMocks
+//	@InjectMocks
 	private FireboltDatabaseMetadata fireboltDatabaseMetadata;
 
 	@BeforeEach
 	void init() throws SQLException {
+		fireboltDatabaseMetadata = new FireboltDatabaseMetadata("jdbc:firebolt:host", fireboltConnection);
 		lenient().when(fireboltConnection.createStatement(any())).thenReturn(statement);
 		lenient().when(fireboltConnection.createStatement()).thenReturn(statement);
 		lenient().when(fireboltConnection.getCatalog()).thenReturn("db_name");
-		lenient().when(fireboltConnection.getSessionProperties()).thenReturn(FireboltProperties.builder().build());
+		lenient().when(fireboltConnection.getSessionProperties()).thenReturn(FireboltProperties.builder().database("my-db").build());
 		lenient().when(statement.executeQuery(anyString())).thenReturn(FireboltResultSet.empty());
 	}
 
@@ -81,6 +128,20 @@ class FireboltDatabaseMetadataTest {
 	}
 
 	@Test
+	void shouldReturnSchemas() throws SQLException {
+		ResultSet expectedResultSet = FireboltResultSet.of(QueryResult.builder()
+				.columns(List.of(
+						Column.builder().name(TABLE_SCHEM).type(TEXT).build(),
+						Column.builder().name(TABLE_CATALOG).type(TEXT).build()))
+				.rows(List.of(List.of("public", "my-db"), List.of("information_schema", "my-db"), List.of("catalog", "my-db")))
+				.build());
+
+		ResultSet actualResultSet = fireboltDatabaseMetadata.getSchemas();
+
+		AssertionUtil.assertResultSetEquality(expectedResultSet, actualResultSet);
+	}
+
+	@Test
 	void shouldNotReturnAnyProcedureColumns() throws SQLException {
 		AssertionUtil.assertResultSetEquality(FireboltResultSet.empty(),
 				fireboltDatabaseMetadata.getProcedureColumns(null, null, null, null));
@@ -94,6 +155,16 @@ class FireboltDatabaseMetadataTest {
 	@Test
 	void shouldReturnDriverName() throws SQLException {
 		assertEquals("Firebolt JDBC Driver", fireboltDatabaseMetadata.getDriverName());
+	}
+
+	@Test
+	void shouldGetConnection() throws SQLException {
+		assertSame(fireboltConnection, fireboltDatabaseMetadata.getConnection());
+	}
+
+	@Test
+	void shouldGetUrl() throws SQLException {
+		assertEquals("jdbc:firebolt:host", fireboltDatabaseMetadata.getURL());
 	}
 
 	@Test
@@ -228,6 +299,31 @@ class FireboltDatabaseMetadataTest {
 	}
 
 	@Test
+	void shouldGetDriverMajorVersion() {
+		assertEquals(2, fireboltDatabaseMetadata.getDriverMajorVersion());
+	}
+
+	@Test
+	void shouldGetDriverManorVersion() {
+		assertEquals(4, fireboltDatabaseMetadata.getDriverMinorVersion());
+	}
+
+	@Test
+	void shouldGetDriverVersion() throws SQLException {
+		assertEquals("2.4.5-SNAPSHOT", fireboltDatabaseMetadata.getDriverVersion());
+	}
+
+	@Test
+	void shouldGetJdbcMajorVersion() throws SQLException {
+		assertEquals(4, fireboltDatabaseMetadata.getJDBCMajorVersion());
+	}
+
+	@Test
+	void shouldGetJdbcManorVersion() throws SQLException {
+		assertEquals(3, fireboltDatabaseMetadata.getJDBCMinorVersion());
+	}
+
+	@Test
 	void shouldGetDatabaseProductVersion() throws SQLException {
 		Statement statement = mock(FireboltStatement.class);
 		when(fireboltConnection.createStatement()).thenReturn(statement);
@@ -287,6 +383,30 @@ class FireboltDatabaseMetadataTest {
 	@CsvSource(value = {",true", "'',true", "abs,true", "SIN,true", "ThisFunctionDoesNotExist,false"}, delimiter = ',')
 	void getFunctionColumns(String functionNamePattern, boolean filled) throws SQLException {
 		getFunctions(md -> md.getFunctionColumns(null, null, functionNamePattern, null), functionNamePattern, filled, true);
+	}
+
+	@ParameterizedTest
+	@ValueSource(classes = {DatabaseMetaData.class, FireboltDatabaseMetadata.class, Wrapper.class})
+	void successfulUnwrap(Class<?> clazz) throws SQLException {
+		assertSame(fireboltDatabaseMetadata, fireboltDatabaseMetadata.unwrap(clazz));
+	}
+
+	@ParameterizedTest
+	@ValueSource(classes = {Closeable.class, String.class})
+	void failingUnwrap(Class<?> clazz) {
+		assertThrows(SQLException.class, () -> fireboltDatabaseMetadata.unwrap(clazz));
+	}
+
+	@ParameterizedTest
+	@ValueSource(classes = {DatabaseMetaData.class, FireboltDatabaseMetadata.class, Wrapper.class})
+	void isWrapperFor(Class<?> clazz) throws SQLException {
+		assertTrue(fireboltDatabaseMetadata.isWrapperFor(clazz));
+	}
+
+	@ParameterizedTest
+	@ValueSource(classes = {Driver.class, Connection.class, String.class})
+	void isNotWrapperFor(Class<?> clazz) throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.isWrapperFor(clazz));
 	}
 
 	void getFunctions(CheckedFunction<DatabaseMetaData, ResultSet> getter, String functionNamePattern, boolean filled, boolean allowDuplicates) throws SQLException {

@@ -1,32 +1,48 @@
 package com.firebolt.jdbc.statement;
 
-import static java.sql.Statement.CLOSE_CURRENT_RESULT;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-
-import java.lang.reflect.Field;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.HashMap;
-import java.util.Optional;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.service.FireboltStatementService;
-
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.Closeable;
+import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.Statement;
+import java.sql.Wrapper;
+import java.util.HashMap;
+import java.util.Optional;
+
+import static java.sql.Statement.CLOSE_CURRENT_RESULT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltStatementTest {
@@ -84,6 +100,10 @@ class FireboltStatementTest {
 		fireboltStatement.close();
 		verify(rs).close();
 		verify(connection).removeClosedStatement(fireboltStatement);
+
+		// validate that recurrent close does not create cascading closing calls.
+		fireboltStatement.close();
+		verifyNoMoreInteractions(connection);
 	}
 
 	@Test
@@ -199,5 +219,86 @@ class FireboltStatementTest {
 		verify(firstRs).close();
 		verify(secondRs).close();
 
+	}
+
+	@Test
+	void maxRows() throws SQLException {
+		FireboltProperties fireboltProperties = null;
+		FireboltConnection connection = mock(FireboltConnection.class);
+		Statement statement  = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
+		assertEquals(0, statement.getMaxRows()); // zero means there is not limit
+		statement.setMaxRows(123);
+		assertEquals(123, statement.getMaxRows());
+
+	}
+
+	@ParameterizedTest
+	@ValueSource(classes = {Statement.class, FireboltStatement.class, Wrapper.class, AutoCloseable.class})
+	void successfulUnwrap(Class<?> clazz) throws SQLException {
+		Statement statement  = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class));
+		assertSame(statement, statement.unwrap(clazz));
+	}
+
+	@ParameterizedTest
+	@ValueSource(classes = {Connection.class, String.class, Closeable.class})
+	void failingUnwrap(Class<?> clazz) {
+		Statement statement  = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class));
+		assertThrows(SQLException.class, () -> statement.unwrap(clazz));
+	}
+
+	@ParameterizedTest
+	@ValueSource(classes = {Statement.class, FireboltStatement.class, Wrapper.class, AutoCloseable.class})
+	void isWrapperFor(Class<?> clazz) throws SQLException {
+		Statement statement  = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class));
+		assertTrue(statement.isWrapperFor(clazz));
+	}
+
+	@ParameterizedTest
+	@ValueSource(classes = {Connection.class, String.class, Closeable.class})
+	void isNotWrapperFor(Class<?> clazz) throws SQLException {
+		Statement statement  = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class));
+		assertFalse(statement.isWrapperFor(clazz));
+	}
+
+	@Test
+	void queryTimeout() throws SQLException {
+		Statement statement  = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class));
+		assertEquals(0, statement.getQueryTimeout());
+		statement.setQueryTimeout(12345);
+		assertEquals(12345, statement.getQueryTimeout());
+	}
+
+	@Test
+	void closeOnCompletion() throws SQLException {
+		Statement statement  = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class));
+		assertFalse(statement.isCloseOnCompletion());
+		statement.closeOnCompletion();
+		assertTrue(statement.isCloseOnCompletion());
+	}
+
+	@Test
+	void isPoolable() throws SQLException {
+		Statement statement  = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class));
+		assertFalse(statement.isPoolable());
+		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setPoolable(true));
+		assertFalse(statement.isPoolable());
+		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setPoolable(false));
+		assertFalse(statement.isPoolable());
+	}
+
+	@Test
+	void fetchSize() throws SQLException {
+		Statement statement  = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class));
+		assertEquals(0, statement.getFetchSize());
+		statement.setFetchSize(123); // ignore
+		assertEquals(0, statement.getFetchSize());
+		assertThrows(SQLException.class, () -> statement.setFetchSize(-1));
+	}
+
+	@Test
+	void getConnection() throws SQLException {
+		FireboltConnection connection = mock(FireboltConnection.class);
+		Statement statement  = new FireboltStatement(fireboltStatementService, null, connection);
+		assertSame(connection, statement.getConnection());
 	}
 }

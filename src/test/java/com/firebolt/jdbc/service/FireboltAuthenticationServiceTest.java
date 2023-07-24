@@ -63,6 +63,24 @@ class FireboltAuthenticationServiceTest {
 	}
 
 	@Test
+	void shouldGetConnectionTokenAfterRemoving() throws IOException, FireboltException {
+		String randomHost = UUID.randomUUID().toString();
+		FireboltConnectionTokens token1 = FireboltConnectionTokens.builder().expiresInSeconds(52)
+				.refreshToken("refresh").accessToken("one").build();
+		FireboltConnectionTokens token2 = FireboltConnectionTokens.builder().expiresInSeconds(52)
+				.refreshToken("refresh").accessToken("two").build();
+		when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD)).thenReturn(token1, token2);
+
+		fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES);
+		assertEquals(token1, fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES));
+		fireboltAuthenticationService.removeConnectionTokens(randomHost, PROPERTIES);
+		fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES);
+		assertEquals(token2, fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES));
+
+		verify(fireboltAuthenticationClient, Mockito.times(2)).postConnectionTokens(randomHost, USER, PASSWORD);
+	}
+
+	@Test
 	void shouldThrowExceptionWithServerResponseWhenAResponseIsAvailable() throws IOException, FireboltException {
 		String randomHost = UUID.randomUUID().toString();
 		Mockito.when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD))

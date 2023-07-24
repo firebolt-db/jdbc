@@ -5,10 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class AssertionUtil {
-
-	private AssertionUtil() {
-	}
+public abstract class AssertionUtil {
 
 	public static void assertResultSetValuesEquality(ResultSet expected, ResultSet actual) throws SQLException {
 		while (expected.next()) {
