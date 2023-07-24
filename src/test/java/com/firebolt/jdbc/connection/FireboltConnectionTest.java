@@ -186,7 +186,6 @@ class FireboltConnectionTest {
 		assertNotNull(ps);
 	}
 
-	@ParameterizedTest
 	private <T> void notSupported(CheckedFunction<Connection, T> getter) throws FireboltException {
 		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
 				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
