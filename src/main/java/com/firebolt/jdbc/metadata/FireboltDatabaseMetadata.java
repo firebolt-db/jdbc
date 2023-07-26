@@ -313,12 +313,12 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public int getJDBCMajorVersion() throws SQLException {
-		return 4;
+		return VersionUtil.extractMajorVersion(VersionUtil.getSpecificationVersion());
 	}
 
 	@Override
 	public int getJDBCMinorVersion() throws SQLException {
-		return 3;
+		return VersionUtil.extractMinorVersion(VersionUtil.getSpecificationVersion());
 	}
 
 	@Override

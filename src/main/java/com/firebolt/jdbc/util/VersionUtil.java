@@ -21,34 +21,39 @@ public class VersionUtil {
 	private static final Pattern VERSION_PATTERN = Pattern.compile("^\\s*(\\d+)\\.(\\d+).*");
 	private static final String IMPLEMENTATION_TITLE = "Implementation-Title";
 	private static final String IMPLEMENTATION_VERSION = "Implementation-Version";
+	private static final String SPECIFICATION_VERSION = "Specification-Version";
 	private static final String FIREBOLT_IMPLEMENTATION_TITLE = "Firebolt JDBC driver"; // This value must be the same as one defined in build.gradle/jar/manifest/attributes
 
 	private static String driverVersion;
+	private static String specificationVersion;
 
 	static {
 		try {
-			driverVersion = retrieveVersion();
+			retrieveVersionInfo();
 			log.info("Firebolt driver version used: {}", driverVersion);
 		} catch (IOException e) {
 			log.error("Could not get Project Version defined in the build.gradle file", e);
 		}
 	}
 
-	private static String retrieveVersion() throws IOException {
+	private static void retrieveVersionInfo() throws IOException {
 		for(Enumeration<URL> eurl = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF"); eurl.hasMoreElements();) {
 			URL url = eurl.nextElement();
 			try (InputStream in = url.openStream()) {
 				Manifest manifest = new Manifest(in);
 				String implementationTitle = (String)manifest.getMainAttributes().get(new Name(IMPLEMENTATION_TITLE));
 				if (FIREBOLT_IMPLEMENTATION_TITLE.equals(implementationTitle)) {
-					return (String)manifest.getMainAttributes().get(new Name(IMPLEMENTATION_VERSION));
+					driverVersion = (String)manifest.getMainAttributes().get(new Name(IMPLEMENTATION_VERSION));
+					specificationVersion = (String)manifest.getMainAttributes().get(new Name(SPECIFICATION_VERSION));
+					return;
 				}
 			}
 		}
 		try (InputStream in = new FileInputStream("gradle.properties")) {
 			Properties properties = new Properties();
 			properties.load(in);
-			return properties.getProperty("version");
+			driverVersion = properties.getProperty("version");
+			specificationVersion = properties.getProperty("jdbcVersion");
 		}
 	}
 
@@ -105,5 +110,9 @@ public class VersionUtil {
 	 */
 	public String getDriverVersion() {
 		return driverVersion;
+	}
+
+	public String getSpecificationVersion() {
+		return specificationVersion;
 	}
 }
