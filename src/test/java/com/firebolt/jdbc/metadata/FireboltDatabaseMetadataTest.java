@@ -304,7 +304,7 @@ class FireboltDatabaseMetadataTest {
 	}
 
 	@Test
-	void shouldGetDriverManorVersion() {
+	void shouldGetDriverMinorVersion() {
 		assertEquals(4, fireboltDatabaseMetadata.getDriverMinorVersion());
 	}
 
@@ -351,6 +351,11 @@ class FireboltDatabaseMetadataTest {
 		when(statement.executeQuery("SELECT version FROM information_schema.engines WHERE engine_name iLIKE 'test%'"))
 				.thenReturn(new FireboltResultSet(getInputStreamForGetVersion()));
 		assertEquals(0, fireboltDatabaseMetadata.getDatabaseMinorVersion());
+	}
+
+	@Test
+	void isReadOnly() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.isReadOnly());
 	}
 
 	@Test

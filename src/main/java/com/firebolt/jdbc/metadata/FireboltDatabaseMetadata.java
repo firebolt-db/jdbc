@@ -358,9 +358,8 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean isReadOnly() throws SQLException {
-		return true;
+		return false;
 	}
 
 	@Override

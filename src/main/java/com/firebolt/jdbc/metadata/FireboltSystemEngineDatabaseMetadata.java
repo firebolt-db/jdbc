@@ -1,12 +1,11 @@
 package com.firebolt.jdbc.metadata;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
+import org.apache.commons.lang3.StringUtils;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 /**
  * This class represents the database metadata for a system engine
@@ -51,5 +50,10 @@ public class FireboltSystemEngineDatabaseMetadata extends FireboltDatabaseMetada
 	@Override
 	public String getDatabaseProductVersion() throws SQLException {
 		return StringUtils.EMPTY;
+	}
+
+	@Override
+	public boolean isReadOnly() throws SQLException {
+		return true;
 	}
 }
