@@ -32,9 +32,7 @@ public abstract class IntegrationTest {
 	}
 
 	protected Connection createConnection() throws SQLException {
-		return DriverManager.getConnection(integration.ConnectionInfo.getInstance().toJdbcUrl(),
-				integration.ConnectionInfo.getInstance().getPrincipal(),
-				integration.ConnectionInfo.getInstance().getSecret());
+		return createConnection(integration.ConnectionInfo.getInstance().getEngine());
 	}
 
 	protected Connection createConnection(String engine) throws SQLException {
