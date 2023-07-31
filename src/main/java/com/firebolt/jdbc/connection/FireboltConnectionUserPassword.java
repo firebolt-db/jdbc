@@ -28,7 +28,7 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
     public static final String SYSTEM_ENGINE_NAME = "system";
     private final FireboltEngineService fireboltEngineService;
 
-    FireboltConnectionUserPassword(@NonNull String url,
+    public FireboltConnectionUserPassword(@NonNull String url,
                                    Properties connectionSettings,
                                    FireboltAuthenticationService fireboltAuthenticationService,
                                    FireboltStatementService fireboltStatementService,

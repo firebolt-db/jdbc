@@ -33,13 +33,13 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
     private final FireboltAccountIdService fireboltAccountIdService;
     private final FireboltEngineService fireboltEngineService;
 
-    FireboltConnectionServiceSecret(@NonNull String url,
-                                    Properties connectionSettings,
-                                    FireboltAuthenticationService fireboltAuthenticationService,
-                                    FireboltGatewayUrlService fireboltGatewayUrlService,
-                                    FireboltStatementService fireboltStatementService,
-                                    FireboltEngineInformationSchemaService fireboltEngineService,
-                                    FireboltAccountIdService fireboltAccountIdService) throws SQLException {
+    public FireboltConnectionServiceSecret(@NonNull String url,
+                                           Properties connectionSettings,
+                                           FireboltAuthenticationService fireboltAuthenticationService,
+                                           FireboltGatewayUrlService fireboltGatewayUrlService,
+                                           FireboltStatementService fireboltStatementService,
+                                           FireboltEngineService fireboltEngineService,
+                                           FireboltAccountIdService fireboltAccountIdService) throws SQLException {
         super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService);
         this.fireboltGatewayUrlService = fireboltGatewayUrlService;
         this.fireboltAccountIdService = fireboltAccountIdService;

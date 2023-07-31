@@ -11,13 +11,89 @@ import com.firebolt.jdbc.util.VersionUtil;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.JDBCType;
+import java.sql.ResultSet;
+import java.sql.RowIdLifetime;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static com.firebolt.jdbc.metadata.MetadataColumns.*;
-import static com.firebolt.jdbc.type.FireboltDataType.*;
+import static com.firebolt.jdbc.metadata.MetadataColumns.AUTO_INCREMENT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.BUFFER_LENGTH;
+import static com.firebolt.jdbc.metadata.MetadataColumns.CASE_SENSITIVE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.CHAR_OCTET_LENGTH;
+import static com.firebolt.jdbc.metadata.MetadataColumns.COLUMN_DEF;
+import static com.firebolt.jdbc.metadata.MetadataColumns.COLUMN_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.COLUMN_SIZE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.COLUMN_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.COMMON_RADIX;
+import static com.firebolt.jdbc.metadata.MetadataColumns.CREATE_PARAMS;
+import static com.firebolt.jdbc.metadata.MetadataColumns.DATA_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.DECIMAL_DIGITS;
+import static com.firebolt.jdbc.metadata.MetadataColumns.FIXED_PREC_SCALE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.FUNCTION_CAT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.FUNCTION_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.FUNCTION_SCHEM;
+import static com.firebolt.jdbc.metadata.MetadataColumns.FUNCTION_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.IS_AUTOINCREMENT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.IS_GENERATEDCOLUMN;
+import static com.firebolt.jdbc.metadata.MetadataColumns.IS_NULLABLE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.LENGTH;
+import static com.firebolt.jdbc.metadata.MetadataColumns.LITERAL_PREFIX;
+import static com.firebolt.jdbc.metadata.MetadataColumns.LITERAL_SUFFIX;
+import static com.firebolt.jdbc.metadata.MetadataColumns.LOCAL_TYPE_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.MAXIMUM_SCALE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.MINIMUM_SCALE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.NULLABLE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.NUM_PREC_RADIX;
+import static com.firebolt.jdbc.metadata.MetadataColumns.ORDINAL_POSITION;
+import static com.firebolt.jdbc.metadata.MetadataColumns.PRECISION;
+import static com.firebolt.jdbc.metadata.MetadataColumns.RADIX;
+import static com.firebolt.jdbc.metadata.MetadataColumns.REF_GENERATION;
+import static com.firebolt.jdbc.metadata.MetadataColumns.REMARKS;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SCALE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SCOPE_CATALOG;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SCOPE_SCHEMA;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SCOPE_TABLE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SEARCHABLE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SELF_REFERENCING_COL_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SOURCE_DATA_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SPECIFIC_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SQL_DATA_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SQL_DATETIME_SUB;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_CAT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_CATALOG;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_SCHEM;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_CAT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_SCHEM;
+import static com.firebolt.jdbc.metadata.MetadataColumns.UNSIGNED_ATTRIBUTE;
+import static com.firebolt.jdbc.type.FireboltDataType.ARRAY;
+import static com.firebolt.jdbc.type.FireboltDataType.BIG_INT;
+import static com.firebolt.jdbc.type.FireboltDataType.BOOLEAN;
+import static com.firebolt.jdbc.type.FireboltDataType.BYTEA;
+import static com.firebolt.jdbc.type.FireboltDataType.DATE;
+import static com.firebolt.jdbc.type.FireboltDataType.DOUBLE_PRECISION;
+import static com.firebolt.jdbc.type.FireboltDataType.INTEGER;
+import static com.firebolt.jdbc.type.FireboltDataType.NUMERIC;
+import static com.firebolt.jdbc.type.FireboltDataType.REAL;
+import static com.firebolt.jdbc.type.FireboltDataType.TEXT;
+import static com.firebolt.jdbc.type.FireboltDataType.TIMESTAMP;
+import static com.firebolt.jdbc.type.FireboltDataType.TUPLE;
 import static java.sql.Types.VARCHAR;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
@@ -33,10 +109,12 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	private final String url;
 	private final FireboltConnection connection;
 	private String databaseVersion;
+	private final ReadOnlyChecker readOnlyChecker;
 
 	public FireboltDatabaseMetadata(String url, FireboltConnection connection) {
 		this.url = url;
 		this.connection = connection;
+		readOnlyChecker = new ReadOnlyChecker(connection, connection.getSessionProperties().getDatabase(), MetadataUtil.isDatabaseReadOnly());
 	}
 
 	@Override
@@ -359,7 +437,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public boolean isReadOnly() throws SQLException {
-		return false;
+		return readOnlyChecker.isReadOnly();
 	}
 
 	@Override

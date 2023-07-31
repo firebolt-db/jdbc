@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Driver;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -97,12 +98,12 @@ class FireboltDatabaseMetadataTest {
 
 	@BeforeEach
 	void init() throws SQLException {
-		fireboltDatabaseMetadata = new FireboltDatabaseMetadata("jdbc:firebolt:host", fireboltConnection);
 		lenient().when(fireboltConnection.createStatement(any())).thenReturn(statement);
 		lenient().when(fireboltConnection.createStatement()).thenReturn(statement);
 		lenient().when(fireboltConnection.getCatalog()).thenReturn("db_name");
 		lenient().when(fireboltConnection.getSessionProperties()).thenReturn(FireboltProperties.builder().database("my-db").build());
 		lenient().when(statement.executeQuery(anyString())).thenReturn(FireboltResultSet.empty());
+		fireboltDatabaseMetadata = new FireboltDatabaseMetadata("jdbc:firebolt:host", fireboltConnection);
 	}
 
 	@Test
@@ -353,9 +354,22 @@ class FireboltDatabaseMetadataTest {
 		assertEquals(0, fireboltDatabaseMetadata.getDatabaseMinorVersion());
 	}
 
-	@Test
-	void isReadOnly() throws SQLException {
-		assertFalse(fireboltDatabaseMetadata.isReadOnly());
+	@ParameterizedTest
+	@CsvSource({
+			"false,,false",
+			"true,false,false",
+			"true,true,true"
+	})
+	void isReadOnly(boolean next, Boolean value, boolean expectedReadOnly) throws SQLException {
+		PreparedStatement ps = mock(PreparedStatement.class);
+		ResultSet rs  = mock(ResultSet.class);
+		when(fireboltConnection.prepareStatement(anyString())).thenReturn(ps);
+		when(ps.executeQuery()).thenReturn(rs);
+		when(rs.next()).thenReturn(next);
+		if (value != null) {
+			when(rs.getBoolean(1)).thenReturn(value);
+		}
+		assertEquals(expectedReadOnly, fireboltDatabaseMetadata.isReadOnly());
 	}
 
 	@Test

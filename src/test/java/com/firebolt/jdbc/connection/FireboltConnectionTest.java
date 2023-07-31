@@ -10,7 +10,6 @@ import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
-import lombok.NonNull;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.sql.Array;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -50,6 +50,7 @@ import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.ACCE
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.CLIENT_ID;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.CLIENT_SECRET;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.HOST;
+import static java.lang.String.format;
 import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.CONCUR_UPDATABLE;
@@ -70,7 +71,6 @@ import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -233,6 +233,7 @@ abstract class FireboltConnectionTest {
 
 	@Test
 	void readOnly() throws SQLException {
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any())).thenReturn(Optional.of(mock(ResultSet.class)));
 		validateFlag(Connection::isReadOnly, false);
 	}
 
@@ -597,6 +598,29 @@ abstract class FireboltConnectionTest {
 		try (FireboltConnection connection = createConnection(URL, connectionProperties)) {
 			verify(fireboltEngineService).getEngine(argThat(props -> "engine".equals(props.getEngine()) && "db".equals(props.getDatabase())));
 			assertEquals("http://my_endpoint", connection.getSessionProperties().getHost());
+		}
+	}
+
+	@ParameterizedTest(name = "{0}")
+	@CsvSource({
+			"existing read only engine, true, true, true",
+			"existing writable engine, true, false, false",
+			"engine does not exist, false, false, false"
+	})
+	void getRegularEngineMetadata(String testName, boolean next, boolean column1, boolean expectedReadOnly) throws SQLException {
+		ResultSet rs = mock(ResultSet.class);
+		when(rs.next()).thenReturn(next);
+		if (next) {
+			when(rs.getBoolean(1)).thenReturn(column1);
+		}
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), Mockito.anyBoolean(), Mockito.anyBoolean(), any())).thenReturn(Optional.of(rs));
+		assertMetadata("&engine=eng", expectedReadOnly);
+	}
+
+	protected void assertMetadata(String engineParameter, boolean expectedReadOnly) throws SQLException {
+		try (FireboltConnection connection = createConnection(format("jdbc:firebolt:db?env=dev&account=dev%s", engineParameter), connectionProperties)) {
+			DatabaseMetaData dbmd = connection.getMetaData();
+			assertEquals(expectedReadOnly, dbmd.isReadOnly());
 		}
 	}
 

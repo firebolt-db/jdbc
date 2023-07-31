@@ -53,7 +53,7 @@ public class FireboltSystemEngineDatabaseMetadata extends FireboltDatabaseMetada
 	}
 
 	@Override
-	public boolean isReadOnly() throws SQLException {
+	public boolean isReadOnly() {
 		return true;
 	}
 }

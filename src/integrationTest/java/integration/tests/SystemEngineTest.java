@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -22,7 +21,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -132,9 +130,5 @@ public class SystemEngineTest extends IntegrationTest {
 				}
 			}
 		}
-	}
-
-	private String getSystemEngineName() {
-		return System.getProperty("api") == null ? null : SYSTEM_ENGINE_NAME;
 	}
 }

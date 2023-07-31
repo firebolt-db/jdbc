@@ -9,8 +9,15 @@ import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.UtilityClass;
 
+import static java.lang.String.format;
+
 @UtilityClass
 public class MetadataUtil {
+	// lower() is used in SQL statement because the comparison in Firebolt is case-sensitive but we retrieve engine name from host where lowercase is used.
+	// But default engine is created with suffix Ingest (upper I). This is the reason to call lower() function.
+	private static final String CHECK_STATUS_QUERY = "select count(*) = 0 from information_schema.engines where status = 'Running' and engine_type = 'General Purpose' and lower(%s) = lower(?)";
+	private static final String CHECK_CONNECTION_READ_ONLY = format(CHECK_STATUS_QUERY, "engine_name");
+	private static final String CHECK_DATABASE_READ_ONLY = format(CHECK_STATUS_QUERY, "attached_to");
 
 	// To uncomment once schemas are supported
 //	public String getSchemasQuery(String catalog, String schemaPattern) {
@@ -38,11 +45,11 @@ public class MetadataUtil {
 
 		List<String> conditions = new ArrayList<>();
 		Optional.ofNullable(tableNamePattern)
-				.ifPresent(pattern -> conditions.add(String.format("table_name LIKE '%s'", pattern)));
+				.ifPresent(pattern -> conditions.add(format("table_name LIKE '%s'", pattern)));
 		Optional.ofNullable(columnNamePattern)
-				.ifPresent(pattern -> conditions.add(String.format("column_name LIKE '%s'", pattern)));
+				.ifPresent(pattern -> conditions.add(format("column_name LIKE '%s'", pattern)));
 		Optional.ofNullable(schemaPattern)
-				.ifPresent(pattern -> conditions.add(String.format("table_schema LIKE '%s'", pattern)));
+				.ifPresent(pattern -> conditions.add(format("table_schema LIKE '%s'", pattern)));
 		return queryBuilder.conditions(conditions).build().toSql();
 	}
 
@@ -82,10 +89,10 @@ public class MetadataUtil {
 			boolean isTable) {
 		List<String> conditions = new ArrayList<>();
 		Optional.ofNullable(schema)
-				.ifPresent(pattern -> conditions.add(String.format("table_schema LIKE '%s'", pattern)));
+				.ifPresent(pattern -> conditions.add(format("table_schema LIKE '%s'", pattern)));
 
 		Optional.ofNullable(tableName)
-				.ifPresent(pattern -> conditions.add(String.format("table_name LIKE '%s'", pattern)));
+				.ifPresent(pattern -> conditions.add(format("table_name LIKE '%s'", pattern)));
 		// Uncomment once table catalogs are supported
 		// Optional.ofNullable(catalog)
 		// .ifPresent(pattern -> conditions.add(String.format("table_catalog LIKE '%s'",
@@ -98,7 +105,7 @@ public class MetadataUtil {
 
 	public static String getDatabaseVersionQuery(String engine) {
 		return Query.builder().select("version").from("information_schema.engines")
-				.conditions(Collections.singletonList(String.format("engine_name iLIKE '%s%%'", engine))).build()
+				.conditions(Collections.singletonList(format("engine_name iLIKE '%s%%'", engine))).build()
 				.toSql();
 	}
 
@@ -158,4 +165,11 @@ public class MetadataUtil {
 		}
 	}
 
+	public static String isConnectionReadOnly() {
+		return CHECK_CONNECTION_READ_ONLY;
+	}
+
+	public static String isDatabaseReadOnly() {
+		return CHECK_DATABASE_READ_ONLY;
+	}
 }

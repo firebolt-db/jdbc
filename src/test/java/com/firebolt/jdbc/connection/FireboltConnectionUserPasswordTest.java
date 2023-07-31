@@ -1,15 +1,11 @@
 package com.firebolt.jdbc.connection;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 
-import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Properties;
 
 import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
-import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -43,7 +39,6 @@ class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
         }
     }
 
-
     @Test
     void noEngineAndDb() throws SQLException {
         try (FireboltConnection connection = createConnection("jdbc:firebolt:?env=dev&account=dev", connectionProperties)) {
@@ -53,16 +48,9 @@ class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
         }
     }
 
-    @ParameterizedTest
-    @CsvSource({
-            "eng,false",
-            "system,true" // system engine is readonly
-    })
-    void getMetadata(String engine, boolean readOnly) throws SQLException {
-        try (FireboltConnection connection = createConnection(format("jdbc:firebolt:db?env=dev&engine=%s&account=dev", engine), connectionProperties)) {
-            DatabaseMetaData dbmd = connection.getMetaData();
-            assertEquals(readOnly, dbmd.isReadOnly());
-        }
+    @Test
+    void getSystemEngineMetadata() throws SQLException {
+        assertMetadata("&engine=system", true);
     }
 
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {

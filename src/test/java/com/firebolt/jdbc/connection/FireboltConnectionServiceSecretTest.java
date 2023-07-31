@@ -3,14 +3,11 @@ package com.firebolt.jdbc.connection;
 import com.firebolt.jdbc.exception.FireboltException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Properties;
 
-import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -64,16 +61,9 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         assertEquals("Database my_db does not exist", assertThrows(FireboltException.class, () -> createConnection("jdbc:firebolt:?env=dev&account=dev", connectionProperties)).getMessage());
     }
 
-    @ParameterizedTest(name = "{0}")
-    @CsvSource({
-            "regular engine,&engine=eng,false",
-            "system engine,'',true" // system engine is readonly
-    })
-    void getMetadata(String testName, String engineParameter, boolean readOnly) throws SQLException {
-        try (FireboltConnection connection = createConnection(format("jdbc:firebolt:db?env=dev&account=dev%s", engineParameter), connectionProperties)) {
-            DatabaseMetaData dbmd = connection.getMetaData();
-            assertEquals(readOnly, dbmd.isReadOnly());
-        }
+    @Test
+    void getSystemEngineMetadata() throws SQLException {
+        assertMetadata("", true);
     }
 
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {

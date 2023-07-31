@@ -14,6 +14,8 @@ import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
 import com.firebolt.jdbc.metadata.FireboltSystemEngineDatabaseMetadata;
+import com.firebolt.jdbc.metadata.MetadataUtil;
+import com.firebolt.jdbc.metadata.ReadOnlyChecker;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
@@ -68,6 +70,7 @@ public abstract class FireboltConnection implements Connection {
 	private boolean closed = true;
 	protected FireboltProperties sessionProperties;
 	private int networkTimeout;
+	private ReadOnlyChecker readOnlyChecker;
 
 	//Properties that are used at the beginning of the connection for authentication
 	protected final FireboltProperties loginProperties;
@@ -101,6 +104,18 @@ public abstract class FireboltConnection implements Connection {
 		this.statements = new ArrayList<>();
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
+	}
+
+	private ReadOnlyChecker createReadOnlyChecker() {
+		if (PropertyUtil.isLocalDb(loginProperties)) {
+			return new ReadOnlyChecker(null, null, null) {
+				@Override
+				public boolean isReadOnly() {
+					return false;
+				}
+			};
+		}
+		return new ReadOnlyChecker(this, getEngine(), MetadataUtil.isConnectionReadOnly());
 	}
 
 	protected abstract FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper);
@@ -154,7 +169,7 @@ public abstract class FireboltConnection implements Connection {
 			// The validation of not local DB is implemented into authenticate() method itself.
 			assertDatabaseExisting(loginProperties.getDatabase());
 		}
-
+		readOnlyChecker = createReadOnlyChecker();
 		log.debug("Connection opened");
 	}
 
@@ -497,7 +512,7 @@ public abstract class FireboltConnection implements Connection {
 	@Override
 	public boolean isReadOnly() throws SQLException {
 		this.validateConnectionIsNotClose();
-		return false;
+		return readOnlyChecker.isReadOnly();
 	}
 
 	@Override
