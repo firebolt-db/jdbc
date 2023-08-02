@@ -1,6 +1,11 @@
 package com.firebolt.jdbc.connection;
 
+import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
+import static java.sql.ResultSet.CONCUR_READ_ONLY;
+import static java.sql.ResultSet.CONCUR_UPDATABLE;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE;
+import static java.sql.ResultSet.TYPE_SCROLL_SENSITIVE;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -13,11 +18,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import com.firebolt.jdbc.CheckedFunction;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -103,6 +110,86 @@ class FireboltConnectionTest {
 		assertTrue(statement.isClosed());
 		assertTrue(preparedStatement.isClosed());
 		assertTrue(fireboltConnection.isClosed());
+	}
+
+	@Test
+	void createStatement() throws SQLException {
+		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
+				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
+		assertNotNull(fireboltConnection.createStatement());
+	}
+
+	@Test
+	void createStatementWithParameters() throws SQLException {
+		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
+				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
+		assertNotNull(fireboltConnection.createStatement(TYPE_FORWARD_ONLY, CONCUR_READ_ONLY));
+	}
+
+	@Test
+	void unsupportedCreateStatementWithParameters() throws SQLException {
+		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
+				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
+		assertThrows(SQLFeatureNotSupportedException.class, () -> fireboltConnection.createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> fireboltConnection.createStatement(TYPE_SCROLL_SENSITIVE, CONCUR_READ_ONLY));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> fireboltConnection.createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_UPDATABLE));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> fireboltConnection.createStatement(TYPE_SCROLL_SENSITIVE, CONCUR_UPDATABLE));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> fireboltConnection.createStatement(TYPE_FORWARD_ONLY, CONCUR_UPDATABLE));
+	}
+
+	@Test
+	void autoCommit() throws SQLException {
+		validateFlag(Connection::getAutoCommit, true);
+	}
+
+	@Test
+	void readOnly() throws SQLException {
+		validateFlag(Connection::isReadOnly, false);
+	}
+
+	@Test
+	void holdability() throws SQLException {
+		validateFlag(Connection::getHoldability, CLOSE_CURSORS_AT_COMMIT);
+	}
+
+	@Test
+	void schema() throws SQLException {
+		validateFlag(Connection::getSchema, null);
+	}
+
+	private <T> void validateFlag(CheckedFunction<Connection, T> getter, T expected) throws SQLException {
+		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
+				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
+		assertEquals(expected, getter.apply(fireboltConnection));
+		fireboltConnection.close();
+		assertThrows(FireboltException.class, () -> getter.apply(fireboltConnection)); // cannot invoke this method on closed connection
+	}
+
+	@Test
+	void prepareCall() throws FireboltException {
+		notSupported(c -> c.prepareCall("select 1"));
+	}
+
+	@Test
+	void unsupportedPrepareStatement() throws FireboltException {
+		notSupported(c -> c.prepareStatement("select 1", ResultSet.TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY));
+		notSupported(c -> c.prepareStatement("select 1", Statement.RETURN_GENERATED_KEYS));
+		notSupported(c -> c.prepareStatement("select 1", new int[0]));
+		notSupported(c -> c.prepareStatement("select 1", new String[0]));
+	}
+
+	@Test
+	void prepareStatement() throws SQLException {
+		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
+				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
+		PreparedStatement ps = fireboltConnection.prepareStatement("select 1", ResultSet.TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
+		assertNotNull(ps);
+	}
+
+	private <T> void notSupported(CheckedFunction<Connection, T> getter) throws FireboltException {
+		FireboltConnection fireboltConnection = new FireboltConnection(URL, connectionProperties,
+				fireboltAuthenticationService, fireboltEngineService, fireboltStatementService);
+		assertThrows(SQLFeatureNotSupportedException.class, () -> getter.apply(fireboltConnection)); // cannot invoke this method on closed connection
 	}
 
 	@Test

@@ -1,12 +1,5 @@
 package com.firebolt.jdbc.statement;
 
-import java.io.InputStream;
-import java.sql.*;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
@@ -16,10 +9,22 @@ import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.util.CloseableUtil;
-import com.firebolt.jdbc.util.PropertyUtil;
-
 import lombok.Builder;
 import lombok.CustomLog;
+
+import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.sql.Statement;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @CustomLog
 public class FireboltStatement implements Statement {
@@ -34,7 +39,7 @@ public class FireboltStatement implements Statement {
 	private volatile boolean isClosed = false;
 	private StatementResultWrapper currentStatementResult;
 	private StatementResultWrapper firstUnclosedStatementResult;
-	private int queryTimeout = -1;
+	private int queryTimeout = 0; // zero means that there is not limit
 	private String runningStatementId;
 
 	@Builder
@@ -438,7 +443,7 @@ public class FireboltStatement implements Statement {
 	public void setFetchSize(int rows) throws SQLException {
 		validateStatementIsNotClosed();
 		if (rows < 0) {
-			throw new IllegalArgumentException("The number of rows cannot be less than 0");
+			throw new SQLException("The number of rows cannot be less than 0");
 		}
 		// Ignore
 	}
@@ -544,8 +549,6 @@ public class FireboltStatement implements Statement {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setPoolable(boolean poolable) throws SQLException {
 		throw new FireboltUnsupportedOperationException();
 	}

@@ -50,9 +50,7 @@ public class FireboltException extends SQLException {
 	}
 
 	public FireboltException(String message, Integer httpStatusCode, Throwable cause) {
-		super(message, cause);
-		this.type = getExceptionType(httpStatusCode);
-		errorMessageFromServer = null;
+		this(message, cause, getExceptionType(httpStatusCode));
 	}
 
 	public FireboltException(String message, Throwable cause, ExceptionType type) {
@@ -61,7 +59,7 @@ public class FireboltException extends SQLException {
 		errorMessageFromServer = null;
 	}
 
-	private ExceptionType getExceptionType(Integer httpStatusCode) {
+	private static ExceptionType getExceptionType(Integer httpStatusCode) {
 		if (httpStatusCode == null) {
 			return ERROR;
 		}

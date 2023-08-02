@@ -222,7 +222,7 @@ jar {
                 'Implementation-Vendor': 'Firebolt Analytics',
                 'Implementation-Version': version,
                 'Specification-Title': 'JDBC',
-                'Specification-Version': '4.3',
+                'Specification-Version': jdbcVersion,
                 'Specification-Vendor': 'Oracle Corporation',
                 'Built-By'       : System.properties['user.name'],
                 'Build-Timestamp': new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),

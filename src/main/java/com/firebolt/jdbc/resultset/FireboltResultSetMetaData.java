@@ -141,9 +141,8 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean isReadOnly(int column) throws SQLException {
-		return false;
+		return true;
 	}
 
 	@Override

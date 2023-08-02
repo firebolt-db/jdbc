@@ -1,5 +1,7 @@
 package com.firebolt.jdbc.resultset;
 
+import static java.sql.ResultSetMetaData.columnNoNulls;
+import static java.sql.ResultSetMetaData.columnNullable;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.sql.SQLException;
@@ -16,94 +18,83 @@ class FireboltResultSetMetaDataTest {
 
 	@Test
 	void shouldReturnColumnCount() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
-				.tableName("table-name").dbName("db-name").build();
-		assertEquals(3, fireboltResultSetMetaData.getColumnCount());
+		assertEquals(3, getMetaData().getColumnCount());
 	}
 
 	@Test
 	void shouldReturn1WhenColumnIsNullable() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
-				.tableName("table-name").dbName("db-name").build();
-		assertEquals(1, fireboltResultSetMetaData.isNullable(1));
+		assertEquals(columnNullable, getMetaData().isNullable(1));
 	}
 
 	@Test
 	void shouldReturn0WhenColumnIsNotNullable() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
-				.tableName("table-name").dbName("db-name").build();
-		assertEquals(0, fireboltResultSetMetaData.isNullable(2));
+		assertEquals(columnNoNulls, getMetaData().isNullable(2));
 	}
 
 	@Test
 	void shouldReturnTrueWhenColumnSigned() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
-				.tableName("table-name").dbName("db-name").build();
-		assertTrue(fireboltResultSetMetaData.isSigned(2));
+		assertTrue(getMetaData().isSigned(2));
 	}
 
 	@Test
 	void shouldReturnTrueWhenColumnNotSigned() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
-				.tableName("table-name").dbName("db-name").build();
-		assertFalse(fireboltResultSetMetaData.isSigned(1));
+		assertFalse(getMetaData().isSigned(1));
 	}
 
 	@Test
 	void shouldReturnColumnNameAndLabel() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
-				.tableName("table-name").dbName("db-name").build();
+		FireboltResultSetMetaData fireboltResultSetMetaData = getMetaData();
 		assertEquals("name", fireboltResultSetMetaData.getColumnName(1));
 		assertEquals("name", fireboltResultSetMetaData.getColumnLabel(1));
 	}
 
 	@Test
 	void shouldReturnEmptyWhenGettingSchemaAsItIsNotSupported() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
-				.tableName("table-name").dbName("db-name").build();
-		assertEquals(StringUtils.EMPTY, fireboltResultSetMetaData.getSchemaName(1));
+		assertEquals(StringUtils.EMPTY, getMetaData().getSchemaName(1));
 	}
 
 	@Test
-	void ShouldReturnScale() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
-				.tableName("table-name").dbName("db-name").build();
-		assertEquals(2, fireboltResultSetMetaData.getScale(3));
+	void shouldReturnScale() throws SQLException {
+		assertEquals(2, getMetaData().getScale(3));
 	}
 
 	@Test
-	void ShouldReturnPrecision() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
-				.tableName("table-name").dbName("db-name").build();
-		assertEquals(1, fireboltResultSetMetaData.getPrecision(3));
+	void shouldReturnPrecision() throws SQLException {
+		assertEquals(1, getMetaData().getPrecision(3));
 	}
 
 	@Test
-	void ShouldReturnTableName() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
-				.tableName("table-name").dbName("db-name").build();
-		assertEquals("table-name", fireboltResultSetMetaData.getTableName());
+	void shouldReturnTableName() throws SQLException {
+		assertEquals("table-name", getMetaData().getTableName());
 	}
 
 	@Test
-	void ShouldReturnDbName() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
-				.tableName("table-name").dbName("db-name").build();
-		assertEquals("db-name", fireboltResultSetMetaData.getDbName());
+	void shouldReturnDbName() throws SQLException {
+		assertEquals("db-name", getMetaData().getDbName());
 	}
 
 	@Test
-	void ShouldReturnColumnType() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
-				.tableName("table-name").dbName("db-name").build();
-		assertEquals(Types.VARCHAR, fireboltResultSetMetaData.getColumnType(1));
+	void shouldReturnColumnType() throws SQLException {
+		assertEquals(Types.VARCHAR, getMetaData().getColumnType(1));
 	}
 
 	@Test
-	void ShouldReturnColumnClassName() throws SQLException {
+	void shouldReturnColumnClassName() throws SQLException {
+		assertEquals("java.math.BigDecimal", getMetaData().getColumnClassName(3));
+	}
+
+	@Test
+	void shouldReturnTrueWhenColumnIsCaseSensitiveAndFalseOtherwise() throws SQLException {
+		FireboltResultSetMetaData fireboltResultSetMetaData = getMetaData();
+		assertTrue(fireboltResultSetMetaData.isCaseSensitive(1));
+		assertFalse(fireboltResultSetMetaData.isCaseSensitive(2));
+	}
+
+	@Test
+	void isReadOnly() throws SQLException {
 		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
 				.tableName("table-name").dbName("db-name").build();
-		assertEquals("java.math.BigDecimal", fireboltResultSetMetaData.getColumnClassName(3));
+		assertTrue(fireboltResultSetMetaData.isReadOnly(1));
 	}
 
 	private List<Column> getColumns() {
@@ -111,11 +102,7 @@ class FireboltResultSetMetaDataTest {
 				Column.of("Decimal(1,2)", "Weight"));
 	}
 
-	@Test
-	void shouldReturnTrueWhenColumnIsCaseSensitiveAndFalseOtherwise() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
-				.tableName("table-name").dbName("db-name").build();
-		assertTrue(fireboltResultSetMetaData.isCaseSensitive(1));
-		assertFalse(fireboltResultSetMetaData.isCaseSensitive(2));
+	private  FireboltResultSetMetaData getMetaData() {
+		return FireboltResultSetMetaData.builder().columns(getColumns()).tableName("table-name").dbName("db-name").build();
 	}
 }

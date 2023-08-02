@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
 import java.io.IOException;
@@ -184,7 +185,7 @@ public class FireboltConnection implements Connection {
 
 	@Override
 	public String getCatalog() throws SQLException {
-		this.validateConnectionIsNotClose();
+		validateConnectionIsNotClose();
 		return sessionProperties.getDatabase();
 	}
 
@@ -223,6 +224,7 @@ public class FireboltConnection implements Connection {
 
 	@Override
 	public String getSchema() throws SQLException {
+		validateConnectionIsNotClose();
 		return null;
 	}
 
@@ -442,8 +444,8 @@ public class FireboltConnection implements Connection {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean isReadOnly() throws SQLException {
+		this.validateConnectionIsNotClose();
 		return false;
 	}
 
@@ -480,7 +482,7 @@ public class FireboltConnection implements Connection {
 	@NotImplemented
 	public Map<String, Class<?>> getTypeMap() throws SQLException {
 		// Since setTypeMap is currently not supported, an empty map is returned (refer to the doc for more info)
-		return new HashMap<>();
+		return Map.of();
 	}
 
 	@Override
@@ -492,7 +494,8 @@ public class FireboltConnection implements Connection {
 
 	@ExcludeFromJacocoGeneratedReport
 	public int getHoldability() throws SQLException {
-		return 0;
+		validateConnectionIsNotClose();
+		return CLOSE_CURSORS_AT_COMMIT;
 	}
 
 	@Override

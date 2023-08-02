@@ -19,18 +19,35 @@ class RetryInterceptorTest {
 
 	@ParameterizedTest
 	@ValueSource(ints = { HTTP_CLIENT_TIMEOUT, HTTP_BAD_GATEWAY, HTTP_UNAVAILABLE, HTTP_GATEWAY_TIMEOUT })
-	void shouldRetryOnRetryableResponseCode(int arg) throws IOException {
+	void shouldRetryOnRetryableResponseCodeWithoutTag(int responseCode) throws IOException {
+		shouldRetryOnRetryableResponseCode(responseCode, null);
+	}
+
+	/**
+	 * The difference between with and without tag is just logging that very difficult to validate right now.
+	 * At least we validate that additional logging does not cause any failure.
+	 * @param responseCode response code
+	 * @throws IOException on failure
+	 */
+	@ParameterizedTest
+	@ValueSource(ints = { HTTP_CLIENT_TIMEOUT, HTTP_BAD_GATEWAY, HTTP_UNAVAILABLE, HTTP_GATEWAY_TIMEOUT })
+	void shouldRetryOnRetryableResponseCodeWithTag(int responseCode) throws IOException {
+		shouldRetryOnRetryableResponseCode(responseCode, "my tag");
+	}
+
+	void shouldRetryOnRetryableResponseCode(int responseCode, Object tag) throws IOException {
 		int retries = 3;
 		RetryInterceptor retryInterceptor = new RetryInterceptor(retries);
 		Interceptor.Chain chain = mock(Interceptor.Chain.class);
 		Response response = mock(Response.class);
 		Call call = mock(Call.class);
 		Request request = mock(Request.class);
+		when(request.tag()).thenReturn(tag);
 
 		when(chain.request()).thenReturn(request);
 		when(chain.proceed(any(Request.class))).thenReturn(response);
 		when(response.isSuccessful()).thenReturn(false);
-		when(response.code()).thenReturn(arg);
+		when(response.code()).thenReturn(responseCode);
 		when(chain.call()).thenReturn(call);
 
 		retryInterceptor.intercept(chain);

@@ -313,12 +313,12 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public int getJDBCMajorVersion() throws SQLException {
-		return VersionUtil.getMajorDriverVersion();
+		return VersionUtil.extractMajorVersion(VersionUtil.getSpecificationVersion());
 	}
 
 	@Override
 	public int getJDBCMinorVersion() throws SQLException {
-		return VersionUtil.getDriverMinorVersion();
+		return VersionUtil.extractMinorVersion(VersionUtil.getSpecificationVersion());
 	}
 
 	@Override
@@ -358,9 +358,8 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean isReadOnly() throws SQLException {
-		return true;
+		return false;
 	}
 
 	@Override

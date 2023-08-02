@@ -1,6 +1,9 @@
 package com.firebolt.jdbc.exception;
 
-public class FireboltUnsupportedOperationException extends UnsupportedOperationException {
+import java.sql.SQLFeatureNotSupportedException;
+
+@SuppressWarnings("squid:MaximumInheritanceDepth")
+public class FireboltUnsupportedOperationException extends SQLFeatureNotSupportedException {
 
 	public static final String OPERATION_NOT_SUPPORTED = "JDBC Operation not supported. Method: %s, Line: %d";
 
