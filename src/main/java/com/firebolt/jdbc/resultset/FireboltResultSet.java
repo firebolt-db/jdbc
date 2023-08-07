@@ -85,6 +85,7 @@ public class FireboltResultSet implements ResultSet {
 		this(is, tableName, dbName, bufferSize, 0, isCompressed, statement, logResultSet);
 	}
 
+	@SuppressWarnings("java:S107")
 	public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize, int maxRows, boolean isCompressed,
 			FireboltStatement statement, boolean logResultSet) throws SQLException {
 		log.debug("Creating resultSet...");
