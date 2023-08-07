@@ -61,17 +61,15 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	 * @param connectionProperties the connection properties
 	 * @param systemEngine         indicates if system engine is used
 	 * @param queryTimeout         query timeout
-	 * @param maxRows              max rows
 	 * @param standardSql          indicates if standard sql should be used
 	 * @return the server response
 	 */
 	@Override
 	public InputStream executeSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
-										   @NonNull FireboltProperties connectionProperties, boolean systemEngine, int queryTimeout, int maxRows,
+										   @NonNull FireboltProperties connectionProperties, boolean systemEngine, int queryTimeout,
 										   boolean standardSql) throws FireboltException {
 		String formattedStatement = formatStatement(statementInfoWrapper);
-		Map<String, String> params = getAllParameters(connectionProperties, statementInfoWrapper, systemEngine,
-				queryTimeout, maxRows);
+		Map<String, String> params = getAllParameters(connectionProperties, statementInfoWrapper, systemEngine, queryTimeout);
 		try {
 			String uri = this.buildQueryUri(connectionProperties, params).toString();
 			return executeSqlStatementWithRetryOnUnauthorized(statementInfoWrapper, connectionProperties,
@@ -203,7 +201,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	private Map<String, String> getAllParameters(FireboltProperties fireboltProperties,
-			StatementInfoWrapper statementInfoWrapper, boolean systemEngine, int queryTimeout, int maxRows) {
+			StatementInfoWrapper statementInfoWrapper, boolean systemEngine, int queryTimeout) {
 		boolean isLocalDb = PropertyUtil.isLocalDb(fireboltProperties);
 
 		Map<String, String> params = new HashMap<>(fireboltProperties.getAdditionalProperties());
@@ -219,10 +217,6 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 			if (queryTimeout > -1) {
 				params.put("max_execution_time", String.valueOf(queryTimeout));
-			}
-			if (maxRows > 0) {
-				params.put("max_result_rows", String.valueOf(maxRows));
-				params.put("result_overflow_mode", "break");
 			}
 		}
 

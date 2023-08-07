@@ -1,22 +1,32 @@
 package integration.tests;
 
-import static org.junit.jupiter.api.Assertions.*;
+import com.firebolt.jdbc.exception.FireboltException;
+import integration.IntegrationTest;
+import kotlin.collections.ArrayDeque;
+import lombok.CustomLog;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import com.firebolt.jdbc.exception.FireboltException;
-
-import integration.IntegrationTest;
-import lombok.CustomLog;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import static java.lang.String.format;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
 class StatementTest extends IntegrationTest {
@@ -68,6 +78,36 @@ class StatementTest extends IntegrationTest {
 		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
 			assertFalse(statement.execute("INSERT INTO statement_test(id) values (1); SELECT 1;"));
 		}
+	}
+
+	@Test
+	void shouldReturnLimitedNumberOfLines() throws SQLException {
+		try (Connection connection = createConnection(); Statement insert = connection.createStatement()) {
+			String valuesAsStr = IntStream.rangeClosed(1, 100).mapToObj(n -> format("(%d)", n)).collect(joining(","));
+			insert.execute("INSERT INTO statement_test(id) values " + valuesAsStr);
+			List<Integer> resultAll = IntStream.rangeClosed(1, 100).boxed().collect(toList());
+			assertEquals(resultAll, selectIntValues(connection, 0));
+			assertEquals(resultAll, selectIntValues(connection, 100));
+			assertEquals(resultAll, selectIntValues(connection, 101));
+			assertEquals(resultAll, selectIntValues(connection, 1000));
+
+			List<Integer> result99 = IntStream.rangeClosed(1, 99).boxed().collect(toList());
+			assertEquals(result99, selectIntValues(connection, 99));
+			assertEquals(List.of(1, 2), selectIntValues(connection, 2));
+			assertEquals(List.of(1), selectIntValues(connection, 1));
+		}
+	}
+
+	private List<Integer> selectIntValues(Connection connection, int limit) throws SQLException {
+		Statement select = connection.createStatement();
+		select.setMaxRows(limit);
+		List<Integer> result = new ArrayDeque<>();
+		try  (ResultSet rs = select.executeQuery("select id from statement_test order by id")) {
+			while (rs.next()) {
+				result.add(rs.getInt(1));
+			}
+		}
+		return result;
 	}
 
 	@Test

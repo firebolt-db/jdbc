@@ -42,6 +42,7 @@ public class FireboltResultSet implements ResultSet {
 	private final FireboltResultSetMetaData resultSetMetaData;
 	private final FireboltStatement statement;
 	private final List<Column> columns;
+	private final int maxRows;
 	private String currentLine;
 	private int currentRow = 0;
 	private int lastSplitRow = -1;
@@ -76,9 +77,15 @@ public class FireboltResultSet implements ResultSet {
 		currentLine = null;
 		columns = new ArrayList<>();
 		statement = null;
+		maxRows = 0;
 	}
 
 	public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize, boolean isCompressed,
+							 FireboltStatement statement, boolean logResultSet) throws SQLException {
+		this(is, tableName, dbName, bufferSize, 0, isCompressed, statement, logResultSet);
+	}
+
+	public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize, int maxRows, boolean isCompressed,
 			FireboltStatement statement, boolean logResultSet) throws SQLException {
 		log.debug("Creating resultSet...");
 		this.statement = statement;
@@ -87,6 +94,7 @@ public class FireboltResultSet implements ResultSet {
 		}
 
 		this.reader = createStreamReader(is, bufferSize, isCompressed);
+		this.maxRows = maxRows;
 
 		try {
 			this.next();
@@ -130,6 +138,10 @@ public class FireboltResultSet implements ResultSet {
 	@Override
 	public boolean next() throws SQLException {
 		checkStreamNotClosed();
+
+		if (maxRows > 0 && currentRow - 2 >= maxRows) {
+			return false;
+		}
 
 		try {
 			currentLine = reader.readLine();

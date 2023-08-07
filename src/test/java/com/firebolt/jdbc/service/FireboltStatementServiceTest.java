@@ -39,7 +39,7 @@ class FireboltStatementServiceTest {
 
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, 10, -1, true,
 					mock(FireboltStatement.class));
-			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, -1, true);
+			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true);
 			Assertions.assertEquals(1, mocked.constructed().size());
 		}
 	}
@@ -54,7 +54,7 @@ class FireboltStatementServiceTest {
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, -1, 10, true,
 					mock(FireboltStatement.class));
 			Assertions.assertEquals(1, mocked.constructed().size());
-			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, -1, 10, true);
+			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, -1, true);
 		}
 	}
 
@@ -88,7 +88,7 @@ class FireboltStatementServiceTest {
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, 10, 10, true,
 					mock(FireboltStatement.class));
 			Assertions.assertEquals(1, mocked.constructed().size());
-			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, true, 10, 10, true);
+			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, true, 10, true);
 		}
 	}
 
@@ -104,7 +104,7 @@ class FireboltStatementServiceTest {
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, -1, 0, false,
 					mock(FireboltStatement.class));
 			Assertions.assertEquals(1, mocked.constructed().size());
-			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, true, -1, 0, false);
+			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, true, -1, false);
 		}
 	}
 
@@ -118,7 +118,7 @@ class FireboltStatementServiceTest {
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient, false);
 		Assertions.assertEquals(Optional.empty(), fireboltStatementService.execute(statementInfoWrapper,
 				fireboltProperties, -1, 10, true, mock(FireboltStatement.class)));
-		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, -1, 10, true);
+		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, -1, true);
 	}
 
 }

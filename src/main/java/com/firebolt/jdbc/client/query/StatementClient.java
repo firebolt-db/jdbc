@@ -12,7 +12,7 @@ public interface StatementClient {
 	 * Post SQL statement
 	 */
 	InputStream executeSqlStatement(StatementInfoWrapper statementInfoWrapper, FireboltProperties connectionProperties,
-									boolean systemEngine, int queryTimeout, int maxRows, boolean standardSql) throws FireboltException;
+									boolean systemEngine, int queryTimeout, boolean standardSql) throws FireboltException;
 
 	/**
 	 * Call endpoint to abort a running SQL statement
