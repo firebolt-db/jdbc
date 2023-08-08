@@ -85,7 +85,7 @@ public class FireboltResultSet implements ResultSet {
 		this(is, tableName, dbName, bufferSize, 0, isCompressed, statement, logResultSet);
 	}
 
-	@SuppressWarnings("java:S107")
+	@SuppressWarnings("java:S107") //Number of parameters (8) > max (7). This is the price of the immutability
 	public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize, int maxRows, boolean isCompressed,
 			FireboltStatement statement, boolean logResultSet) throws SQLException {
 		log.debug("Creating resultSet...");
@@ -141,6 +141,8 @@ public class FireboltResultSet implements ResultSet {
 		checkStreamNotClosed();
 
 		if (maxRows > 0 && currentRow - 2 >= maxRows) {
+			// if maxRows is configured (>0) and currentRow (minus 2 that is header lines) arrived >= maxRows
+			// we are going to read the next line after maxRows, so return false to prevent it.
 			return false;
 		}
 

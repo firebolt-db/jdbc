@@ -45,7 +45,7 @@ public class FireboltStatementService {
 									   FireboltProperties properties, int queryTimeout, int maxRows, boolean standardSql,
 									   FireboltStatement statement)
 			throws SQLException {
-		InputStream is = statementClient.executeSqlStatement(statementInfoWrapper, properties, systemEngine, queryTimeout,standardSql);
+		InputStream is = statementClient.executeSqlStatement(statementInfoWrapper, properties, systemEngine, queryTimeout, standardSql);
 		if (statementInfoWrapper.getType() == StatementType.QUERY) {
 			return Optional.of(createResultSet(is, (QueryRawStatement) statementInfoWrapper.getInitialStatement(), properties, statement, maxRows));
 		} else {
