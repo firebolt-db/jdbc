@@ -45,10 +45,9 @@ public class FireboltStatementService {
 									   FireboltProperties properties, int queryTimeout, int maxRows, boolean standardSql,
 									   FireboltStatement statement)
 			throws SQLException {
-		InputStream is = statementClient.executeSqlStatement(statementInfoWrapper, properties, systemEngine, queryTimeout,
-				maxRows, standardSql);
+		InputStream is = statementClient.executeSqlStatement(statementInfoWrapper, properties, systemEngine, queryTimeout, standardSql);
 		if (statementInfoWrapper.getType() == StatementType.QUERY) {
-			return Optional.of(createResultSet(is, (QueryRawStatement) statementInfoWrapper.getInitialStatement(), properties, statement));
+			return Optional.of(createResultSet(is, (QueryRawStatement) statementInfoWrapper.getInitialStatement(), properties, statement, maxRows));
 		} else {
 			// If the statement is not a query, read all bytes from the input stream and close it.
 			// This is needed otherwise the stream with the server will be closed after having received the first chunk of data (resulting in incomplete inserts).
@@ -75,11 +74,11 @@ public class FireboltStatementService {
 		return statementClient.isStatementRunning(statementId);
 	}
 
-	private FireboltResultSet createResultSet(InputStream inputStream, QueryRawStatement initialQuery, FireboltProperties properties, FireboltStatement statement)
+	private FireboltResultSet createResultSet(InputStream inputStream, QueryRawStatement initialQuery, FireboltProperties properties, FireboltStatement statement, int maxRows)
 			throws SQLException {
 		return new FireboltResultSet(inputStream, Optional.ofNullable(initialQuery.getTable()).orElse(UNKNOWN_TABLE_NAME),
 				Optional.ofNullable(initialQuery.getDatabase()).orElse(properties.getDatabase()),
-				properties.getBufferSize(), properties.isCompress(), statement,
+				properties.getBufferSize(), maxRows, properties.isCompress(), statement,
 				properties.isLogResultSet());
 	}
 }
