@@ -57,6 +57,7 @@ public class FireboltProperties {
 	boolean systemEngine;
 	String userDrivers;
 	String userClients;
+	String accessToken;
 
 	@Builder.Default
 	Map<String, String> additionalProperties = new HashMap<>();
@@ -90,6 +91,7 @@ public class FireboltProperties {
 		String host = getHost(mergedProperties);
 		Integer port = getPort(mergedProperties, ssl);
 		String database = getDatabase(mergedProperties, path);
+		String accessToken =  getSetting(mergedProperties, FireboltSessionProperty.ACCESS_TOKEN);
 		Map<String, String> additionalProperties = getFireboltCustomProperties(mergedProperties);
 
 		return FireboltProperties.builder().ssl(ssl).sslCertificatePath(sslRootCertificate).sslMode(sslMode).path(path)
@@ -101,6 +103,7 @@ public class FireboltProperties {
 				.logResultSet(logResultSet).systemEngine(isSystemEngine)
 				.userDrivers(driverVersions)
 				.userClients(clientVersions)
+				.accessToken(accessToken)
 				.build();
 	}
 

@@ -1,33 +1,6 @@
 package com.firebolt.jdbc.connection;
 
-import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
-import static java.sql.ResultSet.CONCUR_READ_ONLY;
-import static java.sql.ResultSet.CONCUR_UPDATABLE;
-import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE;
-import static java.sql.ResultSet.TYPE_SCROLL_SENSITIVE;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-
-import java.sql.*;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import com.firebolt.jdbc.CheckedFunction;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.mockito.*;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
@@ -35,6 +8,57 @@ import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.Statement;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.ACCESS_TOKEN;
+import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.HOST;
+import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.PASSWORD;
+import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.USER;
+import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
+import static java.sql.ResultSet.CONCUR_READ_ONLY;
+import static java.sql.ResultSet.CONCUR_UPDATABLE;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE;
+import static java.sql.ResultSet.TYPE_SCROLL_SENSITIVE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltConnectionTest {
@@ -382,6 +406,36 @@ class FireboltConnectionTest {
 			assertEquals(Optional.empty(), fireboltConnection.getAccessToken());
 			verifyNoInteractions(fireboltAuthenticationService);
 		}
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			"localhost,access-token,access-token",
+			"localhost,,", // access token cannot be retrieved from service for localhost
+			"my-host,access-token,access-token"})
+	void shouldGetConnectionTokenFromProperties(String host, String configuredAccessToken, String expectedAccessToken) throws SQLException {
+		Properties propsWithToken = new Properties();
+		if (host != null) {
+			propsWithToken.setProperty(HOST.getKey(), host);
+		}
+		if (configuredAccessToken != null) {
+			propsWithToken.setProperty(ACCESS_TOKEN.getKey(), configuredAccessToken);
+		}
+		try (FireboltConnection connection = new FireboltConnection(URL, propsWithToken, fireboltAuthenticationService,
+				fireboltEngineService, fireboltStatementService)) {
+			assertEquals(expectedAccessToken, connection.getAccessToken().orElse(null));
+			Mockito.verifyNoMoreInteractions(fireboltAuthenticationService);
+		}
+	}
+
+	@Test
+	void shouldThrowExceptionIfBothAccessTokenAndUserPasswordAreSupplied() {
+		Properties propsWithToken = new Properties();
+		propsWithToken.setProperty(ACCESS_TOKEN.getKey(), "my-token");
+		propsWithToken.setProperty(USER.getKey(), "my-user");
+		propsWithToken.setProperty(PASSWORD.getKey(), "my-password");
+		assertThrows(SQLException.class, () -> new FireboltConnection(URL, propsWithToken, fireboltAuthenticationService,
+				fireboltEngineService, fireboltStatementService));
 	}
 
 	@Test

@@ -54,6 +54,7 @@ public enum FireboltSessionProperty {
 			"When set to true, the result of the queries executed are logged with the log level INFO. This has a negative performance impact and should be enabled only for debugging purposes"),
 	USER_DRIVERS("user_drivers", null, String.class, "user drivers"),
 	USER_CLIENTS("user_clients", null, String.class, "user clients"),
+	ACCESS_TOKEN("access_token", null, String.class, "access token"),
 
 	// We keep all the deprecated properties to ensure backward compatibility - but
 	// they do not have any effect.
