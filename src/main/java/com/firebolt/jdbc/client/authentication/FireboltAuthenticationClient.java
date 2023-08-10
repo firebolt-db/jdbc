@@ -1,20 +1,17 @@
 package com.firebolt.jdbc.client.authentication;
 
-import java.io.IOException;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltClient;
 import com.firebolt.jdbc.client.authentication.response.FireboltAuthenticationResponse;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.exception.FireboltException;
-
 import lombok.CustomLog;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+
+import java.io.IOException;
 
 @CustomLog
 public class FireboltAuthenticationClient extends FireboltClient {
@@ -54,16 +51,16 @@ public class FireboltAuthenticationClient extends FireboltClient {
 	}
 
 	private void logToken(FireboltAuthenticationResponse connectionTokens) {
-
-		if (!StringUtils.isEmpty(connectionTokens.getAccessToken())) {
-			log.debug("Retrieved access_token");
-		}
-
-		if (!StringUtils.isEmpty(connectionTokens.getRefreshToken())) {
-			log.debug("Retrieved refresh_token");
-		}
-		if (0 <= connectionTokens.getExpiresIn()) {
+		logIfPresent(connectionTokens.getAccessToken(), "Retrieved access_token");
+		logIfPresent(connectionTokens.getRefreshToken(), "Retrieved refresh_token");
+		if (connectionTokens.getExpiresIn() >=- 0) {
 			log.debug("Retrieved expires_in");
+		}
+	}
+
+	private void logIfPresent(String token, String message) {
+		if (token != null && !token.isEmpty()) {
+			log.debug(message);
 		}
 	}
 }

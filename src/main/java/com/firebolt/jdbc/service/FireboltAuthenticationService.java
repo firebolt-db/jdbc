@@ -1,23 +1,21 @@
 package com.firebolt.jdbc.service;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.StringUtils;
-
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
-
 import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
+import org.apache.commons.lang3.StringUtils;
+
+import javax.xml.bind.DatatypeConverter;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 @CustomLog
@@ -101,7 +99,7 @@ public class FireboltAuthenticationService {
 			MessageDigest sha256Instance = MessageDigest.getInstance("SHA-256");
 			Optional.ofNullable(user).map(String::getBytes).ifPresent(sha256Instance::update);
 			Optional.ofNullable(password).map(String::getBytes).ifPresent(sha256Instance::update);
-			this.credentialsHash = new String(Hex.encodeHex(sha256Instance.digest()));
+			this.credentialsHash = DatatypeConverter.printHexBinary(sha256Instance.digest());
 		}
 	}
 }

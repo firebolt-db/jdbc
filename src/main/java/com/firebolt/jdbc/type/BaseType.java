@@ -1,24 +1,25 @@
 package com.firebolt.jdbc.type;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.sql.*;
-import java.util.TimeZone;
-
-import javax.xml.bind.DatatypeConverter;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.text.StringEscapeUtils;
-
 import com.firebolt.jdbc.CheckedFunction;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.column.Column;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import com.firebolt.jdbc.type.date.SqlDateUtil;
-
 import lombok.Builder;
 import lombok.CustomLog;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
+
+import javax.xml.bind.DatatypeConverter;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.Array;
+import java.sql.Date;
+import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.TimeZone;
 
 /** This class contains the java types the Firebolt datatypes are mapped to */
 @CustomLog
@@ -73,14 +74,14 @@ public enum BaseType {
 			conversion -> SqlArrayUtil.transformToSqlArray(conversion.getValue(), conversion.getColumn().getType())),
 	BYTEA(byte[].class, conversion -> {
 		String s = conversion.getValue();
-		if (StringUtils.startsWith(s, "\\x")) {
-			return DatatypeConverter.parseHexBinary(s.substring(2));
-		} else if (StringUtils.isEmpty(s)) {
+		if (s == null || s.isEmpty()) {
 			return new byte[] {};
-		} else {
-			// Cannot convert from other formats (such as 'Escape') for the moment
-			throw new FireboltException("Cannot convert binary string in non-hex format to byte array");
 		}
+		if (s.startsWith("\\x")) {
+			return DatatypeConverter.parseHexBinary(s.substring(2));
+		}
+		// Cannot convert from other formats (such as 'Escape') for the moment
+		throw new FireboltException("Cannot convert binary string in non-hex format to byte array");
 	});
 
 	public static final String NULL_VALUE = "\\N";
