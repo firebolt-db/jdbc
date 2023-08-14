@@ -98,6 +98,7 @@ public class SqlArrayUtil {
 		return stringBuilder.toString();
 	}
 
+	@SuppressWarnings("java:S5852") // simplicity of code that uses regex here is more important than pre-mature optimisation
 	private static String removeQuotesAndTransformNull(String s) {
 		return "NULL".equals(s) ? "\\N" : s.replaceFirst("^'+", "").replaceFirst("'+$", "");
 	}
