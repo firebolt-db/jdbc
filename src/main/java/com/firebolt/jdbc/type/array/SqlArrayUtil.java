@@ -4,7 +4,6 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
-import com.firebolt.jdbc.util.StringUtil;
 import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
@@ -100,7 +99,7 @@ public class SqlArrayUtil {
 	}
 
 	private static String removeQuotesAndTransformNull(String s) {
-		return "NULL".equals(s) ? "\\N" : StringUtil.trim(s, '\'');
+		return "NULL".equals(s) ? "\\N" : StringUtils.strip(s, "'");
 	}
 
 	private static String removeParenthesis(String s) {
