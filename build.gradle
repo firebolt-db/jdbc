@@ -86,7 +86,7 @@ dependencies {
     testImplementation 'com.squareup.okhttp3:okhttp-tls:4.11.0'
     testImplementation 'io.zonky.test:embedded-postgres:2.0.4'
     testCompileOnly 'org.slf4j:slf4j-api:2.0.7'
-    testCommonImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
+    testCommonImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
     testImplementation sourceSets.testCommon.output
     compileTestJava.dependsOn processTestResources
     jar.dependsOn processTestResources
