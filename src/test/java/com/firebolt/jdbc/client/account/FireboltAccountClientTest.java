@@ -8,8 +8,11 @@ import com.firebolt.jdbc.client.account.response.FireboltEngineIdResponse;
 import com.firebolt.jdbc.client.account.response.FireboltEngineResponse;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
-import com.google.common.collect.ImmutableMap;
-import okhttp3.*;
+import okhttp3.Call;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.junit.function.ThrowingRunnable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,11 +28,15 @@ import java.util.Map;
 
 import static com.firebolt.jdbc.client.UserAgentFormatter.userAgent;
 import static java.lang.String.format;
-import static java.net.HttpURLConnection.*;
+import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static java.net.HttpURLConnection.HTTP_OK;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltAccountClientTest {
@@ -74,7 +81,7 @@ class FireboltAccountClientTest {
 
 		FireboltAccountResponse account = fireboltAccountClient.getAccount(HOST, ACCOUNT, ACCESS_TOKEN);
 
-		Map<String, String> expectedHeader = ImmutableMap.of("User-Agent",
+		Map<String, String> expectedHeader = Map.of("User-Agent",
 				userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; ) ConnA/1.0.9"), "Authorization",
 				"Bearer " + ACCESS_TOKEN);
 
@@ -99,7 +106,7 @@ class FireboltAccountClientTest {
 
 		FireboltEngineResponse engine = fireboltAccountClient.getEngine(HOST, ENGINE_NAME, DB_NAME, ACCOUNT_ID,
 				ACCESS_TOKEN);
-		Map<String, String> expectedHeader = ImmutableMap.of("User-Agent",
+		Map<String, String> expectedHeader = Map.of("User-Agent",
 				userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; ) ConnA/1.0.9"), "Authorization",
 				"Bearer " + ACCESS_TOKEN);
 
@@ -125,7 +132,7 @@ class FireboltAccountClientTest {
 
 		FireboltDefaultDatabaseEngineResponse fireboltDefaultDatabaseEngineResponse = fireboltAccountClient
 				.getDefaultEngineByDatabaseName(HOST, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN);
-		Map<String, String> expectedHeader = ImmutableMap.of("User-Agent",
+		Map<String, String> expectedHeader = Map.of("User-Agent",
 				userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; ) ConnA/1.0.9"), "Authorization",
 				"Bearer " + ACCESS_TOKEN);
 
@@ -149,7 +156,7 @@ class FireboltAccountClientTest {
 
 		FireboltEngineIdResponse fireboltEngineIdResponse = fireboltAccountClient.getEngineId(HOST, ACCOUNT_ID,
 				ENGINE_NAME, ACCESS_TOKEN);
-		Map<String, String> expectedHeader = ImmutableMap.of("User-Agent",
+		Map<String, String> expectedHeader = Map.of("User-Agent",
 				userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; ) ConnA/1.0.9"), "Authorization",
 				"Bearer " + ACCESS_TOKEN);
 

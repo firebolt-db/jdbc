@@ -1,5 +1,11 @@
 package integration;
 
+import com.firebolt.jdbc.client.HttpClientConfig;
+import lombok.CustomLog;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.TestInstance;
+
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
@@ -8,13 +14,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Optional;
 
-import org.junit.jupiter.api.TestInstance;
-
-import com.firebolt.jdbc.client.HttpClientConfig;
-import com.google.common.io.Resources;
-
-import lombok.CustomLog;
-import lombok.SneakyThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @CustomLog
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -58,8 +58,9 @@ public abstract class IntegrationTest {
 
 	@SneakyThrows
 	protected void executeStatementFromFile(String path, String engine) {
-		try (Connection connection = createConnection(engine); Statement statement = connection.createStatement()) {
-			String sql = Resources.toString(IntegrationTest.class.getResource(path), StandardCharsets.UTF_8);
+		try (Connection connection = createConnection(engine); Statement statement = connection.createStatement(); InputStream is = IntegrationTest.class.getResourceAsStream(path)) {
+			assertNotNull(is);
+			String sql = new String(is.readAllBytes(), StandardCharsets.UTF_8);
 			statement.execute(sql);
 		}
 	}

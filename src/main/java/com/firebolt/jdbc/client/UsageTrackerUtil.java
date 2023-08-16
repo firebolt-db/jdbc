@@ -1,24 +1,24 @@
 package com.firebolt.jdbc.client;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.firebolt.jdbc.util.VersionUtil;
-import com.google.common.collect.ImmutableMap;
-
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @CustomLog
 @UtilityClass
 public class UsageTrackerUtil {
 
-	public static final Map<String, String> CLIENT_MAP = ImmutableMap.of("Tableau", "com.tableau", "Looker",
-			"com.looker", "Calcite", "org.apache.calcite", "Metabase", "metabase");
+	public static final Map<String, String> CLIENT_MAP = Map.of(
+			"Tableau", "com.tableau",
+			"Looker", "com.looker",
+			"Calcite", "org.apache.calcite",
+			"Metabase", "metabase");
 
-	public static final Map<String, String> DRIVER_MAP = ImmutableMap.of();
+	public static final Map<String, String> DRIVER_MAP = Map.of();
 
 	private static String getVersionForClass(String name) {
 		try {

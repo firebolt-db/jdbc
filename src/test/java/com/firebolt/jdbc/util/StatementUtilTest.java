@@ -1,26 +1,32 @@
 package com.firebolt.jdbc.util;
 
-import static com.firebolt.jdbc.statement.StatementType.PARAM_SETTING;
-import static com.firebolt.jdbc.statement.StatementUtil.isQuery;
-import static com.firebolt.jdbc.statement.StatementUtil.replaceParameterMarksWithValues;
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.junit.jupiter.api.Test;
-
 import com.firebolt.jdbc.statement.ParamMarker;
 import com.firebolt.jdbc.statement.StatementUtil;
 import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
 import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
-import com.google.common.collect.ImmutableMap;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.junit.jupiter.api.Test;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static com.firebolt.jdbc.statement.StatementType.PARAM_SETTING;
+import static com.firebolt.jdbc.statement.StatementUtil.isQuery;
+import static com.firebolt.jdbc.statement.StatementUtil.replaceParameterMarksWithValues;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StatementUtilTest {
 
@@ -178,56 +184,56 @@ class StatementUtilTest {
 	@Test
 	void shouldGetAllQueryParams() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id = ?";
-		assertEquals(ImmutableMap.of(1, 35), StatementUtil.getParamMarketsPositions(sql));
+		assertEquals(Map.of(1, 35), StatementUtil.getParamMarketsPositions(sql));
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
 
 	@Test
 	void shouldGetAllQueryParamsWithoutTrimmingRequest() {
 		String sql = "     SElECT * FROM EMPLOYEES WHERE id = ?";
-		assertEquals(ImmutableMap.of(1, 40), StatementUtil.getParamMarketsPositions(sql));
+		assertEquals(Map.of(1, 40), StatementUtil.getParamMarketsPositions(sql));
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
 
 	@Test
 	void shouldGetAllQueryParamsFromIn() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id IN (?,?)";
-		assertEquals(ImmutableMap.of(1, 37, 2, 39), StatementUtil.getParamMarketsPositions(sql));
+		assertEquals(Map.of(1, 37, 2, 39), StatementUtil.getParamMarketsPositions(sql));
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
 
 	@Test
 	void shouldGetAllQueryParamsThatAreNotInComments() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE /* ?*/id IN (?,?)";
-		assertEquals(ImmutableMap.of(1, 43, 2, 45), StatementUtil.getParamMarketsPositions(sql));
+		assertEquals(Map.of(1, 43, 2, 45), StatementUtil.getParamMarketsPositions(sql));
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
 
 	@Test
 	void shouldGetAllQueryParamsThatAreNotInComments2() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE /* ?id IN (?,?)*/";
-		assertEquals(ImmutableMap.of(), StatementUtil.getParamMarketsPositions(sql));
+		assertEquals(Map.of(), StatementUtil.getParamMarketsPositions(sql));
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
 
 	@Test
 	void shouldGetAllQueryParamsThatAreNotInSingleLineComment() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n";
-		assertEquals(ImmutableMap.of(), StatementUtil.getParamMarketsPositions(sql));
+		assertEquals(Map.of(), StatementUtil.getParamMarketsPositions(sql));
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
 
 	@Test
 	void shouldGetAllQueryParamsThatAreNotInSingleLineComment2() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id IN --\n(?,?)";
-		assertEquals(ImmutableMap.of(1, 40, 2, 42), StatementUtil.getParamMarketsPositions(sql));
+		assertEquals(Map.of(1, 40, 2, 42), StatementUtil.getParamMarketsPositions(sql));
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
 
 	@Test
 	void shouldGetAllQueryParamsThatAreNotInBetweenQuotesOrComments() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE ? AND my_date = ?";
-		assertEquals(ImmutableMap.of(1, 93, 2, 109), StatementUtil.getParamMarketsPositions(sql));
+		assertEquals(Map.of(1, 93, 2, 109), StatementUtil.getParamMarketsPositions(sql));
 		assertEquals(1, StatementUtil.parseToRawStatementWrapper(sql).getSubStatements().size());
 	}
 
@@ -235,7 +241,7 @@ class StatementUtilTest {
 	void shouldReplaceOneQueryParamsThatAreNotInBetweenQuotesOrComments() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE ?";
 		String expectedSql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE '55 Liverpool road%'";
-		Map<Integer, String> params = ImmutableMap.of(1, "'55 Liverpool road%'");
+		Map<Integer, String> params = Map.of(1, "'55 Liverpool road%'");
 		assertEquals(expectedSql, replaceParameterMarksWithValues(params, sql).get(0).getSql());
 	}
 
@@ -243,7 +249,7 @@ class StatementUtilTest {
 	void shouldReplaceAQueryParam() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id is ?";
 		String expectedSql = "SElECT * FROM EMPLOYEES WHERE id is 5";
-		Map<Integer, String> params = ImmutableMap.of(1, "5");
+		Map<Integer, String> params = Map.of(1, "5");
 		assertEquals(expectedSql, replaceParameterMarksWithValues(params, sql).get(0).getSql());
 	}
 
@@ -251,7 +257,7 @@ class StatementUtilTest {
 	void shouldReplaceMultipleQueryParams() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id = ? AND name LIKE ? AND dob = ? ";
 		String expectedSql = "SElECT * FROM EMPLOYEES WHERE id = 5 AND name LIKE 'George' AND dob = '1980-05-22' ";
-		Map<Integer, String> params = ImmutableMap.of(1, "5", 2, "'George'", 3, "'1980-05-22'");
+		Map<Integer, String> params = Map.of(1, "5", 2, "'George'", 3, "'1980-05-22'");
 		assertEquals(expectedSql, replaceParameterMarksWithValues(params, sql).get(0).getSql());
 	}
 
@@ -259,7 +265,7 @@ class StatementUtilTest {
 	void shouldReplaceAllQueryParamsThatAreNotInBetweenQuotesOrComments() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE ? AND my_date = ? AND age = /* */ ?";
 		String expectedSql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE '55 Liverpool road%' AND my_date = '2022-01-01' AND age = /* */ 5";
-		Map<Integer, String> params = ImmutableMap.of(1, "'55 Liverpool road%'", 2, "'2022-01-01'", 3, "5");
+		Map<Integer, String> params = Map.of(1, "'55 Liverpool road%'", 2, "'2022-01-01'", 3, "5");
 		assertEquals(expectedSql, replaceParameterMarksWithValues(params, sql).get(0).getSql());
 	}
 
@@ -269,7 +275,7 @@ class StatementUtilTest {
 		String expectedFirstSql = "SElECT * FROM EMPLOYEES WHERE id = 5 AND name LIKE 'George' AND dob = '1980-05-22' ; ";
 		String expectedSecondSql = "SELECT * FROM cats WHERE name IN ('Elizabeth', 'Charles')";
 
-		Map<Integer, String> params = ImmutableMap.of(1, "5", 2, "'George'", 3, "'1980-05-22'", 4, "'Elizabeth'", 5,
+		Map<Integer, String> params = Map.of(1, "5", 2, "'George'", 3, "'1980-05-22'", 4, "'Elizabeth'", 5,
 				"'Charles'");
 		assertEquals(expectedFirstSql, replaceParameterMarksWithValues(params, sql).get(0).getSql());
 		assertEquals(expectedSecondSql, replaceParameterMarksWithValues(params, sql).get(1).getSql());
@@ -277,7 +283,7 @@ class StatementUtilTest {
 
 	@Test
 	void shouldThrowExceptionWhenTheNumberOfParamsIsNotTheSameAsTheNumberOfParamMarkers() {
-		Map<Integer, String> params = ImmutableMap.of(1, "1");
+		Map<Integer, String> params = Map.of(1, "1");
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
 				() -> replaceParameterMarksWithValues(params, "SELECT 1;"));
 		assertEquals(

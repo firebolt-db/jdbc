@@ -12,7 +12,6 @@ import com.firebolt.jdbc.statement.StatementType;
 import com.firebolt.jdbc.statement.rawstatement.RawStatement;
 import com.firebolt.jdbc.util.CloseableUtil;
 import com.firebolt.jdbc.util.PropertyUtil;
-import com.google.common.collect.ImmutableMap;
 import lombok.CustomLog;
 import lombok.NonNull;
 import okhttp3.Call;
@@ -232,7 +231,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	private Map<String, String> getCancelParameters(String statementId) {
-		return ImmutableMap.of(FireboltQueryParameterKey.QUERY_ID.getKey(), statementId);
+		return Map.of(FireboltQueryParameterKey.QUERY_ID.getKey(), statementId);
 	}
 
 }
