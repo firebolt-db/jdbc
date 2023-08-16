@@ -27,8 +27,7 @@ public class FireboltAuthenticationService {
 	private static final long TOKEN_TTL_THRESHOLD = 60L;
 	private final FireboltAuthenticationClient fireboltAuthenticationClient;
 
-	public FireboltConnectionTokens getConnectionTokens(String host, FireboltProperties loginProperties)
-			throws FireboltException {
+	public FireboltConnectionTokens getConnectionTokens(String host, FireboltProperties loginProperties) throws FireboltException {
 		try {
 			ConnectParams connectionParams = new ConnectParams(host, loginProperties.getUser(),
 					loginProperties.getPassword());

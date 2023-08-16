@@ -103,7 +103,7 @@ public class FireboltConnection implements Connection {
 	}
 
 	private void connect() throws FireboltException {
-		String accessToken = this.getAccessToken(loginProperties).orElse(StringUtils.EMPTY);
+		String accessToken = getAccessToken(loginProperties).orElse(StringUtils.EMPTY);
 		if (!PropertyUtil.isLocalDb(loginProperties)) {
 			String endpoint = fireboltEngineService.getEngine(httpConnectionUrl, loginProperties, accessToken)
 					.getEndpoint();
@@ -124,6 +124,14 @@ public class FireboltConnection implements Connection {
 	}
 
 	private Optional<String> getAccessToken(FireboltProperties fireboltProperties) throws FireboltException {
+		String accessToken = fireboltProperties.getAccessToken();
+		if (accessToken != null) {
+			if (fireboltProperties.getUser() != null || fireboltProperties.getPassword() != null) {
+				throw new FireboltException("Ambiguity: Both access token and user/password are supplied");
+			}
+			return Optional.of(accessToken);
+		}
+
 		if (!PropertyUtil.isLocalDb(fireboltProperties)) {
 			return Optional.of(fireboltAuthenticationService.getConnectionTokens(httpConnectionUrl, fireboltProperties)).map(FireboltConnectionTokens::getAccessToken);
 		}
