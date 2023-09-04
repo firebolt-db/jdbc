@@ -5,6 +5,8 @@ import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.type.array.FireboltArray;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junitpioneer.jupiter.DefaultTimeZone;
 
 import java.sql.Date;
@@ -23,8 +25,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class JavaTypeToFireboltSQLStringTest {
 
 	@Test
-	void shouldTransformNullToString() throws FireboltException {
+	void shouldTransformAnyNullToString() throws FireboltException {
 		assertEquals("NULL", JavaTypeToFireboltSQLString.transformAny(null));
+	}
+
+	@ParameterizedTest
+	@EnumSource(value = JavaTypeToFireboltSQLString.class)
+	void shouldTransformNull(JavaTypeToFireboltSQLString type) throws FireboltException {
+		assertEquals("NULL", type.transform(null));
 	}
 
 	@Test

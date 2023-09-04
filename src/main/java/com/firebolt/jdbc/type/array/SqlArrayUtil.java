@@ -29,7 +29,7 @@ public class SqlArrayUtil {
 				break;
 		value = value.substring(dimensions, value.length() - dimensions);
 		Object arr = createArray(value, dimensions, columnType);
-		return FireboltArray.builder().array(arr).type(columnType.getArrayBaseColumnType().getDataType()).build();
+		return new FireboltArray(columnType.getArrayBaseColumnType().getDataType(), arr);
 	}
 
 	private static Object createArray(String arrayContent, int dimension, ColumnType columnType) throws SQLException {

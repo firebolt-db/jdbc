@@ -9,7 +9,10 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -26,6 +29,7 @@ import java.sql.Statement;
 import java.sql.Wrapper;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static java.sql.Statement.CLOSE_CURRENT_RESULT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,6 +57,34 @@ class FireboltStatementTest {
 	private FireboltStatementService fireboltStatementService;
 	@Mock
 	private FireboltConnection fireboltConnection;
+
+	private static FireboltStatement statement;
+
+	private static Stream<Arguments> unsupported() {
+		return Stream.of(
+				Arguments.of("clearWarnings", (Executable) () -> statement.clearWarnings()),
+				Arguments.of("setCursorName", (Executable) () -> statement.setCursorName("my_cursor")),
+				Arguments.of("addBatch", (Executable) () -> statement.addBatch("insert into people (id, name) values (?, ?))")),
+				Arguments.of("clearBatch", (Executable) () -> statement.clearBatch()),
+				Arguments.of("executeBatch", (Executable) () -> statement.executeBatch()),
+				Arguments.of("getGeneratedKeys", (Executable) () -> statement.getGeneratedKeys()),
+				Arguments.of("executeUpdate(auto generated keys)", (Executable) () -> statement.executeUpdate("insert", Statement.NO_GENERATED_KEYS)),
+				Arguments.of("executeUpdate(column indexes)", (Executable) () -> statement.executeUpdate("insert", new int[0])),
+				Arguments.of("executeUpdate(column names)", (Executable) () -> statement.executeUpdate("insert", new String[0])),
+				Arguments.of("execute(auto generated keys)", (Executable) () -> statement.execute("insert", Statement.NO_GENERATED_KEYS)),
+				Arguments.of("execute(column indexes)", (Executable) () -> statement.execute("insert", new int[0])),
+				Arguments.of("execute(column names)", (Executable) () -> statement.execute("insert", new String[0])),
+				Arguments.of("setPoolable(true)", (Executable) () -> statement.setPoolable(true))
+		);
+	}
+
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("unsupported")
+	void shouldThrowSQLFeatureNotSupportedException(String name, Executable function) {
+		statement = FireboltStatement.builder().statementService(fireboltStatementService)
+				.sessionProperties(mock(FireboltProperties.class)).connection(mock(FireboltConnection.class)).build();
+		assertThrows(SQLFeatureNotSupportedException.class, function);
+	}
 
 	@Test
 	void shouldExtractAdditionalPropertiesAndNotExecuteQueryWhenSetParamIsUsed() throws SQLException {
@@ -223,13 +255,29 @@ class FireboltStatementTest {
 
 	@Test
 	void maxRows() throws SQLException {
-		FireboltProperties fireboltProperties = null;
-		FireboltConnection connection = mock(FireboltConnection.class);
-		Statement statement  = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
-		assertEquals(0, statement.getMaxRows()); // zero means there is not limit
-		statement.setMaxRows(123);
-		assertEquals(123, statement.getMaxRows());
+		try (Statement statement  = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class))) {
+			assertEquals(0, statement.getMaxRows()); // zero means there is no limit
+			statement.setMaxRows(123);
+			assertEquals(123, statement.getMaxRows());
+		}
+	}
 
+	@Test
+	void negativeMaxRows() throws SQLException {
+		try (Statement statement  = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class))) {
+			assertThrows(SQLException.class, () -> statement.setMaxRows(-1));
+		}
+	}
+
+	@Test
+	void statementParameters() throws SQLException {
+		try (Statement statement  = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class))) {
+			assertEquals(ResultSet.FETCH_FORWARD, statement.getFetchDirection());
+			assertEquals(ResultSet.CONCUR_READ_ONLY, statement.getResultSetConcurrency());
+			assertEquals(ResultSet.TYPE_FORWARD_ONLY, statement.getResultSetType());
+			assertEquals(ResultSet.HOLD_CURSORS_OVER_COMMIT, statement.getResultSetHoldability());
+			assertNull(statement.getWarnings());
+		}
 	}
 
 	@ParameterizedTest
