@@ -1,17 +1,5 @@
 package com.firebolt.jdbc.statement.preparedstatement;
 
-import static com.firebolt.jdbc.statement.StatementUtil.replaceParameterMarksWithValues;
-
-import java.io.InputStream;
-import java.io.Reader;
-import java.math.BigDecimal;
-import java.net.URL;
-import java.sql.*;
-import java.sql.Date;
-import java.util.*;
-
-import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
-import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
@@ -23,10 +11,37 @@ import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementUtil;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
 import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
-
 import lombok.Builder;
 import lombok.CustomLog;
 import lombok.NonNull;
+
+import java.io.InputStream;
+import java.io.Reader;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Date;
+import java.sql.NClob;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
+import java.sql.Ref;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.RowId;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLXML;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static com.firebolt.jdbc.statement.StatementUtil.replaceParameterMarksWithValues;
 
 @CustomLog
 public class FireboltPreparedStatement extends FireboltStatement implements PreparedStatement {
@@ -188,11 +203,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	@Override
 	public ResultSetMetaData getMetaData() throws SQLException {
 		ResultSet resultSet = this.getResultSet();
-		if (resultSet != null) {
-			return resultSet.getMetaData();
-		} else {
-			return null;
-		}
+		return resultSet != null ? resultSet.getMetaData() : null;
 	}
 
 	@Override
@@ -256,204 +267,146 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setCharacterStream(int parameterIndex, Reader reader, int length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setRef(int parameterIndex, Ref x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setBlob(int parameterIndex, Blob x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setClob(int parameterIndex, Clob x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setDate(int parameterIndex, Date x, Calendar cal) throws SQLException {
 		throw new FireboltUnsupportedOperationException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setTime(int parameterIndex, Time x, Calendar cal) throws SQLException {
 		throw new FireboltUnsupportedOperationException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) throws SQLException {
 		throw new FireboltUnsupportedOperationException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public ParameterMetaData getParameterMetaData() throws SQLException {
 		throw new FireboltUnsupportedOperationException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setRowId(int parameterIndex, RowId x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setNCharacterStream(int parameterIndex, Reader value, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setNClob(int parameterIndex, NClob value) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setClob(int parameterIndex, Reader reader, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setBlob(int parameterIndex, InputStream inputStream, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setNClob(int parameterIndex, Reader reader, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setSQLXML(int parameterIndex, SQLXML xmlObject) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setObject(int parameterIndex, Object x, int targetSqlType, int scaleOrLength) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setAsciiStream(int parameterIndex, InputStream x, long length) throws SQLException {
 		throw new FireboltUnsupportedOperationException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setBinaryStream(int parameterIndex, InputStream x, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setCharacterStream(int parameterIndex, Reader reader, long length) throws SQLException {
 		throw new FireboltUnsupportedOperationException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setAsciiStream(int parameterIndex, InputStream x) throws SQLException {
 		throw new FireboltUnsupportedOperationException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setBinaryStream(int parameterIndex, InputStream x) throws SQLException {
 		throw new FireboltUnsupportedOperationException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setCharacterStream(int parameterIndex, Reader reader) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setNCharacterStream(int parameterIndex, Reader value) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setClob(int parameterIndex, Reader reader) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setBlob(int parameterIndex, InputStream inputStream) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setNClob(int parameterIndex, Reader reader) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setAsciiStream(int parameterIndex, InputStream x, int length) throws SQLException {
 		throw new FireboltUnsupportedOperationException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setUnicodeStream(int parameterIndex, InputStream x, int length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setBinaryStream(int parameterIndex, InputStream x, int length) throws SQLException {
 		throw new FireboltUnsupportedOperationException();
 	}

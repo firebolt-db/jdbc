@@ -1,24 +1,46 @@
 package com.firebolt.jdbc.statement.preparedstatement;
 
+import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
+import com.firebolt.jdbc.type.FireboltDataType;
+import com.firebolt.jdbc.type.array.FireboltArray;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junitpioneer.jupiter.DefaultTimeZone;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.InputStream;
+import java.io.StringReader;
 import java.math.BigDecimal;
+import java.net.URL;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Date;
+import java.sql.NClob;
+import java.sql.Ref;
+import java.sql.RowId;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLXML;
+import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
+import java.util.Calendar;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -27,6 +49,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -40,6 +63,54 @@ class FireboltPreparedStatementTest {
 	@Mock
 	private FireboltProperties properties;
 
+	private final FireboltConnection connection = Mockito.mock(FireboltConnection.class);
+	private static FireboltPreparedStatement statement;
+
+	private static Stream<Arguments> unsupported() {
+		return Stream.of(
+					Arguments.of("setByte", (Executable) () -> statement.setByte(1, (byte) 127)),
+					Arguments.of("setBytes", (Executable) () -> statement.setBytes(1, "bytes".getBytes())),
+					Arguments.of("setURL", (Executable) () -> statement.setURL(1, new URL("http://foo.bar"))),
+					Arguments.of("setCharacterStream", (Executable) () -> statement.setCharacterStream(1, new StringReader("hello"))),
+					Arguments.of("setCharacterStream(length)", (Executable) () -> statement.setCharacterStream(1, new StringReader("hello"), 2)),
+					Arguments.of("setCharacterStream(long length)", (Executable) () -> statement.setCharacterStream(1, new StringReader("hello"), 2L)),
+					Arguments.of("setNCharacterStream", (Executable) () -> statement.setNCharacterStream(1, new StringReader("hello"))),
+					Arguments.of("setNCharacterStream(length)", (Executable) () -> statement.setNCharacterStream(1, new StringReader("hello"), 2)),
+					Arguments.of("setNCharacterStream(length)", (Executable) () -> statement.setNCharacterStream(1, new StringReader("hello"), 2L)),
+
+					Arguments.of("setRef", (Executable) () -> statement.setRef(1, mock(Ref.class))),
+					Arguments.of("setBlob", (Executable) () -> statement.setBlob(1, mock(Blob.class))),
+					Arguments.of("setBlob(input stream)", (Executable) () -> statement.setBlob(1, mock(InputStream.class))),
+					Arguments.of("setBlob(input stream, length)", (Executable) () -> statement.setBlob(1, mock(InputStream.class), 123)),
+					Arguments.of("setClob", (Executable) () -> statement.setClob(1, mock(Clob.class))),
+					Arguments.of("setClob(reader)", (Executable) () -> statement.setClob(1, new StringReader("hello"))),
+					Arguments.of("setClob(reader, length)", (Executable) () -> statement.setClob(1, new StringReader("hello"), 1)),
+					Arguments.of("setNClob", (Executable) () -> statement.setNClob(1, mock(NClob.class))),
+					Arguments.of("setNClob(reader)", (Executable) () -> statement.setNClob(1, new StringReader("hello"))),
+					Arguments.of("setNClob(reader, length)", (Executable) () -> statement.setNClob(1, new StringReader("hello"), 1L)),
+
+					Arguments.of("setAsciiStream", (Executable) () -> statement.setAsciiStream(1, mock(InputStream.class))),
+					Arguments.of("setAsciiStream(int length)", (Executable) () -> statement.setAsciiStream(1, mock(InputStream.class), 456)),
+					Arguments.of("setAsciiStream(long length)", (Executable) () -> statement.setAsciiStream(1, mock(InputStream.class), 456L)),
+					Arguments.of("setBinaryStream", (Executable) () -> statement.setBinaryStream(1, mock(InputStream.class))),
+					Arguments.of("setBinaryStream(int length)", (Executable) () -> statement.setBinaryStream(1, mock(InputStream.class), 456)),
+					Arguments.of("setBinaryStream(long length)", (Executable) () -> statement.setBinaryStream(1, mock(InputStream.class), 456L)),
+					Arguments.of("setUnicodeStream(int length)", (Executable) () -> statement.setUnicodeStream(1, mock(InputStream.class), 123)),
+
+					Arguments.of("setDate", (Executable) () -> statement.setDate(1, new Date(System.currentTimeMillis()), Calendar.getInstance())),
+					Arguments.of("setTime", (Executable) () -> statement.setTime(1, new Time(System.currentTimeMillis()))),
+					Arguments.of("setTime(calendar)", (Executable) () -> statement.setTime(1, new Time(System.currentTimeMillis()), Calendar.getInstance())),
+					Arguments.of("setTimestamp", (Executable) () -> statement.setTimestamp(1, new Timestamp(System.currentTimeMillis()), Calendar.getInstance())),
+					Arguments.of("setRowId", (Executable) () -> statement.setRowId(1, mock(RowId.class)),
+					Arguments.of("setSQLXML", (Executable) () -> statement.setSQLXML(1, mock(SQLXML.class))),
+
+					// TODO: add support of  this method
+					Arguments.of("getParameterMetaData", (Executable) () -> statement.getParameterMetaData())),
+					Arguments.of("setObject", (Executable) () -> statement.setObject(1, mock(SQLXML.class), Types.VARCHAR, 0)),
+					Arguments.of("getParameterMetaData", (Executable) () -> statement.getParameterMetaData())
+		);
+	}
+
 	@BeforeEach
 	void beforeEach() throws SQLException {
 		lenient().when(properties.getBufferSize()).thenReturn(10);
@@ -47,27 +118,35 @@ class FireboltPreparedStatementTest {
 				.thenReturn(Optional.empty());
 	}
 
+	@AfterEach
+	void afterEach() throws SQLException {
+		if (statement != null) {
+			statement.close();
+		}
+	}
+
 	@Test
 	void shouldExecute() throws SQLException {
-		FireboltPreparedStatement statement = FireboltPreparedStatement.statementBuilder()
-				.statementService(fireboltStatementService).sql("INSERT INTO cars (sales, make) VALUES (?,?)")
-				.sessionProperties(properties).build();
+		statement = createStatementWithSql("INSERT INTO cars (sales, make, model, minor_model, color, type, types) VALUES (?,?,?,?,?,?,?)");
 
-		statement.setObject(1, 500);
-		statement.setObject(2, "Ford");
+		statement.setInt(1, 500);
+		statement.setString(2, "Ford");
+		statement.setObject(3, "FOCUS", Types.VARCHAR);
+		statement.setNull(4, Types.VARCHAR);
+		statement.setNull(5, Types.VARCHAR,  "VARCHAR");
+		statement.setNString(6, "sedan");
+		statement.setArray(7, new FireboltArray(FireboltDataType.TEXT, new String[] {"sedan", "hatchback", "coupe"}));
 		statement.execute();
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(this.properties),
 				anyInt(), anyInt(), anyBoolean(), any());
 
-		assertEquals("INSERT INTO cars (sales, make) VALUES (500,'Ford')",
+		assertEquals("INSERT INTO cars (sales, make, model, minor_model, color, type, types) VALUES (500,'Ford','FOCUS',NULL,NULL,'sedan',['sedan','hatchback','coupe'])",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
 	@Test
 	void shouldExecuteBatch() throws SQLException {
-		FireboltPreparedStatement statement = FireboltPreparedStatement.statementBuilder()
-				.statementService(fireboltStatementService).sql("INSERT INTO cars (sales, make) VALUES (?,?)")
-				.sessionProperties(properties).build();
+		statement = createStatementWithSql("INSERT INTO cars (sales, make) VALUES (?,?)");
 
 		statement.setObject(1, 150);
 		statement.setObject(2, "Ford");
@@ -104,8 +183,7 @@ class FireboltPreparedStatementTest {
 	@Test
 	void shouldExecuteWithSpecialCharactersInQuery() throws SQLException {
 		String sql = "INSERT INTO cars (model ,sales, make) VALUES (?,?,'(?:^|[^\\\\p{L}\\\\p{N}])(?i)(phone)(?:[^\\\\p{L}\\\\p{N}]|$)')";
-		FireboltPreparedStatement statement = FireboltPreparedStatement.statementBuilder()
-				.statementService(fireboltStatementService).sql(sql).sessionProperties(properties).build();
+		statement = createStatementWithSql(sql);
 
 		statement.setObject(1, "?");
 		statement.setObject(2, " ?");
@@ -121,8 +199,7 @@ class FireboltPreparedStatementTest {
 	@Test
 	void shouldThrowExceptionWhenTooManyParametersAreProvided() throws SQLException {
 		String sql = "INSERT INTO cars (model ,sales, make) VALUES (?, '(?:^|[^\\\\p{L}\\\\p{N}])(?i)(phone)(?:[^\\\\p{L}\\\\p{N}]|$)')";
-		FireboltPreparedStatement statement = FireboltPreparedStatement.statementBuilder()
-				.statementService(fireboltStatementService).sql(sql).sessionProperties(properties).build();
+		statement  = createStatementWithSql(sql);
 
 		statement.setObject(1, "A");
 
@@ -131,8 +208,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldThrowsExceptionWhenTryingToExecuteUpdate() throws SQLException {
-		FireboltPreparedStatement statement = FireboltPreparedStatement.statementBuilder()
-				.sql("update cars set sales = ? where make = ?").build();
+		statement  = createStatementWithSql("update cars set sales = ? where make = ?");
 
 		statement.setObject(1, 150);
 		statement.setObject(2, "Ford");
@@ -143,7 +219,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldSetNull() throws SQLException {
-		FireboltPreparedStatement statement = createStatementWithSql("INSERT INTO cars (sales, make) VALUES (?,?)");
+		statement = createStatementWithSql("INSERT INTO cars (sales, make) VALUES (?,?)");
 
 		statement.setNull(1, 0);
 		statement.setNull(2, 0);
@@ -157,7 +233,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldSetBoolean() throws SQLException {
-		FireboltPreparedStatement statement = createStatementWithSql("INSERT INTO cars(available) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO cars(available) VALUES (?)");
 
 		statement.setBoolean(1, true);
 		statement.execute();
@@ -168,20 +244,22 @@ class FireboltPreparedStatementTest {
 	}
 
 	@Test
-	void shouldThrowExceptionWhenTryingToSetByte() throws SQLException {
-		FireboltPreparedStatement statement = createStatementWithSql("INSERT INTO cars(make) VALUES (?)");
-		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setByte(1, (byte) 127));
+	void shouldThrowExceptionWhenTryingToSetCharacterStream() {
+		statement = createStatementWithSql("INSERT INTO cars(make) VALUES (?)");
+		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setCharacterStream(1, new StringReader("hello")));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setCharacterStream(1, new StringReader("hello"), 2));
 	}
 
-	@Test
-	void shouldThrowExceptionWhenTryingToSetBytes() throws SQLException {
-		FireboltPreparedStatement statement = createStatementWithSql("INSERT INTO cars(make) VALUES (?)");
-		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setBytes(1, "bytes".getBytes()));
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("unsupported")
+	void shouldThrowSQLFeatureNotSupportedException(String name, Executable function) {
+		statement = createStatementWithSql("INSERT INTO cars(make) VALUES (?)");
+		assertThrows(SQLFeatureNotSupportedException.class, function);
 	}
 
 	@Test
 	void shouldSetInt() throws SQLException {
-		FireboltPreparedStatement statement = createStatementWithSql("INSERT INTO cars(price) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO cars(price) VALUES (?)");
 
 		statement.setInt(1, 50);
 		statement.execute();
@@ -192,7 +270,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldSetLong() throws SQLException {
-		FireboltPreparedStatement statement = createStatementWithSql("INSERT INTO cars(price) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO cars(price) VALUES (?)");
 
 		statement.setLong(1, 50L);
 		statement.execute();
@@ -204,7 +282,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldSetFloat() throws SQLException {
-		FireboltPreparedStatement statement = createStatementWithSql("INSERT INTO cars(price) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO cars(price) VALUES (?)");
 
 		statement.setFloat(1, 5.5F);
 		statement.execute();
@@ -217,7 +295,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldSetDouble() throws SQLException {
-		FireboltPreparedStatement statement = createStatementWithSql("INSERT INTO cars(price) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO cars(price) VALUES (?)");
 
 		statement.setDouble(1, 5.5);
 		statement.execute();
@@ -228,7 +306,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldSetBigDecimal() throws SQLException {
-		FireboltPreparedStatement statement = createStatementWithSql("INSERT INTO cars(price) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO cars(price) VALUES (?)");
 
 		statement.setBigDecimal(1, new BigDecimal("555555555555.55555555"));
 		statement.execute();
@@ -242,7 +320,7 @@ class FireboltPreparedStatementTest {
 	@Test
 	@DefaultTimeZone("Europe/London")
 	void shouldSetDate() throws SQLException {
-		FireboltPreparedStatement statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
 
 		statement.setDate(1, new Date(1564527600000L));
 		statement.execute();
@@ -256,7 +334,7 @@ class FireboltPreparedStatementTest {
 	@Test
 	@DefaultTimeZone("Europe/London")
 	void shouldSetTimeStamp() throws SQLException {
-		FireboltPreparedStatement statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
 
 		statement.setTimestamp(1, new Timestamp(1564571713000L));
 		statement.execute();
@@ -271,7 +349,7 @@ class FireboltPreparedStatementTest {
 	@Test
 	@DefaultTimeZone("Europe/London")
 	void shouldSetAllObjects() throws SQLException {
-		FireboltPreparedStatement statement = createStatementWithSql(
+		statement = createStatementWithSql(
 				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) "
 						+ "VALUES (?,?,?,?,?,?,?,?)");
 
@@ -296,6 +374,6 @@ class FireboltPreparedStatementTest {
 
 	private FireboltPreparedStatement createStatementWithSql(String sql) {
 		return FireboltPreparedStatement.statementBuilder().statementService(fireboltStatementService).sql(sql)
-				.sessionProperties(properties).build();
+				.sessionProperties(properties).connection(connection).build();
 	}
 }

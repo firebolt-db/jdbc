@@ -16,9 +16,7 @@ class SqlArrayUtilTest {
 	@Test
 	void shouldTransformToEmptyArray() throws SQLException {
 		String value = "[]";
-		FireboltArray emptyArray = FireboltArray.builder().array(new Integer[] {}).type(FireboltDataType.INTEGER)
-				.build();
-
+		FireboltArray emptyArray = new FireboltArray(FireboltDataType.INTEGER, new Integer[] {});
 		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(INT32)"));
 
 		assertEquals(emptyArray.getBaseType(), result.getBaseType());
@@ -28,9 +26,7 @@ class SqlArrayUtilTest {
 	@Test
 	void shouldTransformIntArray() throws SQLException {
 		String value = "[1,2,3,\\N,5]";
-		FireboltArray expectedArray = FireboltArray.builder().array(new Integer[] { 1, 2, 3, null, 5 })
-				.type(FireboltDataType.INTEGER).build();
-
+		FireboltArray expectedArray = new FireboltArray(FireboltDataType.INTEGER, new Integer[] { 1, 2, 3, null, 5 });
 		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(INT32)"));
 
 		assertEquals(expectedArray.getBaseType(), result.getBaseType());
@@ -40,9 +36,7 @@ class SqlArrayUtilTest {
 	@Test
 	void shouldTransformStringArray() throws SQLException {
 		String value = "['1','2','3','',\\N,'5']";
-		FireboltArray expectedArray = FireboltArray.builder().array(new String[] { "1", "2", "3", "", null, "5" })
-				.type(FireboltDataType.TEXT).build();
-
+		FireboltArray expectedArray = new FireboltArray(FireboltDataType.TEXT, new String[] { "1", "2", "3", "", null, "5" });
 		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(TEXT)"));
 
 		assertEquals(expectedArray.getBaseType(), result.getBaseType());
@@ -52,9 +46,7 @@ class SqlArrayUtilTest {
 	@Test
 	void shouldTransformStringArrayWithComma() throws SQLException {
 		String value = "['1','2,','3','',\\N,'5']";
-		FireboltArray expectedArray = FireboltArray.builder().array(new String[] { "1", "2,", "3", "", null, "5" })
-				.type(FireboltDataType.TEXT).build();
-
+		FireboltArray expectedArray = new FireboltArray(FireboltDataType.TEXT, new String[] { "1", "2,", "3", "", null, "5" });
 		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(TEXT)"));
 
 		assertEquals(expectedArray.getBaseType(), result.getBaseType());
@@ -65,9 +57,7 @@ class SqlArrayUtilTest {
 	void shouldTransformArrayOfTuples() throws SQLException {
 		String value = "[(1,'a'),(2,'b'),(3,'c')]";
 		Object[][] expectedArray = new Object[][] { { 1, "a" }, { 2, "b" }, { 3, "c" } };
-		FireboltArray expectedFireboltArray = FireboltArray.builder().array(expectedArray).type(FireboltDataType.TUPLE)
-				.build();
-
+		FireboltArray expectedFireboltArray = new FireboltArray(FireboltDataType.TUPLE, expectedArray);
 		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(TUPLE(int,string))"));
 
 		assertEquals(expectedFireboltArray.getBaseType(), result.getBaseType());
@@ -79,9 +69,7 @@ class SqlArrayUtilTest {
 		String value = "[[(1,'(a))'),(2,'[b]'),(3,'[]c[')],[(4,'d')]]";
 		Object[][][] expectedArray = new Object[][][] { { { 1, "(a))" }, { 2, "[b]" }, { 3, "[]c[" } },
 				{ { 4, "d" } } };
-		FireboltArray expectedFireboltArray = FireboltArray.builder().array(expectedArray).type(FireboltDataType.TUPLE)
-				.build();
-
+		FireboltArray expectedFireboltArray = new FireboltArray(FireboltDataType.TUPLE, expectedArray);
 		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(Array(TUPLE(int,string)))"));
 
 		assertEquals(expectedFireboltArray.getBaseType(), result.getBaseType());
@@ -92,9 +80,7 @@ class SqlArrayUtilTest {
 	void shouldTransformArrayOfTuplesWithSpecialCharacters() throws SQLException {
 		String value = "[(1,'a','1a'),(2,'b','2b'),(3,'[c]','3c')]";
 		Object[][] expectedArray = new Object[][] { { 1, "a", "1a" }, { 2, "b", "2b" }, { 3, "[c]", "3c" } };
-		FireboltArray expectedFireboltArray = FireboltArray.builder().array(expectedArray).type(FireboltDataType.TUPLE)
-				.build();
-
+		FireboltArray expectedFireboltArray = new FireboltArray(FireboltDataType.TUPLE, expectedArray);
 		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(TUPLE(int,string,string))"));
 
 		assertEquals(expectedFireboltArray.getBaseType(), result.getBaseType());
