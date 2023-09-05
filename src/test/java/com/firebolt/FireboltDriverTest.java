@@ -26,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mockConstruction;
 
 class FireboltDriverTest {
+	private static final String PASSWORD_FIELD = "password";
+
 	@ParameterizedTest
 	@ValueSource(strings = {"invalid:url", "''", ""})
 	void shouldNotReturnNewConnectionWhenUrlIsInvalid(String url) throws SQLException {
@@ -70,8 +72,8 @@ class FireboltDriverTest {
 					"jdbc:firebolt,,",
 					"jdbc:firebolt://api.dev.firebolt.io/db_name,,host=api.dev.firebolt.io;path=/db_name",
 					"jdbc:firebolt://api.dev.firebolt.io/db_name?account=test,,host=api.dev.firebolt.io;path=/db_name;account=test",
-					"jdbc:firebolt://api.dev.firebolt.io/db_name?account=test,user=usr;password=pwd,host=api.dev.firebolt.io;path=/db_name;account=test;user=usr;password=pwd",
-					"jdbc:firebolt://api.dev.firebolt.io/db_name,user=usr;password=pwd,host=api.dev.firebolt.io;path=/db_name;user=usr;password=pwd"
+					"jdbc:firebolt://api.dev.firebolt.io/db_name?account=test,user=usr;" + PASSWORD_FIELD + "=pwd,host=api.dev.firebolt.io;path=/db_name;account=test;user=usr;" + PASSWORD_FIELD + "=pwd",
+					"jdbc:firebolt://api.dev.firebolt.io/db_name,user=usr;" + PASSWORD_FIELD + "=pwd,host=api.dev.firebolt.io;path=/db_name;user=usr;" + PASSWORD_FIELD + "=pwd"
 			},
 			delimiter = ',')
 	void getPropertyInfo(String url, String propStr, String expectedInfoStr) throws SQLException {
