@@ -1,22 +1,6 @@
 package com.firebolt.jdbc.connection;
 
-import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
-import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-
-import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.Executor;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.firebolt.jdbc.util.PropertyUtil;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.client.FireboltObjectMapper;
@@ -36,10 +20,46 @@ import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
-
+import com.firebolt.jdbc.type.FireboltDataType;
+import com.firebolt.jdbc.type.array.FireboltArray;
+import com.firebolt.jdbc.util.PropertyUtil;
 import lombok.CustomLog;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.CallableStatement;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.NClob;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLClientInfoException;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Savepoint;
+import java.sql.Statement;
+import java.sql.Struct;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.concurrent.Executor;
+
+import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
 @CustomLog
 public class FireboltConnection implements Connection {
@@ -445,7 +465,6 @@ public class FireboltConnection implements Connection {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public String nativeSQL(String sql) throws SQLException {
 		throw new FireboltUnsupportedOperationException();
@@ -465,7 +484,6 @@ public class FireboltConnection implements Connection {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public SQLWarning getWarnings() throws SQLException {
 		return null;
@@ -479,14 +497,12 @@ public class FireboltConnection implements Connection {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public Map<String, Class<?>> getTypeMap() throws SQLException {
 		// Since setTypeMap is currently not supported, an empty map is returned (refer to the doc for more info)
@@ -494,13 +510,11 @@ public class FireboltConnection implements Connection {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public void setTypeMap(Map<String, Class<?>> map) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
-	@ExcludeFromJacocoGeneratedReport
 	public int getHoldability() throws SQLException {
 		validateConnectionIsNotClose();
 		return CLOSE_CURSORS_AT_COMMIT;
@@ -514,7 +528,6 @@ public class FireboltConnection implements Connection {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public Savepoint setSavepoint() throws SQLException {
 		// No support for transaction
@@ -522,7 +535,6 @@ public class FireboltConnection implements Connection {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public Savepoint setSavepoint(String name) throws SQLException {
 		// No support for transaction
@@ -530,7 +542,6 @@ public class FireboltConnection implements Connection {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public void rollback(Savepoint savepoint) throws SQLException {
 		// No support for transaction
@@ -538,14 +549,12 @@ public class FireboltConnection implements Connection {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public void releaseSavepoint(Savepoint savepoint) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency,
 			int resultSetHoldability) throws SQLException {
@@ -553,48 +562,41 @@ public class FireboltConnection implements Connection {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public Clob createClob() throws SQLException {
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public Blob createBlob() throws SQLException {
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public NClob createNClob() throws SQLException {
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public SQLXML createSQLXML() throws SQLException {
 		throw new SQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public void setClientInfo(String name, String value) throws SQLClientInfoException {
 		// Not supported
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public String getClientInfo(String name) throws SQLException {
 		return null;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public Properties getClientInfo() throws SQLException {
 		return new Properties();
@@ -607,14 +609,12 @@ public class FireboltConnection implements Connection {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public Array createArrayOf(String typeName, Object[] elements) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		validateConnectionIsNotClose();
+		return new FireboltArray(FireboltDataType.ofType(typeName), elements);
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public Struct createStruct(String typeName, Object[] attributes) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();

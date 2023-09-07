@@ -1,23 +1,36 @@
 package com.firebolt.jdbc.type.array;
 
+import com.firebolt.jdbc.QueryResult;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.resultset.FireboltResultSet;
+import com.firebolt.jdbc.type.FireboltDataType;
+
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
-import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
-import com.firebolt.jdbc.annotation.NotImplemented;
-import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
-import com.firebolt.jdbc.type.FireboltDataType;
+import static com.firebolt.jdbc.type.FireboltDataType.INTEGER;
+import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
 
-import lombok.Builder;
-
-@Builder
 public class FireboltArray implements Array {
 
 	private final FireboltDataType type;
 	private Object array;
+	private final List<QueryResult.Column> columns;
+
+	public FireboltArray(FireboltDataType type, Object array) {
+		this.type = type;
+		this.array = array;
+		columns = Arrays.asList(
+				QueryResult.Column.builder().name("INDEX").type(INTEGER).build(),
+				QueryResult.Column.builder().name("VALUE").type(type).build());
+	}
 
 	@Override
 	public String getBaseTypeName() {
@@ -39,10 +52,7 @@ public class FireboltArray implements Array {
 
 	@Override
 	public Object getArray(Map<String, Class<?>> map) throws SQLException {
-		if (map != null && !map.isEmpty()) {
-			throw new SQLFeatureNotSupportedException("Maps are not supported with Arrays");
-		}
-		return getArray();
+		return getArray(1, Integer.MAX_VALUE, map);
 	}
 
 	@Override
@@ -51,44 +61,47 @@ public class FireboltArray implements Array {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Object getArray(long index, int count) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getArray(index, count, null);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Object getArray(long index, int count, Map<String, Class<?>> map) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		if (array == null) {
+			throw new SQLException("Cannot call method getArray() after calling free()");
+		}
+		if (map != null && !map.isEmpty()) {
+			throw new SQLFeatureNotSupportedException("Maps are not supported with Arrays");
+		}
+		if (index < 1) {
+			throw new FireboltException(format("The array index is out of range: %d", index));
+		}
+		int length = java.lang.reflect.Array.getLength(array);
+		int from = (int)(index - 1);
+		int to = Math.min(from + count, length);
+		int maxCount = length - from;
+		return index == 1 && count >= maxCount ? array : Arrays.copyOfRange((Object[])array, from, to);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public ResultSet getResultSet() throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getResultSet(null);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public ResultSet getResultSet(Map<String, Class<?>> map) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getResultSet(1, Integer.MAX_VALUE, map);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public ResultSet getResultSet(long index, int count) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getResultSet(index, count, null);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public ResultSet getResultSet(long index, int count, Map<String, Class<?>> map) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		Object[] arr = (Object[])getArray(index, count, map);
+		List<List<?>> data = IntStream.range(0, arr.length).mapToObj(i -> List.of(i + 1, arr[i])).collect(toList());
+		return FireboltResultSet.of(QueryResult.builder().columns(columns).rows(data).build());
 	}
 }

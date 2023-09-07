@@ -27,7 +27,7 @@ class PreparedStatementArrayTest extends IntegrationTest {
 	enum PreparedStatementValueSetter {
 		ARRAY {
 			Object create(FireboltDataType type, Object data) {
-				return data == null ? null : FireboltArray.builder().type(type).array(data).build();
+				return data == null ? null : new FireboltArray(type, data);
 			}
 
 			@Override

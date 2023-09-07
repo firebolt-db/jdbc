@@ -4,6 +4,8 @@ import static java.sql.ResultSetMetaData.columnNoNulls;
 import static java.sql.ResultSetMetaData.columnNullable;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Arrays;
@@ -13,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 
 import com.firebolt.jdbc.resultset.column.Column;
+import org.junit.jupiter.params.ParameterizedTest;
 
 class FireboltResultSetMetaDataTest {
 
@@ -79,6 +82,11 @@ class FireboltResultSetMetaDataTest {
 	}
 
 	@Test
+	void shouldReturnColumnTypeName() throws SQLException {
+		assertEquals("text", getMetaData().getColumnTypeName(1));
+	}
+
+	@Test
 	void shouldReturnColumnClassName() throws SQLException {
 		assertEquals("java.math.BigDecimal", getMetaData().getColumnClassName(3));
 	}
@@ -95,6 +103,16 @@ class FireboltResultSetMetaDataTest {
 		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
 				.tableName("table-name").dbName("db-name").build();
 		assertTrue(fireboltResultSetMetaData.isReadOnly(1));
+	}
+
+	@Test
+	void wrap() throws SQLException {
+		FireboltResultSetMetaData fireboltResultSetMetaData = getMetaData();
+		assertTrue(fireboltResultSetMetaData.isWrapperFor(ResultSetMetaData.class));
+		assertSame(fireboltResultSetMetaData, fireboltResultSetMetaData.unwrap(ResultSetMetaData.class));
+
+		assertFalse(fireboltResultSetMetaData.isWrapperFor(ResultSet.class));
+		assertThrows(SQLException.class, () -> fireboltResultSetMetaData.unwrap(ResultSet.class));
 	}
 
 	private List<Column> getColumns() {
