@@ -310,7 +310,7 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void shouldGetDriverVersion() throws SQLException {
-		assertEquals("2.4.5-SNAPSHOT", fireboltDatabaseMetadata.getDriverVersion());
+		assertEquals("2.4.6-SNAPSHOT", fireboltDatabaseMetadata.getDriverVersion());
 	}
 
 	@Test
