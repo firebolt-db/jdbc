@@ -6,6 +6,8 @@ plugins {
     id "org.sonarqube" version "4.3.1.3277"
     id 'maven-publish'
     id 'com.github.johnrengelman.shadow' version '8.0.0'
+    id 'org.quiltmc.gradle.licenser' version '2.0.1'
+    id 'signing'
 }
 
 group 'io.firebolt'
@@ -22,6 +24,7 @@ project.ext {
 
 java {
     withSourcesJar()
+    withJavadocJar()
 }
 
 compileJava {
@@ -91,6 +94,8 @@ dependencies {
     compileTestJava.dependsOn processTestResources
     jar.dependsOn processTestResources
     jar.dependsOn processIntegrationTestResources
+    javadoc.dependsOn processTestResources
+    javadoc.dependsOn processIntegrationTestResources
     compileTestCommonJava.dependsOn processTestResources
     compileTestCommonJava.dependsOn processIntegrationTestResources
     compileIntegrationTestJava.dependsOn processIntegrationTestResources
@@ -151,7 +156,7 @@ shadowJar {
             JarFile jf = new JarFile(jar)
             jf.entries().each { entry ->
                 if (entry.name.endsWith(".class") && entry.name != "module-info.class" &&
-                   !entry.name.startsWith('org/slf4j') && !entry.name.startsWith('ch/qos/logback')) {
+                    !entry.name.startsWith('org/slf4j') && !entry.name.startsWith('ch/qos/logback')) {
                     packages << entry.name[0..entry.name.lastIndexOf('/')-1].replaceAll('/', '.')
                 }
             }
@@ -194,22 +199,71 @@ publishing {
     publications {
         maven(MavenPublication) {
             from components.java
+            pom {
+                name = "firebolt-jdbc"
+                description = 'Type 4 JDBC driver that allows connection to Firebolt Database'
+                url = "https://github.com/firebolt-db/jdbc"
+                licenses {
+                    license {
+                        name = "The Apache License, Version 2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "JonyBoyko"
+                        name = "Ivan Boyko"
+                        email = "107884978+yingli017@users.noreply.github.com"
+                    }
+                    developer {
+                        id = "ptiurin"
+                        name = "Petro Tiurin"
+                        email = "petro.tiurin@firebolt.io"
+                    }
+                    developer {
+                        id = "kevin"
+                        name = "Kevin Marr"
+                        email = "kevin@firebolt.io"
+                    }
+                    developer {
+                        id = "aymeric"
+                        name = "Aymeric Dispa"
+                        email = "aymeric@firebolt.io"
+                    }
+                    developer {
+                        id = "alexradzin"
+                        name = "Alexander Radzin"
+                        email = "alexander.radzin@firebolt.io"
+                    }
+                    developer {
+                        id = "reelsen"
+                        name = "Alexander Reelsen"
+                        email = "alexander@reelsen.net"
+                    }
+                }
+                scm {
+                    connection = "scm:svn:https://github.com/firebolt-db/jdbc/"
+                    developerConnection = "scm:svn:https://github.com/firebolt-db/jdbc/"
+                    url = "https://github.com/firebolt-db/jdbc/"
+                }
+            }
             // remove dependencies due to shaded jar
             pom.withXml {
-              node = asNode()
-              node.remove(node.get('dependencies'))
+                node = asNode()
+                node.remove(node.get('dependencies'))
             }
         }
     }
 
     repositories {
         maven {
-            def releasesRepoUrl = 'https://repo.repsy.io/mvn/firebolt/maven'
-            def snapshotsRepoUrl = 'https://repo.repsy.io/mvn/firebolt/maven-snapshots'
+            def releasesRepoUrl = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+            def snapshotsRepoUrl = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+
             url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
             credentials {
-                username System.getenv("REPSY_USERNAME")
-                password System.getenv("REPSY_PASSWORD")
+                username System.getenv("MAVEN_REPO_USERNAME")
+                password System.getenv("MAVEN_REPO_PASSWORD")
             }
         }
     }
@@ -233,6 +287,7 @@ jar {
     }
 }
 
+
 task generateJavadoc(type: Javadoc) {
     failOnError false
     source = sourceSets.main.allJava
@@ -242,6 +297,11 @@ task generateJavadoc(type: Javadoc) {
         links = ['https://docs.oracle.com/javase/8/docs/api/']
     }
     options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+
+signing {
+    sign publishing.publications
 }
 
 if (hasProperty('buildScan')) {
