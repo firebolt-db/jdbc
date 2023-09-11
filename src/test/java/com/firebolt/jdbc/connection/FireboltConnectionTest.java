@@ -61,11 +61,11 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class FireboltConnectionTest {
 
-	private static final String URL = "jdbc:firebolt:db?env=dev&engine=eng";
+	private static final String URL = "jdbc:firebolt:db?env=dev&engine=eng&account=dev";
 
-	private static final String SYSTEM_ENGINE_URL = "jdbc:firebolt:db?env=dev";
+	private static final String SYSTEM_ENGINE_URL = "jdbc:firebolt:db?env=dev&account=dev";
 
-	private static final String LOCAL_URL = "jdbc:firebolt:local_dev_db?ssl=false&max_query_size=10000000&use_standard_sql=1&mask_internal_errors=0&firebolt_enable_beta_functions=1&firebolt_case_insensitive_identifiers=1&rest_api_pull_timeout_sec=3600&rest_api_pull_interval_millisec=5000&rest_api_retry_times=10&host=localhost";
+	private static final String LOCAL_URL = "jdbc:firebolt:local_dev_db?account=dev&ssl=false&max_query_size=10000000&use_standard_sql=1&mask_internal_errors=0&firebolt_enable_beta_functions=1&firebolt_case_insensitive_identifiers=1&rest_api_pull_timeout_sec=3600&rest_api_pull_interval_millisec=5000&rest_api_retry_times=10&host=localhost";
 	private final FireboltConnectionTokens fireboltConnectionTokens = FireboltConnectionTokens.builder().build();
 	@Captor
 	private ArgumentCaptor<FireboltProperties> propertiesArgumentCaptor;
@@ -366,7 +366,7 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldRemoveExpiredToken() throws SQLException {
-		FireboltProperties fireboltProperties = FireboltProperties.builder().host("host").path("/db").port(8080).build();
+		FireboltProperties fireboltProperties = FireboltProperties.builder().host("host").path("/db").port(8080).account("dev").build();
 		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
 			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
 			when(fireboltAuthenticationService.getConnectionTokens("http://host:8080", fireboltProperties))
@@ -383,7 +383,7 @@ class FireboltConnectionTest {
 	@Test
 	void shouldReturnConnectionTokenWhenAvailable() throws SQLException {
 		String accessToken = "hello";
-		FireboltProperties fireboltProperties = FireboltProperties.builder().host("host").path("/db").port(8080).build();
+		FireboltProperties fireboltProperties = FireboltProperties.builder().host("host").path("/db").port(8080).account("dev").build();
 		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
 			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
 			FireboltConnectionTokens connectionTokens = FireboltConnectionTokens.builder().accessToken(accessToken).build();
@@ -398,7 +398,7 @@ class FireboltConnectionTest {
 
 	@Test
 	void shouldNotReturnConnectionTokenWithLocalDb() throws SQLException {
-		FireboltProperties fireboltProperties = FireboltProperties.builder().host("localhost").path("/db").port(8080).build();
+		FireboltProperties fireboltProperties = FireboltProperties.builder().host("localhost").path("/db").port(8080).account("dev").build();
 		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
 			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
 			try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
@@ -507,7 +507,7 @@ class FireboltConnectionTest {
 	void noEngineAndDb() throws SQLException {
 		when(fireboltGatewayUrlService.getUrl(any(), any())).thenReturn("http://my_endpoint");
 
-		try (FireboltConnection connection = createConnection("jdbc:firebolt:?env=dev", connectionProperties)) {
+		try (FireboltConnection connection = createConnection("jdbc:firebolt:?env=dev&account=dev", connectionProperties)) {
 			assertEquals("my_endpoint", connection.getSessionProperties().getHost());
 			assertNull(connection.getSessionProperties().getEngine());
 			assertTrue(connection.getSessionProperties().isSystemEngine());

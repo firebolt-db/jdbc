@@ -140,8 +140,12 @@ public class FireboltConnection implements Connection {
 		String accessToken = this.getAccessToken(loginProperties).orElse(StringUtils.EMPTY);
 		closed = false;
 		if (!PropertyUtil.isLocalDb(loginProperties)) {
-			FireboltProperties internalSystemEngineProperties = createInternalSystemEngineProperties(accessToken, loginProperties.getAccount());
-			String accountId = fireboltAccountIdService.getValue(accessToken, loginProperties.getAccount());
+			String account = loginProperties.getAccount();
+			if (account == null) {
+				throw new FireboltException("Cannot connect: account is missing");
+			}
+			FireboltProperties internalSystemEngineProperties = createInternalSystemEngineProperties(accessToken, account);
+			String accountId = fireboltAccountIdService.getValue(accessToken, account);
 			if (systemEngine) {
 				//When using system engine, the system engine properties are the same as the session properties
 				sessionProperties = internalSystemEngineProperties.toBuilder().accountId(accountId).build();
