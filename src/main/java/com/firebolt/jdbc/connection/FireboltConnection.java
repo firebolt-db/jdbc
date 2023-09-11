@@ -182,6 +182,7 @@ public class FireboltConnection implements Connection {
 		return this.loginProperties
 				.toBuilder()
 				.systemEngine(true)
+				.additionalProperties(Map.of())
 				.compress(false)
 				.host(UrlUtil.createUrl(systemEngineEndpoint).getHost()).database(null).build();
 	}
