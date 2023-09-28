@@ -40,7 +40,7 @@ public class FieldTypeConverter {
 			return BaseType.LONG.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(Double.class, (value, columnType, column) -> {
-			verify(Double.class, columnType, BaseType.DOUBLE, BaseType.REAL);
+			verify(Double.class, columnType, BaseType.DOUBLE, BaseType.REAL, BaseType.INTEGER, BaseType.SHORT, BaseType.LONG, BaseType.BIGINT);
 			return BaseType.DOUBLE.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(Boolean.class, (value, columnType, column) -> {
@@ -56,7 +56,7 @@ public class FieldTypeConverter {
 			return BaseType.BIGINT.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(Float.class, (value, columnType, column) -> {
-			verify(Float.class, columnType, BaseType.REAL);
+			verify(Float.class, columnType, BaseType.REAL, BaseType.INTEGER, BaseType.SHORT, BaseType.LONG, BaseType.BIGINT);
 			return BaseType.REAL.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(BigDecimal.class, (value, columnType, column) -> {
