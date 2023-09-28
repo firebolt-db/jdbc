@@ -190,4 +190,19 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Test
+	void specialIntValue() throws SQLException {
+		try (Connection connection = createConnection()) {
+			try (Statement statement = connection.createStatement()) {
+				ResultSet resultSet = statement.executeQuery("SELECT 1/0");
+				resultSet.next();
+				assertThrows(IllegalArgumentException.class, () -> resultSet.getShort(1));
+				assertThrows(IllegalArgumentException.class, () -> resultSet.getInt(1));
+				assertThrows(IllegalArgumentException.class, () -> resultSet.getLong(1));
+				assertEquals(Float.POSITIVE_INFINITY, resultSet.getFloat(1));
+				assertEquals(Double.POSITIVE_INFINITY, resultSet.getDouble(1));
+			}
+		}
+	}
+
 }

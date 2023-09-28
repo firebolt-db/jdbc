@@ -888,7 +888,40 @@ class FireboltResultSetTest {
 		resultSet.next();
 		assertEquals(new BigInteger("18446744073709551615"), resultSet.getObject(1, BigInteger.class));
 		assertEquals(new BigInteger("-9223372036854775807"), resultSet.getObject(2, BigInteger.class));
+	}
 
+	@Test
+	void shouldThrowIntegerInfinity() throws SQLException {
+		inputStream = getInputStreamWithInfinity();
+		resultSet = new FireboltResultSet(inputStream);
+		resultSet.next();
+		assertThrows(IllegalArgumentException.class, () -> resultSet.getShort(1));
+		assertThrows(IllegalArgumentException.class, () -> resultSet.getInt(1));
+		assertThrows(IllegalArgumentException.class, () -> resultSet.getLong(1));
+
+		assertThrows(IllegalArgumentException.class, () -> resultSet.getShort(2));
+		assertThrows(IllegalArgumentException.class, () -> resultSet.getInt(2));
+		assertThrows(IllegalArgumentException.class, () -> resultSet.getLong(2));
+
+		assertThrows(IllegalArgumentException.class, () -> resultSet.getObject(1, BigInteger.class));
+	}
+
+	@Test
+	void shouldConvertFloatInfinity() throws SQLException {
+		inputStream = getInputStreamWithInfinity();
+		resultSet = new FireboltResultSet(inputStream);
+		resultSet.next();
+
+		assertEquals(Float.POSITIVE_INFINITY, resultSet.getFloat(1));
+		assertEquals(Float.NEGATIVE_INFINITY, resultSet.getFloat(2));
+
+		assertEquals(Float.POSITIVE_INFINITY, resultSet.getDouble(1));
+		assertEquals(Float.NEGATIVE_INFINITY, resultSet.getDouble(2));
+
+		assertEquals(Double.POSITIVE_INFINITY, resultSet.getObject(1, Double.class));
+		assertEquals(Double.NEGATIVE_INFINITY, resultSet.getObject(2, Double.class));
+		assertEquals(Float.POSITIVE_INFINITY, resultSet.getObject(1, Float.class));
+		assertEquals(Float.NEGATIVE_INFINITY, resultSet.getObject(2, Float.class));
 	}
 
 	@Test
@@ -932,6 +965,10 @@ class FireboltResultSetTest {
 
 	private InputStream getInputStreamWithBigInt64() {
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-bigint-64");
+	}
+
+	private InputStream getInputStreamWithInfinity() {
+		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-infinity");
 	}
 
 	private InputStream getInputStreamWithNewTypes() {

@@ -24,10 +24,10 @@ import java.util.TimeZone;
 /** This class contains the java types the Firebolt datatypes are mapped to */
 @CustomLog
 public enum BaseType {
-	LONG(Long.class, conversion -> Long.parseLong(conversion.getValue())),
-	INTEGER(Integer.class, conversion -> Integer.parseInt(conversion.getValue())),
-	SHORT(Short.class, conversion -> Short.parseShort(conversion.getValue())),
-	BIGINT(BigInteger.class, conversion -> new BigInteger(conversion.getValue())),
+	LONG(Long.class, conversion -> Long.parseLong(checkInfinity(conversion.getValue()))),
+	INTEGER(Integer.class, conversion -> Integer.parseInt(checkInfinity(conversion.getValue()))),
+	SHORT(Short.class, conversion -> Short.parseShort(checkInfinity(conversion.getValue()))),
+	BIGINT(BigInteger.class, conversion -> new BigInteger(checkInfinity(conversion.getValue()))),
 	TEXT(String.class, conversion -> StringEscapeUtils.unescapeJava(conversion.getValue())),
 	REAL(Float.class, conversion -> {
 		if (isNan(conversion.getValue())) {
@@ -99,6 +99,13 @@ public enum BaseType {
 
 	private static boolean isNegativeInf(String value) {
 		return StringUtils.equals(value, "-inf");
+	}
+
+	private static String checkInfinity(String s) {
+		if (isPositiveInf(s) || isNegativeInf(s)) {
+			throw new IllegalArgumentException("Integer does not support infinity");
+		}
+		return s;
 	}
 
 	public static boolean isNull(String value) {
