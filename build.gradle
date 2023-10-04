@@ -244,6 +244,7 @@ task generateJavadoc(type: Javadoc) {
     options.addStringOption('Xdoclint:none', '-quiet')
 }
 
+
 if (hasProperty('buildScan')) {
     buildScan {
         termsOfServiceUrl = 'https://gradle.com/terms-of-service'
