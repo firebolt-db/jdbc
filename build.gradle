@@ -6,7 +6,7 @@ plugins {
     id "org.sonarqube" version "4.3.1.3277"
     id 'maven-publish'
     id 'com.github.johnrengelman.shadow' version '8.0.0'
-    id 'org.quiltmc.gradle.licenser' version '2.0.1'
+    //id 'org.quiltmc.gradle.licenser' version '2.0.1'
 }
 
 group 'io.firebolt'
