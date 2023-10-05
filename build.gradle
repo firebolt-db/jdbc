@@ -184,7 +184,7 @@ task generateVersionProperties {
 processResources.dependsOn generateVersionProperties
 
 task printVersion {
-    println project.version
+    println "PROJECT_VERSION=${project.version}"
 }
 sonarqube {
     properties {

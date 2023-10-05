@@ -43,7 +43,7 @@ jobs:
       - name: Get project version
         id: project-version
         run: |
-          echo "PROJECT_VERSION=$(./gradlew printVersion | grep -A1 '> Configure project :'| grep -v "> Configure project :")" >> $GITHUB_OUTPUT
+          echo "PROJECT_VERSION=$(./gradlew printVersion |grep 'PROJECT_VERSION=' | cut -d= -f2)" >> $GITHUB_OUTPUT
       - name: Upload uber-jar
         uses: actions/upload-artifact@v3
         with:
