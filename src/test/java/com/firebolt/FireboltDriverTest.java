@@ -65,18 +65,18 @@ class FireboltDriverTest {
 	@Test
 	void version() {
 		FireboltDriver fireboltDriver = new FireboltDriver();
-		assertEquals(2, fireboltDriver.getMajorVersion());
-		assertEquals(4, fireboltDriver.getMinorVersion());
+		assertEquals(3, fireboltDriver.getMajorVersion());
+		assertEquals(0, fireboltDriver.getMinorVersion());
 	}
 
 	@ParameterizedTest
 	@CsvSource(value =
 			{
 					"jdbc:firebolt,,",
-					"jdbc:firebolt://api.dev.firebolt.io/db_name,,host=api.dev.firebolt.io;path=/db_name",
-					"jdbc:firebolt://api.dev.firebolt.io/db_name?account=test,,host=api.dev.firebolt.io;path=/db_name;account=test",
-					"jdbc:firebolt://api.dev.firebolt.io/db_name?account=test,user=usr;password=pwd,host=api.dev.firebolt.io;path=/db_name;account=test;user=usr;password=pwd", // legit:ignore-secrets
-					"jdbc:firebolt://api.dev.firebolt.io/db_name,user=usr;password=pwd,host=api.dev.firebolt.io;path=/db_name;user=usr;password=pwd" // legit:ignore-secrets
+					"jdbc:firebolt:db_name,,environment=app;path=db_name",
+					"jdbc:firebolt:db_name?account=test,,environment=app;path=db_name;account=test",
+					"jdbc:firebolt:db_name?account=test,client_id=usr;client_secret=pwd,environment=app;path=db_name;account=test;client_id=usr;client_secret=pwd",
+					"jdbc:firebolt:db_name,client_id=usr;client_secret=pwd,environment=app;path=db_name;client_id=usr;client_secret=pwd"
 			},
 			delimiter = ',')
 	void getPropertyInfo(String url, String propStr, String expectedInfoStr) throws SQLException {

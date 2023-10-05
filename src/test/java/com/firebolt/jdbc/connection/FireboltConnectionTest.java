@@ -12,6 +12,7 @@ import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
+import lombok.NonNull;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -484,8 +485,9 @@ class FireboltConnectionTest {
 		if (configuredAccessToken != null) {
 			propsWithToken.setProperty(ACCESS_TOKEN.getKey(), configuredAccessToken);
 		}
+
 		try (FireboltConnection connection = new FireboltConnection(URL, propsWithToken, fireboltAuthenticationService,
-				fireboltEngineService, fireboltStatementService)) {
+				fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService)) {
 			assertEquals(expectedAccessToken, connection.getAccessToken().orElse(null));
 			Mockito.verifyNoMoreInteractions(fireboltAuthenticationService);
 		}
@@ -498,7 +500,7 @@ class FireboltConnectionTest {
 		propsWithToken.setProperty(CLIENT_ID.getKey(), "my-client");
 		propsWithToken.setProperty(CLIENT_SECRET.getKey(), "my-secret");
 		assertThrows(SQLException.class, () -> new FireboltConnection(URL, propsWithToken, fireboltAuthenticationService,
-				fireboltEngineService, fireboltStatementService));
+				fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService));
 	}
 
 	@Test
@@ -578,7 +580,7 @@ class FireboltConnectionTest {
 	@Test
 	void createArray() throws SQLException {
 		try (Connection connection = new FireboltConnection(URL, connectionProperties, fireboltAuthenticationService,
-				fireboltEngineService, fireboltStatementService)) {
+				fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService)) {
 			Object[] data = new Object[] {"red", "green", "blue"};
 			Array array = connection.createArrayOf("text", data);
 			assertEquals(Types.VARCHAR, array.getBaseType());
@@ -588,9 +590,9 @@ class FireboltConnectionTest {
 
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("unsupported")
-	void shouldThrowSQLFeatureNotSupportedException(String name, Executable function) throws FireboltException {
+	void shouldThrowSQLFeatureNotSupportedException(String name, Executable function) throws SQLException {
 		connection = new FireboltConnection(URL, connectionProperties, fireboltAuthenticationService,
-				fireboltEngineService, fireboltStatementService);
+				fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService);
 		assertThrows(SQLFeatureNotSupportedException.class, function);
 	}
 
@@ -598,7 +600,7 @@ class FireboltConnectionTest {
 	@MethodSource("empty")
 	void shouldReturnEmptyResult(String name, Callable<?> function, Object expected) throws Exception {
 		connection = new FireboltConnection(URL, connectionProperties, fireboltAuthenticationService,
-				fireboltEngineService, fireboltStatementService);
+				fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService);
 		assertEquals(expected, function.call());
 	}
 
