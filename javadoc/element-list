@@ -8,7 +8,6 @@ com.firebolt.jdbc.client.authentication
 com.firebolt.jdbc.client.authentication.response
 com.firebolt.jdbc.client.config
 com.firebolt.jdbc.client.config.socket
-com.firebolt.jdbc.client.gateway
 com.firebolt.jdbc.client.query
 com.firebolt.jdbc.connection
 com.firebolt.jdbc.connection.settings
