@@ -1,0 +1,96 @@
+name: Run integration tests v2
+
+on:
+  workflow_call:
+    inputs:
+      database:
+        description: 'Database - a new one will be created if not provided'
+        required: false
+        default: ''
+        type: string
+      engine:
+        description: 'Engine - a new one will be created if not provided'
+        required: false
+        type: string
+      account:
+        description: 'Account'
+        required: true
+        default: 'developer'
+        type: string
+      environment:
+        description: 'Environment to run the tests against'
+        type: string
+        required: true
+        default: 'staging'
+    secrets:
+      FIREBOLT_CLIENT_ID_STG_NEW_IDN:
+        required: true
+      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
+        required: true
+      FIREBOLT_CLIENT_ID_NEW_IDN:
+        required: true
+      FIREBOLT_CLIENT_SECRET_NEW_IDN:
+        required: true
+
+jobs:
+  run-integration-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate database and engine
+        if: ${{ (github.event.inputs.database == '') != (github.event.inputs.engine == '') }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed("Database and Engine parameters should be provided simultaneously")
+
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Prepare java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Determine env variables
+        run: |
+          if [ "${{ github.event.inputs.environment }}" == 'staging' ]; then
+             echo "SERVICE_ACCOUNT_ID=${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" >> "$GITHUB_ENV"
+             echo "SERVICE_ACCOUNT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" >> "$GITHUB_ENV"
+          else
+             echo "SERVICE_ACCOUNT_ID=${{ secrets.FIREBOLT_CLIENT_ID_NEW_IDN }}" >> "$GITHUB_ENV"
+             echo "SERVICE_ACCOUNT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_NEW_IDN }}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Setup database and engine
+        id: setup
+        if: ${{ github.event.inputs.database == '' }}
+        uses: firebolt-db/integration-testing-setup@v2
+        with:
+          firebolt-client-id: ${{ env.SERVICE_ACCOUNT_ID }}
+          firebolt-client-secret: ${{ env.SERVICE_ACCOUNT_SECRET }}
+          account: ${{ github.event.inputs.account }}
+          api-endpoint: "api.${{ github.event.inputs.environment }}.firebolt.io"
+          instance-type: "B2"
+
+      - name: Determine database name
+        id: find-database-name
+        run: |
+          if ! [[ -z "${{ github.event.inputs.database }}" ]]; then
+             echo "database_name=${{ github.event.inputs.database }}" >> $GITHUB_OUTPUT
+          else
+             echo "database_name=${{ steps.setup.outputs.database_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine engine name
+        id: find-engine-name
+        run: |
+          if ! [[ -z "${{ github.event.inputs.engine }}" ]]; then
+             echo "engine_name=${{ github.event.inputs.engine }}" >> $GITHUB_OUTPUT
+          else
+             echo "engine_name=${{ steps.setup.outputs.engine_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run integration tests
+        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=${{ github.event.inputs.environment }} -Dclient_secret="${{ env.SERVICE_ACCOUNT_SECRET }}" -Dclient_id="${{ env.SERVICE_ACCOUNT_ID }}" -Daccount="${{ github.event.inputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags=v1

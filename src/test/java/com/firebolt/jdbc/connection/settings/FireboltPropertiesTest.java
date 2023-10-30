@@ -1,15 +1,20 @@
 package com.firebolt.jdbc.connection.settings;
 
-import org.junit.jupiter.api.Disabled;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FireboltPropertiesTest {
 
@@ -58,12 +63,42 @@ class FireboltPropertiesTest {
 	}
 
 	@Test
+	void shouldAddAdditionalProperties() {
+		FireboltProperties props = FireboltProperties.of();
+		assertTrue(props.getAdditionalProperties().isEmpty());
+		props.addProperty(new ImmutablePair<>("a", "1"));
+		props.addProperty("b", "2");
+		assertEquals(Map.of("a", "1", "b", "2"), props.getAdditionalProperties());
+	}
+
+	@Test
 	void shouldUsePathParamAsDb() {
 		Properties properties = new Properties();
 		properties.put("path", "example");
 		properties.put("host", "host");
 
 		assertEquals("example", FireboltProperties.of(properties).getDatabase());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"$", "@"})
+	void invalidDatabase(String db) {
+		Properties properties = new Properties();
+		properties.put("path", db);
+		assertThrows(IllegalArgumentException.class, () -> FireboltProperties.of(properties));
+	}
+
+	@Test
+	void emptyCopy() {
+		Properties properties = new Properties();
+		properties.put("path", "example");
+		properties.put("host", "host");
+		assertEquals(FireboltProperties.of(properties), FireboltProperties.copy(FireboltProperties.of(properties)));
+	}
+
+	@Test
+	void notEmptyCopy() {
+		assertEquals(FireboltProperties.of(), FireboltProperties.copy(FireboltProperties.of()));
 	}
 
 	@Test

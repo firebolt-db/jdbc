@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 
@@ -136,29 +137,25 @@ public abstract class FireboltClient {
 		int statusCode = response.code();
 		if (!isCallSuccessful(statusCode)) {
 			if (statusCode == HTTP_UNAVAILABLE) {
-				throw new FireboltException(
-						String.format("Could not query Firebolt at %s. The engine is not running.", host), statusCode);
+				throw new FireboltException(format("Could not query Firebolt at %s. The engine is not running.", host), statusCode);
 			}
-			String errorResponseMessage;
-			try {
-				String errorMessageFromServer = extractErrorMessage(response, isCompress);
-				errorResponseMessage = String.format(
-						"Server failed to execute query with the following error:%n%s%ninternal error:%n%s",
-						errorMessageFromServer, this.getInternalErrorWithHeadersText(response));
-				if (statusCode == HTTP_UNAUTHORIZED) {
-					this.getConnection().removeExpiredTokens();
-					throw new FireboltException(String.format(
-							"Could not query Firebolt at %s. The operation is not authorized or the token is expired and has been cleared from the cache.%n%s",
-							host, errorResponseMessage), statusCode, errorMessageFromServer);
-				}
-				throw new FireboltException(errorResponseMessage, statusCode, errorMessageFromServer);
-			} catch (IOException e) {
-				log.warn("Could not parse response containing the error message from Firebolt", e);
-				errorResponseMessage = String.format("Server failed to execute query%ninternal error:%n%s",
-						this.getInternalErrorWithHeadersText(response));
-				throw new FireboltException(errorResponseMessage, statusCode, e);
+			String errorMessageFromServer = extractErrorMessage(response, isCompress);
+			validateResponse(host, statusCode, errorMessageFromServer);
+			String errorResponseMessage = format(
+					"Server failed to execute query with the following error:%n%s%ninternal error:%n%s",
+					errorMessageFromServer, getInternalErrorWithHeadersText(response));
+			if (statusCode == HTTP_UNAUTHORIZED) {
+				getConnection().removeExpiredTokens();
+				throw new FireboltException(format(
+						"Could not query Firebolt at %s. The operation is not authorized or the token is expired and has been cleared from the cache.%n%s",
+						host, errorResponseMessage), statusCode, errorMessageFromServer);
 			}
+			throw new FireboltException(errorResponseMessage, statusCode, errorMessageFromServer);
 		}
+	}
+
+	protected void validateResponse(String host, int statusCode, String errorMessageFromServer) throws FireboltException {
+		// empty implementation
 	}
 
 	protected String getResponseAsString(Response response) throws FireboltException, IOException {
@@ -168,8 +165,17 @@ public abstract class FireboltClient {
 		return response.body().string();
 	}
 
-	private String extractErrorMessage(Response response, boolean isCompress) throws IOException {
-		byte[] entityBytes = response.body() !=  null ? response.body().bytes() : null;
+	private String extractErrorMessage(Response response, boolean isCompress) throws FireboltException {
+		byte[] entityBytes;
+		try {
+			entityBytes = response.body() !=  null ? response.body().bytes() : null;
+		} catch (IOException e) {
+			log.warn("Could not parse response containing the error message from Firebolt", e);
+			String errorResponseMessage = format("Server failed to execute query%ninternal error:%n%s",
+					this.getInternalErrorWithHeadersText(response));
+			throw new FireboltException(errorResponseMessage, response.code(), e);
+		}
+
 		if (entityBytes == null) {
 			return null;
 		}
@@ -185,7 +191,7 @@ public abstract class FireboltClient {
 		return new String(entityBytes, StandardCharsets.UTF_8);
 	}
 
-	private boolean isCallSuccessful(int statusCode) {
+	protected boolean isCallSuccessful(int statusCode) {
 		return statusCode >= 200 && statusCode <= 299; // Call is considered successful when the status code is 2XX
 	}
 

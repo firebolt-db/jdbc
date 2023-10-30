@@ -188,7 +188,7 @@ class FireboltDatabaseMetadataTest {
 //		ResultSet expectedResultSet = FireboltDatabaseMetadataResult.builder()
 //				.columns(Arrays.asList(Column.builder().name(TABLE_SCHEM).type(STRING).build(),
 //						Column.builder().name(TABLE_CATALOG).type(STRING).build()))
-//				.rows(Arrays.asList(Arrays.asList("Tutorial_11_04", "default"), Arrays.asList("system", "default")))
+//				.rows(Arrays.asList(Arrays.asList("Tutorial_11_04", "default"), Arrays.asList(SYSTEM_ENGINE_NAME, "default")))
 //				.build().toResultSet();
 //
 //		verifyResultSetEquality(expectedResultSet, resultSet);

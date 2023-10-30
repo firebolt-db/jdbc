@@ -1,20 +1,23 @@
 package com.firebolt.jdbc.util;
 
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
+import lombok.CustomLog;
+import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.StringUtils;
+
 import java.sql.DriverPropertyInfo;
-import java.util.ArrayList;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import com.firebolt.jdbc.connection.UrlUtil;
-import org.apache.commons.lang3.StringUtils;
-
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
-
-import lombok.CustomLog;
-import lombok.experimental.UtilityClass;
+import static com.firebolt.jdbc.connection.UrlUtil.extractProperties;
+import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.getNonDeprecatedProperties;
 
 @CustomLog
 @UtilityClass
@@ -30,18 +33,7 @@ public class PropertyUtil {
 	 * @return an array containing the properties used by the driver
 	 */
 	public DriverPropertyInfo[] getPropertyInfo(String url, Properties properties) {
-		try {
-			Properties propertiesFromUrl = UrlUtil.extractProperties(url);
-			for (Object key : propertiesFromUrl.keySet()) {
-				properties.put(key, propertiesFromUrl.get(key.toString()));
-			}
-		} catch (Exception ex) {
-			log.error("Could not extract properties from url {}", url, ex);
-		}
-
-		List<DriverPropertyInfo> result = new ArrayList<>(
-				mapProperties(FireboltSessionProperty.getNonDeprecatedProperties(), properties));
-		return result.toArray(new DriverPropertyInfo[0]);
+		return mapProperties(getNonDeprecatedProperties(), mergeProperties(extractProperties(url), properties)).toArray(new DriverPropertyInfo[0]);
 	}
 
 	/**
@@ -57,8 +49,8 @@ public class PropertyUtil {
 	private List<DriverPropertyInfo> mapProperties(List<FireboltSessionProperty> fireboltSessionProperties,
 			Properties properties) {
 		return fireboltSessionProperties.stream().map(fireboltProperty -> {
-			DriverPropertyInfo driverPropertyInfo = new DriverPropertyInfo(fireboltProperty.getKey(),
-					getValueForFireboltSessionProperty(properties, fireboltProperty));
+			Entry<String, String> property = getValueForFireboltSessionProperty(properties, fireboltProperty);
+			DriverPropertyInfo driverPropertyInfo = new DriverPropertyInfo(property.getKey(), property.getValue());
 			driverPropertyInfo.required = false;
 			driverPropertyInfo.description = fireboltProperty.getDescription();
 			driverPropertyInfo.choices = fireboltProperty.getPossibleValues();
@@ -66,11 +58,22 @@ public class PropertyUtil {
 		}).collect(Collectors.toList());
 	}
 
-	private String getValueForFireboltSessionProperty(Properties properties,
-			FireboltSessionProperty fireboltSessionProperty) {
-		Optional<String> value = Optional.ofNullable(properties.getProperty(fireboltSessionProperty.getKey()));
+	private Entry<String, String> getValueForFireboltSessionProperty(Properties properties, FireboltSessionProperty fireboltSessionProperty) {
+		String strDefaultValue = Optional.ofNullable(fireboltSessionProperty.getDefaultValue()).map(Object::toString).orElse(null);
+		return Stream.concat(Stream.of(fireboltSessionProperty.getKey()), Arrays.stream(fireboltSessionProperty.getAliases()))
+				.filter(key -> properties.getProperty(key) != null)
+				.map(key -> new SimpleEntry<>(key, properties.getProperty(key)))
+				.findFirst()
+				.orElseGet(() -> new SimpleEntry<>(fireboltSessionProperty.getKey(), strDefaultValue));
+	}
 
-		return value.orElseGet(() -> Optional.ofNullable(fireboltSessionProperty.getDefaultValue())
-				.map(Object::toString).orElse(null));
+	public static Properties mergeProperties(Properties... properties) {
+		Properties mergedProperties = new Properties();
+		for (Properties p : properties) {
+			if (p != null) {
+				mergedProperties.putAll(p);
+			}
+		}
+		return mergedProperties;
 	}
 }

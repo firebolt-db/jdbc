@@ -10,4 +10,5 @@ public class Engine {
 	private final String status;
 	private final String name;
 	private final String database;
+	private final String id;
 }

@@ -29,7 +29,7 @@ public class FireboltDriver implements Driver {
 
 	@Override
 	public Connection connect(String url, Properties connectionSettings) throws SQLException {
-		return acceptsURL(url) ? new FireboltConnection(url, connectionSettings) : null;
+		return acceptsURL(url) ? FireboltConnection.create(url, connectionSettings) : null;
 	}
 
 	@Override

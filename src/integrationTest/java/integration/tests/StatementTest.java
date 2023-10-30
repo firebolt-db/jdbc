@@ -7,6 +7,7 @@ import lombok.CustomLog;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -42,7 +43,18 @@ class StatementTest extends IntegrationTest {
 
 	@Test
 	void shouldSelect1() throws SQLException {
-		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
+		try (Connection connection = this.createConnection();
+			 ResultSet rs = connection.createStatement().executeQuery("SELECT 1")) {
+			assertTrue(rs.next());
+			assertEquals(1, rs.getInt(1));
+			assertFalse(rs.next());
+		}
+	}
+
+	@Test
+	@EnabledIfSystemProperty(named = "engine", matches = ".+")
+	void shouldSelect1WithEngine() throws SQLException {
+		try (Connection connection = this.createConnection(System.getProperty("engine")); Statement statement = connection.createStatement()) {
 			statement.executeQuery("SELECT 1;");
 			assertNotNull(statement.executeQuery("SELECT 1;"));
 		}

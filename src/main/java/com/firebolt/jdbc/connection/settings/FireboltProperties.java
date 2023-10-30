@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.firebolt.jdbc.util.PropertyUtil.mergeProperties;
 import static java.lang.String.format;
 
 @Value
@@ -21,7 +22,7 @@ import static java.lang.String.format;
 @CustomLog
 public class FireboltProperties {
 
-	private static final Pattern DB_PATH_PATTERN = Pattern.compile("([a-zA-Z0-9_*\\-]+)");
+	private static final Pattern DB_PATH_PATTERN = Pattern.compile("/?([a-zA-Z0-9_*\\-]+)");
 	private static final int FIREBOLT_SSL_PROXY_PORT = 443;
 	private static final int FIREBOLT_NO_SSL_PROXY_PORT = 9090;
 
@@ -225,14 +226,6 @@ public class FireboltProperties {
 		return (T) clazz.cast(val);
 	}
 
-	private static Properties mergeProperties(Properties... properties) {
-		Properties mergedProperties = new Properties();
-		for (Properties p : properties) {
-			mergedProperties.putAll(p);
-		}
-		return mergedProperties;
-	}
-
 	public static FireboltProperties copy(FireboltProperties properties) {
 		return properties.toBuilder().additionalProperties(new HashMap<>(properties.getAdditionalProperties())).build();
 	}
@@ -248,4 +241,11 @@ public class FireboltProperties {
 	public void addProperty(Pair<String, String> property) {
 		this.addProperty(property.getLeft(), property.getRight());
 	}
+
+	public String getHttpConnectionUrl() {
+		String hostAndPort = host + (port == null ? "" : ":" + port);
+		String protocol = isSsl() ? "https://" : "http://";
+		return protocol + hostAndPort;
+	}
+
 }

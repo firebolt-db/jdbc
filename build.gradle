@@ -111,7 +111,10 @@ test {
 
 tasks.register('integrationTest', Test) {
     description = 'Runs integration tests.'
-    useJUnitPlatform()
+    useJUnitPlatform() {
+        includeTags(System.getProperty("includeTags", "common").split(","))
+        excludeTags(System.getProperty("excludeTags", "nothing").split(","))
+    }
     reports {
         junitXml {
             outputPerTestCase = true // defaults to false
@@ -126,8 +129,38 @@ tasks.register('integrationTest', Test) {
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath
     maxParallelForks = (int) (Runtime.runtime.availableProcessors() / 2 + 1)
+
+    testLogging {
+        events 'PASSED', 'FAILED', 'SKIPPED'
+    }
 }
 
+allprojects {
+    // add a collection to track failedTests
+    ext.failedTests = []
+
+    // add a testlistener to all tasks of type Test
+    tasks.withType(Test) {
+        afterTest { TestDescriptor descriptor, TestResult result ->
+            if(result.resultType == org.gradle.api.tasks.testing.TestResult.ResultType.FAILURE){
+                failedTests << ["${descriptor.className}::${descriptor.name}"]
+            }
+        }
+    }
+
+    // print out tracked failed tests when the build has finished
+    gradle.buildFinished {
+        if(!failedTests.empty){
+            println "Failed tests for ${project.name}:"
+            failedTests.each { failedTest ->
+                println failedTest
+            }
+            println "End of the list"
+        } else {
+            println "No failures found"
+        }
+    }
+}
 
 jacoco {
     toolVersion = "0.8.10"
