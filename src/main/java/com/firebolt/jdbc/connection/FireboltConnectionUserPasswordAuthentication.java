@@ -43,12 +43,9 @@ public class FireboltConnectionUserPasswordAuthentication extends FireboltConnec
 
     @Override
     protected FireboltProperties extractFireboltProperties(String jdbcUri, Properties connectionProperties) {
-        Properties propertiesFromUrl = UrlUtil.extractProperties(jdbcUri);
-        String engineKey = FireboltSessionProperty.ENGINE.getKey();
-//		if (!propertiesFromUrl.containsKey(engineKey) && !connectionProperties.containsKey(engineKey)) {
-//			connectionProperties.setProperty(engineKey, "system");
-//		}
-        return FireboltProperties.of(propertiesFromUrl, connectionProperties);
+        FireboltProperties properties = super.extractFireboltProperties(jdbcUri, connectionProperties);
+        boolean systemEngine = "system".equals(properties.getEngine());
+        return properties.toBuilder().systemEngine(systemEngine).build();
     }
 
     @Override
