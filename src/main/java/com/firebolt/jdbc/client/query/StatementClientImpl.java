@@ -75,15 +75,13 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			return executeSqlStatementWithRetryOnUnauthorized(statementInfoWrapper, connectionProperties, formattedStatement, uri);
 		} catch (FireboltException e) {
 			throw e;
+		} catch (StreamResetException e) {
+			String errorMessage = format("Error executing statement with id %s: %s", statementInfoWrapper.getId(), formattedStatement);
+			throw new FireboltException(errorMessage, e, ExceptionType.CANCELED);
 		} catch (Exception e) {
-			String errorMessage = format("Error executing statement with id %s: %s",
-					statementInfoWrapper.getId(), formattedStatement);
-			if (e instanceof StreamResetException) {
-				throw new FireboltException(errorMessage, e, ExceptionType.CANCELED);
-			}
+			String errorMessage = format("Error executing statement with id %s: %s", statementInfoWrapper.getId(), formattedStatement);
 			throw new FireboltException(errorMessage, e);
 		}
-
 	}
 
 	private InputStream executeSqlStatementWithRetryOnUnauthorized(@NonNull StatementInfoWrapper statementInfoWrapper,
@@ -210,7 +208,9 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		getResponseFormatParameter(statementInfoWrapper.getType() == StatementType.QUERY, isLocalDb)
 				.ifPresent(format -> params.put(format.getLeft(), format.getRight()));
 		if (systemEngine) {
-			params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId());
+			if (fireboltProperties.getAccountId() != null) {
+				params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId());
+			}
 		} else {
 			params.put(FireboltQueryParameterKey.QUERY_ID.getKey(), statementInfoWrapper.getId());
 			params.put(FireboltQueryParameterKey.COMPRESS.getKey(), fireboltProperties.isCompress() ? "1" : "0");
@@ -225,7 +225,8 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	private Optional<Pair<String, String>> getResponseFormatParameter(boolean isQuery, boolean isLocalDb) {
-		return isQuery ? Optional.of(Pair.of((isLocalDb ? DEFAULT_FORMAT : OUTPUT_FORMAT).getKey(), TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT)) : Optional.empty();
+		FireboltQueryParameterKey format = isLocalDb ? DEFAULT_FORMAT : OUTPUT_FORMAT;
+		return isQuery ? Optional.of(Pair.of(format.getKey(), TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT)) : Optional.empty();
 	}
 
 	private Map<String, String> getCancelParameters(String statementId) {

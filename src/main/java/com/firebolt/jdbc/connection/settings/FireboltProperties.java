@@ -176,7 +176,7 @@ public class FireboltProperties {
 				return null;
 			} else {
 				Matcher m = DB_PATH_PATTERN.matcher(path);
-				if (m.matches()) {
+				if (m.find()) {
 					return m.group(1);
 				} else {
 					throw new IllegalArgumentException(format("The database provided is invalid %s", path));
@@ -248,4 +248,11 @@ public class FireboltProperties {
 	public void addProperty(Pair<String, String> property) {
 		this.addProperty(property.getLeft(), property.getRight());
 	}
+
+	public String getHttpConnectionUrl() {
+		String hostAndPort = host + (port == null ? "" : ":" + port);
+		String protocol = isSsl() ? "https://" : "http://";
+		return protocol + hostAndPort;
+	}
+
 }

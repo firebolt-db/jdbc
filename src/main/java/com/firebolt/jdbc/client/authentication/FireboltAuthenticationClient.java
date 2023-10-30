@@ -14,10 +14,10 @@ import okhttp3.Response;
 import java.io.IOException;
 
 @CustomLog
-public class FireboltAuthenticationClient extends FireboltClient {
+public abstract class FireboltAuthenticationClient extends FireboltClient {
 
-	public FireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper,
-			FireboltConnection connection, String customDrivers, String customClients) {
+	protected FireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper,
+										   FireboltConnection connection, String customDrivers, String customClients) {
 		super(httpClient, objectMapper, connection, customDrivers, customClients);
 	}
 
@@ -32,7 +32,7 @@ public class FireboltAuthenticationClient extends FireboltClient {
 	 */
 	public FireboltConnectionTokens postConnectionTokens(String host, String user, String password, String environment)
 			throws IOException, FireboltException {
-		AuthenticationRequest authenticationRequest = new ServiceAccountAuthenticationRequest(user, password, environment);
+		AuthenticationRequest authenticationRequest = getAuthenticationRequest(user, password, host, environment);
 		String uri = authenticationRequest.getUri();
 		log.debug("Creating connection with url {}", uri);
 		Request request = this.createPostRequest(uri, authenticationRequest.getRequestBody());
@@ -63,4 +63,6 @@ public class FireboltAuthenticationClient extends FireboltClient {
 			log.debug(message);
 		}
 	}
+
+	protected abstract AuthenticationRequest getAuthenticationRequest(String username, String password, String host, String environment);
 }

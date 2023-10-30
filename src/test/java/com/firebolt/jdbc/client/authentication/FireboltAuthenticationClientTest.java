@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -47,8 +48,14 @@ class FireboltAuthenticationClientTest {
 
 	@BeforeEach
 	void setUp() {
-		fireboltAuthenticationClient = new FireboltAuthenticationClient(httpClient, objectMapper, connection,
-				"ConnA:1.0.9", "ConnB:2.0.9");
+		fireboltAuthenticationClient = new FireboltAuthenticationClient(httpClient, objectMapper, connection, "ConnA:1.0.9", "ConnB:2.0.9") {
+			@Override
+			protected AuthenticationRequest getAuthenticationRequest(String username, String password, String host, String environment) {
+				AuthenticationRequest request = Mockito.mock(AuthenticationRequest.class);
+				when(request.getUri()).thenReturn("http://host/auth");
+				return request;
+			}
+		};
 	}
 
 	@Test

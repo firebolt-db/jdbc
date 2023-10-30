@@ -2,6 +2,7 @@ package com.firebolt.jdbc.service;
 
 import com.firebolt.jdbc.connection.Engine;
 import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,35 +24,23 @@ import java.util.regex.Pattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class FireboltEngineServiceTest {
+class FireboltEngineInformationSchemaServiceTest {
 
 	@InjectMocks
-	private FireboltEngineService fireboltEngineService;
+	private FireboltEngineInformationSchemaService fireboltEngineService;
 
 	@Mock
 	private FireboltConnection fireboltConnection;
 
 	@Test
-	void shouldGetEngineNameFromEngineHost() throws SQLException {
-		assertEquals("myHost_345", fireboltEngineService.getEngineNameByHost("myHost-345.firebolt.io"));
-	}
-
-	@Test
-	void shouldThrowExceptionWhenThEngineCannotBeEstablishedFromTheHost() {
-		assertThrows(FireboltException.class, () -> fireboltEngineService.getEngineNameByHost("myHost-345"));
-	}
-
-	@Test
-	void shouldThrowExceptionWhenThEngineCannotBeEstablishedFromNullHost() {
-		assertThrows(FireboltException.class, () -> fireboltEngineService.getEngineNameByHost(null));
-	}
-
-	@Test
-	void shouldGetDefaultEngineWhenEngineNameIsNotProvided() throws SQLException {
-		assertThrows(IllegalArgumentException.class, () -> fireboltEngineService.getEngine(null, "db"));
+	void shouldThrowExceptionEngineWhenEngineNameIsNotProvided() {
+		FireboltProperties properties = FireboltProperties.builder().database("db").build();
+		assertThrows(IllegalArgumentException.class, () -> fireboltEngineService.getEngine(properties));
 	}
 
 	@Test
@@ -60,7 +49,7 @@ class FireboltEngineServiceTest {
 		ResultSet resultSet = mockedResultSet(Map.of("status", "running", "url", "https://url", "attached_to", "db", "engine_name", "some-engine"));
 		when(fireboltConnection.prepareStatement(anyString())).thenReturn(statement);
 		when(statement.executeQuery()).thenReturn(resultSet);
-		assertEquals(new Engine("https://url", "running", "some-engine", "db"), fireboltEngineService.getEngine("some-engine", "db"));
+		assertEquals(new Engine("https://url", "running", "some-engine", "db", null), fireboltEngineService.getEngine(createFireboltProperties("some-engine", "db")));
 	}
 
 	@ParameterizedTest
@@ -83,13 +72,25 @@ class FireboltEngineServiceTest {
 		ResultSet resultSet = mockedResultSet(rsData);
 		when(fireboltConnection.prepareStatement(Mockito.matches(Pattern.compile("SELECT.+JOIN", Pattern.MULTILINE | Pattern.DOTALL)))).thenReturn(statement);
 		when(statement.executeQuery()).thenReturn(resultSet);
-		assertEquals(errorMessage, assertThrows(FireboltException.class, () -> fireboltEngineService.getEngine(engineName, db)).getMessage());
+		assertEquals(errorMessage, assertThrows(FireboltException.class, () -> fireboltEngineService.getEngine(createFireboltProperties(engineName, db))).getMessage());
 		Mockito.verify(statement, Mockito.times(1)).setString(1, engineName);
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {"mydb;'';false", "other_db;'database_name,other_db';true"}, delimiter = ';')
+	void doesDatabaseExist(String db, String row, boolean expected) throws SQLException {
+		PreparedStatement statement = mock(PreparedStatement.class);
+		Map<String, String> rowData = row == null || row.isEmpty() ? Map.of() : Map.of(row.split(",")[0], row.split(",")[1]);
+		ResultSet resultSet = mockedResultSet(rowData);
+		when(fireboltConnection.prepareStatement("SELECT database_name FROM information_schema.databases WHERE database_name=?")).thenReturn(statement);
+		when(statement.executeQuery()).thenReturn(resultSet);
+		assertEquals(expected, fireboltEngineService.doesDatabaseExist(db));
+		Mockito.verify(statement, Mockito.times(1)).setString(1, db);
 	}
 
 	private ResultSet mockedResultSet(Map<String, String> values) throws SQLException {
 		ResultSet resultSet = mock(ResultSet.class);
-		if (values == null) {
+		if (values == null || values.isEmpty()) {
 			when(resultSet.next()).thenReturn(false);
 		} else {
 			when(resultSet.next()).thenReturn(true, false);
@@ -98,5 +99,9 @@ class FireboltEngineServiceTest {
 			}
 		}
 		return resultSet;
+	}
+
+	private FireboltProperties createFireboltProperties(String engine, String database) {
+		return FireboltProperties.builder().engine(engine).database(database).build();
 	}
 }

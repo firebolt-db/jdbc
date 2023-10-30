@@ -111,7 +111,10 @@ test {
 
 tasks.register('integrationTest', Test) {
     description = 'Runs integration tests.'
-    useJUnitPlatform()
+    useJUnitPlatform() {
+        includeTags(System.getProperty("includeTags", "common").split(","))
+        excludeTags(System.getProperty("excludeTags", "nothing").split(","))
+    }
     reports {
         junitXml {
             outputPerTestCase = true // defaults to false

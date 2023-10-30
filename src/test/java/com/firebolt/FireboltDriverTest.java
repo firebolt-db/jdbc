@@ -1,12 +1,14 @@
 package com.firebolt;
 
-import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.connection.FireboltConnectionServiceSecretAuthentication;
+import com.firebolt.jdbc.connection.FireboltConnectionUserPasswordAuthentication;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedConstruction;
 
+import java.sql.Connection;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -33,10 +35,19 @@ class FireboltDriverTest {
 	}
 
 	@Test
-	void shouldReturnNewConnectionWhenUrlIsValid() throws SQLException {
-		try (MockedConstruction<FireboltConnection> mocked = mockConstruction(FireboltConnection.class)) {
+	void shouldReturnNewConnectionWhenUrlIsValid1() throws SQLException {
+		shouldReturnNewConnectionWhenUrlIsValid(FireboltConnectionUserPasswordAuthentication.class, "jdbc:firebolt://api.dev.firebolt.io/db_name");
+	}
+
+	@Test
+	void shouldReturnNewConnectionWhenUrlIsValid2() throws SQLException {
+		shouldReturnNewConnectionWhenUrlIsValid(FireboltConnectionServiceSecretAuthentication.class, "jdbc:firebolt:db_name");
+	}
+
+	private <T extends Connection> void shouldReturnNewConnectionWhenUrlIsValid(Class<T> connectionType, String jdbcUrl) throws SQLException {
+		try (MockedConstruction<T> mocked = mockConstruction(connectionType)) {
 			FireboltDriver fireboltDriver = new FireboltDriver();
-			assertNotNull(fireboltDriver.connect("jdbc:firebolt://api.dev.firebolt.io/db_name", new Properties()));
+			assertNotNull(fireboltDriver.connect(jdbcUrl, new Properties()));
 			assertEquals(1, mocked.constructed().size());
 		}
 	}
@@ -65,8 +76,8 @@ class FireboltDriverTest {
 	@Test
 	void version() {
 		FireboltDriver fireboltDriver = new FireboltDriver();
-		assertEquals(2, fireboltDriver.getMajorVersion());
-		assertEquals(4, fireboltDriver.getMinorVersion());
+		assertEquals(3, fireboltDriver.getMajorVersion());
+		assertEquals(0, fireboltDriver.getMinorVersion());
 	}
 
 	@ParameterizedTest
@@ -76,7 +87,9 @@ class FireboltDriverTest {
 					"jdbc:firebolt://api.dev.firebolt.io/db_name,,host=api.dev.firebolt.io;path=/db_name",
 					"jdbc:firebolt://api.dev.firebolt.io/db_name?account=test,,host=api.dev.firebolt.io;path=/db_name;account=test",
 					"jdbc:firebolt://api.dev.firebolt.io/db_name?account=test,user=usr;password=pwd,host=api.dev.firebolt.io;path=/db_name;account=test;user=usr;password=pwd", // legit:ignore-secrets
-					"jdbc:firebolt://api.dev.firebolt.io/db_name,user=usr;password=pwd,host=api.dev.firebolt.io;path=/db_name;user=usr;password=pwd" // legit:ignore-secrets
+					"jdbc:firebolt://api.dev.firebolt.io/db_name,user=usr;password=pwd,host=api.dev.firebolt.io;path=/db_name;user=usr;password=pwd", // legit:ignore-secrets
+					// TODO: add more tests with "new" URL format
+//					"jdbc:firebolt:db_name,,host=api.dev.firebolt.io;database=db_name",
 			},
 			delimiter = ',')
 	void getPropertyInfo(String url, String propStr, String expectedInfoStr) throws SQLException {
