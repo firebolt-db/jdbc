@@ -3,6 +3,8 @@ package com.firebolt.jdbc.connection;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltObjectMapper;
 import com.firebolt.jdbc.client.account.FireboltAccountClient;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
 import com.firebolt.jdbc.service.FireboltAccountIdService;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineService;
@@ -35,9 +37,18 @@ public class FireboltConnectionUserPasswordAuthentication extends FireboltConnec
     @Override
     protected void authenticate() throws SQLException {
         String accessToken = getAccessToken(loginProperties).orElse(StringUtils.EMPTY);
-        String endpoint = fireboltEngineService.getEngine(httpConnectionUrl, loginProperties, accessToken)
-                .getEndpoint();
+        String endpoint = fireboltEngineService.getEngine(httpConnectionUrl, loginProperties, accessToken).getEndpoint();
         this.sessionProperties = loginProperties.toBuilder().host(endpoint).build();
+    }
+
+    @Override
+    protected FireboltProperties extractFireboltProperties(String jdbcUri, Properties connectionProperties) {
+        Properties propertiesFromUrl = UrlUtil.extractProperties(jdbcUri);
+        String engineKey = FireboltSessionProperty.ENGINE.getKey();
+		if (!propertiesFromUrl.containsKey(engineKey) && !connectionProperties.containsKey(engineKey)) {
+			connectionProperties.setProperty(engineKey, "system");
+		}
+        return FireboltProperties.of(propertiesFromUrl, connectionProperties);
     }
 
     @Override

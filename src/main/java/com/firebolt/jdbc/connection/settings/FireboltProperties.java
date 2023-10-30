@@ -62,7 +62,6 @@ public class FireboltProperties {
 	String userDrivers;
 	String userClients;
 	String accessToken;
-	int authenticationVersion;
 
 	@Builder.Default
 	Map<String, String> additionalProperties = new HashMap<>();
@@ -113,7 +112,6 @@ public class FireboltProperties {
 				.userDrivers(driverVersions)
 				.userClients(clientVersions)
 				.accessToken(accessToken)
-				.authenticationVersion(Integer.parseInt(mergedProperties.getProperty("AUTHENTICATION_VERSION", "2")))
 				.build();
 	}
 
