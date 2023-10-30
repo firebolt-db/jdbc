@@ -38,7 +38,7 @@ public class FireboltAuthenticationService {
 					return foundToken;
 				}
 				FireboltConnectionTokens fireboltConnectionTokens = fireboltAuthenticationClient
-						.postConnectionTokens(host, loginProperties.getPrincipal(), loginProperties.getSecret(), loginProperties.getEnvironment());
+						.postConnectionTokens(host, loginProperties.getPrincipal(), loginProperties.getSecret(), loginProperties.getEnvironment(), loginProperties.getAuthenticationVersion());
 				long durationInSeconds = getCachingDurationInSeconds(fireboltConnectionTokens.getExpiresInSeconds());
 				tokensMap.put(connectionParams, fireboltConnectionTokens, CREATED, durationInSeconds, SECONDS);
 				return fireboltConnectionTokens;

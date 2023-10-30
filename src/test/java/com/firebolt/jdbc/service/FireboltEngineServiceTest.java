@@ -60,7 +60,7 @@ class FireboltEngineServiceTest {
 		ResultSet resultSet = mockedResultSet(Map.of("status", "running", "url", "https://url", "attached_to", "db", "engine_name", "some-engine"));
 		when(fireboltConnection.prepareStatement(anyString())).thenReturn(statement);
 		when(statement.executeQuery()).thenReturn(resultSet);
-		assertEquals(new Engine("https://url", "running", "some-engine", "db"), fireboltEngineService.getEngine("some-engine", "db"));
+		assertEquals(new Engine("https://url", "running", "some-engine", "db", null), fireboltEngineService.getEngine("some-engine", "db"));
 	}
 
 	@ParameterizedTest

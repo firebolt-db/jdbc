@@ -4,6 +4,7 @@ import java.sql.*;
 import java.util.Properties;
 import java.util.logging.Logger;
 
+import com.firebolt.jdbc.connection.FireboltConnectionServiceSecretAuthentication;
 import org.apache.commons.lang3.StringUtils;
 
 import com.firebolt.jdbc.util.PropertyUtil;
@@ -29,7 +30,7 @@ public class FireboltDriver implements Driver {
 
 	@Override
 	public Connection connect(String url, Properties connectionSettings) throws SQLException {
-		return acceptsURL(url) ? new FireboltConnection(url, connectionSettings) : null;
+		return acceptsURL(url) ? FireboltConnection.create(url, connectionSettings) : null;
 	}
 
 	@Override

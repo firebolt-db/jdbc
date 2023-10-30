@@ -10,6 +10,7 @@ import lombok.CustomLog;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 
@@ -30,9 +31,9 @@ public class FireboltAuthenticationClient extends FireboltClient {
 	 * @param environment the environment
 	 * @return the connection tokens
 	 */
-	public FireboltConnectionTokens postConnectionTokens(String host, String user, String password, String environment)
+	public FireboltConnectionTokens postConnectionTokens(String host, String user, String password, String environment, int authenticationVersion)
 			throws IOException, FireboltException {
-		AuthenticationRequest authenticationRequest = new ServiceAccountAuthenticationRequest(user, password, environment);
+		AuthenticationRequest authenticationRequest = getAuthenticationRequest(user, password, host, environment, authenticationVersion);
 		String uri = authenticationRequest.getUri();
 		log.debug("Creating connection with url {}", uri);
 		Request request = this.createPostRequest(uri, authenticationRequest.getRequestBody());
@@ -61,6 +62,17 @@ public class FireboltAuthenticationClient extends FireboltClient {
 	private void logIfPresent(String token, String message) {
 		if (token != null && !token.isEmpty()) {
 			log.debug(message);
+		}
+	}
+
+	public static AuthenticationRequest getAuthenticationRequest(String username, String password, String host, String environment, int authenticationVersion) {
+		if (authenticationVersion > 1) {
+			return new ServiceAccountAuthenticationRequest(username, password, environment);
+		}
+		if (StringUtils.isEmpty(username) || StringUtils.contains(username, "@")) {
+			return new UsernamePasswordAuthenticationRequest(username, password, host);
+		} else {
+			return new OldServiceAccountAuthenticationRequest(username, password, host);
 		}
 	}
 }

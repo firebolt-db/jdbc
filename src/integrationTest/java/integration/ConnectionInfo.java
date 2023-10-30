@@ -18,6 +18,8 @@ public class ConnectionInfo {
 	private final String database;
 	private final String account;
 	private final String engine;
+	private final String api;
+	private final int version;
 
 	private ConnectionInfo() {
 		this(
@@ -26,17 +28,21 @@ public class ConnectionInfo {
 				getProperty("env"),
 				getProperty("db"),
 				getProperty("account"),
-				getProperty("engine")
+				getProperty("engine"),
+				getProperty("api"),
+				Integer.parseInt(getProperty("version", "2"))
 		);
 	}
 
-	public ConnectionInfo(String principal, String secret, String env, String database, String account, String engine) {
+	public ConnectionInfo(String principal, String secret, String env, String database, String account, String engine, String api, int version) {
 		this.principal = principal;
 		this.secret = secret;
 		this.env = env;
 		this.database = database;
 		this.account = account;
 		this.engine = engine;
+		this.api = api;
+		this.version = version;
 	}
 
 	public static ConnectionInfo getInstance() {
@@ -78,7 +84,27 @@ public class ConnectionInfo {
 		return engine;
 	}
 
+	public String getApi() {
+		return api;
+	}
+
+	public int getVersion() {
+		return version;
+	}
+
 	public String toJdbcUrl() {
+		switch (version) {
+			case 1: return toJdbcUrl1();
+			case 2: return toJdbcUrl2();
+			default: throw new IllegalStateException("Unsupported API version " + version);
+		}
+
+	}
+
+	private String toJdbcUrl1() {
+		return "jdbc:firebolt://" + api + "/" + database + (engine == null ? "" : "?engine=" + engine);
+	}
+	private String toJdbcUrl2() {
 		String params = Stream.of(param("env", env), param("engine", engine), param("account", account)).filter(Objects::nonNull).collect(joining("&"));
 		if (!params.isEmpty()) {
 			params = "?" + params;

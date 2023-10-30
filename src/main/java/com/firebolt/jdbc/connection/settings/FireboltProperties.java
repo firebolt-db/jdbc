@@ -62,6 +62,7 @@ public class FireboltProperties {
 	String userDrivers;
 	String userClients;
 	String accessToken;
+	int authenticationVersion;
 
 	@Builder.Default
 	Map<String, String> additionalProperties = new HashMap<>();
@@ -112,6 +113,7 @@ public class FireboltProperties {
 				.userDrivers(driverVersions)
 				.userClients(clientVersions)
 				.accessToken(accessToken)
+				.authenticationVersion(Integer.parseInt(mergedProperties.getProperty("AUTHENTICATION_VERSION", "2")))
 				.build();
 	}
 
@@ -176,7 +178,7 @@ public class FireboltProperties {
 				return null;
 			} else {
 				Matcher m = DB_PATH_PATTERN.matcher(path);
-				if (m.matches()) {
+				if (m.find()) {
 					return m.group(1);
 				} else {
 					throw new IllegalArgumentException(format("The database provided is invalid %s", path));
