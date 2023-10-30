@@ -1,12 +1,15 @@
 package com.firebolt;
 
-import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.connection.FireboltConnectionUserPassword;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedConstruction;
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.sql.Connection;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -32,11 +35,33 @@ class FireboltDriverTest {
 		assertNull(new FireboltDriver().connect(url, null));
 	}
 
-	@Test
-	void shouldReturnNewConnectionWhenUrlIsValid() throws SQLException {
-		try (MockedConstruction<FireboltConnection> mocked = mockConstruction(FireboltConnection.class)) {
+	@ParameterizedTest
+	@CsvSource({
+			"FireboltConnectionServiceSecret, jdbc:firebolt://api.dev.firebolt.io/db_name,", // old URL, null properties, i.e. no username - for "URL backwards compatibility" considered v2
+			"FireboltConnectionServiceSecret, jdbc:firebolt://api.dev.firebolt.io/db_name,''", // same but empty properties
+			"FireboltConnectionServiceSecret,jdbc:firebolt:db_name,", // new URL format, null properties
+			"FireboltConnectionServiceSecret,jdbc:firebolt:db_name,''", // same but empty properties
+			"FireboltConnectionUserPassword, jdbc:firebolt://api.dev.firebolt.io/db_name,'user=sherlok@holmes.uk;password=watson'", // user is email - v1
+			"FireboltConnectionServiceSecret, jdbc:firebolt://api.dev.firebolt.io/db_name,'user=not-email;password=any'", // user is not email - v2
+			"FireboltConnectionServiceSecret, jdbc:firebolt://api.dev.firebolt.io/db_name,'client_id=not-email;client_secret=any'", // clientId and client_secret are defined - v2
+			"FireboltConnectionUserPassword, jdbc:firebolt://api.dev.firebolt.io/db_name?user=sherlok@holmes.uk&password=watson,", // user is email as URL parameter - v1 // legit:ignore-secrets
+			"FireboltConnectionServiceSecret, jdbc:firebolt://api.dev.firebolt.io/db_name?client_id=not-email&client_secret=any,", // clientId and client_secret as URL parameters - v2
+	})
+	void validateConnectionWhenUrlIsValid(String expectedConnectionTypeName, String jdbcUrl, String propsString) throws SQLException, IOException, ClassNotFoundException {
+		Properties properties = null;
+		if (propsString != null) {
+			properties = new Properties();
+			properties.load(new StringReader(propsString));
+		}
+		@SuppressWarnings("unchecked")
+		Class<? extends Connection> expectedConnectionType = (Class<? extends Connection>)Class.forName(FireboltConnectionUserPassword.class.getPackageName() + "." + expectedConnectionTypeName);
+		validateConnection(expectedConnectionType, jdbcUrl, properties);
+	}
+
+	private <T extends Connection> void validateConnection(Class<T> expectedConnectionType, String jdbcUrl, Properties properties) throws SQLException {
+		try (MockedConstruction<T> mocked = mockConstruction(expectedConnectionType)) {
 			FireboltDriver fireboltDriver = new FireboltDriver();
-			assertNotNull(fireboltDriver.connect("jdbc:firebolt://api.dev.firebolt.io/db_name", new Properties()));
+			assertNotNull(fireboltDriver.connect(jdbcUrl, properties));
 			assertEquals(1, mocked.constructed().size());
 		}
 	}
@@ -73,10 +98,13 @@ class FireboltDriverTest {
 	@CsvSource(value =
 			{
 					"jdbc:firebolt,,",
-					"jdbc:firebolt:db_name,,environment=app;path=db_name",
-					"jdbc:firebolt:db_name?account=test,,environment=app;path=db_name;account=test",
-					"jdbc:firebolt:db_name?account=test,client_id=usr;client_secret=pwd,environment=app;path=db_name;account=test;client_id=usr;client_secret=pwd",
-					"jdbc:firebolt:db_name,client_id=usr;client_secret=pwd,environment=app;path=db_name;client_id=usr;client_secret=pwd"
+					"jdbc:firebolt://api.dev.firebolt.io/db_name,,host=api.dev.firebolt.io;path=/db_name",
+					"jdbc:firebolt://api.dev.firebolt.io/db_name?account=test,,host=api.dev.firebolt.io;path=/db_name;account=test",
+					"jdbc:firebolt://api.dev.firebolt.io/db_name?account=test,user=usr;password=pwd,host=api.dev.firebolt.io;path=/db_name;account=test;user=usr;password=pwd", // legit:ignore-secrets
+					"jdbc:firebolt://api.dev.firebolt.io/db_name,user=usr;password=pwd,host=api.dev.firebolt.io;path=/db_name;user=usr;password=pwd", // legit:ignore-secrets
+					// TODO: add more tests with "new" URL format
+//					"jdbc:firebolt:db_name,,host=api.dev.firebolt.io;database=db_name",
+
 			},
 			delimiter = ',')
 	void getPropertyInfo(String url, String propStr, String expectedInfoStr) throws SQLException {

@@ -39,6 +39,8 @@ public class UrlUtil {
             }
         }
         Optional.ofNullable(uri.getPath()).map(p -> !StringUtils.isEmpty(p) ? StringUtils.removeEnd(p, "/") : p).ifPresent(path -> uriProperties.put(FireboltSessionProperty.PATH.getKey(), path));
+        Optional.ofNullable(uri.getHost())
+                .ifPresent(host -> uriProperties.put(FireboltSessionProperty.HOST.getKey(), host));
         Optional.of(uri.getPort()).filter(p -> !p.equals(-1))
                 .ifPresent(port -> uriProperties.put(FireboltSessionProperty.PORT.getKey(), String.valueOf(port)));
         return uriProperties;

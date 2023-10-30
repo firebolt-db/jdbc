@@ -35,16 +35,23 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.DEFAULT_FORMAT;
 import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.OUTPUT_FORMAT;
 import static com.firebolt.jdbc.exception.ExceptionType.UNAUTHORIZED;
 import static java.lang.String.format;
+import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
+import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 
 @CustomLog
 public class StatementClientImpl extends FireboltClient implements StatementClient {
 
 	private static final String TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT = "TabSeparatedWithNamesAndTypes";
+	private static final Map<Pattern, String> missConfigurationErrorMessages = Map.of(
+			Pattern.compile("HTTP status code: 401"), "Please associate user with your service account.",
+			Pattern.compile("Engine .+? does not exist or not authorized"), "Please grant at least one role to user associated your service account."
+	);
 
 	private final BiPredicate<Call, String> isCallWithId = (call, id) -> call.request().tag() instanceof String
 			&& StringUtils.equals((String) call.request().tag(), id);
@@ -75,15 +82,13 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			return executeSqlStatementWithRetryOnUnauthorized(statementInfoWrapper, connectionProperties, formattedStatement, uri);
 		} catch (FireboltException e) {
 			throw e;
+		} catch (StreamResetException e) {
+			String errorMessage = format("Error executing statement with id %s: %s", statementInfoWrapper.getId(), formattedStatement);
+			throw new FireboltException(errorMessage, e, ExceptionType.CANCELED);
 		} catch (Exception e) {
-			String errorMessage = format("Error executing statement with id %s: %s",
-					statementInfoWrapper.getId(), formattedStatement);
-			if (e instanceof StreamResetException) {
-				throw new FireboltException(errorMessage, e, ExceptionType.CANCELED);
-			}
+			String errorMessage = format("Error executing statement with id %s: %s", statementInfoWrapper.getId(), formattedStatement);
 			throw new FireboltException(errorMessage, e);
 		}
-
 	}
 
 	private InputStream executeSqlStatementWithRetryOnUnauthorized(@NonNull StatementInfoWrapper statementInfoWrapper,
@@ -210,25 +215,41 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		getResponseFormatParameter(statementInfoWrapper.getType() == StatementType.QUERY, isLocalDb)
 				.ifPresent(format -> params.put(format.getLeft(), format.getRight()));
 		if (systemEngine) {
-			params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId());
+			if (fireboltProperties.getAccountId() != null) {
+				params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId());
+			}
 		} else {
 			params.put(FireboltQueryParameterKey.QUERY_ID.getKey(), statementInfoWrapper.getId());
 			params.put(FireboltQueryParameterKey.COMPRESS.getKey(), fireboltProperties.isCompress() ? "1" : "0");
-			params.put(FireboltQueryParameterKey.DATABASE.getKey(), fireboltProperties.getDatabase());
 
 			if (queryTimeout > 0) {
 				params.put("max_execution_time", String.valueOf(queryTimeout));
 			}
 		}
+		params.put(FireboltQueryParameterKey.DATABASE.getKey(), fireboltProperties.getDatabase());
 
 		return params;
 	}
 
 	private Optional<Pair<String, String>> getResponseFormatParameter(boolean isQuery, boolean isLocalDb) {
-		return isQuery ? Optional.of(Pair.of((isLocalDb ? DEFAULT_FORMAT : OUTPUT_FORMAT).getKey(), TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT)) : Optional.empty();
+		FireboltQueryParameterKey format = isLocalDb ? DEFAULT_FORMAT : OUTPUT_FORMAT;
+		return isQuery ? Optional.of(Pair.of(format.getKey(), TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT)) : Optional.empty();
 	}
 
 	private Map<String, String> getCancelParameters(String statementId) {
 		return Map.of(FireboltQueryParameterKey.QUERY_ID.getKey(), statementId);
+	}
+
+	@Override
+	protected void validateResponse(String host, int statusCode, String errorMessageFromServer) throws FireboltException {
+		if (statusCode == HTTP_INTERNAL_ERROR) {
+			FireboltException ex = missConfigurationErrorMessages.entrySet().stream()
+					.filter(msg -> msg.getKey().matcher(errorMessageFromServer).find()).findFirst()
+					.map(msg -> new FireboltException(format("Could not query Firebolt at %s. %s", host, msg.getValue()), HTTP_UNAUTHORIZED, errorMessageFromServer))
+					.orElse(null);
+			if (ex != null) {
+				throw ex;
+			}
+		}
 	}
 }

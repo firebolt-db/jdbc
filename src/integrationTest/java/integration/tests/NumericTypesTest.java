@@ -10,7 +10,7 @@ import java.sql.Statement;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class NumericTypesTest extends IntegrationTest {
+class NumericTypesTest extends IntegrationTest {
     @Test
     void shouldHaveCorrectInfo() throws SQLException {
         try (Connection connection = this.createConnection(null);

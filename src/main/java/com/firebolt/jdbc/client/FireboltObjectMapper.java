@@ -10,7 +10,7 @@ public class FireboltObjectMapper {
 	private FireboltObjectMapper() {
 	}
 
-	public static com.fasterxml.jackson.databind.ObjectMapper getInstance() {
+	public static ObjectMapper getInstance() {
 		return MAPPER;
 	}
 }
