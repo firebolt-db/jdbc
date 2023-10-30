@@ -30,7 +30,7 @@ public class ConnectionInfo {
 				getProperty("account"),
 				getProperty("engine"),
 				getProperty("api"),
-				Integer.parseInt(getProperty("version", "2"))
+				Integer.parseInt(getProperty("version", getProperty("api") == null ? "2" :"1"))
 		);
 	}
 
