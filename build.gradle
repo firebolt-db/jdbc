@@ -64,7 +64,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:4.11.0'
     implementation 'net.jodah:expiringmap:0.5.11'
     implementation 'org.apache.commons:commons-lang3:3.13.0'
-    implementation 'org.apache.commons:commons-text:1.10.0'
+    implementation 'org.apache.commons:commons-text:1.11.0'
     implementation 'org.lz4:lz4-java:1.8.0'
     implementation 'javax.xml.bind:jaxb-api:2.3.1'
 
