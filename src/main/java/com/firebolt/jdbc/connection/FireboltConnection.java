@@ -66,14 +66,12 @@ public abstract class FireboltConnection implements Connection {
 
 	private final FireboltAuthenticationService fireboltAuthenticationService;
 	private final FireboltStatementService fireboltStatementService;
-//	protected final FireboltEngineService fireboltEngineService;
 	protected final String httpConnectionUrl;
 	private final List<FireboltStatement> statements;
 	private final int connectionTimeout;
 	private boolean closed = true;
 	protected FireboltProperties sessionProperties;
 	private int networkTimeout;
-	private final int authenticationVersion;
 
 	//Properties that are used at the beginning of the connection for authentication
 	protected final FireboltProperties loginProperties;
@@ -83,8 +81,7 @@ public abstract class FireboltConnection implements Connection {
 							  	FireboltGatewayUrlService fireboltGatewayUrlService,
 							  	FireboltStatementService fireboltStatementService,
 							  	FireboltEngineService fireboltEngineService,
-							  	FireboltAccountIdService fireboltAccountIdService,
-							  	int authenticationVersion) throws SQLException {
+							  	FireboltAccountIdService fireboltAccountIdService) throws SQLException {
 		this.loginProperties = extractFireboltProperties(url, connectionSettings);
 
 		this.fireboltAuthenticationService = fireboltAuthenticationService;
@@ -94,25 +91,25 @@ public abstract class FireboltConnection implements Connection {
 		this.statements = new ArrayList<>();
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
-		this.authenticationVersion = authenticationVersion;
 	}
 
 	// This code duplication between constructors is done because of back reference: dependent services require reference to current instance of FireboltConnection that prevents using constructor chaining or factory method.
 	@ExcludeFromJacocoGeneratedReport
-	protected FireboltConnection(@NonNull String url, Properties connectionSettings, int authenticationVersion) throws SQLException {
+	protected FireboltConnection(@NonNull String url, Properties connectionSettings) throws SQLException {
 		this.loginProperties = extractFireboltProperties(url, connectionSettings);
 		OkHttpClient httpClient = getHttpClient(loginProperties);
 		ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
 
-		this.fireboltAuthenticationService = new FireboltAuthenticationService(new FireboltAuthenticationClient(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
+		this.fireboltAuthenticationService = new FireboltAuthenticationService(createFireboltAuthenticationClient(httpClient, objectMapper));
 		this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
 		this.fireboltStatementService = new FireboltStatementService(new StatementClientImpl(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
 
 		this.statements = new ArrayList<>();
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
-		this.authenticationVersion = authenticationVersion;
 	}
+
+	protected abstract FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper);
 
 	public static FireboltConnection create(@NonNull String url, Properties connectionSettings) throws SQLException {
 		switch(getUrlVersion(url)) {
@@ -174,7 +171,7 @@ public abstract class FireboltConnection implements Connection {
 		}
 
 		if (!PropertyUtil.isLocalDb(fireboltProperties)) {
-			return Optional.of(fireboltAuthenticationService.getConnectionTokens(httpConnectionUrl, fireboltProperties, authenticationVersion)).map(FireboltConnectionTokens::getAccessToken);
+			return Optional.of(fireboltAuthenticationService.getConnectionTokens(httpConnectionUrl, fireboltProperties)).map(FireboltConnectionTokens::getAccessToken);
 		}
 		return Optional.empty();
 	}

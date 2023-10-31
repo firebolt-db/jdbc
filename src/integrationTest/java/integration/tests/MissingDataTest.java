@@ -22,7 +22,7 @@ public class MissingDataTest extends IntegrationTest {
         }
 
         ConnectionInfo noAccount = new ConnectionInfo(current.getPrincipal(), current.getSecret(),
-                current.getEnv(), current.getDatabase(), null, current.getEngine(), current.getApi(), current.getVersion());
+                current.getEnv(), current.getDatabase(), null, current.getEngine(), current.getApi());
         assertThrows(SQLException.class, () -> DriverManager.getConnection(noAccount.toJdbcUrl(), noAccount.getPrincipal(), noAccount.getSecret()));
     }
 }

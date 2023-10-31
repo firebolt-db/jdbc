@@ -3,8 +3,11 @@ package com.firebolt.jdbc.connection;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltObjectMapper;
 import com.firebolt.jdbc.client.account.FireboltAccountClient;
+import com.firebolt.jdbc.client.authentication.AuthenticationRequest;
+import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
+import com.firebolt.jdbc.client.authentication.OldServiceAccountAuthenticationRequest;
+import com.firebolt.jdbc.client.authentication.UsernamePasswordAuthenticationRequest;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
 import com.firebolt.jdbc.service.FireboltAccountIdService;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineService;
@@ -21,13 +24,13 @@ public class FireboltConnectionUserPasswordAuthentication extends FireboltConnec
     private final FireboltEngineService fireboltEngineService;
 
     FireboltConnectionUserPasswordAuthentication(@NonNull String url, Properties connectionSettings, FireboltAuthenticationService fireboltAuthenticationService, FireboltGatewayUrlService fireboltGatewayUrlService, FireboltStatementService fireboltStatementService, FireboltEngineService fireboltEngineService, FireboltAccountIdService fireboltAccountIdService) throws SQLException {
-        super(url, connectionSettings, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService, 1);
+        super(url, connectionSettings, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService);
         this.fireboltEngineService = fireboltEngineService;
         connect();
     }
 
     FireboltConnectionUserPasswordAuthentication(@NonNull String url, Properties connectionSettings) throws SQLException {
-        super(url, connectionSettings, 1);
+        super(url, connectionSettings);
         OkHttpClient httpClient = getHttpClient(loginProperties);
         ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
         this.fireboltEngineService = new FireboltEngineService(this, new FireboltAccountClient(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
@@ -51,5 +54,19 @@ public class FireboltConnectionUserPasswordAuthentication extends FireboltConnec
     @Override
     protected void assertDatabaseExisting(String database) throws SQLException {
 
+    }
+
+    @Override
+    protected FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper) {
+        return new FireboltAuthenticationClient(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()) {
+            @Override
+            public AuthenticationRequest getAuthenticationRequest(String username, String password, String host, String environment) {
+                if (StringUtils.isEmpty(username) || StringUtils.contains(username, "@")) {
+                    return new UsernamePasswordAuthenticationRequest(username, password, host);
+                } else {
+                    return new OldServiceAccountAuthenticationRequest(username, password, host);
+                }
+            }
+        };
     }
 }

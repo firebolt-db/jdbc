@@ -38,7 +38,7 @@ public abstract class IntegrationTest {
 	protected Connection createConnection(String engine) throws SQLException {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
 		ConnectionInfo updated = new ConnectionInfo(current.getPrincipal(), current.getSecret(),
-				current.getEnv(), current.getDatabase(), current.getAccount(), engine, current.getApi(), current.getVersion());
+				current.getEnv(), current.getDatabase(), current.getAccount(), engine, current.getApi());
 		return DriverManager.getConnection(updated.toJdbcUrl(),
 				integration.ConnectionInfo.getInstance().getPrincipal(),
 				integration.ConnectionInfo.getInstance().getSecret());

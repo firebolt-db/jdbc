@@ -15,7 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.IOException;
 
 @CustomLog
-public class FireboltAuthenticationClient extends FireboltClient {
+public abstract class FireboltAuthenticationClient extends FireboltClient {
 
 	public FireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper,
 			FireboltConnection connection, String customDrivers, String customClients) {
@@ -31,9 +31,9 @@ public class FireboltAuthenticationClient extends FireboltClient {
 	 * @param environment the environment
 	 * @return the connection tokens
 	 */
-	public FireboltConnectionTokens postConnectionTokens(String host, String user, String password, String environment, int authenticationVersion)
+	public FireboltConnectionTokens postConnectionTokens(String host, String user, String password, String environment)
 			throws IOException, FireboltException {
-		AuthenticationRequest authenticationRequest = getAuthenticationRequest(user, password, host, environment, authenticationVersion);
+		AuthenticationRequest authenticationRequest = getAuthenticationRequest(user, password, host, environment);
 		String uri = authenticationRequest.getUri();
 		log.debug("Creating connection with url {}", uri);
 		Request request = this.createPostRequest(uri, authenticationRequest.getRequestBody());
@@ -65,14 +65,8 @@ public class FireboltAuthenticationClient extends FireboltClient {
 		}
 	}
 
-	public static AuthenticationRequest getAuthenticationRequest(String username, String password, String host, String environment, int authenticationVersion) {
-		if (authenticationVersion > 1) {
-			return new ServiceAccountAuthenticationRequest(username, password, environment);
-		}
-		if (StringUtils.isEmpty(username) || StringUtils.contains(username, "@")) {
-			return new UsernamePasswordAuthenticationRequest(username, password, host);
-		} else {
-			return new OldServiceAccountAuthenticationRequest(username, password, host);
-		}
-	}
+	protected abstract AuthenticationRequest getAuthenticationRequest(String username, String password, String host, String environment);
+//	protected AuthenticationRequest getAuthenticationRequest(String username, String password, String host, String environment) {
+//		return new ServiceAccountAuthenticationRequest(username, password, environment);
+//	}
 }

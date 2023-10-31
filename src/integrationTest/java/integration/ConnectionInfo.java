@@ -2,6 +2,7 @@ package integration;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
@@ -19,7 +20,7 @@ public class ConnectionInfo {
 	private final String account;
 	private final String engine;
 	private final String api;
-	private final int version;
+	private final Supplier<String> jdbcUrlSupplier;
 
 	private ConnectionInfo() {
 		this(
@@ -29,12 +30,11 @@ public class ConnectionInfo {
 				getProperty("db"),
 				getProperty("account"),
 				getProperty("engine"),
-				getProperty("api"),
-				Integer.parseInt(getProperty("version", getProperty("api") == null ? "2" :"1"))
+				getProperty("api")
 		);
 	}
 
-	public ConnectionInfo(String principal, String secret, String env, String database, String account, String engine, String api, int version) {
+	public ConnectionInfo(String principal, String secret, String env, String database, String account, String engine, String api) {
 		this.principal = principal;
 		this.secret = secret;
 		this.env = env;
@@ -42,7 +42,7 @@ public class ConnectionInfo {
 		this.account = account;
 		this.engine = engine;
 		this.api = api;
-		this.version = version;
+		jdbcUrlSupplier = api == null ? this::toJdbcUrl2 : this::toJdbcUrl1;
 	}
 
 	public static ConnectionInfo getInstance() {
@@ -88,22 +88,14 @@ public class ConnectionInfo {
 		return api;
 	}
 
-	public int getVersion() {
-		return version;
-	}
-
 	public String toJdbcUrl() {
-		switch (version) {
-			case 1: return toJdbcUrl1();
-			case 2: return toJdbcUrl2();
-			default: throw new IllegalStateException("Unsupported API version " + version);
-		}
-
+		return jdbcUrlSupplier.get();
 	}
 
 	private String toJdbcUrl1() {
 		return "jdbc:firebolt://" + api + "/" + database + (engine == null ? "" : "?engine=" + engine);
 	}
+
 	private String toJdbcUrl2() {
 		String params = Stream.of(param("env", env), param("engine", engine), param("account", account)).filter(Objects::nonNull).collect(joining("&"));
 		if (!params.isEmpty()) {
