@@ -17,7 +17,7 @@ import com.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
 import com.firebolt.jdbc.metadata.FireboltSystemEngineDatabaseMetadata;
 import com.firebolt.jdbc.service.FireboltAccountIdService;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
-import com.firebolt.jdbc.service.FireboltEngineService;
+import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
@@ -80,12 +80,12 @@ public abstract class FireboltConnection implements Connection {
 								 FireboltAuthenticationService fireboltAuthenticationService,
 							  	FireboltGatewayUrlService fireboltGatewayUrlService,
 							  	FireboltStatementService fireboltStatementService,
-							  	FireboltEngineService fireboltEngineService,
+							  	FireboltEngineInformationSchemaService fireboltEngineService,
 							  	FireboltAccountIdService fireboltAccountIdService) throws SQLException {
 		this.loginProperties = extractFireboltProperties(url, connectionSettings);
 
 		this.fireboltAuthenticationService = fireboltAuthenticationService;
-		this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
+		this.httpConnectionUrl = loginProperties.getHttpConnectionUrl();
 		this.fireboltStatementService = fireboltStatementService;
 
 		this.statements = new ArrayList<>();
@@ -101,7 +101,7 @@ public abstract class FireboltConnection implements Connection {
 		ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
 
 		this.fireboltAuthenticationService = new FireboltAuthenticationService(createFireboltAuthenticationClient(httpClient, objectMapper));
-		this.httpConnectionUrl = getHttpConnectionUrl(loginProperties);
+		this.httpConnectionUrl = loginProperties.getHttpConnectionUrl();
 		this.fireboltStatementService = new FireboltStatementService(new StatementClientImpl(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
 
 		this.statements = new ArrayList<>();
@@ -112,6 +112,10 @@ public abstract class FireboltConnection implements Connection {
 	protected abstract FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper);
 
 	public static FireboltConnection create(@NonNull String url, Properties connectionSettings) throws SQLException {
+		return createConnectionInstance(url, connectionSettings);
+	}
+
+	private static FireboltConnection createConnectionInstance(@NonNull String url, Properties connectionSettings) throws SQLException {
 		switch(getUrlVersion(url)) {
 			case 1: return new FireboltConnectionUserPasswordAuthentication(url, connectionSettings);
 			case 2: return new FireboltConnectionServiceSecretAuthentication(url, connectionSettings);
@@ -312,14 +316,9 @@ public abstract class FireboltConnection implements Connection {
 		log.debug("Connection closed");
 	}
 
-	protected FireboltProperties extractFireboltProperties(String jdbcUri, Properties connectionProperties) {
+	protected FireboltProperties extractFireboltProperties(String jdbcUri, Properties connectionProperties) throws SQLException {
 		Properties propertiesFromUrl = UrlUtil.extractProperties(jdbcUri);
 		return FireboltProperties.of(propertiesFromUrl, connectionProperties);
-	}
-
-	private String getHttpConnectionUrl(FireboltProperties newSessionProperties) {
-		String hostAndPort = newSessionProperties.getHost() + ":" + newSessionProperties.getPort();
-		return newSessionProperties.isSsl() ? "https://" + hostAndPort : "http://" + hostAndPort;
 	}
 
 	@Override

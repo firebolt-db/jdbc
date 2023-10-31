@@ -13,6 +13,7 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltAccountIdService;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
+import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
 import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
@@ -31,7 +32,7 @@ public class FireboltConnectionServiceSecretAuthentication extends FireboltConne
     private final FireboltAccountIdService fireboltAccountIdService;
     private final FireboltEngineService fireboltEngineService;
 
-    FireboltConnectionServiceSecretAuthentication(@NonNull String url, Properties connectionSettings, FireboltAuthenticationService fireboltAuthenticationService, FireboltGatewayUrlService fireboltGatewayUrlService, FireboltStatementService fireboltStatementService, FireboltEngineService fireboltEngineService, FireboltAccountIdService fireboltAccountIdService) throws SQLException {
+    FireboltConnectionServiceSecretAuthentication(@NonNull String url, Properties connectionSettings, FireboltAuthenticationService fireboltAuthenticationService, FireboltGatewayUrlService fireboltGatewayUrlService, FireboltStatementService fireboltStatementService, FireboltEngineInformationSchemaService fireboltEngineService, FireboltAccountIdService fireboltAccountIdService) throws SQLException {
         super(url, connectionSettings, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService);
         this.fireboltGatewayUrlService = fireboltGatewayUrlService;
         this.fireboltAccountIdService = fireboltAccountIdService;
@@ -45,7 +46,7 @@ public class FireboltConnectionServiceSecretAuthentication extends FireboltConne
         ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
         this.fireboltGatewayUrlService = new FireboltGatewayUrlService(createFireboltAccountRetriever(httpClient, objectMapper, "engineUrl", GatewayUrlResponse.class));
         this.fireboltAccountIdService = new FireboltAccountIdService(createFireboltAccountRetriever(httpClient, objectMapper, "resolve", FireboltAccount.class));
-        this.fireboltEngineService = new FireboltEngineService(this, new FireboltAccountClient(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
+        this.fireboltEngineService = new FireboltEngineInformationSchemaService(this);
         connect();
     }
 
@@ -70,7 +71,7 @@ public class FireboltConnectionServiceSecretAuthentication extends FireboltConne
 
     private FireboltProperties getSessionPropertiesForNonSystemEngine() throws SQLException {
         sessionProperties = sessionProperties.toBuilder().engine(loginProperties.getEngine()).build();
-        Engine engine = fireboltEngineService.getEngine(loginProperties.getEngine(), loginProperties.getDatabase());
+        Engine engine = fireboltEngineService.getEngine(loginProperties);
         return loginProperties.toBuilder().host(engine.getEndpoint()).engine(engine.getName()).systemEngine(false).database(engine.getDatabase()).build();
     }
 

@@ -6,6 +6,7 @@ import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltAccountIdService;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
+import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
 import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
@@ -93,7 +94,7 @@ class FireboltConnectionTest {
 	private FireboltGatewayUrlService fireboltGatewayUrlService;
 
 	@Mock
-	private FireboltEngineService fireboltEngineService;
+	private FireboltEngineInformationSchemaService fireboltEngineService;
 	@Mock
 	private FireboltStatementService fireboltStatementService;
 	@Mock
@@ -149,7 +150,7 @@ class FireboltConnectionTest {
 				.thenReturn(fireboltConnectionTokens);
 		lenient().when(fireboltGatewayUrlService.getUrl(any(), any())).thenReturn("http://foo:8080/bar");
 		engine = new Engine("endpoint", "id123", "OK", "noname", null);
-		lenient().when(fireboltEngineService.getEngine(any(), any())).thenReturn(engine);
+		lenient().when(fireboltEngineService.getEngine(any())).thenReturn(engine);
 		lenient().when(fireboltEngineService.doesDatabaseExist(any())).thenReturn(true);
 	}
 
@@ -427,7 +428,7 @@ class FireboltConnectionTest {
 			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
 			when(fireboltAuthenticationService.getConnectionTokens("http://host:8080", fireboltProperties))
 					.thenReturn(FireboltConnectionTokens.builder().build());
-			lenient().when(fireboltEngineService.getEngine(any(), any())).thenReturn(new Engine("http://hello", null, null, null, null));
+			lenient().when(fireboltEngineService.getEngine(any())).thenReturn(new Engine("http://hello", null, null, null, null));
 
 			try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
 				fireboltConnection.removeExpiredTokens();
@@ -444,7 +445,7 @@ class FireboltConnectionTest {
 			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
 			FireboltConnectionTokens connectionTokens = FireboltConnectionTokens.builder().accessToken(accessToken).build();
 			when(fireboltAuthenticationService.getConnectionTokens(eq("http://host:8080"), any())).thenReturn(connectionTokens);
-			lenient().when(fireboltEngineService.getEngine(any(), any())).thenReturn(new Engine("http://engineHost", null, null, null, null));
+			lenient().when(fireboltEngineService.getEngine(any())).thenReturn(new Engine("http://engineHost", null, null, null, null));
 			try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
 				verify(fireboltAuthenticationService).getConnectionTokens("http://host:8080", fireboltProperties);
 				assertEquals(accessToken, fireboltConnection.getAccessToken().get());
@@ -592,9 +593,9 @@ class FireboltConnectionTest {
 
 	void shouldGetEngineUrlWhenEngineIsProvided() throws SQLException {
 		connectionProperties.put("engine", "engine");
-		when(fireboltEngineService.getEngine(any(), any())).thenReturn(new Engine("http://my_endpoint", null, null, null, null));
+		when(fireboltEngineService.getEngine(any())).thenReturn(new Engine("http://my_endpoint", null, null, null, null));
 		try (FireboltConnection connection = createConnection(URL, connectionProperties)) {
-			verify(fireboltEngineService).getEngine("engine", "db");
+			verify(fireboltEngineService).getEngine(FireboltProperties.builder().engine("engine").database("db").build());
 			assertEquals("http://my_endpoint", connection.getSessionProperties().getHost());
 		}
 	}
@@ -605,7 +606,7 @@ class FireboltConnectionTest {
 		when(fireboltGatewayUrlService.getUrl(any(), any())).thenReturn("http://my_endpoint");
 
 		try (FireboltConnection connection = createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
-			verify(fireboltEngineService, times(0)).getEngine(isNull(), eq("my_db"));
+			verify(fireboltEngineService, times(0)).getEngine(FireboltProperties.builder().database("my_db").build());
 			assertEquals("my_endpoint", connection.getSessionProperties().getHost());
 		}
 	}

@@ -29,7 +29,7 @@ import static org.mockito.Mockito.*;
 class FireboltEngineServiceTest {
 
 	@InjectMocks
-	private FireboltEngineService fireboltEngineService;
+	private FireboltEngineInformationSchemaService fireboltEngineService;
 
 	@Mock
 	private FireboltConnection fireboltConnection;
