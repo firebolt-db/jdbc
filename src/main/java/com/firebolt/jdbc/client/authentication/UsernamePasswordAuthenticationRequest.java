@@ -1,35 +1,38 @@
 package com.firebolt.jdbc.client.authentication;
 
+import java.net.HttpURLConnection;
+import java.net.http.HttpRequest;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltObjectMapper;
 
 import lombok.AllArgsConstructor;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
 
+import static java.lang.String.format;
+
 @AllArgsConstructor
 public class UsernamePasswordAuthenticationRequest implements AuthenticationRequest {
     private static final String AUTH_URL = "%s/auth/v1/login";
     private static final String USERNAME_FIELD_NAME = "username";
     private static final String PASSWORD_FIELD_NAME = "password";
-    private String username;
-    private String password;
-    private String host;
+    private static final MediaType JSON = MediaType.parse("application/json");
+    private final ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
+    private final String username;
+    private final String password;
+    private final String host;
 
     public RequestBody getRequestBody() throws JsonProcessingException {
-        Map<String, Object> loginDetailsMap = new HashMap<>();
-        loginDetailsMap.put(USERNAME_FIELD_NAME, username);
-        loginDetailsMap.put(PASSWORD_FIELD_NAME, password);
-        return RequestBody.create(FireboltObjectMapper.getInstance().writeValueAsString(loginDetailsMap),
-                MediaType.parse("application/json"));
+        Map<String, String> loginDetailsMap = Map.of(USERNAME_FIELD_NAME, username, PASSWORD_FIELD_NAME, password);
+        return RequestBody.create(objectMapper.writeValueAsString(loginDetailsMap), JSON);
     }
 
     @Override
     public String getUri() {
-        return String.format(AUTH_URL, host);
+        return format(AUTH_URL, host);
     }
-
 }

@@ -3,6 +3,8 @@ package com.firebolt.jdbc.client.authentication;
 import okhttp3.FormBody;
 import okhttp3.RequestBody;
 
+import static java.lang.String.format;
+
 public class ServiceAccountAuthenticationRequest implements AuthenticationRequest {
 
     private static final String AUDIENCE_FIELD_NAME = "audience";
@@ -28,12 +30,13 @@ public class ServiceAccountAuthenticationRequest implements AuthenticationReques
         return new FormBody.Builder()
                 .add(AUDIENCE_FIELD_NAME, AUDIENCE_FIELD_VALUE)
                 .add(GRAND_TYPE_FIELD_NAME, GRAND_TYPE_FIELD_VALUE)
-                .add(CLIENT_ID_FIELD_NAME, clientId)
-                .add(CLIENT_SECRET_FIELD_NAME, clientSecret).build();
+                .addEncoded(CLIENT_ID_FIELD_NAME, clientId)
+                .addEncoded(CLIENT_SECRET_FIELD_NAME, clientSecret)
+                .build();
     }
 
     @Override
     public String getUri() {
-        return String.format(AUTH_URL, environment);
+        return format(AUTH_URL, environment);
     }
 }

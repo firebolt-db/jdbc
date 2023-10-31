@@ -11,13 +11,16 @@ public class OldServiceAccountAuthenticationRequest implements AuthenticationReq
     private static final String CLIENT_ID_FIELD_NAME = "client_id";
     private static final String CLIENT_SECRET_FIELD_NAME = "client_secret";
     private static final String AUTH_URL = "%s/auth/v1/token";
-    private String id;
-    private String secret;
-    private String host;
+    private final String id;
+    private final String secret;
+    private final String host;
 
     public RequestBody getRequestBody() {
-        return new FormBody.Builder().add(CLIENT_ID_FIELD_NAME, id).add(CLIENT_SECRET_FIELD_NAME, secret)
-                .add(GRAND_TYPE_FIELD_NAME, CLIENT_CREDENTIALS).build();
+        return new FormBody.Builder()
+                .addEncoded(CLIENT_ID_FIELD_NAME, id)
+                .addEncoded(CLIENT_SECRET_FIELD_NAME, secret)
+                .add(GRAND_TYPE_FIELD_NAME, CLIENT_CREDENTIALS)
+                .build();
     }
 
     @Override
