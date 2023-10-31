@@ -66,7 +66,4 @@ public abstract class FireboltAuthenticationClient extends FireboltClient {
 	}
 
 	protected abstract AuthenticationRequest getAuthenticationRequest(String username, String password, String host, String environment);
-//	protected AuthenticationRequest getAuthenticationRequest(String username, String password, String host, String environment) {
-//		return new ServiceAccountAuthenticationRequest(username, password, environment);
-//	}
 }
