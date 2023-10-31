@@ -59,7 +59,7 @@ public class FireboltEngineInformationSchemaService implements FireboltEngineSer
     }
 
 
-    public Engine getEngine(String engine, @Nullable String database) throws SQLException {
+    private Engine getEngine(String engine, @Nullable String database) throws SQLException {
         if (engine == null) {
             throw new IllegalArgumentException("Cannot retrieve engine parameters because its name is null");
         }

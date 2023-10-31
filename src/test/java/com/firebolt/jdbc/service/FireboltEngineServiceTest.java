@@ -2,6 +2,7 @@ package com.firebolt.jdbc.service;
 
 import com.firebolt.jdbc.connection.Engine;
 import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,7 +52,7 @@ class FireboltEngineServiceTest {
 
 	@Test
 	void shouldGetDefaultEngineWhenEngineNameIsNotProvided() throws SQLException {
-		assertThrows(IllegalArgumentException.class, () -> fireboltEngineService.getEngine(null, "db"));
+		assertThrows(IllegalArgumentException.class, () -> fireboltEngineService.getEngine(FireboltProperties.builder().database("db").build()));
 	}
 
 	@Test
@@ -60,7 +61,7 @@ class FireboltEngineServiceTest {
 		ResultSet resultSet = mockedResultSet(Map.of("status", "running", "url", "https://url", "attached_to", "db", "engine_name", "some-engine"));
 		when(fireboltConnection.prepareStatement(anyString())).thenReturn(statement);
 		when(statement.executeQuery()).thenReturn(resultSet);
-		assertEquals(new Engine("https://url", "running", "some-engine", "db", null), fireboltEngineService.getEngine("some-engine", "db"));
+		assertEquals(new Engine("https://url", "running", "some-engine", "db", null), fireboltEngineService.getEngine(createFireboltProperties("some-engine", "db")));
 	}
 
 	@ParameterizedTest
@@ -83,7 +84,7 @@ class FireboltEngineServiceTest {
 		ResultSet resultSet = mockedResultSet(rsData);
 		when(fireboltConnection.prepareStatement(Mockito.matches(Pattern.compile("SELECT.+JOIN", Pattern.MULTILINE | Pattern.DOTALL)))).thenReturn(statement);
 		when(statement.executeQuery()).thenReturn(resultSet);
-		assertEquals(errorMessage, assertThrows(FireboltException.class, () -> fireboltEngineService.getEngine(engineName, db)).getMessage());
+		assertEquals(errorMessage, assertThrows(FireboltException.class, () -> fireboltEngineService.getEngine(createFireboltProperties(engineName, db))).getMessage());
 		Mockito.verify(statement, Mockito.times(1)).setString(1, engineName);
 	}
 
@@ -98,5 +99,9 @@ class FireboltEngineServiceTest {
 			}
 		}
 		return resultSet;
+	}
+
+	private FireboltProperties createFireboltProperties(String engine, String database) {
+		return FireboltProperties.builder().engine(engine).database(database).build();
 	}
 }
