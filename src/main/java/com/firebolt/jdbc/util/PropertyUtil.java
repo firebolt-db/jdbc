@@ -1,20 +1,22 @@
 package com.firebolt.jdbc.util;
 
+import com.firebolt.jdbc.connection.UrlUtil;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
+import lombok.CustomLog;
+import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.StringUtils;
+
 import java.sql.DriverPropertyInfo;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
-import com.firebolt.jdbc.connection.UrlUtil;
-import org.apache.commons.lang3.StringUtils;
-
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
-
-import lombok.CustomLog;
-import lombok.experimental.UtilityClass;
+import java.util.stream.Stream;
 
 @CustomLog
 @UtilityClass
@@ -57,8 +59,8 @@ public class PropertyUtil {
 	private List<DriverPropertyInfo> mapProperties(List<FireboltSessionProperty> fireboltSessionProperties,
 			Properties properties) {
 		return fireboltSessionProperties.stream().map(fireboltProperty -> {
-			DriverPropertyInfo driverPropertyInfo = new DriverPropertyInfo(fireboltProperty.getKey(),
-					getValueForFireboltSessionProperty(properties, fireboltProperty));
+			Entry<String, String> property = getValueForFireboltSessionProperty(properties, fireboltProperty);
+			DriverPropertyInfo driverPropertyInfo = new DriverPropertyInfo(property.getKey(), property.getValue());
 			driverPropertyInfo.required = false;
 			driverPropertyInfo.description = fireboltProperty.getDescription();
 			driverPropertyInfo.choices = fireboltProperty.getPossibleValues();
@@ -66,11 +68,12 @@ public class PropertyUtil {
 		}).collect(Collectors.toList());
 	}
 
-	private String getValueForFireboltSessionProperty(Properties properties,
-			FireboltSessionProperty fireboltSessionProperty) {
-		Optional<String> value = Optional.ofNullable(properties.getProperty(fireboltSessionProperty.getKey()));
-
-		return value.orElseGet(() -> Optional.ofNullable(fireboltSessionProperty.getDefaultValue())
-				.map(Object::toString).orElse(null));
+	private Entry<String, String> getValueForFireboltSessionProperty(Properties properties, FireboltSessionProperty fireboltSessionProperty) {
+		String strDefaultValue = Optional.ofNullable(fireboltSessionProperty.getDefaultValue()).map(Object::toString).orElse(null);
+		return Stream.concat(Stream.of(fireboltSessionProperty.getKey()), Arrays.stream(fireboltSessionProperty.getAliases()))
+				.filter(key -> properties.getProperty(key) != null)
+				.map(key -> new SimpleEntry<>(key, properties.getProperty(key)))
+				.findFirst()
+				.orElseGet(() -> new SimpleEntry<>(fireboltSessionProperty.getKey(), strDefaultValue));
 	}
 }
