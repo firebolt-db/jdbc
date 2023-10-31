@@ -136,10 +136,6 @@ public abstract class FireboltConnection implements Connection {
 		}
 	}
 
-	private <T> FireboltAccountRetriever<T> createFireboltAccountRetriever(OkHttpClient httpClient, ObjectMapper objectMapper, String path, Class<T> type) {
-		return new FireboltAccountRetriever<>(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients(), loginProperties.getHost(), path, type);
-	}
-
 	protected void connect() throws SQLException {
 		closed = false;
 		if (!PropertyUtil.isLocalDb(loginProperties)) {
