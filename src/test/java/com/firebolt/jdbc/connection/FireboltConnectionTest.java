@@ -7,7 +7,6 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltAccountIdService;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
-import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
@@ -64,10 +63,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.isNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -591,11 +590,12 @@ class FireboltConnectionTest {
 		assertEquals(expected, function.call());
 	}
 
+	@Test
 	void shouldGetEngineUrlWhenEngineIsProvided() throws SQLException {
 		connectionProperties.put("engine", "engine");
 		when(fireboltEngineService.getEngine(any())).thenReturn(new Engine("http://my_endpoint", null, null, null, null));
 		try (FireboltConnection connection = createConnection(URL, connectionProperties)) {
-			verify(fireboltEngineService).getEngine(FireboltProperties.builder().engine("engine").database("db").build());
+			verify(fireboltEngineService).getEngine(argThat(props -> "engine".equals(props.getEngine()) && "db".equals(props.getDatabase())));
 			assertEquals("http://my_endpoint", connection.getSessionProperties().getHost());
 		}
 	}
@@ -606,7 +606,7 @@ class FireboltConnectionTest {
 		when(fireboltGatewayUrlService.getUrl(any(), any())).thenReturn("http://my_endpoint");
 
 		try (FireboltConnection connection = createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
-			verify(fireboltEngineService, times(0)).getEngine(FireboltProperties.builder().database("my_db").build());
+			verify(fireboltEngineService, times(0)).getEngine(argThat(props -> "my_db".equals(props.getDatabase())));
 			assertEquals("my_endpoint", connection.getSessionProperties().getHost());
 		}
 	}

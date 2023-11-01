@@ -31,18 +31,6 @@ public class FireboltEngineInformationSchemaService implements FireboltEngineSer
 
     private final FireboltConnection fireboltConnection;
 
-    /**
-     * Extracts the engine name from host
-     *
-     * @param engineHost engine host
-     * @return the engine name
-     */
-    public String getEngineNameByHost(String engineHost) throws FireboltException {
-        return Optional.ofNullable(engineHost).filter(host -> host.contains(".")).map(host -> host.split("\\.")[0])
-                .map(host -> host.replace("-", "_")).orElseThrow(() -> new FireboltException(
-                        format("Could not establish the engine from the host: %s", engineHost)));
-    }
-
     @Override
     public boolean doesDatabaseExist(String database) throws SQLException {
         try (PreparedStatement ps = fireboltConnection.prepareStatement(DATABASE_QUERY)) {
@@ -57,7 +45,6 @@ public class FireboltEngineInformationSchemaService implements FireboltEngineSer
     public Engine getEngine(FireboltProperties properties) throws SQLException {
         return getEngine(properties.getEngine(), properties.getDatabase());
     }
-
 
     private Engine getEngine(String engine, @Nullable String database) throws SQLException {
         if (engine == null) {

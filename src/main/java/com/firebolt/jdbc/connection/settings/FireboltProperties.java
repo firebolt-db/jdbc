@@ -250,8 +250,9 @@ public class FireboltProperties {
 	}
 
 	public String getHttpConnectionUrl() {
-		String hostAndPort = getHost() + ":" + getPort();
-		return isSsl() ? "https://" + hostAndPort : "http://" + hostAndPort;
+		String hostAndPort = host + (port == null ? "" : ":" + port);
+		String protocol = isSsl() ? "https://" : "http://";
+		return protocol + hostAndPort;
 	}
 
 }
