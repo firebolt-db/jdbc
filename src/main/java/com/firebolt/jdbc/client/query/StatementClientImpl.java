@@ -227,7 +227,8 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	private Optional<Pair<String, String>> getResponseFormatParameter(boolean isQuery, boolean isLocalDb) {
-		return isQuery ? Optional.of(Pair.of((isLocalDb ? DEFAULT_FORMAT : OUTPUT_FORMAT).getKey(), TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT)) : Optional.empty();
+		FireboltQueryParameterKey format = isLocalDb ? DEFAULT_FORMAT : OUTPUT_FORMAT;
+		return isQuery ? Optional.of(Pair.of(format.getKey(), TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT)) : Optional.empty();
 	}
 
 	private Map<String, String> getCancelParameters(String statementId) {

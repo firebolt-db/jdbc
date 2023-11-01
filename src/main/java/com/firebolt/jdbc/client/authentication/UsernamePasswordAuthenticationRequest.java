@@ -1,17 +1,13 @@
 package com.firebolt.jdbc.client.authentication;
 
-import java.net.HttpURLConnection;
-import java.net.http.HttpRequest;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltObjectMapper;
-
 import lombok.AllArgsConstructor;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
+
+import java.util.Map;
 
 import static java.lang.String.format;
 

@@ -26,6 +26,8 @@ public class FireboltAuthenticationService {
 			.variableExpiration().build();
 	private static final long TOKEN_EXPIRATION_OFFSET = 5L;
 	private static final long TOKEN_TTL_THRESHOLD = 60L;
+	private static final String errorMessage = "Failed to connect to Firebolt with the error: %s, see logs for more info.";
+	private static final String errorMessageFromServer = "Failed to connect to Firebolt with the error from the server: %s, see logs for more info.";
 	private final FireboltAuthenticationClient fireboltAuthenticationClient;
 
 	public FireboltConnectionTokens getConnectionTokens(String host, FireboltProperties loginProperties) throws FireboltException {
@@ -43,16 +45,13 @@ public class FireboltAuthenticationService {
 				tokensMap.put(connectionParams, fireboltConnectionTokens, CREATED, durationInSeconds, SECONDS);
 				return fireboltConnectionTokens;
 			}
+		} catch (FireboltException e) {
+			log.error("Failed to connect to Firebolt", e);
+			String msg = e.getErrorMessageFromServer() == null ? errorMessage : errorMessageFromServer;
+			throw new FireboltException(format(msg, e.getMessage()), e);
 		} catch (Exception e) {
 			log.error("Failed to connect to Firebolt", e);
-			String errorMessageTemplate = "Failed to connect to Firebolt with the error%s: %s, see logs for more info.";
-			if (e instanceof FireboltException) {
-				String server = ((FireboltException) e).getErrorMessageFromServer();
-				if (server != null) {
-					throw new FireboltException(format(errorMessageTemplate, " from the server", server), e);
-				}
-			}
-			throw new FireboltException(format(errorMessageTemplate, "", e.getMessage()), e);
+			throw new FireboltException(format(errorMessage, e.getMessage()), e);
 		}
 	}
 

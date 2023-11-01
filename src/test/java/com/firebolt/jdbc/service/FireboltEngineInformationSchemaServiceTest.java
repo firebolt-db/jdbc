@@ -38,8 +38,9 @@ class FireboltEngineInformationSchemaServiceTest {
 	private FireboltConnection fireboltConnection;
 
 	@Test
-	void shouldThrowExceptionEngineWhenEngineNameIsNotProvided() throws SQLException {
-		assertThrows(IllegalArgumentException.class, () -> fireboltEngineService.getEngine(FireboltProperties.builder().database("db").build()));
+	void shouldThrowExceptionEngineWhenEngineNameIsNotProvided() {
+		FireboltProperties properties = FireboltProperties.builder().database("db").build();
+		assertThrows(IllegalArgumentException.class, () -> fireboltEngineService.getEngine(properties));
 	}
 
 	@Test
@@ -81,7 +82,7 @@ class FireboltEngineInformationSchemaServiceTest {
 		PreparedStatement statement = mock(PreparedStatement.class);
 		Map<String, String> rowData = row == null || row.isEmpty() ? Map.of() : Map.of(row.split(",")[0], row.split(",")[1]);
 		ResultSet resultSet = mockedResultSet(rowData);
-		when(fireboltConnection.prepareStatement(Mockito.eq("SELECT database_name FROM information_schema.databases WHERE database_name=?"))).thenReturn(statement);
+		when(fireboltConnection.prepareStatement("SELECT database_name FROM information_schema.databases WHERE database_name=?")).thenReturn(statement);
 		when(statement.executeQuery()).thenReturn(resultSet);
 		assertEquals(expected, fireboltEngineService.doesDatabaseExist(db));
 		Mockito.verify(statement, Mockito.times(1)).setString(1, db);

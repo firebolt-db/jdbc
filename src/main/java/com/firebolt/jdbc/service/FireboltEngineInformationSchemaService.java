@@ -11,7 +11,6 @@ import javax.annotation.Nullable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Optional;
 
 import static java.lang.String.format;
 

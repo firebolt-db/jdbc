@@ -1,9 +1,9 @@
 package com.firebolt.jdbc.connection;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.client.FireboltObjectMapper;
 import com.firebolt.jdbc.client.account.FireboltAccount;
-import com.firebolt.jdbc.client.account.FireboltAccountClient;
 import com.firebolt.jdbc.client.account.FireboltAccountRetriever;
 import com.firebolt.jdbc.client.authentication.AuthenticationRequest;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
@@ -32,14 +32,21 @@ public class FireboltConnectionServiceSecretAuthentication extends FireboltConne
     private final FireboltAccountIdService fireboltAccountIdService;
     private final FireboltEngineService fireboltEngineService;
 
-    FireboltConnectionServiceSecretAuthentication(@NonNull String url, Properties connectionSettings, FireboltAuthenticationService fireboltAuthenticationService, FireboltGatewayUrlService fireboltGatewayUrlService, FireboltStatementService fireboltStatementService, FireboltEngineInformationSchemaService fireboltEngineService, FireboltAccountIdService fireboltAccountIdService) throws SQLException {
-        super(url, connectionSettings, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService);
+    FireboltConnectionServiceSecretAuthentication(@NonNull String url,
+                                                  Properties connectionSettings,
+                                                  FireboltAuthenticationService fireboltAuthenticationService,
+                                                  FireboltGatewayUrlService fireboltGatewayUrlService,
+                                                  FireboltStatementService fireboltStatementService,
+                                                  FireboltEngineInformationSchemaService fireboltEngineService,
+                                                  FireboltAccountIdService fireboltAccountIdService) throws SQLException {
+        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService);
         this.fireboltGatewayUrlService = fireboltGatewayUrlService;
         this.fireboltAccountIdService = fireboltAccountIdService;
         this.fireboltEngineService = fireboltEngineService;
         connect();
     }
 
+    @ExcludeFromJacocoGeneratedReport
     FireboltConnectionServiceSecretAuthentication(@NonNull String url, Properties connectionSettings) throws SQLException {
         super(url, connectionSettings);
         OkHttpClient httpClient = getHttpClient(loginProperties);

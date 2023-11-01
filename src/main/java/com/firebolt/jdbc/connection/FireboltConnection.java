@@ -76,12 +76,10 @@ public abstract class FireboltConnection implements Connection {
 	//Properties that are used at the beginning of the connection for authentication
 	protected final FireboltProperties loginProperties;
 
-	protected FireboltConnection(@NonNull String url, Properties connectionSettings,
+	protected FireboltConnection(@NonNull String url,
+								 Properties connectionSettings,
 								 FireboltAuthenticationService fireboltAuthenticationService,
-							  	FireboltGatewayUrlService fireboltGatewayUrlService,
-							  	FireboltStatementService fireboltStatementService,
-							  	FireboltEngineInformationSchemaService fireboltEngineService,
-							  	FireboltAccountIdService fireboltAccountIdService) throws SQLException {
+							  	 FireboltStatementService fireboltStatementService) throws SQLException {
 		this.loginProperties = extractFireboltProperties(url, connectionSettings);
 
 		this.fireboltAuthenticationService = fireboltAuthenticationService;
@@ -312,7 +310,7 @@ public abstract class FireboltConnection implements Connection {
 		log.debug("Connection closed");
 	}
 
-	protected FireboltProperties extractFireboltProperties(String jdbcUri, Properties connectionProperties) throws SQLException {
+	protected FireboltProperties extractFireboltProperties(String jdbcUri, Properties connectionProperties) {
 		Properties propertiesFromUrl = UrlUtil.extractProperties(jdbcUri);
 		return FireboltProperties.of(propertiesFromUrl, connectionProperties);
 	}

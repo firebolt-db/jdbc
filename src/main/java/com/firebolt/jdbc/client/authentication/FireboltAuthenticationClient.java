@@ -10,15 +10,14 @@ import lombok.CustomLog;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 
 @CustomLog
 public abstract class FireboltAuthenticationClient extends FireboltClient {
 
-	public FireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper,
-			FireboltConnection connection, String customDrivers, String customClients) {
+	protected FireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper,
+										   FireboltConnection connection, String customDrivers, String customClients) {
 		super(httpClient, objectMapper, connection, customDrivers, customClients);
 	}
 

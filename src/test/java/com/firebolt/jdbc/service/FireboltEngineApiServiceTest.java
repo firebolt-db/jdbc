@@ -24,7 +24,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class FireboltEngineApiServiceTest {
+class FireboltEngineApiServiceTest {
     private static final String HOST = "host";
     private static final String URL = "http://host";
     private static final String ACCOUNT_ID = "account_id";
