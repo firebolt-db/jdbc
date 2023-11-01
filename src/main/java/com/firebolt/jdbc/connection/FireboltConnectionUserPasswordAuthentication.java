@@ -47,8 +47,8 @@ public class FireboltConnectionUserPasswordAuthentication extends FireboltConnec
     protected void authenticate() throws SQLException {
         String accessToken = getAccessToken(loginProperties).orElse(StringUtils.EMPTY);
         FireboltProperties propertiesWithAccessToken = loginProperties.toBuilder().accessToken(accessToken).build();
-        String endpoint = fireboltEngineService.getEngine(propertiesWithAccessToken).getEndpoint();
-        this.sessionProperties = loginProperties.toBuilder().host(endpoint).build();
+        Engine engine = fireboltEngineService.getEngine(propertiesWithAccessToken);
+        this.sessionProperties = loginProperties.toBuilder().host(engine.getEndpoint()).database(engine.getDatabase()).engine(engine.getName()).build();
     }
 
     @Override

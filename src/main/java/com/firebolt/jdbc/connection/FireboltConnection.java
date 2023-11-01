@@ -5,7 +5,6 @@ import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.client.FireboltObjectMapper;
 import com.firebolt.jdbc.client.HttpClientConfig;
-import com.firebolt.jdbc.client.account.FireboltAccountRetriever;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.client.query.StatementClientImpl;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
@@ -15,10 +14,7 @@ import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
 import com.firebolt.jdbc.metadata.FireboltSystemEngineDatabaseMetadata;
-import com.firebolt.jdbc.service.FireboltAccountIdService;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
-import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
-import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
@@ -221,9 +217,9 @@ public abstract class FireboltConnection implements Connection {
 	public DatabaseMetaData getMetaData() throws SQLException {
 		this.validateConnectionIsNotClose();
 		if (!loginProperties.isSystemEngine()) {
-			return new FireboltDatabaseMetadata(this.httpConnectionUrl, this);
+			return new FireboltDatabaseMetadata(httpConnectionUrl, this);
 		} else {
-			return new FireboltSystemEngineDatabaseMetadata(this.httpConnectionUrl, this);
+			return new FireboltSystemEngineDatabaseMetadata(httpConnectionUrl, this);
 		}
 	}
 

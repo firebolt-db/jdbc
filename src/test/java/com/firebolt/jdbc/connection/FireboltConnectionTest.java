@@ -75,11 +75,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class FireboltConnectionTest {
+abstract class FireboltConnectionTest {
 
 	private static final String URL = "jdbc:firebolt:db?env=dev&engine=eng&account=dev";
-
-	private static final String SYSTEM_ENGINE_URL = "jdbc:firebolt:db?env=dev&account=dev";
 
 	private static final String LOCAL_URL = "jdbc:firebolt:local_dev_db?account=dev&ssl=false&max_query_size=10000000&use_standard_sql=1&mask_internal_errors=0&firebolt_enable_beta_functions=1&firebolt_case_insensitive_identifiers=1&rest_api_pull_timeout_sec=3600&rest_api_pull_interval_millisec=5000&rest_api_retry_times=10&host=localhost";
 	private final FireboltConnectionTokens fireboltConnectionTokens = FireboltConnectionTokens.builder().build();
@@ -88,17 +86,17 @@ class FireboltConnectionTest {
 	@Captor
 	private ArgumentCaptor<StatementInfoWrapper> queryInfoWrapperArgumentCaptor;
 	@Mock
-	private FireboltAuthenticationService fireboltAuthenticationService;
+	protected FireboltAuthenticationService fireboltAuthenticationService;
 	@Mock
-	private FireboltGatewayUrlService fireboltGatewayUrlService;
+	protected FireboltGatewayUrlService fireboltGatewayUrlService;
 
 	@Mock
-	private FireboltEngineInformationSchemaService fireboltEngineService;
+	protected FireboltEngineInformationSchemaService fireboltEngineService;
 	@Mock
-	private FireboltStatementService fireboltStatementService;
+	protected FireboltStatementService fireboltStatementService;
 	@Mock
-	private FireboltAccountIdService fireboltAccountIdService;
-	private Properties connectionProperties = new Properties();
+	protected FireboltAccountIdService fireboltAccountIdService;
+	protected Properties connectionProperties = new Properties();
 	private static Connection connection;
 
 	private static Stream<Arguments> unsupported() {
@@ -321,15 +319,6 @@ class FireboltConnectionTest {
 			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
 					propertiesArgumentCaptor.capture(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any());
 			assertEquals("SELECT 1", queryInfoWrapperArgumentCaptor.getValue().getSql());
-		}
-	}
-
-	@Test
-	void shouldNotValidateConnectionWhenCallingIsValidWhenUsingSystemEngine() throws SQLException {
-		Properties propertiesWithSystemEngine = new Properties(connectionProperties);
-		try (FireboltConnection fireboltConnection = createConnection(SYSTEM_ENGINE_URL, propertiesWithSystemEngine)) {
-			fireboltConnection.isValid(500);
-			verifyNoInteractions(fireboltStatementService);
 		}
 	}
 
@@ -600,29 +589,5 @@ class FireboltConnectionTest {
 		}
 	}
 
-	@Test
-	void shouldNotGetEngineUrlOrDefaultEngineUrlWhenUsingSystemEngine() throws SQLException {
-		connectionProperties.put("database", "my_db");
-		when(fireboltGatewayUrlService.getUrl(any(), any())).thenReturn("http://my_endpoint");
-
-		try (FireboltConnection connection = createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
-			verify(fireboltEngineService, times(0)).getEngine(argThat(props -> "my_db".equals(props.getDatabase())));
-			assertEquals("my_endpoint", connection.getSessionProperties().getHost());
-		}
-	}
-
-	@Test
-	void noEngineAndDb() throws SQLException {
-		when(fireboltGatewayUrlService.getUrl(any(), any())).thenReturn("http://my_endpoint");
-
-		try (FireboltConnection connection = createConnection("jdbc:firebolt:?env=dev&account=dev", connectionProperties)) {
-			assertEquals("my_endpoint", connection.getSessionProperties().getHost());
-			assertNull(connection.getSessionProperties().getEngine());
-			assertTrue(connection.getSessionProperties().isSystemEngine());
-		}
-	}
-
-	private FireboltConnection createConnection(String url, Properties props) throws SQLException {
-		return new FireboltConnectionServiceSecretAuthentication(url, props, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService);
-	}
+	protected abstract FireboltConnection createConnection(String url, Properties props) throws SQLException;
 }
