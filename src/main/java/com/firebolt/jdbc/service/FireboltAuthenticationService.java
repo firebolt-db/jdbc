@@ -12,7 +12,6 @@ import net.jodah.expiringmap.ExpiringMap;
 import javax.xml.bind.DatatypeConverter;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Optional;
 
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
@@ -27,8 +26,8 @@ public class FireboltAuthenticationService {
 			.variableExpiration().build();
 	private static final long TOKEN_EXPIRATION_OFFSET = 5L;
 	private static final long TOKEN_TTL_THRESHOLD = 60L;
-	private static final String errorMessage = "Failed to connect to Firebolt with the error: %s, see logs for more info.";
-	private static final String errorMessageFromServer = "Failed to connect to Firebolt with the error from the server: %s, see logs for more info.";
+	private static final String ERROR_MESSAGE = "Failed to connect to Firebolt with the error: %s, see logs for more info.";
+	private static final String ERROR_MESSAGE_FROM_SERVER = "Failed to connect to Firebolt with the error from the server: %s, see logs for more info.";
 	private final FireboltAuthenticationClient fireboltAuthenticationClient;
 
 	public FireboltConnectionTokens getConnectionTokens(String host, FireboltProperties loginProperties) throws FireboltException {
@@ -48,11 +47,11 @@ public class FireboltAuthenticationService {
 			}
 		} catch (FireboltException e) {
 			log.error("Failed to connect to Firebolt", e);
-			String msg = ofNullable(e.getErrorMessageFromServer()).map(m -> format(errorMessageFromServer, m)).orElse(format(errorMessage, e.getMessage()));
+			String msg = ofNullable(e.getErrorMessageFromServer()).map(m -> format(ERROR_MESSAGE_FROM_SERVER, m)).orElse(format(ERROR_MESSAGE, e.getMessage()));
 			throw new FireboltException(msg, e);
 		} catch (Exception e) {
 			log.error("Failed to connect to Firebolt", e);
-			throw new FireboltException(format(errorMessage, e.getMessage()), e);
+			throw new FireboltException(format(ERROR_MESSAGE, e.getMessage()), e);
 		}
 	}
 

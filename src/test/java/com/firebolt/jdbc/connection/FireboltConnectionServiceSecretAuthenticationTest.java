@@ -19,7 +19,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-public class FireboltConnectionServiceSecretAuthenticationTest extends FireboltConnectionTest {
+class FireboltConnectionServiceSecretAuthenticationTest extends FireboltConnectionTest {
     private static final String SYSTEM_ENGINE_URL = "jdbc:firebolt:db?env=dev&account=dev";
 
     @Test

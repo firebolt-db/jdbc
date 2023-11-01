@@ -75,7 +75,7 @@ public abstract class FireboltConnection implements Connection {
 	protected FireboltConnection(@NonNull String url,
 								 Properties connectionSettings,
 								 FireboltAuthenticationService fireboltAuthenticationService,
-							  	 FireboltStatementService fireboltStatementService) throws SQLException {
+							  	 FireboltStatementService fireboltStatementService) {
 		this.loginProperties = extractFireboltProperties(url, connectionSettings);
 
 		this.fireboltAuthenticationService = fireboltAuthenticationService;

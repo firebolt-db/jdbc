@@ -17,7 +17,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-public class FireboltConnectionUserPasswordAuthenticationTest extends FireboltConnectionTest {
+class FireboltConnectionUserPasswordAuthenticationTest extends FireboltConnectionTest {
     private static final String SYSTEM_ENGINE_URL = "jdbc:firebolt:db?env=dev&account=dev&engine=system";
     @Test
     void shouldNotValidateConnectionWhenCallingIsValidWhenUsingSystemEngine() throws SQLException {
