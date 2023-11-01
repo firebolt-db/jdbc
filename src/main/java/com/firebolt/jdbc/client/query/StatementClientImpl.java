@@ -75,15 +75,13 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			return executeSqlStatementWithRetryOnUnauthorized(statementInfoWrapper, connectionProperties, formattedStatement, uri);
 		} catch (FireboltException e) {
 			throw e;
+		} catch (StreamResetException e) {
+			String errorMessage = format("Error executing statement with id %s: %s", statementInfoWrapper.getId(), formattedStatement);
+			throw new FireboltException(errorMessage, e, ExceptionType.CANCELED);
 		} catch (Exception e) {
-			String errorMessage = format("Error executing statement with id %s: %s",
-					statementInfoWrapper.getId(), formattedStatement);
-			if (e instanceof StreamResetException) {
-				throw new FireboltException(errorMessage, e, ExceptionType.CANCELED);
-			}
+			String errorMessage = format("Error executing statement with id %s: %s", statementInfoWrapper.getId(), formattedStatement);
 			throw new FireboltException(errorMessage, e);
 		}
-
 	}
 
 	private InputStream executeSqlStatementWithRetryOnUnauthorized(@NonNull StatementInfoWrapper statementInfoWrapper,
