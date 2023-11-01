@@ -15,6 +15,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 
 import static java.lang.String.format;
+import static java.util.Optional.ofNullable;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.jodah.expiringmap.ExpirationPolicy.CREATED;
 
@@ -47,8 +48,8 @@ public class FireboltAuthenticationService {
 			}
 		} catch (FireboltException e) {
 			log.error("Failed to connect to Firebolt", e);
-			String msg = e.getErrorMessageFromServer() == null ? errorMessage : errorMessageFromServer;
-			throw new FireboltException(format(msg, e.getMessage()), e);
+			String msg = ofNullable(e.getErrorMessageFromServer()).map(m -> format(errorMessageFromServer, m)).orElse(format(errorMessage, e.getMessage()));
+			throw new FireboltException(msg, e);
 		} catch (Exception e) {
 			log.error("Failed to connect to Firebolt", e);
 			throw new FireboltException(format(errorMessage, e.getMessage()), e);
@@ -88,8 +89,8 @@ public class FireboltAuthenticationService {
 		public ConnectParams(String fireboltHost, String principal, String secret) throws NoSuchAlgorithmException {
 			this.fireboltHost = fireboltHost;
 			MessageDigest sha256Instance = MessageDigest.getInstance("SHA-256");
-			Optional.ofNullable(principal).map(String::getBytes).ifPresent(sha256Instance::update);
-			Optional.ofNullable(secret).map(String::getBytes).ifPresent(sha256Instance::update);
+			ofNullable(principal).map(String::getBytes).ifPresent(sha256Instance::update);
+			ofNullable(secret).map(String::getBytes).ifPresent(sha256Instance::update);
 			this.credentialsHash = DatatypeConverter.printHexBinary(sha256Instance.digest());
 		}
 	}
