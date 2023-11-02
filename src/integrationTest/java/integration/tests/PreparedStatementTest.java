@@ -1,28 +1,32 @@
 package integration.tests;
 
-import static java.sql.Statement.SUCCESS_NO_INFO;
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.testutils.AssertionUtil;
 import com.firebolt.jdbc.type.FireboltDataType;
-
 import integration.ConnectionInfo;
 import integration.IntegrationTest;
 import lombok.Builder;
 import lombok.CustomLog;
 import lombok.Value;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static java.sql.Statement.SUCCESS_NO_INFO;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
 class PreparedStatementTest extends IntegrationTest {

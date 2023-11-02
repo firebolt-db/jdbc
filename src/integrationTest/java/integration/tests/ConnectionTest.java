@@ -1,6 +1,7 @@
 package integration.tests;
 
 import integration.ConnectionInfo;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -21,6 +22,7 @@ public class ConnectionTest {
      * @throws SQLException if something went wrong
      */
     @Test
+    @Tag("v2")
     void connectionWithAdditionalProperties() throws SQLException {
         ConnectionInfo params = integration.ConnectionInfo.getInstance();
         String url = format("jdbc:firebolt:%s?env=%s&engine=%s&account=%s&use_standard_sql=1", params.getDatabase(), params.getEnv(), params.getEngine(), params.getAccount());

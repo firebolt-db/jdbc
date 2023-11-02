@@ -3,6 +3,7 @@ package integration;
 import com.firebolt.jdbc.client.HttpClientConfig;
 import lombok.CustomLog;
 import lombok.SneakyThrows;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 
 import java.io.InputStream;
@@ -17,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @CustomLog
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Tag("common")
 public abstract class IntegrationTest {
 
 	private static final String JDBC_URL_PREFIX = "jdbc:firebolt:";

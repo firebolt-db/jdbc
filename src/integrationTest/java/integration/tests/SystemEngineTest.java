@@ -38,6 +38,7 @@ public class SystemEngineTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag("slow")
 	void shouldExecuteEngineManagementQueries() throws SQLException {
 		try (Connection connection = this.createConnection(null)) {
 			List<String> queries = Arrays.asList(String.format("CREATE DATABASE IF NOT EXISTS %s", DATABASE_NAME),
