@@ -48,7 +48,7 @@ on:
 
 jobs:
   run-integration-tests1:
-    if: ${{ github.event.inputs.run-v1 }}
+    if: ${{ github.event.inputs.run-v1 == 'true' }}
     uses: ./.github/workflows/integration-test-v1.yml
     with:
       database: ${{ github.event.inputs.database1 }}
@@ -61,7 +61,7 @@ jobs:
       FIREBOLT_PASSWORD_DEV: ${{ secrets.FIREBOLT_PASSWORD_DEV }}
 
   run-integration-tests2:
-    if: ${{ github.event.inputs.run-v2 }}
+    if: ${{ github.event.inputs.run-v2 == 'true' }}
     uses: ./.github/workflows/integration-test-v2.yml
     with:
       database: ${{ github.event.inputs.database2 }}
