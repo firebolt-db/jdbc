@@ -32,9 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SystemEngineTest extends IntegrationTest {
 
-	private static final String DATABASE_NAME = "jdbc_system_engine_integration_test";
-	private static final String ENGINE_NAME = "jdbc_system_engine_integration_test_engine";
-	private static final String ENGINE_NEW_NAME = "jdbc_system_engine_integration_test_engine_2";
+	private static final long ID = ProcessHandle.current().pid() + System.currentTimeMillis();
+	private static final String DATABASE_NAME = "jdbc_system_engine_integration_test_" + ID;
+	private static final String ENGINE_NAME = DATABASE_NAME + "_engine";
+	private static final String ENGINE_NEW_NAME = ENGINE_NAME + "_2";
 
 	@BeforeAll
 	void beforeAll() {
@@ -56,7 +57,7 @@ public class SystemEngineTest extends IntegrationTest {
 
 	@Test
 	void shouldSelect1() throws SQLException {
-		try (Connection connection = createConnection(getSystemEngineName());
+		try (Connection connection = createConnection();
 			 ResultSet rs = connection.createStatement().executeQuery("SELECT 1")) {
 			assertTrue(rs.next());
 			assertEquals(1, rs.getInt(1));

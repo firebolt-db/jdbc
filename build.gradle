@@ -128,7 +128,8 @@ tasks.register('integrationTest', Test) {
     testLogging.exceptionFormat = 'full'
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath
-    maxParallelForks = (int) (Runtime.runtime.availableProcessors() / 2 + 1)
+    // Temporarily disabled multithreaded execution due to bug on server side.
+    //maxParallelForks = (int) (Runtime.runtime.availableProcessors() / 2 + 1)
 
     testLogging {
         events 'PASSED', 'FAILED', 'SKIPPED'

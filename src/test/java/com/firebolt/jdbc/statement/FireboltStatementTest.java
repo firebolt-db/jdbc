@@ -108,7 +108,7 @@ class FireboltStatementTest {
 		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
 				.sessionProperties(fireboltProperties).connection(fireboltConnection).build();
 
-		Field runningStatementField = FireboltStatement.class.getDeclaredField("runningStatementId");
+		Field runningStatementField = FireboltStatement.class.getDeclaredField("runningStatementLabel");
 		runningStatementField.setAccessible(true);
 		runningStatementField.set(fireboltStatement, "1234");
 		fireboltStatement.cancel();

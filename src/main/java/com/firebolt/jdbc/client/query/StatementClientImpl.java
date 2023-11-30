@@ -19,19 +19,23 @@ import okhttp3.Dispatcher;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.internal.http2.StreamResetException;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
@@ -39,6 +43,7 @@ import java.util.regex.Pattern;
 
 import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.DEFAULT_FORMAT;
 import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.OUTPUT_FORMAT;
+import static com.firebolt.jdbc.exception.ExceptionType.INVALID_REQUEST;
 import static com.firebolt.jdbc.exception.ExceptionType.UNAUTHORIZED;
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
@@ -52,9 +57,12 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			Pattern.compile("HTTP status code: 401"), "Please associate user with your service account.",
 			Pattern.compile("Engine .+? does not exist or not authorized"), "Please grant at least one role to user associated your service account."
 	);
+	//QUERY_LABEL - change the code when query_label is supported on sever side
+	@SuppressWarnings("java:S125")
+	//private static final String QUERY_ID_FETCHER = "select query_id from information_schema.query_history where status = 'STARTED_EXECUTION' and  query_label = ?";
+	private static final String QUERY_ID_FETCHER = "select query_id from information_schema.query_history where status = 'STARTED_EXECUTION' and  query_text like ?";
 
-	private final BiPredicate<Call, String> isCallWithId = (call, id) -> call.request().tag() instanceof String
-			&& StringUtils.equals((String) call.request().tag(), id);
+	private final BiPredicate<Call, String> isCallWithLabel = (call, label) -> call.request().tag() instanceof String && Objects.equals(call.request().tag(), label);
 
 	public StatementClientImpl(OkHttpClient httpClient, ObjectMapper objectMapper, FireboltConnection connection, String customDrivers, String customClients) {
 		super(httpClient, objectMapper, connection, customDrivers, customClients);
@@ -77,44 +85,39 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 										   boolean standardSql) throws FireboltException {
 		String formattedStatement = formatStatement(statementInfoWrapper);
 		Map<String, String> params = getAllParameters(connectionProperties, statementInfoWrapper, systemEngine, queryTimeout);
+		String label = statementInfoWrapper.getLabel();
+		String errorMessage = format("Error executing statement with label %s: %s", label, formattedStatement);
 		try {
 			String uri = this.buildQueryUri(connectionProperties, params).toString();
-			return executeSqlStatementWithRetryOnUnauthorized(statementInfoWrapper, connectionProperties, formattedStatement, uri);
+			return executeSqlStatementWithRetryOnUnauthorized(label, connectionProperties, formattedStatement, uri);
 		} catch (FireboltException e) {
 			throw e;
 		} catch (StreamResetException e) {
-			String errorMessage = format("Error executing statement with id %s: %s", statementInfoWrapper.getId(), formattedStatement);
 			throw new FireboltException(errorMessage, e, ExceptionType.CANCELED);
 		} catch (Exception e) {
-			String errorMessage = format("Error executing statement with id %s: %s", statementInfoWrapper.getId(), formattedStatement);
 			throw new FireboltException(errorMessage, e);
 		}
 	}
 
-	private InputStream executeSqlStatementWithRetryOnUnauthorized(@NonNull StatementInfoWrapper statementInfoWrapper,
-																   @NonNull FireboltProperties connectionProperties, String formattedStatement, String uri)
+	private InputStream executeSqlStatementWithRetryOnUnauthorized(String label, @NonNull FireboltProperties connectionProperties, String formattedStatement, String uri)
 			throws IOException, FireboltException {
 		try {
-			log.debug("Posting statement with id {} to URI: {}", statementInfoWrapper.getId(), uri);
-			return postSqlStatement(statementInfoWrapper, connectionProperties, formattedStatement, uri);
+			log.debug("Posting statement with label {} to URI: {}", label, uri);
+			return postSqlStatement(connectionProperties, formattedStatement, uri, label);
 		} catch (FireboltException exception) {
 			if (exception.getType() == UNAUTHORIZED) {
-				log.debug("Retrying to post statement with id {} following a 401 status code to URI: {}",
-						statementInfoWrapper.getId(), uri);
-				return postSqlStatement(statementInfoWrapper, connectionProperties, formattedStatement, uri);
+				log.debug("Retrying to post statement with label {} following a 401 status code to URI: {}",label, uri);
+				return postSqlStatement(connectionProperties, formattedStatement, uri, label);
 			} else {
 				throw exception;
 			}
 		}
 	}
 
-	private InputStream postSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
-			@NonNull FireboltProperties connectionProperties, String formattedStatement, String uri)
+	private InputStream postSqlStatement(@NonNull FireboltProperties connectionProperties, String formattedStatement, String uri, String label)
 			throws FireboltException, IOException {
-		Response response;
-		Request post = this.createPostRequest(uri, formattedStatement,
-				this.getConnection().getAccessToken().orElse(null), statementInfoWrapper.getId());
-		response = this.execute(post, connectionProperties.getHost(), connectionProperties.isCompress());
+		Request post = createPostRequest(uri, label, formattedStatement, getConnection().getAccessToken().orElse(null));
+		Response response = this.execute(post, connectionProperties.getHost(), connectionProperties.isCompress());
 		InputStream is = Optional.ofNullable(response.body()).map(ResponseBody::byteStream).orElse(null);
 		if (is == null) {
 			CloseableUtil.close(response);
@@ -123,25 +126,48 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	private String formatStatement(StatementInfoWrapper statementInfoWrapper) {
-		Optional<String> cleanSql = Optional.ofNullable(statementInfoWrapper.getInitialStatement())
-				.map(RawStatement::getCleanSql);
-		if (cleanSql.isPresent() && !StringUtils.endsWith(cleanSql.get(), ";")) {
-			return statementInfoWrapper.getSql() + ";";
+		return Optional.ofNullable(statementInfoWrapper.getInitialStatement())
+				.map(RawStatement::getCleanSql)
+				.map(cleanSql  -> !cleanSql.endsWith(";") ? statementInfoWrapper.getSql() + ";" : statementInfoWrapper.getSql())
+				.map(sql -> sql + "--label:" + statementInfoWrapper.getLabel()) //QUERY_LABEL - remove --label=LABEL
+				.orElse(statementInfoWrapper.getSql());
+	}
+
+	public void abortStatement(@NonNull String statementLabel, @NonNull FireboltProperties properties) throws FireboltException {
+		boolean aborted = abortRunningHttpRequest(statementLabel);
+		if (properties.isSystemEngine()) {
+			throw new FireboltException("Cannot cancel a statement using a system engine", INVALID_REQUEST);
 		} else {
-			return statementInfoWrapper.getSql();
+			abortRunningDbStatement(statementLabel, properties, aborted ? 10_000 : 1);
 		}
 	}
 
 	/**
 	 * Aborts the statement being sent to the server
 	 *
-	 * @param id                 id of the statement
+	 * @param label				 label of the statement
 	 * @param fireboltProperties the properties
 	 */
-	public void abortStatement(String id, FireboltProperties fireboltProperties) throws FireboltException {
+	private void abortRunningDbStatement(String label, FireboltProperties fireboltProperties, int getIdTimeout) throws FireboltException {
 		try {
+			String id;
+			int attempt = 0;
+			int getIdAttempts = 10;
+			int getIdDelay = Math.max(getIdTimeout / getIdAttempts, 1);
+			// Statement ID is retrieved from query_history table. Records are written to this table asynchronously.
+			// So, if cancel() is called immediately after executing the statement sometimes the record in query_history
+			// can be unavailable. To retrieve it we perform several attempts.
+			for (id = getStatementId(label); attempt < getIdAttempts; id = getStatementId(label), attempt++) {
+				if (id != null) {
+					break;
+				}
+				delay(getIdDelay);
+			}
+			if (id == null) {
+				throw new FireboltException("Cannot retrieve id for statement with label " + label);
+			}
 			String uri = this.buildCancelUri(fireboltProperties, id).toString();
-			Request rq = this.createPostRequest(uri, this.getConnection().getAccessToken().orElse(null), null);
+			Request rq = createPostRequest(uri, null, (RequestBody)null, getConnection().getAccessToken().orElse(null));
 			try (Response response = this.execute(rq, fireboltProperties.getHost())) {
 				CloseableUtil.close(response);
 			}
@@ -153,35 +179,52 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 				throw e;
 			}
 		} catch (Exception e) {
-			throw new FireboltException(format("Could not cancel query: %s at %s", id, fireboltProperties.getHost()), e);
+			throw new FireboltException(format("Could not cancel query: %s at %s", label, fireboltProperties.getHost()), e);
+		}
+	}
+
+	@SuppressWarnings("java:S2142") // "InterruptedException" and "ThreadDeath" should not be ignored
+	private void delay(int delay) {
+		try {
+			Thread.sleep(delay);
+		} catch (InterruptedException e) {
+			// ignore interrupted exception
 		}
 	}
 
 	/**
 	 * Abort HttpRequest if it is currently being sent
 	 *
-	 * @param id id of the statement
+	 * @param label id of the statement
 	 */
-	public void abortRunningHttpRequest(@NonNull String id) {
-		getQueuedCallWithId(id).ifPresent(Call::cancel);
-		getRunningCallWithId(id).ifPresent(Call::cancel);
+	private boolean abortRunningHttpRequest(@NonNull String label) {
+		boolean quedAborted = abortCall(getQueuedCallWithLabel(label));
+		boolean runningAborted = abortCall(getRunningCallWithLabel(label));
+		return quedAborted || runningAborted;
 	}
 
-	private Optional<Call> getQueuedCallWithId(String id) {
-		return getSelectedCallWithId(id, Dispatcher::queuedCalls);
+	private boolean abortCall(Optional<Call> call) {
+		return call.map(c -> {
+			c.cancel();
+			return true;
+		}).orElse(false);
 	}
 
-	private Optional<Call> getRunningCallWithId(String id) {
-		return getSelectedCallWithId(id, Dispatcher::runningCalls);
+	private Optional<Call> getQueuedCallWithLabel(String label) {
+		return getSelectedCallWithLabel(label, Dispatcher::queuedCalls);
 	}
 
-	private Optional<Call> getSelectedCallWithId(String id, Function<Dispatcher, List<Call>> callsGetter) {
-		return callsGetter.apply(getHttpClient().dispatcher()).stream().filter(call -> isCallWithId.test(call, id)).findAny();
+	private Optional<Call> getRunningCallWithLabel(String id) {
+		return getSelectedCallWithLabel(id, Dispatcher::runningCalls);
+	}
+
+	private Optional<Call> getSelectedCallWithLabel(String label, Function<Dispatcher, List<Call>> callsGetter) {
+		return callsGetter.apply(getHttpClient().dispatcher()).stream().filter(call -> isCallWithLabel.test(call, label)).findAny();
 	}
 
 	@Override
 	public boolean isStatementRunning(String statementId) {
-		return getQueuedCallWithId(statementId).isPresent() || getRunningCallWithId(statementId).isPresent();
+		return getQueuedCallWithLabel(statementId).isPresent() || getRunningCallWithLabel(statementId).isPresent();
 	}
 
 	private URI buildQueryUri(FireboltProperties fireboltProperties, Map<String, String> parameters) {
@@ -206,6 +249,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 	}
 
+	@SuppressWarnings("java:S125") //QUERY_LABEL  - remove when the line of the code is uncommented
 	private Map<String, String> getAllParameters(FireboltProperties fireboltProperties,
 			StatementInfoWrapper statementInfoWrapper, boolean systemEngine, int queryTimeout) {
 		boolean isLocalDb = PropertyUtil.isLocalDb(fireboltProperties);
@@ -219,7 +263,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 				params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId());
 			}
 		} else {
-			params.put(FireboltQueryParameterKey.QUERY_ID.getKey(), statementInfoWrapper.getId());
+			//params.put(FireboltQueryParameterKey.QUERY_LABEL.getKey(), statementInfoWrapper.getLabel()); //QUERY_LABEL - uncomment
 			params.put(FireboltQueryParameterKey.COMPRESS.getKey(), fireboltProperties.isCompress() ? "1" : "0");
 
 			if (queryTimeout > 0) {
@@ -249,6 +293,15 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 					.orElse(null);
 			if (ex != null) {
 				throw ex;
+			}
+		}
+	}
+
+	private String getStatementId(String label) throws SQLException {
+		try (PreparedStatement ps = connection.prepareStatement(QUERY_ID_FETCHER)) {
+			ps.setString(1, "%label:" + label); //QUERY_LABEL - remove %label:
+			try (ResultSet rs = ps.executeQuery()) {
+				return rs.next() ? rs.getString(1) : null;
 			}
 		}
 	}

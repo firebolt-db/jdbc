@@ -3,6 +3,10 @@ package com.firebolt.jdbc.service;
 import java.sql.SQLException;
 import java.util.Optional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.firebolt.jdbc.client.query.StatementClientImpl;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,7 +82,8 @@ class FireboltStatementServiceTest {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("http://firebolt1")
 				.ssl(true).compress(false).systemEngine(true).build();
 
-		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
+		StatementClient client = new StatementClientImpl(new OkHttpClient(), new ObjectMapper(), Mockito.mock(FireboltConnection.class), null, null);
+		FireboltStatementService fireboltStatementService = new FireboltStatementService(client);
 		assertThrows(FireboltException.class, () -> fireboltStatementService.abortStatement("123", fireboltProperties));
 		verifyNoInteractions(statementClient);
 	}
@@ -129,8 +134,8 @@ class FireboltStatementServiceTest {
 	@Test
 	void abortStatementHttpRequest() throws FireboltException {
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
-		fireboltStatementService.abortStatementHttpRequest("id");
-		verify(statementClient).abortRunningHttpRequest("id");
+		fireboltStatementService.abortStatement("id", FireboltProperties.builder().build());
+		verify(statementClient).abortStatement("id", FireboltProperties.builder().build());
 	}
 
 	@ParameterizedTest
