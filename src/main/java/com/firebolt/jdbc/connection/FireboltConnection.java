@@ -68,6 +68,7 @@ public abstract class FireboltConnection implements Connection {
 	private boolean closed = true;
 	protected FireboltProperties sessionProperties;
 	private int networkTimeout;
+	private final String protocolVersion;
 
 	//Properties that are used at the beginning of the connection for authentication
 	protected final FireboltProperties loginProperties;
@@ -75,7 +76,8 @@ public abstract class FireboltConnection implements Connection {
 	protected FireboltConnection(@NonNull String url,
 								 Properties connectionSettings,
 								 FireboltAuthenticationService fireboltAuthenticationService,
-							  	 FireboltStatementService fireboltStatementService) {
+							  	 FireboltStatementService fireboltStatementService,
+								 String protocolVersion) {
 		this.loginProperties = extractFireboltProperties(url, connectionSettings);
 
 		this.fireboltAuthenticationService = fireboltAuthenticationService;
@@ -85,11 +87,12 @@ public abstract class FireboltConnection implements Connection {
 		this.statements = new ArrayList<>();
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
+		this.protocolVersion = protocolVersion;
 	}
 
 	// This code duplication between constructors is done because of back reference: dependent services require reference to current instance of FireboltConnection that prevents using constructor chaining or factory method.
 	@ExcludeFromJacocoGeneratedReport
-	protected FireboltConnection(@NonNull String url, Properties connectionSettings) throws SQLException {
+	protected FireboltConnection(@NonNull String url, Properties connectionSettings, String protocolVersion) throws SQLException {
 		this.loginProperties = extractFireboltProperties(url, connectionSettings);
 		OkHttpClient httpClient = getHttpClient(loginProperties);
 		ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
@@ -101,6 +104,7 @@ public abstract class FireboltConnection implements Connection {
 		this.statements = new ArrayList<>();
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
+		this.protocolVersion = protocolVersion;
 	}
 
 	protected abstract FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper);
@@ -642,5 +646,9 @@ public abstract class FireboltConnection implements Connection {
 	@NotImplemented
 	public Struct createStruct(String typeName, Object[] attributes) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
+	}
+
+	public String getProtocolVersion() {
+		return protocolVersion;
 	}
 }

@@ -32,14 +32,16 @@ import java.util.stream.Collectors;
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
+import static java.util.Optional.ofNullable;
 
 @Getter
 @CustomLog
 public abstract class FireboltClient {
 
-	public static final String HEADER_AUTHORIZATION = "Authorization";
-	public static final String HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE = "Bearer ";
-	public static final String HEADER_USER_AGENT = "User-Agent";
+	private static final String HEADER_AUTHORIZATION = "Authorization";
+	private static final String HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE = "Bearer ";
+	private static final String HEADER_USER_AGENT = "User-Agent";
+	private static final String HEADER_PROTOCOL_VERSION = "Firebolt-Protocol-Version";
 	private final OkHttpClient httpClient;
 	protected final ObjectMapper objectMapper;
 	private final String headerUserAgentValue;
@@ -185,8 +187,8 @@ public abstract class FireboltClient {
 	private List<Pair<String, String>> createHeaders(String accessToken) {
 		List<Pair<String, String>> headers = new ArrayList<>();
 		headers.add(new ImmutablePair<>(HEADER_USER_AGENT, this.getHeaderUserAgentValue()));
-		Optional.ofNullable(accessToken).ifPresent(token -> headers.add(
-				new ImmutablePair<>(HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken)));
+		ofNullable(connection.getProtocolVersion()).ifPresent(version -> headers.add(new ImmutablePair<>(HEADER_PROTOCOL_VERSION, version)));
+		ofNullable(accessToken).ifPresent(token -> headers.add(new ImmutablePair<>(HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken)));
 		return headers;
 	}
 

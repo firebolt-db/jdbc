@@ -14,6 +14,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @CustomLog
@@ -72,5 +73,9 @@ public abstract class IntegrationTest {
 
 	private String getAccountParam() {
 		return "&account=" + integration.ConnectionInfo.getInstance().getAccount();
+	}
+
+	protected String getSystemEngineName() {
+		return System.getProperty("api") == null ? null : SYSTEM_ENGINE_NAME;
 	}
 }
