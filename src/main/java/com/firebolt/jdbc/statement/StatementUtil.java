@@ -258,9 +258,7 @@ public class StatementUtil {
 			Pair<String, String> additionalParams = subQuery.getStatementType() == StatementType.PARAM_SETTING
 					? ((SetParamRawStatement) subQuery).getAdditionalProperty()
 					: null;
-			subQueries.add(new StatementInfoWrapper(subQueryWithParams, UUID.randomUUID().toString(),
-					subQuery.getStatementType(), additionalParams, subQuery));
-
+			subQueries.add(new StatementInfoWrapper(subQueryWithParams, subQuery.getStatementType(), additionalParams, subQuery));
 		}
 		return subQueries;
 	}

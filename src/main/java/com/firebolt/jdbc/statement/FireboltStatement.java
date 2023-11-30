@@ -32,15 +32,15 @@ public class FireboltStatement implements Statement {
 	private final FireboltStatementService statementService;
 	private final FireboltProperties sessionProperties;
 	private final FireboltConnection connection;
-	private final Collection<String> statementsToExecuteIds = new HashSet<>();
+	private final Collection<String> statementsToExecuteLabels = new HashSet<>();
 	private boolean closeOnCompletion = false;
 	private int currentUpdateCount = -1;
 	private int maxRows;
 	private volatile boolean isClosed = false;
 	private StatementResultWrapper currentStatementResult;
 	private StatementResultWrapper firstUnclosedStatementResult;
-	private int queryTimeout = 0; // zero means that there is not limit
-	private String runningStatementId;
+	private int queryTimeout = 0; // zero means that there is no limit
+	private String runningStatementLabel;
 
 	@Builder
 	public FireboltStatement(FireboltStatementService statementService, FireboltProperties sessionProperties,
@@ -76,11 +76,11 @@ public class FireboltStatement implements Statement {
 	protected Optional<ResultSet> execute(List<StatementInfoWrapper> statements) throws SQLException {
 		Optional<ResultSet> resultSet = Optional.empty();
 		this.closeAllResults();
-		Set<String> queryIds = statements.stream().map(StatementInfoWrapper::getId)
+		Set<String> queryLabels = statements.stream().map(StatementInfoWrapper::getLabel)
 				.collect(Collectors.toCollection(HashSet::new));
 		try {
-			synchronized (statementsToExecuteIds) {
-				statementsToExecuteIds.addAll(queryIds);
+			synchronized (statementsToExecuteLabels) {
+				statementsToExecuteLabels.addAll(queryLabels);
 			}
 			for (int i = 0; i < statements.size(); i++) {
 				if (i == 0) {
@@ -90,8 +90,8 @@ public class FireboltStatement implements Statement {
 				}
 			}
 		} finally {
-			synchronized (statementsToExecuteIds) {
-				statementsToExecuteIds.removeAll(queryIds);
+			synchronized (statementsToExecuteLabels) {
+				statementsToExecuteLabels.removeAll(queryLabels);
 			}
 		}
 		return resultSet;
@@ -101,17 +101,17 @@ public class FireboltStatement implements Statement {
 			boolean isStandardSql) throws SQLException {
 		ResultSet resultSet = null;
 		if (!verifyNotCancelled || isStatementNotCancelled(statementInfoWrapper)) {
-			runningStatementId = statementInfoWrapper.getId();
+			runningStatementLabel = statementInfoWrapper.getLabel();
 			synchronized (this) {
 				this.validateStatementIsNotClosed();
 			}
 			InputStream inputStream = null;
 			try {
-				log.info("Executing the statement with id {} : {}", statementInfoWrapper.getId(),
+				log.info("Executing the statement with label {} : {}", statementInfoWrapper.getLabel(),
 						statementInfoWrapper.getSql());
 				if (statementInfoWrapper.getType() == StatementType.PARAM_SETTING) {
 					this.connection.addProperty(statementInfoWrapper.getParam());
-					log.debug("The property from the query {} was stored", runningStatementId);
+					log.debug("The property from the query {} was stored", runningStatementLabel);
 				} else {
 					Optional<ResultSet> currentRs = statementService.execute(statementInfoWrapper,
 							this.sessionProperties, this.queryTimeout, this.maxRows, isStandardSql, sessionProperties.isSystemEngine(), this);
@@ -121,15 +121,15 @@ public class FireboltStatement implements Statement {
 					} else {
 						currentUpdateCount = 0;
 					}
-					log.info("The query with the id {} was executed with success", runningStatementId);
+					log.info("The query with the label {} was executed with success", runningStatementLabel);
 				}
 			} catch (Exception ex) {
 				CloseableUtil.close(inputStream);
 				log.error(String.format("An error happened while executing the statement with the id %s",
-						runningStatementId), ex);
+						runningStatementLabel), ex);
 				throw ex;
 			} finally {
-				runningStatementId = null;
+				runningStatementLabel = null;
 			}
 			synchronized (this) {
 				if (this.firstUnclosedStatementResult == null) {
@@ -141,14 +141,14 @@ public class FireboltStatement implements Statement {
 				}
 			}
 		} else {
-			log.warn("Aborted query with id {}", statementInfoWrapper.getId());
+			log.warn("Aborted query with id {}", statementInfoWrapper.getLabel());
 		}
 		return Optional.ofNullable(resultSet);
 	}
 
 	private boolean isStatementNotCancelled(StatementInfoWrapper statementInfoWrapper) {
-		synchronized (statementsToExecuteIds) {
-			return statementsToExecuteIds.contains(statementInfoWrapper.getId());
+		synchronized (statementsToExecuteLabels) {
+			return statementsToExecuteLabels.contains(statementInfoWrapper.getLabel());
 		}
 	}
 
@@ -163,24 +163,20 @@ public class FireboltStatement implements Statement {
 
 	@Override
 	public void cancel() throws SQLException {
-		synchronized (statementsToExecuteIds) {
-			statementsToExecuteIds.clear();
+		synchronized (statementsToExecuteLabels) {
+			statementsToExecuteLabels.clear();
 		}
-		String statementId = runningStatementId;
-		if (statementId != null) {
-			log.info("Cancelling statement with id " + statementId);
-			try {
-				statementService.abortStatementHttpRequest(statementId);
-			} finally {
-				abortStatementRunningOnFirebolt(statementId);
-			}
+		String statementLabel = runningStatementLabel;
+		if (statementLabel != null) {
+			log.info("Cancelling statement with label " + statementLabel);
+			abortStatementRunningOnFirebolt(statementLabel);
 		}
 	}
 
-	private void abortStatementRunningOnFirebolt(String statementId) throws SQLException {
+	private void abortStatementRunningOnFirebolt(String statementLabel) throws SQLException {
 		try {
-			statementService.abortStatement(statementId, this.sessionProperties);
-			log.debug("Statement with id {} was aborted", statementId);
+			statementService.abortStatement(statementLabel, this.sessionProperties);
+			log.debug("Statement with label {} was aborted", statementLabel);
 		} catch (FireboltException e) {
 			throw e;
 		} catch (Exception e) {
@@ -375,7 +371,7 @@ public class FireboltStatement implements Statement {
 	 * @return true if the statement is currently running
 	 */
 	public boolean isStatementRunning() {
-		return this.runningStatementId != null && statementService.isStatementRunning(this.runningStatementId);
+		return this.runningStatementLabel != null && statementService.isStatementRunning(this.runningStatementLabel);
 	}
 
 	@Override

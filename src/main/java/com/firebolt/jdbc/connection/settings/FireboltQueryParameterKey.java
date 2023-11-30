@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 public enum FireboltQueryParameterKey {
 	DATABASE("database"),
 	QUERY_ID("query_id"),
+	QUERY_LABEL("query_label"),
 	COMPRESS("compress"),
 	DEFAULT_FORMAT("default_format"),
 	OUTPUT_FORMAT("output_format"),

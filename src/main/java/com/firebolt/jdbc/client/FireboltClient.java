@@ -43,7 +43,7 @@ public abstract class FireboltClient {
 	private final OkHttpClient httpClient;
 	protected final ObjectMapper objectMapper;
 	private final String headerUserAgentValue;
-	private final FireboltConnection connection;
+	protected final FireboltConnection connection;
 
 	protected FireboltClient(OkHttpClient httpClient, ObjectMapper objectMapper, FireboltConnection connection, String customDrivers, String customClients) {
 		this.httpClient = httpClient;
@@ -68,8 +68,7 @@ public abstract class FireboltClient {
 
 	private Request createGetRequest(String uri, String accessToken) {
 		Request.Builder requestBuilder = new Request.Builder().url(uri);
-		this.createHeaders(accessToken)
-				.forEach(header -> requestBuilder.addHeader(header.getLeft(), header.getRight()));
+		createHeaders(accessToken).forEach(header -> requestBuilder.addHeader(header.getLeft(), header.getRight()));
 		return requestBuilder.build();
 	}
 
@@ -104,33 +103,21 @@ public abstract class FireboltClient {
 		}
 	}
 
-	protected Request createPostRequest(String uri, RequestBody requestBody) {
-		return createPostRequest(uri, requestBody, null, null);
-	}
-
-	protected Request createPostRequest(String uri, RequestBody body, String accessToken, String id) {
-		Request.Builder requestBuilder = new Request.Builder().url(uri);
-		this.createHeaders(accessToken)
-				.forEach(header -> requestBuilder.addHeader(header.getLeft(), header.getRight()));
+	protected Request createPostRequest(String uri, String label, RequestBody body, String accessToken) {
+		Request.Builder requestBuilder = new Request.Builder().url(uri).tag(label);
+		createHeaders(accessToken).forEach(header -> requestBuilder.addHeader(header.getLeft(), header.getRight()));
 		if (body != null) {
 			requestBuilder.post(body);
-		}
-		if (id != null) {
-			requestBuilder.tag(id);
 		}
 		return requestBuilder.build();
 	}
 
-	protected Request createPostRequest(String uri, String accessToken, String id) {
-		return createPostRequest(uri, (RequestBody) null, accessToken, id);
-	}
-
-	protected Request createPostRequest(String uri, String json, String accessToken, String id) {
+	protected Request createPostRequest(String uri, String label, String json, String accessToken) {
 		RequestBody requestBody = null;
 		if (json != null) {
 			requestBody = RequestBody.create(json, MediaType.parse("application/json"));
 		}
-		return createPostRequest(uri, requestBody, accessToken, id);
+		return createPostRequest(uri, label, requestBody, accessToken);
 	}
 
 	protected void validateResponse(String host, Response response, Boolean isCompress) throws FireboltException {

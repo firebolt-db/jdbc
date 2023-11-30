@@ -1,19 +1,11 @@
 package com.firebolt.jdbc.service;
 
-import static com.firebolt.jdbc.exception.ExceptionType.INVALID_REQUEST;
-
-import java.io.InputStream;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Optional;
-
 import com.firebolt.jdbc.client.query.StatementClient;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
-
 import com.firebolt.jdbc.statement.StatementType;
 import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
 import com.firebolt.jdbc.util.CloseableUtil;
@@ -21,6 +13,11 @@ import com.firebolt.jdbc.util.InputStreamUtil;
 import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+
+import java.io.InputStream;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 @CustomLog
@@ -56,21 +53,12 @@ public class FireboltStatementService {
 		return Optional.empty();
 	}
 
-	public void abortStatement(@NonNull String statementId, @NonNull FireboltProperties properties)
-			throws FireboltException {
-		if (properties.isSystemEngine()) {
-			throw new FireboltException("Cannot cancel a statement using a system engine", INVALID_REQUEST);
-		} else {
-			statementClient.abortStatement(statementId, properties);
-		}
+	public void abortStatement(@NonNull String statementLabel, @NonNull FireboltProperties properties) throws FireboltException {
+		statementClient.abortStatement(statementLabel, properties);
 	}
 
-	public void abortStatementHttpRequest(@NonNull String statementId) throws FireboltException {
-		statementClient.abortRunningHttpRequest(statementId);
-	}
-
-	public boolean isStatementRunning(String statementId) {
-		return statementClient.isStatementRunning(statementId);
+	public boolean isStatementRunning(String statementLabel) {
+		return statementClient.isStatementRunning(statementLabel);
 	}
 
 	private FireboltResultSet createResultSet(InputStream inputStream, QueryRawStatement initialQuery, FireboltProperties properties, FireboltStatement statement, int maxRows)
