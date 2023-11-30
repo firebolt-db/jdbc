@@ -171,7 +171,7 @@ class TimestampTest extends IntegrationTest {
 				ResultSet resultSetWithTzInQuery = statementWithTzInQuery
 						.executeQuery("SELECT '1975-05-10 23:01:02.123 EST'::timestamptz;")) {
 			// Same as: SELECT '1975-05-10 23:01:02.123 Europe/Berlin'::timestamptz;
-			statement.execute("SET advanced_mode=1;SET time_zone = 'EST';");
+			statement.execute("SET time_zone = 'EST';");
 			ResultSet resultSetWithTzAsQueryParam = statement
 					.executeQuery("SELECT '1975-05-10 23:01:02.123'::timestamptz;");
 			resultSetWithTzInQuery.next();
@@ -203,7 +203,7 @@ class TimestampTest extends IntegrationTest {
 	@Test
 	void shouldReturnTimestampFromTimestampTzWithTzWithHoursAndMinutes() throws SQLException {
 		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
-			statement.execute("SET advanced_mode=1;SET time_zone = 'Asia/Calcutta';"); // The server will return a tz in
+			statement.execute("SET time_zone = 'Asia/Calcutta';"); // The server will return a tz in
 			// the format +05:30
 			ResultSet resultSet = statement.executeQuery("SELECT '1975-05-10 23:01:02.123'::timestamptz;");
 			resultSet.next();
@@ -215,7 +215,7 @@ class TimestampTest extends IntegrationTest {
 	@Test
 	void shouldReturnTimestampFromTimestampTzWithTzWithHoursAndMinutesAndSeconds() throws SQLException {
 		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
-			statement.execute("SET advanced_mode=1;SET time_zone = 'Asia/Calcutta';"); // The server will return a tz in
+			statement.execute("SET time_zone = 'Asia/Calcutta';"); // The server will return a tz in
 			// the format +05:30
 			ResultSet resultSet = statement.executeQuery("SELECT '1111-01-05 17:04:42.123456'::timestamptz");
 			resultSet.next();
@@ -232,7 +232,7 @@ class TimestampTest extends IntegrationTest {
 	@Test
 	void shouldReturnTimestampFromDate() throws SQLException {
 		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
-			statement.execute("SET advanced_mode=1; SET time_zone='Europe/Berlin';");
+			statement.execute("SET time_zone='Europe/Berlin';");
 			ResultSet resultSet = statement.executeQuery("SELECT '2022-05-10'::pgdate;");
 			resultSet.next();
 			ZonedDateTime expectedZdt = ZonedDateTime.of(2022, 5, 10, 0, 0, 0, 0, UTC_TZ.toZoneId());
