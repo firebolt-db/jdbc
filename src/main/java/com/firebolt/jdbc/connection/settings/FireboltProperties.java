@@ -2,13 +2,22 @@ package com.firebolt.jdbc.connection.settings;
 
 import lombok.Builder;
 import lombok.CustomLog;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.Value;
+import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -17,7 +26,9 @@ import java.util.stream.Stream;
 import static com.firebolt.jdbc.util.PropertyUtil.mergeProperties;
 import static java.lang.String.format;
 
-@Value
+@Getter
+@ToString
+@EqualsAndHashCode
 @Builder(toBuilder = true)
 @CustomLog
 public class FireboltProperties {
@@ -34,38 +45,38 @@ public class FireboltProperties {
 				return keys;
 			}).flatMap(List::stream).collect(Collectors.toSet());
 
-	int keepAliveTimeoutMillis;
-	int maxConnectionsTotal;
-	int maxRetries;
-	int bufferSize;
-	int clientBufferSize;
-	int socketTimeoutMillis;
-	int connectionTimeoutMillis;
-	Integer port;
-	String host;
+	final int keepAliveTimeoutMillis;
+	final int maxConnectionsTotal;
+	final int maxRetries;
+	final int bufferSize;
+	final int clientBufferSize;
+	final int socketTimeoutMillis;
+	final int connectionTimeoutMillis;
+	final Integer port;
+	final String host;
 	String database;
-	String path;
-	boolean ssl;
-	String sslCertificatePath;
-	String sslMode;
-	boolean compress;
-	String principal;
-	String secret;
+	final String path;
+	final boolean ssl;
+	final String sslCertificatePath;
+	final String sslMode;
+	final boolean compress;
+	final String principal;
+	final String secret;
 	String engine;
-	String account;
-	String accountId;
-	Integer tcpKeepIdle;
-	Integer tcpKeepCount;
-	Integer tcpKeepInterval;
-	boolean logResultSet;
+	final String account;
+	final String accountId;
+	final Integer tcpKeepIdle;
+	final Integer tcpKeepCount;
+	final Integer tcpKeepInterval;
+	final boolean logResultSet;
 	boolean systemEngine;
-	String environment;
-	String userDrivers;
-	String userClients;
-	String accessToken;
+	final String environment;
+	final String userDrivers;
+	final String userClients;
+	final String accessToken;
 
 	@Builder.Default
-	Map<String, String> additionalProperties = new HashMap<>();
+	final Map<String, String> additionalProperties = new HashMap<>();
 
 	public static FireboltProperties of(Properties... properties) {
 		Properties mergedProperties = mergeProperties(properties);
@@ -100,7 +111,7 @@ public class FireboltProperties {
 		Integer port = getPort(mergedProperties, ssl);
 		String accessToken =  getSetting(mergedProperties, FireboltSessionProperty.ACCESS_TOKEN);
 
-		Map<String, String> additionalProperties = getFireboltCustomProperties(mergedProperties);
+		Map<String, String> additionalProperties = new HashMap<>(getFireboltCustomProperties(mergedProperties)); // wrap with HashMap to make these properties updatable
 
 		return FireboltProperties.builder().ssl(ssl).sslCertificatePath(sslRootCertificate).sslMode(sslMode).path(path)
 				.port(port).database(database).compress(compress).principal(principal).secret(secret).host(host)
@@ -235,7 +246,12 @@ public class FireboltProperties {
 	}
 
 	public void addProperty(@NonNull String key, String value) {
-		additionalProperties.put(key, value);
+		// This a bad patch but there is nothing to do right now. We will refactor this class and make solution more generic
+		switch (key) {
+			case "database": database = value; break;
+			case "engine": engine = value; break;
+			default: additionalProperties.put(key, value);
+		}
 	}
 
 	public void addProperty(Pair<String, String> property) {

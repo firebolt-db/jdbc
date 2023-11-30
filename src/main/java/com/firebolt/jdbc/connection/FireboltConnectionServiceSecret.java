@@ -22,13 +22,14 @@ import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.SQLException;
-import java.util.Map;
+import java.util.HashMap;
 import java.util.Properties;
 
 import static com.firebolt.jdbc.exception.ExceptionType.RESOURCE_NOT_FOUND;
 import static java.lang.String.format;
 
 public class FireboltConnectionServiceSecret extends FireboltConnection {
+    private static final String PROTOCOL_VERSION = "2.0";
     private final FireboltGatewayUrlService fireboltGatewayUrlService;
     private final FireboltAccountIdService fireboltAccountIdService;
     private final FireboltEngineService fireboltEngineService;
@@ -40,7 +41,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
                                     FireboltStatementService fireboltStatementService,
                                     FireboltEngineInformationSchemaService fireboltEngineService,
                                     FireboltAccountIdService fireboltAccountIdService) throws SQLException {
-        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService);
+        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION);
         this.fireboltGatewayUrlService = fireboltGatewayUrlService;
         this.fireboltAccountIdService = fireboltAccountIdService;
         this.fireboltEngineService = fireboltEngineService;
@@ -49,7 +50,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
 
     @ExcludeFromJacocoGeneratedReport
     FireboltConnectionServiceSecret(@NonNull String url, Properties connectionSettings) throws SQLException {
-        super(url, connectionSettings);
+        super(url, connectionSettings, PROTOCOL_VERSION);
         OkHttpClient httpClient = getHttpClient(loginProperties);
         ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
         this.fireboltGatewayUrlService = new FireboltGatewayUrlService(createFireboltAccountRetriever(httpClient, objectMapper, "engineUrl", GatewayUrlResponse.class));
@@ -104,7 +105,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
         return this.loginProperties
                 .toBuilder()
                 .systemEngine(true)
-                .additionalProperties(Map.of())
+                .additionalProperties(new HashMap<>()) // additional properties must be writable
                 .compress(false)
                 .accountId(accountId)
                 .host(UrlUtil.createUrl(systemEngineEndpoint).getHost())

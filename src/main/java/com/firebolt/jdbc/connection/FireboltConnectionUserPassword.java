@@ -26,6 +26,7 @@ import static com.firebolt.jdbc.exception.ExceptionType.RESOURCE_NOT_FOUND;
 public class FireboltConnectionUserPassword extends FireboltConnection {
     // Visible for testing
     public static final String SYSTEM_ENGINE_NAME = "system";
+    private static final String PROTOCOL_VERSION = null; // It could be 1.0, but we send null for backwards compatibility, so not version header is sent
     private final FireboltEngineService fireboltEngineService;
 
     FireboltConnectionUserPassword(@NonNull String url,
@@ -33,14 +34,14 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
                                    FireboltAuthenticationService fireboltAuthenticationService,
                                    FireboltStatementService fireboltStatementService,
                                    FireboltEngineInformationSchemaService fireboltEngineService) throws SQLException {
-        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService);
+        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION);
         this.fireboltEngineService = fireboltEngineService;
         connect();
     }
 
     @ExcludeFromJacocoGeneratedReport
     FireboltConnectionUserPassword(@NonNull String url, Properties connectionSettings) throws SQLException {
-        super(url, connectionSettings);
+        super(url, connectionSettings, PROTOCOL_VERSION);
         OkHttpClient httpClient = getHttpClient(loginProperties);
         ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
         this.fireboltEngineService = new FireboltEngineApiService(new FireboltAccountClient(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));

@@ -1,10 +1,15 @@
 package com.firebolt.jdbc.client.query;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.service.FireboltAuthenticationService;
+import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementUtil;
 import lombok.NonNull;
@@ -30,17 +35,24 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Properties;
 
 import static com.firebolt.jdbc.client.UserAgentFormatter.userAgent;
+import static com.firebolt.jdbc.client.query.StatementClientImpl.HEADER_UPDATE_PARAMETER;
 import static java.lang.String.format;
+import static java.util.Optional.ofNullable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -197,8 +209,8 @@ class StatementClientImplTest {
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
 		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 5, true);
 		verify(okHttpClient, times(2)).newCall(requestArgumentCaptor.capture());
-		assertEquals("Bearer oldToken" ,requestArgumentCaptor.getAllValues().get(0).headers().get("Authorization"));
-		assertEquals("Bearer newToken" ,requestArgumentCaptor.getAllValues().get(1).headers().get("Authorization"));
+		assertEquals("Bearer oldToken", requestArgumentCaptor.getAllValues().get(0).headers().get("Authorization")); // legit:ignore-secrets
+		assertEquals("Bearer newToken", requestArgumentCaptor.getAllValues().get(1).headers().get("Authorization")); // legit:ignore-secrets
 		verify(connection).removeExpiredTokens();
 	}
 
@@ -216,6 +228,66 @@ class StatementClientImplTest {
 		assertEquals(ExceptionType.UNAUTHORIZED, ex.getType());
 		verify(okHttpClient, times(2)).newCall(any());
 		verify(connection, times(2)).removeExpiredTokens();
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+			"db1,db1,db1,db1",
+			"db1,db2,db2,db2",
+			"db1,db2,,db1", // no header returned
+			"db1,db2,db3,db3" // use db2 but switched to db3
+	})
+	void use(String oldDb, String newDb, String responseHeaderDb, String expectedDb) throws IOException, SQLException {
+		Map<String, List<String>> responseHeaders = responseHeaderDb == null ? null : Map.of(HEADER_UPDATE_PARAMETER, List.of("database=" + responseHeaderDb));
+		try (FireboltConnection connection = use(oldDb,  "use " + newDb, responseHeaders)) {
+			assertEquals(expectedDb, connection.getSessionProperties().getDatabase());
+		}
+	}
+
+	// this function can be used for "use engine" when it is supported
+	private FireboltConnection use(String oldDb, String useCommand, Map<String, List<String>> responseHeaders) throws IOException, SQLException {
+		Properties props = new Properties();
+		props.setProperty("database", oldDb);
+		props.setProperty("compress", "true");
+		props.setProperty("host", "firebolt1");
+		props.setProperty("port", "555");
+		props.setProperty(FireboltSessionProperty.CONNECTION_TIMEOUT_MILLIS.getKey(), "0"); // simplifies mocking
+		FireboltProperties fireboltProperties = FireboltProperties.of(props);
+		Call okCall = getMockedCallWithResponse(200, "", responseHeaders);
+		when(okHttpClient.newCall(any())).thenReturn(okCall);
+		FireboltAuthenticationService fireboltAuthenticationService = mock(FireboltAuthenticationService.class);
+		FireboltConnectionTokens tokens = mock(FireboltConnectionTokens.class);
+		when(fireboltAuthenticationService.getConnectionTokens(eq(format("https://%s:%d", fireboltProperties.getHost(), fireboltProperties.getPort())), any())).thenReturn(tokens);
+		FireboltStatementService fireboltStatementService = mock(FireboltStatementService.class);
+		lenient().when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any())).thenReturn(Optional.of(mock(ResultSet.class))); //SELECT 1 after setting property
+		FireboltConnection connection = new FireboltConnection("url", props, fireboltAuthenticationService, fireboltStatementService, "0") {
+			{
+				try {
+					connect();
+				} catch (SQLException e) {
+					throw new RuntimeException(e);
+				}
+			}
+			@Override
+			protected FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper) {
+				return null;
+			}
+
+			@Override
+			protected void authenticate() {
+				sessionProperties = loginProperties;
+			}
+
+			@Override
+			protected void assertDatabaseExisting(String database) {
+
+			}
+		};
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(ObjectMapper.class), connection,
+				"ConnA:1.0.9", "ConnB:2.0.9");
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers(useCommand).get(0);
+		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 5, true);
+		return connection;
 	}
 
 	@ParameterizedTest
@@ -261,9 +333,14 @@ class StatementClientImplTest {
 	}
 
 	private Call getMockedCallWithResponse(int statusCode, String content) throws IOException {
+		return getMockedCallWithResponse(statusCode, content, Map.of());
+	}
+
+	private Call getMockedCallWithResponse(int statusCode, String content, Map<String, List<String>> responseHeaders) throws IOException {
 		Call call = mock(Call.class);
 		Response response = mock(Response.class);
 		lenient().when(response.code()).thenReturn(statusCode);
+		ofNullable(responseHeaders).ifPresent(headers -> headers.forEach((key, value) -> lenient().when(response.headers(key)).thenReturn(value)));
 		ResponseBody body = mock(ResponseBody.class);
 		lenient().when(response.body()).thenReturn(body);
 		lenient().when(body.bytes()).thenReturn(content.getBytes());

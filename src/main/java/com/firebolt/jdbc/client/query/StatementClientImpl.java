@@ -57,12 +57,13 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			Pattern.compile("HTTP status code: 401"), "Please associate user with your service account.",
 			Pattern.compile("Engine .+? does not exist or not authorized"), "Please grant at least one role to user associated your service account."
 	);
+
 	//QUERY_LABEL - change the code when query_label is supported on sever side
 	@SuppressWarnings("java:S125")
 	//private static final String QUERY_ID_FETCHER = "select query_id from information_schema.query_history where status = 'STARTED_EXECUTION' and  query_label = ?";
 	private static final String QUERY_ID_FETCHER = "select query_id from information_schema.query_history where status = 'STARTED_EXECUTION' and  query_text like ?";
-
 	private final BiPredicate<Call, String> isCallWithLabel = (call, label) -> call.request().tag() instanceof String && Objects.equals(call.request().tag(), label);
+	static final String HEADER_UPDATE_PARAMETER = "Firebolt-Update-Parameters";
 
 	public StatementClientImpl(OkHttpClient httpClient, ObjectMapper objectMapper, FireboltConnection connection, String customDrivers, String customClients) {
 		super(httpClient, objectMapper, connection, customDrivers, customClients);
@@ -282,6 +283,19 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 	private Map<String, String> getCancelParameters(String statementId) {
 		return Map.of(FireboltQueryParameterKey.QUERY_ID.getKey(), statementId);
+	}
+
+
+	@Override
+	protected void validateResponse(String host, Response response, Boolean isCompress) throws FireboltException {
+		super.validateResponse(host, response, isCompress);
+		FireboltConnection connection = getConnection();
+		if (isCallSuccessful(response.code())) {
+			for (String header : response.headers(HEADER_UPDATE_PARAMETER)) {
+				String[] keyValue = header.split("=");
+				connection.addProperty(Pair.of(keyValue[0].trim(), keyValue[1].trim()));
+			}
+		}
 	}
 
 	@Override
