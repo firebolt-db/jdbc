@@ -187,8 +187,7 @@ class StatementTest extends IntegrationTest {
 	void shouldGetBooleans() throws SQLException {
 		try (Connection connection = createConnection()) {
 			try (Statement statement = connection.createStatement()) {
-				statement.execute(
-						"SET advanced_mode=1; SET output_format_firebolt_type_names=1; SET bool_output_format=postgres;");
+				statement.execute("SET SET bool_output_format=postgres;");
 				ResultSet resultSet = statement.executeQuery("SELECT true, false, null::boolean;");
 				resultSet.next();
 				assertEquals(Boolean.TRUE, resultSet.getObject(1));
