@@ -9,6 +9,9 @@ import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,8 +47,8 @@ class FireboltAccountRetrieverTest {
 
     @BeforeEach
     void setUp() {
-        fireboltGatewayUrlClient = new FireboltAccountRetriever<>(httpClient, objectMapper, fireboltConnection, null, null, "http://test-firebolt.io", "engineUrl", GatewayUrlResponse.class);
-        fireboltAccountIdResolver = new FireboltAccountRetriever<>(httpClient, objectMapper, fireboltConnection, null, null, "http://test-firebolt.io", "resolve", FireboltAccount.class);
+        fireboltGatewayUrlClient = new FireboltAccountRetriever<>(httpClient, objectMapper, fireboltConnection, null, null, "test-firebolt.io", "engineUrl", GatewayUrlResponse.class);
+        fireboltAccountIdResolver = new FireboltAccountRetriever<>(httpClient, objectMapper, fireboltConnection, null, null, "test-firebolt.io", "resolve", FireboltAccount.class);
     }
 
 	@Test
@@ -75,6 +79,13 @@ class FireboltAccountRetrieverTest {
         assertEquals("Failed to get engineUrl url for account acc", assertThrows(FireboltException.class, () -> fireboltGatewayUrlClient.retrieve("token", "acc")).getMessage());
     }
 
+    @Test
+    void accountAccessNotFound() throws IOException {
+        injectMockedResponse(httpClient, HTTP_NOT_FOUND, null);
+        MatcherAssert.assertThat(Assert.assertThrows(FireboltException.class, () -> fireboltAccountIdResolver.retrieve("access_token", "one")).getMessage(), Matchers.startsWith("Account 'one' does not exist"));
+        MatcherAssert.assertThat(Assert.assertThrows(FireboltException.class, () -> fireboltGatewayUrlClient.retrieve("access_token", "two")).getMessage(), Matchers.startsWith("Account 'two' does not exist"));
+   }
+
     private void injectMockedResponse(OkHttpClient httpClient, int code, Object payload) throws IOException {
         Response response = mock(Response.class);
         Call call = mock(Call.class);
@@ -84,6 +95,8 @@ class FireboltAccountRetrieverTest {
         when(response.body()).thenReturn(body);
         when(response.code()).thenReturn(code);
         String gatewayResponse = new ObjectMapper().writeValueAsString(payload);
-        when(body.string()).thenReturn(gatewayResponse);
+        if (code == HTTP_OK) {
+            when(body.string()).thenReturn(gatewayResponse);
+        }
     }
 }
