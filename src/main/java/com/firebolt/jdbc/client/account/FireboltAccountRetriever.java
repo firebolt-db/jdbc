@@ -43,7 +43,7 @@ public class FireboltAccountRetriever<T> extends FireboltClient {
             String account = fragments.length > 1 ? fragments[fragments.length - 2] : "N/A";
             throw new FireboltException(
                     format("Account '%s' does not exist in this organization or is not authorized. " +
-                           "Please verify the account name, organization, check that your service account has the correct RBAC permission and is linked to a user.", account),
+                           "Please verify the account name and make sure your service account has the correct RBAC permissions and is linked to a user.", account),
                     statusCode, errorMessageFromServer);
         }
     }
