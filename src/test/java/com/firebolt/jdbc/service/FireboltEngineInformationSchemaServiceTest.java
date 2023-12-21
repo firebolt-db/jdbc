@@ -14,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -51,7 +52,7 @@ class FireboltEngineInformationSchemaServiceTest {
 	@NullSource
 	void shouldGetEngineWhenEngineNameIsProvided(String db) throws SQLException {
 		PreparedStatement statement = mock(PreparedStatement.class);
-		ResultSet resultSet = mockedResultSet(Map.of("status", "running", "url", "https://url", "attached_to", "db", "engine_name", "some-engine"));
+		ResultSet resultSet = mockedResultSet(Map.of("status", "running", "url", "https://url", "attached_to_database_name", "db", "engine_name", "some-engine"));
 		when(fireboltConnection.prepareStatement(anyString())).thenReturn(statement);
 		when(statement.executeQuery()).thenReturn(resultSet);
 		assertEquals(new Engine("https://url", "running", "some-engine", "db", null, Collections.emptyList()), fireboltEngineService.getEngine(createFireboltProperties("some-engine", "db")));
@@ -60,7 +61,7 @@ class FireboltEngineInformationSchemaServiceTest {
 	@ParameterizedTest
 	@CsvSource(value = {
 			"engine1;db1;http://url1;running;;The engine with the name engine1 is not attached to any database",
-			"engine1;db1;http://url1;running;db2;The engine with the name engine1 is not attached to database db1",
+			"engine1;db1;http://url1;running;db2;The engine with the name engine1 is not attached to any database",
 			"engine1;db1;http://url1;starting;;The engine with the name engine1 is not running. Status: starting",
 			"engine2;;;;;The engine with the name engine2 could not be found",
 	}, delimiter = ';')
@@ -82,8 +83,8 @@ class FireboltEngineInformationSchemaServiceTest {
 	}
 
 	@ParameterizedTest
-	@CsvSource(value = {"mydb;'';false", "other_db;'database_name,other_db';true"}, delimiter = ';')
-	void doesDatabaseExist(String db, String row, boolean expected) throws SQLException {
+	@CsvSource(value = {"other_db;'database_name,other_db';true"}, delimiter = ';')
+	void doesDatabaseExistFoundInIs_Databases(String db, String row, boolean expected) throws SQLException {
 		PreparedStatement statement = mock(PreparedStatement.class);
 		Map<String, String> rowData = row == null || row.isEmpty() ? Map.of() : Map.of(row.split(",")[0], row.split(",")[1]);
 		ResultSet resultSet = mockedResultSet(rowData);
@@ -91,6 +92,22 @@ class FireboltEngineInformationSchemaServiceTest {
 		when(statement.executeQuery()).thenReturn(resultSet);
 		assertEquals(expected, fireboltEngineService.doesDatabaseExist(db));
 		Mockito.verify(statement, Mockito.times(1)).setString(1, db);
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {"mydb;'';false","other_db;'catalog_name,other_db';true"}, delimiter = ';')
+	void databaseNotInIs_Databases(String db, String row, boolean expected) throws SQLException {
+		PreparedStatement statement = mock(PreparedStatement.class);
+		Answer<ResultSet> emptyAnswer = invocation -> {
+			return mockedResultSet(Map.of());
+		};
+		Map<String, String> rowData = row == null || row.isEmpty() ? Map.of() : Map.of(row.split(",")[0], row.split(",")[1]);
+		ResultSet withData = mockedResultSet(rowData);
+		when(fireboltConnection.prepareStatement("SELECT database_name FROM information_schema.databases WHERE database_name=?")).thenReturn(statement);
+		when(fireboltConnection.prepareStatement("SELECT catalog_name FROM information_schema.catalogs WHERE catalog_name=?")).thenReturn(statement);
+		when(statement.executeQuery()).thenAnswer(emptyAnswer).thenReturn(withData);
+		assertEquals(expected, fireboltEngineService.doesDatabaseExist(db));
+		Mockito.verify(statement, Mockito.times(2)).setString(1, db);
 	}
 
 	private ResultSet mockedResultSet(Map<String, String> values) throws SQLException {

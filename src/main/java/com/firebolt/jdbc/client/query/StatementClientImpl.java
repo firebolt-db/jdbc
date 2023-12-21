@@ -232,7 +232,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	private URI buildQueryUri(FireboltProperties fireboltProperties, Map<String, String> parameters) {
-		return buildURI(fireboltProperties, parameters, Collections.emptyList());
+		return buildURI(fireboltProperties, parameters, Collections.singletonList("query"));
 	}
 
 	private URI buildCancelUri(FireboltProperties fireboltProperties, String id) {
@@ -245,8 +245,8 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		HttpUrl.Builder httpUrlBuilder = new HttpUrl.Builder()
 				.scheme(fireboltProperties.isSsl() ? "https" : "http")
 				.host(fireboltProperties.getHost())
-				.addPathSegment("query")
 				.port(fireboltProperties.getPort());
+
 		parameters.forEach(httpUrlBuilder::addQueryParameter);
 
 		pathSegments.forEach(httpUrlBuilder::addPathSegment);

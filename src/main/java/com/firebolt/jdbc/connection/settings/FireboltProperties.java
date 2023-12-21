@@ -93,6 +93,7 @@ public class FireboltProperties {
 		boolean isSystemEngine = isSystemEngine(engine);
 		boolean compress = ((Boolean) getSetting(mergedProperties, FireboltSessionProperty.COMPRESS))
 				&& !isSystemEngine;
+		List<ImmutablePair<String, String>> queryParams = new ArrayList<>(); 
 		String account = getSetting(mergedProperties, FireboltSessionProperty.ACCOUNT);
 		int keepAliveMillis = getSetting(mergedProperties, FireboltSessionProperty.KEEP_ALIVE_TIMEOUT_MILLIS);
 		int maxTotal = getSetting(mergedProperties, FireboltSessionProperty.MAX_CONNECTIONS_TOTAL);
@@ -115,8 +116,8 @@ public class FireboltProperties {
 
 		Map<String, String> additionalProperties = new HashMap<>(getFireboltCustomProperties(mergedProperties)); // wrap with HashMap to make these properties updatable
 
-		return FireboltProperties.builder().ssl(ssl).sslCertificatePath(sslRootCertificate).sslMode(sslMode).path(path)
-				.port(port).database(database).compress(compress).principal(principal).secret(secret).host(host)
+		return FireboltProperties.builder().ssl(ssl).sslCertificatePath(sslRootCertificate).sslMode(sslMode).queryParams(queryParams)
+				.path(path).port(port).database(database).compress(compress).principal(principal).secret(secret).host(host)
 				.additionalProperties(additionalProperties).account(account).engine(engine)
 				.keepAliveTimeoutMillis(keepAliveMillis).maxConnectionsTotal(maxTotal).maxRetries(maxRetries)
 				.bufferSize(bufferSize).socketTimeoutMillis(socketTimeout).connectionTimeoutMillis(connectionTimeout)

@@ -6,6 +6,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -22,7 +24,7 @@ class FireboltPropertiesTest {
 	void shouldHaveDefaultPropertiesWhenOnlyTheRequiredFieldsAreSpecified() {
 		FireboltProperties expectedDefaultProperties = FireboltProperties.builder().engine("engine").database("db").bufferSize(65536)
 				.sslCertificatePath("").sslMode("strict").path("").port(443) // 443 by default as SSL is enabled by
-				.systemEngine(false).compress(true)													// default
+				.systemEngine(false).compress(true).queryParams(Collections.emptyList())    // default
 				.principal(null).secret(null).host("host").ssl(true).additionalProperties(new HashMap<>())
 				.keepAliveTimeoutMillis(300000).maxConnectionsTotal(300).maxRetries(3)
 				.socketTimeoutMillis(0).connectionTimeoutMillis(60000).tcpKeepInterval(30).environment("app").tcpKeepIdle(60)
@@ -56,7 +58,7 @@ class FireboltPropertiesTest {
 		FireboltProperties expectedDefaultProperties = FireboltProperties.builder().engine("my_test").bufferSize(51)
 				.sslCertificatePath("root_cert").sslMode("none").path("example").database("myDb").compress(true)
 				.port(443).principal(null).secret(null).host("myDummyHost").ssl(true).systemEngine(false)
-				.additionalProperties(customProperties).keepAliveTimeoutMillis(300000)
+				.additionalProperties(customProperties).keepAliveTimeoutMillis(300000).queryParams(Collections.emptyList())
 				.maxConnectionsTotal(300).maxRetries(3).socketTimeoutMillis(20).connectionTimeoutMillis(60000)
 				.tcpKeepInterval(30).tcpKeepIdle(60).tcpKeepCount(10).environment("app").build();
 		assertEquals(expectedDefaultProperties, FireboltProperties.of(properties));

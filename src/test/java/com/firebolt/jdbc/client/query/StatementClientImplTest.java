@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -75,7 +76,7 @@ class StatementClientImplTest {
 		String requestId = result.getKey();
 		String url = result.getValue();
 		assertEquals(
-				"http://firebolt1:555/?database=db1&output_format=TabSeparatedWithNamesAndTypes&compress=1&max_execution_time=15",
+				"http://firebolt1:555/query?database=db1&output_format=TabSeparatedWithNamesAndTypes&compress=1&max_execution_time=15",
 				//format("http://firebolt1:555/?database=db1&output_format=TabSeparatedWithNamesAndTypes&compress=1&query_label=%s&max_execution_time=15", requestId),
 				url);
 	}
@@ -84,13 +85,13 @@ class StatementClientImplTest {
 	void shouldPostSqlQueryForSystemEngine() throws FireboltException, IOException {
 		String url = shouldPostSqlQueryForSystemEngine(true).getValue();
 		assertEquals(
-				"http://firebolt1:555/?database=db1&account_id=12345&output_format=TabSeparatedWithNamesAndTypes",
+				"http://firebolt1:555/query?database=db1&account_id=12345&output_format=TabSeparatedWithNamesAndTypes",
 				url);
 	}
 
 	private Entry<String, String> shouldPostSqlQueryForSystemEngine(boolean systemEngine) throws FireboltException, IOException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
-				.host("firebolt1").port(555).accountId("12345").systemEngine(systemEngine).build();
+				.host("firebolt1").queryParams(Collections.emptyList()).port(555).accountId("12345").systemEngine(systemEngine).build();
 		when(connection.getAccessToken())
 				.thenReturn(Optional.of("token"));
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(ObjectMapper.class), connection,
@@ -199,7 +200,7 @@ class StatementClientImplTest {
 	@Test
 	void shouldRetryOnUnauthorized() throws IOException, SQLException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
-				.host("firebolt1").port(555).build();
+				.host("firebolt1").queryParams(Collections.emptyList()).port(555).build();
 		when(connection.getAccessToken()).thenReturn(Optional.of("oldToken")).thenReturn(Optional.of("newToken"));
 		Call okCall = getMockedCallWithResponse(200, "");
 		Call unauthorizedCall = getMockedCallWithResponse(401, "");
@@ -217,7 +218,7 @@ class StatementClientImplTest {
 	@Test
 	void shouldNotRetryNoMoreThanOnceOnUnauthorized() throws IOException, FireboltException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
-				.host("firebolt1").port(555).build();
+				.host("firebolt1").queryParams(Collections.emptyList()).port(555).build();
 		Call okCall = getMockedCallWithResponse(200, "");
 		Call unauthorizedCall = getMockedCallWithResponse(401, "");
 		when(okHttpClient.newCall(any())).thenReturn(unauthorizedCall).thenReturn(unauthorizedCall).thenReturn(okCall);
@@ -299,8 +300,14 @@ class StatementClientImplTest {
 			delimiter = ';')
 	void shouldThrowUnauthorizedExceptionWhenNoAssociatedUser(String serverErrorMessage, String exceptionMessage) throws IOException, FireboltException {
 		String host = "firebolt1";
-		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
-				.host(host).port(555).build();
+		FireboltProperties fireboltProperties = FireboltProperties
+			.builder()
+			.queryParams(Collections.emptyList())
+			.database("db1")
+			.compress(true)
+			.host(host)
+			.port(555)
+			.build();
 		when(connection.getAccessToken()).thenReturn(Optional.of("token"));
 		Call unauthorizedCall = getMockedCallWithResponse(500, serverErrorMessage);
 
@@ -320,8 +327,14 @@ class StatementClientImplTest {
 			"java.lang.IllegalArgumentException, ERROR",
 	})
 	<T extends Exception> void shouldThrowIOException(Class<T> exceptionClass, ExceptionType exceptionType) throws IOException {
-		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true)
-				.host("firebolt1").port(555).build();
+		FireboltProperties fireboltProperties = FireboltProperties
+			.builder()
+			.database("db1")
+			.compress(true)
+			.host("firebolt1")
+			.queryParams(Collections.emptyList())
+			.port(555)
+			.build();
 		Call call = mock(Call.class);
 		when(call.execute()).thenThrow(exceptionClass);
 		when(okHttpClient.newCall(any())).thenReturn(call);
