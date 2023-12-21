@@ -57,17 +57,15 @@ public class FireboltEngineInformationSchemaService implements FireboltEngineSer
 
     @Override
     public boolean doesDatabaseExist(String database) throws SQLException {
-        if (fireboltConnection.getProtocolVersion() != "2.0") {
-            try (PreparedStatement ps = fireboltConnection.prepareStatement(DATABASE_QUERY_DATABASE_TABLE)) {
-                ps.setString(1, database);
-                try (ResultSet rs = ps.executeQuery()) {
-                    boolean hasNext = rs.next();
-                    if (hasNext) {
-                        return hasNext;
-                    }
+        try (PreparedStatement ps = fireboltConnection.prepareStatement(DATABASE_QUERY_DATABASE_TABLE)) {
+            ps.setString(1, database);
+            try (ResultSet rs = ps.executeQuery()) {
+                boolean hasNext = rs.next();
+                if (hasNext) {
+                    return hasNext;
                 }
-            } 
-        }
+            }
+        } 
 
         try (PreparedStatement ps = fireboltConnection.prepareStatement(DATABASE_QUERY_CATALOG_TABLE)) {
             ps.setString(1, database);
@@ -110,9 +108,6 @@ public class FireboltEngineInformationSchemaService implements FireboltEngineSer
             if (!isEngineRunning(status)) {
                 throw new FireboltException(format("The engine with the name %s is not running. Status: %s", engine, status));
             }
-            if (attachedDatabase == null) {
-                throw new FireboltException(format("The engine with the name %s is not attached to any database", engine));
-            }
 
             // If the engine url has query parameters, we want to keep them and send on requests. 
             String hostUrl = rawUrl;
@@ -129,6 +124,10 @@ public class FireboltEngineInformationSchemaService implements FireboltEngineSer
                     String[] pair = param.split("=");
                     queryParams.add(new ImmutablePair<String, String>(pair[0], pair[1]));
                 }
+            }
+
+            if (attachedDatabase == null) {
+                throw new FireboltException(format("The engine with the name %s is not attached to any database", engine));
             }
 
             return new Engine(hostUrl, status, engineName, attachedDatabase, null, queryParams);

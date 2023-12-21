@@ -4,6 +4,8 @@ import com.firebolt.jdbc.connection.Engine;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -21,6 +23,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -52,10 +55,18 @@ class FireboltEngineInformationSchemaServiceTest {
 	@NullSource
 	void shouldGetEngineWhenEngineNameIsProvided(String db) throws SQLException {
 		PreparedStatement statement = mock(PreparedStatement.class);
-		ResultSet resultSet = mockedResultSet(Map.of("status", "running", "url", "https://url", "attached_to_database_name", "db", "engine_name", "some-engine"));
+		ResultSet resultSet = mockedResultSet(Map.of("status", "running", "url", "https://url?param1=X&param2=Y", "attached_to_database_name", "db", "engine_name", "some-engine"));
 		when(fireboltConnection.prepareStatement(anyString())).thenReturn(statement);
 		when(statement.executeQuery()).thenReturn(resultSet);
-		assertEquals(new Engine("https://url", "running", "some-engine", "db", null, Collections.emptyList()), fireboltEngineService.getEngine(createFireboltProperties("some-engine", "db")));
+		assertEquals(
+			new Engine(
+				"https://url",
+				"running",
+				"some-engine",
+				"db",
+				null,
+				List.of(ImmutablePair.of("param1", "X"), ImmutablePair.of("param2", "Y"))),
+			fireboltEngineService.getEngine(createFireboltProperties("some-engine", "db")));
 	}
 
 	@ParameterizedTest
@@ -63,6 +74,7 @@ class FireboltEngineInformationSchemaServiceTest {
 			"engine1;db1;http://url1;running;;The engine with the name engine1 is not attached to any database",
 			"engine1;db1;http://url1;running;db2;The engine with the name engine1 is not attached to any database",
 			"engine1;db1;http://url1;starting;;The engine with the name engine1 is not running. Status: starting",
+			"engine1;db1;bad url with a space;running;some_db;The engine with the name engine1 has an invalid url",
 			"engine2;;;;;The engine with the name engine2 could not be found",
 	}, delimiter = ';')
 	void shouldThrowExceptionWhenSomethingIsWrong(String engineName, String db, String endpoint, String status, String attachedDb, String errorMessage) throws SQLException {
