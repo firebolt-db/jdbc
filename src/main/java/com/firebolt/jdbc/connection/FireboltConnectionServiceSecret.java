@@ -89,6 +89,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
                 .engine(engine.getName()) // engine name is updated here because this code is running either if engine has been supplied in initial parameters or when default engine for current DB was discovered
                 .systemEngine(false) // this is definitely not system engine
                 .database(engine.getDatabase()) // DB is updated because this code is running either when DB was supplied in initial parameters or not
+                .queryParams(engine.getQueryParams()) // When we look up the URL, we may get additional query params to set.
                 .build();
     }
 

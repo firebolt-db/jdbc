@@ -23,6 +23,8 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.internal.http2.StreamResetException;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
@@ -31,6 +33,7 @@ import java.net.URI;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -242,6 +245,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		HttpUrl.Builder httpUrlBuilder = new HttpUrl.Builder()
 				.scheme(fireboltProperties.isSsl() ? "https" : "http")
 				.host(fireboltProperties.getHost())
+				.addPathSegment("query")
 				.port(fireboltProperties.getPort());
 		parameters.forEach(httpUrlBuilder::addQueryParameter);
 
@@ -259,6 +263,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 		getResponseFormatParameter(statementInfoWrapper.getType() == StatementType.QUERY, isLocalDb)
 				.ifPresent(format -> params.put(format.getLeft(), format.getRight()));
+
 		if (systemEngine) {
 			if (fireboltProperties.getAccountId() != null) {
 				params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId());
@@ -266,9 +271,12 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		} else {
 			//params.put(FireboltQueryParameterKey.QUERY_LABEL.getKey(), statementInfoWrapper.getLabel()); //QUERY_LABEL - uncomment
 			params.put(FireboltQueryParameterKey.COMPRESS.getKey(), fireboltProperties.isCompress() ? "1" : "0");
-
 			if (queryTimeout > 0) {
 				params.put("max_execution_time", String.valueOf(queryTimeout));
+			}
+
+			for (ImmutablePair<String, String> p : fireboltProperties.getQueryParams()) {
+				params.put(p.left, p.right);
 			}
 		}
 		params.put(FireboltQueryParameterKey.DATABASE.getKey(), fireboltProperties.getDatabase());

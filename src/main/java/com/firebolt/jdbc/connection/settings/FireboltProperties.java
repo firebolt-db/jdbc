@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 
@@ -63,6 +64,7 @@ public class FireboltProperties {
 	final String principal;
 	final String secret;
 	String engine;
+	List<ImmutablePair<String, String>> queryParams;
 	final String account;
 	final String accountId;
 	final Integer tcpKeepIdle;

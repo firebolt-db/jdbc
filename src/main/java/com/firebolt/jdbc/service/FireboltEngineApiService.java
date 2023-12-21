@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 
@@ -78,7 +79,14 @@ public class FireboltEngineApiService implements FireboltEngineService {
 
         return ofNullable(fireboltEngineResponse).map(FireboltEngineResponse::getEngine)
                 .filter(e -> StringUtils.isNotEmpty(e.getEndpoint()))
-                .map(e -> new Engine(e.getEndpoint(), e.getCurrentStatus(), engineName, null, engineID))
+                .map(e -> 
+                    new Engine(
+                        e.getEndpoint(),
+                        e.getCurrentStatus(),
+                        engineName, 
+                        null,
+                        engineID,
+                        Collections.emptyList()))
                 .orElseThrow(() -> new FireboltException(
                         String.format(ERROR_NO_ENGINE_WITH_NAME, connectionUrl, engineName)));
     }
@@ -89,7 +97,14 @@ public class FireboltEngineApiService implements FireboltEngineService {
                 .getDefaultEngineByDatabaseName(connectionUrl, accountId, database, accessToken);
 
         return ofNullable(defaultEngine).map(FireboltDefaultDatabaseEngineResponse::getEngineUrl)
-                .map(url -> new Engine(url, "running", null, database, null)).orElseThrow(
+                .map(url -> new Engine(
+                    url,
+                    "running",
+                    null,
+                    database,
+                    null,
+                    Collections.emptyList()))
+                .orElseThrow(
                         () -> new FireboltException(String.format(ERROR_NO_ENGINE_ATTACHED, connectionUrl, database)));
     }
 
