@@ -39,7 +39,7 @@ public class FireboltAccountRetriever<T> extends FireboltClient {
             String[] fragments = host.split("/");
             // Second to last because th last element presents action and the second to last is the account name
             // The validation of the array length is done "just in case" to be safe for future, probably wrong, modifications
-            // because the last think we want is to fail on ArrayIndexOutOfBounds when creating error message.
+            // because the last thing we want is to fail on ArrayIndexOutOfBounds when creating error message.
             String account = fragments.length > 1 ? fragments[fragments.length - 2] : "N/A";
             throw new FireboltException(
                     format("Account '%s' does not exist in this organization or is not authorized. " +
