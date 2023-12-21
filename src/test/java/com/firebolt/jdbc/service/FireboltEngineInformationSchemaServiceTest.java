@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -53,7 +54,7 @@ class FireboltEngineInformationSchemaServiceTest {
 		ResultSet resultSet = mockedResultSet(Map.of("status", "running", "url", "https://url", "attached_to", "db", "engine_name", "some-engine"));
 		when(fireboltConnection.prepareStatement(anyString())).thenReturn(statement);
 		when(statement.executeQuery()).thenReturn(resultSet);
-		assertEquals(new Engine("https://url", "running", "some-engine", "db", null), fireboltEngineService.getEngine(createFireboltProperties("some-engine", "db")));
+		assertEquals(new Engine("https://url", "running", "some-engine", "db", null, Collections.emptyList()), fireboltEngineService.getEngine(createFireboltProperties("some-engine", "db")));
 	}
 
 	@ParameterizedTest
