@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public enum FireboltQueryParameterKey {
 	DATABASE("database"),
+	ENGINE("engine"),
 	QUERY_ID("query_id"),
 	QUERY_LABEL("query_label"),
 	COMPRESS("compress"),

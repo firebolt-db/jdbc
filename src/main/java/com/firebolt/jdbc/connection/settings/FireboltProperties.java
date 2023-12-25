@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static com.firebolt.jdbc.util.PropertyUtil.mergeProperties;
 import static java.lang.String.format;
 
@@ -64,7 +65,7 @@ public class FireboltProperties {
 	private final String secret;
 	private String engine; // updatable using use statement
 	private final String account;
-	private final String accountId;
+	private String accountId;
 	private final int tcpKeepIdle;
 	private final int tcpKeepCount;
 	private final int tcpKeepInterval;
@@ -229,7 +230,16 @@ public class FireboltProperties {
 		// This a bad patch but there is nothing to do right now. We will refactor this class and make solution more generic
 		switch (key) {
 			case "database": database = value; break;
-			case "engine": engine = value; break;
+			case "engine":
+				engine = value;
+				systemEngine = SYSTEM_ENGINE_NAME.equalsIgnoreCase(engine);
+				break;
+			case "account_id":
+				if (accountId != null && !accountId.equalsIgnoreCase(value)) {
+					throw new IllegalStateException("Failed to execute command. Account parameter mismatch. Contact support");
+				}
+				this.accountId = value;
+				break;
 			default: additionalProperties.put(key, value);
 		}
 	}
@@ -242,5 +252,18 @@ public class FireboltProperties {
 		String hostAndPort = host + (port == null ? "" : ":" + port);
 		String protocol = isSsl() ? "https://" : "http://";
 		return protocol + hostAndPort;
+	}
+
+	public void clearAdditionalProperties() {
+		additionalProperties.clear();
+	}
+
+	public String processEngineUrl(String endpoint) {
+		String[] engineUrl = endpoint.split("\\?", 2);
+		String engineHost = engineUrl[0].replaceFirst("^https?://", ""); // just in case remove URL scheme although right now server never returns it
+		String[] engineQuery = engineUrl.length > 1 ? engineUrl[1].split("&") : new String[0];
+		// get properties from query string and update values
+		Arrays.stream(engineQuery).map(prop -> prop.split("=")).filter(a -> a.length == 2).forEach(prop -> addProperty(prop[0], prop[1]));
+		return engineHost;
 	}
 }

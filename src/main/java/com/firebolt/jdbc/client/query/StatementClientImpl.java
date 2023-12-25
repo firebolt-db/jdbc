@@ -63,6 +63,8 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	private static final String QUERY_ID_FETCHER = "select query_id from information_schema.query_history where status = 'STARTED_EXECUTION' and  query_text like ?";
 	private final BiPredicate<Call, String> isCallWithLabel = (call, label) -> call.request().tag() instanceof String && Objects.equals(call.request().tag(), label);
 	static final String HEADER_UPDATE_PARAMETER = "Firebolt-Update-Parameters";
+	static final String HEADER_UPDATE_ENDPOINT = "Firebolt-Update-Endpoint";
+	static final String HEADER_RESET_SESSION = "Firebolt-Reset-Session";
 
 	public StatementClientImpl(OkHttpClient httpClient, FireboltConnection connection, String customDrivers, String customClients) {
 		super(httpClient, connection, customDrivers, customClients);
@@ -172,8 +174,9 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 				CloseableUtil.close(response);
 			}
 		} catch (FireboltException e) {
-			if (e.getType() == ExceptionType.INVALID_REQUEST) {
+			if (e.getType() == ExceptionType.INVALID_REQUEST || e.getType() == ExceptionType.RESOURCE_NOT_FOUND) {
 				// 400 on that request indicates that the statement does not exist
+				// 404 - the same when working against "real" v2 engine
 				log.warn(e.getMessage());
 			} else {
 				throw e;
@@ -263,6 +266,10 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 				params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId());
 			}
 		} else {
+			if (connection.getInfraVersion() >= 2 && fireboltProperties.getAccountId() != null) {
+				params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId());
+				params.put(FireboltQueryParameterKey.ENGINE.getKey(), fireboltProperties.getEngine());
+			}
 			//params.put(FireboltQueryParameterKey.QUERY_LABEL.getKey(), statementInfoWrapper.getLabel()); //QUERY_LABEL - uncomment
 			params.put(FireboltQueryParameterKey.COMPRESS.getKey(), fireboltProperties.isCompress() ? "1" : "0");
 
@@ -284,12 +291,18 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		return Map.of(FireboltQueryParameterKey.QUERY_ID.getKey(), statementId);
 	}
 
-
 	@Override
 	protected void validateResponse(String host, Response response, Boolean isCompress) throws FireboltException {
 		super.validateResponse(host, response, isCompress);
 		FireboltConnection connection = getConnection();
 		if (isCallSuccessful(response.code())) {
+			if (response.header(HEADER_RESET_SESSION) != null) {
+				connection.reset();
+			}
+			String endpoint = response.header(HEADER_UPDATE_ENDPOINT);
+			if (endpoint != null) {
+				connection.setEndpoint(connection.getSessionProperties().processEngineUrl(endpoint));
+			}
 			for (String header : response.headers(HEADER_UPDATE_PARAMETER)) {
 				String[] keyValue = header.split("=");
 				connection.addProperty(keyValue[0].trim(), keyValue[1].trim());

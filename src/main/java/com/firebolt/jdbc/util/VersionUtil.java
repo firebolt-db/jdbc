@@ -59,7 +59,7 @@ public class VersionUtil {
 
 	/**
 	 * Returns the driver major version
-	 * 
+	 *
 	 * @return the driver major version
 	 */
 	public int getMajorDriverVersion() {
@@ -68,7 +68,7 @@ public class VersionUtil {
 
 	/**
 	 * Returns the driver minor version
-	 * 
+	 *
 	 * @return the driver minor version
 	 */
 	public int getDriverMinorVersion() {
@@ -77,7 +77,7 @@ public class VersionUtil {
 
 	/**
 	 * Extracts the major version from the version provided
-	 * 
+	 *
 	 * @param version the version to extract the major version from
 	 * @return the major version
 	 */
@@ -91,7 +91,7 @@ public class VersionUtil {
 
 	/**
 	 * Extracts the minor version from the version provided
-	 * 
+	 *
 	 * @param version the version to extract the minor version from
 	 * @return the minor version
 	 */
@@ -105,7 +105,7 @@ public class VersionUtil {
 
 	/**
 	 * Returns the driver version
-	 * 
+	 *
 	 * @return the driver version
 	 */
 	public String getDriverVersion() {

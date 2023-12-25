@@ -8,8 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.NullSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -23,6 +21,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
+import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -46,14 +45,21 @@ class FireboltEngineInformationSchemaServiceTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = "db")
-	@NullSource
-	void shouldGetEngineWhenEngineNameIsProvided(String db) throws SQLException {
+	@CsvSource({
+			/*in:*/ "db,running,my-url,my-url," + /*expected:*/  "some-engine,db,",
+			/*in:*/ ",running,api.region.env.firebolt.io,api.region.env.firebolt.io," +  /*expected:*/ "some-engine,,",
+			/*in:*/ "db,ENGINE_STATE_RUNNING,api.us-east-1.dev.firebolt.io?account_id=01hf9pchg0mnrd2g3hypm1dea4&engine=max_test,api.us-east-1.dev.firebolt.io," + /*expected:*/ "max_test,db,01hf9pchg0mnrd2g3hypm1dea4",
+	})
+	void shouldGetEngineWhenEngineNameIsProvided(String db, String engineStatus, String engineUrl, String expectedEngineUrl, String expectedEngine, String expectedDb, String expectedAccountId) throws SQLException {
 		PreparedStatement statement = mock(PreparedStatement.class);
-		ResultSet resultSet = mockedResultSet(Map.of("status", "running", "url", "https://url", "attached_to", "db", "engine_name", "some-engine"));
+		ResultSet resultSet = mockedResultSet(Map.of("status", engineStatus, "url", engineUrl, "attached_to", "db", "engine_name", "some-engine"));
 		when(fireboltConnection.prepareStatement(anyString())).thenReturn(statement);
 		when(statement.executeQuery()).thenReturn(resultSet);
-		assertEquals(new Engine("https://url", "running", "some-engine", "db", null), fireboltEngineService.getEngine(createFireboltProperties("some-engine", "db")));
+		FireboltProperties properties = createFireboltProperties("some-engine", db);
+		assertEquals(new Engine(expectedEngineUrl, engineStatus, "some-engine", "db", null), fireboltEngineService.getEngine(properties));
+		assertEquals(expectedEngine, properties.getEngine());
+		assertEquals(expectedDb, properties.getDatabase());
+		assertEquals(expectedAccountId, properties.getAccountId());
 	}
 
 	@ParameterizedTest
@@ -92,12 +98,23 @@ class FireboltEngineInformationSchemaServiceTest {
 		Mockito.verify(statement, Mockito.times(1)).setString(1, db);
 	}
 
+	private PreparedStatement mockedEntityStatement(String entity, String row) throws SQLException {
+		if (row == null) {
+			return null;
+		}
+		PreparedStatement statement = mock(PreparedStatement.class);
+		ResultSet resultSet = mockedResultSet(row.isEmpty() ? Map.of() : Map.of(row.split(",")[0], row.split(",")[1]));
+		when(fireboltConnection.prepareStatement(format("SELECT * FROM information_schema.%ss WHERE %s_name=?", entity, entity))).thenReturn(statement);
+		when(statement.executeQuery()).thenReturn(resultSet);
+		return statement;
+	}
+
 	private ResultSet mockedResultSet(Map<String, String> values) throws SQLException {
 		ResultSet resultSet = mock(ResultSet.class);
 		if (values == null || values.isEmpty()) {
 			when(resultSet.next()).thenReturn(false);
 		} else {
-			when(resultSet.next()).thenReturn(true, false);
+			when(resultSet.next()).thenReturn(true);
 			for (Entry<String, String> column : values.entrySet()) {
 				lenient().when(resultSet.getString(column.getKey())).thenReturn(column.getValue());
 			}

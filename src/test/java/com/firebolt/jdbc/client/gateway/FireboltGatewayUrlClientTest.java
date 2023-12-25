@@ -80,8 +80,8 @@ class FireboltAccountRetrieverTest {
 
     @Test
     void shouldGetAccountId() throws IOException, FireboltException {
-        FireboltAccount account = new FireboltAccount("12345", "central");
-        injectMockedResponse(httpClient, HTTP_OK, "{\"id\": \"12345\", \"region\":\"central\"}");
+        FireboltAccount account = new FireboltAccount("12345", "central", 2);
+        injectMockedResponse(httpClient, HTTP_OK, "{\"id\": \"12345\", \"region\":\"central\", \"infraVersion\":2}");
         assertEquals(account, fireboltAccountIdResolver.retrieve("access_token", "account"));
     }
 

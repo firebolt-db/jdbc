@@ -1,6 +1,7 @@
 package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.CheckedFunction;
+import com.firebolt.jdbc.client.account.FireboltAccount;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
@@ -152,6 +153,7 @@ abstract class FireboltConnectionTest {
 		engine = new Engine("endpoint", "id123", "OK", "noname", null);
 		lenient().when(fireboltEngineService.getEngine(any())).thenReturn(engine);
 		lenient().when(fireboltEngineService.doesDatabaseExist(any())).thenReturn(true);
+		lenient().when(fireboltAccountIdService.getValue(any(), any())).thenReturn(new FireboltAccount("id", "earth", 1));
 	}
 
 	@Test

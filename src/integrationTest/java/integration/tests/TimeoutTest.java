@@ -1,5 +1,6 @@
 package integration.tests;
 
+import com.firebolt.jdbc.connection.FireboltConnection;
 import integration.IntegrationTest;
 import lombok.CustomLog;
 import org.junit.jupiter.api.AfterEach;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Timeout;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
@@ -19,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @CustomLog
 class TimeoutTest extends IntegrationTest {
 	private static final int MIN_TIME_SECONDS = 350;
+	private static final Map<Integer, Long> SERIES_SIZE = Map.of(1, 300000000000L, 2, 500000000000L);
 	private long startTime;
 
 	@BeforeEach
@@ -39,7 +42,8 @@ class TimeoutTest extends IntegrationTest {
 	@Tag("slow")
 	void shouldExecuteRequestWithoutTimeout() throws SQLException {
 		try (Connection con = createConnection(); Statement stmt = con.createStatement()) {
-			stmt.executeQuery("SELECT checksum(*) FROM generate_series(1, 300000000000)");
+			int infraVersion = ((FireboltConnection)con).getInfraVersion();
+			stmt.executeQuery(format("SELECT checksum(*) FROM generate_series(1, %d)", SERIES_SIZE.get(infraVersion)));
 		}
 	}
 }

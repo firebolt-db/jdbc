@@ -6,6 +6,8 @@ import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
 import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -61,6 +63,17 @@ class StatementUtilTest {
 		String query = "set time_zone='Europe/Berlin';";
 		assertEquals(Optional.of(Map.entry("time_zone", "Europe/Berlin")),
 				StatementUtil.extractParamFromSetStatement(query, null));
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			"set database='my_db',Could not set parameter. Set parameter 'DATABASE' is not allowed. Try again with 'USE DATABASE' instead of SET.",
+			"set engine='my_engine',Could not set parameter. Set parameter 'ENGINE' is not allowed. Try again with 'USE ENGINE' instead of SET.",
+			"set account_id='123',Could not set parameter. Set parameter 'ACCOUNT_ID' is not allowed. Try again with a different parameter name.",
+			"set output_format='XML',Could not set parameter. Set parameter 'OUTPUT_FORMAT' is not allowed. Try again with a different parameter name."
+	})
+	void shouldThrowWhenSettingPropertyThatShouldBeSetByUse(String statement, String error) {
+		assertEquals(error, assertThrows(IllegalArgumentException.class, () -> StatementUtil.parseToRawStatementWrapper(statement)).getMessage());
 	}
 
 	@Test
