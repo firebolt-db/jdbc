@@ -5,7 +5,6 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.service.FireboltStatementService;
-import lombok.SneakyThrows;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +49,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltStatementTest {
-
 	@Captor
 	ArgumentCaptor<StatementInfoWrapper> queryInfoWrapperArgumentCaptor;
 	@Mock
@@ -59,6 +57,7 @@ class FireboltStatementTest {
 	private FireboltConnection fireboltConnection;
 
 	private static FireboltStatement statement;
+	private final FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>()).build();
 
 	private static Stream<Arguments> unsupported() {
 		return Stream.of(
@@ -89,22 +88,16 @@ class FireboltStatementTest {
 	@Test
 	void shouldExtractAdditionalPropertiesAndNotExecuteQueryWhenSetParamIsUsed() throws SQLException {
 		FireboltConnection connection = mock(FireboltConnection.class);
-		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-				.build();
-		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-				.sessionProperties(fireboltProperties).connection(connection).build();
-
-		fireboltStatement.execute("set custom_1 = 1");
-		verifyNoMoreInteractions(fireboltStatementService);
-		verify(connection).addProperty(new ImmutablePair<>("custom_1", "1"));
+		try (FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
+				.sessionProperties(fireboltProperties).connection(connection).build()) {
+			fireboltStatement.execute("set custom_1 = 1");
+			verifyNoMoreInteractions(fireboltStatementService);
+			verify(connection).addProperty(new ImmutablePair<>("custom_1", "1"));
+		}
 	}
 
-	@SneakyThrows
 	@Test
-	void shouldAbortStatementOnCancel() {
-		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db")
-				.additionalProperties(new HashMap<>()).build();
-
+	void shouldAbortStatementOnCancel() throws SQLException, ReflectiveOperationException {
 		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
 				.sessionProperties(fireboltProperties).connection(fireboltConnection).build();
 
@@ -118,8 +111,6 @@ class FireboltStatementTest {
 	@Test
 	void shouldCloseInputStreamOnClose() throws SQLException {
 		ResultSet rs = mock(ResultSet.class);
-		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-				.build();
 		FireboltConnection connection = mock(FireboltConnection.class);
 		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
 				.sessionProperties(fireboltProperties).connection(connection).build();
@@ -139,22 +130,16 @@ class FireboltStatementTest {
 	}
 
 	@Test
-	void shouldThrowAnExceptionWhenExecutingQueryOnANonQueryStatement() {
+	void shouldThrowAnExceptionWhenExecutingQueryOnANonQueryStatement() throws SQLException {
 		FireboltConnection connection = mock(FireboltConnection.class);
-		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-				.build();
-
-		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-				.sessionProperties(fireboltProperties).connection(connection).build();
-
-		assertThrows(FireboltException.class, () -> fireboltStatement.executeQuery("set custom_1 = 1"));
+		try (FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
+				.sessionProperties(fireboltProperties).connection(connection).build()) {
+			assertThrows(FireboltException.class, () -> fireboltStatement.executeQuery("set custom_1 = 1"));
+		}
 	}
 
 	@Test
 	void shouldExecuteIfUpdateStatementWouldNotReturnAResultSet() throws SQLException {
-		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-				.build();
-
 		try (FireboltStatement fireboltStatement = FireboltStatement.builder()
 				.statementService(fireboltStatementService).connection(fireboltConnection)
 				.sessionProperties(fireboltProperties).build()) {
@@ -175,8 +160,6 @@ class FireboltStatementTest {
 		ResultSet rs = mock(FireboltResultSet.class);
 		ResultSet rs2 = mock(FireboltResultSet.class);
 		FireboltConnection connection = mock(FireboltConnection.class);
-		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-				.build();
 		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
 				.sessionProperties(fireboltProperties).connection(connection).build();
 
@@ -198,8 +181,6 @@ class FireboltStatementTest {
 	@Test
 	void shouldCloseCurrentAndGetMoreResultWhenCallingGetMoreResultsWithCloseCurrentFlag() throws SQLException {
 		FireboltConnection connection = mock(FireboltConnection.class);
-		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-				.build();
 		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
 				.sessionProperties(fireboltProperties).connection(connection).build();
 		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
@@ -213,8 +194,6 @@ class FireboltStatementTest {
 	@Test
 	void shouldKeepCurrentAndGetMoreResultWhenCallingGetMoreResultsWithKeepCurrentResultFlag() throws SQLException {
 		FireboltConnection connection = mock(FireboltConnection.class);
-		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-				.build();
 		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
 				.sessionProperties(fireboltProperties).connection(connection).build();
 		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
@@ -232,8 +211,6 @@ class FireboltStatementTest {
 		ResultSet rs2 = mock(FireboltResultSet.class);
 		ResultSet rs3 = mock(FireboltResultSet.class);
 		FireboltConnection connection = mock(FireboltConnection.class);
-		FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>())
-				.build();
 		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
 				.sessionProperties(fireboltProperties).connection(connection).build();
 

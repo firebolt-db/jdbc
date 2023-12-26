@@ -422,7 +422,7 @@ abstract class FireboltConnectionTest {
 
 	@Test
 	void shouldRemoveExpiredToken() throws SQLException {
-		FireboltProperties fireboltProperties = FireboltProperties.builder().host("host").path("/db").database("db").port(8080).account("dev").build();
+		FireboltProperties fireboltProperties = FireboltProperties.builder().host("host").database("db").port(8080).account("dev").build();
 		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
 			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
 			when(fireboltAuthenticationService.getConnectionTokens("http://host:8080", fireboltProperties))
@@ -439,7 +439,7 @@ abstract class FireboltConnectionTest {
 	@Test
 	void shouldReturnConnectionTokenWhenAvailable() throws SQLException {
 		String accessToken = "hello";
-		FireboltProperties fireboltProperties = FireboltProperties.builder().host("host").path("/db").database("db").port(8080).account("dev").build();
+		FireboltProperties fireboltProperties = FireboltProperties.builder().host("host").database("db").port(8080).account("dev").build();
 		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
 			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
 			FireboltConnectionTokens connectionTokens = FireboltConnectionTokens.builder().accessToken(accessToken).build();
@@ -454,7 +454,7 @@ abstract class FireboltConnectionTest {
 
 	@Test
 	void shouldNotReturnConnectionTokenWithLocalDb() throws SQLException {
-		FireboltProperties fireboltProperties = FireboltProperties.builder().host("localhost").path("/db").port(8080).account("dev").build();
+		FireboltProperties fireboltProperties = FireboltProperties.builder().host("localhost").build();
 		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
 			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
 			try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {

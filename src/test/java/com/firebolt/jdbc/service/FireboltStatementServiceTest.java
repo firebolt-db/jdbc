@@ -33,6 +33,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltStatementServiceTest {
+	private final FireboltProperties emptyFireboltProperties = FireboltProperties.builder().build();
 
 	@Mock
 	private StatementClient statementClient;
@@ -42,8 +43,7 @@ class FireboltStatementServiceTest {
 		try (MockedConstruction<FireboltResultSet> mocked = Mockito.mockConstruction(FireboltResultSet.class)) {
 
 			StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1").get(0);
-			FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("firebolt1")
-					.ssl(true).compress(false).build();
+			FireboltProperties fireboltProperties = fireboltProperties("firebolt1", false);
 			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, 10, -1, true, false,
@@ -57,8 +57,7 @@ class FireboltStatementServiceTest {
 	void shouldExecuteQueryWithLocalHostFormatParameters() throws SQLException {
 		try (MockedConstruction<FireboltResultSet> mocked = Mockito.mockConstruction(FireboltResultSet.class)) {
 			StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1").get(0);
-			FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("localhost")
-					.ssl(true).compress(false).build();
+			FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
 			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, -1, 10, true, false,
 					mock(FireboltStatement.class));
@@ -69,19 +68,15 @@ class FireboltStatementServiceTest {
 
 	@Test
 	void shouldCancelQueryWithAllRequiredParams() throws FireboltException {
-		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("http://firebolt1")
-				.ssl(true).compress(false).build();
-
+		FireboltProperties fireboltProperties = fireboltProperties("firebolt1", false);
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 		fireboltStatementService.abortStatement("123", fireboltProperties);
 		verify(statementClient).abortStatement("123", fireboltProperties);
 	}
 
 	@Test
-	void shouldThrowExceptionWhenTryingToCancelQueryWithASystemEngine() throws FireboltException {
-		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("http://firebolt1")
-				.ssl(true).compress(false).systemEngine(true).build();
-
+	void shouldThrowExceptionWhenTryingToCancelQueryWithASystemEngine() {
+		FireboltProperties fireboltProperties = fireboltProperties("firebolt1", true);
 		StatementClient client = new StatementClientImpl(new OkHttpClient(), new ObjectMapper(), Mockito.mock(FireboltConnection.class), null, null);
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(client);
 		assertThrows(FireboltException.class, () -> fireboltStatementService.abortStatement("123", fireboltProperties));
@@ -92,8 +87,7 @@ class FireboltStatementServiceTest {
 	void shouldExecuteQueryWithParametersForSystemEngine() throws SQLException {
 		try (MockedConstruction<FireboltResultSet> mocked = Mockito.mockConstruction(FireboltResultSet.class)) {
 			StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1").get(0);
-			FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("firebolt1")
-					.ssl(true).compress(false).build();
+			FireboltProperties fireboltProperties = fireboltProperties("firebolt1", false);
 			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, 10, 10, true, true,
 					mock(FireboltStatement.class));
@@ -107,8 +101,7 @@ class FireboltStatementServiceTest {
 		try (MockedConstruction<FireboltResultSet> mocked = Mockito.mockConstruction(FireboltResultSet.class)) {
 
 			StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1").get(0);
-			FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("localhost")
-					.ssl(true).compress(false).build();
+			FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
 
 			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, -1, 0, false, true,
@@ -122,8 +115,7 @@ class FireboltStatementServiceTest {
 	void shouldBeEmptyWithNonQueryStatement() throws SQLException {
 		StatementInfoWrapper statementInfoWrapper = StatementUtil
 				.parseToStatementInfoWrappers("INSERT INTO ltv SELECT * FROM ltv_external").get(0);
-		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db").host("localhost").ssl(true)
-				.compress(false).build();
+		FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
 
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 		Assertions.assertEquals(Optional.empty(), fireboltStatementService.execute(statementInfoWrapper,
@@ -134,8 +126,8 @@ class FireboltStatementServiceTest {
 	@Test
 	void abortStatementHttpRequest() throws FireboltException {
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
-		fireboltStatementService.abortStatement("id", FireboltProperties.builder().build());
-		verify(statementClient).abortStatement("id", FireboltProperties.builder().build());
+		fireboltStatementService.abortStatement("id", emptyFireboltProperties);
+		verify(statementClient).abortStatement("id", emptyFireboltProperties);
 	}
 
 	@ParameterizedTest
@@ -144,5 +136,9 @@ class FireboltStatementServiceTest {
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 		when(statementClient.isStatementRunning("id")).thenReturn(running);
 		Assertions.assertEquals(running, fireboltStatementService.isStatementRunning("id"));
+	}
+
+	private FireboltProperties fireboltProperties(String host, boolean systemEngine) {
+		return FireboltProperties.builder().database("db").host(host).ssl(true).compress(false).systemEngine(systemEngine).build();
 	}
 }
