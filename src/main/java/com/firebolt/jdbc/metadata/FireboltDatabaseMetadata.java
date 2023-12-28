@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -32,8 +31,8 @@ import java.util.stream.Stream;
 
 import static com.firebolt.jdbc.metadata.MetadataColumns.ATTR_DEF;
 import static com.firebolt.jdbc.metadata.MetadataColumns.ATTR_NAME;
-import static com.firebolt.jdbc.metadata.MetadataColumns.ATTR_TYPE_NAME;
 import static com.firebolt.jdbc.metadata.MetadataColumns.ATTR_SIZE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.ATTR_TYPE_NAME;
 import static com.firebolt.jdbc.metadata.MetadataColumns.AUTO_INCREMENT;
 import static com.firebolt.jdbc.metadata.MetadataColumns.BASE_TYPE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.BUFFER_LENGTH;
@@ -141,6 +140,8 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	private static final String PUBLIC_SCHEMA_NAME = "public";
 	private static final String INFORMATION_SCHEMA_NAME = "information_schema";
 	private static final String CATALOG_SCHEMA_NAME = "catalog";
+	private static final String TABLE = "TABLE";
+	private static final String VIEW = "VIEW";
 	private static final String QUOTE = "'";
 	private static final int MAX_IDENTIFIER_LENGTH = 63;
 	private final String url;
@@ -173,7 +174,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public ResultSet getTableTypes() throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(List.of(QueryResult.Column.builder().name(TABLE_TYPE).type(TEXT).build()))
-				.rows(List.of(List.of("TABLE"), List.of("VIEW"))).build());
+				.rows(List.of(List.of(TABLE), List.of(VIEW))).build());
 	}
 
 	@Override
@@ -242,10 +243,9 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		try (Statement statement = connection.createStatement();
 				ResultSet columnDescription = statement.executeQuery(query)) {
 			while (columnDescription.next()) {
-				List<?> row;
 				Column columnInfo = Column.of(columnDescription.getString("data_type"),
 						columnDescription.getString("column_name"));
-				row = Arrays.asList(connection.getCatalog(), // TABLE_CAT
+				rows.add(Arrays.asList(connection.getCatalog(), // TABLE_CAT
 						columnDescription.getString("table_schema"), // schema
 						columnDescription.getString("table_name"), // table name
 						columnDescription.getString("column_name"), // column name
@@ -263,8 +263,8 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 						null, // SQL_DATA_TYPE - reserved for future use (see javadoc)
 						null, // SQL_DATETIME_SUB - reserved for future use (see javadoc)
 						null, // CHAR_OCTET_LENGTH - The maximum
-								// length of binary and character
-								// based columns (null for others)
+						// length of binary and character
+						// based columns (null for others)
 						columnDescription.getInt("ordinal_position"), // The ordinal position starting from 1
 						isColumnNullable(columnDescription) ? "YES" : "NO",
 						null, // "SCOPE_CATALOG - Unused
@@ -272,8 +272,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 						null, // "SCOPE_TABLE" - Unused
 						null, // "SOURCE_DATA_TYPE" - Unused
 						"NO", // IS_AUTOINCREMENT - Not supported
-						"NO"); // IS_GENERATEDCOLUMN - Not supported
-				rows.add(row);
+						"NO")); // IS_GENERATEDCOLUMN - Not supported
 			}
 			return FireboltResultSet.of(QueryResult.builder().rows(rows).columns(columns).build());
 		}
@@ -288,50 +287,33 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	public ResultSet getTables(String catalog, String schemaPattern, String tableNamePattern, String[] typesArr)
-			throws SQLException {
-		List<List<?>> rows = Stream
-				.of(getTables(catalog, schemaPattern, tableNamePattern, typesArr, false),
-						getTables(catalog, schemaPattern, tableNamePattern, typesArr, true))
-				.flatMap(Collection::stream).collect(toList());
-
+	public ResultSet getTables(String catalog, String schemaPattern, String tableNamePattern, String[] typesArr) throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Arrays.asList(QueryResult.Column.builder().name(TABLE_CAT).type(TEXT).build(),
-						QueryResult.Column.builder().name(TABLE_SCHEM).type(TEXT).build(),
-						QueryResult.Column.builder().name(TABLE_NAME).type(TEXT).build(),
-						QueryResult.Column.builder().name(TABLE_TYPE).type(TEXT).build(),
-						QueryResult.Column.builder().name(REMARKS).type(TEXT).build(),
-						QueryResult.Column.builder().name(TYPE_CAT).type(TEXT).build(),
-						QueryResult.Column.builder().name(TYPE_SCHEM).type(TEXT).build(),
-						QueryResult.Column.builder().name(TYPE_NAME).type(TEXT).build(),
-						QueryResult.Column.builder().name(SELF_REFERENCING_COL_NAME).type(TEXT).build(),
-						QueryResult.Column.builder().name(REF_GENERATION).type(TEXT).build()))
-				.rows(rows).build());
+				.columns(Stream.of(TABLE_CAT, TABLE_SCHEM, TABLE_NAME, TABLE_TYPE, REMARKS, TYPE_CAT, TYPE_SCHEM, TYPE_NAME, SELF_REFERENCING_COL_NAME, REF_GENERATION)
+						.map(name -> QueryResult.Column.builder().name(name).type(TEXT).build()).collect(toList()))
+				.rows(getTablesData(catalog, schemaPattern, tableNamePattern, typesArr)).build());
 	}
 
-	private List<List<?>> getTables(String catalog, String schemaPattern, String tableNamePattern, String[] typesArr,
-			boolean isView) throws SQLException {
+	private List<List<?>> getTablesData(String catalog, String schemaPattern, String tableNamePattern, String[] typesArr) throws SQLException {
+		Set<String> types = typesArr == null ? Set.of(TABLE, VIEW) : Set.of(typesArr);
+		Set<String> tableTypes = Set.of("FACT", "DIMENSION");
+		List<String> trulyTableTypes = new ArrayList<>();
+		if (types.contains(TABLE)) {
+			trulyTableTypes.addAll(List.of("FACT", "DIMENSION"));
+		}
+		if (types.contains(VIEW)) {
+			trulyTableTypes.add(VIEW);
+		}
+		String query = MetadataUtil.getTablesQuery(catalog, schemaPattern, tableNamePattern, trulyTableTypes.toArray(new String[0]));
 		List<List<?>> rows = new ArrayList<>();
-
-		String query = isView ? MetadataUtil.getViewsQuery(catalog, schemaPattern, tableNamePattern)
-				: MetadataUtil.getTablesQuery(catalog, schemaPattern, tableNamePattern);
-		try (Statement statement = connection.createStatement();
-				ResultSet tables = statement.executeQuery(query)) {
-
-			Set<String> types = typesArr != null ? new HashSet<>(Arrays.asList(typesArr)) : null;
+		try (Statement statement = connection.createStatement(); ResultSet tables = statement.executeQuery(query)) {
 			while (tables.next()) {
-				List<String> row = new ArrayList<>();
-				row.add(connection.getCatalog());
-				row.add(tables.getString("table_schema"));
-				row.add(tables.getString("table_name"));
-				String tableType = isView ? "VIEW" : "TABLE";
-				row.add(tableType);
-				for (int i = 3; i < 9; i++) {
-					row.add(null);
-				}
-				if (types == null || types.contains(tableType)) {
-					rows.add(row);
-				}
+				String tableType = tables.getString("table_type");
+				tableType = tableTypes.contains(tableType) ? TABLE: tableType; // replace FACT and DIMENSION by TABLE
+				List<String> row = Arrays.asList(
+						connection.getCatalog(), tables.getString("table_schema"), tables.getString("table_name"), tableType,
+						null, null, null, null, null, null);
+				rows.add(row);
 			}
 		}
 		return rows;
@@ -359,33 +341,32 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 				QueryResult.Column.builder().name(SQL_DATETIME_SUB).type(INTEGER).build(),
 				QueryResult.Column.builder().name(NUM_PREC_RADIX).type(INTEGER).build());
 
-		List<List<?>> rows = new ArrayList<>();
 		List<FireboltDataType> usableTypes = Arrays.asList(INTEGER, BIG_INT, REAL, DOUBLE_PRECISION, TEXT, DATE,
 				TIMESTAMP, NUMERIC, ARRAY, TUPLE, BYTEA, BOOLEAN);
-		usableTypes
-				.forEach(
-						type -> rows.add(Arrays.asList(type.getDisplayName(), type.getSqlType(),
-								type.getPrecision(), QUOTE, // LITERAL_PREFIX
-								QUOTE, // LITERAL_SUFFIX
-								null, // Description of the creation parameters - can be null (can set if needed
-										// in the future)
-								typeNullableUnknown, // It depends - A type can be nullable or not depending on
-								// the presence of the additional keyword Nullable()
-								type.isCaseSensitive(), type.getSqlType() == VARCHAR ? typeSearchable
-										: typePredBasic, /*
-															 * SEARCHABLE - LIKE can only be used for VARCHAR
-															 */
-								!type.isSigned(),
-								false, // FIXED_PREC_SCALE - indicates if the type can be a money value.
-												// Always
-												// false as we do not have a money type
-								false, // AUTO_INCREMENT
-								null, // LOCAL_TYPE_NAME
-								type.getMinScale(), // MINIMUM_SCALE
-								type.getMaxScale(), // MAXIMUM_SCALE
-								null, // SQL_DATA_TYPE - Not needed - reserved for future use
-								null, // SQL_DATETIME_SUB - Not needed - reserved for future use
-								COMMON_RADIX)));
+		List<List<?>> rows = usableTypes.stream().map(type ->
+				Arrays.asList(type.getDisplayName(), type.getSqlType(),
+						type.getPrecision(), QUOTE, // LITERAL_PREFIX
+						QUOTE, // LITERAL_SUFFIX
+						null, // Description of the creation parameters - can be null (can set if needed
+						// in the future)
+						typeNullableUnknown, // It depends - A type can be nullable or not depending on
+						// the presence of the additional keyword Nullable()
+						type.isCaseSensitive(), type.getSqlType() == VARCHAR ? typeSearchable
+								: typePredBasic, /*
+						 * SEARCHABLE - LIKE can only be used for VARCHAR
+						 */
+						!type.isSigned(),
+						false, // FIXED_PREC_SCALE - indicates if the type can be a money value.
+						// Always
+						// false as we do not have a money type
+						false, // AUTO_INCREMENT
+						null, // LOCAL_TYPE_NAME
+						type.getMinScale(), // MINIMUM_SCALE
+						type.getMaxScale(), // MAXIMUM_SCALE
+						null, // SQL_DATA_TYPE - Not needed - reserved for future use
+						null, // SQL_DATETIME_SUB - Not needed - reserved for future use
+						COMMON_RADIX))
+				.collect(toList());
 
 		return FireboltResultSet.of(QueryResult.builder().columns(columns).rows(rows).build());
 	}
@@ -446,7 +427,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public <T> T unwrap(Class<T> iface) throws SQLException {
-		if (iface.isAssignableFrom(getClass())) {
+		if (isWrapperFor(iface)) {
 			return iface.cast(this);
 		}
 		throw new SQLException("Cannot unwrap to " + iface.getName());

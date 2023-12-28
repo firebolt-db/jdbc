@@ -22,28 +22,21 @@ class MetadataUtilTest {
 	@Test
 	void shouldGetTablesQueryWhenGettingQueryWithArguments() {
 		assertEquals(
-				"SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_schema LIKE 'db' AND table_name LIKE 'tableName' AND table_type NOT LIKE 'EXTERNAL' order by table_schema, table_name",
-				MetadataUtil.getTablesQuery("catalog", "db", "tableName"));
+				"SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('FACT', 'DIMENSION') AND table_schema LIKE 'db' AND table_name LIKE 'tableName' order by table_schema, table_name",
+				MetadataUtil.getTablesQuery("catalog", "db", "tableName", new String[] {"FACT", "DIMENSION"}));
+	}
+	@Test
+	void shouldGetViewQueryWhenGettingQueryWithArguments() {
+		assertEquals(
+				"SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('VIEW') AND table_schema LIKE 'db' AND table_name LIKE 'tableName' order by table_schema, table_name",
+				MetadataUtil.getTablesQuery("catalog", "db", "tableName", new String[] {"VIEW"}));
 	}
 
 	@Test
 	void shouldGetTablesQueryWhenGettingQueryWithoutArguments() {
 		assertEquals(
-				"SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type NOT LIKE 'EXTERNAL' order by table_schema, table_name",
-				MetadataUtil.getTablesQuery(null, null, null));
-	}
-
-	@Test
-	void shouldGetViewsQueryWhenGettingQueryWithArguments() {
-		assertEquals(
-				"SELECT table_schema, table_name FROM information_schema.views WHERE table_schema LIKE 'schem' AND table_name LIKE 'tableName' order by table_schema, table_name",
-				MetadataUtil.getViewsQuery("catalog", "schem", "tableName"));
-	}
-
-	@Test
-	void shouldGetViewsQueryWhenGettingQueryWithoutArguments() {
-		assertEquals("SELECT table_schema, table_name FROM information_schema.views order by table_schema, table_name",
-				MetadataUtil.getViewsQuery(null, null, null));
+				"SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('FACT', 'DIMENSION', 'VIEW') order by table_schema, table_name",
+				MetadataUtil.getTablesQuery(null, null, null, new String[] {"FACT", "DIMENSION", "VIEW"}));
 	}
 
 	@Test
