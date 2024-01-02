@@ -100,9 +100,7 @@ class FireboltResultSetMetaDataTest {
 
 	@Test
 	void isReadOnly() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = FireboltResultSetMetaData.builder().columns(getColumns())
-				.tableName("table-name").dbName("db-name").build();
-		assertTrue(fireboltResultSetMetaData.isReadOnly(1));
+		assertTrue(getMetaData().isReadOnly(1));
 	}
 
 	@Test
@@ -121,6 +119,6 @@ class FireboltResultSetMetaDataTest {
 	}
 
 	private  FireboltResultSetMetaData getMetaData() {
-		return FireboltResultSetMetaData.builder().columns(getColumns()).tableName("table-name").dbName("db-name").build();
+		return new FireboltResultSetMetaData(getColumns(), "table-name", "db-name");
 	}
 }
