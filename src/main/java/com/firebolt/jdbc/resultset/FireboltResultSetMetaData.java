@@ -1,22 +1,18 @@
 package com.firebolt.jdbc.resultset;
 
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.util.List;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.column.Column;
-
-import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
+
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.List;
 
 @Value
-@Builder
 @EqualsAndHashCode(callSuper = false)
 public class FireboltResultSetMetaData implements ResultSetMetaData {
 
@@ -61,12 +57,12 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 
 	@Override
 	public String getTableName(int column) throws SQLException {
-		return this.tableName;
+		return tableName;
 	}
 
 	@Override
 	public String getCatalogName(int column) throws SQLException {
-		return this.dbName;
+		return dbName;
 	}
 
 	@Override
@@ -85,7 +81,7 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 	}
 
 	public Column getColumn(int column) {
-		return this.columns.get(column - 1);
+		return columns.get(column - 1);
 	}
 
 	@Override

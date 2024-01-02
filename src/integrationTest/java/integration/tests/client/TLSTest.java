@@ -41,7 +41,7 @@ public class TLSTest extends MockWebServerAwareIntegrationTest {
 
 		// Write the public certificate to a file that will be used by the driver for
 		// the TLS handshake
-		String path = this.getClass().getResource("/").getPath() + UUID.randomUUID() + ".pem";
+		String path = getClass().getResource("/").getPath() + UUID.randomUUID() + ".pem";
 		try (Writer out = new FileWriter(new File(path).getAbsoluteFile())) {
 			out.write(localhostCertificate.certificatePem());
 		}

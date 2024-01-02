@@ -126,7 +126,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 		List<List<?>> rows = new ArrayList<>();
 		String query = MetadataUtil.getColumnsQuery(schemaPattern, tableNamePattern, columnNamePattern);
-		try (Statement statement = this.connection.createStatement();
+		try (Statement statement = connection.createStatement();
 				ResultSet columnDescription = statement.executeQuery(query)) {
 			while (columnDescription.next()) {
 				List<?> row;
@@ -178,8 +178,8 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public ResultSet getTables(String catalog, String schemaPattern, String tableNamePattern, String[] typesArr)
 			throws SQLException {
 		List<List<?>> rows = Stream
-				.of(this.getTables(catalog, schemaPattern, tableNamePattern, typesArr, false),
-						this.getTables(catalog, schemaPattern, tableNamePattern, typesArr, true))
+				.of(getTables(catalog, schemaPattern, tableNamePattern, typesArr, false),
+						getTables(catalog, schemaPattern, tableNamePattern, typesArr, true))
 				.flatMap(Collection::stream).collect(toList());
 
 		return FireboltResultSet.of(QueryResult.builder()
@@ -202,7 +202,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 		String query = isView ? MetadataUtil.getViewsQuery(catalog, schemaPattern, tableNamePattern)
 				: MetadataUtil.getTablesQuery(catalog, schemaPattern, tableNamePattern);
-		try (Statement statement = this.connection.createStatement();
+		try (Statement statement = connection.createStatement();
 				ResultSet tables = statement.executeQuery(query)) {
 
 			Set<String> types = typesArr != null ? new HashSet<>(Arrays.asList(typesArr)) : null;
@@ -289,16 +289,16 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public String getDatabaseProductVersion() throws SQLException {
-		if (this.databaseVersion == null) {
-			String engine = this.connection.getEngine();
-			try (Statement statement = this.connection.createStatement()) {
+		if (databaseVersion == null) {
+			String engine = connection.getEngine();
+			try (Statement statement = connection.createStatement()) {
 				String query = MetadataUtil.getDatabaseVersionQuery(engine);
 				ResultSet rs = statement.executeQuery(query);
 				rs.next();
-				this.databaseVersion = rs.getString(1);
+				databaseVersion = rs.getString(1);
 			}
 		}
-		return this.databaseVersion;
+		return databaseVersion;
 	}
 
 	@Override

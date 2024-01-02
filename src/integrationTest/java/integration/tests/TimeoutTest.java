@@ -24,7 +24,7 @@ class TimeoutTest extends IntegrationTest {
 	@Tag("slow")
 	void shouldExecuteRequestWithoutTimeout() throws SQLException {
 		long startTime = System.nanoTime();
-		try (Connection con = this.createConnection(); Statement stmt = con.createStatement()) {
+		try (Connection con = createConnection(); Statement stmt = con.createStatement()) {
 			stmt.executeQuery("SELECT checksum(*) FROM generate_series(1, 100000000000)");
 		} finally {
 			log.info("Time elapsed: " + (System.nanoTime() - startTime) / 1_000_000_000 + " seconds");

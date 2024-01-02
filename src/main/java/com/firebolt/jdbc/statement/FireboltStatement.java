@@ -26,6 +26,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toCollection;
+
 @CustomLog
 public class FireboltStatement implements Statement {
 
@@ -53,31 +55,26 @@ public class FireboltStatement implements Statement {
 
 	@Override
 	public ResultSet executeQuery(String sql) throws SQLException {
-		return this.executeQuery(StatementUtil.parseToStatementInfoWrappers(sql));
+		return executeQuery(StatementUtil.parseToStatementInfoWrappers(sql));
 	}
 
 	protected ResultSet executeQuery(List<StatementInfoWrapper> statementInfoList) throws SQLException {
 		StatementInfoWrapper query = getOneQueryStatementInfo(statementInfoList);
-		Optional<ResultSet> resultSet = this.execute(Collections.singletonList(query));
+		Optional<ResultSet> resultSet = execute(Collections.singletonList(query));
 		synchronized (this) {
-			if (!resultSet.isPresent()) {
-				throw new FireboltException("Could not return ResultSet - the query returned no result.");
-			} else {
-				return resultSet.get();
-			}
+			return resultSet.orElseThrow(() -> new FireboltException("Could not return ResultSet - the query returned no result."));
 		}
 	}
 
 	@Override
 	public boolean execute(String sql) throws SQLException {
-		return this.execute(StatementUtil.parseToStatementInfoWrappers(sql)).isPresent();
+		return execute(StatementUtil.parseToStatementInfoWrappers(sql)).isPresent();
 	}
 
 	protected Optional<ResultSet> execute(List<StatementInfoWrapper> statements) throws SQLException {
 		Optional<ResultSet> resultSet = Optional.empty();
-		this.closeAllResults();
-		Set<String> queryLabels = statements.stream().map(StatementInfoWrapper::getLabel)
-				.collect(Collectors.toCollection(HashSet::new));
+		closeAllResults();
+		Set<String> queryLabels = statements.stream().map(StatementInfoWrapper::getLabel).collect(toCollection(HashSet::new));
 		try {
 			synchronized (statementsToExecuteLabels) {
 				statementsToExecuteLabels.addAll(queryLabels);
@@ -97,24 +94,23 @@ public class FireboltStatement implements Statement {
 		return resultSet;
 	}
 
-	private Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper, boolean verifyNotCancelled,
-			boolean isStandardSql) throws SQLException {
+	private Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper, boolean verifyNotCancelled, boolean isStandardSql) throws SQLException {
 		ResultSet resultSet = null;
 		if (!verifyNotCancelled || isStatementNotCancelled(statementInfoWrapper)) {
 			runningStatementLabel = statementInfoWrapper.getLabel();
 			synchronized (this) {
-				this.validateStatementIsNotClosed();
+				validateStatementIsNotClosed();
 			}
 			InputStream inputStream = null;
 			try {
 				log.info("Executing the statement with label {} : {}", statementInfoWrapper.getLabel(),
 						statementInfoWrapper.getSql());
 				if (statementInfoWrapper.getType() == StatementType.PARAM_SETTING) {
-					this.connection.addProperty(statementInfoWrapper.getParam());
+					connection.addProperty(statementInfoWrapper.getParam());
 					log.debug("The property from the query {} was stored", runningStatementLabel);
 				} else {
 					Optional<ResultSet> currentRs = statementService.execute(statementInfoWrapper,
-							this.sessionProperties, this.queryTimeout, this.maxRows, isStandardSql, sessionProperties.isSystemEngine(), this);
+							sessionProperties, queryTimeout, maxRows, isStandardSql, sessionProperties.isSystemEngine(), this);
 					if (currentRs.isPresent()) {
 						resultSet = currentRs.get();
 						currentUpdateCount = -1; // Always -1 when returning a ResultSet
@@ -132,12 +128,10 @@ public class FireboltStatement implements Statement {
 				runningStatementLabel = null;
 			}
 			synchronized (this) {
-				if (this.firstUnclosedStatementResult == null) {
-					this.firstUnclosedStatementResult = this.currentStatementResult = new StatementResultWrapper(
-							resultSet, statementInfoWrapper);
+				if (firstUnclosedStatementResult == null) {
+					firstUnclosedStatementResult = currentStatementResult = new StatementResultWrapper(resultSet, statementInfoWrapper);
 				} else {
-					this.firstUnclosedStatementResult
-							.append(new StatementResultWrapper(resultSet, statementInfoWrapper));
+					firstUnclosedStatementResult.append(new StatementResultWrapper(resultSet, statementInfoWrapper));
 				}
 			}
 		} else {
@@ -154,9 +148,9 @@ public class FireboltStatement implements Statement {
 
 	private void closeAllResults() {
 		synchronized (this) {
-			if (this.firstUnclosedStatementResult != null) {
-				this.firstUnclosedStatementResult.close();
-				this.firstUnclosedStatementResult = null;
+			if (firstUnclosedStatementResult != null) {
+				firstUnclosedStatementResult.close();
+				firstUnclosedStatementResult = null;
 			}
 		}
 	}
@@ -175,7 +169,7 @@ public class FireboltStatement implements Statement {
 
 	private void abortStatementRunningOnFirebolt(String statementLabel) throws SQLException {
 		try {
-			statementService.abortStatement(statementLabel, this.sessionProperties);
+			statementService.abortStatement(statementLabel, sessionProperties);
 			log.debug("Statement with label {} was aborted", statementLabel);
 		} catch (FireboltException e) {
 			throw e;
@@ -190,14 +184,14 @@ public class FireboltStatement implements Statement {
 
 	@Override
 	public int executeUpdate(String sql) throws SQLException {
-		return this.executeUpdate(StatementUtil.parseToStatementInfoWrappers(sql));
+		return executeUpdate(StatementUtil.parseToStatementInfoWrappers(sql));
 	}
 
 	protected int executeUpdate(List<StatementInfoWrapper> sql) throws SQLException {
-		this.execute(sql);
+		execute(sql);
 		StatementResultWrapper response;
 		synchronized (this) {
-			response = this.firstUnclosedStatementResult;
+			response = firstUnclosedStatementResult;
 		}
 		try {
 			while (response != null && response.getResultSet() != null) {
@@ -214,7 +208,7 @@ public class FireboltStatement implements Statement {
 
 	@Override
 	public Connection getConnection() {
-		return this.connection;
+		return connection;
 	}
 
 	@Override
@@ -222,20 +216,20 @@ public class FireboltStatement implements Statement {
 		synchronized (this) {
 			validateStatementIsNotClosed();
 
-			if (current == Statement.CLOSE_CURRENT_RESULT && this.currentStatementResult != null
-					&& this.currentStatementResult.getResultSet() != null) {
-				this.currentStatementResult.getResultSet().close();
+			if (current == Statement.CLOSE_CURRENT_RESULT && currentStatementResult != null
+					&& currentStatementResult.getResultSet() != null) {
+				currentStatementResult.getResultSet().close();
 			}
 
-			if (this.currentStatementResult != null) {
-				this.currentStatementResult = this.currentStatementResult.getNext();
+			if (currentStatementResult != null) {
+				currentStatementResult = currentStatementResult.getNext();
 			}
 
 			if (current == Statement.CLOSE_ALL_RESULTS) {
 				closeUnclosedProcessedResults();
 			}
 
-			return (this.currentStatementResult != null && this.currentStatementResult.getResultSet() != null);
+			return (currentStatementResult != null && currentStatementResult.getResultSet() != null);
 		}
 	}
 
@@ -284,7 +278,7 @@ public class FireboltStatement implements Statement {
 			}
 			isClosed = true;
 		}
-		this.closeAllResults();
+		closeAllResults();
 
 		if (removeFromConnection) {
 			connection.removeClosedStatement(this);
@@ -295,12 +289,12 @@ public class FireboltStatement implements Statement {
 
 	@Override
 	public boolean isClosed() throws SQLException {
-		return this.isClosed;
+		return isClosed;
 	}
 
 	@Override
 	public synchronized ResultSet getResultSet() throws SQLException {
-		return this.firstUnclosedStatementResult != null ? this.firstUnclosedStatementResult.getResultSet() : null;
+		return firstUnclosedStatementResult != null ? firstUnclosedStatementResult.getResultSet() : null;
 	}
 
 	@Override
@@ -371,7 +365,7 @@ public class FireboltStatement implements Statement {
 	 * @return true if the statement is currently running
 	 */
 	public boolean isStatementRunning() {
-		return this.runningStatementLabel != null && statementService.isStatementRunning(this.runningStatementLabel);
+		return runningStatementLabel != null && statementService.isStatementRunning(runningStatementLabel);
 	}
 
 	@Override
@@ -537,6 +531,6 @@ public class FireboltStatement implements Statement {
 	 * @return true if the statement has more results
 	 */
 	public boolean hasMoreResults() {
-		return this.currentStatementResult.getNext() != null;
+		return currentStatementResult.getNext() != null;
 	}
 }

@@ -102,7 +102,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
     private FireboltProperties getSessionPropertiesForSystemEngine(String accessToken, String account) throws FireboltException {
         String systemEngineEndpoint = fireboltGatewayUrlService.getUrl(accessToken, account);
         String accountId = fireboltAccountIdService.getValue(accessToken, account);
-        return this.loginProperties
+        return loginProperties
                 .toBuilder()
                 .systemEngine(true)
                 .additionalProperties(new HashMap<>()) // additional properties must be writable

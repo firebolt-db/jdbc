@@ -79,7 +79,7 @@ public enum JavaTypeToFireboltSQLString {
 			return NULL_VALUE;
 		} else {
 			try {
-				return this.transformToJavaTypeFunction.apply(object);
+				return transformToJavaTypeFunction.apply(object);
 			} catch (Exception e) {
 				throw new FireboltException("Could not convert object to a String ", e, TYPE_TRANSFORMATION_ERROR);
 			}

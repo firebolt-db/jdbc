@@ -36,7 +36,7 @@ public abstract class FireboltAuthenticationClient extends FireboltClient {
 		String uri = authenticationRequest.getUri();
 		log.debug("Creating connection with url {}", uri);
 		Request request = createPostRequest(uri, null, authenticationRequest.getRequestBody(), null);
-		try (Response response = this.execute(request, host)) {
+		try (Response response = execute(request, host)) {
 			String responseString = getResponseAsString(response);
 			FireboltAuthenticationResponse authenticationResponse = objectMapper.readValue(responseString,
 					FireboltAuthenticationResponse.class);

@@ -68,27 +68,27 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	private List<StatementInfoWrapper> prepareSQL(@NonNull Map<Integer, String> params) {
-		return replaceParameterMarksWithValues(params, this.rawStatement);
+		return replaceParameterMarksWithValues(params, rawStatement);
 	}
 
 	@Override
 	public int executeUpdate() throws SQLException {
-		this.validateStatementIsNotClosed();
-		return super.executeUpdate(prepareSQL(this.providedParameters));
+		validateStatementIsNotClosed();
+		return super.executeUpdate(prepareSQL(providedParameters));
 	}
 
 	@Override
 	public void setNull(int parameterIndex, int sqlType) throws SQLException {
-		this.validateStatementIsNotClosed();
-		this.validateParamIndex(parameterIndex);
-		this.providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.NULL_VALUE);
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.NULL_VALUE);
 	}
 
 	@Override
 	public void setBoolean(int parameterIndex, boolean x) throws SQLException {
-		this.validateStatementIsNotClosed();
-		this.validateParamIndex(parameterIndex);
-		this.providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.BOOLEAN.transform(x));
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.BOOLEAN.transform(x));
 	}
 
 	@Override
@@ -98,51 +98,51 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 
 	@Override
 	public void setShort(int parameterIndex, short x) throws SQLException {
-		this.validateStatementIsNotClosed();
-		this.validateParamIndex(parameterIndex);
-		this.providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.SHORT.transform(x));
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.SHORT.transform(x));
 	}
 
 	@Override
 	public void setInt(int parameterIndex, int x) throws SQLException {
-		this.validateStatementIsNotClosed();
-		this.validateParamIndex(parameterIndex);
-		this.providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.INTEGER.transform(x));
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.INTEGER.transform(x));
 	}
 
 	@Override
 	public void setLong(int parameterIndex, long x) throws SQLException {
-		this.validateStatementIsNotClosed();
-		this.validateParamIndex(parameterIndex);
-		this.providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.LONG.transform(x));
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.LONG.transform(x));
 	}
 
 	@Override
 	public void setFloat(int parameterIndex, float x) throws SQLException {
-		this.validateStatementIsNotClosed();
-		this.validateParamIndex(parameterIndex);
-		this.providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.FLOAT.transform(x));
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.FLOAT.transform(x));
 	}
 
 	@Override
 	public void setDouble(int parameterIndex, double x) throws SQLException {
-		this.validateStatementIsNotClosed();
-		this.validateParamIndex(parameterIndex);
-		this.providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.DOUBLE.transform(x));
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.DOUBLE.transform(x));
 	}
 
 	@Override
 	public void setBigDecimal(int parameterIndex, BigDecimal x) throws SQLException {
-		this.validateStatementIsNotClosed();
-		this.validateParamIndex(parameterIndex);
-		this.providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.BIG_DECIMAL.transform(x));
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.BIG_DECIMAL.transform(x));
 	}
 
 	@Override
 	public void setString(int parameterIndex, String x) throws SQLException {
-		this.validateStatementIsNotClosed();
-		this.validateParamIndex(parameterIndex);
-		this.providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.STRING.transform(x));
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.STRING.transform(x));
 	}
 
 	@Override
@@ -153,9 +153,9 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 
 	@Override
 	public void setDate(int parameterIndex, Date x) throws SQLException {
-		this.validateStatementIsNotClosed();
-		this.validateParamIndex(parameterIndex);
-		this.providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.DATE.transform(x));
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.DATE.transform(x));
 	}
 
 	@Override
@@ -166,54 +166,54 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 
 	@Override
 	public void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {
-		this.validateStatementIsNotClosed();
-		this.validateParamIndex(parameterIndex);
-		this.providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.TIMESTAMP.transform(x));
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.TIMESTAMP.transform(x));
 	}
 
 	@Override
 	public void clearParameters() throws SQLException {
-		this.providedParameters.clear();
-		this.rows.clear();
+		providedParameters.clear();
+		rows.clear();
 	}
 
 	@Override
 	public void setObject(int parameterIndex, Object x, int targetSqlType) throws SQLException {
-		this.validateStatementIsNotClosed();
-		this.validateParamIndex(parameterIndex);
-		this.setObject(parameterIndex, x);
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
+		setObject(parameterIndex, x);
 	}
 
 	@Override
 	public void setObject(int parameterIndex, Object x) throws SQLException {
-		this.validateStatementIsNotClosed();
-		this.validateParamIndex(parameterIndex);
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
 		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x));
 	}
 
 	@Override
 	public boolean execute() throws SQLException {
-		this.validateStatementIsNotClosed();
+		validateStatementIsNotClosed();
 		return super.execute(prepareSQL(providedParameters)).isPresent();
 	}
 
 	@Override
 	public void addBatch() throws SQLException {
-		rows.add(this.providedParameters);
-		this.providedParameters = new HashMap<>();
+		rows.add(providedParameters);
+		providedParameters = new HashMap<>();
 	}
 
 	@Override
 	public ResultSetMetaData getMetaData() throws SQLException {
-		ResultSet resultSet = this.getResultSet();
+		ResultSet resultSet = getResultSet();
 		return resultSet != null ? resultSet.getMetaData() : null;
 	}
 
 	@Override
 	public void setNull(int parameterIndex, int sqlType, String typeName) throws SQLException {
-		this.validateStatementIsNotClosed();
-		this.validateParamIndex(parameterIndex);
-		this.providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.NULL_VALUE);
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.NULL_VALUE);
 	}
 
 	@Override
@@ -224,28 +224,28 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 
 	@Override
 	public void setNString(int parameterIndex, String value) throws SQLException {
-		this.validateStatementIsNotClosed();
+		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		this.setString(parameterIndex, value);
+		setString(parameterIndex, value);
 	}
 
 	@Override
 	public void setArray(int parameterIndex, Array x) throws SQLException {
-		this.validateStatementIsNotClosed();
+		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		this.providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.ARRAY.transform(x));
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.ARRAY.transform(x));
 	}
 
 	@Override
 	public int[] executeBatch() throws SQLException {
-		this.validateStatementIsNotClosed();
+		validateStatementIsNotClosed();
 		log.debug("Executing batch for statement: {}", rawStatement);
 		List<StatementInfoWrapper> inserts = new ArrayList<>();
-		int[] result = new int[this.rows.size()];
+		int[] result = new int[rows.size()];
 		for (Map<Integer, String> row : rows) {
-			inserts.addAll(this.prepareSQL(row));
+			inserts.addAll(prepareSQL(row));
 		}
-		this.execute(inserts);
+		execute(inserts);
 		for (int i = 0; i < inserts.size(); i++) {
 			result[i] = SUCCESS_NO_INFO;
 		}
@@ -259,7 +259,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	private void validateParamIndex(int paramIndex) throws FireboltException {
-		if (this.rawStatement.getTotalParams() < paramIndex) {
+		if (rawStatement.getTotalParams() < paramIndex) {
 			throw new FireboltException(
 					String.format("Cannot set parameter as there is no parameter at index: %d for statement: %s",
 							paramIndex, rawStatement));

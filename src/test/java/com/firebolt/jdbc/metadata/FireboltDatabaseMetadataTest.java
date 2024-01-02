@@ -246,8 +246,7 @@ class FireboltDatabaseMetadataTest {
 						"NO")))
 				.build());
 
-		when(statement.executeQuery(expectedQuery))
-				.thenReturn(new FireboltResultSet(this.getInputStreamForGetColumns()));
+		when(statement.executeQuery(expectedQuery)).thenReturn(new FireboltResultSet(getInputStreamForGetColumns()));
 
 		ResultSet resultSet = fireboltDatabaseMetadata.getColumns("a", "b", "c", "d");
 		verify(statement).executeQuery(expectedQuery);
@@ -257,7 +256,7 @@ class FireboltDatabaseMetadataTest {
 	@Test
 	void shouldGetTypeInfo() throws SQLException {
 		ResultSet resultSet = fireboltDatabaseMetadata.getTypeInfo();
-		ResultSet expectedTypeInfo = new FireboltResultSet(this.getExpectedTypeInfo());
+		ResultSet expectedTypeInfo = new FireboltResultSet(getExpectedTypeInfo());
 		AssertionUtil.assertResultSetEquality(expectedTypeInfo, resultSet);
 	}
 

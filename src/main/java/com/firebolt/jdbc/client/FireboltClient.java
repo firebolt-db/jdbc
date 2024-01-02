@@ -63,7 +63,7 @@ public abstract class FireboltClient {
 	protected <T> T getResource(String uri, String host, String accessToken, Class<T> valueType)
 			throws IOException, FireboltException {
 		Request rq = createGetRequest(uri, accessToken);
-		try (Response response = this.execute(rq, host)) {
+		try (Response response = execute(rq, host)) {
 			return objectMapper.readValue(getResponseAsString(response), valueType);
 		}
 	}
@@ -82,8 +82,7 @@ public abstract class FireboltClient {
 			throws IOException, FireboltException {
 		Response response = null;
 		try {
-			OkHttpClient client = getClientWithTimeouts(this.connection.getConnectionTimeout(),
-					this.connection.getNetworkTimeout());
+			OkHttpClient client = getClientWithTimeouts(connection.getConnectionTimeout(), connection.getNetworkTimeout());
 			Call call = client.newCall(request);
 			response = call.execute();
 			validateResponse(host, response, isCompress);
@@ -95,13 +94,13 @@ public abstract class FireboltClient {
 	}
 
 	private OkHttpClient getClientWithTimeouts(int connectionTimeout, int networkTimeout) {
-		if (connectionTimeout != this.httpClient.connectTimeoutMillis()
-				|| networkTimeout != this.httpClient.readTimeoutMillis()) {
+		if (connectionTimeout != httpClient.connectTimeoutMillis()
+				|| networkTimeout != httpClient.readTimeoutMillis()) {
 			// This creates a shallow copy using the same connection pool
-			return this.httpClient.newBuilder().readTimeout(this.connection.getNetworkTimeout(), TimeUnit.MILLISECONDS)
-					.connectTimeout(this.connection.getConnectionTimeout(), TimeUnit.MILLISECONDS).build();
+			return httpClient.newBuilder().readTimeout(connection.getNetworkTimeout(), TimeUnit.MILLISECONDS)
+					.connectTimeout(connection.getConnectionTimeout(), TimeUnit.MILLISECONDS).build();
 		} else {
-			return this.httpClient;
+			return httpClient;
 		}
 	}
 
@@ -161,7 +160,7 @@ public abstract class FireboltClient {
 		} catch (IOException e) {
 			log.warn("Could not parse response containing the error message from Firebolt", e);
 			String errorResponseMessage = format("Server failed to execute query%ninternal error:%n%s",
-					this.getInternalErrorWithHeadersText(response));
+					getInternalErrorWithHeadersText(response));
 			throw new FireboltException(errorResponseMessage, response.code(), e);
 		}
 
@@ -186,7 +185,7 @@ public abstract class FireboltClient {
 
 	private List<Pair<String, String>> createHeaders(String accessToken) {
 		List<Pair<String, String>> headers = new ArrayList<>();
-		headers.add(new ImmutablePair<>(HEADER_USER_AGENT, this.getHeaderUserAgentValue()));
+		headers.add(new ImmutablePair<>(HEADER_USER_AGENT, getHeaderUserAgentValue()));
 		ofNullable(connection.getProtocolVersion()).ifPresent(version -> headers.add(new ImmutablePair<>(HEADER_PROTOCOL_VERSION, version)));
 		ofNullable(accessToken).ifPresent(token -> headers.add(new ImmutablePair<>(HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken)));
 		return headers;

@@ -1,22 +1,6 @@
 package com.firebolt.jdbc.resultset;
 
-import java.io.*;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.sql.*;
-import java.sql.Date;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 import com.firebolt.jdbc.QueryResult;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.commons.text.StringEscapeUtils;
-
-import com.firebolt.jdbc.util.LoggerUtil;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.exception.FireboltException;
@@ -29,8 +13,47 @@ import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.type.BaseType;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.array.FireboltArray;
-
+import com.firebolt.jdbc.util.LoggerUtil;
 import lombok.CustomLog;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.text.StringEscapeUtils;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.net.URL;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Date;
+import java.sql.NClob;
+import java.sql.Ref;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.RowId;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TimeZone;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * ResultSet for InputStream using the format "TabSeparatedWithNamesAndTypes"
@@ -69,10 +92,8 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	private FireboltResultSet() {
-		reader = // empty InputStream
-				new BufferedReader(
-						new InputStreamReader(new ByteArrayInputStream("".getBytes()), StandardCharsets.UTF_8));
-		resultSetMetaData = FireboltResultSetMetaData.builder().columns(new ArrayList<>()).build();
+		reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream("".getBytes()), UTF_8)); // empty InputStream
+		resultSetMetaData = new FireboltResultSetMetaData(new ArrayList<>(), null, null);
 		columnNameToColumnNumber = new HashMap<>();
 		currentLine = null;
 		columns = new ArrayList<>();
@@ -98,16 +119,15 @@ public class FireboltResultSet implements ResultSet {
 		this.maxRows = maxRows;
 
 		try {
-			this.next();
+			next();
 			String[] fields = toStringArray(currentLine);
 			this.columnNameToColumnNumber = getColumnNamesToIndexes(fields);
-			if (this.next()) {
-				this.columns = getColumns(fields, currentLine);
+			if (next()) {
+				columns = getColumns(fields, currentLine);
 			} else {
-				this.columns = new ArrayList<>();
+				columns = new ArrayList<>();
 			}
-			resultSetMetaData = FireboltResultSetMetaData.builder().columns(this.columns).tableName(tableName)
-					.dbName(dbName).build();
+			resultSetMetaData = new FireboltResultSetMetaData(columns, tableName, dbName);
 		} catch (Exception e) {
 			log.error("Could not create ResultSet: " + ExceptionUtils.getStackTrace(e), e);
 			throw new FireboltException("Cannot read response from DB: error while creating ResultSet ", e);
@@ -128,9 +148,9 @@ public class FireboltResultSet implements ResultSet {
 	private BufferedReader createStreamReader(InputStream is, Integer bufferSize, boolean isCompressed) {
 		InputStreamReader inputStreamReader;
 		if (isCompressed) {
-			inputStreamReader = new InputStreamReader(new LZ4InputStream(is), StandardCharsets.UTF_8);
+			inputStreamReader = new InputStreamReader(new LZ4InputStream(is), UTF_8);
 		} else {
-			inputStreamReader = new InputStreamReader(is, StandardCharsets.UTF_8);
+			inputStreamReader = new InputStreamReader(is, UTF_8);
 		}
 		return bufferSize != null && bufferSize != 0 ? new BufferedReader(inputStreamReader, bufferSize)
 				: new BufferedReader(inputStreamReader);
