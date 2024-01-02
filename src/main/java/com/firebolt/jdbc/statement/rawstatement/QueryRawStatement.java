@@ -29,7 +29,7 @@ public class QueryRawStatement extends RawStatement {
 	public QueryRawStatement(String sql, String cleanSql, List<ParamMarker> paramPositions) {
 		super(sql, cleanSql, paramPositions);
 		Pair<Optional<String>, Optional<String>> databaseAndTablePair = StatementUtil
-				.extractDbNameAndTableNamePairFromCleanQuery(this.getCleanSql());
+				.extractDbNameAndTableNamePairFromCleanQuery(getCleanSql());
 		this.database = databaseAndTablePair.getLeft().orElse(null);
 		this.table = databaseAndTablePair.getRight().orElse(null);
 	}

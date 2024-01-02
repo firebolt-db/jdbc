@@ -25,10 +25,10 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static com.firebolt.jdbc.client.UsageTrackerUtil.getUserAgentString;
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
@@ -51,8 +51,11 @@ public abstract class FireboltClient {
 		this.httpClient = httpClient;
 		this.objectMapper = objectMapper;
 		this.connection = connection;
-		this.headerUserAgentValue = UsageTrackerUtil.getUserAgentString(customDrivers != null ? customDrivers : "",
-				customClients != null ? customClients : "");
+		this.headerUserAgentValue = getUserAgentString(nullToEmpty(customDrivers), nullToEmpty(customClients));
+	}
+
+	private String nullToEmpty(String str) {
+		return str == null ? "" : str;
 	}
 
 	protected <T> T getResource(String uri, String accessToken, Class<T> valueType)

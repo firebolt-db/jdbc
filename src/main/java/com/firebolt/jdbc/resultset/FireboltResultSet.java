@@ -178,13 +178,13 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public String getString(int columnIndex) throws SQLException {
-		Column columnInfo = this.columns.get(columnIndex - 1);
+		Column columnInfo = columns.get(columnIndex - 1);
 		if (Optional.ofNullable(columnInfo).map(Column::getType).map(ColumnType::getDataType)
 				.filter(t -> t.equals(FireboltDataType.BYTEA)).isPresent()) {
 			// We do not need to escape when the type is BYTEA
-			return this.getValueAtColumn(columnIndex);
+			return getValueAtColumn(columnIndex);
 		} else {
-			return BaseType.TEXT.transform(this.getValueAtColumn(columnIndex));
+			return BaseType.TEXT.transform(getValueAtColumn(columnIndex));
 		}
 	}
 
@@ -201,7 +201,7 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public int getInt(String columnName) throws SQLException {
-		return this.getInt(findColumn(columnName));
+		return getInt(findColumn(columnName));
 	}
 
 	@Override
@@ -218,7 +218,7 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public float getFloat(String columnLabel) throws SQLException {
-		return this.getFloat(findColumn(columnLabel));
+		return getFloat(findColumn(columnLabel));
 	}
 
 	@Override
@@ -229,12 +229,12 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public double getDouble(String columnLabel) throws SQLException {
-		return this.getDouble(findColumn(columnLabel));
+		return getDouble(findColumn(columnLabel));
 	}
 
 	@Override
 	public long getLong(String column) throws SQLException {
-		return this.getLong(findColumn(column));
+		return getLong(findColumn(column));
 	}
 
 	@Override
@@ -251,12 +251,12 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public byte getByte(String column) throws SQLException {
-		return this.getByte(findColumn(column));
+		return getByte(findColumn(column));
 	}
 
 	@Override
 	public short getShort(String columnLabel) throws SQLException {
-		return this.getShort(findColumn(columnLabel));
+		return getShort(findColumn(columnLabel));
 	}
 
 	@Override
@@ -267,21 +267,20 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public byte[] getBytes(String column) throws SQLException {
-		return this.getBytes(findColumn(column));
+		return getBytes(findColumn(column));
 	}
 
 	@Override
 	public synchronized void close() throws SQLException {
-		if (!this.isClosed) {
+		if (!isClosed) {
 			try {
-				this.reader.close();
-				this.isClosed = true;
+				reader.close();
+				isClosed = true;
 			} catch (IOException e) {
 				throw new SQLException("Could not close data stream when closing ResultSet", e);
 			} finally {
-				if (this.statement != null
-						&& (this.statement.isCloseOnCompletion() && !this.statement.hasMoreResults())) {
-					this.statement.close();
+				if (statement != null && (statement.isCloseOnCompletion() && !statement.hasMoreResults())) {
+					statement.close();
 				}
 			}
 		}
@@ -303,45 +302,45 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public BigDecimal getBigDecimal(String columnLabel) throws SQLException {
-		return getBigDecimal(this.findColumn(columnLabel));
+		return getBigDecimal(findColumn(columnLabel));
 	}
 
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
-		BigDecimal bigDecimal = this.getBigDecimal(columnIndex);
+		BigDecimal bigDecimal = getBigDecimal(columnIndex);
 		return bigDecimal == null ? null : bigDecimal.setScale(scale, RoundingMode.HALF_UP);
 	}
 
 	@Override
 	public BigDecimal getBigDecimal(String columnLabel, int scale) throws SQLException {
-		return getBigDecimal(this.findColumn(columnLabel), scale);
+		return getBigDecimal(findColumn(columnLabel), scale);
 	}
 
 	@Override
 	public Array getArray(int columnIndex) throws SQLException {
 		String value = getValueAtColumn(columnIndex);
-		return BaseType.ARRAY.transform(value, this.resultSetMetaData.getColumn(columnIndex));
+		return BaseType.ARRAY.transform(value, resultSetMetaData.getColumn(columnIndex));
 	}
 
 	@Override
 	public Array getArray(String column) throws SQLException {
-		return this.getArray(this.findColumn(column));
+		return getArray(findColumn(column));
 	}
 
 	@Override
 	public boolean getBoolean(String columnLabel) throws SQLException {
-		return getBoolean(this.findColumn(columnLabel));
+		return getBoolean(findColumn(columnLabel));
 	}
 
 	@Override
 	public boolean getBoolean(int columnIndex) throws SQLException {
-		Boolean value = BaseType.BOOLEAN.transform(this.getValueAtColumn(columnIndex), this.resultSetMetaData.getColumn(columnIndex));
+		Boolean value = BaseType.BOOLEAN.transform(getValueAtColumn(columnIndex), resultSetMetaData.getColumn(columnIndex));
 		return value != null && value;
 	}
 
 	@Override
 	public Date getDate(String columnLabel) throws SQLException {
-		return getDate(this.findColumn(columnLabel));
+		return getDate(findColumn(columnLabel));
 	}
 
 	@Override
@@ -352,42 +351,42 @@ public class FireboltResultSet implements ResultSet {
 	@Override
 	public Date getDate(int columnIndex, Calendar calendar) throws SQLException {
 		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
-		String value = this.getValueAtColumn(columnIndex);
-		return BaseType.DATE.transform(value, this.resultSetMetaData.getColumn(columnIndex), timeZone);
+		String value = getValueAtColumn(columnIndex);
+		return BaseType.DATE.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone);
 	}
 
 	@Override
 	public Date getDate(String columnLabel, Calendar cal) throws SQLException {
-		return getDate(this.findColumn(columnLabel), cal);
+		return getDate(findColumn(columnLabel), cal);
 	}
 
 	@Override
 	public Timestamp getTimestamp(int columnIndex) throws SQLException {
-		return this.getTimestamp(columnIndex, null);
+		return getTimestamp(columnIndex, null);
 	}
 
 	@Override
 	public Timestamp getTimestamp(String columnLabel) throws SQLException {
-		return getTimestamp(this.findColumn(columnLabel));
+		return getTimestamp(findColumn(columnLabel));
 	}
 
 	@Override
 	public Timestamp getTimestamp(int columnIndex, Calendar calendar) throws SQLException {
 		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
-		String value = this.getValueAtColumn(columnIndex);
-		return BaseType.TIMESTAMP.transform(value, this.resultSetMetaData.getColumn(columnIndex), timeZone);
+		String value = getValueAtColumn(columnIndex);
+		return BaseType.TIMESTAMP.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone);
 	}
 
 	@Override
 	public Timestamp getTimestamp(String columnLabel, Calendar calendar) throws SQLException {
-		return getTimestamp(this.findColumn(columnLabel), calendar);
+		return getTimestamp(findColumn(columnLabel), calendar);
 	}
 
 	@Override
 	public Time getTime(int columnIndex, Calendar calendar) throws SQLException {
 		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
-		String value = this.getValueAtColumn(columnIndex);
-		return BaseType.TIME.transform(value, this.resultSetMetaData.getColumn(columnIndex), timeZone);
+		String value = getValueAtColumn(columnIndex);
+		return BaseType.TIME.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone);
 	}
 
 	@Override
@@ -395,30 +394,30 @@ public class FireboltResultSet implements ResultSet {
 		if (type == null) {
 			throw new FireboltException("The type provided is null");
 		}
-		String value = this.getValueAtColumn(columnIndex);
-		Column column = this.resultSetMetaData.getColumn(columnIndex);
+		String value = getValueAtColumn(columnIndex);
+		Column column = resultSetMetaData.getColumn(columnIndex);
 		BaseType columnType = column.getType().getDataType().getBaseType();
 		return FieldTypeConverter.convert(type, value, columnType, column);
 	}
 
 	@Override
 	public <T> T getObject(String columnLabel, Class<T> type) throws SQLException {
-		return getObject(this.findColumn(columnLabel), type);
+		return getObject(findColumn(columnLabel), type);
 	}
 
 	@Override
 	public Time getTime(String columnLabel) throws SQLException {
-		return getTime(this.findColumn(columnLabel));
+		return getTime(findColumn(columnLabel));
 	}
 
 	@Override
 	public Time getTime(int columnIndex) throws SQLException {
-		return this.getTime(columnIndex, null);
+		return getTime(columnIndex, null);
 	}
 
 	@Override
 	public Time getTime(String columnLabel, Calendar cal) throws SQLException {
-		return getTime(this.findColumn(columnLabel), cal);
+		return getTime(findColumn(columnLabel), cal);
 	}
 
 	@Override
@@ -433,7 +432,7 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public ResultSetMetaData getMetaData() throws SQLException {
-		return this.resultSetMetaData;
+		return resultSetMetaData;
 	}
 
 	@Override
@@ -442,7 +441,7 @@ public class FireboltResultSet implements ResultSet {
 		if (BaseType.isNull(value)) {
 			return null;
 		}
-		Column columnInfo = this.columns.get(columnIndex - 1);
+		Column columnInfo = columns.get(columnIndex - 1);
 		FireboltDataType columnType = columnInfo.getType().getDataType();
 		Object object = columnType.getBaseType().transform(value, columnInfo, columnInfo.getType().getTimeZone());
 		if (columnType == FireboltDataType.ARRAY && object != null) {
