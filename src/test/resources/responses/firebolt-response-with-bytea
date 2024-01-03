@@ -1,4 +1,4 @@
-id	null_bytea	an_empty_bytea	a_bytea
-Int64	bytea	bytea	bytea
-1	\N		\xdeadbeef
-2	\N		\x00ab
+id	null_bytea	an_empty_bytea	a_bytea	false_bytea
+Int64	bytea	bytea	bytea	bytea
+1	\N		\xdeadbeef	1
+2	\N		\x00ab	hello
