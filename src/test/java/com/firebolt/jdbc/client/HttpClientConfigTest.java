@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.lang.reflect.Field;
+import java.util.Properties;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,7 @@ class HttpClientConfigTest {
 	@Test
 	void shouldInitHttpClient() throws Exception {
 		assertNull(HttpClientConfig.getInstance());
-		OkHttpClient client = HttpClientConfig.init(FireboltProperties.of());
+		OkHttpClient client = HttpClientConfig.init(new FireboltProperties(new Properties()));
 		assertNotNull(client);
 		assertSame(client, HttpClientConfig.getInstance());
 	}

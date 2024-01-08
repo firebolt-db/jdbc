@@ -23,7 +23,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
+import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -37,6 +37,7 @@ import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Callable;
@@ -423,15 +424,18 @@ abstract class FireboltConnectionTest {
 	@Test
 	void shouldRemoveExpiredToken() throws SQLException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().host("host").database("db").port(8080).account("dev").build();
-		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
-			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
-			when(fireboltAuthenticationService.getConnectionTokens("http://host:8080", fireboltProperties))
-					.thenReturn(FireboltConnectionTokens.builder().build());
+		String url = fireboltProperties.getHttpConnectionUrl();
+		try (MockedConstruction<FireboltProperties> mockedFireboltPropertiesConstruction = Mockito.mockConstruction(FireboltProperties.class, (fireboltPropertiesMock, context) -> {
+			when(fireboltPropertiesMock.getAccount()).thenReturn(fireboltProperties.getAccount());
+			when(fireboltPropertiesMock.getDatabase()).thenReturn(fireboltProperties.getDatabase());
+			when(fireboltPropertiesMock.getHttpConnectionUrl()).thenReturn(fireboltProperties.getHttpConnectionUrl());
+			when(fireboltPropertiesMock.toBuilder()).thenReturn(fireboltProperties.toBuilder());
+			lenient().when(fireboltAuthenticationService.getConnectionTokens(eq(url), argThat(argument -> true))).thenReturn(FireboltConnectionTokens.builder().build());
 			lenient().when(fireboltEngineService.getEngine(any())).thenReturn(new Engine("http://hello", null, null, null, null));
-
+		})) {
 			try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
 				fireboltConnection.removeExpiredTokens();
-				verify(fireboltAuthenticationService).removeConnectionTokens("http://host:8080", fireboltProperties);
+				verify(fireboltAuthenticationService).removeConnectionTokens(eq(url), argThat(argument -> true));
 			}
 		}
 	}
@@ -440,13 +444,19 @@ abstract class FireboltConnectionTest {
 	void shouldReturnConnectionTokenWhenAvailable() throws SQLException {
 		String accessToken = "hello";
 		FireboltProperties fireboltProperties = FireboltProperties.builder().host("host").database("db").port(8080).account("dev").build();
-		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
-			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
+		String url = fireboltProperties.getHttpConnectionUrl();
+
+        try (MockedConstruction<FireboltProperties> mockedFireboltPropertiesConstruction = Mockito.mockConstruction(FireboltProperties.class, (fireboltPropertiesMock, context) -> {
+			when(fireboltPropertiesMock.getAccount()).thenReturn(fireboltProperties.getAccount());
+			when(fireboltPropertiesMock.getHttpConnectionUrl()).thenReturn(url);
+			when(fireboltPropertiesMock.getDatabase()).thenReturn(fireboltProperties.getDatabase());
+			when(fireboltPropertiesMock.toBuilder()).thenReturn(fireboltProperties.toBuilder());
+        })) {
 			FireboltConnectionTokens connectionTokens = FireboltConnectionTokens.builder().accessToken(accessToken).build();
-			when(fireboltAuthenticationService.getConnectionTokens(eq("http://host:8080"), any())).thenReturn(connectionTokens);
+			when(fireboltAuthenticationService.getConnectionTokens(eq(url), any())).thenReturn(connectionTokens);
 			lenient().when(fireboltEngineService.getEngine(any())).thenReturn(new Engine("http://engineHost", null, null, null, null));
 			try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
-				verify(fireboltAuthenticationService).getConnectionTokens("http://host:8080", fireboltProperties);
+				verify(fireboltAuthenticationService).getConnectionTokens(eq(url), argThat(argument -> Objects.equals(argument.getHttpConnectionUrl(), url)));
 				assertEquals(accessToken, fireboltConnection.getAccessToken().get());
 			}
 		}
@@ -455,8 +465,10 @@ abstract class FireboltConnectionTest {
 	@Test
 	void shouldNotReturnConnectionTokenWithLocalDb() throws SQLException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().host("localhost").build();
-		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
-			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
+		try (MockedConstruction<FireboltProperties> mockedFireboltPropertiesConstruction = Mockito.mockConstruction(FireboltProperties.class, (fireboltPropertiesMock, context) -> {
+			when(fireboltPropertiesMock.getHost()).thenReturn(fireboltProperties.getHost());
+			when(fireboltPropertiesMock.toBuilder()).thenReturn(fireboltProperties.toBuilder());
+		})) {
 			try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
 				assertEquals(Optional.empty(), fireboltConnection.getAccessToken());
 				verifyNoInteractions(fireboltAuthenticationService);
@@ -494,10 +506,12 @@ abstract class FireboltConnectionTest {
 
 	@Test
 	void shouldSetNetworkTimeout() throws SQLException {
-		FireboltProperties fireboltProperties = FireboltProperties.builder().host("localhost").path("/db")
-				.socketTimeoutMillis(5).port(8080).build();
-		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
-			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
+		FireboltProperties fireboltProperties = FireboltProperties.builder().host("localhost").socketTimeoutMillis(5).build();
+		try (MockedConstruction<FireboltProperties> mockedFireboltPropertiesConstruction = Mockito.mockConstruction(FireboltProperties.class, (fireboltPropertiesMock, context) -> {
+			when(fireboltPropertiesMock.getHost()).thenReturn(fireboltProperties.getHost());
+			when(fireboltPropertiesMock.getSocketTimeoutMillis()).thenReturn(fireboltProperties.getSocketTimeoutMillis());
+			when(fireboltPropertiesMock.toBuilder()).thenReturn(fireboltProperties.toBuilder());
+		})) {
 			try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
 				assertEquals(5, fireboltConnection.getNetworkTimeout());
 				fireboltConnection.setNetworkTimeout(null, 1);
@@ -508,11 +522,14 @@ abstract class FireboltConnectionTest {
 
 	@Test
 	void shouldUseConnectionTimeoutFromProperties() throws SQLException {
-		FireboltProperties fireboltProperties = FireboltProperties.builder().host("localhost").path("/db").connectionTimeoutMillis(20).port(8080).build();
-		try (MockedStatic<FireboltProperties> mockedFireboltProperties = Mockito.mockStatic(FireboltProperties.class)) {
-			when(FireboltProperties.of(any())).thenReturn(fireboltProperties);
+		FireboltProperties fireboltProperties = FireboltProperties.builder().host("localhost").connectionTimeoutMillis(20).build();
+		try (MockedConstruction<FireboltProperties> mockedFireboltPropertiesConstruction = Mockito.mockConstruction(FireboltProperties.class, (fireboltPropertiesMock, context) -> {
+			when(fireboltPropertiesMock.getHost()).thenReturn(fireboltProperties.getHost());
+			when(fireboltPropertiesMock.getConnectionTimeoutMillis()).thenReturn(fireboltProperties.getConnectionTimeoutMillis());
+			when(fireboltPropertiesMock.toBuilder()).thenReturn(fireboltProperties.toBuilder());
+		})) {
 			try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
-				assertEquals(20, fireboltConnection.getConnectionTimeout());
+				assertEquals(fireboltProperties.getConnectionTimeoutMillis(), fireboltConnection.getConnectionTimeout());
 			}
 		}
 	}
