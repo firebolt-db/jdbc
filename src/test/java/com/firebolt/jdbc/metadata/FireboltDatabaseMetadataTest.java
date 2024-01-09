@@ -28,6 +28,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Driver;
 import java.sql.ResultSet;
+import java.sql.RowIdLifetime;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
@@ -70,6 +71,11 @@ import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_NAME;
 import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_SCHEM;
 import static com.firebolt.jdbc.type.FireboltDataType.INTEGER;
 import static com.firebolt.jdbc.type.FireboltDataType.TEXT;
+import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
+import static java.sql.Connection.TRANSACTION_READ_UNCOMMITTED;
+import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
+import static java.sql.Connection.TRANSACTION_SERIALIZABLE;
+import static java.sql.DatabaseMetaData.sqlStateSQL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -85,14 +91,12 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltDatabaseMetadataTest {
-
 	@Mock
 	private FireboltConnection fireboltConnection;
 
 	@Mock
 	private FireboltStatement statement;
 
-//	@InjectMocks
 	private FireboltDatabaseMetadata fireboltDatabaseMetadata;
 
 	@BeforeEach
@@ -139,12 +143,6 @@ class FireboltDatabaseMetadataTest {
 		ResultSet actualResultSet = fireboltDatabaseMetadata.getSchemas();
 
 		AssertionUtil.assertResultSetEquality(expectedResultSet, actualResultSet);
-	}
-
-	@Test
-	void shouldNotReturnAnyProcedureColumns() throws SQLException {
-		AssertionUtil.assertResultSetEquality(FireboltResultSet.empty(),
-				fireboltDatabaseMetadata.getProcedureColumns(null, null, null, null));
 	}
 
 	@Test
@@ -359,6 +357,235 @@ class FireboltDatabaseMetadataTest {
 	}
 
 	@Test
+	void nullSorting() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.nullsAreSortedHigh());
+		assertTrue(fireboltDatabaseMetadata.nullsAreSortedLow());
+		assertFalse(fireboltDatabaseMetadata.nullsAreSortedAtStart());
+		assertTrue(fireboltDatabaseMetadata.nullsAreSortedAtEnd());
+	}
+
+	@Test
+	void useLocalFiles() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.usesLocalFiles());
+		assertFalse(fireboltDatabaseMetadata.usesLocalFilePerTable());
+	}
+
+	@Test
+	void identifiersCase() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsMixedCaseIdentifiers());
+		assertFalse(fireboltDatabaseMetadata.storesMixedCaseIdentifiers());
+		assertFalse(fireboltDatabaseMetadata.storesUpperCaseIdentifiers());
+		assertTrue(fireboltDatabaseMetadata.storesLowerCaseIdentifiers());
+	}
+
+	@Test
+	void quotedIdentifiersCase() throws SQLException {
+		assertTrue(fireboltDatabaseMetadata.supportsMixedCaseQuotedIdentifiers());
+		assertTrue(fireboltDatabaseMetadata.storesMixedCaseQuotedIdentifiers());
+		assertFalse(fireboltDatabaseMetadata.storesUpperCaseQuotedIdentifiers());
+		assertFalse(fireboltDatabaseMetadata.storesLowerCaseQuotedIdentifiers());
+	}
+
+	@Test
+	void getIdentifierQuoteString() throws SQLException {
+		assertEquals("\"", fireboltDatabaseMetadata.getIdentifierQuoteString());
+	}
+
+	@Test
+	void getSearchStringEscape() throws SQLException {
+		assertEquals("\\", fireboltDatabaseMetadata.getSearchStringEscape());
+	}
+
+	@Test
+	void getExtraNameCharacters() throws SQLException {
+		assertEquals("", fireboltDatabaseMetadata.getExtraNameCharacters());
+	}
+
+	@Test
+	void supportsAlterTable() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsAlterTableWithAddColumn());
+		assertFalse(fireboltDatabaseMetadata.supportsAlterTableWithDropColumn());
+	}
+
+	@Test
+	void supportsColumnAliasing() throws SQLException {
+		assertTrue(fireboltDatabaseMetadata.supportsColumnAliasing());
+	}
+
+	@Test
+	void nullPlusNonNullIsNull() throws SQLException {
+		assertTrue(fireboltDatabaseMetadata.nullPlusNonNullIsNull());
+	}
+
+	@Test
+	void supportsConvert() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsConvert());
+		assertFalse(fireboltDatabaseMetadata.supportsConvert(Types.INTEGER, Types.VARCHAR));
+	}
+
+
+	@Test
+	void corelationNames() throws SQLException {
+		assertTrue(fireboltDatabaseMetadata.supportsTableCorrelationNames());
+		assertFalse(fireboltDatabaseMetadata.supportsDifferentTableCorrelationNames());
+	}
+
+	@Test
+	void supportsExpressionsInOrderBy() throws SQLException {
+		assertTrue(fireboltDatabaseMetadata.supportsExpressionsInOrderBy());
+		assertTrue(fireboltDatabaseMetadata.supportsOrderByUnrelated());
+	}
+
+	@Test
+	void supportsGroupBy() throws SQLException {
+		assertTrue(fireboltDatabaseMetadata.supportsGroupBy());
+	}
+
+	@Test
+	void supportsTransactions() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsTransactions());
+		assertFalse(fireboltDatabaseMetadata.supportsMultipleTransactions());
+		assertTrue(fireboltDatabaseMetadata.supportsTransactionIsolationLevel(Connection.TRANSACTION_NONE));
+		assertEquals(Connection.TRANSACTION_NONE, fireboltDatabaseMetadata.getDefaultTransactionIsolation());
+		assertFalse(fireboltDatabaseMetadata.supportsDataManipulationTransactionsOnly());
+		assertFalse(fireboltDatabaseMetadata.supportsDataDefinitionAndDataManipulationTransactions());
+		assertFalse(fireboltDatabaseMetadata.dataDefinitionCausesTransactionCommit());
+
+		for (int level : new int[] {TRANSACTION_READ_UNCOMMITTED, TRANSACTION_READ_COMMITTED, TRANSACTION_REPEATABLE_READ, TRANSACTION_SERIALIZABLE}) {
+			assertFalse(fireboltDatabaseMetadata.supportsTransactionIsolationLevel(level));
+		}
+		assertFalse(fireboltDatabaseMetadata.supportsSavepoints());
+		assertFalse(fireboltDatabaseMetadata.autoCommitFailureClosesAllResultSets());
+	}
+
+	@Test
+	void supportsBatchUpdates() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsBatchUpdates());
+	}
+
+	@Test
+	void supportsResultSetType() throws SQLException {
+		assertTrue(fireboltDatabaseMetadata.supportsResultSetType(ResultSet.TYPE_FORWARD_ONLY));
+		assertFalse(fireboltDatabaseMetadata.supportsResultSetType(ResultSet.TYPE_SCROLL_INSENSITIVE));
+		assertFalse(fireboltDatabaseMetadata.supportsResultSetType(ResultSet.TYPE_SCROLL_SENSITIVE));
+	}
+
+	@Test
+	void supportJoins() throws SQLException {
+		assertTrue(fireboltDatabaseMetadata.supportsOuterJoins());
+		assertTrue(fireboltDatabaseMetadata.supportsFullOuterJoins());
+		assertTrue(fireboltDatabaseMetadata.supportsLimitedOuterJoins());
+	}
+
+	@Test
+	void supportTerms() throws SQLException {
+		assertEquals("schema", fireboltDatabaseMetadata.getSchemaTerm());
+		assertEquals("procedure", fireboltDatabaseMetadata.getProcedureTerm());
+		assertEquals("database", fireboltDatabaseMetadata.getCatalogTerm());
+	}
+
+	@Test
+	void supportsCatalogs() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.isCatalogAtStart());
+		assertEquals(".", fireboltDatabaseMetadata.getCatalogSeparator());
+		assertFalse(fireboltDatabaseMetadata.supportsCatalogsInDataManipulation());
+		assertFalse(fireboltDatabaseMetadata.supportsCatalogsInProcedureCalls());
+		assertFalse(fireboltDatabaseMetadata.supportsCatalogsInTableDefinitions());
+		assertFalse(fireboltDatabaseMetadata.supportsCatalogsInIndexDefinitions());
+		assertFalse(fireboltDatabaseMetadata.supportsCatalogsInPrivilegeDefinitions());
+	}
+
+	@Test
+	void supportsSchemas() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsSchemasInDataManipulation());
+		assertFalse(fireboltDatabaseMetadata.supportsSchemasInProcedureCalls());
+		assertFalse(fireboltDatabaseMetadata.supportsSchemasInTableDefinitions());
+		assertFalse(fireboltDatabaseMetadata.supportsSchemasInIndexDefinitions());
+	}
+
+	@Test
+	void supportsUnions() throws SQLException {
+		assertTrue(fireboltDatabaseMetadata.supportsUnion());
+		assertTrue(fireboltDatabaseMetadata.supportsUnionAll());
+	}
+
+	@Test
+	void checkLimits() throws SQLException {
+		assertEquals(63, fireboltDatabaseMetadata.getMaxColumnNameLength());
+		assertEquals(63, fireboltDatabaseMetadata.getMaxSchemaNameLength());
+		assertEquals(63, fireboltDatabaseMetadata.getMaxCatalogNameLength());
+		assertEquals(63, fireboltDatabaseMetadata.getMaxTableNameLength());
+		assertEquals(1000, fireboltDatabaseMetadata.getMaxColumnsInTable());
+	}
+
+
+	@Test
+	void supportsNonNullableColumns() throws SQLException {
+		assertTrue(fireboltDatabaseMetadata.supportsNonNullableColumns());
+	}
+
+	@Test
+	void supportsNamedParameters() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsNamedParameters());
+	}
+
+	@Test
+	void holdability() throws SQLException {
+		assertTrue(fireboltDatabaseMetadata.supportsResultSetHoldability(ResultSet.HOLD_CURSORS_OVER_COMMIT));
+		assertFalse(fireboltDatabaseMetadata.supportsResultSetHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT));
+		assertEquals(ResultSet.HOLD_CURSORS_OVER_COMMIT, fireboltDatabaseMetadata.getResultSetHoldability());
+	}
+
+	@Test
+	void getSQLStateType() throws SQLException {
+		assertEquals(sqlStateSQL, fireboltDatabaseMetadata.getSQLStateType());
+	}
+
+	@Test
+	void locatorsUpdateCopy() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.locatorsUpdateCopy());
+	}
+
+	@Test
+	void supportsStatementPooling() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsStatementPooling());
+	}
+
+	@Test
+	void getRowIdLifetime() throws SQLException {
+		assertEquals(RowIdLifetime.ROWID_UNSUPPORTED, fireboltDatabaseMetadata.getRowIdLifetime());
+	}
+
+	@Test
+	void supportsStoredFunctionsUsingCallSyntax() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsStoredFunctionsUsingCallSyntax());
+	}
+
+	@Test
+	void emptyResultSets() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.getProcedureColumns(null, null, null, null).next());
+		assertFalse(fireboltDatabaseMetadata.getUDTs(null, null, null, null).next());
+		assertFalse(fireboltDatabaseMetadata.getUDTs(null, null, null, null).next());
+		assertFalse(fireboltDatabaseMetadata.getSuperTypes(null, null, null).next());
+		assertFalse(fireboltDatabaseMetadata.getSuperTables(null, null, null).next());
+		assertFalse(fireboltDatabaseMetadata.getAttributes(null, null, null, null).next());
+		assertFalse(fireboltDatabaseMetadata.getProcedures(null, null, null).next());
+		assertFalse(fireboltDatabaseMetadata.getBestRowIdentifier(null, null, null, 0, false).next());
+		assertFalse(fireboltDatabaseMetadata.getVersionColumns(null, null, null).next());
+		assertFalse(fireboltDatabaseMetadata.getPrimaryKeys(null, null, null).next());
+		assertFalse(fireboltDatabaseMetadata.getImportedKeys(null, null, null).next());
+		assertFalse(fireboltDatabaseMetadata.getExportedKeys(null, null, null).next());
+		assertFalse(fireboltDatabaseMetadata.getCrossReference(null, null, null, null, null, null).next());
+		assertFalse(fireboltDatabaseMetadata.getClientInfoProperties().next());
+		assertFalse(fireboltDatabaseMetadata.getPseudoColumns(null, null, null, null).next());
+	}
+
+	@Test
+	void getSQLKeywords() throws SQLException {
+		getFunctions(DatabaseMetaData::getSQLKeywords);
+	}
+
+	@Test
 	void getStringFunctions() throws SQLException {
 		getFunctions(DatabaseMetaData::getStringFunctions);
 	}
@@ -414,7 +641,12 @@ class FireboltDatabaseMetadataTest {
 		assertFalse(fireboltDatabaseMetadata.isWrapperFor(clazz));
 	}
 
-	void getFunctions(CheckedFunction<DatabaseMetaData, ResultSet> getter, String functionNamePattern, boolean filled, boolean allowDuplicates) throws SQLException {
+	@Test
+	void generatedKeyAlwaysReturned() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.generatedKeyAlwaysReturned());
+	}
+
+	private void getFunctions(CheckedFunction<DatabaseMetaData, ResultSet> getter, String functionNamePattern, boolean filled, boolean allowDuplicates) throws SQLException {
 		String previousFunction = null;
 		int count = 0;
 		for (ResultSet rs = getter.apply(fireboltDatabaseMetadata); rs.next();) {
@@ -468,6 +700,6 @@ class FireboltDatabaseMetadataTest {
 	private void getFunctions(CheckedFunction<DatabaseMetaData, String> getter) throws SQLException {
 		String functions = getter.apply(fireboltDatabaseMetadata);
 		assertNotNull(functions);
-		assertTrue(functions.length() > 0);
+        assertFalse(functions.isEmpty());
 	}
 }
