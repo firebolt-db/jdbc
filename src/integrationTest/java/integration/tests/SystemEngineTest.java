@@ -213,22 +213,7 @@ public class SystemEngineTest extends IntegrationTest {
 //				String clientId = genKeyRs.getString(2);
 //				String clientSecret = genKeyRs.getString(3);
 				// But response of this command is incorrect (FIR-28997), so we have to retrieve clientId and clientSecret using SELECT
-				FireboltConnection fbConn = (FireboltConnection)connection;
-				String accessToken = fbConn.getAccessToken().orElseThrow(() -> new IllegalStateException("access token is not found"));
-				FireboltProperties fbProps = fbConn.getSessionProperties();
-				URL url = new URL(format("%s/query?output_format=TabSeparatedWithNamesAndTypes&database=%s&account_id=%s", fbProps.getHttpConnectionUrl(), current.getDatabase(), fbProps.getAccountId()));
-				HttpURLConnection con = (HttpURLConnection)url.openConnection();
-				con.setRequestMethod("POST");
-				con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-				con.setRequestProperty("authorization", "Bearer " + accessToken);
-				con.setDoOutput(true);
-				try (PrintStream ps = new PrintStream(con.getOutputStream())) {
-					ps.println(format("CALL fb_GENERATESERVICEACCOUNTKEY('%s')", serviceAccountName));
-				}
-				BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream(), UTF_8));
-				String[] data = br.readLine().split("\\t");
-//				String clientId = data[1];
-				String clientSecret = data[2];
+				String clientSecret = getClientSecret(connection, serviceAccountName, current.getDatabase());
 				// end of patch against FIR-28997
 //				if (clientId == null || clientId.isEmpty()) { // Currently this is bugged so retrieve id via a query. FIR-28719
 					ResultSet serviceAccountRs = connection.createStatement().executeQuery(format("SELECT service_account_id FROM information_schema.service_accounts WHERE service_account_name='%s'", serviceAccountName));
@@ -243,6 +228,27 @@ public class SystemEngineTest extends IntegrationTest {
 				connection.createStatement().executeUpdate(format("DROP SERVICE ACCOUNT \"%s\"", serviceAccountName));
 			}
 		}
+	}
+
+	// This method should be removed when FIR-28997 is fixed
+	private String getClientSecret(Connection connection, String serviceAccountName, String database) throws SQLException, IOException {
+		FireboltConnection fbConn = (FireboltConnection)connection;
+		String accessToken = fbConn.getAccessToken().orElseThrow(() -> new IllegalStateException("access token is not found"));
+		FireboltProperties fbProps = fbConn.getSessionProperties();
+		URL url = new URL(format("%s/query?output_format=TabSeparatedWithNamesAndTypes&database=%s&account_id=%s", fbProps.getHttpConnectionUrl(), database, fbProps.getAccountId()));
+		HttpURLConnection con = (HttpURLConnection)url.openConnection();
+		con.setRequestMethod("POST");
+		con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+		con.setRequestProperty("authorization", "Bearer " + accessToken);
+		con.setDoOutput(true);
+		try (PrintStream ps = new PrintStream(con.getOutputStream())) {
+			ps.println(format("CALL fb_GENERATESERVICEACCOUNTKEY('%s')", serviceAccountName));
+		}
+		BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream(), UTF_8));
+		String[] data = br.readLine().split("\\t");
+		String clientSecret = data[2];
+		return clientSecret;
+
 	}
 
 	private String getTableDbName(Connection connection, String table) throws SQLException {
