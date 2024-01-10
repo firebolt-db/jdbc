@@ -13,7 +13,8 @@ import java.lang.reflect.Array;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 @UtilityClass
 @CustomLog
@@ -21,59 +22,84 @@ public class SqlArrayUtil {
 
 	public static FireboltArray transformToSqlArray(String value, ColumnType columnType) throws SQLException {
 		log.debug("Transformer array with value {} and type {}", value, columnType);
-		int dimensions = 0;
-		for (int x = 0; x < value.length(); x++)
-			if (value.charAt(x) == '[')
-				dimensions++;
-			else
-				break;
-		value = value.substring(dimensions, value.length() - dimensions);
+		int dimensions = getDimensions(value);
 		Object arr = createArray(value, dimensions, columnType);
-		return new FireboltArray(columnType.getArrayBaseColumnType().getDataType(), arr);
+		return arr == null ? null : new FireboltArray(columnType.getArrayBaseColumnType().getDataType(), arr);
+	}
+
+	private static int getDimensions(String value) {
+		char[] chars = value.toCharArray();
+		int dimensions = 0;
+		int dim = 0;
+		boolean intoString = false;
+
+		for(char c : chars) {
+			if (c == '\'') {
+				intoString = !intoString;
+			}
+			if (intoString) {
+				continue;
+			}
+			switch (c) {
+				case '[':
+					dim++;
+					if (dim > dimensions) {
+						dimensions = dim;
+					}
+					break;
+				case ']':
+					dim--;
+					break;
+				default: // ignore
+			}
+		}
+		return dimensions;
 	}
 
 	private static Object createArray(String arrayContent, int dimension, ColumnType columnType) throws SQLException {
-		if (dimension == 1) {
-			return extractArrayFromOneDimensionalArray(arrayContent, columnType);
-		} else {
-			return extractArrayFromMultiDimensionalArray(arrayContent, dimension, columnType);
+		int from = arrayContent.charAt(0) == '[' ? 1 : 0;
+		int to = arrayContent.charAt(arrayContent.length() - 1) == ']' ? arrayContent.length() - 1 : arrayContent.length();
+		arrayContent = arrayContent.substring(from, to);
+		return extractArray(arrayContent, dimension, columnType);
+	}
+
+	private static Object extractArray(String arrayContent, int dimension, ColumnType columnType) throws SQLException {
+		if (isNullValue(arrayContent))  {
+			return null;
 		}
+		return dimension < 2 ? extractArrayFromOneDimensionalArray(arrayContent, columnType) : extractArrayFromMultiDimensionalArray(arrayContent, dimension, columnType);
 	}
 
 	@NonNull
-	private static Object extractArrayFromMultiDimensionalArray(String str, int dimension, ColumnType columnType)
-			throws SQLException {
-		String[] s = str.split(getArraySeparator(dimension));
+	private static Object extractArrayFromMultiDimensionalArray(String str, int dimension, ColumnType columnType) throws SQLException {
+		String[] s = splitToElements(str);
 		int[] lengths = new int[dimension];
 		lengths[0] = s.length;
-		Object currentArray = Array
-				.newInstance(columnType.getArrayBaseColumnType().getDataType().getBaseType().getType(), lengths);
-
-		for (int x = 0; x < s.length; x++)
-			Array.set(currentArray, x, createArray(s[x], dimension - 1, columnType));
-
+		Object currentArray = Array.newInstance(columnType.getArrayBaseColumnType().getDataType().getBaseType().getType(), lengths);
+		for (int i = 0; i < s.length; i++) {
+			Array.set(currentArray, i, createArray(s[i], dimension - 1, columnType));
+		}
 		return currentArray;
 	}
 
-	private static Object extractArrayFromOneDimensionalArray(String arrayContent, ColumnType columnType)
-			throws SQLException {
-		List<String> elements = splitArrayContent(arrayContent, columnType.getArrayBaseColumnType().getDataType())
-				.stream().filter(StringUtils::isNotEmpty).map(SqlArrayUtil::removeQuotesAndTransformNull)
-				.collect(Collectors.toList());
+	private static Object extractArrayFromOneDimensionalArray(String arrayContent, ColumnType columnType) throws SQLException {
 		FireboltDataType arrayBaseType = columnType.getArrayBaseColumnType().getDataType();
-		if (arrayBaseType != FireboltDataType.TUPLE) {
-			Object currentArray = Array.newInstance(arrayBaseType.getBaseType().getType(), elements.size());
-			for (int i = 0; i < elements.size(); i++)
-				Array.set(currentArray, i, arrayBaseType.getBaseType().transform(elements.get(i), null));
-			return currentArray;
-		} else {
+		List<String> elements = splitArrayContent(arrayContent, arrayBaseType)
+				.stream().filter(StringUtils::isNotEmpty).map(SqlArrayUtil::removeQuotesAndTransformNull)
+				.collect(toList());
+		if (arrayBaseType == FireboltDataType.TUPLE) {
 			return getArrayOfTuples(columnType, elements);
 		}
+		Object currentArray = Array.newInstance(arrayBaseType.getBaseType().getType(), elements.size());
+		for (int i = 0; i < elements.size(); i++) {
+			Array.set(currentArray, i, arrayBaseType.getBaseType().transform(elements.get(i), null));
+		}
+		return currentArray;
 	}
 
 	private static Object[] getArrayOfTuples(ColumnType columnType, List<String> tuples) throws SQLException {
 		List<FireboltDataType> types = columnType.getArrayBaseColumnType().getInnerTypes().stream()
-				.map(ColumnType::getDataType).collect(Collectors.toList());
+				.map(ColumnType::getDataType).collect(toList());
 
 		List<Object[]> list = new ArrayList<>();
 		for (String tupleContent : tuples) {
@@ -89,17 +115,46 @@ public class SqlArrayUtil {
 		return array;
 	}
 
-	private static String getArraySeparator(int dimension) {
-		StringBuilder stringBuilder = new StringBuilder(",");
-		for (int x = 1; x < dimension; x++) {
-			stringBuilder.insert(0, ']');
-			stringBuilder.append("\\[");
+	private String[] splitToElements(String value) {
+		char[] chars = value.toCharArray();
+		int nesting = 0;
+		boolean intoString = false;
+		int from = 0;
+		List<String> elements = new ArrayList<>();
+
+		for (int i = 0; i < chars.length; i++) {
+			char c = chars[i];
+			if (c == '\'') {
+				intoString = !intoString;
+			}
+			if (intoString) {
+				continue;
+			}
+			switch (c) {
+				case '[':
+					nesting++;
+					break;
+				case ']':
+					nesting--;
+					break;
+				case ',':
+					if (nesting <= 0) {
+						elements.add(value.substring(from, i));
+						from = i + 1;
+					}
+				default: // ignore
+			}
 		}
-		return stringBuilder.toString();
+		elements.add(value.substring(from));
+		return elements.toArray(new String[0]);
 	}
 
 	private static String removeQuotesAndTransformNull(String s) {
-		return "NULL".equals(s) ? "\\N" : StringUtils.strip(s, "'");
+		return isNullValue(s) ? "\\N" : StringUtils.strip(s, "'");
+	}
+
+	private static boolean isNullValue(String s) {
+		return "NULL".equals(s);
 	}
 
 	private static String removeParenthesis(String s) {
@@ -115,7 +170,7 @@ public class SqlArrayUtil {
 		while (index < arrayContent.length() - 1) {
 			index++;
 			char currentChar = arrayContent.charAt(index);
-			if (currentChar == 39) {
+			if (currentChar == '\'') {
 				isCurrentSubstringBetweenQuotes = !isCurrentSubstringBetweenQuotes;
 			}
 			if (!isCurrentSubstringBetweenQuotes && baseType == FireboltDataType.TUPLE) {
@@ -168,8 +223,9 @@ public class SqlArrayUtil {
 		}
 		int length = Array.getLength(array);
 		Object[] ret = new Object[length];
-		for (int i = 0; i < length; i++)
+		for (int i = 0; i < length; i++) {
 			ret[i] = Array.get(array, i);
+		}
 		return ret;
 	}
 }

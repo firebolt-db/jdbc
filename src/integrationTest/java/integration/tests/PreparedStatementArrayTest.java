@@ -6,6 +6,7 @@ import integration.IntegrationTest;
 import lombok.CustomLog;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -15,7 +16,11 @@ import java.sql.JDBCType;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -125,7 +130,31 @@ class PreparedStatementArrayTest extends IntegrationTest {
 		}
 	}
 
-
+	@Test
+	void nullableBiDimensionalArray() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			try {
+				statement.executeUpdate("create table b6 (i int, x array(array(int NULL) NULL) NULL)");
+				statement.executeUpdate("insert into b6 (i, x) values (0, [[1, 2], [3]]), (1, [[4, NULL, 5]]), (2, [[4], NULL, [5, NULL, 6]]), (3, NULL), (4, [[NULL,7]])");
+				try (ResultSet rs = statement.executeQuery("select i, x from  b6")) {
+					List<Integer[][]> result = new ArrayList<>();
+					while(rs.next()) {
+						int index = rs.getInt(1);
+						Array value = rs.getArray(2);
+						Integer[][] values = value == null ? null : (Integer[][])value.getArray();
+						result.add(index, values);
+					}
+					List<Integer[][]> expected = Arrays.asList(new Integer[][] {{1, 2}, {3}}, new Integer[][] {{4, null, 5}}, new Integer[][] {{4}, null, {5, null, 6}}, null, new Integer[][] {{null, 7}});
+					assertEquals(expected.size(), result.size());
+					for (int i = 0; i < expected.size(); i++) {
+						assertArrayEquals(expected.get(i), result.get(i));
+					}
+				}
+			} finally {
+				statement.executeUpdate("drop table b6");
+			}
+		}
+	}
 
 	private <T> void validateArrayUsingGetObject(ResultSet rs, int index, T[] expected) throws SQLException {
 		assertSqlArray(rs.getObject(index), expected);
