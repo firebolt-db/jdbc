@@ -84,6 +84,7 @@ public class SqlArrayUtil {
 
 	private static Object extractArrayFromOneDimensionalArray(String arrayContent, ColumnType columnType) throws SQLException {
 		FireboltDataType arrayBaseType = columnType.getArrayBaseColumnType().getDataType();
+		@SuppressWarnings("java:S6204") // JDK 11 compatible
 		List<String> elements = splitArrayContent(arrayContent, arrayBaseType)
 				.stream().filter(StringUtils::isNotEmpty).map(SqlArrayUtil::removeQuotesAndTransformNull)
 				.collect(toList());
@@ -98,6 +99,7 @@ public class SqlArrayUtil {
 	}
 
 	private static Object[] getArrayOfTuples(ColumnType columnType, List<String> tuples) throws SQLException {
+		@SuppressWarnings("java:S6204") // JDK 11 compatible
 		List<FireboltDataType> types = columnType.getArrayBaseColumnType().getInnerTypes().stream()
 				.map(ColumnType::getDataType).collect(toList());
 
@@ -142,6 +144,7 @@ public class SqlArrayUtil {
 						elements.add(value.substring(from, i));
 						from = i + 1;
 					}
+					break;
 				default: // ignore
 			}
 		}
