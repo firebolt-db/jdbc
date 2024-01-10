@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class NumericTypesTest extends IntegrationTest {
     @Test
     void shouldHaveCorrectInfo() throws SQLException {
-        try (Connection connection = this.createConnection(null);
+        try (Connection connection = createConnection(null);
              Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery("SELECT 3::decimal")) {
             resultSet.next();

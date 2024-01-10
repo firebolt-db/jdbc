@@ -35,9 +35,9 @@ public class QueryResult {
 	@Override
 	public String toString() {
 		StringBuilder stringBuilder = new StringBuilder();
-		this.appendWithListValues(stringBuilder, columns.stream().map(Column::getName).collect(Collectors.toList()));
+		appendWithListValues(stringBuilder, columns.stream().map(Column::getName).collect(Collectors.toList()));
 		stringBuilder.append(NEXT_LINE);
-		this.appendWithListValues(stringBuilder, columns.stream().map(Column::getType).map(FireboltDataType::getAliases)
+		appendWithListValues(stringBuilder, columns.stream().map(Column::getType).map(FireboltDataType::getAliases)
 				.map(aliases -> aliases[0]).collect(Collectors.toList()));
 		stringBuilder.append(NEXT_LINE);
 

@@ -163,10 +163,10 @@ public class ColumnType {
 	}
 
 	public String getCompactTypeName() {
-		if (this.isArray()) {
+		if (isArray()) {
 			return getArrayCompactTypeName();
-		} else if (this.isTuple()) {
-			return getTupleCompactTypeName(this.innerTypes);
+		} else if (isTuple()) {
+			return getTupleCompactTypeName(innerTypes);
 		} else {
 			return dataType.getDisplayName();
 		}
@@ -178,13 +178,11 @@ public class ColumnType {
 		ColumnType columnType = this;
 		while (columnType != null && columnType.getDataType() == ARRAY) {
 			depth++;
-			compactType.append(ARRAY.getDisplayName() + "(");
+			compactType.append(ARRAY.getDisplayName()).append("(");
 			columnType = columnType.getInnerTypes().isEmpty() ? null : columnType.getInnerTypes().get(0);
 		}
-		compactType.append(this.getArrayBaseColumnType().getCompactTypeName());
-		for (int i = 0; i < depth; i++) {
-			compactType.append(")");
-		}
+		compactType.append(getArrayBaseColumnType().getCompactTypeName());
+		compactType.append(")".repeat(depth));
 		return compactType.toString();
 	}
 
@@ -205,7 +203,7 @@ public class ColumnType {
 		if (innerTypes == null || innerTypes.isEmpty()) {
 			return null;
 		}
-		ColumnType currentInnerType = this.innerTypes.get(0);
+		ColumnType currentInnerType = innerTypes.get(0);
 		while (currentInnerType.getInnerTypes() != null && !currentInnerType.getInnerTypes().isEmpty()
 				&& currentInnerType.getDataType() != TUPLE) {
 			currentInnerType = currentInnerType.getInnerTypes().get(0);

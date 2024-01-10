@@ -63,7 +63,7 @@ class PreparedStatementTest extends IntegrationTest {
 			expectedRows.add(Arrays.asList(car1.getSales(), car1.getMake()));
 			expectedRows.add(Arrays.asList(car2.getSales(), car2.getMake()));
 
-			QueryResult queryResult = this.createExpectedResult(expectedRows);
+			QueryResult queryResult = createExpectedResult(expectedRows);
 
 			try (Statement statement = connection.createStatement();
 					ResultSet rs = statement
@@ -90,7 +90,7 @@ class PreparedStatementTest extends IntegrationTest {
 
 			String selectSql = "SELECT sales, make FROM prepared_statement_test WHERE make = ?";
 			try (PreparedStatement selectStatement = connection.prepareStatement(selectSql)) {
-				QueryResult expectedResult = this.createExpectedResult(expectedRows);
+				QueryResult expectedResult = createExpectedResult(expectedRows);
 				selectStatement.setString(1, "VW");
 				try (ResultSet rs = selectStatement.executeQuery();
 						ResultSet expectedRs = FireboltResultSet.of(expectedResult)) {

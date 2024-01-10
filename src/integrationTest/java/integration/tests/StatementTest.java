@@ -43,7 +43,7 @@ class StatementTest extends IntegrationTest {
 
 	@Test
 	void shouldSelect1() throws SQLException {
-		try (Connection connection = this.createConnection();
+		try (Connection connection = createConnection();
 			 ResultSet rs = connection.createStatement().executeQuery("SELECT 1")) {
 			assertTrue(rs.next());
 			assertEquals(1, rs.getInt(1));
@@ -54,7 +54,7 @@ class StatementTest extends IntegrationTest {
 	@Test
 	@EnabledIfSystemProperty(named = "engine", matches = ".+")
 	void shouldSelect1WithEngine() throws SQLException {
-		try (Connection connection = this.createConnection(System.getProperty("engine")); Statement statement = connection.createStatement()) {
+		try (Connection connection = createConnection(System.getProperty("engine")); Statement statement = connection.createStatement()) {
 			statement.executeQuery("SELECT 1;");
 			assertNotNull(statement.executeQuery("SELECT 1;"));
 		}
@@ -62,7 +62,7 @@ class StatementTest extends IntegrationTest {
 
 	@Test
 	void shouldSelect1WithQueryTimeout() throws SQLException {
-		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			statement.setQueryTimeout(10); // 10 seconds
 			statement.executeQuery("SELECT 1;");
 			assertNotNull(statement.executeQuery("SELECT 1;"));
@@ -71,7 +71,7 @@ class StatementTest extends IntegrationTest {
 
 	@Test
 	void shouldReuseStatementWhenNotCloseOnCompletion() throws SQLException {
-		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			statement.executeQuery("SELECT 1;");
 			assertNotNull(statement.executeQuery("SELECT 1;"));
 		}
@@ -79,7 +79,7 @@ class StatementTest extends IntegrationTest {
 
 	@Test
 	void shouldThrowExceptionWhenTryingToReuseStatementClosedOnCompletion() throws SQLException {
-		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			statement.closeOnCompletion();
 			statement.executeQuery("SELECT 1;");
 			assertTrue(statement.isCloseOnCompletion());
@@ -89,21 +89,21 @@ class StatementTest extends IntegrationTest {
 
 	@Test
 	void shouldReturnTrueWhenExecutingAStatementThatReturnsAResultSet() throws SQLException {
-		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			assertTrue(statement.execute("SELECT 1;"));
 		}
 	}
 
 	@Test
 	void shouldReturnTrueWhenExecutingMultiStatementWithFirstStatementReturningAResultSet() throws SQLException {
-		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			assertTrue(statement.execute("SELECT 1;"));
 		}
 	}
 
 	@Test
 	void shouldReturnFalseWhenExecutingMultiStatementWithFirstStatementNotReturningAResultSet() throws SQLException {
-		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			assertFalse(statement.execute("INSERT INTO statement_test(id) values (1); SELECT 1;"));
 		}
 	}
@@ -140,7 +140,7 @@ class StatementTest extends IntegrationTest {
 
 	@Test
 	void shouldThrowExceptionWhenTryingToExecuteQueryThatWouldReturnMultipleResultSets() throws SQLException {
-		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			assertThrows(FireboltException.class, () -> statement.executeQuery("SELECT 1; SELECT 2;"));
 		}
 	}

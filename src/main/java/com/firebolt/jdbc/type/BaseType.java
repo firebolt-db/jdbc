@@ -127,11 +127,11 @@ public enum BaseType {
 	}
 
 	public <T> T transform(String value, Column column) throws SQLException {
-		return this.transform(value, column, null);
+		return transform(value, column, null);
 	}
 
 	public <T> T transform(String value) throws SQLException {
-		return this.transform(value, null, null);
+		return transform(value, null, null);
 	}
 
 	public <T> T transform(String value, Column column, TimeZone timeZone) throws SQLException {
@@ -143,7 +143,7 @@ public enum BaseType {
 		}
 		StringToColumnTypeConversion conversion = StringToColumnTypeConversion.builder().value(value).column(column)
 				.timeZone(fromTimeZone).build();
-		return this.transform(conversion);
+		return transform(conversion);
 	}
 
 	private <T> T transform(StringToColumnTypeConversion conversion) throws SQLException {
@@ -151,6 +151,7 @@ public enum BaseType {
 		if (isNull(conversion.getValue())) {
 			return null;
 		}
+		//noinspection unchecked
 		return (T) transformFunction.apply(conversion);
 	}
 

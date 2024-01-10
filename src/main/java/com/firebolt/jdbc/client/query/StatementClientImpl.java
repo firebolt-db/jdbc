@@ -89,7 +89,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		String label = statementInfoWrapper.getLabel();
 		String errorMessage = format("Error executing statement with label %s: %s", label, formattedStatement);
 		try {
-			String uri = this.buildQueryUri(connectionProperties, params).toString();
+			String uri = buildQueryUri(connectionProperties, params).toString();
 			return executeSqlStatementWithRetryOnUnauthorized(label, connectionProperties, formattedStatement, uri);
 		} catch (FireboltException e) {
 			throw e;
@@ -118,7 +118,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	private InputStream postSqlStatement(@NonNull FireboltProperties connectionProperties, String formattedStatement, String uri, String label)
 			throws FireboltException, IOException {
 		Request post = createPostRequest(uri, label, formattedStatement, getConnection().getAccessToken().orElse(null));
-		Response response = this.execute(post, connectionProperties.getHost(), connectionProperties.isCompress());
+		Response response = execute(post, connectionProperties.getHost(), connectionProperties.isCompress());
 		InputStream is = Optional.ofNullable(response.body()).map(ResponseBody::byteStream).orElse(null);
 		if (is == null) {
 			CloseableUtil.close(response);
@@ -167,9 +167,9 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			if (id == null) {
 				throw new FireboltException("Cannot retrieve id for statement with label " + label);
 			}
-			String uri = this.buildCancelUri(fireboltProperties, id).toString();
+			String uri = buildCancelUri(fireboltProperties, id).toString();
 			Request rq = createPostRequest(uri, null, (RequestBody)null, getConnection().getAccessToken().orElse(null));
-			try (Response response = this.execute(rq, fireboltProperties.getHost())) {
+			try (Response response = execute(rq, fireboltProperties.getHost())) {
 				CloseableUtil.close(response);
 			}
 		} catch (FireboltException e) {

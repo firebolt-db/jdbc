@@ -255,7 +255,7 @@ public class FireboltProperties {
 	}
 
 	public void addProperty(Pair<String, String> property) {
-		this.addProperty(property.getLeft(), property.getRight());
+		addProperty(property.getLeft(), property.getRight());
 	}
 
 	public String getHttpConnectionUrl() {
