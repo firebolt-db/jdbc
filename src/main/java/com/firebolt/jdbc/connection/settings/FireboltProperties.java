@@ -65,7 +65,7 @@ public class FireboltProperties {
 	private final String secret;
 	private String engine; // updatable using use statement
 	private final String account;
-	private final String accountId;
+	private String accountId;
 	private final int tcpKeepIdle;
 	private final int tcpKeepCount;
 	private final int tcpKeepInterval;
@@ -236,6 +236,7 @@ public class FireboltProperties {
 		switch (key) {
 			case "database": database = value; break;
 			case "engine": engine = value; break;
+			case "account_id": accountId = value; break;
 			default: additionalProperties.put(key, value);
 		}
 	}

@@ -7,10 +7,10 @@ import com.firebolt.jdbc.exception.FireboltException;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
-import javax.annotation.Nullable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.TreeSet;
 import java.util.stream.Stream;
@@ -57,10 +57,8 @@ public class FireboltEngineInformationSchemaService implements FireboltEngineSer
 
     @Override
     public Engine getEngine(FireboltProperties properties) throws SQLException {
-        return getEngine(properties.getEngine(), properties.getDatabase());
-    }
-
-    private Engine getEngine(String engine, @Nullable String database) throws SQLException {
+        String engine = properties.getEngine();
+        String database = properties.getDatabase();
         if (engine == null) {
             throw new IllegalArgumentException("Cannot retrieve engine parameters because its name is null");
         }
@@ -81,8 +79,11 @@ public class FireboltEngineInformationSchemaService implements FireboltEngineSer
                 if (database != null && !database.equals(attachedDatabase)) {
                     throw new FireboltException(format("The engine with the name %s is not attached to database %s", engine, database));
                 }
-                String url = rs.getString(ENGINE_URL).split("\\?", 2)[0];
-                return new Engine(url, status, rs.getString(ENGINE_NAME_FIELD), attachedDatabase, null);
+                String[] engineUrl = rs.getString(ENGINE_URL).split("\\?", 2);
+                String engineHost = engineUrl[0];
+                String[] engineQuery = engineUrl.length > 1 ? engineUrl[1].split("&") : new String[0];
+                Arrays.stream(engineQuery).map(prop -> prop.split("=")).filter(a -> a.length == 2).forEach(prop -> properties.addProperty(prop[0], prop[1]));
+                return new Engine(engineHost, status, rs.getString(ENGINE_NAME_FIELD), attachedDatabase, null);
             }
         }
     }

@@ -46,16 +46,20 @@ class FireboltEngineInformationSchemaServiceTest {
 
 	@ParameterizedTest
 	@CsvSource({
-			"db,running,my-url,my-url",
-			",running,api.region.env.firebolt.io,api.region.env.firebolt.io",
-			"db,ENGINE_STATE_RUNNING,api.us-east-1.dev.firebolt.io?account_id=01hf9pchg0mnrd2g3hypm1dea4&engine=max_test,api.us-east-1.dev.firebolt.io",
+			/*in:*/ "db,running,my-url,my-url," + /*expected:*/  "some-engine,db,",
+			/*in:*/ ",running,api.region.env.firebolt.io,api.region.env.firebolt.io," +  /*expected:*/ "some-engine,,",
+			/*in:*/ "db,ENGINE_STATE_RUNNING,api.us-east-1.dev.firebolt.io?account_id=01hf9pchg0mnrd2g3hypm1dea4&engine=max_test,api.us-east-1.dev.firebolt.io," + /*expected:*/ "max_test,db,01hf9pchg0mnrd2g3hypm1dea4",
 	})
-	void shouldGetEngineWhenEngineNameIsProvided(String db, String engineStatus, String engineUrl, String expectedEngineUrl) throws SQLException {
+	void shouldGetEngineWhenEngineNameIsProvided(String db, String engineStatus, String engineUrl, String expectedEngineUrl, String expectedEngine, String expectedDb, String expectedAccountId) throws SQLException {
 		PreparedStatement statement = mock(PreparedStatement.class);
 		ResultSet resultSet = mockedResultSet(Map.of("status", engineStatus, "url", engineUrl, "attached_to", "db", "engine_name", "some-engine"));
 		when(fireboltConnection.prepareStatement(anyString())).thenReturn(statement);
 		when(statement.executeQuery()).thenReturn(resultSet);
-		assertEquals(new Engine(expectedEngineUrl, engineStatus, "some-engine", "db", null), fireboltEngineService.getEngine(createFireboltProperties("some-engine", db)));
+		FireboltProperties properties = createFireboltProperties("some-engine", db);
+		assertEquals(new Engine(expectedEngineUrl, engineStatus, "some-engine", "db", null), fireboltEngineService.getEngine(properties));
+		assertEquals(expectedEngine, properties.getEngine());
+		assertEquals(expectedDb, properties.getDatabase());
+		assertEquals(expectedAccountId, properties.getAccountId());
 	}
 
 	@ParameterizedTest
