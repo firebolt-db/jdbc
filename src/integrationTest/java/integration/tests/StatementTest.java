@@ -1,6 +1,7 @@
 package integration.tests;
 
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.metadata.MetadataUtil;
 import integration.IntegrationTest;
 import kotlin.collections.ArrayDeque;
 import lombok.CustomLog;
@@ -9,12 +10,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -232,4 +237,92 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	/**
+	 * This test validates that null values are sorted last.
+	 * @throws SQLException if something is going wrong
+	 * see com.firebolt.jdbc.metadata.FireboltDatabaseMetadataTest#nullSorting
+	 */
+	@Test
+	void nullSortOrder() throws SQLException {
+		try (Connection connection = createConnection();
+			 Statement statement = connection.createStatement();
+			 ResultSet rs = statement.executeQuery("select x from (select null as x union all select '' as x union all select 'a' as x) order by x")) {
+			List<String> actuals = new ArrayList<>();
+			while(rs.next()) {
+				actuals.add(rs.getString(1));
+			}
+			assertEquals(Arrays.asList("", "a", null), actuals);
+		}
+	}
+
+	/**
+	 * This test proves that unquoted query columns become lower case and quoted columns preserve case
+	 * @throws SQLException if something is going wrong
+	 * see com.firebolt.jdbc.metadata.FireboltDatabaseMetadataTest#identifiersCase
+	 * see com.firebolt.jdbc.metadata.FireboltDatabaseMetadataTest#quotedIdentifiersCase
+	 */
+	@ParameterizedTest
+	@CsvSource(value = {
+			"select 1 as lower, 2 as UPPER, 3 AS MiXeD;lower,upper,mixed",
+			"select 1 as \"lower\", 2 as \"UPPER\", 3 AS \"MiXeD\";lower,UPPER,MiXeD"
+	}, delimiter = ';')
+	void mixedCaseSelect(String query, String expectedColumns) throws SQLException {
+		try (Connection connection = createConnection();
+			 Statement statement = connection.createStatement();
+			 ResultSet rs = statement.executeQuery(query)) {
+			ResultSetMetaData md = rs.getMetaData();
+			int n = md.getColumnCount();
+			List<String> names = new ArrayList<>();
+			for (int i = 1; i <= n; i++) {
+				names.add(md.getColumnName(i));
+			}
+			assertEquals(Arrays.asList(expectedColumns.split(",")), names);
+		}
+	}
+
+	/**
+	 * This test proves that unquoted table name is stored in lower case and quoted in mixed case
+	 * @throws SQLException if something is going wrong
+	 * see com.firebolt.jdbc.metadata.FireboltDatabaseMetadataTest#identifiersCase
+	 * see com.firebolt.jdbc.metadata.FireboltDatabaseMetadataTest#quotedIdentifiersCase
+	 */
+	@ParameterizedTest
+	@CsvSource(value = {
+			"CREATE FACT TABLE Case_Test (x long);case_test;Case_Test;case_test",
+			"CREATE FACT TABLE \"Case_Test\" (x long);Case_Test;case_test;\"Case_Test\""
+	}, delimiter = ';')
+	void mixedCaseTable(String createTable, String expectedTableName, String unexpectedTableName, String dropTableName) throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			try {
+				statement.executeUpdate(createTable);
+				try (ResultSet rs = statement.executeQuery(format("select table_name from information_schema.tables where table_name  = '%s'", expectedTableName))) {
+					assertTrue(rs.next());
+					assertEquals(expectedTableName, rs.getString(1));
+					assertFalse(rs.next());
+				}
+				try (ResultSet rs = statement.executeQuery(format("select table_name from information_schema.tables where table_name  = '%s'", unexpectedTableName))) {
+					assertFalse(rs.next());
+				}
+			} finally {
+				statement.executeUpdate("DROP TABLE IF EXISTS " + dropTableName);
+			}
+		}
+	}
+
+	/**
+	 * Validates that specific statement fails because used function is not supported. If specific test fails, i.e.
+	 * the query succeeds this means that used function is supported now. In this case corresponding unit test should be
+	 * fixed too.
+	 * @param query the SQL statement that should fail
+	 * @throws SQLException if something is going wrong
+	 */
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"SELECT CONVERT(varchar, 3.14)" //com.firebolt.jdbc.metadata.FireboltDatabaseMetadataTest#supportsConvert
+	})
+	void failingQuery(String query) throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			assertThrows(SQLException.class, () -> statement.execute(query));
+		}
+	}
 }
