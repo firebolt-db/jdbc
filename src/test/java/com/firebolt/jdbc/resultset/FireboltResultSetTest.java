@@ -3,6 +3,7 @@ package com.firebolt.jdbc.resultset;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.util.LoggerUtil;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -17,16 +18,38 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
-import java.sql.*;
+import java.sql.Array;
+import java.sql.Date;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.sql.Wrapper;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Calendar;
 import java.util.TimeZone;
 
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DefaultTimeZone("UTC")
@@ -185,6 +208,8 @@ class FireboltResultSetTest {
 		assertEquals(2, resultSet.getInt("id"));
 		assertEquals(2, resultSet.getObject(1, Long.class));
 
+		assertEquals(2, resultSet.getLong(1));
+		assertEquals(2, resultSet.getLong("id"));
 	}
 
 	@Test
@@ -224,7 +249,6 @@ class FireboltResultSetTest {
 		assertEquals(expected, resultSet.getString(3));
 		assertEquals(expected, resultSet.getString("name"));
 		assertEquals(expected, resultSet.getObject(3, String.class));
-
 	}
 
 	@Test
@@ -596,6 +620,15 @@ class FireboltResultSetTest {
 	}
 
 	@Test
+	void shouldThrowExceptionWhenCannotConvertToByteArray() throws SQLException {
+		inputStream = getInputStreamWithByteA();
+		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
+		while (resultSet.next()) {
+			assertEquals("Cannot convert binary string in non-hex format to byte array", assertThrows(SQLException.class, () -> resultSet.getObject("false_bytea")).getMessage());
+		}
+	}
+
+	@Test
 	void shouldReturnTrueWhenBooleanFoundIsTrue() throws SQLException {
 		inputStream = getInputStreamWithBooleans();
 		resultSet = new FireboltResultSet(inputStream, "any", "any", 65535);
@@ -925,6 +958,16 @@ class FireboltResultSetTest {
 	}
 
 	@Test
+	void shouldConvertFloatNotANumber() throws SQLException {
+		inputStream = getInputStreamWithInfinity();
+		resultSet = new FireboltResultSet(inputStream);
+		resultSet.next();
+
+		assertEquals(Float.NaN, resultSet.getFloat(3));
+		assertEquals(Double.NaN, resultSet.getDouble(3));
+	}
+
+	@Test
 	void shouldReadArray() throws SQLException {
 		inputStream = getInputStreamWithArray();
 		resultSet = new FireboltResultSet(inputStream);
@@ -933,6 +976,42 @@ class FireboltResultSetTest {
 		assertEquals(Integer[].class, intArray.getClass());
 		assertArrayEquals(new Integer[]{1, 2, 3}, (Integer[]) intArray);
 		assertFalse(resultSet.next());
+	}
+
+	@Test
+	void unwrap() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = new FireboltResultSet(inputStream);
+		for (Class<?> type : new Class[] {ResultSet.class, Wrapper.class, AutoCloseable.class, FireboltResultSet.class}) {
+			assertTrue(resultSet.isWrapperFor(type));
+			assertSame(resultSet, resultSet.unwrap(type));
+		}
+		assertFalse(resultSet.isWrapperFor(Runnable.class));
+		assertEquals("Cannot unwrap to " + Runnable.class.getName(), assertThrows(SQLException.class, () -> resultSet.unwrap(Runnable.class)).getMessage());
+	}
+
+
+	@Test
+	void shouldReturnStream() throws SQLException, IOException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
+		resultSet.next();
+		String expectedStr = "Taylor's Prime Steak House";
+		byte[] expected = expectedStr.getBytes();
+		assertStream(expected, resultSet.getAsciiStream(3));
+		assertStream(expected, resultSet.getAsciiStream("name"));
+		assertStream(expected, resultSet.getBinaryStream(3));
+		assertStream(expected, resultSet.getBinaryStream("name"));
+		//noinspection deprecation
+		assertStream(expected, resultSet.getUnicodeStream(3));
+		//noinspection deprecation
+		assertStream(expected, resultSet.getUnicodeStream("name"));
+		assertEquals(expectedStr, IOUtils.toString(resultSet.getCharacterStream(3)));
+		assertEquals(expectedStr, IOUtils.toString(resultSet.getCharacterStream("name")));
+	}
+
+	private void assertStream(byte[] expected, InputStream stream) throws IOException {
+		assertArrayEquals(expected, stream == null ? null : stream.readAllBytes());
 	}
 
 	private InputStream getInputStreamWithCommonResponseExample() {

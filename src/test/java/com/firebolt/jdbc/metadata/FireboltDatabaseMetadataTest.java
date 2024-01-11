@@ -580,28 +580,28 @@ class FireboltDatabaseMetadataTest {
 	}
 
 	@Test
-	void getSQLKeywords() throws SQLException {
-		getFunctions(DatabaseMetaData::getSQLKeywords);
+	void getStringFunctions() throws SQLException {
+		getFunctions(DatabaseMetaData::getStringFunctions, "CONCAT", "SPLIT");
 	}
 
 	@Test
-	void getStringFunctions() throws SQLException {
-		getFunctions(DatabaseMetaData::getStringFunctions);
+	void getSQLKeywords() throws SQLException {
+		getFunctions(DatabaseMetaData::getSQLKeywords, "BOOL", "COPY", "ISNULL", "WEEK");
 	}
 
 	@Test
 	void getNumericFunctions() throws SQLException {
-		getFunctions(DatabaseMetaData::getNumericFunctions);
+		getFunctions(DatabaseMetaData::getNumericFunctions, "ABS",  "RANDOM");
 	}
 
 	@Test
 	void getSystemFunctions() throws SQLException {
-		getFunctions(DatabaseMetaData::getSystemFunctions);
+		getFunctions(DatabaseMetaData::getSystemFunctions, "IFNULL");
 	}
 
 	@Test
 	void getTimeDateFunctions() throws SQLException {
-		getFunctions(DatabaseMetaData::getTimeDateFunctions);
+		getFunctions(DatabaseMetaData::getTimeDateFunctions, "LOCALTIMESTAMP", "DATE_DIFF");
 	}
 
 	@ParameterizedTest
@@ -696,9 +696,10 @@ class FireboltDatabaseMetadataTest {
 
 	}
 
-	private void getFunctions(CheckedFunction<DatabaseMetaData, String> getter) throws SQLException {
+	private void getFunctions(CheckedFunction<DatabaseMetaData, String> getter, String ... examples) throws SQLException {
 		String functions = getter.apply(fireboltDatabaseMetadata);
 		assertNotNull(functions);
-		assertFalse(functions.isEmpty());
+        assertFalse(functions.isEmpty());
+		Arrays.stream(examples).forEach(example -> assertTrue(functions.contains(example), example + " is not found in list"));
 	}
 }

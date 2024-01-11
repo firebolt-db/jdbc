@@ -47,7 +47,7 @@ public class ColumnType {
 		boolean isNullable = columnTypeWrapper.isNullable();
 
 		if (isType(FireboltDataType.ARRAY, typeWithoutNullKeyword) ) {
-		innerDataTypes = getCollectionSubType(FireboltDataType.ARRAY, typeWithoutNullKeyword);
+			innerDataTypes = getCollectionSubType(FireboltDataType.ARRAY, typeWithoutNullKeyword);
 		} else if (isType(FireboltDataType.TUPLE, typeWithoutNullKeyword)) {
 			innerDataTypes = getCollectionSubType(FireboltDataType.TUPLE, typeWithoutNullKeyword);
 		}

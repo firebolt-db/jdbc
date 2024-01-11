@@ -28,6 +28,8 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.Clob;
@@ -48,12 +50,12 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Optional.ofNullable;
 
 /**
  * ResultSet for InputStream using the format "TabSeparatedWithNamesAndTypes"
@@ -179,7 +181,7 @@ public class FireboltResultSet implements ResultSet {
 	@Override
 	public String getString(int columnIndex) throws SQLException {
 		Column columnInfo = columns.get(columnIndex - 1);
-		if (Optional.ofNullable(columnInfo).map(Column::getType).map(ColumnType::getDataType)
+		if (ofNullable(columnInfo).map(Column::getType).map(ColumnType::getDataType)
 				.filter(t -> t.equals(FireboltDataType.BYTEA)).isPresent()) {
 			// We do not need to escape when the type is BYTEA
 			return getValueAtColumn(columnIndex);
@@ -239,7 +241,7 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public byte getByte(int columnIndex) throws SQLException {
-		return Optional.ofNullable(getValueAtColumn(columnIndex)).map(v -> BaseType.isNull(v) ? null : v)
+		return ofNullable(getValueAtColumn(columnIndex)).map(v -> BaseType.isNull(v) ? null : v)
 				.map(Byte::parseByte).orElse((byte) 0);
 	}
 
@@ -261,7 +263,7 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public byte[] getBytes(int colNum) throws SQLException {
-		return Optional.ofNullable(getValueAtColumn(colNum)).map(v -> BaseType.isNull(v) ? null : v)
+		return ofNullable(getValueAtColumn(colNum)).map(v -> BaseType.isNull(v) ? null : v)
 				.map(String::getBytes).orElse(null);
 	}
 
@@ -581,45 +583,37 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public InputStream getAsciiStream(int columnIndex) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return getTextStream(columnIndex, StandardCharsets.US_ASCII);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public InputStream getUnicodeStream(int columnIndex) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getTextStream(columnIndex, StandardCharsets.UTF_8);
+	}
+
+	private InputStream getTextStream(int columnIndex, Charset charset) throws SQLException {
+		return ofNullable(getString(columnIndex)).map(str -> str.getBytes(charset)).map(ByteArrayInputStream::new).orElse(null);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public InputStream getBinaryStream(int columnIndex) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return ofNullable(getString(columnIndex)).map(String::getBytes).map(ByteArrayInputStream::new).orElse(null);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public InputStream getAsciiStream(String columnLabel) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return getBinaryStream(columnLabel);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public InputStream getUnicodeStream(String columnLabel) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getBinaryStream(columnLabel);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public InputStream getBinaryStream(String columnLabel) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return getBinaryStream(findColumn(columnLabel));
 	}
 
 	@Override
@@ -644,17 +638,13 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Reader getCharacterStream(int columnIndex) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return ofNullable(getBinaryStream(columnIndex)).map(InputStreamReader::new).orElse(null);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Reader getCharacterStream(String columnLabel) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return getCharacterStream(findColumn(columnLabel));
 	}
 
 	@Override
