@@ -11,13 +11,124 @@ import com.firebolt.jdbc.util.VersionUtil;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.JDBCType;
+import java.sql.ResultSet;
+import java.sql.RowIdLifetime;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static com.firebolt.jdbc.metadata.MetadataColumns.*;
-import static com.firebolt.jdbc.type.FireboltDataType.*;
+import static com.firebolt.jdbc.metadata.MetadataColumns.ATTR_DEF;
+import static com.firebolt.jdbc.metadata.MetadataColumns.ATTR_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.ATTR_TYPE_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.ATTR_SIZE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.AUTO_INCREMENT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.BASE_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.BUFFER_LENGTH;
+import static com.firebolt.jdbc.metadata.MetadataColumns.CASE_SENSITIVE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.CHAR_OCTET_LENGTH;
+import static com.firebolt.jdbc.metadata.MetadataColumns.CLASS_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.COLUMN_DEF;
+import static com.firebolt.jdbc.metadata.MetadataColumns.COLUMN_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.COLUMN_SIZE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.COLUMN_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.COLUMN_USAGE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.COMMON_RADIX;
+import static com.firebolt.jdbc.metadata.MetadataColumns.CREATE_PARAMS;
+import static com.firebolt.jdbc.metadata.MetadataColumns.DATA_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.DECIMAL_DIGITS;
+import static com.firebolt.jdbc.metadata.MetadataColumns.DEFAULT_VALUE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.DEFERRABILITY;
+import static com.firebolt.jdbc.metadata.MetadataColumns.DELETE_RULE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.DESCRIPTION;
+import static com.firebolt.jdbc.metadata.MetadataColumns.FIXED_PREC_SCALE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.FKCOLUMN_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.FKTABLE_CAT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.FKTABLE_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.FKTABLE_SCHEM;
+import static com.firebolt.jdbc.metadata.MetadataColumns.FK_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.FUNCTION_CAT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.FUNCTION_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.FUNCTION_SCHEM;
+import static com.firebolt.jdbc.metadata.MetadataColumns.FUNCTION_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.IS_AUTOINCREMENT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.IS_GENERATEDCOLUMN;
+import static com.firebolt.jdbc.metadata.MetadataColumns.IS_NULLABLE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.KEY_SEQ;
+import static com.firebolt.jdbc.metadata.MetadataColumns.LENGTH;
+import static com.firebolt.jdbc.metadata.MetadataColumns.LITERAL_PREFIX;
+import static com.firebolt.jdbc.metadata.MetadataColumns.LITERAL_SUFFIX;
+import static com.firebolt.jdbc.metadata.MetadataColumns.LOCAL_TYPE_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.MAXIMUM_SCALE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.MAX_LEN;
+import static com.firebolt.jdbc.metadata.MetadataColumns.MINIMUM_SCALE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.NULLABLE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.NUM_PREC_RADIX;
+import static com.firebolt.jdbc.metadata.MetadataColumns.ORDINAL_POSITION;
+import static com.firebolt.jdbc.metadata.MetadataColumns.PKCOLUMN_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.PKTABLE_CAT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.PKTABLE_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.PKTABLE_SCHEM;
+import static com.firebolt.jdbc.metadata.MetadataColumns.PK_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.PRECISION;
+import static com.firebolt.jdbc.metadata.MetadataColumns.PROCEDURE_CAT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.PROCEDURE_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.PROCEDURE_SCHEM;
+import static com.firebolt.jdbc.metadata.MetadataColumns.PROCEDURE_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.PSEUDO_COLUMN;
+import static com.firebolt.jdbc.metadata.MetadataColumns.RADIX;
+import static com.firebolt.jdbc.metadata.MetadataColumns.REF_GENERATION;
+import static com.firebolt.jdbc.metadata.MetadataColumns.REMARKS;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SCALE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SCOPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SCOPE_CATALOG;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SCOPE_SCHEMA;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SCOPE_TABLE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SEARCHABLE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SELF_REFERENCING_COL_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SOURCE_DATA_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SPECIFIC_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SQL_DATA_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SQL_DATETIME_SUB;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SUPERTABLE_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SUPERTYPE_CAT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SUPERTYPE_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.SUPERTYPE_SCHEM;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_CAT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_CATALOG;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_SCHEM;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_CAT;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_SCHEM;
+import static com.firebolt.jdbc.metadata.MetadataColumns.UNSIGNED_ATTRIBUTE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.UPDATE_RULE;
+import static com.firebolt.jdbc.type.FireboltDataType.ARRAY;
+import static com.firebolt.jdbc.type.FireboltDataType.BIG_INT;
+import static com.firebolt.jdbc.type.FireboltDataType.BOOLEAN;
+import static com.firebolt.jdbc.type.FireboltDataType.BYTEA;
+import static com.firebolt.jdbc.type.FireboltDataType.DATE;
+import static com.firebolt.jdbc.type.FireboltDataType.DOUBLE_PRECISION;
+import static com.firebolt.jdbc.type.FireboltDataType.INTEGER;
+import static com.firebolt.jdbc.type.FireboltDataType.NUMERIC;
+import static com.firebolt.jdbc.type.FireboltDataType.REAL;
+import static com.firebolt.jdbc.type.FireboltDataType.TEXT;
+import static com.firebolt.jdbc.type.FireboltDataType.TIMESTAMP;
+import static com.firebolt.jdbc.type.FireboltDataType.TUPLE;
 import static java.sql.Types.VARCHAR;
 import static java.util.Map.entry;
 import static java.util.stream.Collectors.toList;
@@ -1113,26 +1224,26 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public ResultSet getProcedureColumns(String catalog, String schemaPattern, String procedureNamePattern, String columnNamePattern) throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Stream.of(
-						entry("PROCEDURE_CAT", TEXT),
-						entry("PROCEDURE_SCHEM", TEXT),
-						entry("PROCEDURE_NAME", TEXT),
-						entry("COLUMN_NAME", TEXT),
-						entry("COLUMN_TYPE", INTEGER), // Short
-						entry("DATA_TYPE", INTEGER),
-						entry("TYPE_NAME", TEXT),
-						entry("PRECISION", INTEGER),
-						entry("LENGTH", INTEGER),
-						entry("SCALE", INTEGER), // short
-						entry("RADIX", INTEGER), // short
-						entry("NULLABLE", INTEGER), // short
-						entry("REMARKS", TEXT),
-						entry("COLUMN_DEF", TEXT),
-						entry("SQL_DATA_TYPE", INTEGER),
-						entry("SQL_DATETIME_SUB", INTEGER),
-						entry("CHAR_OCTET_LENGTH", INTEGER),
-						entry("ORDINAL_POSITION", INTEGER),
-						entry("IS_NULLABLE", TEXT),
-						entry("SPECIFIC_NAME", TEXT)
+						entry(PROCEDURE_CAT, TEXT),
+						entry(PROCEDURE_SCHEM, TEXT),
+						entry(PROCEDURE_NAME, TEXT),
+						entry(COLUMN_NAME, TEXT),
+						entry(COLUMN_TYPE, INTEGER), // Short
+						entry(DATA_TYPE, INTEGER),
+						entry(TYPE_NAME, TEXT),
+						entry(PRECISION, INTEGER),
+						entry(LENGTH, INTEGER),
+						entry(SCALE, INTEGER), // short
+						entry(RADIX, INTEGER), // short
+						entry(NULLABLE, INTEGER), // short
+						entry(REMARKS, TEXT),
+						entry(COLUMN_DEF, TEXT),
+						entry(SQL_DATA_TYPE, INTEGER),
+						entry(SQL_DATETIME_SUB, INTEGER),
+						entry(CHAR_OCTET_LENGTH, INTEGER),
+						entry(ORDINAL_POSITION, INTEGER),
+						entry(IS_NULLABLE, TEXT),
+						entry(SPECIFIC_NAME, TEXT)
 				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
 				.rows(List.of())
 				.build());
@@ -1142,13 +1253,13 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public ResultSet getUDTs(String catalog, String schemaPattern, String typeNamePattern, int[] types) throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Stream.of(
-						entry("TYPE_CAT", TEXT),
-						entry("TYPE_SCHEM", TEXT),
-						entry("TYPE_NAME", TEXT),
-						entry("CLASS_NAME", TEXT),
-						entry("DATA_TYPE", INTEGER),
-						entry("REMARKS", TEXT),
-						entry("BASE_TYPE", INTEGER) // short
+						entry(TYPE_CAT, TEXT),
+						entry(TYPE_SCHEM, TEXT),
+						entry(TYPE_NAME, TEXT),
+						entry(CLASS_NAME, TEXT),
+						entry(DATA_TYPE, INTEGER),
+						entry(REMARKS, TEXT),
+						entry(BASE_TYPE, INTEGER) // short
 				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
 				.rows(List.of())
 				.build());
@@ -1158,12 +1269,12 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public ResultSet getSuperTypes(String catalog, String schemaPattern, String typeNamePattern) throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Stream.of(
-						entry("TYPE_CAT", TEXT),
-						entry("TYPE_SCHEM", TEXT),
-						entry("TYPE_NAME", TEXT),
-						entry("SUPERTYPE_CAT", TEXT),
-						entry("SUPERTYPE_SCHEM", TEXT),
-						entry("SUPERTYPE_NAME", TEXT)
+						entry(TYPE_CAT, TEXT),
+						entry(TYPE_SCHEM, TEXT),
+						entry(TYPE_NAME, TEXT),
+						entry(SUPERTYPE_CAT, TEXT),
+						entry(SUPERTYPE_SCHEM, TEXT),
+						entry(SUPERTYPE_NAME, TEXT)
 				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
 				.rows(List.of())
 				.build());
@@ -1173,10 +1284,10 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public ResultSet getSuperTables(String catalog, String schemaPattern, String tableNamePattern) throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Stream.of(
-						entry("TYPE_CAT", TEXT),
-						entry("TYPE_SCHEM", TEXT),
-						entry("TYPE_NAME", TEXT),
-						entry("SUPERTABLE_NAME", TEXT)
+						entry(TYPE_CAT, TEXT),
+						entry(TYPE_SCHEM, TEXT),
+						entry(TYPE_NAME, TEXT),
+						entry(SUPERTABLE_NAME, TEXT)
 				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
 				.rows(List.of())
 				.build());
@@ -1186,27 +1297,27 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public ResultSet getAttributes(String catalog, String schemaPattern, String typeNamePattern, String attributeNamePattern) throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Stream.of(
-						entry("TYPE_CAT", TEXT),
-						entry("TYPE_SCHEM", TEXT),
-						entry("TYPE_NAME", TEXT),
-						entry("ATTR_NAME", TEXT),
-						entry("DATA_TYPE", INTEGER),
-						entry("ATTR_TYPE_NAME", TEXT),
-						entry("ATTR_SIZE", INTEGER),
-						entry("DECIMAL_DIGITS", INTEGER),
-						entry("NUM_PREC_RADIX", INTEGER),
-						entry("NULLABLE", INTEGER),
-						entry("REMARKS", TEXT),
-						entry("ATTR_DEF", TEXT),
-						entry("SQL_DATA_TYPE", INTEGER),
-						entry("SQL_DATETIME_SUB", INTEGER),
-						entry("CHAR_OCTET_LENGTH", INTEGER),
-						entry("ORDINAL_POSITION", INTEGER),
-						entry("IS_NULLABLE", TEXT),
-						entry("SCOPE_CATALOG", TEXT),
-						entry("SCOPE_SCHEMA", TEXT),
-						entry("SCOPE_TABLE", TEXT),
-						entry("SOURCE_DATA_TYPE", INTEGER) // short
+						entry(TYPE_CAT, TEXT),
+						entry(TYPE_SCHEM, TEXT),
+						entry(TYPE_NAME, TEXT),
+						entry(ATTR_NAME, TEXT),
+						entry(DATA_TYPE, INTEGER),
+						entry(ATTR_TYPE_NAME, TEXT),
+						entry(ATTR_SIZE, INTEGER),
+						entry(DECIMAL_DIGITS, INTEGER),
+						entry(NUM_PREC_RADIX, INTEGER),
+						entry(NULLABLE, INTEGER),
+						entry(REMARKS, TEXT),
+						entry(ATTR_DEF, TEXT),
+						entry(SQL_DATA_TYPE, INTEGER),
+						entry(SQL_DATETIME_SUB, INTEGER),
+						entry(CHAR_OCTET_LENGTH, INTEGER),
+						entry(ORDINAL_POSITION, INTEGER),
+						entry(IS_NULLABLE, TEXT),
+						entry(SCOPE_CATALOG, TEXT),
+						entry(SCOPE_SCHEMA, TEXT),
+						entry(SCOPE_TABLE, TEXT),
+						entry(SOURCE_DATA_TYPE, INTEGER) // short
 				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
 				.rows(List.of())
 				.build());
@@ -1216,12 +1327,12 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public ResultSet getProcedures(String catalog, String schemaPattern, String procedureNamePattern) throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Stream.of(
-						entry("PROCEDURE_CAT", TEXT),
-						entry("PROCEDURE_SCHEM", TEXT),
-						entry("PROCEDURE_NAME", TEXT),
-						entry("REMARKS", TEXT),
-						entry("PROCEDURE_TYPE", INTEGER), // short
-						entry("SPECIFIC_NAME", TEXT)
+						entry(PROCEDURE_CAT, TEXT),
+						entry(PROCEDURE_SCHEM, TEXT),
+						entry(PROCEDURE_NAME, TEXT),
+						entry(REMARKS, TEXT),
+						entry(PROCEDURE_TYPE, INTEGER), // short
+						entry(SPECIFIC_NAME, TEXT)
 				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
 				.rows(List.of())
 				.build());
@@ -1245,14 +1356,14 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public ResultSet getBestRowIdentifier(String catalog, String schema, String table, int scope, boolean nullable) throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Stream.of(
-						entry("SCOPE", INTEGER), // short
-						entry("COLUMN_NAME", TEXT),
-						entry("DATA_TYPE", INTEGER),
-						entry("TYPE_NAME", TEXT),
-						entry("COLUMN_SIZE", INTEGER),
-						entry("BUFFER_LENGTH", INTEGER),
-						entry("DECIMAL_DIGITS", INTEGER), // short
-						entry("PSEUDO_COLUMN", INTEGER) // short
+						entry(SCOPE, INTEGER), // short
+						entry(COLUMN_NAME, TEXT),
+						entry(DATA_TYPE, INTEGER),
+						entry(TYPE_NAME, TEXT),
+						entry(COLUMN_SIZE, INTEGER),
+						entry(BUFFER_LENGTH, INTEGER),
+						entry(DECIMAL_DIGITS, INTEGER), // short
+						entry(PSEUDO_COLUMN, INTEGER) // short
 				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
 				.rows(List.of())
 				.build());
@@ -1262,14 +1373,14 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public ResultSet getVersionColumns(String catalog, String schema, String table) throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Stream.of(
-						entry("SCOPE", INTEGER), // short
-						entry("COLUMN_NAME", TEXT),
-						entry("DATA_TYPE", INTEGER),
-						entry("TYPE_NAME", TEXT),
-						entry("COLUMN_SIZE", INTEGER),
-						entry("BUFFER_LENGTH", INTEGER),
-						entry("DECIMAL_DIGITS", INTEGER), // short
-						entry("PSEUDO_COLUMN", INTEGER) // short
+						entry(SCOPE, INTEGER), // short
+						entry(COLUMN_NAME, TEXT),
+						entry(DATA_TYPE, INTEGER),
+						entry(TYPE_NAME, TEXT),
+						entry(COLUMN_SIZE, INTEGER),
+						entry(BUFFER_LENGTH, INTEGER),
+						entry(DECIMAL_DIGITS, INTEGER), // short
+						entry(PSEUDO_COLUMN, INTEGER) // short
 				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
 				.rows(List.of())
 				.build());
@@ -1279,12 +1390,12 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public ResultSet getPrimaryKeys(String catalog, String schema, String table) throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Stream.of(
-						entry("TABLE_CAT", TEXT),
-						entry("TABLE_SCHEM", TEXT),
-						entry("TABLE_NAME", TEXT),
-						entry("COLUMN_NAME", TEXT),
-						entry("KEY_SEQ", INTEGER), // short
-						entry("PK_NAME", TEXT)
+						entry(TABLE_CAT, TEXT),
+						entry(TABLE_SCHEM, TEXT),
+						entry(TABLE_NAME, TEXT),
+						entry(COLUMN_NAME, TEXT),
+						entry(KEY_SEQ, INTEGER), // short
+						entry(PK_NAME, TEXT)
 				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
 				.rows(List.of())
 				.build());
@@ -1294,20 +1405,20 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public ResultSet getImportedKeys(String catalog, String schema, String table) throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Stream.of(
-						entry("PKTABLE_CAT", TEXT),
-						entry("PKTABLE_SCHEM", TEXT),
-						entry("PKTABLE_NAME", TEXT),
-						entry("PKCOLUMN_NAME", TEXT),
-						entry("FKTABLE_CAT", TEXT),
-						entry("FKTABLE_SCHEM", TEXT),
-						entry("FKTABLE_NAME", TEXT),
-						entry("FKCOLUMN_NAME", TEXT),
-						entry("KEY_SEQ", INTEGER), // short
-						entry("UPDATE_RULE", INTEGER), // short
-						entry("DELETE_RULE", INTEGER), // short
-						entry("FK_NAME String", TEXT),
-						entry("PK_NAME String", TEXT),
-						entry("DEFERRABILITY", INTEGER) // short
+						entry(PKTABLE_CAT, TEXT),
+						entry(PKTABLE_SCHEM, TEXT),
+						entry(PKTABLE_NAME, TEXT),
+						entry(PKCOLUMN_NAME, TEXT),
+						entry(FKTABLE_CAT, TEXT),
+						entry(FKTABLE_SCHEM, TEXT),
+						entry(FKTABLE_NAME, TEXT),
+						entry(FKCOLUMN_NAME, TEXT),
+						entry(KEY_SEQ, INTEGER), // short
+						entry(UPDATE_RULE, INTEGER), // short
+						entry(DELETE_RULE, INTEGER), // short
+						entry(FK_NAME, TEXT),
+						entry(PK_NAME, TEXT),
+						entry(DEFERRABILITY, INTEGER) // short
 						).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
 				.rows(List.of())
 				.build());
@@ -1317,20 +1428,20 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public ResultSet getExportedKeys(String catalog, String schema, String table) throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Stream.of(
-						entry("PKTABLE_CAT", TEXT),
-						entry("PKTABLE_SCHEM", TEXT),
-						entry("PKTABLE_NAME", TEXT),
-						entry("PKCOLUMN_NAME", TEXT),
-						entry("FKTABLE_CAT", TEXT),
-						entry("FKTABLE_SCHEM", TEXT),
-						entry("FKTABLE_NAME", TEXT),
-						entry("FKCOLUMN_NAME", TEXT),
-						entry("KEY_SEQ", INTEGER), // short
-						entry("UPDATE_RULE", INTEGER), // short
-						entry("DELETE_RULE", INTEGER), // short
-						entry("FK_NAME", TEXT),
-						entry("PK_NAME", TEXT),
-						entry("DEFERRABILITY", INTEGER) // short
+						entry(PKTABLE_CAT, TEXT),
+						entry(PKTABLE_SCHEM, TEXT),
+						entry(PKTABLE_NAME, TEXT),
+						entry(PKCOLUMN_NAME, TEXT),
+						entry(FKTABLE_CAT, TEXT),
+						entry(FKTABLE_SCHEM, TEXT),
+						entry(FKTABLE_NAME, TEXT),
+						entry(FKCOLUMN_NAME, TEXT),
+						entry(KEY_SEQ, INTEGER), // short
+						entry(UPDATE_RULE, INTEGER), // short
+						entry(DELETE_RULE, INTEGER), // short
+						entry(FK_NAME, TEXT),
+						entry(PK_NAME, TEXT),
+						entry(DEFERRABILITY, INTEGER) // short
 				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
 				.rows(List.of())
 				.build());
@@ -1341,20 +1452,20 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 			String foreignCatalog, String foreignSchema, String foreignTable) throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Stream.of(
-						entry("PKTABLE_CAT", TEXT),
-						entry("PKTABLE_SCHEM", TEXT),
-						entry("PKTABLE_NAME", TEXT),
-						entry("PKCOLUMN_NAME", TEXT),
-						entry("FKTABLE_CAT", TEXT),
-						entry("FKTABLE_SCHEM", TEXT),
-						entry("FKTABLE_NAME", TEXT),
-						entry("FKCOLUMN_NAME", TEXT),
-						entry("KEY_SEQ", INTEGER), // short
-						entry("UPDATE_RULE", INTEGER), // short
-						entry("DELETE_RULE", INTEGER), // short
-						entry("FK_NAME", TEXT),
-						entry("PK_NAME", TEXT),
-						entry("DEFERRABILITY", INTEGER) // short
+						entry(PKTABLE_CAT, TEXT),
+						entry(PKTABLE_SCHEM, TEXT),
+						entry(PKTABLE_NAME, TEXT),
+						entry(PKCOLUMN_NAME, TEXT),
+						entry(FKTABLE_CAT, TEXT),
+						entry(FKTABLE_SCHEM, TEXT),
+						entry(FKTABLE_NAME, TEXT),
+						entry(FKCOLUMN_NAME, TEXT),
+						entry(KEY_SEQ, INTEGER), // short
+						entry(UPDATE_RULE, INTEGER), // short
+						entry(DELETE_RULE, INTEGER), // short
+						entry(FK_NAME, TEXT),
+						entry(PK_NAME, TEXT),
+						entry(DEFERRABILITY, INTEGER) // short
 				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
 				.rows(List.of())
 				.build());
@@ -1371,10 +1482,10 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public ResultSet getClientInfoProperties() throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Stream.of(
-						entry("NAME", TEXT),
-						entry("MAX_LEN", INTEGER),
-						entry("DEFAULT_VALUE", TEXT),
-						entry("DESCRIPTION", TEXT)
+						entry(NAME, TEXT),
+						entry(MAX_LEN, INTEGER),
+						entry(DEFAULT_VALUE, TEXT),
+						entry(DESCRIPTION, TEXT)
 				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
 				.rows(List.of())
 				.build());
@@ -1464,18 +1575,18 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	public ResultSet getPseudoColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern) throws SQLException {
 		return FireboltResultSet.of(QueryResult.builder()
 				.columns(Stream.of(
-						entry("TABLE_CAT", TEXT),
-						entry("TABLE_SCHEM", TEXT),
-						entry("TABLE_NAME", TEXT),
-						entry("COLUMN_NAME", TEXT),
-						entry("DATA_TYPE", INTEGER),
-						entry("COLUMN_SIZE", INTEGER),
-						entry("DECIMAL_DIGITS", INTEGER),
-						entry("NUM_PREC_RADIX", INTEGER),
-						entry("COLUMN_USAGE", TEXT),
-						entry("REMARKS", TEXT),
-						entry("CHAR_OCTET_LENGTH", INTEGER),
-						entry("IS_NULLABLE", TEXT)
+						entry(TABLE_CAT, TEXT),
+						entry(TABLE_SCHEM, TEXT),
+						entry(TABLE_NAME, TEXT),
+						entry(COLUMN_NAME, TEXT),
+						entry(DATA_TYPE, INTEGER),
+						entry(COLUMN_SIZE, INTEGER),
+						entry(DECIMAL_DIGITS, INTEGER),
+						entry(NUM_PREC_RADIX, INTEGER),
+						entry(COLUMN_USAGE, TEXT),
+						entry(REMARKS, TEXT),
+						entry(CHAR_OCTET_LENGTH, INTEGER),
+						entry(IS_NULLABLE, TEXT)
 				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
 				.rows(List.of())
 				.build());

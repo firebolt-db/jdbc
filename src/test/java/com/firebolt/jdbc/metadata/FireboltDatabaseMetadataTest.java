@@ -700,6 +700,6 @@ class FireboltDatabaseMetadataTest {
 	private void getFunctions(CheckedFunction<DatabaseMetaData, String> getter) throws SQLException {
 		String functions = getter.apply(fireboltDatabaseMetadata);
 		assertNotNull(functions);
-        assertFalse(functions.isEmpty());
+		assertFalse(functions.isEmpty());
 	}
 }
