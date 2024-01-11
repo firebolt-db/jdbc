@@ -231,7 +231,7 @@ class StatementClientImplTest {
 		props.setProperty("host", "firebolt1");
 		props.setProperty("port", "555");
 		props.setProperty(FireboltSessionProperty.CONNECTION_TIMEOUT_MILLIS.getKey(), "0"); // simplifies mocking
-		FireboltProperties fireboltProperties = FireboltProperties.of(props);
+		FireboltProperties fireboltProperties = new FireboltProperties(props);
 		Call okCall = getMockedCallWithResponse(200, "", responseHeaders);
 		when(okHttpClient.newCall(any())).thenReturn(okCall);
 		FireboltAuthenticationService fireboltAuthenticationService = mock(FireboltAuthenticationService.class);

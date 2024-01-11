@@ -32,7 +32,7 @@ class FireboltPropertiesTest {
 		properties.put("engine", "engine");
 		properties.put("host", "host");
 		properties.put("database", "db");
-		assertEquals(expectedDefaultProperties, FireboltProperties.of(properties));
+		assertEquals(expectedDefaultProperties, new FireboltProperties(properties));
 	}
 
 	@Test
@@ -59,12 +59,12 @@ class FireboltPropertiesTest {
 				.additionalProperties(customProperties).keepAliveTimeoutMillis(300000)
 				.maxConnectionsTotal(300).maxRetries(3).socketTimeoutMillis(20).connectionTimeoutMillis(60000)
 				.tcpKeepInterval(30).tcpKeepIdle(60).tcpKeepCount(10).environment("app").build();
-		assertEquals(expectedDefaultProperties, FireboltProperties.of(properties));
+		assertEquals(expectedDefaultProperties, new FireboltProperties(properties));
 	}
 
 	@Test
 	void shouldAddAdditionalProperties() {
-		FireboltProperties props = FireboltProperties.of();
+		FireboltProperties props = new FireboltProperties(new Properties());
 		assertTrue(props.getAdditionalProperties().isEmpty());
 		props.addProperty(new ImmutablePair<>("a", "1"));
 		props.addProperty("b", "2");
@@ -77,7 +77,7 @@ class FireboltPropertiesTest {
 		properties.put("path", "example");
 		properties.put("host", "host");
 
-		assertEquals("example", FireboltProperties.of(properties).getDatabase());
+		assertEquals("example", new FireboltProperties(properties).getDatabase());
 	}
 
 	@ParameterizedTest
@@ -85,7 +85,7 @@ class FireboltPropertiesTest {
 	void invalidDatabase(String db) {
 		Properties properties = new Properties();
 		properties.put("path", db);
-		assertThrows(IllegalArgumentException.class, () -> FireboltProperties.of(properties));
+		assertThrows(IllegalArgumentException.class, () -> new FireboltProperties(properties));
 	}
 
 	@Test
@@ -93,12 +93,12 @@ class FireboltPropertiesTest {
 		Properties properties = new Properties();
 		properties.put("path", "example");
 		properties.put("host", "host");
-		assertEquals(FireboltProperties.of(properties), FireboltProperties.copy(FireboltProperties.of(properties)));
+		assertEquals(new FireboltProperties(properties), FireboltProperties.copy(new FireboltProperties(properties)));
 	}
 
 	@Test
 	void notEmptyCopy() {
-		assertEquals(FireboltProperties.of(), FireboltProperties.copy(FireboltProperties.of()));
+		assertEquals(new FireboltProperties(new Properties()), FireboltProperties.copy(new FireboltProperties(new Properties())));
 	}
 
 	@Test
@@ -109,8 +109,8 @@ class FireboltPropertiesTest {
 		properties.put("ssl", "true");
 		properties.put("compress", "false");
 
-		assertTrue(FireboltProperties.of(properties).isSsl());
-		assertFalse(FireboltProperties.of(properties).isCompress());
+		assertTrue(new FireboltProperties(properties).isSsl());
+		assertFalse(new FireboltProperties(properties).isCompress());
 	}
 
 	@Test
@@ -121,8 +121,8 @@ class FireboltPropertiesTest {
 		properties.put("ssl", "2");
 		properties.put("compress", "0");
 
-		assertTrue(FireboltProperties.of(properties).isSsl());
-		assertFalse(FireboltProperties.of(properties).isCompress());
+		assertTrue(new FireboltProperties(properties).isSsl());
+		assertFalse(new FireboltProperties(properties).isCompress());
 	}
 
 	@Test
@@ -132,13 +132,13 @@ class FireboltPropertiesTest {
 		properties.put("host", "host");
 		properties.put("port", "999");
 
-		assertEquals(999, FireboltProperties.of(properties).getPort());
+		assertEquals(999, new FireboltProperties(properties).getPort());
 	}
 
 	@Test
 	void shouldUseSystemEngineWhenNoDbOrEngineProvided() {
 		Properties properties = new Properties();
-		FireboltProperties fireboltProperties = FireboltProperties.of(properties);
+		FireboltProperties fireboltProperties = new FireboltProperties(properties);
 		assertTrue(fireboltProperties.isSystemEngine());
 		assertNull(fireboltProperties.getEngine());
 		assertNull(fireboltProperties.getDatabase());
@@ -155,13 +155,13 @@ class FireboltPropertiesTest {
 		properties.put("host", "host");
 		properties.put("database", "db");
 
-		assertEquals(clients, FireboltProperties.of(properties).getUserClients());
-		assertEquals(drivers, FireboltProperties.of(properties).getUserDrivers());
+		assertEquals(clients, new FireboltProperties(properties).getUserClients());
+		assertEquals(drivers, new FireboltProperties(properties).getUserDrivers());
 	}
 
 	@Test
 	void noEngineNoDbSystemEngine() {
-		assertNull(FireboltProperties.of(new Properties()).getEngine());
+		assertNull(new FireboltProperties(new Properties()).getEngine());
 	}
 
 	@ParameterizedTest
@@ -178,8 +178,8 @@ class FireboltPropertiesTest {
 	}, delimiter = ',')
 	void hostAndEnvironment(String envKey, String envValue, String host, String expectedHost, String expectedEnvironment) {
 		Properties properties = properties(envKey, envValue, host);
-		assertEquals(expectedHost, FireboltProperties.of(properties).getHost());
-		assertEquals(expectedEnvironment, FireboltProperties.of(properties).getEnvironment());
+		assertEquals(expectedHost, new FireboltProperties(properties).getHost());
+		assertEquals(expectedEnvironment, new FireboltProperties(properties).getEnvironment());
 	}
 
 	@ParameterizedTest
@@ -189,7 +189,7 @@ class FireboltPropertiesTest {
 	}, delimiter = ',')
 	void environmentDoesNotMatch(String envKey, String envValue, String host) {
 		Properties properties = properties(envKey, envValue, host);
-		assertThrows(IllegalStateException.class, () -> FireboltProperties.of(properties));
+		assertThrows(IllegalStateException.class, () -> new FireboltProperties(properties));
 	}
 
 	private Properties properties(String envKey, String envValue, String host) {

@@ -132,7 +132,7 @@ public abstract class FireboltConnection implements Connection {
 		if (allSettings.containsKey("client_id") && allSettings.containsKey("client_secret") && !allSettings.containsKey("user") && !allSettings.containsKey("password")) {
 			return 2;
 		}
-		FireboltProperties props = FireboltProperties.of(propertiesFromUrl, connectionSettings);
+		FireboltProperties props = new FireboltProperties(new Properties[] {propertiesFromUrl, connectionSettings});
 		String principal = props.getPrincipal();
 		if (principal != null && principal.contains("@")) {
 			return 1;
@@ -330,8 +330,7 @@ public abstract class FireboltConnection implements Connection {
 	}
 
 	private static FireboltProperties createFireboltProperties(String jdbcUri, Properties connectionProperties) {
-		Properties propertiesFromUrl = UrlUtil.extractProperties(jdbcUri);
-		return FireboltProperties.of(propertiesFromUrl, connectionProperties);
+		return new FireboltProperties(new Properties[] {UrlUtil.extractProperties(jdbcUri), connectionProperties});
 	}
 
 	@Override
