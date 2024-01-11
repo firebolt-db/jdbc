@@ -60,7 +60,7 @@ sourceSets {
 }
 dependencies {
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     implementation 'net.jodah:expiringmap:0.5.11'
     implementation 'org.apache.commons:commons-lang3:3.13.0'
@@ -70,7 +70,7 @@ dependencies {
 
     implementation fileTree(dir: 'libs', includes: ['*.jar'])
 
-    compileOnly 'org.slf4j:slf4j-api:2.0.9'
+    compileOnly 'org.slf4j:slf4j-api:2.0.11'
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
     testCompileOnly 'org.projectlombok:lombok:1.18.30'
@@ -88,7 +88,7 @@ dependencies {
     testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
     testImplementation 'com.squareup.okhttp3:okhttp-tls:4.12.0'
     testImplementation 'io.zonky.test:embedded-postgres:2.0.6'
-    testCompileOnly 'org.slf4j:slf4j-api:2.0.9'
+    testCompileOnly 'org.slf4j:slf4j-api:2.0.11'
     testCommonImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
     testImplementation sourceSets.testCommon.output
     compileTestJava.dependsOn processTestResources
