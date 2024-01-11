@@ -32,26 +32,31 @@ public class SqlArrayUtil {
 		int dimensions = 0;
 		int dim = 0;
 		boolean intoString = false;
+		boolean escaped = false;
 
 		for(char c : chars) {
-			if (c == '\'') {
-				intoString = !intoString;
-			}
-			if (intoString) {
+			if (c == '\\') {
+				escaped = true;
 				continue;
 			}
-			switch (c) {
-				case '[':
-					dim++;
-					if (dim > dimensions) {
-						dimensions = dim;
-					}
-					break;
-				case ']':
-					dim--;
-					break;
-				default: // ignore
+			if (c == '\'' && !escaped) {
+				intoString = !intoString;
 			}
+			if (!intoString) {
+				switch (c) {
+					case '[':
+						dim++;
+						if (dim > dimensions) {
+							dimensions = dim;
+						}
+						break;
+					case ']':
+						dim--;
+						break;
+					default: // ignore
+				}
+			}
+			escaped = false;
 		}
 		return dimensions;
 	}
@@ -121,32 +126,37 @@ public class SqlArrayUtil {
 		char[] chars = value.toCharArray();
 		int nesting = 0;
 		boolean intoString = false;
+		boolean escaped = false;
 		int from = 0;
 		List<String> elements = new ArrayList<>();
 
 		for (int i = 0; i < chars.length; i++) {
 			char c = chars[i];
-			if (c == '\'') {
-				intoString = !intoString;
-			}
-			if (intoString) {
+			if (c == '\\') {
+				escaped = true;
 				continue;
 			}
-			switch (c) {
-				case '[':
-					nesting++;
-					break;
-				case ']':
-					nesting--;
-					break;
-				case ',':
-					if (nesting <= 0) {
-						elements.add(value.substring(from, i));
-						from = i + 1;
-					}
-					break;
-				default: // ignore
+			if (c == '\'' && !escaped) {
+				intoString = !intoString;
 			}
+			if (!intoString) {
+				switch (c) {
+					case '[':
+						nesting++;
+						break;
+					case ']':
+						nesting--;
+						break;
+					case ',':
+						if (nesting <= 0) {
+							elements.add(value.substring(from, i));
+							from = i + 1;
+						}
+						break;
+					default: // ignore
+				}
+			}
+			escaped = false;
 		}
 		elements.add(value.substring(from));
 		return elements.toArray(new String[0]);
@@ -170,10 +180,15 @@ public class SqlArrayUtil {
 		int parenthesisDepth = 0; // Needed for tuples
 		boolean isCurrentSubstringBetweenQuotes = false;
 		List<String> elements = new ArrayList<>();
+		boolean escaped = false;
 		while (index < arrayContent.length() - 1) {
 			index++;
 			char currentChar = arrayContent.charAt(index);
-			if (currentChar == '\'') {
+			if (currentChar == '\\') {
+				escaped = true;
+				continue;
+			}
+			if (currentChar == '\'' && !escaped) {
 				isCurrentSubstringBetweenQuotes = !isCurrentSubstringBetweenQuotes;
 			}
 			if (!isCurrentSubstringBetweenQuotes && baseType == FireboltDataType.TUPLE) {
@@ -187,6 +202,7 @@ public class SqlArrayUtil {
 				elements.add(arrayContent.substring(subStringStart, index));
 				subStringStart = index + 1;
 			}
+			escaped = false;
 		}
 		elements.add(arrayContent.substring(subStringStart));
 		return elements;
