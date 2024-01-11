@@ -1,5 +1,7 @@
 package integration.tests;
 
+import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import integration.ConnectionInfo;
 import integration.IntegrationTest;
@@ -12,6 +14,12 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -24,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 
 import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -187,6 +196,59 @@ public class SystemEngineTest extends IntegrationTest {
 				}
 			}
 		}
+	}
+
+	@Test
+	@Tag("v2")
+	void connectToAccountWithoutUser() throws SQLException, IOException {
+		ConnectionInfo current = integration.ConnectionInfo.getInstance();
+		String database = current.getDatabase();
+		String serviceAccountName = format("%s_sa_no_user_%d", database, System.currentTimeMillis());
+		try (Connection connection = createConnection(getSystemEngineName())) {
+			try {
+				connection.createStatement().executeUpdate(format("CREATE SERVICE ACCOUNT \"%s\" WITH DESCRIPTION = \"Ecosytem test with no user\"", serviceAccountName));
+				// This what I want to do here
+//				ResultSet genKeyRs = connection.createStatement().executeQuery(format("CALL fb_GENERATESERVICEACCOUNTKEY('%s')", serviceAccountName));
+//				assertTrue(genKeyRs.next());
+//				String clientId = genKeyRs.getString(2);
+//				String clientSecret = genKeyRs.getString(3);
+				// But response of this command is incorrect (FIR-28997), so we have to retrieve clientId and clientSecret using SELECT
+				String clientSecret = getClientSecret(connection, serviceAccountName, current.getDatabase());
+				// end of patch against FIR-28997
+//				if (clientId == null || clientId.isEmpty()) { // Currently this is bugged so retrieve id via a query. FIR-28719
+					ResultSet serviceAccountRs = connection.createStatement().executeQuery(format("SELECT service_account_id FROM information_schema.service_accounts WHERE service_account_name='%s'", serviceAccountName));
+					assertTrue(serviceAccountRs.next());
+					String clientId = serviceAccountRs.getString(1);
+//				}
+				String jdbcUrl = format("jdbc:firebolt:%s?env=%s&account=%s&engine=%s", database, current.getEnv(), current.getAccount(), current.getEngine());
+
+				SQLException e = assertThrows(SQLException.class, () -> DriverManager.getConnection(jdbcUrl, clientId, clientSecret));
+				assertTrue(e.getMessage().matches(format("Account '%s' does not exist in this organization or is not authorized.+RBAC.+", current.getAccount())), "Unexpected exception message: " + e.getMessage());
+			} finally {
+				connection.createStatement().executeUpdate(format("DROP SERVICE ACCOUNT \"%s\"", serviceAccountName));
+			}
+		}
+	}
+
+	// This method should be removed when FIR-28997 is fixed
+	private String getClientSecret(Connection connection, String serviceAccountName, String database) throws SQLException, IOException {
+		FireboltConnection fbConn = (FireboltConnection)connection;
+		String accessToken = fbConn.getAccessToken().orElseThrow(() -> new IllegalStateException("access token is not found"));
+		FireboltProperties fbProps = fbConn.getSessionProperties();
+		URL url = new URL(format("%s/query?output_format=TabSeparatedWithNamesAndTypes&database=%s&account_id=%s", fbProps.getHttpConnectionUrl(), database, fbProps.getAccountId()));
+		HttpURLConnection con = (HttpURLConnection)url.openConnection();
+		con.setRequestMethod("POST");
+		con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+		con.setRequestProperty("authorization", "Bearer " + accessToken);
+		con.setDoOutput(true);
+		try (PrintStream ps = new PrintStream(con.getOutputStream())) {
+			ps.println(format("CALL fb_GENERATESERVICEACCOUNTKEY('%s')", serviceAccountName));
+		}
+		BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream(), UTF_8));
+		String[] data = br.readLine().split("\\t");
+		String clientSecret = data[2];
+		return clientSecret;
+
 	}
 
 	private String getTableDbName(Connection connection, String table) throws SQLException {
