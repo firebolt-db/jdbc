@@ -135,6 +135,7 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
 
 @CustomLog
+@SuppressWarnings("java:S6204") // compatibility with JDK 11
 public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 	private static final String PUBLIC_SCHEMA_NAME = "public";
@@ -925,6 +926,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
+	@SuppressWarnings("java:S4144") // identical implementation
 	public int getMaxColumnNameLength() throws SQLException {
 		return MAX_IDENTIFIER_LENGTH;
 	}
@@ -983,6 +985,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
+	@SuppressWarnings("java:S4144") // identical implementation
 	public int getMaxSchemaNameLength() throws SQLException {
 		return MAX_IDENTIFIER_LENGTH;
 	}
@@ -995,6 +998,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
+	@SuppressWarnings("java:S4144") // identical implementation
 	public int getMaxCatalogNameLength() throws SQLException {
 		return MAX_IDENTIFIER_LENGTH;
 	}
@@ -1027,6 +1031,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
+	@SuppressWarnings("java:S4144") // identical implementation
 	public int getMaxTableNameLength() throws SQLException {
 		return MAX_IDENTIFIER_LENGTH;
 	}
