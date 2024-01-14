@@ -1,8 +1,11 @@
 package com.firebolt.jdbc.resultset;
 
-import static java.sql.ResultSetMetaData.columnNoNulls;
-import static java.sql.ResultSetMetaData.columnNullable;
-import static org.junit.jupiter.api.Assertions.*;
+import com.firebolt.jdbc.CheckedFunction;
+import com.firebolt.jdbc.resultset.column.Column;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -11,11 +14,14 @@ import java.sql.Types;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.Test;
-
-import com.firebolt.jdbc.resultset.column.Column;
-import org.junit.jupiter.params.ParameterizedTest;
+import static java.lang.String.format;
+import static java.sql.ResultSetMetaData.columnNoNulls;
+import static java.sql.ResultSetMetaData.columnNullable;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FireboltResultSetMetaDataTest {
 
@@ -46,7 +52,7 @@ class FireboltResultSetMetaDataTest {
 
 	@Test
 	void shouldReturnColumnNameAndLabel() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = getMetaData();
+		ResultSetMetaData fireboltResultSetMetaData = getMetaData();
 		assertEquals("name", fireboltResultSetMetaData.getColumnName(1));
 		assertEquals("name", fireboltResultSetMetaData.getColumnLabel(1));
 	}
@@ -68,12 +74,12 @@ class FireboltResultSetMetaDataTest {
 
 	@Test
 	void shouldReturnTableName() throws SQLException {
-		assertEquals("table-name", getMetaData().getTableName());
+		assertEquals("table-name", getMetaData().getTableName(1));
 	}
 
 	@Test
 	void shouldReturnDbName() throws SQLException {
-		assertEquals("db-name", getMetaData().getDbName());
+		assertEquals("db-name", getMetaData().getCatalogName(1));
 	}
 
 	@Test
@@ -93,19 +99,57 @@ class FireboltResultSetMetaDataTest {
 
 	@Test
 	void shouldReturnTrueWhenColumnIsCaseSensitiveAndFalseOtherwise() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = getMetaData();
+		ResultSetMetaData fireboltResultSetMetaData = getMetaData();
 		assertTrue(fireboltResultSetMetaData.isCaseSensitive(1));
 		assertFalse(fireboltResultSetMetaData.isCaseSensitive(2));
 	}
 
 	@Test
-	void isReadOnly() throws SQLException {
-		assertTrue(getMetaData().isReadOnly(1));
+	void trivialMarkers() throws SQLException {
+		ResultSetMetaData md = getMetaData();
+		assertTrue(md.isReadOnly(1));
+		assertFalse(md.isAutoIncrement(1));
+		assertTrue(md.isSearchable(1));
+		assertFalse(md.isCurrency(1));
+		assertEquals(80, md.getColumnDisplaySize(1));
+		assertEquals("", md.getSchemaName(1));
+		assertFalse(md.isWritable(1));
+		assertFalse(md.isDefinitelyWritable(1));
+	}
+
+	@ParameterizedTest
+	@ValueSource(ints = {-1, 0, 4})
+	void wrongIndex(int column) {
+		ResultSetMetaData md = getMetaData();
+		assertFunction(md::isNullable, column);
+		assertFunction(md::isSigned, column);
+		assertFunction(md::getColumnLabel, column);
+		assertFunction(md::getColumnName, column);
+		assertFunction(md::getPrecision, column);
+		assertFunction(md::getScale, column);
+		assertFunction(md::getTableName, column);
+		assertFunction(md::getCatalogName, column);
+		assertFunction(md::getColumnType, column);
+		assertFunction(md::getColumnTypeName, column);
+		assertFunction(md::getColumnClassName, column);
+		assertFunction(md::isCaseSensitive, column);
+		assertFunction(md::isAutoIncrement, column);
+		assertFunction(md::isSearchable, column);
+		assertFunction(md::isCurrency, column);
+		assertFunction(md::getColumnDisplaySize, column);
+		assertFunction(md::getSchemaName, column);
+		assertFunction(md::isReadOnly, column);
+		assertFunction(md::isWritable, column);
+		assertFunction(md::isDefinitelyWritable, column);
+	}
+
+	private <R> void assertFunction(CheckedFunction<Integer, R> function, int column) {
+		assertEquals(format("Invalid column number %d", column), assertThrows(SQLException.class, () -> function.apply(column)).getMessage());
 	}
 
 	@Test
 	void wrap() throws SQLException {
-		FireboltResultSetMetaData fireboltResultSetMetaData = getMetaData();
+		ResultSetMetaData fireboltResultSetMetaData = getMetaData();
 		assertTrue(fireboltResultSetMetaData.isWrapperFor(ResultSetMetaData.class));
 		assertSame(fireboltResultSetMetaData, fireboltResultSetMetaData.unwrap(ResultSetMetaData.class));
 
@@ -118,7 +162,7 @@ class FireboltResultSetMetaDataTest {
 				Column.of("Decimal(1,2)", "Weight"));
 	}
 
-	private  FireboltResultSetMetaData getMetaData() {
-		return new FireboltResultSetMetaData(getColumns(), "table-name", "db-name");
+	private  ResultSetMetaData getMetaData() {
+		return new FireboltResultSetMetaData("db-name", "table-name", getColumns());
 	}
 }
