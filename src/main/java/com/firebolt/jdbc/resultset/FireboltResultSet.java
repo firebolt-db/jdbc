@@ -95,7 +95,7 @@ public class FireboltResultSet implements ResultSet {
 
 	private FireboltResultSet() {
 		reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream("".getBytes()), UTF_8)); // empty InputStream
-		resultSetMetaData = new FireboltResultSetMetaData(new ArrayList<>(), null, null);
+		resultSetMetaData = new FireboltResultSetMetaData(null, null, List.of());
 		columnNameToColumnNumber = new HashMap<>();
 		currentLine = null;
 		columns = new ArrayList<>();
@@ -129,7 +129,7 @@ public class FireboltResultSet implements ResultSet {
 			} else {
 				columns = new ArrayList<>();
 			}
-			resultSetMetaData = new FireboltResultSetMetaData(columns, tableName, dbName);
+			resultSetMetaData = new FireboltResultSetMetaData(dbName, tableName, columns);
 		} catch (Exception e) {
 			log.error("Could not create ResultSet: " + ExceptionUtils.getStackTrace(e), e);
 			throw new FireboltException("Cannot read response from DB: error while creating ResultSet ", e);
