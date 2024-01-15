@@ -22,41 +22,15 @@ public class SqlArrayUtil {
 
 	public static FireboltArray transformToSqlArray(String value, ColumnType columnType) throws SQLException {
 		log.debug("Transformer array with value {} and type {}", value, columnType);
-		int dimensions = getDimensions(value);
+		int dimensions = getDimensions(columnType);
 		Object arr = createArray(value, dimensions, columnType);
 		return arr == null ? null : new FireboltArray(columnType.getArrayBaseColumnType().getDataType(), arr);
 	}
 
-	private static int getDimensions(String value) {
-		char[] chars = value.toCharArray();
+	private static int getDimensions(ColumnType columnType) {
 		int dimensions = 0;
-		int dim = 0;
-		boolean intoString = false;
-		boolean escaped = false;
-
-		for(char c : chars) {
-			if (c == '\\') {
-				escaped = true;
-				continue;
-			}
-			if (c == '\'' && !escaped) {
-				intoString = !intoString;
-			}
-			if (!intoString) {
-				switch (c) {
-					case '[':
-						dim++;
-						if (dim > dimensions) {
-							dimensions = dim;
-						}
-						break;
-					case ']':
-						dim--;
-						break;
-					default: // ignore
-				}
-			}
-			escaped = false;
+		for (ColumnType type = columnType; FireboltDataType.ARRAY.equals(type.getDataType()); type = type.getInnerTypes().get(0)) {
+			dimensions++;
 		}
 		return dimensions;
 	}
