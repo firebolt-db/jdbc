@@ -11,6 +11,7 @@ import java.util.Objects;
 
 import static java.lang.String.format;
 
+@SuppressWarnings("java:S4144") // Methods should not have identical implementations - many methods here have trivial identical implementation
 public class FireboltResultSetMetaData implements ResultSetMetaData {
 	private final String dbName;
 	private final String tableName;
