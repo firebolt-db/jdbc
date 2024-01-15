@@ -121,29 +121,29 @@ class FireboltResultSetMetaDataTest {
 	@ValueSource(ints = {-1, 0, 4})
 	void wrongIndex(int column) {
 		ResultSetMetaData md = getMetaData();
-		assertFunction(md::isNullable, column);
-		assertFunction(md::isSigned, column);
-		assertFunction(md::getColumnLabel, column);
-		assertFunction(md::getColumnName, column);
-		assertFunction(md::getPrecision, column);
-		assertFunction(md::getScale, column);
-		assertFunction(md::getTableName, column);
-		assertFunction(md::getCatalogName, column);
-		assertFunction(md::getColumnType, column);
-		assertFunction(md::getColumnTypeName, column);
-		assertFunction(md::getColumnClassName, column);
-		assertFunction(md::isCaseSensitive, column);
-		assertFunction(md::isAutoIncrement, column);
-		assertFunction(md::isSearchable, column);
-		assertFunction(md::isCurrency, column);
-		assertFunction(md::getColumnDisplaySize, column);
-		assertFunction(md::getSchemaName, column);
-		assertFunction(md::isReadOnly, column);
-		assertFunction(md::isWritable, column);
-		assertFunction(md::isDefinitelyWritable, column);
+		assertFunctionThrowsWrongIndex(md::isNullable, column);
+		assertFunctionThrowsWrongIndex(md::isSigned, column);
+		assertFunctionThrowsWrongIndex(md::getColumnLabel, column);
+		assertFunctionThrowsWrongIndex(md::getColumnName, column);
+		assertFunctionThrowsWrongIndex(md::getPrecision, column);
+		assertFunctionThrowsWrongIndex(md::getScale, column);
+		assertFunctionThrowsWrongIndex(md::getTableName, column);
+		assertFunctionThrowsWrongIndex(md::getCatalogName, column);
+		assertFunctionThrowsWrongIndex(md::getColumnType, column);
+		assertFunctionThrowsWrongIndex(md::getColumnTypeName, column);
+		assertFunctionThrowsWrongIndex(md::getColumnClassName, column);
+		assertFunctionThrowsWrongIndex(md::isCaseSensitive, column);
+		assertFunctionThrowsWrongIndex(md::isAutoIncrement, column);
+		assertFunctionThrowsWrongIndex(md::isSearchable, column);
+		assertFunctionThrowsWrongIndex(md::isCurrency, column);
+		assertFunctionThrowsWrongIndex(md::getColumnDisplaySize, column);
+		assertFunctionThrowsWrongIndex(md::getSchemaName, column);
+		assertFunctionThrowsWrongIndex(md::isReadOnly, column);
+		assertFunctionThrowsWrongIndex(md::isWritable, column);
+		assertFunctionThrowsWrongIndex(md::isDefinitelyWritable, column);
 	}
 
-	private <R> void assertFunction(CheckedFunction<Integer, R> function, int column) {
+	private <R> void assertFunctionThrowsWrongIndex(CheckedFunction<Integer, R> function, int column) {
 		assertEquals(format("Invalid column number %d", column), assertThrows(SQLException.class, () -> function.apply(column)).getMessage());
 	}
 
