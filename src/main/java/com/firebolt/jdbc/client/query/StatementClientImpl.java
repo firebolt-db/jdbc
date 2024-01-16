@@ -23,6 +23,8 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.internal.http2.StreamResetException;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
@@ -90,6 +92,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		String errorMessage = format("Error executing statement with label %s: %s", label, formattedStatement);
 		try {
 			String uri = buildQueryUri(connectionProperties, params).toString();
+			log.warn(uri);
 			return executeSqlStatementWithRetryOnUnauthorized(label, connectionProperties, formattedStatement, uri);
 		} catch (FireboltException e) {
 			throw e;
@@ -269,6 +272,11 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 			if (queryTimeout > 0) {
 				params.put("max_execution_time", String.valueOf(queryTimeout));
+			}
+
+			Map<String, String> properties = fireboltProperties.getAdditionalProperties();
+			for (String k : properties.keySet()) {
+				params.put(k, properties.get(k));
 			}
 		}
 		params.put(FireboltQueryParameterKey.DATABASE.getKey(), fireboltProperties.getDatabase());

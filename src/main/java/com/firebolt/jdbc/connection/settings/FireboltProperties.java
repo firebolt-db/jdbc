@@ -232,13 +232,17 @@ public class FireboltProperties {
 	}
 
 	public void addProperty(@NonNull String key, String value) {
+		log.warn("Adding property {} with value {}", key, value);
+
 		// This a bad patch but there is nothing to do right now. We will refactor this class and make solution more generic
 		switch (key) {
 			case "database": database = value; break;
 			case "engine": engine = value; break;
 			case "account_id": accountId = value; break;
-			default: additionalProperties.put(key, value);
+			default: break;
 		}
+
+		additionalProperties.put(key, value);
 	}
 
 	public void addProperty(Pair<String, String> property) {

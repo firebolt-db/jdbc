@@ -27,9 +27,8 @@ public class FireboltEngineInformationSchemaService implements FireboltEngineSer
     private static final String ENGINE_NAME_FIELD = "engine_name";
     private static final Collection<String> RUNNING_STATUSES = Stream.of("running", "ENGINE_STATE_RUNNING").collect(toCollection(() -> new TreeSet<>(CASE_INSENSITIVE_ORDER)));
     private static final String ENGINE_QUERY =
-            "SELECT engs.url, engs.attached_to, dbs.database_name, engs.status, engs.engine_name " +
+            "SELECT engs.url, engs.attached_to, engs.status, engs.engine_name, engs.default_database " +
             "FROM information_schema.engines as engs " +
-            "LEFT JOIN information_schema.databases as dbs ON engs.attached_to = dbs.database_name " +
             "WHERE engs.engine_name = ?";
     private static final String ENTITY_QUERY = "SELECT * FROM information_schema.%ss WHERE %s_name=?";
     private static final String DATABASE_QUERY = format(ENTITY_QUERY, "database", "database");
@@ -58,7 +57,6 @@ public class FireboltEngineInformationSchemaService implements FireboltEngineSer
     @Override
     public Engine getEngine(FireboltProperties properties) throws SQLException {
         String engine = properties.getEngine();
-        String database = properties.getDatabase();
         if (engine == null) {
             throw new IllegalArgumentException("Cannot retrieve engine parameters because its name is null");
         }
@@ -72,13 +70,7 @@ public class FireboltEngineInformationSchemaService implements FireboltEngineSer
                 if (!isEngineRunning(status)) {
                     throw new FireboltException(format("The engine with the name %s is not running. Status: %s", engine, status));
                 }
-                String attachedDatabase = rs.getString("attached_to");
-                if (attachedDatabase == null) {
-                    throw new FireboltException(format("The engine with the name %s is not attached to any database", engine));
-                }
-                if (database != null && !database.equals(attachedDatabase)) {
-                    throw new FireboltException(format("The engine with the name %s is not attached to database %s", engine, database));
-                }
+                String attachedDatabase = rs.getString("default_database");
                 String[] engineUrl = rs.getString(ENGINE_URL).split("\\?", 2);
                 String engineHost = engineUrl[0];
                 String[] engineQuery = engineUrl.length > 1 ? engineUrl[1].split("&") : new String[0];
