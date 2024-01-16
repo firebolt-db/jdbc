@@ -33,10 +33,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.sql.Wrapper;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.firebolt.jdbc.metadata.MetadataColumns.BUFFER_LENGTH;
@@ -260,24 +260,14 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void shouldGetTables() throws SQLException {
-		String expectedSqlForTables = "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_schema LIKE 'def%' AND table_name LIKE 'tab%' AND table_type NOT LIKE 'EXTERNAL' order by table_schema, table_name";
-
-		String expectedSqlForViews = "SELECT table_schema, table_name FROM information_schema.views WHERE table_schema LIKE 'def%' AND table_name LIKE 'tab%' order by table_schema, table_name";
-
-		when(statement.executeQuery(expectedSqlForTables))
-				.thenReturn(new FireboltResultSet(getInputStreamForGetTables()));
-		when(statement.executeQuery(expectedSqlForViews)).thenReturn(FireboltResultSet.empty());
-
+		String expectedSql = "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('FACT', 'DIMENSION', 'VIEW') AND table_schema LIKE 'def%' AND table_name LIKE 'tab%' order by table_schema, table_name";
+		when(statement.executeQuery(expectedSql)).thenReturn(new FireboltResultSet(getInputStreamForGetTables()));
 		ResultSet resultSet = fireboltDatabaseMetadata.getTables("catalog", "def%", "tab%", null);
+		verify(statement).executeQuery(expectedSql);
 
-		verify(statement).executeQuery(expectedSqlForTables);
-		verify(statement).executeQuery(expectedSqlForViews);
-
-		List<List<?>> expectedRows = new ArrayList<>();
-		expectedRows.add(Arrays.asList("db_name", "public", "ex_lineitem", "TABLE", null, null, null, null, null, null,
-				null, null, null));
-		expectedRows.add(Arrays.asList("db_name", "public", "test_1", "TABLE", null, null, null, null, null, null, null,
-				null, null));
+		List<List<?>> expectedRows = List.of(
+				Arrays.asList("db_name", "public", "ex_lineitem", "TABLE", null, null, null, null, null, null, null, null, null),
+				Arrays.asList("db_name", "public", "test_1", "TABLE", null, null, null, null, null, null, null, null, null));
 
 		ResultSet expectedResultSet = FireboltResultSet.of(QueryResult.builder()
 				.columns(Arrays.asList(Column.builder().name(TABLE_CAT).type(TEXT).build(),
@@ -648,46 +638,45 @@ class FireboltDatabaseMetadataTest {
 	private void getFunctions(CheckedFunction<DatabaseMetaData, ResultSet> getter, String functionNamePattern, boolean filled, boolean allowDuplicates) throws SQLException {
 		String previousFunction = null;
 		int count = 0;
-		for (ResultSet rs = getter.apply(fireboltDatabaseMetadata); rs.next();) {
-			count++;
-			String functionName = rs.getString("FUNCTION_NAME");
-			String specificName = rs.getString("SPECIFIC_NAME");
-			assertNotNull(functionName);
-			assertNotNull(specificName);
-			assertEquals(functionName, specificName);
-			if (functionNamePattern != null) {
-				assertTrue(StringUtils.containsIgnoreCase(functionName, functionNamePattern));
-			}
-			if (previousFunction != null) {
-				int functionNameComparison = previousFunction.compareToIgnoreCase(functionName);
-				if (allowDuplicates) {
-					assertTrue(functionNameComparison <= 0);
-				} else {
-					assertTrue(functionNameComparison < 0);
+		try (ResultSet rs = getter.apply(fireboltDatabaseMetadata)) {
+			while (rs.next()) {
+				count++;
+				String functionName = rs.getString("FUNCTION_NAME");
+				String specificName = rs.getString("SPECIFIC_NAME");
+				assertNotNull(functionName);
+				assertNotNull(specificName);
+				assertEquals(functionName, specificName);
+				if (functionNamePattern != null) {
+					assertTrue(StringUtils.containsIgnoreCase(functionName, functionNamePattern));
 				}
+				if (previousFunction != null) {
+					int functionNameComparison = previousFunction.compareToIgnoreCase(functionName);
+					if (allowDuplicates) {
+						assertTrue(functionNameComparison <= 0);
+					} else {
+						assertTrue(functionNameComparison < 0);
+					}
+				}
+				previousFunction = functionName;
 			}
-			previousFunction = functionName;
 		}
 		assertEquals(filled, count > 0);
 	}
 
 	private InputStream getInputStreamForGetColumns() {
-		return FireboltDatabaseMetadata.class
-				.getResourceAsStream("/responses/metadata/firebolt-response-get-columns-example");
+		return FireboltDatabaseMetadata.class.getResourceAsStream("/responses/metadata/firebolt-response-get-columns-example");
 	}
 
 	private InputStream getInputStreamForGetTables() {
-		return FireboltDatabaseMetadata.class
-				.getResourceAsStream("/responses/metadata/firebolt-response-get-tables-example");
+		return FireboltDatabaseMetadata.class.getResourceAsStream("/responses/metadata/firebolt-response-get-tables-example");
 	}
 
 	private InputStream getInputStreamForGetVersion() {
-		return FireboltDatabaseMetadata.class
-				.getResourceAsStream("/responses/metadata/firebolt-response-get-version-example");
+		return FireboltDatabaseMetadata.class.getResourceAsStream("/responses/metadata/firebolt-response-get-version-example");
 	}
 
 	private InputStream getExpectedTypeInfo() {
-		InputStream is = FireboltDatabaseMetadata.class.getResourceAsStream("/responses/metadata/expected-types.csv");
+		InputStream is = Objects.requireNonNull(FireboltDatabaseMetadata.class.getResourceAsStream("/responses/metadata/expected-types.csv"));
 		String typesWithTabs = new BufferedReader(
 				new InputStreamReader(is, StandardCharsets.UTF_8))
 				.lines()
