@@ -48,7 +48,7 @@ public class MetadataUtil {
 		return queryBuilder.conditions(conditions).build().toSql();
 	}
 
-	public String getTablesQuery(@SuppressWarnings("ava:S1172") String catalog, String schema, String tableName, String[] types) {
+	public String getTablesQuery(@SuppressWarnings("java:S1172") String catalog, String schema, String tableName, String[] types) {
 		Query.QueryBuilder queryBuilder = Query.builder().select("table_schema, table_name, table_type").from("information_schema.tables");
 		List<String> conditions = new ArrayList<>();
 		conditions.add(format("table_type IN (%s)", Arrays.stream(types).map(t -> format("'%s'", t)).collect(joining(", "))));
