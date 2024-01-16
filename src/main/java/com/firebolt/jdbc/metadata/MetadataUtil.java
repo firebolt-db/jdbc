@@ -48,11 +48,11 @@ public class MetadataUtil {
 		return queryBuilder.conditions(conditions).build().toSql();
 	}
 
-	public String getTablesQuery(String catalog, String schema, String tableName, String[] types) {
+	public String getTablesQuery(@SuppressWarnings("ava:S1172") String catalog, String schema, String tableName, String[] types) {
 		Query.QueryBuilder queryBuilder = Query.builder().select("table_schema, table_name, table_type").from("information_schema.tables");
 		List<String> conditions = new ArrayList<>();
 		conditions.add(format("table_type IN (%s)", Arrays.stream(types).map(t -> format("'%s'", t)).collect(joining(", "))));
-		// Uncomment once table catalogs are supported
+		// Uncomment once table catalogs are supported. Remove suppress warning ava:S1172 from the first parameter also.
 		//ofNullable(catalog).ifPresent(pattern -> conditions.add(String.format("table_catalog LIKE '%s'",pattern)));
 		ofNullable(schema).ifPresent(pattern -> conditions.add(format("table_schema LIKE '%s'", pattern)));
 		ofNullable(tableName).ifPresent(pattern -> conditions.add(format("table_name LIKE '%s'", pattern)));
