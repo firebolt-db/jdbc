@@ -1,11 +1,14 @@
 package com.firebolt.jdbc.service;
 
-import java.sql.SQLException;
-import java.util.Optional;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.firebolt.jdbc.client.query.StatementClient;
 import com.firebolt.jdbc.client.query.StatementClientImpl;
 import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.resultset.FireboltResultSet;
+import com.firebolt.jdbc.statement.FireboltStatement;
+import com.firebolt.jdbc.statement.StatementInfoWrapper;
+import com.firebolt.jdbc.statement.StatementUtil;
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -17,13 +20,8 @@ import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.firebolt.jdbc.client.query.StatementClient;
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.resultset.FireboltResultSet;
-import com.firebolt.jdbc.statement.FireboltStatement;
-import com.firebolt.jdbc.statement.StatementInfoWrapper;
-import com.firebolt.jdbc.statement.StatementUtil;
+import java.sql.SQLException;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -77,7 +75,7 @@ class FireboltStatementServiceTest {
 	@Test
 	void shouldThrowExceptionWhenTryingToCancelQueryWithASystemEngine() {
 		FireboltProperties fireboltProperties = fireboltProperties("firebolt1", true);
-		StatementClient client = new StatementClientImpl(new OkHttpClient(), new ObjectMapper(), Mockito.mock(FireboltConnection.class), null, null);
+		StatementClient client = new StatementClientImpl(new OkHttpClient(), Mockito.mock(FireboltConnection.class), null, null);
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(client);
 		assertThrows(FireboltException.class, () -> fireboltStatementService.abortStatement("123", fireboltProperties));
 		verifyNoInteractions(statementClient);

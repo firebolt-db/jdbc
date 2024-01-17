@@ -1,6 +1,5 @@
 package com.firebolt.jdbc.client.account;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltClient;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
@@ -17,9 +16,8 @@ public class FireboltAccountRetriever<T> extends FireboltClient {
     private final String path;
     private final Class<T> type;
 
-    @SuppressWarnings("java:S107") //Number of parameters (8) > max (7). This is the price of the immutability
-    public FireboltAccountRetriever(OkHttpClient httpClient, ObjectMapper objectMapper, FireboltConnection connection, String customDrivers, String customClients, String host, String path, Class<T> type) {
-        super(httpClient, objectMapper, connection, customDrivers, customClients);
+    public FireboltAccountRetriever(OkHttpClient httpClient, FireboltConnection connection, String customDrivers, String customClients, String host, String path, Class<T> type) {
+        super(httpClient, connection, customDrivers, customClients);
         this.host = host;
         this.path = path;
         this.type = type;

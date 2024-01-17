@@ -104,7 +104,7 @@ class FireboltPreparedStatementTest {
 					Arguments.of("setRowId", (Executable) () -> statement.setRowId(1, mock(RowId.class)),
 					Arguments.of("setSQLXML", (Executable) () -> statement.setSQLXML(1, mock(SQLXML.class))),
 
-					// TODO: add support of  this method
+					// TODO: add support of these methods
 					Arguments.of("getParameterMetaData", (Executable) () -> statement.getParameterMetaData())),
 					Arguments.of("setObject", (Executable) () -> statement.setObject(1, mock(SQLXML.class), Types.VARCHAR, 0)),
 					Arguments.of("getParameterMetaData", (Executable) () -> statement.getParameterMetaData())

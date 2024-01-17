@@ -1,8 +1,6 @@
 package com.firebolt.jdbc.connection;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
-import com.firebolt.jdbc.client.FireboltObjectMapper;
 import com.firebolt.jdbc.client.account.FireboltAccount;
 import com.firebolt.jdbc.client.account.FireboltAccountRetriever;
 import com.firebolt.jdbc.client.authentication.AuthenticationRequest;
@@ -52,15 +50,14 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
     FireboltConnectionServiceSecret(@NonNull String url, Properties connectionSettings) throws SQLException {
         super(url, connectionSettings, PROTOCOL_VERSION);
         OkHttpClient httpClient = getHttpClient(loginProperties);
-        ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
-        this.fireboltGatewayUrlService = new FireboltGatewayUrlService(createFireboltAccountRetriever(httpClient, objectMapper, "engineUrl", GatewayUrlResponse.class));
-        this.fireboltAccountIdService = new FireboltAccountIdService(createFireboltAccountRetriever(httpClient, objectMapper, "resolve", FireboltAccount.class));
+        this.fireboltGatewayUrlService = new FireboltGatewayUrlService(createFireboltAccountRetriever(httpClient,"engineUrl", GatewayUrlResponse.class));
+        this.fireboltAccountIdService = new FireboltAccountIdService(createFireboltAccountRetriever(httpClient,"resolve", FireboltAccount.class));
         this.fireboltEngineService = new FireboltEngineInformationSchemaService(this);
         connect();
     }
 
-    private <T> FireboltAccountRetriever<T> createFireboltAccountRetriever(OkHttpClient httpClient, ObjectMapper objectMapper, String path, Class<T> type) {
-        return new FireboltAccountRetriever<>(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients(), loginProperties.getHost(), path, type);
+    private <T> FireboltAccountRetriever<T> createFireboltAccountRetriever(OkHttpClient httpClient, String path, Class<T> type) {
+        return new FireboltAccountRetriever<>(httpClient, this, loginProperties.getUserDrivers(), loginProperties.getUserClients(), loginProperties.getHost(), path, type);
     }
 
     @Override
@@ -123,8 +120,8 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
 
 
     @Override
-    protected FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper) {
-        return new FireboltAuthenticationClient(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()) {
+    protected FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient) {
+        return new FireboltAuthenticationClient(httpClient, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()) {
             @Override
             public AuthenticationRequest getAuthenticationRequest(String username, String password, String host, String environment) {
                 return new ServiceAccountAuthenticationRequest(username, password, environment);

@@ -1,7 +1,5 @@
 package com.firebolt.jdbc.client.gateway;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.client.account.FireboltAccount;
 import com.firebolt.jdbc.client.account.FireboltAccountRetriever;
 import com.firebolt.jdbc.connection.FireboltConnection;
@@ -18,13 +16,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
 
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
@@ -60,9 +55,6 @@ import static org.mockito.Mockito.when;
 class FireboltAccountRetrieverTest {
     private static final String GENERIC_ERROR_MESSAGE = "Server failed to execute query with the following error:";
 
-	@Spy
-	private final ObjectMapper objectMapper = new ObjectMapper();
-
 	@Mock
 	private OkHttpClient httpClient;
 
@@ -75,26 +67,26 @@ class FireboltAccountRetrieverTest {
 
     @BeforeEach
     void setUp() {
-        fireboltGatewayUrlClient = new FireboltAccountRetriever<>(httpClient, objectMapper, fireboltConnection, null, null, "test-firebolt.io", "engineUrl", GatewayUrlResponse.class);
-        fireboltAccountIdResolver = new FireboltAccountRetriever<>(httpClient, objectMapper, fireboltConnection, null, null, "test-firebolt.io", "resolve", FireboltAccount.class);
+        fireboltGatewayUrlClient = new FireboltAccountRetriever<>(httpClient, fireboltConnection, null, null, "test-firebolt.io", "engineUrl", GatewayUrlResponse.class);
+        fireboltAccountIdResolver = new FireboltAccountRetriever<>(httpClient, fireboltConnection, null, null, "test-firebolt.io", "resolve", FireboltAccount.class);
     }
 
 	@Test
 	void shouldGetGatewayUrlWhenResponseIsOk() throws IOException, FireboltException {
-        GatewayUrlResponse response = GatewayUrlResponse.builder().engineUrl("http://engine").build();
-        injectMockedResponse(httpClient, HTTP_OK, response);
-        assertEquals("http://engine", fireboltGatewayUrlClient.retrieve("access_token", "account").getEngineUrl());
+        String engineUrl = "http://engine";
+        injectMockedResponse(httpClient, HTTP_OK, format("{\"engineUrl\":  \"%s\"}", engineUrl));
+        assertEquals(engineUrl, fireboltGatewayUrlClient.retrieve("access_token", "account").getEngineUrl());
 	}
 
     @Test
     void shouldGetAccountId() throws IOException, FireboltException {
         FireboltAccount account = new FireboltAccount("12345", "central");
-        injectMockedResponse(httpClient, HTTP_OK, account);
+        injectMockedResponse(httpClient, HTTP_OK, "{\"id\": \"12345\", \"region\":\"central\"}");
         assertEquals(account, fireboltAccountIdResolver.retrieve("access_token", "account"));
     }
 
     @Test
-    void shouldRuntimeExceptionUponRuntimeException() throws FireboltException {
+    void shouldRuntimeExceptionUponRuntimeException() {
         when(httpClient.newCall(any())).thenThrow(new IllegalArgumentException("ex"));
         assertEquals("ex", assertThrows(IllegalArgumentException.class, () -> fireboltGatewayUrlClient.retrieve("token", "acc")).getMessage());
     }
@@ -143,13 +135,12 @@ class FireboltAccountRetrieverTest {
        MatcherAssert.assertThat(Assert.assertThrows(FireboltException.class, () -> accountRetriever.retrieve("access_token", accountName)).getMessage(), Matchers.startsWith(expectedErrorMessagePrefix));
     }
 
-    private void injectMockedResponse(OkHttpClient httpClient, int code, Object payload) throws IOException {
+    private void injectMockedResponse(OkHttpClient httpClient, int code, String gatewayResponse) throws IOException {
         Response response = mock(Response.class);
         Call call = mock(Call.class);
         when(httpClient.newCall(any())).thenReturn(call);
         when(call.execute()).thenReturn(response);
         when(response.code()).thenReturn(code);
-        String gatewayResponse = new ObjectMapper().writeValueAsString(payload);
         if (code == HTTP_OK) {
             ResponseBody body = mock(ResponseBody.class);
             when(response.body()).thenReturn(body);

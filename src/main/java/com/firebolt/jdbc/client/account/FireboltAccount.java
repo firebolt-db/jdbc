@@ -1,20 +1,20 @@
 package com.firebolt.jdbc.client.account;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.json.JSONObject;
 
 import java.util.Objects;
 
 public class FireboltAccount {
-    @JsonProperty
     private final String id;
-    @JsonProperty
     private final String region;
 
-    @JsonCreator
-    public FireboltAccount(@JsonProperty("id") String id, @JsonProperty("region") String region) {
+    public FireboltAccount(String id, String region) {
         this.id = id;
         this.region = region;
+    }
+
+    FireboltAccount(JSONObject json) {
+        this(json.getString("id"), json.getString("region"));
     }
 
     public String getId() {

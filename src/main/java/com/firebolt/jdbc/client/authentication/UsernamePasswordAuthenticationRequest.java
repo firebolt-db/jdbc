@@ -1,13 +1,9 @@
 package com.firebolt.jdbc.client.authentication;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.firebolt.jdbc.client.FireboltObjectMapper;
 import lombok.AllArgsConstructor;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
-
-import java.util.Map;
+import org.json.JSONObject;
 
 import static java.lang.String.format;
 
@@ -17,14 +13,15 @@ public class UsernamePasswordAuthenticationRequest implements AuthenticationRequ
     private static final String USERNAME_FIELD_NAME = "username";
     private static final String PASSWORD_FIELD_NAME = "password";
     private static final MediaType JSON = MediaType.parse("application/json");
-    private final ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
     private final String username;
     private final String password;
     private final String host;
 
-    public RequestBody getRequestBody() throws JsonProcessingException {
-        Map<String, String> loginDetailsMap = Map.of(USERNAME_FIELD_NAME, username, PASSWORD_FIELD_NAME, password);
-        return RequestBody.create(objectMapper.writeValueAsString(loginDetailsMap), JSON);
+    public RequestBody getRequestBody() {
+        JSONObject json = new JSONObject();
+        json.put(USERNAME_FIELD_NAME, username);
+        json.put(PASSWORD_FIELD_NAME, password);
+        return RequestBody.create(json.toString(), JSON);
     }
 
     @Override

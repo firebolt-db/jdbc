@@ -1,8 +1,6 @@
 package com.firebolt.jdbc.connection;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
-import com.firebolt.jdbc.client.FireboltObjectMapper;
 import com.firebolt.jdbc.client.account.FireboltAccountClient;
 import com.firebolt.jdbc.client.authentication.AuthenticationRequest;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
@@ -43,8 +41,7 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
     FireboltConnectionUserPassword(@NonNull String url, Properties connectionSettings) throws SQLException {
         super(url, connectionSettings, PROTOCOL_VERSION);
         OkHttpClient httpClient = getHttpClient(loginProperties);
-        ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
-        this.fireboltEngineService = new FireboltEngineApiService(new FireboltAccountClient(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
+        this.fireboltEngineService = new FireboltEngineApiService(new FireboltAccountClient(httpClient, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
         connect();
     }
 
@@ -78,8 +75,8 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
     }
 
     @Override
-    protected FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper) {
-        return new FireboltAuthenticationClient(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()) {
+    protected FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient) {
+        return new FireboltAuthenticationClient(httpClient,this, loginProperties.getUserDrivers(), loginProperties.getUserClients()) {
             @Override
             public AuthenticationRequest getAuthenticationRequest(String username, String password, String host, String environment) {
                 return new UsernamePasswordAuthenticationRequest(username, password, host);

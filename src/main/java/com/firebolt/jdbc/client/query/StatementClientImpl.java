@@ -1,6 +1,5 @@
 package com.firebolt.jdbc.client.query;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltClient;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
@@ -65,8 +64,8 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	private final BiPredicate<Call, String> isCallWithLabel = (call, label) -> call.request().tag() instanceof String && Objects.equals(call.request().tag(), label);
 	static final String HEADER_UPDATE_PARAMETER = "Firebolt-Update-Parameters";
 
-	public StatementClientImpl(OkHttpClient httpClient, ObjectMapper objectMapper, FireboltConnection connection, String customDrivers, String customClients) {
-		super(httpClient, objectMapper, connection, customDrivers, customClients);
+	public StatementClientImpl(OkHttpClient httpClient, FireboltConnection connection, String customDrivers, String customClients) {
+		super(httpClient, connection, customDrivers, customClients);
 	}
 
 	/**

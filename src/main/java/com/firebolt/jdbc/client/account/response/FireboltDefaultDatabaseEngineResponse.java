@@ -1,15 +1,19 @@
 package com.firebolt.jdbc.client.account.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.json.JSONObject;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Value;
-
-@Value
-@AllArgsConstructor
-@Builder
 public class FireboltDefaultDatabaseEngineResponse {
-	@JsonProperty("engine_url")
-	String engineUrl;
+	private final String engineUrl;
+
+    public FireboltDefaultDatabaseEngineResponse(String engineUrl) {
+        this.engineUrl = engineUrl;
+    }
+
+	FireboltDefaultDatabaseEngineResponse(JSONObject json) {
+		this(json.getString("engine_url"));
+	}
+
+	public String getEngineUrl() {
+		return engineUrl;
+	}
 }

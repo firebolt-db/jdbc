@@ -78,7 +78,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 abstract class FireboltConnectionTest {
 	private static final String LOCAL_URL = "jdbc:firebolt:local_dev_db?account=dev&ssl=false&max_query_size=10000000&use_standard_sql=1&mask_internal_errors=0&firebolt_enable_beta_functions=1&firebolt_case_insensitive_identifiers=1&rest_api_pull_timeout_sec=3600&rest_api_pull_interval_millisec=5000&rest_api_retry_times=10&host=localhost";
-	private final FireboltConnectionTokens fireboltConnectionTokens = FireboltConnectionTokens.builder().build();
+	private final FireboltConnectionTokens fireboltConnectionTokens = new FireboltConnectionTokens(null, 0);
 	@Captor
 	private ArgumentCaptor<FireboltProperties> propertiesArgumentCaptor;
 	@Captor
@@ -430,7 +430,7 @@ abstract class FireboltConnectionTest {
 			when(fireboltPropertiesMock.getDatabase()).thenReturn(fireboltProperties.getDatabase());
 			when(fireboltPropertiesMock.getHttpConnectionUrl()).thenReturn(fireboltProperties.getHttpConnectionUrl());
 			when(fireboltPropertiesMock.toBuilder()).thenReturn(fireboltProperties.toBuilder());
-			lenient().when(fireboltAuthenticationService.getConnectionTokens(eq(url), argThat(argument -> true))).thenReturn(FireboltConnectionTokens.builder().build());
+			lenient().when(fireboltAuthenticationService.getConnectionTokens(eq(url), argThat(argument -> true))).thenReturn(new FireboltConnectionTokens(null, 0));
 			lenient().when(fireboltEngineService.getEngine(any())).thenReturn(new Engine("http://hello", null, null, null, null));
 		})) {
 			try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
@@ -452,7 +452,7 @@ abstract class FireboltConnectionTest {
 			when(fireboltPropertiesMock.getDatabase()).thenReturn(fireboltProperties.getDatabase());
 			when(fireboltPropertiesMock.toBuilder()).thenReturn(fireboltProperties.toBuilder());
         })) {
-			FireboltConnectionTokens connectionTokens = FireboltConnectionTokens.builder().accessToken(accessToken).build();
+			FireboltConnectionTokens connectionTokens = new FireboltConnectionTokens(accessToken, 0);
 			when(fireboltAuthenticationService.getConnectionTokens(eq(url), any())).thenReturn(connectionTokens);
 			lenient().when(fireboltEngineService.getEngine(any())).thenReturn(new Engine("http://engineHost", null, null, null, null));
 			try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {

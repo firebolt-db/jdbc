@@ -1,6 +1,5 @@
 package com.firebolt.jdbc.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
@@ -16,16 +15,17 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -43,13 +43,11 @@ public abstract class FireboltClient {
 	private static final String HEADER_USER_AGENT = "User-Agent";
 	private static final String HEADER_PROTOCOL_VERSION = "Firebolt-Protocol-Version";
 	private final OkHttpClient httpClient;
-	protected final ObjectMapper objectMapper;
 	private final String headerUserAgentValue;
 	protected final FireboltConnection connection;
 
-	protected FireboltClient(OkHttpClient httpClient, ObjectMapper objectMapper, FireboltConnection connection, String customDrivers, String customClients) {
+	protected FireboltClient(OkHttpClient httpClient, FireboltConnection connection, String customDrivers, String customClients) {
 		this.httpClient = httpClient;
-		this.objectMapper = objectMapper;
 		this.connection = connection;
 		this.headerUserAgentValue = UsageTrackerUtil.getUserAgentString(customDrivers != null ? customDrivers : "",
 				customClients != null ? customClients : "");
@@ -64,9 +62,20 @@ public abstract class FireboltClient {
 			throws IOException, FireboltException {
 		Request rq = createGetRequest(uri, accessToken);
 		try (Response response = execute(rq, host)) {
-			return objectMapper.readValue(getResponseAsString(response), valueType);
+			return jsonToObject(getResponseAsString(response), valueType);
 		}
 	}
+
+	@SuppressWarnings("java:S3011") // setAccessible() is required here :(
+	protected <T> T jsonToObject(String json, Class<T> valueType) throws IOException {
+        try {
+			Constructor<T> constructor = valueType.getDeclaredConstructor(JSONObject.class);
+			constructor.setAccessible(true);
+            return constructor.newInstance(new JSONObject(json));
+        } catch (ReflectiveOperationException e) {
+			throw new IOException(e);
+        }
+    }
 
 	private Request createGetRequest(String uri, String accessToken) {
 		Request.Builder requestBuilder = new Request.Builder().url(uri);
