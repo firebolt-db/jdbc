@@ -11,7 +11,6 @@ import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
-import javax.xml.bind.DatatypeConverter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Array;
@@ -20,6 +19,8 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.TimeZone;
+
+import static com.firebolt.jdbc.util.ByteArrayUtil.hexStringToByteArray;
 
 /** This class contains the java types the Firebolt datatypes are mapped to */
 @CustomLog
@@ -78,7 +79,7 @@ public enum BaseType {
 			return new byte[] {};
 		}
 		if (s.startsWith("\\x")) {
-			return DatatypeConverter.parseHexBinary(s.substring(2));
+			return hexStringToByteArray(s.substring(2));
 		}
 		// Cannot convert from other formats (such as 'Escape') for the moment
 		throw new FireboltException("Cannot convert binary string in non-hex format to byte array");

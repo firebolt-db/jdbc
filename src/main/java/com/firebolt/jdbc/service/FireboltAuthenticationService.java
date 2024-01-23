@@ -9,7 +9,7 @@ import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import net.jodah.expiringmap.ExpiringMap;
 
-import javax.xml.bind.DatatypeConverter;
+import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -90,7 +90,7 @@ public class FireboltAuthenticationService {
 			MessageDigest sha256Instance = MessageDigest.getInstance("SHA-256");
 			ofNullable(principal).map(String::getBytes).ifPresent(sha256Instance::update);
 			ofNullable(secret).map(String::getBytes).ifPresent(sha256Instance::update);
-			this.credentialsHash = DatatypeConverter.printHexBinary(sha256Instance.digest());
+			this.credentialsHash = new BigInteger(1, sha256Instance.digest()).toString(16);
 		}
 	}
 }
