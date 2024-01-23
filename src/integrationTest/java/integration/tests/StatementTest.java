@@ -1,7 +1,7 @@
 package integration.tests;
 
+import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.metadata.MetadataUtil;
 import integration.IntegrationTest;
 import kotlin.collections.ArrayDeque;
 import lombok.CustomLog;
@@ -21,6 +21,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import static java.lang.String.format;
@@ -205,6 +206,27 @@ class StatementTest extends IntegrationTest {
 				assertFalse(resultSet.getBoolean(3));
 			}
 
+		}
+	}
+
+	@Test
+	void setWrongParameter() throws SQLException {
+		setWrongParameter("SET foo=bar", Map.of());
+	}
+
+	@Test
+	void setCorrectThenWrongParameter() throws SQLException {
+		setWrongParameter("SET bool_output_format=postgres;SET foo=bar", Map.of("bool_output_format", "postgres"));
+	}
+
+	private void setWrongParameter(String set, Map<String, String> expectedAdditionalProperties) throws SQLException {
+		try (Connection connection = createConnection()) {
+			try (Statement statement = connection.createStatement()) {
+				String message = assertThrows(SQLException.class, () -> statement.execute(set)).getMessage();
+				assertTrue(message.contains("parameter foo is not allowed"),
+						"Unexpected error message: " + message + ".  Message should contain statement: parameter foo is not allowed");
+				assertEquals(expectedAdditionalProperties, ((FireboltConnection)connection).getSessionProperties().getAdditionalProperties());
+			}
 		}
 	}
 
