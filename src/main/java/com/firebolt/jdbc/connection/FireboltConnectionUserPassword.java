@@ -14,7 +14,6 @@ import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
-import org.apache.commons.lang3.StringUtils;
 
 import java.sql.SQLException;
 import java.util.Properties;
@@ -47,7 +46,7 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
 
     @Override
     protected void authenticate() throws SQLException {
-        String accessToken = getAccessToken(loginProperties).orElse(StringUtils.EMPTY);
+        String accessToken = getAccessToken(loginProperties).orElse("");
         FireboltProperties propertiesWithAccessToken = loginProperties.toBuilder().accessToken(accessToken).build();
         Engine engine = fireboltEngineService.getEngine(propertiesWithAccessToken);
         String database = loginProperties.getDatabase();

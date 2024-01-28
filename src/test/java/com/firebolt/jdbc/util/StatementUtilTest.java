@@ -5,7 +5,6 @@ import com.firebolt.jdbc.statement.StatementUtil;
 import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
 import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
@@ -39,7 +38,7 @@ class StatementUtilTest {
 	@Test
 	void shouldExtractAdditionalProperties() {
 		String query = "set my_custom_query=1";
-		assertEquals(Optional.of(new ImmutablePair<>("my_custom_query", "1")),
+		assertEquals(Optional.of(Map.entry("my_custom_query", "1")),
 				StatementUtil.extractParamFromSetStatement(query, null));
 	}
 
@@ -47,20 +46,20 @@ class StatementUtilTest {
 	void shouldExtractAdditionalPropertiesWithComments() {
 		String query = "/* */" + " SeT my_custom_query=1";
 		String cleanQuery = "SeT my_custom_query=1";
-		assertEquals(Optional.of(new ImmutablePair<>("my_custom_query", "1")),
+		assertEquals(Optional.of(Map.entry("my_custom_query", "1")),
 				StatementUtil.extractParamFromSetStatement(cleanQuery, query));
 	}
 
 	@Test
 	void shouldExtractAdditionalWithEmptyProperties() {
 		String query = "set my_custom_char=' '";
-		assertEquals(Optional.of(new ImmutablePair<>("my_custom_char", " ")),
+		assertEquals(Optional.of(Map.entry("my_custom_char", " ")),
 				StatementUtil.extractParamFromSetStatement(query, null));
 	}
 	@Test
 	void shouldExtractTimezone() {
 		String query = "set time_zone='Europe/Berlin';";
-		assertEquals(Optional.of(new ImmutablePair<>("time_zone", "Europe/Berlin")),
+		assertEquals(Optional.of(Map.entry("time_zone", "Europe/Berlin")),
 				StatementUtil.extractParamFromSetStatement(query, null));
 	}
 
@@ -116,22 +115,22 @@ class StatementUtilTest {
 	@Test
 	void shouldGetEmptyDbNameAndTablesTableNameWhenUsingDescribe() {
 		String query = "DESCRIBE EMPLOYEES";
-		assertEquals(Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromCleanQuery(query).getLeft());
+		assertEquals(Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromCleanQuery(query).getKey());
 		assertEquals(Optional.of("tables"),
-				StatementUtil.extractDbNameAndTableNamePairFromCleanQuery(query).getRight());
+				StatementUtil.extractDbNameAndTableNamePairFromCleanQuery(query).getValue());
 	}
 
 	@Test
 	void shouldGetEmptyTableNameAndEmptyDbNameWhenUsingShow() {
 		String query = "SHOW databases";
-		assertEquals(Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromCleanQuery(query).getLeft());
-		assertEquals(Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromCleanQuery(query).getRight());
+		assertEquals(Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromCleanQuery(query).getKey());
+		assertEquals(Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromCleanQuery(query).getValue());
 	}
 
 	@Test
 	void shouldBeEmptyWhenGettingTableNameWhenTheQueryIsNotASelect() {
 		String query = "/* Some random command*/ UPDATE * FROM EMPLOYEES WHERE id = 5";
-		assertEquals(Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromCleanQuery(query).getRight());
+		assertEquals(Optional.empty(), StatementUtil.extractDbNameAndTableNamePairFromCleanQuery(query).getValue());
 	}
 
 	@Test
@@ -369,7 +368,7 @@ class StatementUtilTest {
 		String sql = "-- comment \n \n    SET x = 1 ;";
 		RawStatementWrapper rawStatementWrapper = StatementUtil.parseToRawStatementWrapper(sql);
 		assertEquals(PARAM_SETTING, rawStatementWrapper.getSubStatements().get(0).getStatementType());
-		assertEquals(ImmutablePair.of("x", "1"),
+		assertEquals(Map.entry("x", "1"),
 				((SetParamRawStatement) rawStatementWrapper.getSubStatements().get(0)).getAdditionalProperty());
 	}
 

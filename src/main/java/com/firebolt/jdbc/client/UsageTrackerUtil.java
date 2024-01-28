@@ -3,7 +3,6 @@ package com.firebolt.jdbc.client;
 import com.firebolt.jdbc.util.VersionUtil;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +36,7 @@ public class UsageTrackerUtil {
 		}
 		for (StackTraceElement s : stack) {
 			for (Map.Entry<String, String> connectorEntry : clientMap.entrySet()) {
-				if (StringUtils.contains(s.getClassName(), connectorEntry.getValue())) {
+				if (s.getClassName().contains(connectorEntry.getValue())) {
 					String version = getVersionForClass(s.getClassName());
 					log.debug("Detected running from " + connectorEntry.getKey() + " Version " + version);
 					clients.put(connectorEntry.getKey(), version);

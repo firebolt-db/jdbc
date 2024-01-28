@@ -1,19 +1,28 @@
 package com.firebolt.jdbc.resultset.column;
 
-import static com.firebolt.jdbc.type.FireboltDataType.*;
+import com.firebolt.jdbc.type.FireboltDataType;
+import lombok.Builder;
+import lombok.CustomLog;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Value;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.RegExUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-
-import com.firebolt.jdbc.type.FireboltDataType;
-
-import lombok.*;
+import static com.firebolt.jdbc.type.FireboltDataType.ARRAY;
+import static com.firebolt.jdbc.type.FireboltDataType.TUPLE;
+import static com.firebolt.jdbc.type.FireboltDataType.ofType;
 
 /**
  * This class represents a Column type returned by the server
@@ -25,9 +34,12 @@ import lombok.*;
 public class ColumnType {
 	private static final String NOT_NULLABLE_TYPE = "NOT NULL";
 	private static final String NULL_TYPE = "NULL";
+	private static final String NOT_NULLABLE_TYPE_SUFFIX = " " + NOT_NULLABLE_TYPE;
+	private static final String NULL_TYPE_SUFFIX = " " + NULL_TYPE;
 	private static final String NULLABLE_TYPE = "NULLABLE";
 	private static final Set<String> TIMEZONES = Arrays.stream(TimeZone.getAvailableIDs())
 			.collect(Collectors.toCollection(HashSet::new));
+	private static final Pattern COMMA_WITH_SPACES = Pattern.compile("\\s*,\\s*");
 	@EqualsAndHashCode.Exclude
 	String name;
 	FireboltDataType dataType;
@@ -40,7 +52,7 @@ public class ColumnType {
 	public static ColumnType of(String columnType) {
 		List<ColumnType> innerDataTypes = null;
 		TimeZone timeZone = null;
-		Optional<Pair<Optional<Integer>, Optional<Integer>>> scaleAndPrecisionPair;
+		Optional<Entry<Optional<Integer>, Optional<Integer>>> scaleAndPrecisionPair;
 		FireboltDataType fireboltType;
 		ColumnTypeWrapper columnTypeWrapper = ColumnTypeWrapper.of(columnType);
 		String typeWithoutNullKeyword = columnTypeWrapper.getTypeWithoutNullKeyword();
@@ -63,13 +75,13 @@ public class ColumnType {
 		} else {
 			scaleAndPrecisionPair = Optional.empty();
 		}
-		if (dataType.isTime() && ArrayUtils.isNotEmpty(arguments)) {
+		if (dataType.isTime() && arguments != null && arguments.length > 0) {
 			timeZone = getTimeZoneFromArguments(arguments);
 		}
 		return builder().name(columnTypeWrapper.getTypeInUpperCase()).nullable(isNullable).dataType(fireboltType)
-				.scale(scaleAndPrecisionPair.map(Pair::getLeft).filter(Optional::isPresent).map(Optional::get)
+				.scale(scaleAndPrecisionPair.map(Entry::getKey).filter(Optional::isPresent).map(Optional::get)
 						.orElse(dataType.getMaxScale()))
-				.precision(scaleAndPrecisionPair.map(Pair::getRight).filter(Optional::isPresent).map(Optional::get)
+				.precision(scaleAndPrecisionPair.map(Entry::getValue).filter(Optional::isPresent).map(Optional::get)
 						.orElse(dataType.getPrecision()))
 				.timeZone(timeZone).innerTypes(Optional.ofNullable(innerDataTypes).orElse(new ArrayList<>())).build();
 	}
@@ -86,9 +98,9 @@ public class ColumnType {
 	private static List<ColumnType> getCollectionSubType(FireboltDataType fireboltDataType, String typeWithoutNullKeyword) {
 		String[] types;
 		for (String type: fireboltDataType.getAliases()) {
-			if(typeWithoutNullKeyword.startsWith(type.toUpperCase())) {
-				typeWithoutNullKeyword = RegExUtils.replaceFirst(typeWithoutNullKeyword, type.toUpperCase() + "\\(", "");
-				typeWithoutNullKeyword = StringUtils.substring(typeWithoutNullKeyword, 0, typeWithoutNullKeyword.length() - 1);
+			String typeUpperCase = type.toUpperCase();
+			if (typeWithoutNullKeyword.startsWith(typeUpperCase)) {
+				typeWithoutNullKeyword = typeWithoutNullKeyword.substring((typeUpperCase + "\\(").length() - 1, typeWithoutNullKeyword.length() - 1);
 				break;
 			}
 		}
@@ -115,8 +127,7 @@ public class ColumnType {
 		return typeNameEndIndex < 0 ? type.length() : typeNameEndIndex;
 	}
 
-	private static Pair<Optional<Integer>, Optional<Integer>> getsCaleAndPrecision(String[] arguments,
-			FireboltDataType dataType) {
+	private static Entry<Optional<Integer>, Optional<Integer>> getsCaleAndPrecision(String[] arguments, FireboltDataType dataType) {
 		Integer scale = null;
 		Integer precision = null;
 		switch (dataType) {
@@ -135,11 +146,11 @@ public class ColumnType {
 		default:
 			break;
 		}
-		return new ImmutablePair<>(Optional.ofNullable(scale), Optional.ofNullable(precision));
+		return Map.entry(Optional.ofNullable(scale), Optional.ofNullable(precision));
 	}
 
 	private static String[] splitArguments(String args, int index) {
-		return StringUtils.substring(args, args.indexOf("(", index) + 1, args.indexOf(")", index)).split("\\s*,\\s*");
+		return COMMA_WITH_SPACES.split(args.substring(args.indexOf("(", index) + 1, args.indexOf(")", index)));
 	}
 
 	private static TimeZone getTimeZoneFromArguments(@NonNull String[] arguments) {
@@ -147,7 +158,7 @@ public class ColumnType {
 		TimeZone timeZone = null;
 		if (arguments.length > 1) {
 			timeZoneArgument = arguments[1];
-		} else if (arguments.length == 1 && !StringUtils.isNumeric(arguments[0])) {
+		} else if (arguments.length == 1 && arguments[0].chars().anyMatch(c -> !Character.isDigit(c))) {
 			timeZoneArgument = arguments[0];
 		}
 		if (timeZoneArgument != null) {
@@ -155,8 +166,7 @@ public class ColumnType {
 			if (TIMEZONES.contains(id)) {
 				timeZone = TimeZone.getTimeZone(timeZoneArgument.replace("\\'", ""));
 			} else {
-				log.warn("Could not use the timezone returned by the server with the id {} as it is not supported.",
-						id);
+				log.warn("Could not use the timezone returned by the server with the id {} as it is not supported.", id);
 			}
 		}
 		return timeZone;
@@ -221,21 +231,20 @@ public class ColumnType {
 
 		public static ColumnTypeWrapper of(String type) {
 			boolean isNullable = false;
-			String typeInUpperCase = StringUtils.upperCase(type);
+			String typeInUpperCase = type == null ? null : type.toUpperCase();
 			String typeWithoutNullableKeyword = typeInUpperCase;
 			if (typeInUpperCase.startsWith(NULLABLE_TYPE)) {
 				isNullable = true;
-				typeWithoutNullableKeyword = typeInUpperCase.substring(NULLABLE_TYPE.length() + 1,
-						typeInUpperCase.length() - 1);
-			} else if (typeInUpperCase.endsWith(NOT_NULLABLE_TYPE)) {
-				typeWithoutNullableKeyword = StringUtils.removeEnd(typeInUpperCase, " " + NOT_NULLABLE_TYPE);
+				typeWithoutNullableKeyword = typeInUpperCase.substring(NULLABLE_TYPE.length() + 1, typeInUpperCase.length() - 1);
+			} else if (typeInUpperCase.endsWith(NOT_NULLABLE_TYPE_SUFFIX)) {
+				typeWithoutNullableKeyword = typeInUpperCase.substring(0, typeInUpperCase.length() - NOT_NULLABLE_TYPE_SUFFIX.length());
+			} else if (typeInUpperCase.endsWith(NULL_TYPE_SUFFIX)) {
+				isNullable = true;
+				typeWithoutNullableKeyword = typeInUpperCase.substring(0, typeInUpperCase.length() - NULL_TYPE_SUFFIX.length());
 			} else if (typeInUpperCase.endsWith(NULL_TYPE)) {
 				isNullable = true;
-				typeWithoutNullableKeyword = StringUtils.removeEnd(typeInUpperCase, " " + NULL_TYPE);
 			}
 			return new ColumnTypeWrapper(type, typeInUpperCase, typeWithoutNullableKeyword, isNullable);
-
 		}
 	}
-
 }

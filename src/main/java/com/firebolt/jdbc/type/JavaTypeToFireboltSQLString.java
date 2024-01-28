@@ -4,9 +4,6 @@ import com.firebolt.jdbc.CheckedFunction;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import com.firebolt.jdbc.type.date.SqlDateUtil;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -14,6 +11,9 @@ import java.sql.Array;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_NOT_SUPPORTED;
@@ -34,8 +34,8 @@ public enum JavaTypeToFireboltSQLString {
 	BIG_DECIMAL(BigDecimal.class, value -> value == null ? BaseType.NULL_VALUE : ((BigDecimal) value).toPlainString()),
 	ARRAY(Array.class, SqlArrayUtil::arrayToString);
 
-	private static final Pair<String[], String[]> characterToEscapedCharacterPair = new ImmutablePair<>(
-			new String[] { "\0", "\\", "'" }, new String[] { "\\0", "\\\\", "\\'" });
+	private static final List<Entry<String, String>> characterToEscapedCharacterPairs = List.of(
+			Map.entry("\0", "\\0"), Map.entry("\\", "\\\\"), Map.entry("'", "\\'"));
 	private final Class<?> sourceType;
 	private final CheckedFunction<Object, String> transformToJavaTypeFunction;
 	public static final String NULL_VALUE = "NULL";
@@ -64,8 +64,10 @@ public enum JavaTypeToFireboltSQLString {
 
 	private static CheckedFunction<Object, String> getSQLStringValueOfString() {
 		return value -> {
-			String escaped = StringUtils.replaceEach((String) value, characterToEscapedCharacterPair.getLeft(),
-					characterToEscapedCharacterPair.getRight());
+			String escaped = (String) value;
+			for (Entry<String, String> specialCharacter : characterToEscapedCharacterPairs) {
+				escaped = escaped.replace(specialCharacter.getKey(), specialCharacter.getValue());
+			}
 			return String.format("'%s'", escaped);
 		};
 	}

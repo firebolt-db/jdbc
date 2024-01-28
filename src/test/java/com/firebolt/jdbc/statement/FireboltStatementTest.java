@@ -5,7 +5,6 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.service.FireboltStatementService;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
@@ -27,6 +26,7 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.sql.Wrapper;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -92,7 +92,7 @@ class FireboltStatementTest {
 				.sessionProperties(fireboltProperties).connection(connection).build()) {
 			fireboltStatement.execute("set custom_1 = 1");
 			verifyNoMoreInteractions(fireboltStatementService);
-			verify(connection).addProperty(new ImmutablePair<>("custom_1", "1"));
+			verify(connection).addProperty(Map.entry("custom_1", "1"));
 		}
 	}
 

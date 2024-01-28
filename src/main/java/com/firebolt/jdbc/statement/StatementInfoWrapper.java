@@ -5,8 +5,8 @@ import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
-import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.Map.Entry;
 import java.util.UUID;
 
 import static com.firebolt.jdbc.statement.StatementType.PARAM_SETTING;
@@ -22,10 +22,10 @@ public class StatementInfoWrapper {
 	private final String label;
 	private String id;
 	private final StatementType type;
-	private final Pair<String, String> param;
+	private final Entry<String, String> param;
 	private final RawStatement initialStatement;
 
-	public StatementInfoWrapper(String sql, StatementType type, Pair<String, String> param, RawStatement initialStatement) {
+	public StatementInfoWrapper(String sql, StatementType type, Entry<String, String> param, RawStatement initialStatement) {
 		this.sql = sql;
 		this.type = type;
 		this.param = param;
@@ -40,7 +40,7 @@ public class StatementInfoWrapper {
 	 * @return the statement that will be sent to the server
 	 */
 	public static StatementInfoWrapper of(@NonNull RawStatement rawStatement) {
-		Pair<String, String> additionalProperties = rawStatement.getStatementType() == PARAM_SETTING
+		Entry<String, String> additionalProperties = rawStatement.getStatementType() == PARAM_SETTING
 				? ((SetParamRawStatement) rawStatement).getAdditionalProperty()
 				: null;
 		return new StatementInfoWrapper(rawStatement.getSql(), rawStatement.getStatementType(),

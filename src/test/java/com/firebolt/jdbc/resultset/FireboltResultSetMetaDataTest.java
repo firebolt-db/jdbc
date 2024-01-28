@@ -2,7 +2,6 @@ package com.firebolt.jdbc.resultset;
 
 import com.firebolt.jdbc.CheckedFunction;
 import com.firebolt.jdbc.resultset.column.Column;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -59,7 +58,7 @@ class FireboltResultSetMetaDataTest {
 
 	@Test
 	void shouldReturnEmptyWhenGettingSchemaAsItIsNotSupported() throws SQLException {
-		assertEquals(StringUtils.EMPTY, getMetaData().getSchemaName(1));
+		assertEquals("", getMetaData().getSchemaName(1));
 	}
 
 	@Test

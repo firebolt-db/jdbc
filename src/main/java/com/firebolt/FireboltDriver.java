@@ -1,17 +1,18 @@
 package com.firebolt;
 
-import java.sql.*;
-import java.util.Properties;
-import java.util.logging.Logger;
-
-import org.apache.commons.lang3.StringUtils;
-
-import com.firebolt.jdbc.util.PropertyUtil;
-import com.firebolt.jdbc.util.VersionUtil;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
-
+import com.firebolt.jdbc.util.PropertyUtil;
+import com.firebolt.jdbc.util.VersionUtil;
 import lombok.CustomLog;
+
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverPropertyInfo;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.util.Properties;
+import java.util.logging.Logger;
 
 @CustomLog
 public class FireboltDriver implements Driver {
@@ -34,7 +35,7 @@ public class FireboltDriver implements Driver {
 
 	@Override
 	public boolean acceptsURL(String url) {
-		return StringUtils.isNotEmpty(url) && url.startsWith(JDBC_FIREBOLT);
+		return url != null && url.startsWith(JDBC_FIREBOLT);
 	}
 
 	@Override

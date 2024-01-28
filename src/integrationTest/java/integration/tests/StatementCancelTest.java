@@ -5,7 +5,6 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import integration.IntegrationTest;
 import lombok.CustomLog;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -116,11 +115,10 @@ class StatementCancelTest extends IntegrationTest {
 			ResultSet resultSet = statement.executeQuery("SHOW tables");
 			while (resultSet.next() && tableName == null) {
 				log.info(resultSet.getString(1));
-				if (StringUtils.startsWith(resultSet.getString(1), testTableName)
-						&& StringUtils.endsWith(resultSet.getString(1), "_distributed")) {
+				String rsTableName = resultSet.getString(1);
+				if (rsTableName != null && rsTableName.startsWith(testTableName) && rsTableName.endsWith("_distributed")) {
 					tableName = resultSet.getString(1);
 				}
-
 			}
 		}
 		return tableName;

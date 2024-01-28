@@ -10,13 +10,13 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.Set;
 
+import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
 
 @RequiredArgsConstructor
@@ -49,10 +49,10 @@ public class FireboltEngineApiService implements FireboltEngineService {
         String accountId = null;
         Engine engine;
         try {
-            if (StringUtils.isNotEmpty(loginProperties.getAccount())) {
+            if (loginProperties.getAccount() != null && !loginProperties.getAccount().isEmpty()) {
                 accountId = getAccountId(connectionUrl, loginProperties.getAccount(), accessToken).orElse(null);
             }
-            if (StringUtils.isEmpty(loginProperties.getEngine())) {
+            if (loginProperties.getEngine() == null || loginProperties.getEngine().isEmpty()) {
                 engine = getDefaultEngine(connectionUrl, accountId, loginProperties.getDatabase(), accessToken);
             } else {
                 engine = getEngineWithName(connectionUrl, accountId, loginProperties.getEngine(), accessToken);
@@ -77,10 +77,11 @@ public class FireboltEngineApiService implements FireboltEngineService {
                 engineName, engineID, accessToken);
 
         return ofNullable(fireboltEngineResponse).map(FireboltEngineResponse::getEngine)
-                .filter(e -> StringUtils.isNotEmpty(e.getEndpoint()))
+                .filter(e -> e.getEndpoint() != null)
+                .filter(e -> !e.getEndpoint().isEmpty())
                 .map(e -> new Engine(e.getEndpoint(), e.getCurrentStatus(), engineName, null, engineID))
                 .orElseThrow(() -> new FireboltException(
-                        String.format(ERROR_NO_ENGINE_WITH_NAME, connectionUrl, engineName)));
+                        format(ERROR_NO_ENGINE_WITH_NAME, connectionUrl, engineName)));
     }
 
     private Engine getDefaultEngine(String connectionUrl, String accountId, String database, String accessToken)
@@ -90,7 +91,7 @@ public class FireboltEngineApiService implements FireboltEngineService {
 
         return ofNullable(defaultEngine).map(FireboltDefaultDatabaseEngineResponse::getEngineUrl)
                 .map(url -> new Engine(url, "running", null, database, null)).orElseThrow(
-                        () -> new FireboltException(String.format(ERROR_NO_ENGINE_ATTACHED, connectionUrl, database)));
+                        () -> new FireboltException(format(ERROR_NO_ENGINE_ATTACHED, connectionUrl, database)));
     }
 
     private Optional<String> getAccountId(String connectionUrl, String account, String accessToken)
@@ -99,9 +100,10 @@ public class FireboltEngineApiService implements FireboltEngineService {
     }
 
     private void validateEngineIsNotStarting(Engine engine) throws FireboltException {
-        if (StringUtils.isNotEmpty(engine.getId()) && StringUtils.isNotEmpty(engine.getStatus())
-                && ENGINE_NOT_READY_STATUSES.contains(engine.getStatus())) {
-            throw new FireboltException(String.format(
+        String id = engine.getId();
+        String status = engine.getStatus();
+        if (id != null && !id.isEmpty() && status != null && !status.isEmpty() && ENGINE_NOT_READY_STATUSES.contains(engine.getStatus())) {
+            throw new FireboltException(format(
                     "The engine %s is currently starting. Please wait until the engine is on and then execute the query again.", engine.getName()));
         }
     }

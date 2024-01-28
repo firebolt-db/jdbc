@@ -8,7 +8,6 @@ import com.firebolt.jdbc.type.date.SqlDateUtil;
 import lombok.Builder;
 import lombok.CustomLog;
 import lombok.Value;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
 import java.math.BigDecimal;
@@ -65,11 +64,12 @@ public enum BaseType {
 	OBJECT(Object.class, StringToColumnTypeConversion::getValue),
 	NUMERIC(BigDecimal.class, conversion -> new BigDecimal(conversion.getValue())),
 	BOOLEAN(Boolean.class, conversion -> {
-			if (StringUtils.equalsAnyIgnoreCase(conversion.getValue(), "0", "f")) {
-				return false;
-			} else if (StringUtils.equalsAnyIgnoreCase(conversion.getValue(), "1", "t")) {
-				return true;
-			}
+		String value = conversion.getValue();
+		if ("0".equalsIgnoreCase(value) || "f".equalsIgnoreCase(value)) {
+			return false;
+		} else if ("1".equalsIgnoreCase(value) || "t".equalsIgnoreCase(value)) {
+			return true;
+		}
 		throw new FireboltException(String.format("Cannot cast %s to type boolean", conversion.getValue()));
 	}), ARRAY(Array.class,
 			conversion -> SqlArrayUtil.transformToSqlArray(conversion.getValue(), conversion.getColumn().getType())),
@@ -95,11 +95,11 @@ public enum BaseType {
 	}
 
 	private static boolean isPositiveInf(String value) {
-		return StringUtils.equalsAnyIgnoreCase(value, "+inf", "inf");
+		return "inf".equalsIgnoreCase(value) || "+inf".equalsIgnoreCase(value);
 	}
 
 	private static boolean isNegativeInf(String value) {
-		return StringUtils.equals(value, "-inf");
+		return "-inf".equalsIgnoreCase(value);
 	}
 
 	private static String checkInfinity(String s) {
@@ -110,7 +110,7 @@ public enum BaseType {
 	}
 
 	public static boolean isNull(String value) {
-		return StringUtils.equalsIgnoreCase(value, NULL_VALUE);
+		return NULL_VALUE.equalsIgnoreCase(value);
 	}
 
 	private static boolean isNan(String value) {

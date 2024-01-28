@@ -2,7 +2,6 @@ package com.firebolt.jdbc.metadata;
 
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
-import org.apache.commons.lang3.StringUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -49,7 +48,7 @@ public class FireboltSystemEngineDatabaseMetadata extends FireboltDatabaseMetada
 
 	@Override
 	public String getDatabaseProductVersion() throws SQLException {
-		return StringUtils.EMPTY;
+		return "";
 	}
 
 	@Override

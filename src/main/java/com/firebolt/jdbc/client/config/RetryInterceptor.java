@@ -1,20 +1,21 @@
 package com.firebolt.jdbc.client.config;
 
-import static java.net.HttpURLConnection.*;
+import lombok.CustomLog;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import okhttp3.Interceptor;
+import okhttp3.Request;
+import okhttp3.Response;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import lombok.NonNull;
-import org.apache.commons.lang3.StringUtils;
-
-import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
-import okhttp3.Interceptor;
-import okhttp3.Request;
-import okhttp3.Response;
+import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
+import static java.net.HttpURLConnection.HTTP_CLIENT_TIMEOUT;
+import static java.net.HttpURLConnection.HTTP_GATEWAY_TIMEOUT;
+import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 
 @RequiredArgsConstructor
 @CustomLog
@@ -34,10 +35,11 @@ public class RetryInterceptor implements Interceptor {
 		while (!response.isSuccessful() && RETRYABLE_RESPONSE_CODES.contains(response.code())
 				&& tryCount++ < maxRetries) {
 			String failureInfo;
-			if (request.tag() instanceof String && StringUtils.isNotEmpty((String) request.tag())) {
+			String tag = request.tag(String.class);
+			if (tag != null && !tag.isEmpty()) {
 				failureInfo = String.format(
 						"Failure #%d for query with id %s - Response code: %d. Retrying to send the request.", tryCount,
-						request.tag(), response.code());
+						tag, response.code());
 			} else {
 				failureInfo = String.format("Failure #%d - Response code: %d. Retrying to send the request.", tryCount,
 						response.code());

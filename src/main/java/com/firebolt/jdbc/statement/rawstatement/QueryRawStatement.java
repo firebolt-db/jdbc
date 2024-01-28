@@ -1,18 +1,16 @@
 package com.firebolt.jdbc.statement.rawstatement;
 
-import static com.firebolt.jdbc.statement.StatementType.QUERY;
-
-import java.util.List;
-import java.util.Optional;
-
-import org.apache.commons.lang3.tuple.Pair;
-
 import com.firebolt.jdbc.statement.ParamMarker;
 import com.firebolt.jdbc.statement.StatementType;
 import com.firebolt.jdbc.statement.StatementUtil;
-
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Optional;
+
+import static com.firebolt.jdbc.statement.StatementType.QUERY;
 
 /**
  * A query statement is a statement that returns data (Typically starts with
@@ -28,10 +26,10 @@ public class QueryRawStatement extends RawStatement {
 
 	public QueryRawStatement(String sql, String cleanSql, List<ParamMarker> paramPositions) {
 		super(sql, cleanSql, paramPositions);
-		Pair<Optional<String>, Optional<String>> databaseAndTablePair = StatementUtil
+		Entry<Optional<String>, Optional<String>> databaseAndTablePair = StatementUtil
 				.extractDbNameAndTableNamePairFromCleanQuery(this.getCleanSql());
-		this.database = databaseAndTablePair.getLeft().orElse(null);
-		this.table = databaseAndTablePair.getRight().orElse(null);
+		this.database = databaseAndTablePair.getKey().orElse(null);
+		this.table = databaseAndTablePair.getValue().orElse(null);
 	}
 
 	@Override

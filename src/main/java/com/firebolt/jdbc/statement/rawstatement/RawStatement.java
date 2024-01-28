@@ -1,16 +1,14 @@
 package com.firebolt.jdbc.statement.rawstatement;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-
 import com.firebolt.jdbc.statement.ParamMarker;
 import com.firebolt.jdbc.statement.StatementType;
 import com.firebolt.jdbc.statement.StatementUtil;
-
 import lombok.Data;
+
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Data
 public abstract class RawStatement {
@@ -26,7 +24,7 @@ public abstract class RawStatement {
 	}
 
 	public static RawStatement of(String sql, List<ParamMarker> paramPositions, String cleanSql) {
-		Optional<Pair<String, String>> additionalProperties = StatementUtil.extractParamFromSetStatement(cleanSql, sql);
+		Optional<Entry<String, String>> additionalProperties = StatementUtil.extractParamFromSetStatement(cleanSql, sql);
 		if (additionalProperties.isPresent()) {
 			return new SetParamRawStatement(sql, cleanSql, paramPositions, additionalProperties.get());
 		} else if (StatementUtil.isQuery(cleanSql)) {
@@ -39,7 +37,7 @@ public abstract class RawStatement {
 	@Override
 	public String toString() {
 		return "RawSqlStatement{" + "sql='" + sql + '\'' + ", cleanSql='" + cleanSql + '\'' + ", paramMarkers="
-				+ StringUtils.join(paramMarkers, "|") + '}';
+				+ paramMarkers.stream().map(ParamMarker::toString).collect(Collectors.joining("|")) + '}';
 	}
 
 	public List<ParamMarker> getParamMarkers() {

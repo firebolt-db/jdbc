@@ -1,31 +1,36 @@
 package com.firebolt.jdbc.client.config;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.*;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-
-import javax.net.ssl.*;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.firebolt.jdbc.client.config.socket.FireboltSSLSocketFactory;
 import com.firebolt.jdbc.client.config.socket.FireboltSocketFactory;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
-
 import lombok.Builder;
 import lombok.CustomLog;
 import lombok.Value;
 import lombok.experimental.UtilityClass;
 import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Class to configure the http client using the session settings
@@ -123,34 +128,31 @@ public class OkHttpClientCreator {
 
 	private static Optional<KeyStore> getKeyStore(FireboltProperties fireboltProperties)
 			throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException {
-		if (StringUtils.isNotEmpty(fireboltProperties.getSslCertificatePath())) {
-			KeyStore keyStore;
-			keyStore = KeyStore.getInstance(JKS_KEYSTORE_TYPE);
-			try (InputStream certificate = openSslFile(fireboltProperties)) {
-				keyStore.load(null, null);
-				CertificateFactory cf = CertificateFactory.getInstance(CERTIFICATE_TYPE_X_509);
-				int i = 0;
-				for (Certificate value : cf.generateCertificates(certificate)) {
-					keyStore.setCertificateEntry(String.format("Certificate_ %d)", i++), value);
-				}
-				return Optional.of(keyStore);
-			}
-		} else {
+		String sslCertificatePath = fireboltProperties.getSslCertificatePath();
+		if (sslCertificatePath == null || sslCertificatePath.isEmpty()) {
 			return Optional.empty();
 		}
-
+		KeyStore keyStore = KeyStore.getInstance(JKS_KEYSTORE_TYPE);
+		try (InputStream certificate = openSslFile(sslCertificatePath)) {
+			keyStore.load(null, null);
+			CertificateFactory cf = CertificateFactory.getInstance(CERTIFICATE_TYPE_X_509);
+			int i = 0;
+			for (Certificate value : cf.generateCertificates(certificate)) {
+				keyStore.setCertificateEntry(String.format("Certificate_ %d)", i++), value);
+			}
+			return Optional.of(keyStore);
+		}
 	}
 
-	private static InputStream openSslFile(FireboltProperties fireboltProperties) throws IOException {
+	private static InputStream openSslFile(String sslCertificatePath) throws IOException {
 		InputStream caInputStream;
 		try {
-			caInputStream = new FileInputStream(fireboltProperties.getSslCertificatePath());
+			caInputStream = new FileInputStream(sslCertificatePath);
 		} catch (FileNotFoundException ex) {
 			ClassLoader cl = Thread.currentThread().getContextClassLoader();
-			caInputStream = cl.getResourceAsStream(fireboltProperties.getSslCertificatePath());
+			caInputStream = cl.getResourceAsStream(sslCertificatePath);
 			if (caInputStream == null) {
-				throw new IOException(String.format("Could not open SSL/TLS certificate file %s",
-						fireboltProperties.getSslCertificatePath()), ex);
+				throw new IOException(String.format("Could not open SSL/TLS certificate file %s", sslCertificatePath), ex);
 			}
 		}
 		return caInputStream;

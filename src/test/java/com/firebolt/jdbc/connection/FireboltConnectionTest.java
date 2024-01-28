@@ -10,8 +10,6 @@ import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +35,7 @@ import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
@@ -287,7 +286,7 @@ abstract class FireboltConnectionTest {
 			when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
 					.thenThrow(new FireboltException(ExceptionType.TOO_MANY_REQUESTS));
 			assertThrows(FireboltException.class,
-					() -> fireboltConnection.addProperty(new ImmutablePair<>("custom_1", "1")));
+					() -> fireboltConnection.addProperty(Map.entry("custom_1", "1")));
 
 			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
 					propertiesArgumentCaptor.capture(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any());
@@ -303,7 +302,7 @@ abstract class FireboltConnectionTest {
 				.thenReturn(Optional.empty());
 
 		try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
-			Pair<String, String> newProperties = new ImmutablePair<>("custom_1", "1");
+			Entry<String, String> newProperties = Map.entry("custom_1", "1");
 
 			fireboltConnection.addProperty(newProperties);
 

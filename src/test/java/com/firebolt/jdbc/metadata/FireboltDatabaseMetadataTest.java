@@ -8,7 +8,6 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.testutils.AssertionUtil;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +36,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.firebolt.jdbc.metadata.MetadataColumns.BUFFER_LENGTH;
@@ -638,6 +638,7 @@ class FireboltDatabaseMetadataTest {
 	private void getFunctions(CheckedFunction<DatabaseMetaData, ResultSet> getter, String functionNamePattern, boolean filled, boolean allowDuplicates) throws SQLException {
 		String previousFunction = null;
 		int count = 0;
+		Pattern pattern = functionNamePattern == null ? null : Pattern.compile(functionNamePattern, Pattern.CASE_INSENSITIVE);
 		try (ResultSet rs = getter.apply(fireboltDatabaseMetadata)) {
 			while (rs.next()) {
 				count++;
@@ -646,8 +647,8 @@ class FireboltDatabaseMetadataTest {
 				assertNotNull(functionName);
 				assertNotNull(specificName);
 				assertEquals(functionName, specificName);
-				if (functionNamePattern != null) {
-					assertTrue(StringUtils.containsIgnoreCase(functionName, functionNamePattern));
+				if (pattern != null) {
+					assertTrue(pattern.matcher(functionName).find());
 				}
 				if (previousFunction != null) {
 					int functionNameComparison = previousFunction.compareToIgnoreCase(functionName);

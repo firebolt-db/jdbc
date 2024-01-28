@@ -15,8 +15,6 @@ import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.array.FireboltArray;
 import com.firebolt.jdbc.util.LoggerUtil;
 import lombok.CustomLog;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
 import java.io.BufferedReader;
@@ -54,6 +52,7 @@ import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.firebolt.jdbc.util.StringUtil.splitAll;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Optional.ofNullable;
 
@@ -131,7 +130,7 @@ public class FireboltResultSet implements ResultSet {
 			}
 			resultSetMetaData = new FireboltResultSetMetaData(dbName, tableName, columns);
 		} catch (Exception e) {
-			log.error("Could not create ResultSet: " + ExceptionUtils.getStackTrace(e), e);
+			log.error("Could not create ResultSet: {}", e.getMessage(), e);
 			throw new FireboltException("Cannot read response from DB: error while creating ResultSet ", e);
 		}
 		log.debug("ResultSet created");
@@ -296,10 +295,7 @@ public class FireboltResultSet implements ResultSet {
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex) throws SQLException {
 		String value = getValueAtColumn(columnIndex);
-		if (StringUtils.isEmpty(value)) {
-			return null;
-		}
-		return BaseType.NUMERIC.transform(value);
+		return value == null || value.isEmpty() ? null : BaseType.NUMERIC.transform(value);
 	}
 
 	@Override
@@ -505,13 +501,7 @@ public class FireboltResultSet implements ResultSet {
 
 	private String[] toStringArray(String stringToSplit) {
 		if (currentRow != lastSplitRow) {
-			if (StringUtils.isNotEmpty(stringToSplit)) {
-				arr = StringUtils.splitPreserveAllTokens(stringToSplit, '\t');
-			} else if (StringUtils.equals(stringToSplit, "")) {
-				arr = new String[] { "" };
-			} else {
-				arr = new String[0];
-			}
+			arr = splitAll(stringToSplit, '\t');
 			lastSplitRow = currentRow;
 		}
 		return arr;

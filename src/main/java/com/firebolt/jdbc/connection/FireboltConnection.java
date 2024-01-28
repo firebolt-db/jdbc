@@ -22,7 +22,6 @@ import com.firebolt.jdbc.util.PropertyUtil;
 import lombok.CustomLog;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -46,6 +45,7 @@ import java.sql.Struct;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Executor;
@@ -435,16 +435,20 @@ public abstract class FireboltConnection implements Connection {
 		}
 	}
 
-	public synchronized void addProperty(Pair<String, String> property) throws FireboltException {
+	public synchronized void addProperty(Entry<String, String> property) throws FireboltException {
+		addProperty(property.getKey(), property.getValue());
+	}
+
+	public synchronized void addProperty(String key, String value) throws FireboltException {
 		try {
 			FireboltProperties tmpProperties = FireboltProperties.copy(sessionProperties);
-			tmpProperties.addProperty(property);
+			tmpProperties.addProperty(key, value);
 			validateConnection(tmpProperties, false);
-			sessionProperties.addProperty(property);
+			sessionProperties.addProperty(key, value);
 		} catch (FireboltException e) {
 			throw e;
 		} catch (Exception e) {
-			throw new FireboltException(format("Could not set property %s=%s", property.getLeft(), property.getRight()), e);
+			throw new FireboltException(format("Could not set property %s=%s", key, value), e);
 		}
 	}
 
