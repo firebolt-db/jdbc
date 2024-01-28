@@ -5,7 +5,7 @@ import org.json.JSONObject;
 public class FireboltEngineIdResponse {
 	private final Engine engine;
 
-    public FireboltEngineIdResponse(Engine engine) {
+	public FireboltEngineIdResponse(Engine engine) {
         this.engine = engine;
     }
 
