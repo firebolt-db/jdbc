@@ -84,16 +84,12 @@ public class SystemEngineTest extends IntegrationTest {
 	@Test
 	@Tag("staging")
 	void ddlFailure() throws SQLException {
-		Collection<String> expectedErrorMessages = Set.of(
-				"Cannot execute a DDL query on the system engine.",
-				"std::invalid_argument: URI segment 'N/A' can't contain '/'");
-
 		try (Connection connection = createConnection(getSystemEngineName())) {
 			String errorMessage = assertThrows(
 					FireboltException.class,
 					() -> connection.createStatement().executeUpdate("CREATE DIMENSION TABLE dummy(id INT)"))
-					.getErrorMessageFromServer().replaceAll("\r?\n", "");
-			assertTrue(expectedErrorMessages.contains(errorMessage));
+					.getErrorMessageFromServer();
+			assertEquals("The system engine doesn't support this type of data definition statements. Run this statement on a user engine.\n", errorMessage);
 		}
 	}
 
@@ -144,56 +140,23 @@ public class SystemEngineTest extends IntegrationTest {
 
 	@Test
 	@Tag("v2")
-	@Tag("dev")
 	void useSuccess() throws SQLException {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
-		try (Connection connection = createConnection(getSystemEngineName())) {
+		try (Connection systemConnection = createConnection(getSystemEngineName());
+			 Connection userConnection = createConnection()) {
 			try {
-				connection.createStatement().executeUpdate(format("USE %s", current.getDatabase())); // use current DB; shouldn't have any effect
-				assertNull(getTableDbName(connection, TABLE1)); // the table does not exist yet
-				connection.createStatement().executeUpdate(format("CREATE TABLE %s ( id LONG)", TABLE1)); // create table1 in current DB
-				assertEquals(current.getDatabase(), getTableDbName(connection, TABLE1)); // now table t1 exists
-				Assert.assertThrows(SQLException.class, () -> connection.createStatement().executeUpdate(format("USE %s", USE_DATABASE_NAME))); // DB does not exist
-				connection.createStatement().executeUpdate(format("CREATE DATABASE IF NOT EXISTS %s", USE_DATABASE_NAME)); // create DB
-				connection.createStatement().executeUpdate(format("USE %s", USE_DATABASE_NAME)); // Now this should succeed
-				connection.createStatement().executeUpdate(format("CREATE TABLE %s ( id LONG)", TABLE2)); // create table2 in other DB
-				assertNull(getTableDbName(connection, TABLE1)); // table1 does not exist here
-				assertEquals(USE_DATABASE_NAME, getTableDbName(connection, TABLE2)); // but table2 does exist
+				systemConnection.createStatement().executeUpdate(format("USE %s", current.getDatabase())); // use current DB; shouldn't have any effect
+				assertNull(getTableDbName(systemConnection, TABLE1)); // the table does not exist yet
+				userConnection.createStatement().executeUpdate(format("CREATE TABLE %s ( id LONG)", TABLE1)); // create table1 in current DB
+				assertEquals(current.getDatabase(), getTableDbName(userConnection, TABLE1)); // now table t1 exists
+				Assert.assertThrows(SQLException.class, () -> systemConnection.createStatement().executeUpdate(format("USE %s", USE_DATABASE_NAME))); // DB does not exist
+				systemConnection.createStatement().executeUpdate(format("CREATE DATABASE IF NOT EXISTS %s", USE_DATABASE_NAME)); // create DB
+				systemConnection.createStatement().executeUpdate(format("USE %s", USE_DATABASE_NAME)); // Now this should succeed
+				assertNull(getTableDbName(systemConnection, TABLE1)); // table1 does not exist here
 			} finally {
 				// now clean up everything
-				for (String query : new String[] {
-						format("USE %s", USE_DATABASE_NAME), // switch to DB that should be current just in case because the previous code can fail at any phase
-						format("DROP TABLE %s", TABLE2),
-						format("DROP DATABASE %s", USE_DATABASE_NAME),
-						format("USE %s", current.getDatabase()), // now switch back
-						format("DROP TABLE %s", TABLE1)}) {
-					try (Statement statement = connection.createStatement()) {
-						statement.executeUpdate(query);
-					} catch (SQLException e) { // catch just in case to do our best to clean everything even if test has failed
-						log.warn("Cannot perform query {}",  query, e);
-					}
-				}
-			}
-		}
-	}
-
-	@Test
-	@Tag("v2")
-	@Tag("staging")
-	void useFailure() throws SQLException {
-		ConnectionInfo current = integration.ConnectionInfo.getInstance();
-		try (Connection connection = createConnection(getSystemEngineName())) {
-			try {
-				Assert.assertThrows(SQLException.class, () -> connection.createStatement().executeUpdate(format("USE %s", current.getDatabase()))); // unsupported and DB does not exist
-				Assert.assertThrows(SQLException.class, () -> connection.createStatement().executeUpdate(format("USE %s", USE_DATABASE_NAME))); // DB does not exist
-				connection.createStatement().executeUpdate(format("CREATE DATABASE IF NOT EXISTS %s", USE_DATABASE_NAME)); // create DB
-				Assert.assertThrows(SQLException.class, () -> connection.createStatement().executeUpdate(format("USE %s", USE_DATABASE_NAME))); // DB exists but use statement is unsupported anyway
-			} finally {
-				try (Statement statement = connection.createStatement()) {
-					statement.executeUpdate(format("DROP DATABASE %s", USE_DATABASE_NAME));
-				} catch (SQLException e) { // catch just in case to do our best to clean everything even if test has failed
-					log.warn("Cannot drop database ",  USE_DATABASE_NAME, e);
-				}
+				systemConnection.createStatement().executeUpdate(format("DROP DATABASE %s", USE_DATABASE_NAME));
+				userConnection.createStatement().executeUpdate(format("DROP TABLE %s", TABLE1));
 			}
 		}
 	}
