@@ -17,11 +17,6 @@ on:
         required: true
         default: 'developer'
         type: string
-      environment:
-        description: 'Environment to run the tests against'
-        type: string
-        required: true
-        default: 'staging'
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN:
         required: true
@@ -55,15 +50,8 @@ jobs:
 
       - name: Determine env variables
         run: |
-          if [ "${{ github.event.inputs.environment }}" == 'staging' ]; then
-             echo "SERVICE_ACCOUNT_ID=${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" >> "$GITHUB_ENV"
-             echo "SERVICE_ACCOUNT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" >> "$GITHUB_ENV"
-             echo "EXCLUDE_ENV=dev" >> "$GITHUB_ENV"
-          else
-             echo "SERVICE_ACCOUNT_ID=${{ secrets.FIREBOLT_CLIENT_ID_NEW_IDN }}" >> "$GITHUB_ENV"
-             echo "SERVICE_ACCOUNT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_NEW_IDN }}" >> "$GITHUB_ENV"
-             echo "EXCLUDE_ENV=staging" >> "$GITHUB_ENV"
-          fi
+           echo "SERVICE_ACCOUNT_ID=${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" >> "$GITHUB_ENV"
+           echo "SERVICE_ACCOUNT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" >> "$GITHUB_ENV"
 
       - name: Setup database and engine
         id: setup
@@ -73,7 +61,7 @@ jobs:
           firebolt-client-id: ${{ env.SERVICE_ACCOUNT_ID }}
           firebolt-client-secret: ${{ env.SERVICE_ACCOUNT_SECRET }}
           account: ${{ github.event.inputs.account }}
-          api-endpoint: "api.${{ github.event.inputs.environment }}.firebolt.io"
+          api-endpoint: "api.staging.firebolt.io"
           instance-type: "B2"
 
       - name: Determine database name
@@ -95,4 +83,4 @@ jobs:
           fi
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=${{ github.event.inputs.environment }} -Dclient_secret="${{ env.SERVICE_ACCOUNT_SECRET }}" -Dclient_id="${{ env.SERVICE_ACCOUNT_ID }}" -Daccount="${{ github.event.inputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags=v1,${{ env.EXCLUDE_ENV }}
+        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=${{ github.event.inputs.environment }} -Dclient_secret="${{ env.SERVICE_ACCOUNT_SECRET }}" -Dclient_id="${{ env.SERVICE_ACCOUNT_ID }}" -Daccount="${{ github.event.inputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags=v1

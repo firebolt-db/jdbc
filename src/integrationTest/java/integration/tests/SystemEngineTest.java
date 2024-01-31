@@ -82,7 +82,6 @@ public class SystemEngineTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("staging")
 	void ddlFailure() throws SQLException {
 		try (Connection connection = createConnection(getSystemEngineName())) {
 			String errorMessage = assertThrows(
@@ -90,15 +89,6 @@ public class SystemEngineTest extends IntegrationTest {
 					() -> connection.createStatement().executeUpdate("CREATE DIMENSION TABLE dummy(id INT)"))
 					.getErrorMessageFromServer();
 			assertEquals("The system engine doesn't support this type of data definition statements. Run this statement on a user engine.\n", errorMessage);
-		}
-	}
-
-	@Test
-	@Tag("dev")
-	void ddlSuccess() throws SQLException {
-		try (Connection connection = createConnection(getSystemEngineName())) {
-			connection.createStatement().executeUpdate("CREATE DIMENSION TABLE dummy(id INT)");
-			connection.createStatement().executeUpdate("DROP TABLE dummy");
 		}
 	}
 
