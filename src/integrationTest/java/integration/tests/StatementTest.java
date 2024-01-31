@@ -259,6 +259,56 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"select 'nan'::float", "select '+nan'::float", "select '-nan'::float",
+	})
+	void nanFloatUserEngine(String query) throws SQLException {
+		try (Connection connection = createConnection()) {
+			nan(connection, query, Float.NaN);
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"select 'nan'::float", "select '+nan'::float", "select '-nan'::float",
+	})
+	void nanFloatSystemEngine(String query) throws SQLException {
+		try (Connection connection = createConnection(getSystemEngineName())) {
+			//metadata returns type double, so there is no way to recognize float even if float conversion was called
+			nan(connection, query, Double.NaN);
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"select 'nan'::double", "select '+nan'::double", "select '-nan'::double",
+	})
+	void nanDoubleUserEngine(String query) throws SQLException {
+		try (Connection connection = createConnection()) {
+			nan(connection, query, Double.NaN);
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"select 'nan'::double", "select '+nan'::double", "select '-nan'::double",
+	})
+	void nanDoubleSystemEngine(String query) throws SQLException {
+		try (Connection connection = createConnection(getSystemEngineName())) {
+			nan(connection, query, Double.NaN);
+		}
+	}
+
+	private void nan(Connection connection, String query, Number expectedGetObjectValue) throws SQLException {
+		try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(query)) {
+			resultSet.next();
+			assertEquals(Float.NaN, resultSet.getFloat(1));
+			assertEquals(Double.NaN, resultSet.getDouble(1));
+			assertEquals(expectedGetObjectValue, resultSet.getObject(1));
+		}
+	}
+
 	/**
 	 * This test validates that null values are sorted last.
 	 * @throws SQLException if something is going wrong

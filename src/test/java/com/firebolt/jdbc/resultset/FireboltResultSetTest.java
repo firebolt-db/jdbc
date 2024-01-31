@@ -965,6 +965,8 @@ class FireboltResultSetTest {
 
 		assertEquals(Float.NaN, resultSet.getFloat(3));
 		assertEquals(Double.NaN, resultSet.getDouble(3));
+		assertEquals(Float.NaN, resultSet.getFloat(4));
+		assertEquals(Double.NaN, resultSet.getDouble(4));
 	}
 
 	@Test
