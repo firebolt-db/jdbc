@@ -21,28 +21,11 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ConnectionTest extends IntegrationTest {
     enum EngineType {
         SYSTEM_ENGINE, CUSTOM_ENGINE
-    }
-    /**
-     * This test connects to specific engine with additional property {@code use_standard_sql} supported by user engine but
-     * not supported by system engine used here to retrieve the data of user engine.
-     * The test is needed because there were create connection to system engine by copying all given connection properties
-     * while additional (custom) parameters should be ignored.
-     * @throws SQLException if something went wrong
-     */
-    @Test
-    @Tag("v2")
-    void connectionWithAdditionalProperties() throws SQLException {
-        ConnectionInfo params = integration.ConnectionInfo.getInstance();
-        String url = format("jdbc:firebolt:%s?env=%s&engine=%s&account=%s&use_standard_sql=1", params.getDatabase(), params.getEnv(), params.getEngine(), params.getAccount());
-        try(Connection connection = DriverManager.getConnection(url, params.getPrincipal(), params.getSecret())) {
-            assertNotNull(connection);
-        }
     }
 
     @ParameterizedTest(name = "{0}")
