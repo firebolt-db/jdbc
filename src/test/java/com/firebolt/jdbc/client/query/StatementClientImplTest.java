@@ -1,6 +1,5 @@
 package com.firebolt.jdbc.client.query;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
@@ -84,8 +83,7 @@ class StatementClientImplTest {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).accountId("12345").systemEngine(systemEngine).build();
 		when(connection.getAccessToken())
 				.thenReturn(Optional.of("token"));
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(ObjectMapper.class), connection,
-				"ConnA:1.0.9", "ConnB:2.0.9");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
 		injectMockedResponse(okHttpClient, 200, "");
 		Call call = getMockedCallWithResponse(200, "");
 		when(okHttpClient.newCall(any())).thenReturn(call);
@@ -107,7 +105,7 @@ class StatementClientImplTest {
 	@Test
 	void shouldCancelSqlQuery() throws SQLException, IOException {
 		String id = "12345";
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(ObjectMapper.class), connection, "", "");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "", "");
 		PreparedStatement ps = mock(PreparedStatement.class);
 		ResultSet rs = mock(ResultSet.class);
 		when(connection.prepareStatement(anyString())).thenReturn(ps);
@@ -127,7 +125,7 @@ class StatementClientImplTest {
 	@Test
 	void shouldIgnoreIfStatementIsNotFoundInDbWhenCancelSqlQuery() throws SQLException, IOException {
 		String id = "12345";
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(ObjectMapper.class), connection, "", "");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "", "");
 		PreparedStatement ps = mock(PreparedStatement.class);
 		ResultSet rs = mock(ResultSet.class);
 		when(connection.prepareStatement(anyString())).thenReturn(ps);
@@ -147,7 +145,7 @@ class StatementClientImplTest {
 	@Test
 	void cannotGetStatementIdWhenCancelling() throws SQLException {
 		String id = "12345";
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(ObjectMapper.class), connection, "", "");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "", "");
 		PreparedStatement ps = mock(PreparedStatement.class);
 		ResultSet rs = mock(ResultSet.class);
 		when(connection.prepareStatement(anyString())).thenReturn(ps);
@@ -165,7 +163,7 @@ class StatementClientImplTest {
 	})
 	void shouldFailToCancelSqlQuery(int httpStatus, String errorMessage) throws SQLException, IOException {
 		String id = "12345";
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(ObjectMapper.class), connection, "", "");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "", "");
 		PreparedStatement ps = mock(PreparedStatement.class);
 		ResultSet rs = mock(ResultSet.class);
 		when(connection.prepareStatement(anyString())).thenReturn(ps);
@@ -185,8 +183,7 @@ class StatementClientImplTest {
 		Call okCall = getMockedCallWithResponse(200, "");
 		Call unauthorizedCall = getMockedCallWithResponse(401, "");
 		when(okHttpClient.newCall(any())).thenReturn(unauthorizedCall).thenReturn(okCall);
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(ObjectMapper.class), connection,
-				"ConnA:1.0.9", "ConnB:2.0.9");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
 		statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, false, 5, true);
 		verify(okHttpClient, times(2)).newCall(requestArgumentCaptor.capture());
@@ -200,8 +197,7 @@ class StatementClientImplTest {
 		Call okCall = getMockedCallWithResponse(200, "");
 		Call unauthorizedCall = getMockedCallWithResponse(401, "");
 		when(okHttpClient.newCall(any())).thenReturn(unauthorizedCall).thenReturn(unauthorizedCall).thenReturn(okCall);
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(ObjectMapper.class), connection,
-				"ConnA:1.0.9", "ConnB:2.0.9");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
 		FireboltException ex = assertThrows(FireboltException.class, () -> statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, false, 5, true));
 		assertEquals(ExceptionType.UNAUTHORIZED, ex.getType());
@@ -248,7 +244,7 @@ class StatementClientImplTest {
 				}
 			}
 			@Override
-			protected FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper) {
+			protected FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient) {
 				return null;
 			}
 
@@ -262,8 +258,7 @@ class StatementClientImplTest {
 
 			}
 		};
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(ObjectMapper.class), connection,
-				"ConnA:1.0.9", "ConnB:2.0.9");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers(useCommand).get(0);
 		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 5, true);
 		return connection;
@@ -281,8 +276,7 @@ class StatementClientImplTest {
 		Call unauthorizedCall = getMockedCallWithResponse(500, serverErrorMessage);
 
 		when(okHttpClient.newCall(any())).thenReturn(unauthorizedCall);
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(ObjectMapper.class), connection,
-				"ConnA:1.0.9", "ConnB:2.0.9");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
 		FireboltException exception = assertThrows(FireboltException.class, () -> statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, false, 5, true));
 		assertEquals(ExceptionType.UNAUTHORIZED, exception.getType());
@@ -299,7 +293,7 @@ class StatementClientImplTest {
 		Call call = mock(Call.class);
 		when(call.execute()).thenThrow(exceptionClass);
 		when(okHttpClient.newCall(any())).thenReturn(call);
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, mock(ObjectMapper.class), connection, "", "");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "", "");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("select 1").get(0);
 		FireboltException ex = assertThrows(FireboltException.class, () -> statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, false, 5, true));
 		assertEquals(exceptionType, ex.getType());

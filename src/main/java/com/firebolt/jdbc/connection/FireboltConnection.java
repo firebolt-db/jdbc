@@ -1,9 +1,7 @@
 package com.firebolt.jdbc.connection;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
-import com.firebolt.jdbc.client.FireboltObjectMapper;
 import com.firebolt.jdbc.client.HttpClientConfig;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.client.query.StatementClientImpl;
@@ -95,11 +93,10 @@ public abstract class FireboltConnection implements Connection {
 	protected FireboltConnection(@NonNull String url, Properties connectionSettings, String protocolVersion) throws SQLException {
 		this.loginProperties = extractFireboltProperties(url, connectionSettings);
 		OkHttpClient httpClient = getHttpClient(loginProperties);
-		ObjectMapper objectMapper = FireboltObjectMapper.getInstance();
 
-		this.fireboltAuthenticationService = new FireboltAuthenticationService(createFireboltAuthenticationClient(httpClient, objectMapper));
+		this.fireboltAuthenticationService = new FireboltAuthenticationService(createFireboltAuthenticationClient(httpClient));
 		this.httpConnectionUrl = loginProperties.getHttpConnectionUrl();
-		this.fireboltStatementService = new FireboltStatementService(new StatementClientImpl(httpClient, objectMapper, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
+		this.fireboltStatementService = new FireboltStatementService(new StatementClientImpl(httpClient, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
 
 		this.statements = new ArrayList<>();
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
@@ -107,7 +104,7 @@ public abstract class FireboltConnection implements Connection {
 		this.protocolVersion = protocolVersion;
 	}
 
-	protected abstract FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper);
+	protected abstract FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient);
 
 	public static FireboltConnection create(@NonNull String url, Properties connectionSettings) throws SQLException {
 		return createConnectionInstance(url, connectionSettings);

@@ -43,8 +43,7 @@ class FireboltAuthenticationServiceTest {
 	@Test
 	void shouldGetConnectionToken() throws IOException, FireboltException {
 		String randomHost = UUID.randomUUID().toString();
-		FireboltConnectionTokens tokens = FireboltConnectionTokens.builder().expiresInSeconds(52)
-				.refreshToken("refresh").accessToken("access").build();
+		FireboltConnectionTokens tokens = new FireboltConnectionTokens("access", 52);
 		when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD, ENV)).thenReturn(tokens);
 
 		assertEquals(tokens, fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES));
@@ -54,8 +53,7 @@ class FireboltAuthenticationServiceTest {
 	@Test
 	void shouldCallClientOnlyOnceWhenServiceCalledTwiceForTheSameHost() throws IOException, FireboltException {
 		String randomHost = UUID.randomUUID().toString();
-		FireboltConnectionTokens tokens = FireboltConnectionTokens.builder().expiresInSeconds(52)
-				.refreshToken("refresh").accessToken("access").build();
+		FireboltConnectionTokens tokens = new FireboltConnectionTokens("access", 52);
 		when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD, ENV)).thenReturn(tokens);
 
 		fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES);
@@ -66,10 +64,8 @@ class FireboltAuthenticationServiceTest {
 	@Test
 	void shouldGetConnectionTokenAfterRemoving() throws IOException, FireboltException {
 		String randomHost = UUID.randomUUID().toString();
-		FireboltConnectionTokens token1 = FireboltConnectionTokens.builder().expiresInSeconds(52)
-				.refreshToken("refresh").accessToken("one").build();
-		FireboltConnectionTokens token2 = FireboltConnectionTokens.builder().expiresInSeconds(52)
-				.refreshToken("refresh").accessToken("two").build();
+		FireboltConnectionTokens token1 = new FireboltConnectionTokens("one", 52);
+		FireboltConnectionTokens token2 = new FireboltConnectionTokens("two", 52);
 		when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD, ENV)).thenReturn(token1, token2);
 
 		fireboltAuthenticationService.getConnectionTokens(randomHost, PROPERTIES);

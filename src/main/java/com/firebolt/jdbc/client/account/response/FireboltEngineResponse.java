@@ -1,20 +1,41 @@
 package com.firebolt.jdbc.client.account.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.json.JSONObject;
 
-import lombok.Builder;
-import lombok.Value;
-
-@Value
-@Builder
 public class FireboltEngineResponse {
-	Engine engine;
+	private final Engine engine;
 
-	@Value
-	@Builder
+    public FireboltEngineResponse(Engine engine) {
+        this.engine = engine;
+    }
+
+	FireboltEngineResponse(JSONObject json) {
+		this(new Engine(json.getJSONObject("engine")));
+	}
+
+	public Engine getEngine() {
+		return engine;
+	}
+
 	public static class Engine {
-		String endpoint;
-		@JsonProperty("current_status")
-		String currentStatus;
+		private final String endpoint;
+		private final String currentStatus;
+
+        public Engine(String endpoint, String currentStatus) {
+            this.endpoint = endpoint;
+            this.currentStatus = currentStatus;
+        }
+
+		private Engine(JSONObject json) {
+			this(json.getString("endpoint"), json.getString("current_status"));
+		}
+
+		public String getEndpoint() {
+			return endpoint;
+		}
+
+		public String getCurrentStatus() {
+			return currentStatus;
+		}
 	}
 }

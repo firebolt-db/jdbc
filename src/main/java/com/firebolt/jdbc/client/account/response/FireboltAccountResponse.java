@@ -1,15 +1,19 @@
 package com.firebolt.jdbc.client.account.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.json.JSONObject;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Value;
-
-@Value
-@AllArgsConstructor
-@Builder
 public class FireboltAccountResponse {
-	@JsonProperty("account_id")
-	String accountId;
+	private final String accountId;
+
+	public FireboltAccountResponse(String accountId) {
+		this.accountId = accountId;
+	}
+
+	FireboltAccountResponse(JSONObject json) {
+		this(json.getString("account_id"));
+	}
+
+	public String getAccountId() {
+		return accountId;
+	}
 }

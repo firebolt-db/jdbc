@@ -267,7 +267,7 @@ public class SystemEngineTest extends IntegrationTest {
 			List<String> queries = Arrays.asList(format("CREATE DATABASE IF NOT EXISTS %s", SECOND_DATABASE_NAME),
 					format("CREATE ENGINE %s", ENGINE_NAME),
 					format("ATTACH ENGINE %s TO %s;", ENGINE_NAME, SECOND_DATABASE_NAME),
-					format("ALTER DATABASE %s WITH DESCRIPTION = 'JDBC Integration test'", SECOND_DATABASE_NAME),
+					format("ALTER DATABASE %s SET DESCRIPTION = 'JDBC Integration test'", SECOND_DATABASE_NAME),
 					format("ALTER ENGINE %s RENAME TO %s", ENGINE_NAME, ENGINE_NEW_NAME),
 					format("START ENGINE %s", ENGINE_NEW_NAME), format("STOP ENGINE %s", ENGINE_NEW_NAME),
 					format("DROP ENGINE %s", ENGINE_NEW_NAME), format("DROP DATABASE %s", SECOND_DATABASE_NAME));

@@ -47,9 +47,9 @@ class FireboltEngineApiServiceTest {
     @Test
     void shouldGetDefaultDbEngineWhenEngineNameIsNullOrEmpty() throws Exception {
         when(fireboltAccountClient.getAccount(PROPERTIES_WITHOUT_ENGINE.getHttpConnectionUrl(), PROPERTIES_WITHOUT_ENGINE.getAccount(), ACCESS_TOKEN))
-                .thenReturn(FireboltAccountResponse.builder().accountId(ACCOUNT_ID).build());
+                .thenReturn(new FireboltAccountResponse(ACCOUNT_ID));
         when(fireboltAccountClient.getDefaultEngineByDatabaseName(URL, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN))
-                .thenReturn(FireboltDefaultDatabaseEngineResponse.builder().engineUrl("URL").build());
+                .thenReturn(new FireboltDefaultDatabaseEngineResponse("URL"));
         fireboltEngineService.getEngine(PROPERTIES_WITHOUT_ENGINE);
 
         verify(fireboltAccountClient).getAccount(URL, PROPERTIES_WITHOUT_ENGINE.getAccount(), ACCESS_TOKEN);
@@ -66,9 +66,9 @@ class FireboltEngineApiServiceTest {
     @Test
     void shouldGThrowExceptionWhenGettingDefaultEngineAndTheUrlReturnedFromTheServerIsNull() throws Exception {
         when(fireboltAccountClient.getAccount(PROPERTIES_WITHOUT_ENGINE.getHttpConnectionUrl(), PROPERTIES_WITHOUT_ENGINE.getAccount(), ACCESS_TOKEN))
-                .thenReturn(FireboltAccountResponse.builder().accountId(ACCOUNT_ID).build());
+                .thenReturn(new FireboltAccountResponse(ACCOUNT_ID));
         when(fireboltAccountClient.getDefaultEngineByDatabaseName(URL, ACCOUNT_ID, DB_NAME, ACCESS_TOKEN))
-                .thenReturn(FireboltDefaultDatabaseEngineResponse.builder().engineUrl(null).build());
+                .thenReturn(new FireboltDefaultDatabaseEngineResponse(null));
         FireboltException exception = assertThrows(FireboltException.class,
                 () -> fireboltEngineService.getEngine(PROPERTIES_WITHOUT_ENGINE));
         assertEquals(
@@ -83,13 +83,11 @@ class FireboltEngineApiServiceTest {
     @Test
     void shouldGetEngineWhenEngineNameIsPresent() throws Exception {
         when(fireboltAccountClient.getAccount(URL, PROPERTIES_WITH_ACCOUNT_AND_ENGINE.getAccount(), ACCESS_TOKEN))
-                .thenReturn(FireboltAccountResponse.builder().accountId(ACCOUNT_ID).build());
+                .thenReturn(new FireboltAccountResponse(ACCOUNT_ID));
         when(fireboltAccountClient.getEngineId(URL, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN))
-                .thenReturn(FireboltEngineIdResponse.builder()
-                        .engine(FireboltEngineIdResponse.Engine.builder().engineId(ENGINE_ID).build()).build());
+                .thenReturn(new FireboltEngineIdResponse(new FireboltEngineIdResponse.Engine(ENGINE_ID)));
         when(fireboltAccountClient.getEngine(URL, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN))
-                .thenReturn(FireboltEngineResponse.builder()
-                        .engine(FireboltEngineResponse.Engine.builder().endpoint("ANY").build()).build());
+                .thenReturn(new FireboltEngineResponse(new FireboltEngineResponse.Engine("ANY", null)));
         fireboltEngineService.getEngine(PROPERTIES_WITH_ACCOUNT_AND_ENGINE);
 
         verify(fireboltAccountClient).getAccount(URL, ACCOUNT_ID, ACCESS_TOKEN);
@@ -101,11 +99,9 @@ class FireboltEngineApiServiceTest {
     @Test
     void shouldNotGetAccountWhileGettingEngineIfAccountIdIsNotPresent() throws Exception {
         when(fireboltAccountClient.getEngineId(URL, null, ENGINE_NAME, ACCESS_TOKEN))
-                .thenReturn(FireboltEngineIdResponse.builder()
-                        .engine(FireboltEngineIdResponse.Engine.builder().engineId(ENGINE_ID).build()).build());
+                .thenReturn(new FireboltEngineIdResponse(new FireboltEngineIdResponse.Engine(ENGINE_ID)));
         when(fireboltAccountClient.getEngine(URL, null, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN))
-                .thenReturn(FireboltEngineResponse.builder()
-                        .engine(FireboltEngineResponse.Engine.builder().endpoint("ANY").build()).build());
+                .thenReturn(new FireboltEngineResponse(new FireboltEngineResponse.Engine("ANY", null)));
         fireboltEngineService.getEngine(PROPERTIES_WITHOUT_ACCOUNT);
 
         verify(fireboltAccountClient, times(0)).getAccount(any(), any(), any());
@@ -117,13 +113,11 @@ class FireboltEngineApiServiceTest {
     @Test
     void shouldThrowExceptionWhenEngineNameIsSpecifiedButUrlIsNotPresentInTheResponse() throws Exception {
         when(fireboltAccountClient.getAccount(PROPERTIES_WITH_ACCOUNT_AND_ENGINE.getHttpConnectionUrl(), PROPERTIES_WITH_ACCOUNT_AND_ENGINE.getAccount(), ACCESS_TOKEN))
-                .thenReturn(FireboltAccountResponse.builder().accountId(ACCOUNT_ID).build());
+                .thenReturn(new FireboltAccountResponse(ACCOUNT_ID));
         when(fireboltAccountClient.getEngineId(URL, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN))
-                .thenReturn(FireboltEngineIdResponse.builder()
-                        .engine(FireboltEngineIdResponse.Engine.builder().engineId(ENGINE_ID).build()).build());
+                .thenReturn(new FireboltEngineIdResponse(new FireboltEngineIdResponse.Engine(ENGINE_ID)));
         when(fireboltAccountClient.getEngine(URL, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN))
-                .thenReturn(FireboltEngineResponse.builder()
-                        .engine(FireboltEngineResponse.Engine.builder().endpoint(null).build()).build());
+                .thenReturn(new FireboltEngineResponse(new FireboltEngineResponse.Engine(null, null)));
         FireboltException exception = assertThrows(FireboltException.class,
                 () -> fireboltEngineService.getEngine(PROPERTIES_WITH_ACCOUNT_AND_ENGINE));
         assertEquals(
@@ -139,10 +133,9 @@ class FireboltEngineApiServiceTest {
     @Test
     void shouldThrowExceptionWhenEngineNameIsSpecifiedButEngineIdIsNotPresentInTheServerResponse() throws Exception {
         when(fireboltAccountClient.getAccount(PROPERTIES_WITH_ACCOUNT_AND_ENGINE.getHttpConnectionUrl(), PROPERTIES_WITH_ACCOUNT_AND_ENGINE.getAccount(), ACCESS_TOKEN))
-                .thenReturn(FireboltAccountResponse.builder().accountId(ACCOUNT_ID).build());
+                .thenReturn(new FireboltAccountResponse(ACCOUNT_ID));
         when(fireboltAccountClient.getEngineId(URL, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN))
-                .thenReturn(FireboltEngineIdResponse.builder()
-                        .engine(FireboltEngineIdResponse.Engine.builder().engineId(null).build()).build());
+                .thenReturn(new FireboltEngineIdResponse(new FireboltEngineIdResponse.Engine(null)));
         FireboltException exception = assertThrows(FireboltException.class,
                 () -> fireboltEngineService.getEngine(PROPERTIES_WITH_ACCOUNT_AND_ENGINE));
         assertEquals(
@@ -157,14 +150,11 @@ class FireboltEngineApiServiceTest {
     @ValueSource(strings = { "ENGINE_STATUS_PROVISIONING_STARTED", "ENGINE_STATUS_PROVISIONING_FINISHED", "ENGINE_STATUS_PROVISIONING_PENDING" })
     void shouldThrowExceptionWhenEngineStatusIndicatesEngineIsStarting(String status) throws Exception {
         when(fireboltAccountClient.getAccount(PROPERTIES_WITH_ACCOUNT_AND_ENGINE.getHttpConnectionUrl(), PROPERTIES_WITH_ACCOUNT_AND_ENGINE.getAccount(), ACCESS_TOKEN))
-                .thenReturn(FireboltAccountResponse.builder().accountId(ACCOUNT_ID).build());
+                .thenReturn(new FireboltAccountResponse(ACCOUNT_ID));
         when(fireboltAccountClient.getEngineId(URL, ACCOUNT_ID, ENGINE_NAME, ACCESS_TOKEN))
-                .thenReturn(FireboltEngineIdResponse.builder()
-                        .engine(FireboltEngineIdResponse.Engine.builder().engineId(ENGINE_ID).build()).build());
+                .thenReturn(new FireboltEngineIdResponse(new FireboltEngineIdResponse.Engine(ENGINE_ID)));
         when(fireboltAccountClient.getEngine(URL, ACCOUNT_ID, ENGINE_NAME, ENGINE_ID, ACCESS_TOKEN))
-                .thenReturn(FireboltEngineResponse.builder()
-                        .engine(FireboltEngineResponse.Engine.builder().endpoint("ANY").currentStatus(status).build())
-                        .build());
+                .thenReturn(new FireboltEngineResponse(new FireboltEngineResponse.Engine("ANY", status)));
         FireboltException exception = assertThrows(FireboltException.class,
                 () -> fireboltEngineService.getEngine(PROPERTIES_WITH_ACCOUNT_AND_ENGINE));
         assertEquals("The engine engineName is currently starting. Please wait until the engine is on and then execute the query again.",

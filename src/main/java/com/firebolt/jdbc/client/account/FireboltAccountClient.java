@@ -1,10 +1,5 @@
 package com.firebolt.jdbc.client.account;
 
-import java.io.IOException;
-
-import org.apache.commons.lang3.StringUtils;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltClient;
 import com.firebolt.jdbc.client.account.response.FireboltAccountResponse;
 import com.firebolt.jdbc.client.account.response.FireboltDefaultDatabaseEngineResponse;
@@ -13,9 +8,11 @@ import com.firebolt.jdbc.client.account.response.FireboltEngineResponse;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
-
 import lombok.CustomLog;
 import okhttp3.OkHttpClient;
+import org.apache.commons.lang3.StringUtils;
+
+import java.io.IOException;
 
 import static java.lang.String.format;
 
@@ -29,9 +26,8 @@ public class FireboltAccountClient extends FireboltClient {
     private static final String URI_PREFIX_WITH_ACCOUNT_RESOURCE = "%s/core/v1/accounts/%s/%s";
     private static final String URI_PREFIX_WITHOUT_ACCOUNT_RESOURCE = "%s/core/v1/account/%s";
 
-    public FireboltAccountClient(OkHttpClient httpClient, ObjectMapper objectMapper,
-                                 FireboltConnection fireboltConnection, String customDrivers, String customClients) {
-        super(httpClient, objectMapper, fireboltConnection, customDrivers, customClients);
+    public FireboltAccountClient(OkHttpClient httpClient, FireboltConnection fireboltConnection, String customDrivers, String customClients) {
+        super(httpClient, fireboltConnection, customDrivers, customClients);
     }
 
     /**
@@ -42,8 +38,7 @@ public class FireboltAccountClient extends FireboltClient {
      * @param accessToken the access token
      * @return the account
      */
-    public FireboltAccountResponse getAccount(String host, String account, String accessToken)
-            throws FireboltException, IOException {
+    public FireboltAccountResponse getAccount(String host, String account, String accessToken) throws FireboltException, IOException {
         String uri = format(GET_ACCOUNT_ID_URI, host, account);
         return getResource(uri, host, accessToken, FireboltAccountResponse.class);
     }
@@ -58,8 +53,7 @@ public class FireboltAccountClient extends FireboltClient {
      * @param accessToken the access token
      * @return the engine
      */
-    public FireboltEngineResponse getEngine(String host, String accountId, String engineName, String engineId,
-                                            String accessToken) throws FireboltException, IOException {
+    public FireboltEngineResponse getEngine(String host, String accountId, String engineName, String engineId, String accessToken) throws FireboltException, IOException {
         String uri = createAccountUri(accountId, host, URI_SUFFIX_ACCOUNT_ENGINE_INFO_BY_ENGINE_ID + engineId);
         return getResource(uri, host, accessToken, FireboltEngineResponse.class, format("The address of the engine with name %s and id %s could not be found", engineName, engineId));
     }
@@ -73,8 +67,7 @@ public class FireboltAccountClient extends FireboltClient {
      * @param accessToken the access token
      * @return the default engine for the database
      */
-    public FireboltDefaultDatabaseEngineResponse getDefaultEngineByDatabaseName(String host, String accountId, String dbName,
-                                                                                String accessToken) throws FireboltException, IOException {
+    public FireboltDefaultDatabaseEngineResponse getDefaultEngineByDatabaseName(String host, String accountId, String dbName, String accessToken) throws FireboltException, IOException {
         String uri = createAccountUri(accountId, host, URI_SUFFIX_DATABASE_INFO_URL + dbName);
         return getResource(uri, host, accessToken, FireboltDefaultDatabaseEngineResponse.class, format("The database with the name %s could not be found", dbName));
     }

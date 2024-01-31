@@ -1,8 +1,6 @@
 package com.firebolt.jdbc.client.authentication;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltClient;
-import com.firebolt.jdbc.client.authentication.response.FireboltAuthenticationResponse;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.exception.FireboltException;
@@ -16,9 +14,9 @@ import java.io.IOException;
 @CustomLog
 public abstract class FireboltAuthenticationClient extends FireboltClient {
 
-	protected FireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper,
+	protected FireboltAuthenticationClient(OkHttpClient httpClient,
 										   FireboltConnection connection, String customDrivers, String customClients) {
-		super(httpClient, objectMapper, connection, customDrivers, customClients);
+		super(httpClient, connection, customDrivers, customClients);
 	}
 
 	/**
@@ -38,22 +36,16 @@ public abstract class FireboltAuthenticationClient extends FireboltClient {
 		Request request = createPostRequest(uri, null, authenticationRequest.getRequestBody(), null);
 		try (Response response = execute(request, host)) {
 			String responseString = getResponseAsString(response);
-			FireboltAuthenticationResponse authenticationResponse = objectMapper.readValue(responseString,
-					FireboltAuthenticationResponse.class);
-			FireboltConnectionTokens authenticationTokens = FireboltConnectionTokens.builder()
-					.accessToken(authenticationResponse.getAccessToken())
-					.refreshToken(authenticationResponse.getRefreshToken())
-					.expiresInSeconds(authenticationResponse.getExpiresIn()).build();
+			FireboltConnectionTokens authenticationTokens = jsonToObject(responseString, FireboltConnectionTokens.class);
 			log.info("Successfully fetched connection token");
-			logToken(authenticationResponse);
+			logToken(authenticationTokens);
 			return authenticationTokens;
 		}
 	}
 
-	private void logToken(FireboltAuthenticationResponse connectionTokens) {
+	private void logToken(FireboltConnectionTokens connectionTokens) {
 		logIfPresent(connectionTokens.getAccessToken(), "Retrieved access_token");
-		logIfPresent(connectionTokens.getRefreshToken(), "Retrieved refresh_token");
-		if (connectionTokens.getExpiresIn() >=- 0) {
+		if (connectionTokens.getExpiresInSeconds() >=- 0) {
 			log.debug("Retrieved expires_in");
 		}
 	}
