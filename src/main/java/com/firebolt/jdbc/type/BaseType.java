@@ -114,7 +114,7 @@ public enum BaseType {
 	}
 
 	private static boolean isNan(String value) {
-		return StringUtils.equalsIgnoreCase(value, "nan");
+		return "nan".equalsIgnoreCase(value) || "+nan".equalsIgnoreCase(value) || "-nan".equalsIgnoreCase(value);
 	}
 
 	private static void validateObjectNotNull(String value) {
