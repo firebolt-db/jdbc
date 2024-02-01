@@ -48,8 +48,6 @@ jobs:
     secrets:
       FIREBOLT_USERNAME_STAGING: ${{ secrets.FIREBOLT_USERNAME_STAGING }}
       FIREBOLT_PASSWORD_STAGING: ${{ secrets.FIREBOLT_PASSWORD_STAGING }}
-      FIREBOLT_USERNAME_DEV: ${{ secrets.FIREBOLT_USERNAME_DEV }}
-      FIREBOLT_PASSWORD_DEV: ${{ secrets.FIREBOLT_PASSWORD_DEV }}
 
   run-integration-tests2:
     if: ${{ github.event.inputs.run-v2 == 'true' }}
@@ -61,6 +59,4 @@ jobs:
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
-      FIREBOLT_CLIENT_ID_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_NEW_IDN }}
-      FIREBOLT_CLIENT_SECRET_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_NEW_IDN }}
 
