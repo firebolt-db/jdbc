@@ -3,6 +3,7 @@ package com.firebolt.jdbc.resultset;
 import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
+import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
@@ -25,6 +26,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -53,6 +55,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.firebolt.jdbc.util.StringUtil.splitAll;
+import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Optional.ofNullable;
 
@@ -61,6 +64,7 @@ import static java.util.Optional.ofNullable;
  */
 @CustomLog
 public class FireboltResultSet implements ResultSet {
+	private static final String FORWARD_ONLY_ERROR = "Cannot call %s() for ResultSet of type TYPE_FORWARD_ONLY";
 	private final BufferedReader reader;
 	private final Map<String, Integer> columnNameToColumnNumber;
 	private final FireboltResultSetMetaData resultSetMetaData;
@@ -420,7 +424,7 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public int getRow() {
-		return currentRow;
+		return currentRow - 2;
 	}
 
 	@Override
@@ -491,12 +495,12 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public boolean first() throws SQLException {
-		throw new FireboltException("Cannot call first() for ResultSet of type TYPE_FORWARD_ONLY");
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "first"));
 	}
 
 	@Override
 	public boolean last() throws SQLException {
-		throw new FireboltException("Cannot call last() for ResultSet of type TYPE_FORWARD_ONLY");
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "last"));
 	}
 
 	private String[] toStringArray(String stringToSplit) {
@@ -545,7 +549,7 @@ public class FireboltResultSet implements ResultSet {
 	private void validateColumnNumber(int columnNumber) throws SQLException {
 		if (columnNumber > columns.size()) {
 			throw new SQLException(
-					String.format("There is no column with number %d. Total of of columns available: %d ", columnNumber,
+					format("There is no column with number %d. Total of of columns available: %d ", columnNumber,
 							columns.size()));
 		}
 	}
@@ -554,7 +558,7 @@ public class FireboltResultSet implements ResultSet {
 	public int findColumn(String columnName) throws SQLException {
 		Integer index = columnNameToColumnNumber.get(columnName);
 		if (index == null) {
-			throw new SQLException(String.format("There is no column with name %s ", columnName));
+			throw new SQLException(format("There is no column with name %s ", columnName));
 		}
 		return index;
 	}
@@ -621,8 +625,6 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public String getCursorName() throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
@@ -638,55 +640,46 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void beforeFirst() throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "beforeFirst"));
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void afterLast() throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "afterLast"));
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public boolean absolute(int row) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "absolute"));
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public boolean relative(int rows) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "relative"));
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public boolean previous() throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "previous"));
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public int getFetchDirection() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return ResultSet.FETCH_FORWARD;
 	}
 
 	@Override
 	public void setFetchDirection(int direction) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		if (direction != ResultSet.FETCH_FORWARD) {
+			throw new FireboltException(ExceptionType.TYPE_NOT_SUPPORTED);
+		}
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public int getFetchSize() throws SQLException {
 		throw new FireboltUnsupportedOperationException();
 	}
@@ -701,141 +694,117 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public int getConcurrency() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return ResultSet.CONCUR_READ_ONLY;
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public boolean rowUpdated() throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public boolean rowInserted() throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public boolean rowDeleted() throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNull(int columnIndex) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBoolean(int columnIndex, boolean x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateByte(int columnIndex, byte x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateShort(int columnIndex, short x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateInt(int columnIndex, int x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateLong(int columnIndex, long x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateFloat(int columnIndex, float x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateDouble(int columnIndex, double x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBigDecimal(int columnIndex, BigDecimal x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateString(int columnIndex, String x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBytes(int columnIndex, byte[] x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateDate(int columnIndex, Date x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateTime(int columnIndex, Time x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateTimestamp(int columnIndex, Timestamp x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateAsciiStream(int columnIndex, InputStream x, int length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBinaryStream(int columnIndex, InputStream x, int length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
@@ -849,63 +818,54 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateObject(int columnIndex, Object x, int scaleOrLength) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateObject(int columnIndex, Object x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNull(String columnLabel) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBoolean(String columnLabel, boolean x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateByte(String columnLabel, byte x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateShort(String columnLabel, short x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateInt(String columnLabel, int x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateLong(String columnLabel, long x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateFloat(String columnLabel, float x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
@@ -919,77 +879,66 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBigDecimal(String columnLabel, BigDecimal x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateString(String columnLabel, String x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBytes(String columnLabel, byte[] x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateDate(String columnLabel, Date x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateTime(String columnLabel, Time x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateTimestamp(String columnLabel, Timestamp x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateAsciiStream(String columnLabel, InputStream x, int length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBinaryStream(String columnLabel, InputStream x, int length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateCharacterStream(String columnLabel, Reader reader, int length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateObject(String columnLabel, Object x, int scaleOrLength) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateObject(String columnLabel, Object x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
@@ -1044,10 +993,8 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Statement getStatement() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return statement;
 	}
 
 	@Override
@@ -1107,71 +1054,67 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public URL getURL(int columnIndex) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
-	}
+		return createURL(getString(columnIndex));
+    }
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public URL getURL(String columnLabel) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return createURL(getString(columnLabel));
+	}
+
+	private URL createURL(String url) throws SQLException {
+		try {
+			return url == null ? null : new URL(url);
+		} catch (MalformedURLException e) {
+			throw new SQLException(e);
+		}
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateRef(int columnIndex, Ref x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateRef(String columnLabel, Ref x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBlob(int columnIndex, Blob x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBlob(String columnLabel, Blob x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateClob(int columnIndex, Clob x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateClob(String columnLabel, Clob x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateArray(int columnIndex, Array x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateArray(String columnLabel, Array x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
@@ -1192,49 +1135,41 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateRowId(int columnIndex, RowId x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateRowId(String columnLabel, RowId x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public int getHoldability() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return ResultSet.HOLD_CURSORS_OVER_COMMIT;
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNString(int columnIndex, String nString) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNString(String columnLabel, String nString) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNClob(int columnIndex, NClob nClob) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNClob(String columnLabel, NClob nClob) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
@@ -1269,240 +1204,201 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateSQLXML(int columnIndex, SQLXML xmlObject) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateSQLXML(String columnLabel, SQLXML xmlObject) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public String getNString(int columnIndex) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getString(columnIndex);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public String getNString(String columnLabel) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getString(columnLabel);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Reader getNCharacterStream(int columnIndex) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getCharacterStream(columnIndex);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Reader getNCharacterStream(String columnLabel) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getCharacterStream(columnLabel);
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNCharacterStream(int columnIndex, Reader x, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNCharacterStream(String columnLabel, Reader reader, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateAsciiStream(int columnIndex, InputStream x, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBinaryStream(int columnIndex, InputStream x, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateCharacterStream(int columnIndex, Reader x, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateAsciiStream(String columnLabel, InputStream x, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBinaryStream(String columnLabel, InputStream x, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateCharacterStream(String columnLabel, Reader reader, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBlob(int columnIndex, InputStream inputStream, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBlob(String columnLabel, InputStream inputStream, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateClob(int columnIndex, Reader reader, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateClob(String columnLabel, Reader reader, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNClob(int columnIndex, Reader reader, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNClob(String columnLabel, Reader reader, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNCharacterStream(int columnIndex, Reader x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNCharacterStream(String columnLabel, Reader reader) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateAsciiStream(int columnIndex, InputStream x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBinaryStream(int columnIndex, InputStream x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateCharacterStream(int columnIndex, Reader x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateAsciiStream(String columnLabel, InputStream x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBinaryStream(String columnLabel, InputStream x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateCharacterStream(String columnLabel, Reader reader) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBlob(int columnIndex, InputStream inputStream) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBlob(String columnLabel, InputStream inputStream) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateClob(int columnIndex, Reader reader) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateClob(String columnLabel, Reader reader) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNClob(int columnIndex, Reader reader) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
+
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNClob(String columnLabel, Reader reader) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
-
-
 }

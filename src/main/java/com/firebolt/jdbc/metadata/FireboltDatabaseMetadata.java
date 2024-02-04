@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import static com.firebolt.jdbc.metadata.MetadataColumns.ASC_OR_DESC;
 import static com.firebolt.jdbc.metadata.MetadataColumns.ATTR_DEF;
 import static com.firebolt.jdbc.metadata.MetadataColumns.ATTR_NAME;
 import static com.firebolt.jdbc.metadata.MetadataColumns.ATTR_SIZE;
@@ -35,6 +36,7 @@ import static com.firebolt.jdbc.metadata.MetadataColumns.ATTR_TYPE_NAME;
 import static com.firebolt.jdbc.metadata.MetadataColumns.AUTO_INCREMENT;
 import static com.firebolt.jdbc.metadata.MetadataColumns.BASE_TYPE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.BUFFER_LENGTH;
+import static com.firebolt.jdbc.metadata.MetadataColumns.CARDINALITY;
 import static com.firebolt.jdbc.metadata.MetadataColumns.CASE_SENSITIVE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.CHAR_OCTET_LENGTH;
 import static com.firebolt.jdbc.metadata.MetadataColumns.CLASS_NAME;
@@ -51,6 +53,7 @@ import static com.firebolt.jdbc.metadata.MetadataColumns.DEFAULT_VALUE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.DEFERRABILITY;
 import static com.firebolt.jdbc.metadata.MetadataColumns.DELETE_RULE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.DESCRIPTION;
+import static com.firebolt.jdbc.metadata.MetadataColumns.FILTER_CONDITION;
 import static com.firebolt.jdbc.metadata.MetadataColumns.FIXED_PREC_SCALE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.FKCOLUMN_NAME;
 import static com.firebolt.jdbc.metadata.MetadataColumns.FKTABLE_CAT;
@@ -61,8 +64,13 @@ import static com.firebolt.jdbc.metadata.MetadataColumns.FUNCTION_CAT;
 import static com.firebolt.jdbc.metadata.MetadataColumns.FUNCTION_NAME;
 import static com.firebolt.jdbc.metadata.MetadataColumns.FUNCTION_SCHEM;
 import static com.firebolt.jdbc.metadata.MetadataColumns.FUNCTION_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.GRANTEE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.GRANTOR;
+import static com.firebolt.jdbc.metadata.MetadataColumns.INDEX_NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.INDEX_QUALIFIER;
 import static com.firebolt.jdbc.metadata.MetadataColumns.IS_AUTOINCREMENT;
 import static com.firebolt.jdbc.metadata.MetadataColumns.IS_GENERATEDCOLUMN;
+import static com.firebolt.jdbc.metadata.MetadataColumns.IS_GRANTABLE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.IS_NULLABLE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.KEY_SEQ;
 import static com.firebolt.jdbc.metadata.MetadataColumns.LENGTH;
@@ -73,15 +81,18 @@ import static com.firebolt.jdbc.metadata.MetadataColumns.MAXIMUM_SCALE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.MAX_LEN;
 import static com.firebolt.jdbc.metadata.MetadataColumns.MINIMUM_SCALE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.NAME;
+import static com.firebolt.jdbc.metadata.MetadataColumns.NON_UNIQUE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.NULLABLE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.NUM_PREC_RADIX;
 import static com.firebolt.jdbc.metadata.MetadataColumns.ORDINAL_POSITION;
+import static com.firebolt.jdbc.metadata.MetadataColumns.PAGES;
 import static com.firebolt.jdbc.metadata.MetadataColumns.PKCOLUMN_NAME;
 import static com.firebolt.jdbc.metadata.MetadataColumns.PKTABLE_CAT;
 import static com.firebolt.jdbc.metadata.MetadataColumns.PKTABLE_NAME;
 import static com.firebolt.jdbc.metadata.MetadataColumns.PKTABLE_SCHEM;
 import static com.firebolt.jdbc.metadata.MetadataColumns.PK_NAME;
 import static com.firebolt.jdbc.metadata.MetadataColumns.PRECISION;
+import static com.firebolt.jdbc.metadata.MetadataColumns.PRIVILEGE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.PROCEDURE_CAT;
 import static com.firebolt.jdbc.metadata.MetadataColumns.PROCEDURE_NAME;
 import static com.firebolt.jdbc.metadata.MetadataColumns.PROCEDURE_SCHEM;
@@ -110,6 +121,7 @@ import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_CATALOG;
 import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_NAME;
 import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_SCHEM;
 import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_TYPE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_CAT;
 import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_NAME;
 import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_SCHEM;
@@ -127,6 +139,7 @@ import static com.firebolt.jdbc.type.FireboltDataType.REAL;
 import static com.firebolt.jdbc.type.FireboltDataType.TEXT;
 import static com.firebolt.jdbc.type.FireboltDataType.TIMESTAMP;
 import static com.firebolt.jdbc.type.FireboltDataType.TUPLE;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.Types.VARCHAR;
 import static java.util.Map.entry;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
@@ -144,6 +157,8 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	private static final String VIEW = "VIEW";
 	private static final String QUOTE = "'";
 	private static final int MAX_IDENTIFIER_LENGTH = 63;
+	private static final int MAX_LITERAL_LENGTH = 0x40000; // 262144
+
 	private final String url;
 	private final FireboltConnection connection;
 	private String databaseVersion;
@@ -433,19 +448,16 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean allProceduresAreCallable() throws SQLException {
-		return true;
+		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean allTablesAreSelectable() throws SQLException {
 		return true;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public String getUserName() throws SQLException {
 		return connection.getSessionProperties().getPrincipal();
 	}
@@ -562,7 +574,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public String getSearchStringEscape() throws SQLException {
 		return "\\";
 	}
@@ -633,25 +644,21 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsGroupByUnrelated() throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsGroupByBeyondSelect() throws SQLException {
-		return true;
+		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsLikeEscapeClause() throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsMultipleResultSets() throws SQLException {
 		return false;
 	}
@@ -666,49 +673,54 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		return true;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 *  <p>This grammar is defined at:
+     * <a href="https://learn.microsoft.com/en-us/sql/odbc/reference/appendixes/sql-minimum-grammar?view=sql-server-ver16">SQL Minimum Grammar</a>
+     * @return true
+     * @throws SQLException - actually never throws
+     */
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsMinimumSQLGrammar() throws SQLException {
-		return false;
+		return true;
 	}
 
+	/**
+	 * Does this driver support the Core ODBC SQL grammar. We need SQL-92 conformance for this.
+	 *
+	 * @return false
+	 * @throws SQLException if a database access error occurs
+	 */
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsCoreSQLGrammar() throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsExtendedSQLGrammar() throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsANSI92EntryLevelSQL() throws SQLException {
-		// We do not support it (eg: we would need to be compliant with JDBC and support
-		// 'schema')
+		// We do not support it (eg: we would need to be compliant with JDBC and support 'schema')
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsANSI92IntermediateSQL() throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsANSI92FullSQL() throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsIntegrityEnhancementFacility() throws SQLException {
 		// Similar approach as pgjdbc: we assume it means supported constraints
-		return true;
+		return false;
 	}
 
 	@Override
@@ -773,9 +785,8 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsSchemasInPrivilegeDefinitions() throws SQLException {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -804,55 +815,46 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsPositionedDelete() throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsPositionedUpdate() throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsSelectForUpdate() throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsStoredProcedures() throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsSubqueriesInComparisons() throws SQLException {
 		return true;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsSubqueriesInExists() throws SQLException {
-		return false;
+		return true;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsSubqueriesInIns() throws SQLException {
 		return true;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsSubqueriesInQuantifieds() throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsCorrelatedSubqueries() throws SQLException {
 		return true;
 	}
@@ -868,41 +870,35 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsOpenCursorsAcrossCommit() throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsOpenCursorsAcrossRollback() throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsOpenStatementsAcrossCommit() throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsOpenStatementsAcrossRollback() throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
+	@SuppressWarnings("java:S4144") // identical implementation
 	public int getMaxBinaryLiteralLength() throws SQLException {
-		return 0;
+		return MAX_LITERAL_LENGTH;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
+	@SuppressWarnings("java:S4144") // identical implementation
 	public int getMaxCharLiteralLength() throws SQLException {
-		return 0;
+		return MAX_LITERAL_LENGTH;
 	}
 
 	@Override
@@ -912,31 +908,27 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public int getMaxColumnsInGroupBy() throws SQLException {
-		return 0;
+		return 0x10000; //65536
 	}
 
-	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
+	/**
+	 * Indexes are not supported, so the value is irrelevant.
+	 * @return 0
+	 * @throws SQLException never thrown
+	 */
 	public int getMaxColumnsInIndex() throws SQLException {
 		return 0;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public int getMaxColumnsInOrderBy() throws SQLException {
-		return 0;
+		return 16384;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public int getMaxColumnsInSelect() throws SQLException {
-		return 0;
+		return 8192;
 	}
 
 	@Override
@@ -945,21 +937,16 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public int getMaxConnections() throws SQLException {
 		return 0;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public int getMaxCursorNameLength() throws SQLException {
 		return 0;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public int getMaxIndexLength() throws SQLException {
 		return 0;
 	}
@@ -971,8 +958,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public int getMaxProcedureNameLength() throws SQLException {
 		return 0;
 	}
@@ -1004,8 +989,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public int getMaxStatements() throws SQLException {
 		return 0;
 	}
@@ -1017,17 +1000,13 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public int getMaxTablesInSelect() throws SQLException {
 		return 0;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public int getMaxUserNameLength() throws SQLException {
-		return 0;
+		return MAX_IDENTIFIER_LENGTH;
 	}
 
 	@Override
@@ -1056,20 +1035,18 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean dataDefinitionIgnoredInTransactions() throws SQLException {
 		return false;
 	}
 
 	@Override
 	public boolean supportsResultSetType(int type) throws SQLException {
-		return ResultSet.TYPE_FORWARD_ONLY == type;
+		return TYPE_FORWARD_ONLY == type;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsResultSetConcurrency(int type, int concurrency) throws SQLException {
-		return false;
+		return type == ResultSet.TYPE_FORWARD_ONLY && concurrency == ResultSet.CONCUR_READ_ONLY;
 	}
 
 	/*
@@ -1077,55 +1054,46 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	 * since we do not support updating ResultSet objects
 	 */
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean ownUpdatesAreVisible(int type) throws SQLException {
-		return true;
+		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean ownDeletesAreVisible(int type) throws SQLException {
-		return true;
+		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean ownInsertsAreVisible(int type) throws SQLException {
-		return true;
+		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean othersUpdatesAreVisible(int type) throws SQLException {
-		return true;
+		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean othersDeletesAreVisible(int type) throws SQLException {
-		return true;
+		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean othersInsertsAreVisible(int type) throws SQLException {
-		return true;
+		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean updatesAreDetected(int type) throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean deletesAreDetected(int type) throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean insertsAreDetected(int type) throws SQLException {
 		return false;
 	}
@@ -1148,13 +1116,11 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsMultipleOpenResults() throws SQLException {
 		return false;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean supportsGetGeneratedKeys() throws SQLException {
 		return false;
 	}
@@ -1324,17 +1290,63 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
-	public ResultSet getColumnPrivileges(String catalog, String schema, String table, String columnNamePattern) throws SQLException {
-		return FireboltResultSet.empty();
+	public ResultSet getColumnPrivileges(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern) throws SQLException {
+		List<com.firebolt.jdbc.QueryResult.Column> columns = Stream.of(
+				entry(TABLE_CAT, TEXT),
+				entry(TABLE_SCHEM, TEXT),
+				entry(TABLE_NAME, TEXT),
+				entry(COLUMN_NAME, TEXT),
+				entry(GRANTOR, TEXT),
+				entry(GRANTEE, TEXT),
+				entry(PRIVILEGE, TEXT),
+				entry(IS_GRANTABLE, TEXT)
+		).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList());
+
+		List<List<?>> rows = new ArrayList<>();
+		String query = MetadataUtil.getColumnsQuery(schemaPattern, tableNamePattern, columnNamePattern);
+		try (Statement statement = connection.createStatement();
+			 ResultSet columnDescription = statement.executeQuery(query)) {
+			while (columnDescription.next()) {
+				rows.add(Arrays.asList(connection.getCatalog(),
+						columnDescription.getString("table_schema"),
+						columnDescription.getString("table_name"),
+						columnDescription.getString("column_name"),
+						null,  // grantor
+						null,  // grantee
+						null,  // privilege
+						"NO")); // is_grantable
+			}
+		}
+		return FireboltResultSet.of(QueryResult.builder().columns(columns).rows(rows).build());
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public ResultSet getTablePrivileges(String catalog, String schemaPattern, String tableNamePattern) throws SQLException {
-		return FireboltResultSet.empty();
+		List<com.firebolt.jdbc.QueryResult.Column> columns = Stream.of(
+				entry(TABLE_CAT, TEXT),
+				entry(TABLE_SCHEM, TEXT),
+				entry(TABLE_NAME, TEXT),
+				entry(GRANTOR, TEXT),
+				entry(GRANTEE, TEXT),
+				entry(PRIVILEGE, TEXT),
+				entry(IS_GRANTABLE, TEXT)
+		).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList());
+
+		List<List<?>> rows = new ArrayList<>();
+		String query = MetadataUtil.getTablesQuery(catalog, schemaPattern, tableNamePattern, new String[] {"FACT", "DIMENSION"});
+		try (Statement statement = connection.createStatement();
+			 ResultSet columnDescription = statement.executeQuery(query)) {
+			while (columnDescription.next()) {
+				rows.add(Arrays.asList(connection.getCatalog(),
+						columnDescription.getString("table_schema"),
+						columnDescription.getString("table_name"),
+						null,  // grantor
+						null,  // grantee
+						null,  // privilege
+						"NO")); // is_grantable
+			}
+		}
+		return FireboltResultSet.of(QueryResult.builder().columns(columns).rows(rows).build());
 	}
 
 	@Override
@@ -1457,10 +1469,25 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public ResultSet getIndexInfo(String catalog, String schema, String table, boolean unique, boolean approximate) throws SQLException {
-		return FireboltResultSet.empty();
+		return FireboltResultSet.of(QueryResult.builder()
+				.columns(Stream.of(
+						entry(TABLE_CAT, TEXT),
+						entry(TABLE_SCHEM, TEXT),
+						entry(TABLE_NAME, TEXT),
+						entry(NON_UNIQUE, BOOLEAN),
+						entry(INDEX_QUALIFIER, TEXT),
+						entry(INDEX_NAME, TEXT),
+						entry(TYPE, INTEGER), // short
+						entry(ORDINAL_POSITION, INTEGER), // short
+						entry(COLUMN_NAME, TEXT),
+						entry(ASC_OR_DESC, TEXT),
+						entry(CARDINALITY, BIG_INT), // long
+						entry(PAGES, BIG_INT), // long
+						entry(FILTER_CONDITION, INTEGER)
+				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
+				.rows(List.of())
+				.build());
 	}
 
 	@Override

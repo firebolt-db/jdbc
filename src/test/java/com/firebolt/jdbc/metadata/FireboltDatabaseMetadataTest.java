@@ -3,6 +3,7 @@ package com.firebolt.jdbc.metadata;
 import com.firebolt.jdbc.CheckedFunction;
 import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.QueryResult.Column;
+import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
@@ -46,12 +47,16 @@ import static com.firebolt.jdbc.metadata.MetadataColumns.COLUMN_NAME;
 import static com.firebolt.jdbc.metadata.MetadataColumns.COLUMN_SIZE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.DATA_TYPE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.DECIMAL_DIGITS;
+import static com.firebolt.jdbc.metadata.MetadataColumns.GRANTEE;
+import static com.firebolt.jdbc.metadata.MetadataColumns.GRANTOR;
 import static com.firebolt.jdbc.metadata.MetadataColumns.IS_AUTOINCREMENT;
 import static com.firebolt.jdbc.metadata.MetadataColumns.IS_GENERATEDCOLUMN;
+import static com.firebolt.jdbc.metadata.MetadataColumns.IS_GRANTABLE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.IS_NULLABLE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.NULLABLE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.NUM_PREC_RADIX;
 import static com.firebolt.jdbc.metadata.MetadataColumns.ORDINAL_POSITION;
+import static com.firebolt.jdbc.metadata.MetadataColumns.PRIVILEGE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.REF_GENERATION;
 import static com.firebolt.jdbc.metadata.MetadataColumns.REMARKS;
 import static com.firebolt.jdbc.metadata.MetadataColumns.SCOPE_CATALOG;
@@ -97,7 +102,7 @@ class FireboltDatabaseMetadataTest {
 	@Mock
 	private FireboltStatement statement;
 
-	private FireboltDatabaseMetadata fireboltDatabaseMetadata;
+	private DatabaseMetaData fireboltDatabaseMetadata;
 
 	@BeforeEach
 	void init() throws SQLException {
@@ -105,7 +110,7 @@ class FireboltDatabaseMetadataTest {
 		lenient().when(fireboltConnection.createStatement(any())).thenReturn(statement);
 		lenient().when(fireboltConnection.createStatement()).thenReturn(statement);
 		lenient().when(fireboltConnection.getCatalog()).thenReturn("db_name");
-		lenient().when(fireboltConnection.getSessionProperties()).thenReturn(FireboltProperties.builder().database("my-db").build());
+		lenient().when(fireboltConnection.getSessionProperties()).thenReturn(FireboltProperties.builder().database("my-db").principal("the-user").build());
 		lenient().when(statement.executeQuery(anyString())).thenReturn(FireboltResultSet.empty());
 	}
 
@@ -252,6 +257,35 @@ class FireboltDatabaseMetadataTest {
 	}
 
 	@Test
+	void shouldGetColumnPrivileges() throws SQLException {
+		String expectedQuery = "SELECT table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns WHERE table_name LIKE 'c' AND column_name LIKE 'd' AND table_schema LIKE 'b'";
+
+		ResultSet expectedResultSet = FireboltResultSet.of(QueryResult.builder()
+				.columns(Arrays.asList(Column.builder().name(TABLE_CAT).type(TEXT).build(),
+						Column.builder().name(TABLE_SCHEM).type(TEXT).build(),
+						Column.builder().name(TABLE_NAME).type(TEXT).build(),
+						Column.builder().name(COLUMN_NAME).type(TEXT).build(),
+						Column.builder().name(GRANTOR).type(TEXT).build(),
+						Column.builder().name(GRANTEE).type(TEXT).build(),
+						Column.builder().name(PRIVILEGE).type(TEXT).build(),
+						Column.builder().name(IS_GRANTABLE).type(TEXT).build()))
+				.rows(Collections.singletonList(Arrays.asList("db_name", "Tutorial_11_04", // schema
+						"D2_TIMESTAMP", // table name
+						"id", // column name
+						null, // grantor
+						null, // grantee
+						null, // privilege
+						"NO")))
+				.build());
+
+		when(statement.executeQuery(expectedQuery)).thenReturn(new FireboltResultSet(getInputStreamForGetColumns()));
+
+		ResultSet resultSet = fireboltDatabaseMetadata.getColumnPrivileges("a", "b", "c", "d");
+		verify(statement).executeQuery(expectedQuery);
+		AssertionUtil.assertResultSetEquality(expectedResultSet, resultSet);
+	}
+
+	@Test
 	void shouldGetTypeInfo() throws SQLException {
 		ResultSet resultSet = fireboltDatabaseMetadata.getTypeInfo();
 		ResultSet expectedTypeInfo = new FireboltResultSet(getExpectedTypeInfo());
@@ -280,6 +314,30 @@ class FireboltDatabaseMetadataTest {
 						Column.builder().name(TYPE_NAME).type(TEXT).build(),
 						Column.builder().name(SELF_REFERENCING_COL_NAME).type(TEXT).build(),
 						Column.builder().name(REF_GENERATION).type(TEXT).build()))
+				.rows(expectedRows).build());
+
+		AssertionUtil.assertResultSetEquality(expectedResultSet, resultSet);
+	}
+
+	@Test
+	void shouldGetTablePrivileges() throws SQLException {
+		String expectedSql = "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('FACT', 'DIMENSION') AND table_schema LIKE 'def%' AND table_name LIKE 'tab%' order by table_schema, table_name";
+		when(statement.executeQuery(expectedSql)).thenReturn(new FireboltResultSet(getInputStreamForGetTables()));
+		ResultSet resultSet = fireboltDatabaseMetadata.getTablePrivileges("catalog", "def%", "tab%");
+		verify(statement).executeQuery(expectedSql);
+
+		List<List<?>> expectedRows = List.of(
+				Arrays.asList("db_name", "public", "ex_lineitem", null, null, null, "NO"),
+				Arrays.asList("db_name", "public", "test_1", null, null, null, "NO"));
+
+		ResultSet expectedResultSet = FireboltResultSet.of(QueryResult.builder()
+				.columns(Arrays.asList(Column.builder().name(TABLE_CAT).type(TEXT).build(),
+						Column.builder().name(TABLE_SCHEM).type(TEXT).build(),
+						Column.builder().name(TABLE_NAME).type(TEXT).build(),
+						Column.builder().name(GRANTOR).type(TEXT).build(),
+						Column.builder().name(GRANTEE).type(TEXT).build(),
+						Column.builder().name(PRIVILEGE).type(TEXT).build(),
+						Column.builder().name(IS_GRANTABLE).type(TEXT).build()))
 				.rows(expectedRows).build());
 
 		AssertionUtil.assertResultSetEquality(expectedResultSet, resultSet);
@@ -414,7 +472,7 @@ class FireboltDatabaseMetadataTest {
 
 
 	@Test
-	void corelationNames() throws SQLException {
+	void correlationNames() throws SQLException {
 		assertTrue(fireboltDatabaseMetadata.supportsTableCorrelationNames());
 		assertFalse(fireboltDatabaseMetadata.supportsDifferentTableCorrelationNames());
 	}
@@ -428,6 +486,61 @@ class FireboltDatabaseMetadataTest {
 	@Test
 	void supportsGroupBy() throws SQLException {
 		assertTrue(fireboltDatabaseMetadata.supportsGroupBy());
+	}
+
+	@Test
+	void supportsGroupByUnrelated() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsGroupByUnrelated());
+	}
+
+	@Test
+	void supportsGroupByBeyondSelect() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsGroupByBeyondSelect());
+	}
+
+	@Test
+	void supportsLikeEscapeClause() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsLikeEscapeClause());
+	}
+
+	@Test
+	void supportsMultipleResultSets() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsMultipleResultSets());
+	}
+
+	@Test
+	void supportsMinimumSQLGrammar() throws SQLException {
+		assertTrue(fireboltDatabaseMetadata.supportsMinimumSQLGrammar());
+	}
+
+	@Test
+	void supportsCoreSQLGrammar() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsCoreSQLGrammar());
+	}
+
+	@Test
+	void supportsExtendedSQLGrammar() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsExtendedSQLGrammar());
+	}
+
+	@Test
+	void supportsANSI92EntryLevelSQL() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsANSI92EntryLevelSQL());
+	}
+
+	@Test
+	void supportsANSI92IntermediateSQL() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsANSI92IntermediateSQL());
+	}
+
+	@Test
+	void supportsANSI92FullSQL() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsANSI92FullSQL());
+	}
+
+	@Test
+	void supportsIntegrityEnhancementFacility() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsIntegrityEnhancementFacility());
 	}
 
 	@Test
@@ -445,6 +558,12 @@ class FireboltDatabaseMetadataTest {
 		}
 		assertFalse(fireboltDatabaseMetadata.supportsSavepoints());
 		assertFalse(fireboltDatabaseMetadata.autoCommitFailureClosesAllResultSets());
+
+		assertFalse(fireboltDatabaseMetadata.supportsOpenCursorsAcrossCommit());
+		assertFalse(fireboltDatabaseMetadata.supportsOpenCursorsAcrossRollback());
+		assertFalse(fireboltDatabaseMetadata.supportsOpenStatementsAcrossCommit());
+		assertFalse(fireboltDatabaseMetadata.supportsOpenStatementsAcrossRollback());
+		assertFalse(fireboltDatabaseMetadata.dataDefinitionIgnoredInTransactions());
 	}
 
 	@Test
@@ -490,6 +609,7 @@ class FireboltDatabaseMetadataTest {
 		assertFalse(fireboltDatabaseMetadata.supportsSchemasInProcedureCalls());
 		assertFalse(fireboltDatabaseMetadata.supportsSchemasInTableDefinitions());
 		assertFalse(fireboltDatabaseMetadata.supportsSchemasInIndexDefinitions());
+		assertFalse(fireboltDatabaseMetadata.supportsSchemasInPrivilegeDefinitions());
 	}
 
 	@Test
@@ -505,8 +625,30 @@ class FireboltDatabaseMetadataTest {
 		assertEquals(63, fireboltDatabaseMetadata.getMaxCatalogNameLength());
 		assertEquals(63, fireboltDatabaseMetadata.getMaxTableNameLength());
 		assertEquals(1000, fireboltDatabaseMetadata.getMaxColumnsInTable());
+		assertEquals(0x40000, fireboltDatabaseMetadata.getMaxBinaryLiteralLength());
+		assertEquals(0x40000, fireboltDatabaseMetadata.getMaxCharLiteralLength());
+		assertEquals(65536, fireboltDatabaseMetadata.getMaxColumnsInGroupBy());
+		assertEquals(16384, fireboltDatabaseMetadata.getMaxColumnsInOrderBy());
+		assertEquals(8192, fireboltDatabaseMetadata.getMaxColumnsInSelect());
+		assertEquals(0, fireboltDatabaseMetadata.getMaxColumnsInIndex());
+		assertEquals(0, fireboltDatabaseMetadata.getMaxConnections());
+		assertEquals(0, fireboltDatabaseMetadata.getMaxCursorNameLength());
+		assertEquals(0, fireboltDatabaseMetadata.getMaxIndexLength());
+		assertEquals(0, fireboltDatabaseMetadata.getMaxProcedureNameLength());
+		assertEquals(0, fireboltDatabaseMetadata.getMaxStatements());
+		assertEquals(63, fireboltDatabaseMetadata.getMaxUserNameLength());
+		assertEquals(0, fireboltDatabaseMetadata.getMaxTablesInSelect());
 	}
 
+	@Test
+	void supportsMultipleOpenResults() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsMultipleOpenResults());
+	}
+
+	@Test
+	void supportsGetGeneratedKeys() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsGetGeneratedKeys());
+	}
 
 	@Test
 	void supportsNonNullableColumns() throws SQLException {
@@ -551,6 +693,12 @@ class FireboltDatabaseMetadataTest {
 	}
 
 	@Test
+	void positioned() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsPositionedDelete());
+		assertFalse(fireboltDatabaseMetadata.supportsPositionedUpdate());
+	}
+
+	@Test
 	void emptyResultSets() throws SQLException {
 		assertFalse(fireboltDatabaseMetadata.getProcedureColumns(null, null, null, null).next());
 		assertFalse(fireboltDatabaseMetadata.getUDTs(null, null, null, null).next());
@@ -567,6 +715,7 @@ class FireboltDatabaseMetadataTest {
 		assertFalse(fireboltDatabaseMetadata.getCrossReference(null, null, null, null, null, null).next());
 		assertFalse(fireboltDatabaseMetadata.getClientInfoProperties().next());
 		assertFalse(fireboltDatabaseMetadata.getPseudoColumns(null, null, null, null).next());
+		assertFalse(fireboltDatabaseMetadata.getIndexInfo(null, null, null, true, true).next());
 	}
 
 	@Test
@@ -633,6 +782,68 @@ class FireboltDatabaseMetadataTest {
 	@Test
 	void generatedKeyAlwaysReturned() throws SQLException {
 		assertFalse(fireboltDatabaseMetadata.generatedKeyAlwaysReturned());
+	}
+
+	@Test
+	void allProceduresAreCallable() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.allProceduresAreCallable());
+	}
+
+	@Test
+	void allTablesAreSelectable() throws SQLException {
+		assertTrue(fireboltDatabaseMetadata.allTablesAreSelectable());
+	}
+
+	@Test
+	void getUserName() throws SQLException {
+		assertEquals("the-user", fireboltDatabaseMetadata.getUserName());
+	}
+
+	@Test
+	void supportsSelectForUpdate() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsSelectForUpdate());
+	}
+
+	@Test
+	void supportsStoredProcedures() throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.supportsStoredProcedures());
+	}
+
+	@Test
+	void supportsSubqueries() throws SQLException {
+		assertTrue(fireboltDatabaseMetadata.supportsSubqueriesInComparisons());
+		assertTrue(fireboltDatabaseMetadata.supportsSubqueriesInExists());
+		assertTrue(fireboltDatabaseMetadata.supportsSubqueriesInIns());
+		assertFalse(fireboltDatabaseMetadata.supportsSubqueriesInQuantifieds());
+		assertTrue(fireboltDatabaseMetadata.supportsCorrelatedSubqueries());
+	}
+
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			ResultSet.TYPE_FORWARD_ONLY + "," + ResultSet.CONCUR_READ_ONLY + ",true",
+			ResultSet.TYPE_FORWARD_ONLY + "," + ResultSet.CONCUR_UPDATABLE + ",false",
+			ResultSet.TYPE_SCROLL_INSENSITIVE + "," + ResultSet.CONCUR_READ_ONLY + ",false",
+			ResultSet.TYPE_SCROLL_INSENSITIVE + "," + ResultSet.CONCUR_UPDATABLE + ",false",
+			ResultSet.TYPE_SCROLL_SENSITIVE + "," + ResultSet.CONCUR_READ_ONLY + ",false",
+			ResultSet.TYPE_SCROLL_SENSITIVE + "," + ResultSet.CONCUR_UPDATABLE + ",false",
+	})
+	void supportsResultSetConcurrency(int type, int concurrency, boolean expected) throws SQLException {
+		assertEquals(expected, fireboltDatabaseMetadata.supportsResultSetConcurrency(type, concurrency));
+	}
+
+	@ParameterizedTest
+	@ValueSource(ints = {ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE})
+	void writeability(int type) throws SQLException {
+		assertFalse(fireboltDatabaseMetadata.ownUpdatesAreVisible(type));
+		assertFalse(fireboltDatabaseMetadata.ownDeletesAreVisible(type));
+		assertFalse(fireboltDatabaseMetadata.ownInsertsAreVisible(type));
+		assertFalse(fireboltDatabaseMetadata.othersUpdatesAreVisible(type));
+		assertFalse(fireboltDatabaseMetadata.othersDeletesAreVisible(type));
+		assertFalse(fireboltDatabaseMetadata.othersInsertsAreVisible(type));
+		assertFalse(fireboltDatabaseMetadata.updatesAreDetected(type));
+		assertFalse(fireboltDatabaseMetadata.deletesAreDetected(type));
+		assertFalse(fireboltDatabaseMetadata.insertsAreDetected(type));
 	}
 
 	private void getFunctions(CheckedFunction<DatabaseMetaData, ResultSet> getter, String functionNamePattern, boolean filled, boolean allowDuplicates) throws SQLException {
