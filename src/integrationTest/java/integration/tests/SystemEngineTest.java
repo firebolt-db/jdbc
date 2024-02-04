@@ -152,6 +152,7 @@ public class SystemEngineTest extends IntegrationTest {
 				Assert.assertThrows(SQLException.class, () -> systemConnection.createStatement().executeUpdate(format("USE %s", USE_DATABASE_NAME))); // DB does not exist
 				systemConnection.createStatement().executeUpdate(format("CREATE DATABASE IF NOT EXISTS %s", USE_DATABASE_NAME)); // create DB
 				systemConnection.createStatement().executeUpdate(format("USE %s", USE_DATABASE_NAME)); // Now this should succeed
+				assertThrows(SQLException.class, () -> systemConnection.createStatement().executeUpdate(format("CREATE TABLE %s ( id LONG)", TABLE2))); // create table2 in other DB: right now it fails on server side
 				assertNull(getTableDbName(systemConnection, TABLE1)); // table1 does not exist here
 			} finally {
 				// now clean up everything
