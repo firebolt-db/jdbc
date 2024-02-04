@@ -7,6 +7,7 @@ import kotlin.collections.ArrayDeque;
 import lombok.CustomLog;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -241,6 +242,14 @@ class StatementTest extends IntegrationTest {
 	void empty(String sql) throws SQLException {
 		try (Connection connection = createConnection()) {
 			assertFalse(connection.createStatement().execute(sql));
+		}
+	}
+
+	@Test
+	@Tag("v1")
+	void divisionByZero() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			assertThrows(SQLException.class, () -> statement.executeQuery("SELECT 1/0"));
 		}
 	}
 

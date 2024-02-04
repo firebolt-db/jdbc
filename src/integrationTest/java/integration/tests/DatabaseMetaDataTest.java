@@ -128,7 +128,7 @@ class DatabaseMetaDataTest extends IntegrationTest {
 			",,,VIEW,query_history;tables,integration_test",
 
 			// table name pattern
-			",,%quer%,,running_queries;query_history,tables;columns;databases",
+			",,%account%,,service_account_users;service_accounts,tables;columns;databases",
 			",,%test,,integration_test,tables;columns;databases",
 
 			// schema name pattern
@@ -136,7 +136,7 @@ class DatabaseMetaDataTest extends IntegrationTest {
 			",information_schema,,,tables;columns,integration_test",
 
 			// They say that catalog schema is deprecated and will be removed. In this case this test will fail and should be changed or removed
-			",catalog,,,running_queries;query_history,users;views;integration_test",
+			",catalog,,,query_history,users;views;integration_test",
 	})
 	void getTables(String catalog, String schemaPattern, String tableNamePattern, String typesStr, String expectedNamesStr, String unexpectedNamesStr) throws SQLException {
 		String[] types = typesStr == null ? null : typesStr.split(";");
