@@ -21,14 +21,6 @@ on:
         description: 'Account'
         required: true
         default: 'developer'
-      environment:
-        description: 'Environment to run the tests against'
-        type: choice
-        required: true
-        default: 'staging'
-        options:
-          - dev
-          - staging
       run-v1:
         description: 'Run tests against Firebolt DB v1'
         required: true
@@ -53,12 +45,9 @@ jobs:
     with:
       database: ${{ github.event.inputs.database1 }}
       engine: ${{ github.event.inputs.engine1 }}
-      environment: ${{ github.event.inputs.environment }}
     secrets:
       FIREBOLT_USERNAME_STAGING: ${{ secrets.FIREBOLT_USERNAME_STAGING }}
       FIREBOLT_PASSWORD_STAGING: ${{ secrets.FIREBOLT_PASSWORD_STAGING }}
-      FIREBOLT_USERNAME_DEV: ${{ secrets.FIREBOLT_USERNAME_DEV }}
-      FIREBOLT_PASSWORD_DEV: ${{ secrets.FIREBOLT_PASSWORD_DEV }}
 
   run-integration-tests2:
     if: ${{ github.event.inputs.run-v2 == 'true' }}
@@ -66,11 +55,8 @@ jobs:
     with:
       database: ${{ github.event.inputs.database2 }}
       engine: ${{ github.event.inputs.engine2 }}
-      environment: ${{ github.event.inputs.environment }}
       account: ${{ github.event.inputs.account }}
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
-      FIREBOLT_CLIENT_ID_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_NEW_IDN }}
-      FIREBOLT_CLIENT_SECRET_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_NEW_IDN }}
 

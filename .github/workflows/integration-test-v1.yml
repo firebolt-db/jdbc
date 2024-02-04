@@ -12,19 +12,10 @@ on:
         description: 'Engine - a new one will be created if not provided'
         required: false
         type: string
-      environment:
-        description: 'Environment to run the tests against'
-        type: string
-        required: true
-        default: 'staging'
     secrets:
       FIREBOLT_USERNAME_STAGING:
         required: true
       FIREBOLT_PASSWORD_STAGING:
-        required: true
-      FIREBOLT_USERNAME_DEV:
-        required: true
-      FIREBOLT_PASSWORD_DEV:
         required: true
 
 jobs:
@@ -48,25 +39,14 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Determine env variables
-        run: |
-          if [ "${{ github.event.inputs.environment }}" == 'staging' ]; then
-             echo "USERNAME=${{ secrets.FIREBOLT_USERNAME_STAGING }}" >> "$GITHUB_ENV"
-             echo "PASSWORD=${{ secrets.FIREBOLT_PASSWORD_STAGING }}" >> "$GITHUB_ENV"
-             echo "EXCLUDE_ENV=dev" >> "$GITHUB_ENV"
-          else
-             echo "USERNAME=${{ secrets.FIREBOLT_USERNAME_DEV }}" >> "$GITHUB_ENV"
-             echo "PASSWORD=${{ secrets.FIREBOLT_PASSWORD_DEV }}" >> "$GITHUB_ENV"
-             echo "EXCLUDE_ENV=staging" >> "$GITHUB_ENV"
-          fi
       - name: Setup database and engine
         id: setup
         if: ${{ github.event.inputs.database == '' }}
         uses: firebolt-db/integration-testing-setup@v1
         with:
-          firebolt-username: ${{ env.USERNAME }}
-          firebolt-password: ${{ env.PASSWORD }}
-          api-endpoint: "api.${{ github.event.inputs.environment }}.firebolt.io"
+          firebolt-username: ${{ secrets.FIREBOLT_USERNAME_STAGING }}
+          firebolt-password: ${{ secrets.FIREBOLT_PASSWORD_STAGING }}
+          api-endpoint: "api.staging.firebolt.io"
           region: "us-east-1"
           instance-type: "B2"
 
@@ -89,4 +69,4 @@ jobs:
           fi
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Dapi=api.${{ github.event.inputs.environment }}.firebolt.io -Dpassword="${{ env.PASSWORD }}" -Duser="${{ env.USERNAME }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags=v2,${{ env.EXCLUDE_ENV }}
+        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Dapi=api.${{ github.event.inputs.environment }}.firebolt.io -Dpassword="${{ secrets.FIREBOLT_PASSWORD_STAGING }}" -Duser="${{ secrets.FIREBOLT_USERNAME_STAGING }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags=v2
