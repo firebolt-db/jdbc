@@ -70,7 +70,7 @@ dependencies {
 
     implementation fileTree(dir: 'libs', includes: ['*.jar'])
 
-    compileOnly 'org.slf4j:slf4j-api:2.0.11'
+    compileOnly 'org.slf4j:slf4j-api:2.0.12'
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
     testCompileOnly 'org.projectlombok:lombok:1.18.30'
@@ -88,7 +88,7 @@ dependencies {
     testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
     testImplementation 'com.squareup.okhttp3:okhttp-tls:4.12.0'
     testImplementation 'io.zonky.test:embedded-postgres:2.0.6'
-    testCompileOnly 'org.slf4j:slf4j-api:2.0.11'
+    testCompileOnly 'org.slf4j:slf4j-api:2.0.12'
     testCommonImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
     testImplementation sourceSets.testCommon.output
     compileTestJava.dependsOn processTestResources
