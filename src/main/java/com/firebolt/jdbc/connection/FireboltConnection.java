@@ -119,21 +119,26 @@ public abstract class FireboltConnection implements Connection {
 	}
 
 	private static int getUrlVersion(String url, Properties connectionSettings) {
+		System.out.println("getUrlVersion(" + url + "," +connectionSettings + ")");
 		Pattern urlWithHost = Pattern.compile("jdbc:firebolt://api\\.\\w+\\.firebolt\\.io");
 		if (!urlWithHost.matcher(url).find()) {
+			System.out.println("getUrlVersion 1 return 2");
 			return 2; // new URL format
 		}
 		// old URL format
 		Properties propertiesFromUrl = UrlUtil.extractProperties(url);
 		Properties allSettings = PropertyUtil.mergeProperties(propertiesFromUrl, connectionSettings);
 		if (allSettings.containsKey("client_id") && allSettings.containsKey("client_secret") && !allSettings.containsKey("user") && !allSettings.containsKey("password")) {
+			System.out.println("getUrlVersion 2 return 2");
 			return 2;
 		}
 		FireboltProperties props = new FireboltProperties(new Properties[] {propertiesFromUrl, connectionSettings});
 		String principal = props.getPrincipal();
 		if (principal != null && principal.contains("@")) {
+			System.out.println("getUrlVersion 3 return 1");
 			return 1;
 		}
+		System.out.println("getUrlVersion 4 return 1");
 		return 2;
 	}
 

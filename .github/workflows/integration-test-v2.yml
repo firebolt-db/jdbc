@@ -74,4 +74,4 @@ jobs:
           fi
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=${{ github.event.inputs.environment }} -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ github.event.inputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags=v1
+        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=staging -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ github.event.inputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags=v1
