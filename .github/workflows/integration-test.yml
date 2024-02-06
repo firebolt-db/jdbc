@@ -47,7 +47,7 @@ jobs:
       engine: ${{ github.event.inputs.engine1 }}
     secrets:
       FIREBOLT_STG_USERNAME: ${{ secrets.FIREBOLT_STG_USERNAME }}
-      FIREBOLT_STG_PASSWORD: ${{ secrets.FIREBOLT_STG_USERNAME }}
+      FIREBOLT_STG_PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
 
   run-integration-tests2:
     if: ${{ github.event.inputs.run-v2 == 'true' }}
