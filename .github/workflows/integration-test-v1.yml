@@ -13,9 +13,9 @@ on:
         required: false
         type: string
     secrets:
-      FIREBOLT_USERNAME_STAGING:
+      FIREBOLT_STG_USERNAME:
         required: true
-      FIREBOLT_PASSWORD_STAGING:
+      FIREBOLT_STG_PASSWORD:
         required: true
 
 jobs:
@@ -44,8 +44,8 @@ jobs:
         if: ${{ github.event.inputs.database == '' }}
         uses: firebolt-db/integration-testing-setup@v1
         with:
-          firebolt-username: ${{ secrets.FIREBOLT_USERNAME_STAGING }}
-          firebolt-password: ${{ secrets.FIREBOLT_PASSWORD_STAGING }}
+          firebolt-username: ${{ secrets.FIREBOLT_STG_USERNAME }}
+          firebolt-password: ${{ secrets.FIREBOLT_STG_PASSWORD }}
           api-endpoint: "api.staging.firebolt.io"
           region: "us-east-1"
           instance-type: "B2"
@@ -69,4 +69,4 @@ jobs:
           fi
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Dapi=api.${{ github.event.inputs.environment }}.firebolt.io -Dpassword="${{ secrets.FIREBOLT_PASSWORD_STAGING }}" -Duser="${{ secrets.FIREBOLT_USERNAME_STAGING }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags=v2
+        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Dapi=api.staging.firebolt.io -Dpassword="${{ secrets.FIREBOLT_STG_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_STG_USERNAME }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags=v2

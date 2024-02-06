@@ -39,8 +39,8 @@ jobs:
         if: ${{ github.event.inputs.database == '' }}
         uses: firebolt-db/integration-testing-setup@v1
         with:
-          firebolt-username: ${{ secrets.FIREBOLT_USERNAME_STAGING }}
-          firebolt-password: ${{ secrets.FIREBOLT_PASSWORD_STAGING }}
+          firebolt-username: ${{ secrets.FIREBOLT_STG_USERNAME }}
+          firebolt-password: ${{ secrets.FIREBOLT_STG_PASSWORD }}
           api-endpoint: "api.staging.firebolt.io"
           region: "us-east-1"
           instance-type: "C2"
