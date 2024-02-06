@@ -1,33 +1,45 @@
 package integration.tests;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import integration.IntegrationTest;
+import lombok.CustomLog;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-
-import integration.IntegrationTest;
-import lombok.CustomLog;
+import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
 class TimeoutTest extends IntegrationTest {
+	private static final int MIN_TIME_SECONDS = 350;
+	private long startTime;
+
+	@BeforeEach
+	void before() {
+		startTime = System.nanoTime();
+	}
+
+	@AfterEach
+	void after() {
+		long endTime = System.nanoTime();
+		long elapsedTimeSeconds = (endTime - startTime) / 1_000_000_000;
+		log.info("Time elapsed: {} seconds", elapsedTimeSeconds);
+		assertTrue(elapsedTimeSeconds > MIN_TIME_SECONDS, format("Test is too short. It took %d but should take at least %d seconds", elapsedTimeSeconds, MIN_TIME_SECONDS));
+	}
 
 	@Test
-	@Timeout(value = 7, unit = TimeUnit.MINUTES)
+	@Timeout(value = 10, unit = TimeUnit.MINUTES)
 	@Tag("slow")
 	void shouldExecuteRequestWithoutTimeout() throws SQLException {
-		long startTime = System.nanoTime();
 		try (Connection con = createConnection(); Statement stmt = con.createStatement()) {
-			stmt.executeQuery("SELECT checksum(*) FROM generate_series(1, 100000000000)");
-		} finally {
-			log.info("Time elapsed: " + (System.nanoTime() - startTime) / 1_000_000_000 + " seconds");
+			stmt.executeQuery("SELECT checksum(*) FROM generate_series(1, 300000000000)");
 		}
 	}
 }
