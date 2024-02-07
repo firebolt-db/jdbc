@@ -45,9 +45,9 @@ public enum FireboltSessionProperty {
 			"compress", true, Boolean.class, "Whether to compress transferred data or not. Compressed by default"),
 	DATABASE("database", null, String.class, "default database name"),
 	// Typically client_secret property should be used, but password is the standard JDBC property supported by all tools, so it is silently defined here as alias. Also see CLIENT_ID.
-	CLIENT_SECRET("client_secret", null, String.class, "client secret - null by default", "password"),
+	CLIENT_SECRET("client_secret", null, String.class, "client secret - null by default", "password", "secret"),
 	// Typically client_id property should be used, but user is the standard JDBC property supported by all tools, so it is silently defined here as alias. Also see CLIENT_SECRET
-	CLIENT_ID("client_id", null, String.class, "client ID - null by default", "user"),
+	CLIENT_ID("client_id", null, String.class, "client ID - null by default", "user", "principal"),
 	HOST("host", null, String.class, "Firebolt host - null by default"),
 	PORT("port", null, Integer.class, "Firebolt port - null by default"),
 	ENGINE("engine", null, String.class, "engine - null by default", "engine_name"),

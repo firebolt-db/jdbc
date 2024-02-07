@@ -33,7 +33,7 @@ public class PropertyUtil {
 	 * @return an array containing the properties used by the driver
 	 */
 	public DriverPropertyInfo[] getPropertyInfo(String url, Properties properties) {
-		return mapProperties(getNonDeprecatedProperties(), mergeProperties(extractProperties(url), properties)).toArray(new DriverPropertyInfo[0]);
+		return mapProperties(getNonDeprecatedProperties(), new FireboltProperties(new Properties[] {extractProperties(url), properties}).toProperties()).toArray(new DriverPropertyInfo[0]);
 	}
 
 	/**
