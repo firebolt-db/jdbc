@@ -98,6 +98,7 @@ dependencies {
     compileTestCommonJava.dependsOn processTestResources
     compileTestCommonJava.dependsOn processIntegrationTestResources
     compileIntegrationTestJava.dependsOn processIntegrationTestResources
+    javadoc.options.addStringOption('Xdoclint:none', '-quiet')
 }
 
 test {
