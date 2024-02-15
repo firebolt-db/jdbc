@@ -3,13 +3,19 @@ package integration.tests;
 import integration.IntegrationTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -28,6 +34,19 @@ public class SpecialValuesTest extends IntegrationTest {
     void afterAll() throws SQLException {
         systemConnection.close();
         userConnection.close();
+    }
+
+    @Test
+    void longLiteral() throws FileNotFoundException, SQLException {
+        try (Statement statement = systemConnection.createStatement();  PrintWriter pw = new PrintWriter(new FileOutputStream("/tmp/myresult"))) {
+            for (int i = 1; i < 1000_000; i*=2) {
+                String columns = IntStream.range(0, i).boxed().map(j -> "'a'").collect(Collectors.joining(","));
+                String query = "select " + columns + " from information_schema.users";
+                pw.println(i);
+                pw.flush();
+                statement.executeQuery(query);
+            }
+        }
     }
 
     @ParameterizedTest

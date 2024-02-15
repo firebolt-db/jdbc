@@ -95,4 +95,16 @@ public class MetadataColumns {
 	public static final String FK_NAME = "FK_NAME";
 	public static final String PK_NAME = "PK_NAME";
 	public static final String DEFERRABILITY = "DEFERRABILITY";
+	public static final String GRANTOR = "GRANTOR";
+	public static final String GRANTEE = "GRANTEE";
+	public static final String PRIVILEGE = "PRIVILEGE";
+	public static final String IS_GRANTABLE = "IS_GRANTABLE";
+	public static final String NON_UNIQUE = "NON_UNIQUE";
+	public static final String INDEX_QUALIFIER = "INDEX_QUALIFIER";
+	public static final String INDEX_NAME = "INDEX_NAME";
+	public static final String TYPE = "TYPE";
+	public static final String ASC_OR_DESC = "ASC_OR_DESC";
+	public static final String CARDINALITY = "CARDINALITY";
+	public static final String PAGES = "PAGES";
+	public static final String FILTER_CONDITION = "FILTER_CONDITION";
 }

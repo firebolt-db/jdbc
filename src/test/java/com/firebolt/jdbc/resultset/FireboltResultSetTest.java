@@ -12,15 +12,22 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.sql.Array;
 import java.sql.Date;
 import java.sql.ResultSet;
+import java.sql.RowId;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLXML;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -34,7 +41,9 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Calendar;
 import java.util.TimeZone;
+import java.util.concurrent.Callable;
 
+import static java.lang.String.format;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -76,6 +86,191 @@ class FireboltResultSetTest {
 		assertNotNull(resultSet.getMetaData());
 		assertEquals("any_name", resultSet.getMetaData().getTableName(1));
 		assertEquals("array_db", resultSet.getMetaData().getCatalogName(1));
+	}
+
+	@Test
+	void attributes() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false, fireboltStatement, false);
+		assertEquals(ResultSet.CONCUR_READ_ONLY, resultSet.getConcurrency());
+		assertEquals(ResultSet.FETCH_FORWARD, resultSet.getFetchDirection());
+		assertEquals(ResultSet.HOLD_CURSORS_OVER_COMMIT, resultSet.getHoldability());
+	}
+
+	@Test
+	void setFetchDirection() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false, fireboltStatement, false);
+		resultSet.setFetchDirection(ResultSet.FETCH_FORWARD); // should just work
+		assertThrows(SQLException.class, () -> resultSet.setFetchDirection(ResultSet.FETCH_REVERSE));
+		assertThrows(SQLException.class, () -> resultSet.setFetchDirection(ResultSet.FETCH_UNKNOWN));
+	}
+
+	@Test
+	void getRow() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
+		int i = 0;
+		do {
+			assertEquals(i, resultSet.getRow());
+			i++;
+		} while (resultSet.next());
+	}
+
+	@Test
+	void getStatement() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false, fireboltStatement, false);
+		assertEquals(fireboltStatement, resultSet.getStatement());
+	}
+
+	@Test
+	void unsupportedNavigation() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false, fireboltStatement, false);
+
+		assertThrowsForwardOnly("first", () -> resultSet.first());
+		assertThrowsForwardOnly("last", () -> resultSet.last());
+		assertThrowsForwardOnly("beforeFirst", () -> {resultSet.beforeFirst(); return null;});
+		assertThrowsForwardOnly("afterLast", () -> {resultSet.afterLast(); return null;});
+		assertThrowsForwardOnly("absolute", () -> resultSet.absolute(1));
+		assertThrowsForwardOnly("relative", () -> resultSet.relative(1));
+		assertThrowsForwardOnly("previous", () -> resultSet.previous());
+	}
+
+	private void assertThrowsForwardOnly(String name, Callable<?> method) {
+		assertEquals(format("Cannot call %s() for ResultSet of type TYPE_FORWARD_ONLY", name), assertThrows(SQLException.class, method::call).getMessage());
+	}
+
+	@Test
+	void unsupported() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, false, fireboltStatement, false);
+
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.getCursorName());
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.rowUpdated());
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.rowDeleted());
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.rowInserted());
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.getRowId(1));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.getRowId("no-name"));
+
+		// updates
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNull(1));
+
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBoolean(1, true));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateByte(1, (byte)0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateShort(1, (short)0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateInt(1, 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateLong(1, 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateFloat(1, 0.0f));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateDouble(1, 0.0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBigDecimal(1, new BigDecimal(0)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateString(1, ""));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBytes(1, new byte[0]));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateDate(1, new Date(0)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateTime(1, new Time(0)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateTimestamp(1, new Timestamp(0)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateAsciiStream(1, new ByteArrayInputStream(new byte[0]), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateAsciiStream(1, new ByteArrayInputStream(new byte[0]), 0L));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBinaryStream(1, new ByteArrayInputStream(new byte[0]), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBinaryStream(1, new ByteArrayInputStream(new byte[0]), 0L));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateCharacterStream(1, new StringReader(""), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateCharacterStream(1, new StringReader(""), 0L));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateObject(1, null, 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateObject(1, null));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNull("label"));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBoolean("label", true));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateByte("label", (byte)0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateShort("label", (short)0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateInt("label", 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateLong("label", 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateFloat("label", 0.0f));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateDouble("label", 0.0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBigDecimal("label", new BigDecimal(0)));
+		;
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateString("label", ""));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBytes("label", new byte[0]));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateDate("label", new Date(0)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateTime("label", new Time(0)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateTimestamp("label", new Timestamp(0)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateAsciiStream("label", new ByteArrayInputStream(new byte[0]), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateAsciiStream("label", new ByteArrayInputStream(new byte[0]), 0L));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBinaryStream("label", new ByteArrayInputStream(new byte[0]), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBinaryStream("label", new ByteArrayInputStream(new byte[0]), 0L));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateCharacterStream("label", new StringReader(""), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateObject("label", null, 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateObject("label", null));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.insertRow());
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateRow());
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.deleteRow());
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.refreshRow());
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.cancelRowUpdates());
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.moveToInsertRow());
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.moveToCurrentRow());
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateRef(1, null));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateRef("label", null));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBlob(1, mock(java.sql.Blob.class)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBlob("label", mock(java.sql.Blob.class)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateClob(1, mock(java.sql.Clob.class)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateClob("label", mock(java.sql.Clob.class)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateArray(1, mock(Array.class)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateArray("label", mock(Array.class)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateRowId(1, mock(RowId.class)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateRowId("label", mock(RowId.class)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNString(1, ""));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNString("label", ""));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNClob(1, mock(java.sql.NClob.class)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNClob("label", mock(java.sql.NClob.class)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateSQLXML(1, mock(SQLXML.class)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateSQLXML("", mock(SQLXML.class)));
+
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNCharacterStream(1, new StringReader(""), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNCharacterStream("label", new StringReader(""), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateCharacterStream(1, new StringReader(""), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateCharacterStream(1, new StringReader(""), 0L));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateAsciiStream("label", new ByteArrayInputStream(new byte[0]), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateAsciiStream("label", new ByteArrayInputStream(new byte[0]), 0L));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBinaryStream("label", new ByteArrayInputStream(new byte[0]), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBinaryStream("label", new ByteArrayInputStream(new byte[0]), 0L));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateCharacterStream("label", new StringReader(""), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateCharacterStream("label", new StringReader(""), 0L));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBlob(1, new ByteArrayInputStream(new byte[0]), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBlob("label", new ByteArrayInputStream(new byte[0]), 0L));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBlob(1, new ByteArrayInputStream(new byte[0]), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBlob(1, new ByteArrayInputStream(new byte[0]), 0L));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateClob(1, new StringReader(""), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateClob(1, new StringReader(""), 0L));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateClob("label", new StringReader(""), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateClob("label", new StringReader(""), 0L));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNClob(1, new StringReader(""), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNClob(1, new StringReader(""), 0L));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNClob("label", new StringReader(""), 0));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNClob("label", new StringReader(""), 0L));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNCharacterStream(1, new StringReader("")));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNCharacterStream("label", new StringReader("")));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateAsciiStream(1, new ByteArrayInputStream(new byte[0])));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBinaryStream(1, new ByteArrayInputStream(new byte[0])));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateCharacterStream(1, new StringReader("")));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateAsciiStream("label", new ByteArrayInputStream(new byte[0])));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBinaryStream("label", new ByteArrayInputStream(new byte[0])));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateCharacterStream("label", new StringReader("")));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBlob(1, new ByteArrayInputStream(new byte[0])));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBlob("label", new ByteArrayInputStream(new byte[0])));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateClob(1, new StringReader("")));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateClob("label", new StringReader("")));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNClob(1, new StringReader("")));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNClob("label", new StringReader("")));
+	}
+
+	@Test
+	void fetchSize() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.getFetchSize());
+
+		resultSet.setFetchSize(0); // ignored
+		resultSet.setFetchSize(1); // ignored
+		assertThrows(SQLException.class, () -> resultSet.setFetchSize(-1));
 	}
 
 	@Test
@@ -140,6 +335,16 @@ class FireboltResultSetTest {
 	}
 
 	@Test
+	void shouldGetBigDecimalNull() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
+		resultSet.next();
+		resultSet.next();
+		assertNull(resultSet.getBigDecimal(7));
+		assertNull(resultSet.getBigDecimal("an_integer"));
+	}
+
+	@Test
 	void shouldBeFirstWhenNextRecordIsTheFirstToRead() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
@@ -194,6 +399,14 @@ class FireboltResultSetTest {
 	}
 
 	@Test
+	void shouldThrowIfTypeIsNull() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
+		resultSet.next();
+		assertEquals("The type provided is null", assertThrows(SQLException.class, () -> resultSet.getObject(1, (Class<?>)null)).getMessage());
+	}
+
+	@Test
 	void shouldReturnInt() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
@@ -224,7 +437,6 @@ class FireboltResultSetTest {
 		assertEquals(0, resultSet.getFloat(6));
 		assertEquals(0, resultSet.getFloat("a_double"));
 		assertNull(resultSet.getObject(6, Float.class));
-
 	}
 
 	@Test
@@ -248,6 +460,8 @@ class FireboltResultSetTest {
 		assertEquals(expected, resultSet.getString(3));
 		assertEquals(expected, resultSet.getString("name"));
 		assertEquals(expected, resultSet.getObject(3, String.class));
+		assertEquals(expected, resultSet.getNString(3));
+		assertEquals(expected, resultSet.getNString("name"));
 	}
 
 	@Test
@@ -318,6 +532,8 @@ class FireboltResultSetTest {
 		resultSet.next(); // second line contains \N which represents a null value
 		assertNull(resultSet.getString(3));
 		assertNull(resultSet.getString("name"));
+		assertNull(resultSet.getNString(3));
+		assertNull(resultSet.getNString("name"));
 	}
 
 	@Test
@@ -991,7 +1207,6 @@ class FireboltResultSetTest {
 		assertEquals("Cannot unwrap to " + Runnable.class.getName(), assertThrows(SQLException.class, () -> resultSet.unwrap(Runnable.class)).getMessage());
 	}
 
-
 	@Test
 	void shouldReturnStream() throws SQLException, IOException {
 		inputStream = getInputStreamWithCommonResponseExample();
@@ -1009,6 +1224,22 @@ class FireboltResultSetTest {
 		assertStream(expected, resultSet.getUnicodeStream("name"));
 		assertEquals(expectedStr, IOUtils.toString(resultSet.getCharacterStream(3)));
 		assertEquals(expectedStr, IOUtils.toString(resultSet.getCharacterStream("name")));
+		assertEquals(expectedStr, IOUtils.toString(resultSet.getNCharacterStream(3)));
+		assertEquals(expectedStr, IOUtils.toString(resultSet.getNCharacterStream("name")));
+	}
+
+	@Test
+	void shouldReturnUrl() throws SQLException, MalformedURLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
+		resultSet.next();
+		assertEquals(new URL("http://firebolt.io"), resultSet.getURL(8));
+		assertEquals(new URL("http://firebolt.io"), resultSet.getURL("url"));
+		assertEquals(MalformedURLException.class, assertThrows(SQLException.class, () -> resultSet.getURL(3)).getCause().getClass());
+		assertEquals(MalformedURLException.class, assertThrows(SQLException.class, () -> resultSet.getURL("name")).getCause().getClass());
+		resultSet.next();
+		assertNull(resultSet.getURL(8));
+		assertNull(resultSet.getURL("url"));
 	}
 
 	private void assertStream(byte[] expected, InputStream stream) throws IOException {
