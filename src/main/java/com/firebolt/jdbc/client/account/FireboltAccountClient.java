@@ -10,7 +10,6 @@ import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import lombok.CustomLog;
 import okhttp3.OkHttpClient;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 
@@ -100,7 +99,7 @@ public class FireboltAccountClient extends FireboltClient {
     }
 
     private String createAccountUri(String account, String host, String suffix) {
-        return StringUtils.isEmpty(account) ? format(URI_PREFIX_WITHOUT_ACCOUNT_RESOURCE, host, suffix) : format(URI_PREFIX_WITH_ACCOUNT_RESOURCE, host, account, suffix);
+        return account == null || account.isEmpty() ? format(URI_PREFIX_WITHOUT_ACCOUNT_RESOURCE, host, suffix) : format(URI_PREFIX_WITH_ACCOUNT_RESOURCE, host, account, suffix);
     }
 
 }

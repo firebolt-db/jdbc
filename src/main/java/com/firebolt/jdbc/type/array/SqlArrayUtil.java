@@ -4,10 +4,10 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
+import com.firebolt.jdbc.util.StringUtil;
 import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Array;
 import java.sql.SQLException;
@@ -65,7 +65,7 @@ public class SqlArrayUtil {
 		FireboltDataType arrayBaseType = columnType.getArrayBaseColumnType().getDataType();
 		@SuppressWarnings("java:S6204") // JDK 11 compatible
 		List<String> elements = splitArrayContent(arrayContent, arrayBaseType)
-				.stream().filter(StringUtils::isNotEmpty).map(SqlArrayUtil::removeQuotesAndTransformNull)
+				.stream().filter(s -> s != null && !s.isEmpty()).map(SqlArrayUtil::removeQuotesAndTransformNull)
 				.collect(toList());
 		if (arrayBaseType == FireboltDataType.TUPLE) {
 			return getArrayOfTuples(columnType, elements);
@@ -137,7 +137,7 @@ public class SqlArrayUtil {
 	}
 
 	private static String removeQuotesAndTransformNull(String s) {
-		return isNullValue(s) ? "\\N" : StringUtils.strip(s, "'");
+		return isNullValue(s) ? "\\N" : StringUtil.strip(s, '\'');
 	}
 
 	private static boolean isNullValue(String s) {

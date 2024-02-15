@@ -7,8 +7,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -16,6 +14,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
@@ -169,8 +168,8 @@ public class FireboltProperties {
 
 	private static String getDatabase(Properties properties, String path) throws IllegalArgumentException {
 		String database = getSetting(properties, FireboltSessionProperty.DATABASE);
-		if (StringUtils.isEmpty(database)) {
-			if ("/".equals(path) || StringUtils.isEmpty(path)) {
+		if (database == null || database.isEmpty()) {
+			if ("/".equals(path) || "".equals(path)) {
 				return null;
 			} else {
 				Matcher m = DB_PATH_PATTERN.matcher(path);
@@ -212,12 +211,7 @@ public class FireboltProperties {
 			return (T) clazz.cast(Long.valueOf(val));
 		}
 		if (clazz == boolean.class || clazz == Boolean.class) {
-			boolean boolValue;
-			if (StringUtils.isNumeric(val)) {
-				boolValue = Integer.parseInt(val) > 0;
-			} else {
-				boolValue = Boolean.parseBoolean(val);
-			}
+			boolean boolValue = val.chars().allMatch(Character::isDigit) ? Integer.parseInt(val) > 0 : Boolean.parseBoolean(val);
 			return (T) clazz.cast(boolValue);
 		}
 		return (T) clazz.cast(val);
@@ -240,8 +234,8 @@ public class FireboltProperties {
 		}
 	}
 
-	public void addProperty(Pair<String, String> property) {
-		addProperty(property.getLeft(), property.getRight());
+	public void addProperty(Entry<String, String> property) {
+		addProperty(property.getKey(), property.getValue());
 	}
 
 	public String getHttpConnectionUrl() {

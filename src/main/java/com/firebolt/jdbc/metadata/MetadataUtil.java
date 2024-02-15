@@ -1,14 +1,14 @@
 package com.firebolt.jdbc.metadata;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
-
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.UtilityClass;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
@@ -84,20 +84,20 @@ public class MetadataUtil {
 		 */
 		public String toSql() {
 			StringBuilder query = new StringBuilder();
-			if (StringUtils.isBlank(select)) {
+			if (select == null || select.isBlank()) {
 				throw new IllegalStateException("Cannot create query: SELECT cannot be blank");
 			}
-			if (StringUtils.isBlank(from)) {
+			if (from == null || from.isBlank()) {
 				throw new IllegalStateException("Cannot create query: FROM cannot be blank");
 			}
 
 			query.append("SELECT ").append(select);
 			query.append(" FROM ").append(from);
-			if (StringUtils.isNotBlank(innerJoin)) {
+			if (innerJoin != null && !innerJoin.isBlank()) {
 				query.append(" JOIN ").append(innerJoin);
 			}
 			query.append(getConditionsPart());
-			if (StringUtils.isNotBlank(orderBy)) {
+			if (orderBy != null && !orderBy.isBlank()) {
 				query.append(" order by ").append(orderBy);
 			}
 			return query.toString();

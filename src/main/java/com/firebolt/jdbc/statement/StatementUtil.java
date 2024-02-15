@@ -1,21 +1,22 @@
 package com.firebolt.jdbc.statement;
 
-import java.util.*;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.RegExUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-
 import com.firebolt.jdbc.statement.rawstatement.RawStatement;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
 import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
-
+import com.firebolt.jdbc.util.StringUtil;
 import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @UtilityClass
 @CustomLog
@@ -33,12 +34,11 @@ public class StatementUtil {
 	 * @return true if the statement is a query (eg: SELECT, SHOW).
 	 */
 	public static boolean isQuery(String cleanSql) {
-		if (StringUtils.isNotEmpty(cleanSql)) {
-			cleanSql = cleanSql.replace("(", "");
-			return StringUtils.startsWithAny(cleanSql.toLowerCase(), SELECT_KEYWORDS);
-		} else {
+		if (cleanSql == null || cleanSql.isEmpty()) {
 			return false;
 		}
+		String lowerCaseSql = cleanSql.replace("(", "").toLowerCase();
+		return Arrays.stream(SELECT_KEYWORDS).anyMatch(lowerCaseSql::startsWith);
 	}
 
 	/**
@@ -48,11 +48,8 @@ public class StatementUtil {
 	 * @param sql      the sql statement
 	 * @return an optional parameter represented with a pair of key/value
 	 */
-	public Optional<Pair<String, String>> extractParamFromSetStatement(@NonNull String cleanSql, String sql) {
-		if (StringUtils.startsWithIgnoreCase(cleanSql, SET_PREFIX)) {
-			return extractPropertyPair(cleanSql, sql);
-		}
-		return Optional.empty();
+	public Optional<Entry<String, String>> extractParamFromSetStatement(@NonNull String cleanSql, String sql) {
+		return cleanSql.toLowerCase().startsWith(SET_PREFIX) ? extractPropertyPair(cleanSql, sql) : Optional.empty();
 	}
 
 	/**
@@ -180,25 +177,26 @@ public class StatementUtil {
 	 * @param cleanSql the clean sql query
 	 * @return the database name and the table name from the sql query as a pair
 	 */
-	public Pair<Optional<String>, Optional<String>> extractDbNameAndTableNamePairFromCleanQuery(String cleanSql) {
+	public Entry<Optional<String>, Optional<String>> extractDbNameAndTableNamePairFromCleanQuery(String cleanSql) {
 		Optional<String> from = Optional.empty();
 		if (isQuery(cleanSql)) {
 			log.debug("Extracting DB and Table name for SELECT: {}", cleanSql);
-			String withoutQuotes = StringUtils.replace(cleanSql, "'", "").trim();
-			if (StringUtils.startsWithIgnoreCase(withoutQuotes, "select")) {
-				int fromIndex = StringUtils.indexOfIgnoreCase(withoutQuotes, "from");
+			String withoutQuotes = cleanSql.replace("'", "").trim();
+			String withoutQuotesUpperCase = withoutQuotes.toUpperCase();
+			if (withoutQuotesUpperCase.startsWith("SELECT")) {
+				int fromIndex = withoutQuotesUpperCase.indexOf("FROM");
 				if (fromIndex != -1) {
-					from = Optional.of(withoutQuotes.substring(fromIndex + "from".length()).trim().split(" ")[0]);
+					from = Optional.of(withoutQuotes.substring(fromIndex + "FROM".length()).trim().split(" ")[0]);
 				}
-			} else if (StringUtils.startsWithIgnoreCase(withoutQuotes, "DESCRIBE")) {
+			} else if (withoutQuotesUpperCase.startsWith("DESCRIBE")) {
 				from = Optional.of("tables");
-			} else if (StringUtils.startsWithIgnoreCase(withoutQuotes, "SHOW")) {
+			} else if (withoutQuotesUpperCase.startsWith("SHOW")) {
 				from = Optional.empty(); // Depends on the information requested
 			} else {
 				log.debug("Could not find table name for query {}. This may happen when there is no table.", cleanSql);
 			}
 		}
-		return new ImmutablePair<>(extractDbNameFromFromPartOfTheQuery(from.orElse(null)),
+		return Map.entry(extractDbNameFromFromPartOfTheQuery(from.orElse(null)),
 				extractTableNameFromFromPartOfTheQuery(from.orElse(null)));
 	}
 
@@ -255,7 +253,7 @@ public class StatementUtil {
 						+ subQueryWithParams.substring(currentPos + 1);
 				offset += value.length() - 1;
 			}
-			Pair<String, String> additionalParams = subQuery.getStatementType() == StatementType.PARAM_SETTING
+			Entry<String, String> additionalParams = subQuery.getStatementType() == StatementType.PARAM_SETTING
 					? ((SetParamRawStatement) subQuery).getAdditionalProperty()
 					: null;
 			subQueries.add(new StatementInfoWrapper(subQueryWithParams, subQuery.getStatementType(), additionalParams, subQuery));
@@ -265,19 +263,15 @@ public class StatementUtil {
 
 	private Optional<String> extractTableNameFromFromPartOfTheQuery(String from) {
 		return Optional.ofNullable(from).map(s -> s.replace("\"", "")).map(fromPartOfTheQuery -> {
-			if (StringUtils.contains(fromPartOfTheQuery, ".")) {
-				int indexOfTableName = StringUtils.lastIndexOf(fromPartOfTheQuery, ".");
-				return fromPartOfTheQuery.substring(indexOfTableName + 1);
-			} else {
-				return fromPartOfTheQuery;
-			}
+			int indexOfTableName = fromPartOfTheQuery.lastIndexOf('.');
+			return indexOfTableName >= 0 && indexOfTableName < fromPartOfTheQuery.length() - 1 ? fromPartOfTheQuery.substring(indexOfTableName + 1) : fromPartOfTheQuery;
 		});
 	}
 
 	private static Optional<String> extractDbNameFromFromPartOfTheQuery(String from) {
 		return Optional.ofNullable(from).map(s -> s.replace("\"", ""))
-				.filter(s -> StringUtils.countMatches(s, ".") == 2).map(fromPartOfTheQuery -> {
-					int dbNameEndPos = StringUtils.indexOf(fromPartOfTheQuery, ".");
+				.filter(s -> s.chars().filter(c -> '.' == c).count() == 2).map(fromPartOfTheQuery -> {
+					int dbNameEndPos = fromPartOfTheQuery.indexOf('.');
 					return fromPartOfTheQuery.substring(0, dbNameEndPos);
 				});
 	}
@@ -292,19 +286,14 @@ public class StatementUtil {
 		return isInSingleLineComment;
 	}
 
-	private Optional<Pair<String, String>> extractPropertyPair(String cleanStatement, String sql) {
-		String setQuery = RegExUtils.removeFirst(cleanStatement, SET_WITH_SPACE_REGEX);
-		String[] values = StringUtils.split(setQuery, "=");
+	private Optional<Entry<String, String>> extractPropertyPair(String cleanStatement, String sql) {
+		String setQuery = SET_WITH_SPACE_REGEX.matcher(cleanStatement).replaceFirst("");
+		String[] values = setQuery.split("=");
 		if (values.length == 2) {
-			String value = StringUtils.removeEnd(values[1], ";").trim();
-			if (StringUtils.isNumeric(value)){
-				return Optional.of(Pair.of(values[0].trim(), value.trim()));
-			} else {
-				return Optional.of(Pair.of(values[0].trim(), StringUtils.removeEnd(StringUtils.removeStart(value, "'"), "'")));
-			}
-		} else {
-			throw new IllegalArgumentException(
-					"Cannot parse the additional properties provided in the statement: " + sql);
+			String value = (values[1].endsWith(";") ? values[1].substring(0, values[1].length() - 1) : values[1]).trim();
+			String pureValue = value.chars().allMatch(Character::isDigit) ? value : StringUtil.strip(value, '\'');
+			return Optional.of(Map.entry(values[0].trim(), pureValue));
 		}
+		throw new IllegalArgumentException("Cannot parse the additional properties provided in the statement: " + sql);
 	}
 }

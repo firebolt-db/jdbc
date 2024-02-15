@@ -13,8 +13,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -26,6 +24,8 @@ import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -79,7 +79,7 @@ public abstract class FireboltClient {
 
 	private Request createGetRequest(String uri, String accessToken) {
 		Request.Builder requestBuilder = new Request.Builder().url(uri);
-		createHeaders(accessToken).forEach(header -> requestBuilder.addHeader(header.getLeft(), header.getRight()));
+		createHeaders(accessToken).forEach(header -> requestBuilder.addHeader(header.getKey(), header.getValue()));
 		return requestBuilder.build();
 	}
 
@@ -115,7 +115,7 @@ public abstract class FireboltClient {
 
 	protected Request createPostRequest(String uri, String label, RequestBody body, String accessToken) {
 		Request.Builder requestBuilder = new Request.Builder().url(uri).tag(label);
-		createHeaders(accessToken).forEach(header -> requestBuilder.addHeader(header.getLeft(), header.getRight()));
+		createHeaders(accessToken).forEach(header -> requestBuilder.addHeader(header.getKey(), header.getValue()));
 		if (body != null) {
 			requestBuilder.post(body);
 		}
@@ -192,11 +192,11 @@ public abstract class FireboltClient {
 		return statusCode >= 200 && statusCode <= 299; // Call is considered successful when the status code is 2XX
 	}
 
-	private List<Pair<String, String>> createHeaders(String accessToken) {
-		List<Pair<String, String>> headers = new ArrayList<>();
-		headers.add(new ImmutablePair<>(HEADER_USER_AGENT, getHeaderUserAgentValue()));
-		ofNullable(connection.getProtocolVersion()).ifPresent(version -> headers.add(new ImmutablePair<>(HEADER_PROTOCOL_VERSION, version)));
-		ofNullable(accessToken).ifPresent(token -> headers.add(new ImmutablePair<>(HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken)));
+	private List<Entry<String, String>> createHeaders(String accessToken) {
+		List<Entry<String, String>> headers = new ArrayList<>();
+		headers.add(Map.entry(HEADER_USER_AGENT, getHeaderUserAgentValue()));
+		ofNullable(connection.getProtocolVersion()).ifPresent(version -> headers.add(Map.entry(HEADER_PROTOCOL_VERSION, version)));
+		ofNullable(accessToken).ifPresent(token -> headers.add(Map.entry(HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken)));
 		return headers;
 	}
 

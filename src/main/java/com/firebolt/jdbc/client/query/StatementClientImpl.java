@@ -22,7 +22,6 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.internal.http2.StreamResetException;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,6 +33,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiPredicate;
@@ -257,7 +257,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		Map<String, String> params = new HashMap<>(fireboltProperties.getAdditionalProperties());
 
 		getResponseFormatParameter(statementInfoWrapper.getType() == StatementType.QUERY, isLocalDb)
-				.ifPresent(format -> params.put(format.getLeft(), format.getRight()));
+				.ifPresent(format -> params.put(format.getKey(), format.getValue()));
 		if (systemEngine) {
 			if (fireboltProperties.getAccountId() != null) {
 				params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId());
@@ -275,9 +275,9 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		return params;
 	}
 
-	private Optional<Pair<String, String>> getResponseFormatParameter(boolean isQuery, boolean isLocalDb) {
+	private Optional<Entry<String, String>> getResponseFormatParameter(boolean isQuery, boolean isLocalDb) {
 		FireboltQueryParameterKey format = isLocalDb ? DEFAULT_FORMAT : OUTPUT_FORMAT;
-		return isQuery ? Optional.of(Pair.of(format.getKey(), TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT)) : Optional.empty();
+		return isQuery ? Optional.of(Map.entry(format.getKey(), TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT)) : Optional.empty();
 	}
 
 	private Map<String, String> getCancelParameters(String statementId) {
@@ -292,7 +292,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		if (isCallSuccessful(response.code())) {
 			for (String header : response.headers(HEADER_UPDATE_PARAMETER)) {
 				String[] keyValue = header.split("=");
-				connection.addProperty(Pair.of(keyValue[0].trim(), keyValue[1].trim()));
+				connection.addProperty(keyValue[0].trim(), keyValue[1].trim());
 			}
 		}
 	}

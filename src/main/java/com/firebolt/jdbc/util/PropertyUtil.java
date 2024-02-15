@@ -4,7 +4,6 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
-import org.apache.commons.lang3.StringUtils;
 
 import java.sql.DriverPropertyInfo;
 import java.util.AbstractMap.SimpleEntry;
@@ -43,7 +42,7 @@ public class PropertyUtil {
 	 * @return true if the host property is localhost
 	 */
 	public boolean isLocalDb(FireboltProperties fireboltProperties) {
-		return StringUtils.equalsIgnoreCase(fireboltProperties.getHost(), LOCALHOST);
+		return LOCALHOST.equalsIgnoreCase(fireboltProperties.getHost());
 	}
 
 	private List<DriverPropertyInfo> mapProperties(List<FireboltSessionProperty> fireboltSessionProperties,

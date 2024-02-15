@@ -9,7 +9,6 @@ import com.firebolt.jdbc.resultset.column.Column;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.util.VersionUtil;
 import lombok.CustomLog;
-import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -130,8 +129,9 @@ import static com.firebolt.jdbc.type.FireboltDataType.TIMESTAMP;
 import static com.firebolt.jdbc.type.FireboltDataType.TUPLE;
 import static java.sql.Types.VARCHAR;
 import static java.util.Map.entry;
+import static java.util.regex.Pattern.CASE_INSENSITIVE;
+import static java.util.regex.Pattern.compile;
 import static java.util.stream.Collectors.toList;
-import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
 
 @CustomLog
 @SuppressWarnings("java:S6204") // compatibility with JDK 11
@@ -245,6 +245,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 			while (columnDescription.next()) {
 				Column columnInfo = Column.of(columnDescription.getString("data_type"),
 						columnDescription.getString("column_name"));
+				String columnDefault = columnDescription.getString("column_default");
 				rows.add(Arrays.asList(connection.getCatalog(), // TABLE_CAT
 						columnDescription.getString("table_schema"), // schema
 						columnDescription.getString("table_name"), // table name
@@ -257,9 +258,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 						String.valueOf(COMMON_RADIX), // radix
 						isColumnNullable(columnDescription) ? columnNullable : columnNoNulls,
 						null, // description of the column
-						StringUtils.isNotBlank(columnDescription.getString("column_default"))
-								? columnDescription.getString("column_default")
-								: null, // default value for the column: null,
+						columnDefault == null || columnDefault.isBlank() ? null : columnDefault,
 						null, // SQL_DATA_TYPE - reserved for future use (see javadoc)
 						null, // SQL_DATETIME_SUB - reserved for future use (see javadoc)
 						null, // CHAR_OCTET_LENGTH - The maximum
@@ -1486,7 +1485,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 				QueryResult.Column.builder().name(REMARKS).type(TEXT).build(),
 				QueryResult.Column.builder().name(FUNCTION_TYPE).type(INTEGER).build(),
 				QueryResult.Column.builder().name(SPECIFIC_NAME).type(TEXT).build());
-		Predicate<String> functionFilter = functionNamePattern == null ? f -> true : f -> containsIgnoreCase(f, functionNamePattern);
+		Predicate<String> functionFilter = functionNamePattern == null ? f -> true : compile(functionNamePattern, CASE_INSENSITIVE).asPredicate();
 
 		List<List<?>> rows = Arrays.stream(String.join(",", getStringFunctions(), getNumericFunctions(), getTimeDateFunctions(), getSystemFunctions()).split(","))
 				.map(String::trim) // instead of split("\\s*,\\s") blocked by Sonar according to its opinion "can lead denial of service" (?!)
@@ -1520,7 +1519,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 				QueryResult.Column.builder().name(IS_NULLABLE).type(TEXT).build(),
 				QueryResult.Column.builder().name(SPECIFIC_NAME).type(TEXT).build()
 		);
-		Predicate<String> functionFilter = functionNamePattern == null ? f -> true : f -> containsIgnoreCase(f, functionNamePattern);
+		Predicate<String> functionFilter = functionNamePattern == null ? f -> true : compile(functionNamePattern, CASE_INSENSITIVE).asPredicate();
 
 		List<List<?>> stringFunctions = Arrays.stream(String.join(",", getStringFunctions()).split(",")).map(String::trim).filter(functionFilter)
 				.map(function -> Arrays.asList(null, null, function, null, functionColumnUnknown, Types.VARCHAR, JDBCType.VARCHAR.getName(), null, null, null, null, functionNullable, null, null, null, "YES", function))

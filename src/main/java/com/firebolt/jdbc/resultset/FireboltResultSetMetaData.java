@@ -2,7 +2,6 @@ package com.firebolt.jdbc.resultset;
 
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.column.Column;
-import org.apache.commons.lang3.StringUtils;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -135,7 +134,7 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 	@Override
 	public String getSchemaName(int column) throws SQLException {
 		checkColumnNumber(column);
-		return StringUtils.EMPTY; // Schemas are not implemented so N/A
+		return ""; // Schemas are not implemented so N/A
 	}
 
 	@Override

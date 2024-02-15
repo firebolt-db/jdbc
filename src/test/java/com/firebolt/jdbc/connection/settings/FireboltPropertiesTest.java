@@ -1,6 +1,5 @@
 package com.firebolt.jdbc.connection.settings;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -66,7 +65,7 @@ class FireboltPropertiesTest {
 	void shouldAddAdditionalProperties() {
 		FireboltProperties props = new FireboltProperties(new Properties());
 		assertTrue(props.getAdditionalProperties().isEmpty());
-		props.addProperty(new ImmutablePair<>("a", "1"));
+		props.addProperty(Map.entry("a", "1"));
 		props.addProperty("b", "2");
 		assertEquals(Map.of("a", "1", "b", "2"), props.getAdditionalProperties());
 	}

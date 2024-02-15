@@ -17,7 +17,6 @@ import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
-import org.apache.commons.lang3.StringUtils;
 
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -69,7 +68,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
         if (loginProperties.isSystemEngine() && loginProperties.getDatabase() == null) {
             throw new FireboltException("The database with the name null could not be found", RESOURCE_NOT_FOUND);
         }
-        String accessToken = getAccessToken(loginProperties).orElse(StringUtils.EMPTY);
+        String accessToken = getAccessToken(loginProperties).orElse("");
         sessionProperties = getSessionPropertiesForSystemEngine(accessToken, account);
         assertDatabaseExisting(loginProperties.getDatabase());
         if (!loginProperties.isSystemEngine()) {

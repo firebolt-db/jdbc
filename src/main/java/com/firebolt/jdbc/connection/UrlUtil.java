@@ -3,7 +3,6 @@ package com.firebolt.jdbc.connection;
 import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
-import org.apache.commons.lang3.StringUtils;
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -23,11 +22,11 @@ public class UrlUtil {
 
 
     private static Properties parseUriQueryPart(String jdbcConnectionString) {
-        String cleanURI = StringUtils.replace(jdbcConnectionString, JDBC_PREFIX, "");
+        String cleanURI = jdbcConnectionString.replace(JDBC_PREFIX, "");
         URI uri = URI.create(cleanURI);
         Properties uriProperties = new Properties();
         String query = uri.getQuery();
-        if (StringUtils.isNotBlank(query)) {
+        if (query != null && !query.isBlank()) {
             String[] queryKeyValues = query.split("&");
             for (String keyValue : queryKeyValues) {
                 String[] keyValueTokens = keyValue.split("=");
@@ -38,7 +37,8 @@ public class UrlUtil {
                 }
             }
         }
-        Optional.ofNullable(uri.getPath()).map(p -> !StringUtils.isEmpty(p) ? StringUtils.removeEnd(p, "/") : p).ifPresent(path -> uriProperties.put(FireboltSessionProperty.PATH.getKey(), path));
+        Optional.ofNullable(uri.getPath()).map(p -> !p.isEmpty() && p.charAt(p.length() - 1) == '/' ? p.substring(0, p.length() - 1) : p)
+                .ifPresent(path -> uriProperties.put(FireboltSessionProperty.PATH.getKey(), path));
         Optional.ofNullable(uri.getHost())
                 .ifPresent(host -> uriProperties.put(FireboltSessionProperty.HOST.getKey(), host));
         Optional.of(uri.getPort()).filter(p -> !p.equals(-1))

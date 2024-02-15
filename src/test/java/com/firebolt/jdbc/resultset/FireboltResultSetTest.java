@@ -4,7 +4,6 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.util.LoggerUtil;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -476,8 +475,8 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithEmpty();
 		resultSet = new FireboltResultSet(inputStream, "table_with_empty", "db_with_emtpy", 65535);
 		resultSet.next();
-		assertEquals(StringUtils.EMPTY, resultSet.getObject("name"));
-		assertEquals(StringUtils.EMPTY, resultSet.getObject("city"));
+		assertEquals("", resultSet.getObject("name"));
+		assertEquals("", resultSet.getObject("city"));
 	}
 
 	@Test
