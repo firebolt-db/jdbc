@@ -100,10 +100,11 @@ class FireboltDriverTest {
 					"jdbc:firebolt,,",
 					"jdbc:firebolt://api.dev.firebolt.io/db_name,,host=api.dev.firebolt.io;path=/db_name",
 					"jdbc:firebolt://api.dev.firebolt.io/db_name?account=test,,host=api.dev.firebolt.io;path=/db_name;account=test",
-					"jdbc:firebolt://api.dev.firebolt.io/db_name?account=test,user=usr;password=pwd,host=api.dev.firebolt.io;path=/db_name;account=test;user=usr;password=pwd", // legit:ignore-secrets
-					"jdbc:firebolt://api.dev.firebolt.io/db_name,user=usr;password=pwd,host=api.dev.firebolt.io;path=/db_name;user=usr;password=pwd", // legit:ignore-secrets
-					// TODO: add more tests with "new" URL format
-//					"jdbc:firebolt:db_name,,host=api.dev.firebolt.io;database=db_name",
+					"jdbc:firebolt://api.dev.firebolt.io/db_name?account=test,user=usr;password=pwd,host=api.dev.firebolt.io;path=/db_name;account=test;principal=usr;secret=pwd", // legit:ignore-secrets
+					"jdbc:firebolt://api.dev.firebolt.io/db_name,user=usr;password=pwd,host=api.dev.firebolt.io;path=/db_name;principal=usr;secret=pwd", // legit:ignore-secrets
+					"jdbc:firebolt:db_name,,host=api.app.firebolt.io;database=db_name",
+					"jdbc:firebolt:db_name?env=staging&account=developer,,host=api.staging.firebolt.io;database=db_name;account=developer",
+					"jdbc:firebolt:db_name,user=usr;password=pwd,host=api.app.firebolt.io;database=db_name;principal=usr;secret=pwd",
 
 			},
 			delimiter = ',')

@@ -9,6 +9,7 @@ import lombok.NonNull;
 import lombok.ToString;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -242,5 +243,21 @@ public class FireboltProperties {
 		String hostAndPort = host + (port == null ? "" : ":" + port);
 		String protocol = isSsl() ? "https://" : "http://";
 		return protocol + hostAndPort;
+	}
+
+	public Properties toProperties() {
+		Properties properties = new Properties();
+		Arrays.stream(getClass().getDeclaredFields()).filter(f -> !Modifier.isStatic(f.getModifiers())).forEach(f -> {
+            try {
+                Object value = f.get(this);
+				if (value != null) {
+					properties.setProperty(f.getName(), value.toString());
+				}
+            } catch (IllegalAccessException e) {
+                throw new IllegalStateException(e);
+            }
+		});
+		properties.putAll(additionalProperties);
+		return properties;
 	}
 }
