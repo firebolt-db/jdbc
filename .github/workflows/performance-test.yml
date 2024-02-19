@@ -36,7 +36,7 @@ jobs:
           path: dependencies
       - name: Setup database and engine
         id: setup
-        if: ${{ github.event.inputs.database == '' }}
+        if: ${{ inputs.database == '' }}
         uses: firebolt-db/integration-testing-setup@v1
         with:
           firebolt-username: ${{ secrets.FIREBOLT_STG_USERNAME }}
@@ -49,8 +49,8 @@ jobs:
       - name: Determine database name
         id: find-database-name
         run: |
-          if ! [[ -z "${{ github.event.inputs.database }}" ]]; then
-             echo "database_name=${{ github.event.inputs.database }}" >> $GITHUB_OUTPUT
+          if ! [[ -z "${{ inputs.database }}" ]]; then
+             echo "database_name=${{ inputs.database }}" >> $GITHUB_OUTPUT
           else
              echo "database_name=${{ steps.setup.outputs.database_name }}" >> $GITHUB_OUTPUT
           fi
@@ -61,7 +61,7 @@ jobs:
           testFilePath: JDBC.jmx
           dependencyFolder: dependencies
           outputReportsFolder: reports/
-          args: -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jpassword=${{ secrets.SERVICE_ACCOUNT_SECRET_STAGING }} -Jusername=${{ secrets.SERVICE_ACCOUNT_ID_STAGING }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ github.event.inputs.threads }} -Jloops=${{ github.event.inputs.loops }}
+          args: -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jpassword=${{ secrets.SERVICE_ACCOUNT_SECRET_STAGING }} -Jusername=${{ secrets.SERVICE_ACCOUNT_ID_STAGING }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ inputs.threads }} -Jloops=${{ inputs.loops }}
       - name: Upload JMeter report
         uses: actions/upload-artifact@v3
         with:
@@ -78,7 +78,7 @@ jobs:
       - name: Extract test summary
         id: summary
         run: |
-          result="$(date +"%d-%m-%y %T %Z"),${{ github.event.inputs.threads }},$(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput | round' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/'),${{ steps.short-sha.outputs.short_sha }},$GITHUB_REF"
+          result="$(date +"%d-%m-%y %T %Z"),${{ inputs.threads }},$(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput | round' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/'),${{ steps.short-sha.outputs.short_sha }},$GITHUB_REF"
           echo "SUMMARY=$(echo "$result" | tr '|' ',')" >> $GITHUB_OUTPUT
           sudo rm -rf "/home/runner/work/jdbc/jdbc/reports"
       - name: Checkout history branch

@@ -49,6 +49,8 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import static java.lang.String.format;
@@ -60,13 +62,14 @@ public abstract class FireboltConnection implements Connection {
 
 	private final FireboltAuthenticationService fireboltAuthenticationService;
 	private final FireboltStatementService fireboltStatementService;
-	protected final String httpConnectionUrl;
+	protected String httpConnectionUrl;
 	private final List<FireboltStatement> statements;
 	private final int connectionTimeout;
 	private boolean closed = true;
 	protected FireboltProperties sessionProperties;
 	private int networkTimeout;
 	private final String protocolVersion;
+	protected int infraVersion = 1;
 
 	//Properties that are used at the beginning of the connection for authentication
 	protected final FireboltProperties loginProperties;
@@ -137,7 +140,7 @@ public abstract class FireboltConnection implements Connection {
 		return 2;
 	}
 
-	protected static OkHttpClient getHttpClient(FireboltProperties fireboltProperties) throws FireboltException {
+	protected OkHttpClient getHttpClient(FireboltProperties fireboltProperties) throws FireboltException {
 		try {
 			return HttpClientConfig.getInstance() == null ? HttpClientConfig.init(fireboltProperties) : HttpClientConfig.getInstance();
 		} catch (GeneralSecurityException | IOException e) {
@@ -435,21 +438,37 @@ public abstract class FireboltConnection implements Connection {
 		}
 	}
 
-	public synchronized void addProperty(Entry<String, String> property) throws FireboltException {
-		addProperty(property.getKey(), property.getValue());
+	public synchronized void addProperty(@NonNull String key, String value) throws FireboltException {
+		changeProperty(p -> p.addProperty(key, value), () -> format("Could not set property %s=%s", key, value));
 	}
 
-	public synchronized void addProperty(String key, String value) throws FireboltException {
+	public synchronized void addProperty(Entry<String, String> property) throws FireboltException {
+		changeProperty(p -> p.addProperty(property), () -> format("Could not set property %s=%s", property.getKey(), property.getValue()));
+	}
+
+	public synchronized void reset() throws FireboltException {
+		changeProperty(FireboltProperties::clearAdditionalProperties, () -> "Could not reset connection");
+	}
+
+	public synchronized void changeProperty(Consumer<FireboltProperties> propertiesEditor, Supplier<String> errorMessageFactory) throws FireboltException {
 		try {
 			FireboltProperties tmpProperties = FireboltProperties.copy(sessionProperties);
-			tmpProperties.addProperty(key, value);
+			propertiesEditor.accept(tmpProperties);
 			validateConnection(tmpProperties, false);
-			sessionProperties.addProperty(key, value);
+			propertiesEditor.accept(sessionProperties);
 		} catch (FireboltException e) {
 			throw e;
 		} catch (Exception e) {
-			throw new FireboltException(format("Could not set property %s=%s", key, value), e);
+			throw new FireboltException(errorMessageFactory.get(), e);
 		}
+	}
+
+	public void setEndpoint(String endpoint) {
+		this.httpConnectionUrl = endpoint;
+	}
+
+	public String getEndpoint() {
+		return httpConnectionUrl;
 	}
 
 	@Override
@@ -650,5 +669,9 @@ public abstract class FireboltConnection implements Connection {
 
 	public String getProtocolVersion() {
 		return protocolVersion;
+	}
+
+	public int getInfraVersion() {
+		return infraVersion;
 	}
 }

@@ -71,11 +71,35 @@ class FireboltPropertiesTest {
 	}
 
 	@Test
+	void updateSpecialProperties() {
+		Properties properties = new Properties();
+		properties.put("database", "db1");
+		properties.put("engine", "e1");
+		properties.put("account_id", "a1");
+		properties.put("more", "less");
+		FireboltProperties props = new FireboltProperties(properties);
+		assertEquals("db1", props.getDatabase());
+		assertEquals("e1", props.getEngine());
+		assertEquals("a1", props.getAccountId());
+		assertEquals(Map.of("more", "less"), props.getAdditionalProperties());
+
+		props.addProperty("database", "db2");
+		props.addProperty("engine", "e2");
+		props.addProperty("account_id", "a1");
+		assertThrows(IllegalStateException.class, () -> props.addProperty("account_id", "a2"));
+		props.addProperty("more", "is more");
+
+		assertEquals("db2", props.getDatabase());
+		assertEquals("e2", props.getEngine());
+		assertEquals("a1", props.getAccountId());
+		assertEquals(Map.of("more", "is more"), props.getAdditionalProperties());
+	}
+
+	@Test
 	void shouldUsePathParamAsDb() {
 		Properties properties = new Properties();
 		properties.put("path", "example");
 		properties.put("host", "host");
-
 		assertEquals("example", new FireboltProperties(properties).getDatabase());
 	}
 

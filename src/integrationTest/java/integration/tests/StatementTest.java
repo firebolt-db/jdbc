@@ -194,7 +194,6 @@ class StatementTest extends IntegrationTest {
 	void shouldGetBooleans() throws SQLException {
 		try (Connection connection = createConnection()) {
 			try (Statement statement = connection.createStatement()) {
-				statement.execute("SET bool_output_format=postgres;");
 				ResultSet resultSet = statement.executeQuery("SELECT true, false, null::boolean;");
 				resultSet.next();
 				assertEquals(Boolean.TRUE, resultSet.getObject(1));
@@ -206,28 +205,27 @@ class StatementTest extends IntegrationTest {
 				assertNull(resultSet.getObject(3));
 				assertFalse(resultSet.getBoolean(3));
 			}
-
 		}
 	}
 
 	@Test
 	void setWrongParameter() throws SQLException {
-		setWrongParameter("SET foo=bar", Map.of());
+		setWrongParameter("SET foo=bar", Map.of(), "foo");
 	}
 
 	@Test
 	void setCorrectThenWrongParameter() throws SQLException {
-		setWrongParameter("SET bool_output_format=postgres;SET foo=bar", Map.of("bool_output_format", "postgres"));
+		setWrongParameter("SET time_zone = 'EST';SET bar=tar", Map.of("time_zone", "EST"), "bar");
 	}
 
-	private void setWrongParameter(String set, Map<String, String> expectedAdditionalProperties) throws SQLException {
-		try (Connection connection = createConnection()) {
-			try (Statement statement = connection.createStatement()) {
-				String message = assertThrows(SQLException.class, () -> statement.execute(set)).getMessage();
-				assertTrue(message.contains("parameter foo is not allowed"),
-						"Unexpected error message: " + message + ".  Message should contain statement: parameter foo is not allowed");
-				assertEquals(expectedAdditionalProperties, ((FireboltConnection)connection).getSessionProperties().getAdditionalProperties());
-			}
+	private void setWrongParameter(String set, Map<String, String> expectedAdditionalProperties, String expectedWrongPropertyName) throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			String message = assertThrows(SQLException.class, () -> statement.execute(set)).getMessage();
+			String expected1 = format("parameter %s is not allowed", expectedWrongPropertyName);
+			String expected2 = format("query param not allowed: %s", expectedWrongPropertyName);
+			assertTrue(message.contains(expected1) || message.contains(expected2),
+					format("Unexpected error message: '%s'. Message should contain statement: '%s' or '%s'", message, expected1, expected2));
+			assertEquals(expectedAdditionalProperties, ((FireboltConnection)connection).getSessionProperties().getAdditionalProperties());
 		}
 	}
 

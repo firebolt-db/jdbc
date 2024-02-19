@@ -11,7 +11,7 @@ public class FireboltAccountIdService {
         this.firebolAccountClient = firebolAccountClient;
     }
 
-    public String getValue(String accessToken, String account) throws FireboltException {
-        return firebolAccountClient.retrieve(accessToken, account).getId();
+    public FireboltAccount getValue(String accessToken, String account) throws FireboltException {
+        return firebolAccountClient.retrieve(accessToken, account);
     }
 }

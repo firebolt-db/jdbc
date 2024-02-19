@@ -7,12 +7,17 @@ import com.firebolt.jdbc.exception.FireboltException;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
-import javax.annotation.Nullable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.TreeSet;
+import java.util.stream.Stream;
 
+import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static java.lang.String.format;
+import static java.util.stream.Collectors.toCollection;
 
 @RequiredArgsConstructor
 @CustomLog
@@ -20,7 +25,7 @@ public class FireboltEngineInformationSchemaService implements FireboltEngineSer
     private static final String ENGINE_URL = "url";
     private static final String STATUS_FIELD = "status";
     private static final String ENGINE_NAME_FIELD = "engine_name";
-    private static final String RUNNING_STATUS = "running";
+    private static final Collection<String> RUNNING_STATUSES = Stream.of("running", "ENGINE_STATE_RUNNING").collect(toCollection(() -> new TreeSet<>(CASE_INSENSITIVE_ORDER)));
     private static final String ENGINE_QUERY =
             "SELECT engs.url, engs.attached_to, dbs.database_name, engs.status, engs.engine_name " +
             "FROM information_schema.engines as engs " +
@@ -38,14 +43,12 @@ public class FireboltEngineInformationSchemaService implements FireboltEngineSer
                 return rs.next();
             }
         }
-    }
+   }
 
     @Override
     public Engine getEngine(FireboltProperties properties) throws SQLException {
-        return getEngine(properties.getEngine(), properties.getDatabase());
-    }
-
-    private Engine getEngine(String engine, @Nullable String database) throws SQLException {
+        String engine = properties.getEngine();
+        String database = properties.getDatabase();
         if (engine == null) {
             throw new IllegalArgumentException("Cannot retrieve engine parameters because its name is null");
         }
@@ -66,12 +69,13 @@ public class FireboltEngineInformationSchemaService implements FireboltEngineSer
                 if (database != null && !database.equals(attachedDatabase)) {
                     throw new FireboltException(format("The engine with the name %s is not attached to database %s", engine, database));
                 }
-                return new Engine(rs.getString(ENGINE_URL), status, rs.getString(ENGINE_NAME_FIELD), attachedDatabase, null);
+                String engineHost = properties.processEngineUrl(rs.getString(ENGINE_URL));
+                return new Engine(engineHost, status, rs.getString(ENGINE_NAME_FIELD), attachedDatabase, null);
             }
         }
     }
 
     private boolean isEngineRunning(String status) {
-        return RUNNING_STATUS.equalsIgnoreCase(status);
+        return RUNNING_STATUSES.contains(status);
     }
 }

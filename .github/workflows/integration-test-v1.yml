@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Validate database and engine
-        if: ${{ (github.event.inputs.database == '') != (github.event.inputs.engine == '') }}
+        if: ${{ (inputs.database == '') != (inputs.engine == '') }}
         uses: actions/github-script@v3
         with:
           script: |
@@ -41,7 +41,7 @@ jobs:
 
       - name: Setup database and engine
         id: setup
-        if: ${{ github.event.inputs.database == '' }}
+        if: ${{ inputs.database == '' }}
         uses: firebolt-db/integration-testing-setup@v1
         with:
           firebolt-username: ${{ secrets.FIREBOLT_STG_USERNAME }}
@@ -53,8 +53,8 @@ jobs:
       - name: Determine database name
         id: find-database-name
         run: |
-          if ! [[ -z "${{ github.event.inputs.database }}" ]]; then
-             echo "database_name=${{ github.event.inputs.database }}" >> $GITHUB_OUTPUT
+          if ! [[ -z "${{ inputs.database }}" ]]; then
+             echo "database_name=${{ inputs.database }}" >> $GITHUB_OUTPUT
           else
              echo "database_name=${{ steps.setup.outputs.database_name }}" >> $GITHUB_OUTPUT
           fi
@@ -62,8 +62,8 @@ jobs:
       - name: Determine engine name
         id: find-engine-name
         run: |
-          if ! [[ -z "${{ github.event.inputs.engine }}" ]]; then
-             echo "engine_name=${{ github.event.inputs.engine }}" >> $GITHUB_OUTPUT
+          if ! [[ -z "${{ inputs.engine }}" ]]; then
+             echo "engine_name=${{ inputs.engine }}" >> $GITHUB_OUTPUT
           else
              echo "engine_name=${{ steps.setup.outputs.engine_name }}" >> $GITHUB_OUTPUT
           fi

@@ -15,7 +15,6 @@ on:
       account:
         description: 'Account'
         required: true
-        default: 'developer'
         type: string
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN:
@@ -29,7 +28,7 @@ jobs:
 
     steps:
       - name: Validate database and engine
-        if: ${{ (github.event.inputs.database == '') != (github.event.inputs.engine == '') }}
+        if: ${{ (inputs.database == '') != (inputs.engine == '') }}
         uses: actions/github-script@v3
         with:
           script: |
@@ -46,20 +45,20 @@ jobs:
 
       - name: Setup database and engine
         id: setup
-        if: ${{ github.event.inputs.database == '' }}
+        if: ${{ inputs.database == '' }}
         uses: firebolt-db/integration-testing-setup@v2
         with:
           firebolt-client-id: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           firebolt-client-secret: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
-          account: ${{ github.event.inputs.account }}
+          account: ${{ inputs.account }}
           api-endpoint: "api.staging.firebolt.io"
           instance-type: "B2"
 
       - name: Determine database name
         id: find-database-name
         run: |
-          if ! [[ -z "${{ github.event.inputs.database }}" ]]; then
-             echo "database_name=${{ github.event.inputs.database }}" >> $GITHUB_OUTPUT
+          if ! [[ -z "${{ inputs.database }}" ]]; then
+             echo "database_name=${{ inputs.database }}" >> $GITHUB_OUTPUT
           else
              echo "database_name=${{ steps.setup.outputs.database_name }}" >> $GITHUB_OUTPUT
           fi
@@ -67,11 +66,11 @@ jobs:
       - name: Determine engine name
         id: find-engine-name
         run: |
-          if ! [[ -z "${{ github.event.inputs.engine }}" ]]; then
-             echo "engine_name=${{ github.event.inputs.engine }}" >> $GITHUB_OUTPUT
+          if ! [[ -z "${{ inputs.engine }}" ]]; then
+             echo "engine_name=${{ inputs.engine }}" >> $GITHUB_OUTPUT
           else
              echo "engine_name=${{ steps.setup.outputs.engine_name }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=staging -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ github.event.inputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags=v1
+        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=staging -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ inputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags=v1
