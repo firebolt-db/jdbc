@@ -53,9 +53,6 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
         if (engine.getDatabase() != null) {
            database = engine.getDatabase();
         }
-        if (database == null) {
-            throw new FireboltException("The database with the name null could not be found", RESOURCE_NOT_FOUND);
-        }
         sessionProperties = loginProperties.toBuilder().host(engine.getEndpoint()).engine(engine.getName()).database(database).build();
     }
 

@@ -99,8 +99,8 @@ class ConnectionTest extends IntegrationTest {
         String engine = useEngine ? params.getEngine() : null;
         ConnectionInfo updated = new ConnectionInfo(params.getPrincipal(), params.getSecret(), params.getEnv(), database, params.getAccount(), engine, params.getApi());
         String url = updated.toJdbcUrl();
-        String query = "SELECT TOP 1 * FROM information_schema.tables";
-        boolean expectedSuccess = updated.getApi() != null || infraVersion == 2 ? useDatabase : useDatabase || useEngine;
+        String query = "SELECT version()";
+        boolean expectedSuccess = updated.getApi() == null || useDatabase;
         if (expectedSuccess) {
             try (Connection connection = DriverManager.getConnection(url, params.getPrincipal(), params.getSecret());
                  Statement statement = connection.createStatement()) {

@@ -4,7 +4,6 @@ import com.firebolt.jdbc.exception.FireboltException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
@@ -47,21 +46,17 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "jdbc:firebolt://api.firebolt.io/?env=dev&account=dev", // version 1
-            "jdbc:firebolt:?env=dev&account=dev"  // version 2
-    })
-    void noEngineAndDb(String url) throws SQLException {
-        assertThrows(FireboltException.class, () -> createConnection(url, connectionProperties));
-    }
-
     @Test
     void notExistingDb() throws SQLException {
         connectionProperties.put("database", "my_db");
         when(fireboltGatewayUrlService.getUrl(any(), any())).thenReturn("http://my_endpoint");
         when(fireboltEngineService.doesDatabaseExist("my_db")).thenReturn(false);
         assertEquals("Database my_db does not exist", assertThrows(FireboltException.class, () -> createConnection("jdbc:firebolt:?env=dev&account=dev", connectionProperties)).getMessage());
+    }
+
+    @Test
+    void noAccount() {
+        assertEquals("Cannot connect: account is missing", assertThrows(FireboltException.class, () -> createConnection("jdbc:firebolt:db", connectionProperties)).getMessage());
     }
 
     @ParameterizedTest(name = "{0}")

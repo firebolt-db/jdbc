@@ -67,9 +67,6 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
         if (account == null) {
             throw new FireboltException("Cannot connect: account is missing");
         }
-        if (loginProperties.isSystemEngine() && loginProperties.getDatabase() == null) {
-            throw new FireboltException("The database with the name null could not be found", RESOURCE_NOT_FOUND);
-        }
         String accessToken = getAccessToken(loginProperties).orElse("");
         sessionProperties = getSessionPropertiesForSystemEngine(accessToken, account);
         assertDatabaseExisting(loginProperties.getDatabase());
