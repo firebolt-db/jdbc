@@ -20,7 +20,9 @@ public class FireboltEngineVersion2Service implements FireboltEngineService {
     @SuppressWarnings("java:S2077") // Formatting SQL queries is security-sensitive - looks safe in this case
     public Engine getEngine(FireboltProperties properties) throws SQLException {
         try (Statement statement = fireboltConnection.createStatement()) {
-            statement.executeUpdate(use("DATABASE", properties.getDatabase()));
+            if (properties.getDatabase() != null) {
+                statement.executeUpdate(use("DATABASE", properties.getDatabase()));
+            }
             statement.executeUpdate(use("ENGINE", properties.getEngine()));
         }
         // now session properties are updated with new database and engine
