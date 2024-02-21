@@ -4,6 +4,9 @@ import com.firebolt.jdbc.connection.Engine;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -11,22 +14,31 @@ import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class FireboltEngineVersion2ServiceTest {
-    @Test
-    void getEndine() throws SQLException {
-        String database = "my_database";
+    @ParameterizedTest(name = "database={0}")
+    @ValueSource(strings = {"my_database"})
+    @NullSource
+    void getEndine(String database) throws SQLException {
         String engine = "my_engine";
         Properties props = new Properties();
-        props.setProperty("database", database);
+        if (database != null) {
+            props.setProperty("database", database);
+        }
         props.setProperty("engine", engine);
         String endpoint = "api.region.firebolt.io";
         FireboltProperties properties = new FireboltProperties(props);
         FireboltConnection connection = mock(FireboltConnection.class);
         Statement statement = mock(Statement.class);
         when(connection.createStatement()).thenReturn(statement);
-        when(statement.executeUpdate("USE DATABASE " + database)).thenReturn(1);
+        if (database != null) {
+            when(statement.executeUpdate("USE DATABASE " + database)).thenReturn(1);
+        } else {
+            verify(statement, never()).executeQuery("USE DATABASE " + database);
+        }
         when(statement.executeUpdate("USE ENGINE " + engine)).thenReturn(1);
         when(connection.getSessionProperties()).thenReturn(properties);
         when(connection.getEndpoint()).thenReturn(endpoint);
