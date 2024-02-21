@@ -5,7 +5,6 @@ com.firebolt.jdbc.client
 com.firebolt.jdbc.client.account
 com.firebolt.jdbc.client.account.response
 com.firebolt.jdbc.client.authentication
-com.firebolt.jdbc.client.authentication.response
 com.firebolt.jdbc.client.config
 com.firebolt.jdbc.client.config.socket
 com.firebolt.jdbc.client.gateway
