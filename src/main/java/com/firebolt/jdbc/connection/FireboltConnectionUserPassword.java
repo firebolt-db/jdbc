@@ -6,7 +6,6 @@ import com.firebolt.jdbc.client.authentication.AuthenticationRequest;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.client.authentication.UsernamePasswordAuthenticationRequest;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineApiService;
 import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
@@ -17,8 +16,6 @@ import okhttp3.OkHttpClient;
 
 import java.sql.SQLException;
 import java.util.Properties;
-
-import static com.firebolt.jdbc.exception.ExceptionType.RESOURCE_NOT_FOUND;
 
 public class FireboltConnectionUserPassword extends FireboltConnection {
     // Visible for testing
