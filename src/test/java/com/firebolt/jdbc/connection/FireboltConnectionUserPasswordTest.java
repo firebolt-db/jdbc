@@ -43,10 +43,9 @@ class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
         }
     }
 
-
     @Test
     void noEngineAndDb() throws SQLException {
-        try (FireboltConnection connection = createConnection("jdbc:firebolt:?env=dev&account=dev", connectionProperties)) {
+        try (FireboltConnection connection = createConnection("jdbc:firebolt://api.dev.firebolt.io", connectionProperties)) {
             assertEquals("endpoint", connection.getSessionProperties().getHost());
             assertNotNull(connection.getSessionProperties().getEngine());
             assertFalse(connection.getSessionProperties().isSystemEngine());

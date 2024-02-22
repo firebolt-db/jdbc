@@ -86,35 +86,69 @@ class ConnectionTest extends IntegrationTest {
         }
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "using db:{0} engine:{1}")
     @CsvSource({
-            "false, false",
             "true, false",
-            "false, true",
             "true, true"
     })
-    void connect(boolean useDatabase, boolean useEngine) throws SQLException {
+    @Tag("v1")
+    void successfulConnectV1(boolean useDatabase, boolean useEngine) throws SQLException {
+        successfulConnect(useDatabase, useEngine);
+    }
+
+    @ParameterizedTest(name = "using db:{0} engine:{1}")
+    @CsvSource({
+            "false, false",
+    })
+    @Tag("v1")
+    void unsuccessfulConnectV1(boolean useDatabase, boolean useEngine) throws SQLException {
+        unsuccessfulConnect(useDatabase, useEngine);
+    }
+
+    @ParameterizedTest(name = "using db:{0} engine:{1}")
+    @CsvSource({
+            "false, true", // can connect but cannot execute select
+    })
+    @Tag("v1")
+    void successfulConnectUnsuccessfulSelectV1(boolean useDatabase, boolean useEngine) throws SQLException {
         ConnectionInfo params = integration.ConnectionInfo.getInstance();
+        String url = getJdbcUrl(params, useDatabase, useEngine);
+        try (Connection connection = DriverManager.getConnection(url, params.getPrincipal(), params.getSecret());
+             Statement statement = connection.createStatement()) {
+            assertThrows(SQLException.class, () -> statement.executeQuery("SELECT 1"));
+        }
+    }
+
+    @ParameterizedTest(name = "V2 using db:{0} engine:{1}")
+    @CsvSource({
+            "false, false",
+            "false, true",
+            "true, false",
+            "true, true"
+
+    })
+    @Tag("v2")
+    void successfulConnect(boolean useDatabase, boolean useEngine) throws SQLException {
+        ConnectionInfo params = integration.ConnectionInfo.getInstance();
+        String url = getJdbcUrl(params, useDatabase, useEngine);
+        try (Connection connection = DriverManager.getConnection(url, params.getPrincipal(), params.getSecret());
+             Statement statement = connection.createStatement()) {
+            ResultSet rs = statement.executeQuery("SELECT 1");
+            assertTrue(rs.next());
+            assertNotNull(rs.getObject(1));
+        }
+    }
+
+    void unsuccessfulConnect(boolean useDatabase, boolean useEngine) throws SQLException {
+        ConnectionInfo params = integration.ConnectionInfo.getInstance();
+        String url = getJdbcUrl(params, useDatabase, useEngine);
+        assertThrows(FireboltException.class, () -> DriverManager.getConnection(url, params.getPrincipal(), params.getSecret()));
+    }
+
+    private String getJdbcUrl(ConnectionInfo params, boolean useDatabase, boolean useEngine) {
         String database = useDatabase ? params.getDatabase() : null;
         String engine = useEngine ? params.getEngine() : null;
         ConnectionInfo updated = new ConnectionInfo(params.getPrincipal(), params.getSecret(), params.getEnv(), database, params.getAccount(), engine, params.getApi());
-        String url = updated.toJdbcUrl();
-        String query = "SELECT TOP 1 * FROM information_schema.tables";
-        boolean expectedSuccess = updated.getApi() != null || infraVersion == 2 ? useDatabase : useDatabase || useEngine;
-        if (expectedSuccess) {
-            try (Connection connection = DriverManager.getConnection(url, params.getPrincipal(), params.getSecret());
-                 Statement statement = connection.createStatement()) {
-                assertNotNull(connection);
-                ResultSet rs = statement.executeQuery(query);
-                int n = rs.getMetaData().getColumnCount();
-                while (rs.next()) {
-                    for (int i = 1; i <= n; i++) {
-                        rs.getObject(1);
-                    }
-                }
-            }
-        } else {
-            assertThrows(FireboltException.class, () -> DriverManager.getConnection(url, params.getPrincipal(), params.getSecret()));
-        }
+        return updated.toJdbcUrl();
     }
 }
