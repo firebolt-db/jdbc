@@ -99,11 +99,24 @@ class ConnectionTest extends IntegrationTest {
     @ParameterizedTest(name = "using db:{0} engine:{1}")
     @CsvSource({
             "false, false",
-            "false, true",
     })
     @Tag("v1")
-    void unsuccessfulConnectV1(boolean useDatabase, boolean useEngine) {
+    void unsuccessfulConnectV1(boolean useDatabase, boolean useEngine) throws SQLException {
         unsuccessfulConnect(useDatabase, useEngine);
+    }
+
+    @ParameterizedTest(name = "using db:{0} engine:{1}")
+    @CsvSource({
+            "false, true", // can connect but cannot execute select
+    })
+    @Tag("v1")
+    void successfulConnectUnsuccessfulSelectV1(boolean useDatabase, boolean useEngine) throws SQLException {
+        ConnectionInfo params = integration.ConnectionInfo.getInstance();
+        String url = getJdbcUrl(params, useDatabase, useEngine);
+        try (Connection connection = DriverManager.getConnection(url, params.getPrincipal(), params.getSecret());
+             Statement statement = connection.createStatement()) {
+            assertThrows(SQLException.class, () -> statement.executeQuery("SELECT 1"));
+        }
     }
 
     @ParameterizedTest(name = "V2 using db:{0} engine:{1}")
@@ -120,13 +133,13 @@ class ConnectionTest extends IntegrationTest {
         String url = getJdbcUrl(params, useDatabase, useEngine);
         try (Connection connection = DriverManager.getConnection(url, params.getPrincipal(), params.getSecret());
              Statement statement = connection.createStatement()) {
-            ResultSet rs = statement.executeQuery("SELECT VERSION()");
+            ResultSet rs = statement.executeQuery("SELECT 1");
             assertTrue(rs.next());
             assertNotNull(rs.getObject(1));
         }
     }
 
-    void unsuccessfulConnect(boolean useDatabase, boolean useEngine) {
+    void unsuccessfulConnect(boolean useDatabase, boolean useEngine) throws SQLException {
         ConnectionInfo params = integration.ConnectionInfo.getInstance();
         String url = getJdbcUrl(params, useDatabase, useEngine);
         assertThrows(FireboltException.class, () -> DriverManager.getConnection(url, params.getPrincipal(), params.getSecret()));
