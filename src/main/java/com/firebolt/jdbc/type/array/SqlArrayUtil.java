@@ -9,12 +9,16 @@ import lombok.CustomLog;
 import lombok.NonNull;
 
 import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import static java.util.Optional.ofNullable;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 @CustomLog
@@ -25,6 +29,7 @@ public class SqlArrayUtil {
 	);
 	private final ColumnType columnType;
 	private final Markers markers;
+	public static final String BYTE_ARRAY_PREFIX = "\\x";
 
 	private static final class Markers {
 		private final char leftArrayBracket;
@@ -247,4 +252,31 @@ public class SqlArrayUtil {
 		}
 		return ret;
 	}
+
+	public static String byteArrayToHexString(byte[] bytes, boolean separateEachByte) {
+		if (bytes == null)  {
+			return null;
+		}
+		ByteBuffer buffer = ByteBuffer.wrap(bytes);
+		String separator = separateEachByte ? BYTE_ARRAY_PREFIX : "";
+		return BYTE_ARRAY_PREFIX + Stream.generate(buffer::get).limit(buffer.capacity()).map(Integer::toHexString).collect(joining(separator));
+	}
+
+	@SuppressWarnings("java:S1168") // we have to return null here
+	public static byte[] hexStringToByteArray(String str) {
+		if (str == null) {
+			return null;
+		}
+		if (!str.startsWith(BYTE_ARRAY_PREFIX)) {
+			return str.getBytes();
+		}
+		char[] chars = str.substring(2).toCharArray();
+		byte[] bytes = new byte[chars.length / 2];
+		for (int i = 0; i < chars.length; i += 2) {
+			bytes[i / 2] = (byte) ((Character.digit(chars[i], 16) << 4) + Character.digit(chars[i + 1], 16));
+		}
+		return bytes;
+	}
+
+
 }

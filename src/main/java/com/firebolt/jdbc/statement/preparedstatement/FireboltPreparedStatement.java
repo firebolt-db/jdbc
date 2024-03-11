@@ -43,6 +43,8 @@ import java.util.List;
 import java.util.Map;
 
 import static com.firebolt.jdbc.statement.StatementUtil.replaceParameterMarksWithValues;
+import static java.sql.Types.VARBINARY;
+import static java.util.stream.Collectors.joining;
 
 @CustomLog
 public class FireboltPreparedStatement extends FireboltStatement implements PreparedStatement {
@@ -146,9 +148,12 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	@Override
-	@NotImplemented
-	public void setBytes(int parameterIndex, byte[] x) throws SQLException {
-		throw new SQLFeatureNotSupportedException("The format Byte is currently not supported");
+	public void setBytes(int parameterIndex, byte[] bytes) throws SQLException {
+		if (bytes == null) {
+			setNull(parameterIndex, VARBINARY);
+		} else {
+			setObject(parameterIndex, bytes, VARBINARY);
+		}
 	}
 
 	@Override
@@ -188,7 +193,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public void setObject(int parameterIndex, Object x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x));
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x, getConnection().isUsePrefixForEachByte()));
 	}
 
 	@Override

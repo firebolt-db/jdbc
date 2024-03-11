@@ -18,6 +18,7 @@ import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.array.FireboltArray;
+import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import com.firebolt.jdbc.util.PropertyUtil;
 import lombok.CustomLog;
 import lombok.NonNull;
@@ -70,6 +71,7 @@ public abstract class FireboltConnection implements Connection {
 	private int networkTimeout;
 	private final String protocolVersion;
 	protected int infraVersion = 1;
+	private volatile boolean usePrefixForEachByte = true;
 
 	//Properties that are used at the beginning of the connection for authentication
 	protected final FireboltProperties loginProperties;
@@ -413,6 +415,7 @@ public abstract class FireboltConnection implements Connection {
 			throws SQLException {
 		try (Statement s = createStatement(fireboltProperties)) {
 			s.execute("SELECT 1");
+			discoverByteArrayFormat(s);
 		} catch (Exception e) {
 			// A connection is not invalid when too many requests are being sent.
 			// This error cannot be ignored when testing the connection to validate a param.
@@ -423,6 +426,14 @@ public abstract class FireboltConnection implements Connection {
 				log.warn("Connection is not valid", e);
 				throw e;
 			}
+		}
+	}
+
+	private void discoverByteArrayFormat(Statement s) {
+		try {
+			s.execute(format("SELECT %1$s42%1$s42", SqlArrayUtil.BYTE_ARRAY_PREFIX));
+		} catch (SQLException e) {
+			usePrefixForEachByte = false;
 		}
 	}
 
@@ -673,5 +684,9 @@ public abstract class FireboltConnection implements Connection {
 
 	public int getInfraVersion() {
 		return infraVersion;
+	}
+
+	public boolean isUsePrefixForEachByte() {
+		return usePrefixForEachByte;
 	}
 }

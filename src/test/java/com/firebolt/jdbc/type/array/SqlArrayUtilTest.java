@@ -168,6 +168,41 @@ class SqlArrayUtilTest {
 		assertNull(SqlArrayUtil.transformToSqlArray("NULL", ColumnType.of(type)));
 	}
 
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
+	void nullByteArrayToString(boolean separateEachByte) {
+		assertNull(SqlArrayUtil.byteArrayToHexString(null, separateEachByte));
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+			"ABC,false,\\x414243",
+			"abc,true,\\x61\\x62\\x63"
+	})
+	void byteArrayToString(String str, boolean separateEachByte, String expectedHex) {
+		assertEquals(expectedHex, SqlArrayUtil.byteArrayToHexString(str.getBytes(), separateEachByte));
+	}
+
+	@Test
+	void nullHexStringToByteArray() {
+		assertNull(SqlArrayUtil.hexStringToByteArray(null));
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+			"\\x78797A,xyz",
+			"\\x4a4B4c,JKL",
+			"hello,hello" // not hex string
+	})
+	void hexStringToByteArray(String hex, String expected) {
+		assertArrayEquals(expected.getBytes(), SqlArrayUtil.hexStringToByteArray(hex));
+	}
+
+	@Test
+	void notHexStringToByteArray() {
+		assertArrayEquals("nothing".getBytes(), SqlArrayUtil.hexStringToByteArray("nothing"));
+	}
+
 	private static Stream<Arguments> biDimensionalIntArray() {
 		return Stream.of(
 				// 2 dim integer

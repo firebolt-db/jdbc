@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.type;
 
+import com.firebolt.jdbc.CheckedBiFunction;
 import com.firebolt.jdbc.CheckedFunction;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
@@ -14,6 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_NOT_SUPPORTED;
@@ -32,24 +34,34 @@ public enum JavaTypeToFireboltSQLString {
 	DATE(Date.class, date -> SqlDateUtil.transformFromDateToSQLStringFunction.apply((Date) date)),
 	TIMESTAMP(Timestamp.class, time -> SqlDateUtil.transformFromTimestampToSQLStringFunction.apply((Timestamp) time)),
 	BIG_DECIMAL(BigDecimal.class, value -> value == null ? BaseType.NULL_VALUE : ((BigDecimal) value).toPlainString()),
-	ARRAY(Array.class, SqlArrayUtil::arrayToString);
+	ARRAY(Array.class, SqlArrayUtil::arrayToString),
+	BYTE_ARRAY(byte[].class, (value, separateEachByte) -> Optional.ofNullable(SqlArrayUtil.byteArrayToHexString((byte[])value, separateEachByte)).map(x  -> String.format("'%s'::BYTEA", x)).orElse(null))
+	;
 
 	private static final List<Entry<String, String>> characterToEscapedCharacterPairs = List.of(
 			Map.entry("\0", "\\0"), Map.entry("\\", "\\\\"), Map.entry("'", "''"));
 	private final Class<?> sourceType;
-	private final CheckedFunction<Object, String> transformToJavaTypeFunction;
+	private final CheckedBiFunction<Object, Boolean, String> transformToJavaTypeFunction;
 	public static final String NULL_VALUE = "NULL";
 
 	JavaTypeToFireboltSQLString(Class<?> sourceType, CheckedFunction<Object, String> transformToSqlStringFunction) {
+		this(sourceType, (o, flag) -> transformToSqlStringFunction.apply(o));
+	}
+
+	JavaTypeToFireboltSQLString(Class<?> sourceType, CheckedBiFunction<Object, Boolean, String> transformToSqlStringFunction) {
 		this.sourceType = sourceType;
 		this.transformToJavaTypeFunction = transformToSqlStringFunction;
 	}
 
 	public static String transformAny(Object object) throws FireboltException {
+		return transformAny(object, false);
+	}
+
+	public static String transformAny(Object object, boolean flag) throws FireboltException {
 		Class<?> objectType;
 		if (object == null) {
 			return NULL_VALUE;
-		} else if (object.getClass().isArray()) {
+		} else if (object.getClass().isArray() && !byte[].class.equals(object.getClass())) {
 			objectType = Array.class;
 		} else {
 			objectType = object.getClass();
@@ -59,7 +71,7 @@ public enum JavaTypeToFireboltSQLString {
 				.orElseThrow(() -> new FireboltException(
 						String.format("Cannot convert type %s. The type is not supported.", objectType),
 						TYPE_NOT_SUPPORTED));
-		return converter.transform(object);
+		return converter.transform(object, flag);
 	}
 
 	private static CheckedFunction<Object, String> getSQLStringValueOfString() {
@@ -77,11 +89,15 @@ public enum JavaTypeToFireboltSQLString {
 	}
 
 	public String transform(Object object) throws FireboltException {
+		return transform(object, false);
+	}
+
+	public String transform(Object object, boolean flag) throws FireboltException {
 		if (object == null) {
 			return NULL_VALUE;
 		} else {
 			try {
-				return transformToJavaTypeFunction.apply(object);
+				return transformToJavaTypeFunction.apply(object, flag);
 			} catch (Exception e) {
 				throw new FireboltException("Could not convert object to a String ", e, TYPE_TRANSFORMATION_ERROR);
 			}

@@ -14,6 +14,7 @@ import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.type.BaseType;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.array.FireboltArray;
+import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import com.firebolt.jdbc.util.LoggerUtil;
 import lombok.CustomLog;
 import org.apache.commons.text.StringEscapeUtils;
@@ -266,8 +267,10 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public byte[] getBytes(int colNum) throws SQLException {
-		return ofNullable(getValueAtColumn(colNum)).map(v -> BaseType.isNull(v) ? null : v)
-				.map(String::getBytes).orElse(null);
+		return ofNullable(getValueAtColumn(colNum))
+				.map(v -> BaseType.isNull(v) ? null : v)
+				.map(SqlArrayUtil::hexStringToByteArray)
+				.orElse(null);
 	}
 
 	@Override
