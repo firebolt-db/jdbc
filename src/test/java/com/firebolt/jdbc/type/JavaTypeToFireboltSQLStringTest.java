@@ -67,9 +67,9 @@ class JavaTypeToFireboltSQLStringTest {
 
 	@Test
 	void shouldEscapeCharactersWhenTransformingFromString() throws FireboltException {
-		assertEquals("'105\\' OR 1=1--\\' '", JavaTypeToFireboltSQLString.STRING.transform("105' OR 1=1--' "));
+		assertEquals("'105'' OR 1=1--'' '", JavaTypeToFireboltSQLString.STRING.transform("105' OR 1=1--' "));
 
-		assertEquals("'105\\' OR 1=1--\\' '", JavaTypeToFireboltSQLString.transformAny("105' OR 1=1--' "));
+		assertEquals("'105'' OR 1=1--'' '", JavaTypeToFireboltSQLString.transformAny("105' OR 1=1--' "));
 	}
 
 	@Test

@@ -57,7 +57,7 @@ class FireboltStatementTest {
 	private FireboltConnection fireboltConnection;
 
 	private static FireboltStatement statement;
-	private final FireboltProperties fireboltProperties = FireboltProperties.builder().additionalProperties(new HashMap<>()).build();
+	private final FireboltProperties fireboltProperties = FireboltProperties.builder().initialAdditionalProperties(new HashMap<>()).build();
 
 	private static Stream<Arguments> unsupported() {
 		return Stream.of(

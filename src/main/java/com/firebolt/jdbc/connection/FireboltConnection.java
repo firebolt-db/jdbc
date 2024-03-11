@@ -438,19 +438,19 @@ public abstract class FireboltConnection implements Connection {
 		}
 	}
 
-	public synchronized void addProperty(@NonNull String key, String value) throws FireboltException {
+	public void addProperty(@NonNull String key, String value) throws FireboltException {
 		changeProperty(p -> p.addProperty(key, value), () -> format("Could not set property %s=%s", key, value));
 	}
 
-	public synchronized void addProperty(Entry<String, String> property) throws FireboltException {
+	public void addProperty(Entry<String, String> property) throws FireboltException {
 		changeProperty(p -> p.addProperty(property), () -> format("Could not set property %s=%s", property.getKey(), property.getValue()));
 	}
 
-	public synchronized void reset() throws FireboltException {
+	public void reset() throws FireboltException {
 		changeProperty(FireboltProperties::clearAdditionalProperties, () -> "Could not reset connection");
 	}
 
-	public synchronized void changeProperty(Consumer<FireboltProperties> propertiesEditor, Supplier<String> errorMessageFactory) throws FireboltException {
+	private synchronized void changeProperty(Consumer<FireboltProperties> propertiesEditor, Supplier<String> errorMessageFactory) throws FireboltException {
 		try {
 			FireboltProperties tmpProperties = FireboltProperties.copy(sessionProperties);
 			propertiesEditor.accept(tmpProperties);

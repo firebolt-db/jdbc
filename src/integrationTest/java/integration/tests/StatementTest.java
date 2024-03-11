@@ -2,10 +2,12 @@ package integration.tests;
 
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
+import integration.ConnectionInfo;
 import integration.IntegrationTest;
 import kotlin.collections.ArrayDeque;
 import lombok.CustomLog;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -15,6 +17,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -216,6 +219,62 @@ class StatementTest extends IntegrationTest {
 	@Test
 	void setCorrectThenWrongParameter() throws SQLException {
 		setWrongParameter("SET time_zone = 'EST';SET bar=tar", Map.of("time_zone", "EST"), "bar");
+	}
+
+	/**
+	 * Connect to DB using {@code advanced_mode} sent in JDBC URL and set {@code force_pgdate_timestampntz} that requires advanced mode.
+	 * @throws SQLException if connection fails
+	 */
+	@Test
+	void successfulSettingOfPropertyThatRequiresAdvancedModeConfiguredWhenConnectionIsCreated() throws SQLException {
+		ConnectionInfo current = integration.ConnectionInfo.getInstance();
+		String url = current.toJdbcUrl() + "&advanced_mode=1";
+		try (Connection connection = DriverManager.getConnection(url, current.getPrincipal(), current.getSecret())) {
+			setParam(connection, "force_pgdate_timestampntz", "1");
+		}
+	}
+
+	/**
+	 * Connect to DB without {@code advanced_mode}. Then set {@code advanced_mode=1} and {@code force_pgdate_timestampntz} that requires advanced mode.
+	 * @throws SQLException if connection fails
+	 */
+	@Test
+	void successfulSettingOfPropertyThatRequiresAdvancedModePreviouslySetAtRuntime() throws SQLException {
+		try (Connection connection = createConnection()) {
+			setParam(connection, "advanced_mode", "1");
+			setParam(connection, "force_pgdate_timestampntz", "1");
+		}
+	}
+
+	/**
+	 * Try to set {@code force_pgdate_timestampntz} that requires advanced mode that was not set. This test will fail.
+	 * @throws SQLException if connection fails
+	 */
+	@Test
+	void failedSettingPropertyThatRequiresAdvancedModeThatWasNotSet() throws SQLException {
+		try (Connection connection = createConnection()) {
+			assertFailingSet(connection, "force_pgdate_timestampntz");
+		}
+	}
+
+	/**
+	 * Connect to DB using {@code advanced_mode} sent in JDBC URL. Then set {@code advanced_mode=0} and
+	 * try to set {@code force_pgdate_timestampntz} that requires advanced mode and therefore fails.
+	 * @throws SQLException if connection fails
+	 */
+	@Test
+	void failedSettingPropertyThatRequiresAdvancedModeThatWasUnset() throws SQLException {
+		ConnectionInfo current = integration.ConnectionInfo.getInstance();
+		String url = current.toJdbcUrl() + "&advanced_mode=1";
+		try (Connection connection = DriverManager.getConnection(url, current.getPrincipal(), current.getSecret())) {
+			setParam(connection, "advanced_mode", "0");
+			assertFailingSet(connection, "force_pgdate_timestampntz");
+		}
+	}
+
+	private void assertFailingSet(Connection connection, String paramName) {
+		FireboltException e = assertThrows(FireboltException.class, () -> setParam(connection, paramName, "1"));
+		assertTrue(e.getMessage().contains(paramName) && e.getMessage().contains("not allowed"), format("error message say that parameter %s is not allowed but was %s", paramName, e.getMessage()));
 	}
 
 	private void setWrongParameter(String set, Map<String, String> expectedAdditionalProperties, String expectedWrongPropertyName) throws SQLException {

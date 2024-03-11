@@ -20,7 +20,6 @@ import lombok.NonNull;
 import okhttp3.OkHttpClient;
 
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -85,7 +84,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
                 .systemEngine(false) // this is definitely not system engine
                 .database(engine.getDatabase()) // DB is updated because this code is running either when DB was supplied in initial parameters or not
                 .accountId(sessionProperties.getAccountId()) // discovered in case of v2 engine
-                .additionalProperties(sessionProperties.getAdditionalProperties()) // discovered in case of v2 engine
+                .runtimeAdditionalProperties(sessionProperties.getRuntimeAdditionalProperties()) // discovered in case of v2 engine
                 .build();
     }
 
@@ -103,7 +102,6 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
         return loginProperties
                 .toBuilder()
                 .systemEngine(true)
-                .additionalProperties(new HashMap<>()) // additional properties must be writable
                 .compress(false)
                 .accountId(account.getId())
                 .host(UrlUtil.createUrl(systemEngineEndpoint).getHost())

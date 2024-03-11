@@ -291,7 +291,8 @@ class StatementClientImplTest {
 				}
 			}))).thenReturn(useCall, select1Call);
 			connection.createStatement().executeUpdate("also does not matter");
-			assertEquals(Map.of(), connection.getSessionProperties().getAdditionalProperties());
+			// one->first remains here because this is initial property; it should not be removed during session reset
+			assertEquals(Map.of("one", "first"), connection.getSessionProperties().getAdditionalProperties());
 		}
 	}
 

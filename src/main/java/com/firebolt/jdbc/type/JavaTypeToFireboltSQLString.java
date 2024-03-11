@@ -35,7 +35,7 @@ public enum JavaTypeToFireboltSQLString {
 	ARRAY(Array.class, SqlArrayUtil::arrayToString);
 
 	private static final List<Entry<String, String>> characterToEscapedCharacterPairs = List.of(
-			Map.entry("\0", "\\0"), Map.entry("\\", "\\\\"), Map.entry("'", "\\'"));
+			Map.entry("\0", "\\0"), Map.entry("\\", "\\\\"), Map.entry("'", "''"));
 	private final Class<?> sourceType;
 	private final CheckedFunction<Object, String> transformToJavaTypeFunction;
 	public static final String NULL_VALUE = "NULL";
