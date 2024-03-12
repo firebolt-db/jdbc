@@ -76,7 +76,9 @@ public class FireboltProperties {
 	private final String userClients;
 	private final String accessToken;
 	@Builder.Default
-	Map<String, String> additionalProperties = new HashMap<>();
+	private Map<String, String> initialAdditionalProperties = new HashMap<>();
+	@Builder.Default
+	private Map<String, String> runtimeAdditionalProperties = new HashMap<>();
 
 	public FireboltProperties(Properties[] allProperties) {
 		this(mergeProperties(allProperties));
@@ -114,7 +116,8 @@ public class FireboltProperties {
 		port = getPort(properties, ssl);
 		accessToken =  getSetting(properties, FireboltSessionProperty.ACCESS_TOKEN);
 
-		additionalProperties = new HashMap<>(getFireboltCustomProperties(properties)); // wrap with HashMap to make these properties updatable
+		initialAdditionalProperties = getFireboltCustomProperties(properties);
+		runtimeAdditionalProperties = new HashMap<>();
 	}
 
 	private static String getEngine(Properties mergedProperties) {
@@ -219,11 +222,17 @@ public class FireboltProperties {
 	}
 
 	public static FireboltProperties copy(FireboltProperties properties) {
-		return properties.toBuilder().additionalProperties(new HashMap<>(properties.getAdditionalProperties())).build();
+		return properties.toBuilder().runtimeAdditionalProperties(new HashMap<>(properties.getRuntimeAdditionalProperties())).build();
 	}
 
 	private static boolean isSystemEngine(String engine) {
 		return engine == null;
+	}
+
+	public Map<String, String> getAdditionalProperties() {
+		Map<String, String> additionalProperties = new HashMap<>(initialAdditionalProperties);
+		additionalProperties.putAll(runtimeAdditionalProperties);
+		return additionalProperties;
 	}
 
 	public void addProperty(@NonNull String key, String value) {
@@ -240,7 +249,7 @@ public class FireboltProperties {
 				}
 				this.accountId = value;
 				break;
-			default: additionalProperties.put(key, value);
+			default: runtimeAdditionalProperties.put(key, value);
 		}
 	}
 
@@ -255,7 +264,7 @@ public class FireboltProperties {
 	}
 
 	public void clearAdditionalProperties() {
-		additionalProperties.clear();
+		runtimeAdditionalProperties.clear();
 	}
 
 	public String processEngineUrl(String endpoint) {
