@@ -5,6 +5,7 @@ import com.firebolt.jdbc.type.FireboltDataType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -22,6 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class SqlArrayUtilTest {
+	private static final String nullableTwoDimIntArray = "Array(Array(int null) null) null";
+	private static final String threeDimLongArray = "Array(Array(Array(long)))";
+	private static final String textArray = "Array(TEXT)";
+	private static final String nullableTwoDimTextArray = "Array(Array(TEXT null) null) null";
+	private static final String FB1 = "Firebolt.1";
+	private static final String PG = "PostreSQL compliant";
 
 	@Test
 	void shouldTransformToEmptyArray() throws SQLException {
@@ -34,9 +41,22 @@ class SqlArrayUtilTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"Array(INT32)", "Array(int)", "Array(int null)", "Array(int) null", "Array(int null) null"})
-	void shouldTransformIntArray(String type) throws SQLException {
-		String value = "[1,2,3,\\N,5]";
+	@CsvSource(value = {
+			// old format
+			"Array(INT32);[1,2,3,\\N,5]",
+			"Array(int);[1,2,3,\\N,5]",
+			"Array(int null);[1,2,3,\\N,5]",
+			"Array(int) null;[1,2,3,\\N,5]",
+			"Array(int null) null;[1,2,3,\\N,5]",
+			// new/v2/postgres compliant
+			"Array(INT32);{1,2,3,\\N,5}",
+			"Array(int);{1,2,3,\\N,5}",
+			"Array(int null);{1,2,3,\\N,5}",
+			"Array(int) null;{1,2,3,\\N,5}",
+			"Array(int null) null;{1,2,3,\\N,5}"
+	},
+			delimiter = ';')
+	void shouldTransformIntArray(String type, String value) throws SQLException {
 		FireboltArray expectedArray = new FireboltArray(INTEGER, new Integer[] { 1, 2, 3, null, 5 });
 		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of(type));
 
@@ -44,9 +64,14 @@ class SqlArrayUtilTest {
 		assertArrayEquals((Integer[]) expectedArray.getArray(), (Integer[]) result.getArray());
 	}
 
-	@Test
-	void shouldTransformStringArray() throws SQLException {
-		String value = "['1','2','3','',\\N,'5']";
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"['1','2','3','',\\N,'5']",
+			"['1','2','3','',NULL,'5']",
+			"{1,2,3,\"\",\\N,5}",
+			"{1,2,3,\"\",NULL,5}",
+	})
+	void shouldTransformStringArray(String value) throws SQLException {
 		FireboltArray expectedArray = new FireboltArray(FireboltDataType.TEXT, new String[] { "1", "2", "3", "", null, "5" });
 		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(TEXT)"));
 
@@ -54,9 +79,25 @@ class SqlArrayUtilTest {
 		assertArrayEquals((String[]) expectedArray.getArray(), (String[]) result.getArray());
 	}
 
-	@Test
-	void shouldTransformStringArrayWithComma() throws SQLException {
-		String value = "['1','2,','3','',\\N,'5']";
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"[' a','b ',' c ',' ','a b',' c d ']",
+			"{\" a\",\"b \",\" c \",\" \",\"a b\",\" c d \"}"
+	})
+	void shouldTransformStringArrayWithSpaces(String value) throws SQLException {
+		FireboltArray expectedArray = new FireboltArray(FireboltDataType.TEXT, new String[] { " a", "b ", " c ", " ", "a b", " c d " });
+		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(TEXT)"));
+
+		assertJdbcType(expectedArray.getBaseType(), result.getBaseType());
+		assertArrayEquals((String[]) expectedArray.getArray(), (String[]) result.getArray());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"['1','2,','3','',\\N,'5']",
+			"{1,\"2,\",3,\"\",\\N,5}"
+	})
+	void shouldTransformStringArrayWithComma(String value) throws SQLException {
 		FireboltArray expectedArray = new FireboltArray(FireboltDataType.TEXT, new String[] { "1", "2,", "3", "", null, "5" });
 		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(TEXT)"));
 
@@ -64,9 +105,12 @@ class SqlArrayUtilTest {
 		assertArrayEquals((String[]) expectedArray.getArray(), (String[]) result.getArray());
 	}
 
-	@Test
-	void shouldTransformArrayOfTuples() throws SQLException {
-		String value = "[(1,'a'),(2,'b'),(3,'c')]";
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"[(1,'a'),(2,'b'),(3,'c')]",
+			"{\"('1','a')\",\"('2','b')\",\"('3','c')\"}"
+	})
+	void shouldTransformArrayOfTuples(String value) throws SQLException {
 		Object[][] expectedArray = new Object[][] { { 1, "a" }, { 2, "b" }, { 3, "c" } };
 		FireboltArray expectedFireboltArray = new FireboltArray(FireboltDataType.TUPLE, expectedArray);
 		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(TUPLE(int,string))"));
@@ -75,9 +119,12 @@ class SqlArrayUtilTest {
 		assertArrayEquals(expectedArray, (Object[]) result.getArray());
 	}
 
-	@Test
-	void shouldTransformArrayOfArrayTuples() throws SQLException {
-		String value = "[[(1,'(a))'),(2,'[b]'),(3,'[]c[')],[(4,'d')]]";
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"[[(1,'(a))'),(2,'[b]'),(3,'[]c[')],[(4,'d')]]",
+			"{{\"(1,'(a))')\",\"(2,'[b]')\",\"(3,'[]c[')\"},{\"(4,'d')\"}}"
+	})
+	void shouldTransformArrayOfArrayTuples(String value) throws SQLException {
 		Object[][][] expectedArray = new Object[][][] {
 				{ { 1, "(a))" }, { 2, "[b]" }, { 3, "[]c[" } },
 				{ { 4, "d" } }
@@ -89,9 +136,12 @@ class SqlArrayUtilTest {
 		assertArrayEquals(expectedArray, (Object[][]) result.getArray());
 	}
 
-	@Test
-	void shouldTransformArrayOfTuplesWithSpecialCharacters() throws SQLException {
-		String value = "[(1,'a','1a'),(2,'b','2b'),(3,'[c]','3c')]";
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"[(1,'a','1a'),(2,'b','2b'),(3,'[c]','3c')]",
+			"{\"(1,'a','1a')\",\"(2,'b','2b')\",\"(3,'[c]','3c')\"}"
+	})
+	void shouldTransformArrayOfTuplesWithSpecialCharacters(String value) throws SQLException {
 		Object[][] expectedArray = new Object[][] { { 1, "a", "1a" }, { 2, "b", "2b" }, { 3, "[c]", "3c" } };
 		FireboltArray expectedFireboltArray = new FireboltArray(FireboltDataType.TUPLE, expectedArray);
 		Array result = SqlArrayUtil.transformToSqlArray(value, ColumnType.of("Array(TUPLE(int,string,string))"));
@@ -119,31 +169,48 @@ class SqlArrayUtilTest {
 	}
 
 	private static Stream<Arguments> biDimensionalIntArray() {
-		String nullableTwoDimIntArray = "Array(Array(int null) null) null";
-		String threeDimLongArray = "Array(Array(Array(long)))";
-		String textArray = "Array(TEXT)";
-		String nullableTwoDimTextArray = "Array(Array(TEXT null) null) null";
 		return Stream.of(
 				// 2 dim integer
-				Arguments.of(nullableTwoDimIntArray, "[[1,2],[3]]", INTEGER, new Integer[][] {{1,2}, {3}}),
-				Arguments.of(nullableTwoDimIntArray, "[[4,NULL,5]]", INTEGER, new Integer[][] {{4, null, 5}}),
-				Arguments.of(nullableTwoDimIntArray, "[NULL,[4],NULL]", INTEGER, new Integer[][] {null, {4}, null}),
-				Arguments.of(nullableTwoDimIntArray, "[[4],NULL,[5,NULL,6]]", INTEGER, new Integer[][] {{4}, null, {5,null,6}}),
-				Arguments.of(nullableTwoDimIntArray, "[[NULL,7]]", INTEGER, new Integer[][] {{null,7}}),
+				Arguments.of(FB1, nullableTwoDimIntArray, "[[1,2],[3]]", INTEGER, new Integer[][] {{1,2}, {3}}),
+				Arguments.of(FB1, nullableTwoDimIntArray, "[[4,NULL,5]]", INTEGER, new Integer[][] {{4, null, 5}}),
+				Arguments.of(FB1, nullableTwoDimIntArray, "[NULL,[4],NULL]", INTEGER, new Integer[][] {null, {4}, null}),
+				Arguments.of(FB1, nullableTwoDimIntArray, "[[4],NULL,[5,NULL,6]]", INTEGER, new Integer[][] {{4}, null, {5,null,6}}),
+				Arguments.of(FB1, nullableTwoDimIntArray, "[[NULL,7]]", INTEGER, new Integer[][] {{null,7}}),
 				// 3 dim integer
-				Arguments.of(threeDimLongArray, "[[[1,2,3]]]", BIG_INT, new Long[][][] {{{1L, 2L, 3L}}}),
-				Arguments.of(threeDimLongArray, "[[[10]],[[1],[2,3],[4,5]],[[20]]]", BIG_INT, new Long[][][] {{{10L}}, {{1L}, {2L, 3L}, {4L, 5L}}, {{20L}}}),
-				Arguments.of(threeDimLongArray, "[NULL,[NULL,[1,2,3],NULL],NULL]", BIG_INT, new Long[][][] {null, {null, {1L, 2L, 3L}, null}, null}),
-				Arguments.of(threeDimLongArray, "[[[]]]", BIG_INT, new Long[][][] {{{}}}),
+				Arguments.of(FB1, threeDimLongArray, "[[[1,2,3]]]", BIG_INT, new Long[][][] {{{1L, 2L, 3L}}}),
+				Arguments.of(FB1, threeDimLongArray, "[[[10]],[[1],[2,3],[4,5]],[[20]]]", BIG_INT, new Long[][][] {{{10L}}, {{1L}, {2L, 3L}, {4L, 5L}}, {{20L}}}),
+				Arguments.of(FB1, threeDimLongArray, "[NULL,[NULL,[1,2,3],NULL],NULL]", BIG_INT, new Long[][][] {null, {null, {1L, 2L, 3L}, null}, null}),
+				Arguments.of(FB1, threeDimLongArray, "[[[]]]", BIG_INT, new Long[][][] {{{}}}),
 				// text array
-				Arguments.of(textArray, "['Hello','Bye']", TEXT, new String[] {"Hello", "Bye"}),
-				Arguments.of(textArray, "['What\\'s up','ok','a[1]']", TEXT, new String[] {"What's up", "ok", "a[1]"}),
-				Arguments.of(nullableTwoDimTextArray, "[['one','two'],['three']]", TEXT, new String[][] {{"one", "two"}, {"three"}})
+				Arguments.of(FB1, textArray, "['Hello','Bye']", TEXT, new String[] {"Hello", "Bye"}),
+				Arguments.of(FB1, textArray, "['What\\'s up','ok','a[1]']", TEXT, new String[] {"What's up", "ok", "a[1]"}),
+				Arguments.of(FB1, nullableTwoDimTextArray, "[['one','two'],['three']]", TEXT, new String[][] {{"one", "two"}, {"three"}})
 		);
 	}
-	@ParameterizedTest(name = "{0}:{1}")
-	@MethodSource("biDimensionalIntArray")
-	void shouldTransformBiDimensionalIntArraySeveralElements(String type, String input, FireboltDataType expectedType, Object[] expected) throws SQLException {
+
+	private static Stream<Arguments> biDimensionalIntArrayPostgresCompliant() {
+		return Stream.of(
+				// 2 dim integer
+				Arguments.of(PG, nullableTwoDimIntArray, "{{1,2},{3}}", INTEGER, new Integer[][] {{1,2}, {3}}),
+				Arguments.of(PG, nullableTwoDimIntArray, "{{4,NULL,5}}", INTEGER, new Integer[][] {{4, null, 5}}),
+				Arguments.of(PG, nullableTwoDimIntArray, "{NULL,{4},NULL}", INTEGER, new Integer[][] {null, {4}, null}),
+				Arguments.of(PG, nullableTwoDimIntArray, "{{4},NULL,{5,NULL,6}}", INTEGER, new Integer[][] {{4}, null, {5,null,6}}),
+				Arguments.of(PG, nullableTwoDimIntArray, "{{NULL,7}}", INTEGER, new Integer[][] {{null,7}}),
+				// 3 dim integer
+				Arguments.of(PG, threeDimLongArray, "{{{1,2,3}}}", BIG_INT, new Long[][][] {{{1L, 2L, 3L}}}),
+				Arguments.of(PG, threeDimLongArray, "{{{10}},{{1},{2,3},{4,5}},{{20}}}", BIG_INT, new Long[][][] {{{10L}}, {{1L}, {2L, 3L}, {4L, 5L}}, {{20L}}}),
+				Arguments.of(PG, threeDimLongArray, "{NULL,{NULL,{1,2,3},NULL},NULL}", BIG_INT, new Long[][][] {null, {null, {1L, 2L, 3L}, null}, null}),
+				Arguments.of(PG, threeDimLongArray, "{{{}}}", BIG_INT, new Long[][][] {{{}}}),
+				// text array
+				Arguments.of(PG, textArray, "{Hello,Bye}", TEXT, new String[] {"Hello", "Bye"}),
+				Arguments.of(PG, textArray, "{\"What's up\",ok,a[1]}", TEXT, new String[] {"What's up", "ok", "a[1]"}),
+				Arguments.of(PG, nullableTwoDimTextArray, "{{one,two},{three}}", TEXT, new String[][] {{"one", "two"}, {"three"}})
+		);
+	}
+
+	@ParameterizedTest(name = "{0}:{1}:{2}")
+	@MethodSource({"biDimensionalIntArray", "biDimensionalIntArrayPostgresCompliant"})
+	void shouldTransformBiDimensionalIntArraySeveralElements(String format, String type, String input, FireboltDataType expectedType, Object[] expected) throws SQLException {
 		shouldTransformArray(type, input, expectedType, expected);
 	}
 
