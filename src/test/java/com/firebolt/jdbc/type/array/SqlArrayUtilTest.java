@@ -7,6 +7,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.sql.Array;
@@ -175,12 +176,23 @@ class SqlArrayUtilTest {
 	}
 
 	@ParameterizedTest
-	@CsvSource({
-			"ABC,false,\\x414243",
-			"abc,true,\\x61\\x62\\x63"
-	})
-	void byteArrayToString(String str, boolean separateEachByte, String expectedHex) {
+	@CsvSource(value = {
+			"ABC;false;\\x414243",
+			"abc;true;\\x61\\x62\\x63",
+			"Hello, world!;false;\\x48656c6c6f2c20776f726c6421",
+			"Hello, world!;true;\\x48\\x65\\x6c\\x6c\\x6f\\x2c\\x20\\x77\\x6f\\x72\\x6c\\x64\\x21"
+	}, delimiter = ';')
+	void byteArrayToHexString(String str, boolean separateEachByte, String expectedHex) {
 		assertEquals(expectedHex, SqlArrayUtil.byteArrayToHexString(str.getBytes(), separateEachByte));
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			"false;\\x4d756c74690a6c696e650a74657874",
+			"true;\\x4d\\x75\\x6c\\x74\\x69\\x0a\\x6c\\x69\\x6e\\x65\\x0a\\x74\\x65\\x78\\x74"
+	}, delimiter = ';')
+	void byteArrayWithNewLineToHexString(boolean separateEachByte, String expectedHex) {
+		byteArrayToHexString("Multi\nline\ntext", separateEachByte, expectedHex);
 	}
 
 	@Test
@@ -201,6 +213,16 @@ class SqlArrayUtilTest {
 	@Test
 	void notHexStringToByteArray() {
 		assertArrayEquals("nothing".getBytes(), SqlArrayUtil.hexStringToByteArray("nothing"));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"ABC", "abc", "Hello, world!", "Multi\nlinentext"
+	})
+	@NullSource
+	void byteArrayToHexStringAndBack(String str) {
+		byte[] bytes = SqlArrayUtil.hexStringToByteArray(SqlArrayUtil.byteArrayToHexString(str == null ? null : str.getBytes(), false));
+		assertEquals(str, bytes == null ? null : new String(bytes));
 	}
 
 	private static Stream<Arguments> biDimensionalIntArray() {

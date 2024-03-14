@@ -92,12 +92,12 @@ public enum JavaTypeToFireboltSQLString {
 		return transform(object, false);
 	}
 
-	public String transform(Object object, boolean flag) throws FireboltException {
+	public String transform(Object object, boolean transformAny) throws FireboltException {
 		if (object == null) {
 			return NULL_VALUE;
 		} else {
 			try {
-				return transformToJavaTypeFunction.apply(object, flag);
+				return transformToJavaTypeFunction.apply(object, transformAny);
 			} catch (Exception e) {
 				throw new FireboltException("Could not convert object to a String ", e, TYPE_TRANSFORMATION_ERROR);
 			}

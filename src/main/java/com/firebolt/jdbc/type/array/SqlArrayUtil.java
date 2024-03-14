@@ -8,8 +8,10 @@ import com.firebolt.jdbc.util.StringUtil;
 import lombok.CustomLog;
 import lombok.NonNull;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +20,8 @@ import java.util.Map;
 import static java.util.Optional.ofNullable;
 import java.util.stream.Stream;
 
+import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -253,13 +257,13 @@ public class SqlArrayUtil {
 		return ret;
 	}
 
-	public static String byteArrayToHexString(byte[] bytes, boolean separateEachByte) {
+	public static String byteArrayToHexString(@Nullable byte[] bytes, boolean separateEachByte) {
 		if (bytes == null)  {
 			return null;
 		}
 		ByteBuffer buffer = ByteBuffer.wrap(bytes);
 		String separator = separateEachByte ? BYTE_ARRAY_PREFIX : "";
-		return BYTE_ARRAY_PREFIX + Stream.generate(buffer::get).limit(buffer.capacity()).map(Integer::toHexString).collect(joining(separator));
+		return BYTE_ARRAY_PREFIX + Stream.generate(buffer::get).limit(buffer.capacity()).map(i -> format("%02x", i)).collect(joining(separator));
 	}
 
 	@SuppressWarnings("java:S1168") // we have to return null here
@@ -268,7 +272,7 @@ public class SqlArrayUtil {
 			return null;
 		}
 		if (!str.startsWith(BYTE_ARRAY_PREFIX)) {
-			return str.getBytes();
+			return str.getBytes(UTF_8);
 		}
 		char[] chars = str.substring(2).toCharArray();
 		byte[] bytes = new byte[chars.length / 2];
