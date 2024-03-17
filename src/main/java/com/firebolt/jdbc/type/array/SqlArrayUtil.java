@@ -7,23 +7,54 @@ import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
 import com.firebolt.jdbc.util.StringUtil;
 import lombok.CustomLog;
 import lombok.NonNull;
-import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Array;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
-@UtilityClass
 @CustomLog
 public class SqlArrayUtil {
+	private static final Map<Character, Markers> formatMarkers = Map.of(
+			'[', new Markers('[', ']', '\'', '\''),
+			'{', new Markers('{', '}', '"', '\'')
+	);
+	private final ColumnType columnType;
+	private final Markers markers;
 
-	public static FireboltArray transformToSqlArray(String value, ColumnType columnType) throws SQLException {
+	private static final class Markers {
+		private final char leftArrayBracket;
+		private final char rightArrayBracket;
+		private final char literalQuote;
+		private final char tupleLiteralQuote;
+
+		public Markers(char leftArrayBracket, char rightArrayBracket, char literalQuote, char tupleLiteralQuote) {
+			this.leftArrayBracket = leftArrayBracket;
+			this.rightArrayBracket = rightArrayBracket;
+			this.literalQuote = literalQuote;
+			this.tupleLiteralQuote = tupleLiteralQuote;
+		}
+	}
+
+    public SqlArrayUtil(ColumnType columnType, Markers markers) {
+        this.columnType = columnType;
+        this.markers  = markers;
+    }
+
+    public static FireboltArray transformToSqlArray(String value, ColumnType columnType) throws SQLException {
 		log.debug("Transformer array with value {} and type {}", value, columnType);
+		if (isNullValue(value))  {
+			return null;
+		}
 		int dimensions = getDimensions(columnType);
-		Object arr = createArray(value, dimensions, columnType);
+		SqlArrayUtil parser = new SqlArrayUtil(columnType,
+				ofNullable(formatMarkers.get(value.charAt(0))).orElseThrow(() -> new IllegalArgumentException("Wrong format"))
+		);
+		Object arr = parser.createArray(value, dimensions);
 		return arr == null ? null : new FireboltArray(columnType.getArrayBaseColumnType().getDataType(), arr);
 	}
 
@@ -35,37 +66,37 @@ public class SqlArrayUtil {
 		return dimensions;
 	}
 
-	private static Object createArray(String arrayContent, int dimension, ColumnType columnType) throws SQLException {
-		int from = arrayContent.charAt(0) == '[' ? 1 : 0;
-		int to = arrayContent.charAt(arrayContent.length() - 1) == ']' ? arrayContent.length() - 1 : arrayContent.length();
+	private Object createArray(String arrayContent, int dimension) throws SQLException {
+		int from = arrayContent.charAt(0) == markers.leftArrayBracket ? 1 : 0;
+		int to = arrayContent.charAt(arrayContent.length() - 1) == markers.rightArrayBracket ? arrayContent.length() - 1 : arrayContent.length();
 		arrayContent = arrayContent.substring(from, to);
-		return extractArray(arrayContent, dimension, columnType);
+		return extractArray(arrayContent, dimension);
 	}
 
-	private static Object extractArray(String arrayContent, int dimension, ColumnType columnType) throws SQLException {
+	private Object extractArray(String arrayContent, int dimension) throws SQLException {
 		if (isNullValue(arrayContent))  {
 			return null;
 		}
-		return dimension < 2 ? extractArrayFromOneDimensionalArray(arrayContent, columnType) : extractArrayFromMultiDimensionalArray(arrayContent, dimension, columnType);
+		return dimension < 2 ? extractArrayFromOneDimensionalArray(arrayContent) : extractArrayFromMultiDimensionalArray(arrayContent, dimension);
 	}
 
 	@NonNull
-	private static Object extractArrayFromMultiDimensionalArray(String str, int dimension, ColumnType columnType) throws SQLException {
+	private Object extractArrayFromMultiDimensionalArray(String str, int dimension) throws SQLException {
 		String[] s = splitToElements(str);
 		int[] lengths = new int[dimension];
 		lengths[0] = s.length;
 		Object currentArray = Array.newInstance(columnType.getArrayBaseColumnType().getDataType().getBaseType().getType(), lengths);
 		for (int i = 0; i < s.length; i++) {
-			Array.set(currentArray, i, createArray(s[i], dimension - 1, columnType));
+			Array.set(currentArray, i, createArray(s[i], dimension - 1));
 		}
 		return currentArray;
 	}
 
-	private static Object extractArrayFromOneDimensionalArray(String arrayContent, ColumnType columnType) throws SQLException {
+	private Object extractArrayFromOneDimensionalArray(String arrayContent) throws SQLException {
 		FireboltDataType arrayBaseType = columnType.getArrayBaseColumnType().getDataType();
 		@SuppressWarnings("java:S6204") // JDK 11 compatible
-		List<String> elements = splitArrayContent(arrayContent, arrayBaseType)
-				.stream().filter(s -> s != null && !s.isEmpty()).map(SqlArrayUtil::removeQuotesAndTransformNull)
+		List<String> elements = splitArrayContent(arrayContent, arrayBaseType, markers.literalQuote)
+				.stream().filter(s -> s != null && !s.isEmpty()).map(x -> removeQuotesAndTransformNull(x, markers.literalQuote))
 				.collect(toList());
 		if (arrayBaseType == FireboltDataType.TUPLE) {
 			return getArrayOfTuples(columnType, elements);
@@ -77,7 +108,7 @@ public class SqlArrayUtil {
 		return currentArray;
 	}
 
-	private static Object[] getArrayOfTuples(ColumnType columnType, List<String> tuples) throws SQLException {
+	private Object[] getArrayOfTuples(ColumnType columnType, List<String> tuples) throws SQLException {
 		@SuppressWarnings("java:S6204") // JDK 11 compatible
 		List<FireboltDataType> types = columnType.getArrayBaseColumnType().getInnerTypes().stream()
 				.map(ColumnType::getDataType).collect(toList());
@@ -85,9 +116,9 @@ public class SqlArrayUtil {
 		List<Object[]> list = new ArrayList<>();
 		for (String tupleContent : tuples) {
 			List<Object> subList = new ArrayList<>();
-			List<String> tupleValues = splitArrayContent(removeParenthesis(tupleContent), FireboltDataType.TEXT);
+			List<String> tupleValues = splitArrayContent(removeParenthesis(tupleContent), FireboltDataType.TEXT, markers.tupleLiteralQuote);
 			for (int j = 0; j < types.size(); j++) {
-				subList.add(types.get(j).getBaseType().transform(removeQuotesAndTransformNull(tupleValues.get(j))));
+				subList.add(types.get(j).getBaseType().transform(removeQuotesAndTransformNull(tupleValues.get(j), markers.tupleLiteralQuote)));
 			}
 			list.add(subList.toArray());
 		}
@@ -114,20 +145,15 @@ public class SqlArrayUtil {
 				intoString = !intoString;
 			}
 			if (!intoString) {
-				switch (c) {
-					case '[':
-						nesting++;
-						break;
-					case ']':
-						nesting--;
-						break;
-					case ',':
-						if (nesting <= 0) {
-							elements.add(value.substring(from, i));
-							from = i + 1;
-						}
-						break;
-					default: // ignore
+				if (c == markers.leftArrayBracket) {
+					nesting++;
+				} else if (c == markers.rightArrayBracket) {
+					nesting--;
+				} else if (c == ',') {
+					if (nesting <= 0) {
+						elements.add(value.substring(from, i));
+						from = i + 1;
+					}
 				}
 			}
 			escaped = false;
@@ -136,8 +162,8 @@ public class SqlArrayUtil {
 		return elements.toArray(new String[0]);
 	}
 
-	private static String removeQuotesAndTransformNull(String s) {
-		return isNullValue(s) ? "\\N" : StringUtil.strip(s, '\'');
+	private String removeQuotesAndTransformNull(String s, char quote) {
+		return isNullValue(s) ? "\\N" : StringUtil.strip(s, quote);
 	}
 
 	private static boolean isNullValue(String s) {
@@ -148,7 +174,7 @@ public class SqlArrayUtil {
 		return s.substring(1, s.length() - 1);
 	}
 
-	private static List<String> splitArrayContent(String arrayContent, FireboltDataType baseType) {
+	private static List<String> splitArrayContent(String arrayContent, FireboltDataType baseType, char quote) {
 		int index = -1;
 		int subStringStart = 0;
 		int parenthesisDepth = 0; // Needed for tuples
@@ -162,7 +188,7 @@ public class SqlArrayUtil {
 				escaped = true;
 				continue;
 			}
-			if (currentChar == '\'' && !escaped) {
+			if (currentChar == quote && !escaped) {
 				isCurrentSubstringBetweenQuotes = !isCurrentSubstringBetweenQuotes;
 			}
 			if (!isCurrentSubstringBetweenQuotes && baseType == FireboltDataType.TUPLE) {
