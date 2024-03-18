@@ -45,7 +45,7 @@ public enum JavaTypeToFireboltSQLString {
 	public static final String NULL_VALUE = "NULL";
 
 	JavaTypeToFireboltSQLString(Class<?> sourceType, CheckedFunction<Object, String> transformToSqlStringFunction) {
-		this(sourceType, (o, flag) -> transformToSqlStringFunction.apply(o));
+		this(sourceType, (o, transformAny) -> transformToSqlStringFunction.apply(o));
 	}
 
 	JavaTypeToFireboltSQLString(Class<?> sourceType, CheckedBiFunction<Object, Boolean, String> transformToSqlStringFunction) {
@@ -57,7 +57,7 @@ public enum JavaTypeToFireboltSQLString {
 		return transformAny(object, false);
 	}
 
-	public static String transformAny(Object object, boolean flag) throws FireboltException {
+	public static String transformAny(Object object, boolean transformAny) throws FireboltException {
 		Class<?> objectType;
 		if (object == null) {
 			return NULL_VALUE;
@@ -71,7 +71,7 @@ public enum JavaTypeToFireboltSQLString {
 				.orElseThrow(() -> new FireboltException(
 						String.format("Cannot convert type %s. The type is not supported.", objectType),
 						TYPE_NOT_SUPPORTED));
-		return converter.transform(object, flag);
+		return converter.transform(object, transformAny);
 	}
 
 	private static CheckedFunction<Object, String> getSQLStringValueOfString() {
