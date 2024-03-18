@@ -180,7 +180,11 @@ class SqlArrayUtilTest {
 			"ABC;false;\\x414243",
 			"abc;true;\\x61\\x62\\x63",
 			"Hello, world!;false;\\x48656c6c6f2c20776f726c6421",
-			"Hello, world!;true;\\x48\\x65\\x6c\\x6c\\x6f\\x2c\\x20\\x77\\x6f\\x72\\x6c\\x64\\x21"
+			"Hello, world!;true;\\x48\\x65\\x6c\\x6c\\x6f\\x2c\\x20\\x77\\x6f\\x72\\x6c\\x64\\x21",
+			"6/3=2;false;\\x362f333d32",
+			"6/3=2;true;\\x36\\x2f\\x33\\x3d\\x32",
+			"x\\y;false;\\x785c79",
+			"x\\y;true;\\x78\\x5c\\x79"
 	}, delimiter = ';')
 	void byteArrayToHexString(String str, boolean separateEachByte, String expectedHex) {
 		assertEquals(expectedHex, SqlArrayUtil.byteArrayToHexString(str.getBytes(), separateEachByte));
