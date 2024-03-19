@@ -3,7 +3,6 @@ package com.firebolt.jdbc.metadata;
 import com.firebolt.jdbc.CheckedFunction;
 import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.QueryResult.Column;
-import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
@@ -87,7 +86,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -107,7 +105,6 @@ class FireboltDatabaseMetadataTest {
 	@BeforeEach
 	void init() throws SQLException {
 		fireboltDatabaseMetadata = new FireboltDatabaseMetadata("jdbc:firebolt:host", fireboltConnection);
-		lenient().when(fireboltConnection.createStatement(any())).thenReturn(statement);
 		lenient().when(fireboltConnection.createStatement()).thenReturn(statement);
 		lenient().when(fireboltConnection.getCatalog()).thenReturn("db_name");
 		lenient().when(fireboltConnection.getSessionProperties()).thenReturn(FireboltProperties.builder().database("my-db").principal("the-user").build());

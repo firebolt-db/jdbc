@@ -15,6 +15,7 @@ import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junitpioneer.jupiter.DefaultTimeZone;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -30,6 +31,7 @@ import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Date;
 import java.sql.NClob;
+import java.sql.PreparedStatement;
 import java.sql.Ref;
 import java.sql.RowId;
 import java.sql.SQLException;
@@ -52,6 +54,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltPreparedStatementTest {
@@ -112,6 +115,7 @@ class FireboltPreparedStatementTest {
 
 	@BeforeEach
 	void beforeEach() throws SQLException {
+		when(connection.getSessionProperties()).thenReturn(properties);
 		lenient().when(properties.getBufferSize()).thenReturn(10);
 		lenient().when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
 				.thenReturn(Optional.empty());
@@ -185,20 +189,16 @@ class FireboltPreparedStatementTest {
 				queryInfoWrapperArgumentCaptor.getAllValues().get(1).getSql());
 	}
 
-	@Test
-	void shouldThrowExceptionWhenAllParametersAreNotDefined() {
-		FireboltPreparedStatement statementWithUndefinedParamWithSpace = FireboltPreparedStatement.statementBuilder()
-				.sql("SELECT * FROM cars WHERE make LIKE ?").build();
-
-		FireboltPreparedStatement statementWithUndefinedParamWithComma = FireboltPreparedStatement.statementBuilder()
-				.sql("SELECT * FROM cars WHERE make LIKE ,?").build();
-
-		FireboltPreparedStatement statementWithUndefinedParamWithParenthesis = FireboltPreparedStatement
-				.statementBuilder().sql("SELECT * FROM cars WHERE make LIKE (?").build();
-
-		assertThrows(IllegalArgumentException.class, statementWithUndefinedParamWithSpace::executeQuery);
-		assertThrows(IllegalArgumentException.class, statementWithUndefinedParamWithComma::executeQuery);
-		assertThrows(IllegalArgumentException.class, statementWithUndefinedParamWithParenthesis::executeQuery);
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"SELECT * FROM cars WHERE make LIKE ?",
+			"SELECT * FROM cars WHERE make LIKE ,?",
+			"SELECT * FROM cars WHERE make LIKE (?"
+	})
+	void shouldThrowExceptionWhenAllParametersAreNotDefined(String query) throws SQLException {
+		try (PreparedStatement ps = createStatementWithSql(query)) {
+			assertThrows(IllegalArgumentException.class, ps::executeQuery);
+		}
 	}
 
 	@Test
@@ -394,7 +394,6 @@ class FireboltPreparedStatementTest {
 	}
 
 	private FireboltPreparedStatement createStatementWithSql(String sql) {
-		return FireboltPreparedStatement.statementBuilder().statementService(fireboltStatementService).sql(sql)
-				.sessionProperties(properties).connection(connection).build();
+		return new FireboltPreparedStatement(fireboltStatementService, connection, sql);
 	}
 }

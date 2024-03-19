@@ -80,16 +80,14 @@ class FireboltStatementTest {
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("unsupported")
 	void shouldThrowSQLFeatureNotSupportedException(String name, Executable function) {
-		statement = FireboltStatement.builder().statementService(fireboltStatementService)
-				.sessionProperties(mock(FireboltProperties.class)).connection(mock(FireboltConnection.class)).build();
+		statement = new FireboltStatement(fireboltStatementService, mock(FireboltProperties.class), mock(FireboltConnection.class));
 		assertThrows(SQLFeatureNotSupportedException.class, function);
 	}
 
 	@Test
 	void shouldExtractAdditionalPropertiesAndNotExecuteQueryWhenSetParamIsUsed() throws SQLException {
 		FireboltConnection connection = mock(FireboltConnection.class);
-		try (FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-				.sessionProperties(fireboltProperties).connection(connection).build()) {
+		try (FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection)) {
 			fireboltStatement.execute("set custom_1 = 1");
 			verifyNoMoreInteractions(fireboltStatementService);
 			verify(connection).addProperty(Map.entry("custom_1", "1"));
@@ -98,8 +96,7 @@ class FireboltStatementTest {
 
 	@Test
 	void shouldAbortStatementOnCancel() throws SQLException, ReflectiveOperationException {
-		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-				.sessionProperties(fireboltProperties).connection(fireboltConnection).build();
+		FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, fireboltConnection);
 
 		Field runningStatementField = FireboltStatement.class.getDeclaredField("runningStatementLabel");
 		runningStatementField.setAccessible(true);
@@ -112,8 +109,7 @@ class FireboltStatementTest {
 	void shouldCloseInputStreamOnClose() throws SQLException {
 		ResultSet rs = mock(ResultSet.class);
 		FireboltConnection connection = mock(FireboltConnection.class);
-		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-				.sessionProperties(fireboltProperties).connection(connection).build();
+		FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 
 		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
 				.thenReturn(Optional.empty());
@@ -132,17 +128,14 @@ class FireboltStatementTest {
 	@Test
 	void shouldThrowAnExceptionWhenExecutingQueryOnANonQueryStatement() throws SQLException {
 		FireboltConnection connection = mock(FireboltConnection.class);
-		try (FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-				.sessionProperties(fireboltProperties).connection(connection).build()) {
+		try (FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection)) {
 			assertThrows(FireboltException.class, () -> fireboltStatement.executeQuery("set custom_1 = 1"));
 		}
 	}
 
 	@Test
 	void shouldExecuteIfUpdateStatementWouldNotReturnAResultSet() throws SQLException {
-		try (FireboltStatement fireboltStatement = FireboltStatement.builder()
-				.statementService(fireboltStatementService).connection(fireboltConnection)
-				.sessionProperties(fireboltProperties).build()) {
+		try (FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, fireboltConnection)) {
 			when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
 					.thenReturn(Optional.empty());
 			assertEquals(0, fireboltStatement.executeUpdate("INSERT INTO cars(sales, name) VALUES (500, 'Ford')"));
@@ -160,8 +153,7 @@ class FireboltStatementTest {
 		ResultSet rs = mock(FireboltResultSet.class);
 		ResultSet rs2 = mock(FireboltResultSet.class);
 		FireboltConnection connection = mock(FireboltConnection.class);
-		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-				.sessionProperties(fireboltProperties).connection(connection).build();
+		FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 
 		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
 				.thenReturn(Optional.of(rs)).thenReturn(Optional.of(rs2));
@@ -181,8 +173,7 @@ class FireboltStatementTest {
 	@Test
 	void shouldCloseCurrentAndGetMoreResultWhenCallingGetMoreResultsWithCloseCurrentFlag() throws SQLException {
 		FireboltConnection connection = mock(FireboltConnection.class);
-		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-				.sessionProperties(fireboltProperties).connection(connection).build();
+		FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
 				.thenReturn(Optional.of(mock(FireboltResultSet.class)));
 		fireboltStatement.execute("SELECT 1; SELECT 2;");
@@ -194,8 +185,7 @@ class FireboltStatementTest {
 	@Test
 	void shouldKeepCurrentAndGetMoreResultWhenCallingGetMoreResultsWithKeepCurrentResultFlag() throws SQLException {
 		FireboltConnection connection = mock(FireboltConnection.class);
-		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-				.sessionProperties(fireboltProperties).connection(connection).build();
+		FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
 				.thenReturn(Optional.of(mock(ResultSet.class)));
 
@@ -211,8 +201,7 @@ class FireboltStatementTest {
 		ResultSet rs2 = mock(FireboltResultSet.class);
 		ResultSet rs3 = mock(FireboltResultSet.class);
 		FireboltConnection connection = mock(FireboltConnection.class);
-		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-				.sessionProperties(fireboltProperties).connection(connection).build();
+		FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 
 		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
 				.thenReturn(Optional.of(rs)).thenReturn(Optional.of(rs2)).thenReturn(Optional.of(rs3));
