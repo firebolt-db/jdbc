@@ -52,7 +52,6 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltPreparedStatementTest {
@@ -137,12 +136,11 @@ class FireboltPreparedStatementTest {
 		statement.setNString(6, "sedan");
 		statement.setArray(7, new FireboltArray(FireboltDataType.TEXT, new String[] {"sedan", "hatchback", "coupe"}));
 		statement.setBytes(8, "HarryFord".getBytes());
-		when(connection.isUsePrefixForEachByte()).thenReturn(false);
 		statement.execute();
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties),
 				anyInt(), anyInt(), anyBoolean(), anyBoolean(), any());
 
-		assertEquals("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (500,'Ford','FOCUS',NULL,NULL,'sedan',['sedan','hatchback','coupe'],'\\x4861727279466f7264'::BYTEA)",
+		assertEquals("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (500,'Ford','FOCUS',NULL,NULL,'sedan',['sedan','hatchback','coupe'],E'\\x48\\x61\\x72\\x72\\x79\\x46\\x6f\\x72\\x64'::BYTEA)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
@@ -158,7 +156,6 @@ class FireboltPreparedStatementTest {
 		statement.setNString(6, "sedan");
 		statement.setArray(7, new FireboltArray(FireboltDataType.TEXT, new String[] {"sedan", "hatchback", "coupe"}));
 		statement.setBytes(8, null);
-		when(connection.isUsePrefixForEachByte()).thenReturn(false);
 		statement.execute();
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties),
 				anyInt(), anyInt(), anyBoolean(), anyBoolean(), any());

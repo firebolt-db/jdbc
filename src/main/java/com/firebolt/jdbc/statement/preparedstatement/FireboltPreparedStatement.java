@@ -193,7 +193,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public void setObject(int parameterIndex, Object x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x, getConnection().isUsePrefixForEachByte()));
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x));
 	}
 
 	@Override

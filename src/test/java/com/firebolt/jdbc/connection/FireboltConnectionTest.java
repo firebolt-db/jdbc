@@ -312,11 +312,11 @@ abstract class FireboltConnectionTest {
 
 			fireboltConnection.addProperty(newProperties);
 
-			verify(fireboltStatementService, times(2)).execute(queryInfoWrapperArgumentCaptor.capture(),
+			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
 					propertiesArgumentCaptor.capture(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any());
 			assertEquals("1", propertiesArgumentCaptor.getValue().getAdditionalProperties().get("custom_1"));
 			assertEquals("1", fireboltConnection.getSessionProperties().getAdditionalProperties().get("custom_1"));
-			assertEquals(List.of("SELECT 1", "SELECT \\x42\\x42"), queryInfoWrapperArgumentCaptor.getAllValues().stream().map(StatementInfoWrapper::getSql).collect(toList()));
+			assertEquals(List.of("SELECT 1"), queryInfoWrapperArgumentCaptor.getAllValues().stream().map(StatementInfoWrapper::getSql).collect(toList()));
 		}
 	}
 
@@ -326,9 +326,9 @@ abstract class FireboltConnectionTest {
 				.thenReturn(Optional.empty());
 		try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
 			fireboltConnection.isValid(500);
-			verify(fireboltStatementService, times(2)).execute(queryInfoWrapperArgumentCaptor.capture(),
+			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
 					propertiesArgumentCaptor.capture(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any());
-			assertEquals(List.of("SELECT 1", "SELECT \\x42\\x42"), queryInfoWrapperArgumentCaptor.getAllValues().stream().map(StatementInfoWrapper::getSql).collect(toList()));
+			assertEquals(List.of("SELECT 1"), queryInfoWrapperArgumentCaptor.getAllValues().stream().map(StatementInfoWrapper::getSql).collect(toList()));
 		}
 	}
 

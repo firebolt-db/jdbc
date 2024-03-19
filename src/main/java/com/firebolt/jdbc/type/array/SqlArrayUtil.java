@@ -11,17 +11,15 @@ import lombok.NonNull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.Optional.ofNullable;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -33,7 +31,7 @@ public class SqlArrayUtil {
 	);
 	private final ColumnType columnType;
 	private final Markers markers;
-	public static final String BYTE_ARRAY_PREFIX = "\\x";
+	private static final String BYTE_ARRAY_PREFIX = "\\x";
 
 	private static final class Markers {
 		private final char leftArrayBracket;
@@ -257,13 +255,22 @@ public class SqlArrayUtil {
 		return ret;
 	}
 
+	/**
+	 * Creates string representation of given byte array as a sequence of hexadecimal 2 character digits prepended
+	 * by special marker {@code \x}. The same marker can be optionally used as a separator between hexadecimal digits
+	 * depending on value of {@code separateEachByte}.
+	 *
+	 * @param bytes - the given byte array
+	 * @param separateEachByte - flag that controls separator between hexadecimal digits in the resulting string
+	 * @return hexadecimal representation of given array
+	 */
 	public static String byteArrayToHexString(@Nullable byte[] bytes, boolean separateEachByte) {
 		if (bytes == null)  {
 			return null;
 		}
 		ByteBuffer buffer = ByteBuffer.wrap(bytes);
 		String separator = separateEachByte ? BYTE_ARRAY_PREFIX : "";
-		return BYTE_ARRAY_PREFIX + Stream.generate(buffer::get).limit(buffer.capacity()).map(i -> format("%02x", i)).collect(joining(separator));
+		return Stream.generate(buffer::get).limit(buffer.capacity()).map(i -> format("%02x", i)).collect(joining(separator, BYTE_ARRAY_PREFIX, ""));
 	}
 
 	@SuppressWarnings("java:S1168") // we have to return null here
