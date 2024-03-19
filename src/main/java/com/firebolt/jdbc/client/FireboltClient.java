@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -71,9 +72,10 @@ public abstract class FireboltClient {
         try {
 			Constructor<T> constructor = valueType.getDeclaredConstructor(JSONObject.class);
 			constructor.setAccessible(true);
-            return constructor.newInstance(new JSONObject(json));
-        } catch (ReflectiveOperationException e) {
-			throw new IOException(e);
+            return json == null ? null : constructor.newInstance(new JSONObject(json));
+        } catch (ReflectiveOperationException | RuntimeException e) {
+			Throwable cause = Optional.ofNullable(e.getCause()).orElse(e);
+			throw new IOException(cause.getMessage(), cause);
         }
     }
 

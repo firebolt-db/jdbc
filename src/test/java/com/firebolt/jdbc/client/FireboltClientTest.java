@@ -1,5 +1,7 @@
 package com.firebolt.jdbc.client;
 
+import com.firebolt.jdbc.client.account.FireboltAccount;
+import com.firebolt.jdbc.client.gateway.GatewayUrlResponse;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
@@ -9,11 +11,15 @@ import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.stream.Stream;
 
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
@@ -129,6 +135,52 @@ class FireboltClientTest {
 			when(okHttpClient.newCall(any())).thenReturn(call);
 			FireboltClient client = new FireboltClient(okHttpClient, mock(), null, null) {};
 			assertEquals("Cannot get resource: the response from the server is empty", assertThrows(FireboltException.class, () -> client.getResource("http://foo", "foo", "token", String.class)).getMessage());
+		}
+	}
+
+	private static Stream<Arguments> goodJson() {
+		return Stream.of(
+				Arguments.of(GatewayUrlResponse.class, "{\"engineUrl\": \"my.engine\"}", new GatewayUrlResponse("my.engine")),
+				Arguments.of(FireboltAccount.class, "{\"id\": \"123\", \"region\": \"earth\"}", new FireboltAccount("123", "earth", 1)),
+				Arguments.of(GatewayUrlResponse.class, null, null),
+				Arguments.of(FireboltAccount.class, null, null)
+		);
+	}
+
+	@ParameterizedTest(name = "{0}:{1}")
+	@MethodSource("goodJson")
+	<T> void goodJsonResponse(Class<T> clazz, String json, T expected) throws IOException, FireboltException {
+		assertEquals(expected, mockClient(json).getResource("http://foo", "foo", "token", clazz));
+	}
+
+	private static Stream<Arguments> badJson() {
+		return Stream.of(
+				Arguments.of(GatewayUrlResponse.class, "", "A JSONObject text must begin with '{' at 0 [character 1 line 1]"),
+				Arguments.of(FireboltAccount.class, "", "A JSONObject text must begin with '{' at 0 [character 1 line 1]"),
+				Arguments.of(GatewayUrlResponse.class, "{}", "JSONObject[\"engineUrl\"] not found."),
+				Arguments.of(FireboltAccount.class, "{}", "JSONObject[\"id\"] not found.")
+		);
+	}
+
+	@ParameterizedTest(name = "{0}:{1}")
+	@MethodSource("badJson")
+	<T> void wrongJsonResponse(Class<T> clazz, String json, String expectedErrorMessage) throws IOException {
+		FireboltClient client = mockClient(json);
+		IOException e = assertThrows(IOException.class,() -> client.getResource("http://foo", "foo", "token", clazz));
+		assertEquals(expectedErrorMessage, e.getMessage());
+	}
+
+	private FireboltClient mockClient(String json) throws IOException {
+		try (Response response = mock(Response.class)) {
+			when(response.code()).thenReturn(200);
+			ResponseBody responseBody = mock(ResponseBody.class);
+			when(responseBody.string()).thenReturn(json);
+			when(response.body()).thenReturn(responseBody);
+			OkHttpClient okHttpClient = mock(OkHttpClient.class);
+			Call call = mock();
+			when(call.execute()).thenReturn(response);
+			when(okHttpClient.newCall(any())).thenReturn(call);
+			return new FireboltClient(okHttpClient, mock(), null, null) {};
 		}
 	}
 
