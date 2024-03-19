@@ -69,7 +69,6 @@ class FireboltPreparedStatementTest {
 	private static Stream<Arguments> unsupported() {
 		return Stream.of(
 					Arguments.of("setByte", (Executable) () -> statement.setByte(1, (byte) 127)),
-					Arguments.of("setBytes", (Executable) () -> statement.setBytes(1, "bytes".getBytes())),
 					Arguments.of("setURL", (Executable) () -> statement.setURL(1, new URL("http://foo.bar"))),
 					Arguments.of("setCharacterStream", (Executable) () -> statement.setCharacterStream(1, new StringReader("hello"))),
 					Arguments.of("setCharacterStream(length)", (Executable) () -> statement.setCharacterStream(1, new StringReader("hello"), 2)),
@@ -127,7 +126,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldExecute() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars (sales, make, model, minor_model, color, type, types) VALUES (?,?,?,?,?,?,?)");
+		statement = createStatementWithSql("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (?,?,?,?,?,?,?,?)");
 
 		statement.setInt(1, 500);
 		statement.setString(2, "Ford");
@@ -136,13 +135,35 @@ class FireboltPreparedStatementTest {
 		statement.setNull(5, Types.VARCHAR,  "VARCHAR");
 		statement.setNString(6, "sedan");
 		statement.setArray(7, new FireboltArray(FireboltDataType.TEXT, new String[] {"sedan", "hatchback", "coupe"}));
+		statement.setBytes(8, "HarryFord".getBytes());
 		statement.execute();
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties),
 				anyInt(), anyInt(), anyBoolean(), anyBoolean(), any());
 
-		assertEquals("INSERT INTO cars (sales, make, model, minor_model, color, type, types) VALUES (500,'Ford','FOCUS',NULL,NULL,'sedan',['sedan','hatchback','coupe'])",
+		assertEquals("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (500,'Ford','FOCUS',NULL,NULL,'sedan',['sedan','hatchback','coupe'],E'\\x48\\x61\\x72\\x72\\x79\\x46\\x6f\\x72\\x64'::BYTEA)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
+
+	@Test
+	void setNullByteArray() throws SQLException {
+		statement = createStatementWithSql("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (?,?,?,?,?,?,?,?)");
+
+		statement.setInt(1, 500);
+		statement.setString(2, "Ford");
+		statement.setObject(3, "FOCUS", Types.VARCHAR);
+		statement.setNull(4, Types.VARCHAR);
+		statement.setNull(5, Types.VARCHAR,  "VARCHAR");
+		statement.setNString(6, "sedan");
+		statement.setArray(7, new FireboltArray(FireboltDataType.TEXT, new String[] {"sedan", "hatchback", "coupe"}));
+		statement.setBytes(8, null);
+		statement.execute();
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties),
+				anyInt(), anyInt(), anyBoolean(), anyBoolean(), any());
+
+		assertEquals("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (500,'Ford','FOCUS',NULL,NULL,'sedan',['sedan','hatchback','coupe'],NULL)",
+				queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
+
 
 	@Test
 	void shouldExecuteBatch() throws SQLException {

@@ -7,6 +7,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.sql.Array;
@@ -166,6 +167,66 @@ class SqlArrayUtilTest {
 	@ValueSource(strings = {"Array(double) null", "Array(Array(int null) null) null"})
 	void shouldTransformNullArrayToNull(String type) throws SQLException {
 		assertNull(SqlArrayUtil.transformToSqlArray("NULL", ColumnType.of(type)));
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
+	void nullByteArrayToString(boolean separateEachByte) {
+		assertNull(SqlArrayUtil.byteArrayToHexString(null, separateEachByte));
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			"ABC;false;\\x414243",
+			"abc;true;\\x61\\x62\\x63",
+			"Hello, world!;false;\\x48656c6c6f2c20776f726c6421",
+			"Hello, world!;true;\\x48\\x65\\x6c\\x6c\\x6f\\x2c\\x20\\x77\\x6f\\x72\\x6c\\x64\\x21",
+			"6/3=2;false;\\x362f333d32",
+			"6/3=2;true;\\x36\\x2f\\x33\\x3d\\x32",
+			"x\\y;false;\\x785c79",
+			"x\\y;true;\\x78\\x5c\\x79"
+	}, delimiter = ';')
+	void byteArrayToHexString(String str, boolean separateEachByte, String expectedHex) {
+		assertEquals(expectedHex, SqlArrayUtil.byteArrayToHexString(str.getBytes(), separateEachByte));
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			"false;\\x4d756c74690a6c696e650a74657874",
+			"true;\\x4d\\x75\\x6c\\x74\\x69\\x0a\\x6c\\x69\\x6e\\x65\\x0a\\x74\\x65\\x78\\x74"
+	}, delimiter = ';')
+	void byteArrayWithNewLineToHexString(boolean separateEachByte, String expectedHex) {
+		byteArrayToHexString("Multi\nline\ntext", separateEachByte, expectedHex);
+	}
+
+	@Test
+	void nullHexStringToByteArray() {
+		assertNull(SqlArrayUtil.hexStringToByteArray(null));
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+			"\\x78797A,xyz",
+			"\\x4a4B4c,JKL",
+			"hello,hello" // not hex string
+	})
+	void hexStringToByteArray(String hex, String expected) {
+		assertArrayEquals(expected.getBytes(), SqlArrayUtil.hexStringToByteArray(hex));
+	}
+
+	@Test
+	void notHexStringToByteArray() {
+		assertArrayEquals("nothing".getBytes(), SqlArrayUtil.hexStringToByteArray("nothing"));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"ABC", "abc", "Hello, world!", "Multi\nlinentext"
+	})
+	@NullSource
+	void byteArrayToHexStringAndBack(String str) {
+		byte[] bytes = SqlArrayUtil.hexStringToByteArray(SqlArrayUtil.byteArrayToHexString(str == null ? null : str.getBytes(), false));
+		assertEquals(str, bytes == null ? null : new String(bytes));
 	}
 
 	private static Stream<Arguments> biDimensionalIntArray() {

@@ -35,6 +35,7 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -44,6 +45,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.ACCESS_TOKEN;
@@ -57,6 +59,7 @@ import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE;
 import static java.sql.ResultSet.TYPE_SCROLL_SENSITIVE;
+import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -74,6 +77,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
 abstract class FireboltConnectionTest {
@@ -312,7 +316,7 @@ abstract class FireboltConnectionTest {
 					propertiesArgumentCaptor.capture(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any());
 			assertEquals("1", propertiesArgumentCaptor.getValue().getAdditionalProperties().get("custom_1"));
 			assertEquals("1", fireboltConnection.getSessionProperties().getAdditionalProperties().get("custom_1"));
-			assertEquals("SELECT 1", queryInfoWrapperArgumentCaptor.getValue().getSql());
+			assertEquals(List.of("SELECT 1"), queryInfoWrapperArgumentCaptor.getAllValues().stream().map(StatementInfoWrapper::getSql).collect(toList()));
 		}
 	}
 
@@ -324,7 +328,7 @@ abstract class FireboltConnectionTest {
 			fireboltConnection.isValid(500);
 			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
 					propertiesArgumentCaptor.capture(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any());
-			assertEquals("SELECT 1", queryInfoWrapperArgumentCaptor.getValue().getSql());
+			assertEquals(List.of("SELECT 1"), queryInfoWrapperArgumentCaptor.getAllValues().stream().map(StatementInfoWrapper::getSql).collect(toList()));
 		}
 	}
 

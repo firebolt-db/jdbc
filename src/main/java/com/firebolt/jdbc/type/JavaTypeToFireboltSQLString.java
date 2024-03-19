@@ -18,6 +18,9 @@ import java.util.UUID;
 
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_NOT_SUPPORTED;
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
+import static com.firebolt.jdbc.type.array.SqlArrayUtil.byteArrayToHexString;
+import static java.lang.String.format;
+import static java.util.Optional.ofNullable;
 
 public enum JavaTypeToFireboltSQLString {
 	BOOLEAN(Boolean.class, value -> Boolean.TRUE.equals(value) ? "1" : "0"),
@@ -32,7 +35,9 @@ public enum JavaTypeToFireboltSQLString {
 	DATE(Date.class, date -> SqlDateUtil.transformFromDateToSQLStringFunction.apply((Date) date)),
 	TIMESTAMP(Timestamp.class, time -> SqlDateUtil.transformFromTimestampToSQLStringFunction.apply((Timestamp) time)),
 	BIG_DECIMAL(BigDecimal.class, value -> value == null ? BaseType.NULL_VALUE : ((BigDecimal) value).toPlainString()),
-	ARRAY(Array.class, SqlArrayUtil::arrayToString);
+	ARRAY(Array.class, SqlArrayUtil::arrayToString),
+	BYTE_ARRAY(byte[].class, value -> ofNullable(byteArrayToHexString((byte[])value, true)).map(x  -> format("E'%s'::BYTEA", x)).orElse(null)),
+	;
 
 	private static final List<Entry<String, String>> characterToEscapedCharacterPairs = List.of(
 			Map.entry("\0", "\\0"), Map.entry("\\", "\\\\"), Map.entry("'", "''"));
@@ -49,7 +54,7 @@ public enum JavaTypeToFireboltSQLString {
 		Class<?> objectType;
 		if (object == null) {
 			return NULL_VALUE;
-		} else if (object.getClass().isArray()) {
+		} else if (object.getClass().isArray() && !byte[].class.equals(object.getClass())) {
 			objectType = Array.class;
 		} else {
 			objectType = object.getClass();
@@ -57,7 +62,7 @@ public enum JavaTypeToFireboltSQLString {
 		JavaTypeToFireboltSQLString converter = Arrays.stream(JavaTypeToFireboltSQLString.values())
 				.filter(c -> c.getSourceType().equals(objectType)).findAny()
 				.orElseThrow(() -> new FireboltException(
-						String.format("Cannot convert type %s. The type is not supported.", objectType),
+						format("Cannot convert type %s. The type is not supported.", objectType),
 						TYPE_NOT_SUPPORTED));
 		return converter.transform(object);
 	}
@@ -68,7 +73,7 @@ public enum JavaTypeToFireboltSQLString {
 			for (Entry<String, String> specialCharacter : characterToEscapedCharacterPairs) {
 				escaped = escaped.replace(specialCharacter.getKey(), specialCharacter.getValue());
 			}
-			return String.format("'%s'", escaped);
+			return format("'%s'", escaped);
 		};
 	}
 
