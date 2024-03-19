@@ -18,7 +18,6 @@ import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.array.FireboltArray;
-import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import com.firebolt.jdbc.util.PropertyUtil;
 import lombok.CustomLog;
 import lombok.NonNull;

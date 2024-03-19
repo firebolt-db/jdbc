@@ -207,7 +207,7 @@ public class FireboltStatement implements Statement {
 	}
 
 	@Override
-	public FireboltConnection getConnection() {
+	public Connection getConnection() {
 		return connection;
 	}
 
