@@ -95,8 +95,32 @@ class FireboltAccountRetrieverTest {
     void shouldThrowFireboltExceptionUponIOException() throws IOException {
         Call call = mock(Call.class);
         when(httpClient.newCall(any())).thenReturn(call);
-        when(call.execute()).thenThrow(new IOException("ex"));
-        assertEquals("Failed to get engineUrl url for account acc", assertThrows(FireboltException.class, () -> fireboltGatewayUrlClient.retrieve("token", "acc")).getMessage());
+        when(call.execute()).thenThrow(new IOException("io error"));
+        assertEquals("Failed to get engineUrl url for account acc: io error", assertThrows(FireboltException.class, () -> fireboltGatewayUrlClient.retrieve("token", "acc")).getMessage());
+    }
+
+    @ParameterizedTest(name = "{0}:{1}")
+    @CsvSource({
+            "resolve, com.firebolt.jdbc.client.account.FireboltAccount, {}, JSONObject[\"id\"] not found.",
+            "engineUrl, com.firebolt.jdbc.client.gateway.GatewayUrlResponse, {}, JSONObject[\"engineUrl\"] not found."
+    })
+    <T> void shouldThrowFireboltExceptionUponWrongJsonFormat(String path, Class<T> clazz, String json, String expectedErrorMessage) throws IOException {
+        FireboltAccountRetriever<T> fireboltAccountIdResolver = mockAccountRetriever(path, clazz, json);
+        assertEquals(format("Failed to get %s url for account acc: %s", path, expectedErrorMessage), assertThrows(FireboltException.class, () -> fireboltAccountIdResolver.retrieve("token", "acc")).getMessage());
+    }
+
+    private <T> FireboltAccountRetriever<T> mockAccountRetriever(String path, Class<T> clazz, String json) throws IOException {
+        try (Response response = mock(Response.class)) {
+            when(response.code()).thenReturn(200);
+            ResponseBody responseBody = mock(ResponseBody.class);
+            when(responseBody.string()).thenReturn(json);
+            when(response.body()).thenReturn(responseBody);
+            OkHttpClient okHttpClient = mock(OkHttpClient.class);
+            Call call = mock();
+            when(call.execute()).thenReturn(response);
+            when(okHttpClient.newCall(any())).thenReturn(call);
+            return new FireboltAccountRetriever<>(okHttpClient, mock(), null, null, "test-firebolt.io", path, clazz);
+        }
     }
 
     @ParameterizedTest

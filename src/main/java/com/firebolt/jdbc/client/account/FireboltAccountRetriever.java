@@ -27,7 +27,7 @@ public class FireboltAccountRetriever<T> extends FireboltClient {
         try {
             return getResource(format(URL, host, accountName, path), accessToken, type);
         } catch (IOException e) {
-            throw new FireboltException(String.format("Failed to get %s url for account %s", path, accountName), e);
+            throw new FireboltException(String.format("Failed to get %s url for account %s: %s", path, accountName, e.getMessage()), e);
         }
     }
 
