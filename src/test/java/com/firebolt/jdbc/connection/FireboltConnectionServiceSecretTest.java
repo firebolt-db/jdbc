@@ -71,6 +71,12 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         }
     }
 
+    @Test
+    void shouldNotFetchTokenNorEngineHostForLocalFirebolt() throws SQLException {
+        super.shouldNotFetchTokenNorEngineHostForLocalFirebolt();
+        verifyNoInteractions(fireboltEngineService);
+    }
+
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
         return new FireboltConnectionServiceSecret(url, props, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService);
     }
