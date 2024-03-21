@@ -16,6 +16,7 @@ import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltEngineVersion2Service;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
+import com.firebolt.jdbc.util.PropertyUtil;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
 
@@ -90,7 +91,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
 
     @Override
     protected void assertDatabaseExisting(String database) throws SQLException {
-        if (database != null && !getFireboltEngineService().doesDatabaseExist(database)) {
+        if (database != null && !PropertyUtil.isLocalDb(loginProperties) && !getFireboltEngineService().doesDatabaseExist(database)) {
             throw new FireboltException(format("Database %s does not exist", database), RESOURCE_NOT_FOUND);
         }
     }
