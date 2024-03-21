@@ -70,10 +70,10 @@ dependencies {
     implementation fileTree(dir: 'libs', includes: ['*.jar'])
 
     compileOnly 'org.slf4j:slf4j-api:2.0.11'
-    compileOnly 'org.projectlombok:lombok:1.18.30'
-    annotationProcessor 'org.projectlombok:lombok:1.18.30'
-    testCompileOnly 'org.projectlombok:lombok:1.18.30'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+    compileOnly 'org.projectlombok:lombok:1.18.32'
+    annotationProcessor 'org.projectlombok:lombok:1.18.32'
+    testCompileOnly 'org.projectlombok:lombok:1.18.32'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.32'
 
     testImplementation 'ch.qos.logback:logback-classic:1.5.3'
     testImplementation 'org.mockito:mockito-junit-jupiter:5.10.0'
