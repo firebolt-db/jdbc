@@ -115,7 +115,6 @@ class ConnectionTest extends IntegrationTest {
         String url = getJdbcUrl(params, useDatabase, useEngine);
         try (Connection connection = DriverManager.getConnection(url, params.getPrincipal(), params.getSecret());
              Statement statement = connection.createStatement()) {
-            statement.executeQuery("SELECT 1");
             assertThrows(SQLException.class, () -> statement.executeQuery("SELECT 1"));
         }
     }
