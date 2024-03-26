@@ -12,7 +12,6 @@ import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementUtil;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
 import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
-import lombok.Builder;
 import lombok.CustomLog;
 import lombok.NonNull;
 
@@ -44,7 +43,6 @@ import java.util.Map;
 
 import static com.firebolt.jdbc.statement.StatementUtil.replaceParameterMarksWithValues;
 import static java.sql.Types.VARBINARY;
-import static java.util.stream.Collectors.joining;
 
 @CustomLog
 public class FireboltPreparedStatement extends FireboltStatement implements PreparedStatement {
@@ -53,9 +51,12 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	private final List<Map<Integer, String>> rows;
 	private Map<Integer, String> providedParameters;
 
-	@Builder(builderMethodName = "statementBuilder") // As the parent is also using @Builder, a method name is mandatory
+	public FireboltPreparedStatement(FireboltStatementService statementService, FireboltConnection connection, String sql) {
+		this(statementService, connection.getSessionProperties(), connection, sql);
+	}
+
 	public FireboltPreparedStatement(FireboltStatementService statementService, FireboltProperties sessionProperties,
-			String sql, FireboltConnection connection) {
+									 FireboltConnection connection, String sql) {
 		super(statementService, sessionProperties, connection);
 		log.debug("Populating PreparedStatement object for SQL: {}", sql);
 		this.providedParameters = new HashMap<>();

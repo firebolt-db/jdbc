@@ -199,10 +199,9 @@ public abstract class FireboltConnection implements Connection {
 		return createStatement(getSessionProperties());
 	}
 
-	public Statement createStatement(FireboltProperties fireboltProperties) throws SQLException {
+	private Statement createStatement(FireboltProperties fireboltProperties) throws SQLException {
 		validateConnectionIsNotClose();
-		FireboltStatement fireboltStatement = FireboltStatement.builder().statementService(fireboltStatementService)
-				.sessionProperties(fireboltProperties).connection(this).build();
+		FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, this);
 		addStatement(fireboltStatement);
 		return fireboltStatement;
 	}
@@ -379,9 +378,7 @@ public abstract class FireboltConnection implements Connection {
 
 	private PreparedStatement createPreparedStatement(String sql) throws SQLException {
 		validateConnectionIsNotClose();
-		FireboltPreparedStatement statement = FireboltPreparedStatement.statementBuilder()
-				.statementService(fireboltStatementService).sessionProperties(getSessionProperties()).sql(sql)
-				.connection(this).build();
+		FireboltPreparedStatement statement = new FireboltPreparedStatement(fireboltStatementService, this, sql);
 		addStatement(statement);
 		return statement;
 	}

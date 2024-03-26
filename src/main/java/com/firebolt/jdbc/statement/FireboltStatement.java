@@ -9,7 +9,6 @@ import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.util.CloseableUtil;
-import lombok.Builder;
 import lombok.CustomLog;
 
 import java.io.InputStream;
@@ -24,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toCollection;
 
@@ -44,7 +42,6 @@ public class FireboltStatement implements Statement {
 	private int queryTimeout = 0; // zero means that there is no limit
 	private String runningStatementLabel;
 
-	@Builder
 	public FireboltStatement(FireboltStatementService statementService, FireboltProperties sessionProperties,
 			FireboltConnection connection) {
 		this.statementService = statementService;
@@ -280,7 +277,7 @@ public class FireboltStatement implements Statement {
 		}
 		closeAllResults();
 
-		if (removeFromConnection) {
+		if (removeFromConnection && connection != null) {
 			connection.removeClosedStatement(this);
 		}
 		cancel();
