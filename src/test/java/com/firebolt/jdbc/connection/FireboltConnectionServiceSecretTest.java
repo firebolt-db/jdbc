@@ -1,6 +1,9 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.client.account.FireboltAccountRetriever;
+import com.firebolt.jdbc.client.gateway.GatewayUrlResponse;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -14,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -69,6 +73,23 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
             DatabaseMetaData dbmd = connection.getMetaData();
             assertEquals(readOnly, dbmd.isReadOnly());
         }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({
+            "http://the-endpoint,the-endpoint",
+            "https://the-endpoint,the-endpoint",
+            "the-endpoint,the-endpoint",
+            "http://the-endpoint?foo=1&bar=2,the-endpoint",
+            "https://the-endpoint?foo=1&bar=2,the-endpoint",
+            "the-endpoint?foo=1&bar=2,the-endpoint",
+    })
+    void checkSystemEngineEndpoint(String gatewayUrl, String expectedHost) throws SQLException {
+        @SuppressWarnings("unchecked") FireboltAccountRetriever<GatewayUrlResponse> fireboltGatewayUrlClient = mock(FireboltAccountRetriever.class);
+        when(fireboltGatewayUrlClient.retrieve(any(), any())).thenReturn(new GatewayUrlResponse(gatewayUrl));
+        FireboltGatewayUrlService gatewayUrlService = new FireboltGatewayUrlService(fireboltGatewayUrlClient);
+        FireboltConnection connection = new FireboltConnectionServiceSecret(SYSTEM_ENGINE_URL, connectionProperties, fireboltAuthenticationService, gatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService);
+        assertEquals(expectedHost, connection.getSessionProperties().getHost());
     }
 
     @Test
