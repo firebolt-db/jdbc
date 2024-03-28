@@ -67,6 +67,7 @@ jobs:
       database: ${{ inputs.database2 }}
       engine: ${{ inputs.engine2 }}
       account: ${{ vars.FIREBOLT_ACCOUNT_V1 }}
+      run_setup: true
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
@@ -78,6 +79,7 @@ jobs:
       database: ${{ inputs.database-with-engine-v2 }}
       engine: ${{ inputs.engine_v2_fb_2_0 }}
       account: ${{ vars.FIREBOLT_ACCOUNT_V2 }}
+      run_setup: false
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
