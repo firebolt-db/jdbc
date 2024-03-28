@@ -6,7 +6,6 @@ import lombok.experimental.UtilityClass;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -57,12 +56,6 @@ public class MetadataUtil {
 		ofNullable(schema).ifPresent(pattern -> conditions.add(format("table_schema LIKE '%s'", pattern)));
 		ofNullable(tableName).ifPresent(pattern -> conditions.add(format("table_name LIKE '%s'", pattern)));
 		return queryBuilder.conditions(conditions).orderBy("table_schema, table_name").build().toSql();
-	}
-
-	public static String getDatabaseVersionQuery(String engine) {
-		return Query.builder().select("version").from("information_schema.engines")
-				.conditions(Collections.singletonList(format("engine_name iLIKE '%s%%'", engine))).build()
-				.toSql();
 	}
 
 	/**

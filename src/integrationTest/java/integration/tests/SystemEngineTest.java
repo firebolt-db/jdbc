@@ -4,7 +4,7 @@ import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import integration.ConnectionInfo;
-import integration.InfraVersion;
+import integration.EnvironmentCondition;
 import integration.IntegrationTest;
 import lombok.CustomLog;
 import org.junit.Assert;
@@ -79,7 +79,7 @@ public class SystemEngineTest extends IntegrationTest {
 
 	@Test
 	void shouldSelect1() throws SQLException {
-		try (Connection connection = createConnection();
+		try (Connection connection = createConnection("");
 			 ResultSet rs = connection.createStatement().executeQuery("SELECT 1")) {
 			assertTrue(rs.next());
 			assertEquals(1, rs.getInt(1));
@@ -127,7 +127,7 @@ public class SystemEngineTest extends IntegrationTest {
 	@ParameterizedTest
 	@ValueSource(strings = {"", "DATABASE"})
 	@Tag("v2")
-	@InfraVersion(value = 2, comparison = InfraVersion.Comparison.GE)
+	@EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.GE)
 	void useDatabase(String entityType) throws SQLException {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
 		try (Connection connection = createConnection(getSystemEngineName())) {
@@ -163,7 +163,7 @@ public class SystemEngineTest extends IntegrationTest {
 	@Test
 	@Tag("v2")
 	@Tag("slow")
-	@InfraVersion(value = 2, comparison = InfraVersion.Comparison.GE)
+	@EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.GE)
 	void useEngine() throws SQLException {
 		try (Connection connection = createConnection(getSystemEngineName())) {
 			try {
@@ -196,7 +196,7 @@ public class SystemEngineTest extends IntegrationTest {
 		String serviceAccountName = format("%s_sa_no_user_%d", database, System.currentTimeMillis());
 		try (Connection connection = createConnection(getSystemEngineName())) {
 			try {
-				connection.createStatement().executeUpdate(format("CREATE SERVICE ACCOUNT \"%s\" WITH DESCRIPTION = \"Ecosytem test with no user\"", serviceAccountName));
+				connection.createStatement().executeUpdate(format("CREATE SERVICE ACCOUNT \"%s\" WITH DESCRIPTION = 'Ecosytem test with no user'", serviceAccountName));
 				// This what I want to do here
 //				ResultSet genKeyRs = connection.createStatement().executeQuery(format("CALL fb_GENERATESERVICEACCOUNTKEY('%s')", serviceAccountName));
 //				assertTrue(genKeyRs.next());

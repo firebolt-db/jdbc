@@ -80,7 +80,7 @@ jobs:
       - name: Setup env by build
         id: setup-env
         run: |
-          if [ inputs.run_setup == true ]; then
+          if [ ${{ inputs.run_setup }} == true ]; then
              echo "run_setup=false" >> $GITHUB_OUTPUT
           else
              echo "run_setup=true" >> $GITHUB_OUTPUT

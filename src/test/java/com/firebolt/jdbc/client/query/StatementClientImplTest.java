@@ -3,6 +3,7 @@ package com.firebolt.jdbc.client.query;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
+import com.firebolt.jdbc.connection.UrlUtil;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
 import com.firebolt.jdbc.exception.ExceptionType;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Captor;
@@ -30,6 +32,7 @@ import org.mockito.stubbing.Answer;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -103,8 +106,10 @@ class StatementClientImplTest {
 		return Map.entry(statementInfoWrapper.getLabel(), actualRequest.url().toString());
 	}
 
-	@Test
-	void shouldCancelSqlQuery() throws SQLException, IOException {
+	@ParameterizedTest(name = "infra version:{0}")
+	@ValueSource(ints = {0, 1, 2})
+	void shouldCancelSqlQuery(int infraVersion) throws SQLException, IOException {
+		when(connection.getInfraVersion()).thenReturn(infraVersion);
 		String id = "12345";
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "", "");
 		PreparedStatement ps = mock(PreparedStatement.class);
@@ -123,8 +128,10 @@ class StatementClientImplTest {
 				requestArgumentCaptor.getValue().url().uri().toString());
 	}
 
-	@Test
-	void shouldIgnoreIfStatementIsNotFoundInDbWhenCancelSqlQuery() throws SQLException, IOException {
+	@ParameterizedTest(name = "infra version:{0}")
+	@ValueSource(ints = {0, 1, 2})
+	void shouldIgnoreIfStatementIsNotFoundInDbWhenCancelSqlQuery(int infraVersion) throws SQLException, IOException {
+		when(connection.getInfraVersion()).thenReturn(infraVersion);
 		String id = "12345";
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "", "");
 		PreparedStatement ps = mock(PreparedStatement.class);
@@ -143,8 +150,10 @@ class StatementClientImplTest {
 				requestArgumentCaptor.getValue().url().uri().toString());
 	}
 
-	@Test
-	void cannotGetStatementIdWhenCancelling() throws SQLException {
+	@ParameterizedTest(name = "infra version:{0}")
+	@ValueSource(ints = {0, 1, 2})
+	void cannotGetStatementIdWhenCancelling(int infraVersion) throws SQLException {
+		when(connection.getInfraVersion()).thenReturn(infraVersion);
 		String id = "12345";
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "", "");
 		PreparedStatement ps = mock(PreparedStatement.class);
@@ -159,10 +168,13 @@ class StatementClientImplTest {
 
 	@ParameterizedTest
 	@CsvSource({
-			"401,The operation is not authorized",
-			"500, Server failed to execute query"
+			"1,401,The operation is not authorized",
+			"1,500, Server failed to execute query",
+			"2,401,The operation is not authorized",
+			"2,500, Server failed to execute query"
 	})
-	void shouldFailToCancelSqlQuery(int httpStatus, String errorMessage) throws SQLException, IOException {
+	void shouldFailToCancelSqlQuery(int infraVersion, int httpStatus, String errorMessage) throws SQLException, IOException {
+		when(connection.getInfraVersion()).thenReturn(infraVersion);
 		String id = "12345";
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "", "");
 		PreparedStatement ps = mock(PreparedStatement.class);
@@ -258,10 +270,10 @@ class StatementClientImplTest {
 		}
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest(name = "infra version:{0}")
 	@CsvSource({
 			"1,https://api.app.firebolt.io/?database=db1&two=second&three=third&compress=1&one=first,https://api.app.firebolt.io/?database=db1&output_format=TabSeparatedWithNamesAndTypes&compress=1",
-			"2,https://api.app.firebolt.io/?database=db1&account_id=a1&engine=e1&compress=1&one=first&two=second&three=third,https://api.app.firebolt.io/?database=db1&account_id=a1&output_format=TabSeparatedWithNamesAndTypes&engine=e1&compress=1"
+			"2,https://api.app.firebolt.io/?database=db1&account_id=a1&engine=e1&compress=1&one=first&two=second&three=third&query_label=[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12},https://api.app.firebolt.io/?database=db1&account_id=a1&output_format=TabSeparatedWithNamesAndTypes&engine=e1&compress=1&query_label=[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}"
 	})
 	void useResetSession(int infraVersion, String useUrl, String select1Url) throws SQLException, IOException {
 		Properties props = new Properties();
@@ -287,13 +299,40 @@ class StatementClientImplTest {
 				private int i = 0;
 				@Override
 				public boolean matches(Request request) {
-					return useUrls[i++].equals(request.url().url().toString());
+					return urlsComparator(useUrls[i++], request.url().url().toString());
 				}
 			}))).thenReturn(useCall, select1Call);
 			connection.createStatement().executeUpdate("also does not matter");
 			// one->first remains here because this is initial property; it should not be removed during session reset
 			assertEquals(Map.of("one", "first"), connection.getSessionProperties().getAdditionalProperties());
 		}
+	}
+
+	/**
+	 * Compares given URL template with actual URL as following: host and then each query parameter.
+	 * Each string element of template is interpreted as regular expression, each element of actual
+	 * URL as just string.
+	 * @param template
+	 * @param actual
+	 * @return true if matches, false otherwise
+	 */
+	private boolean urlsComparator(String template, String actual) {
+		URL templateUrl = UrlUtil.createUrl(template);
+		URL actualUrl = UrlUtil.createUrl(actual);
+		if (!actualUrl.getHost().matches(templateUrl.getHost())) {
+			return false;
+		}
+		Map<String, String> templateParameters = UrlUtil.getQueryParameters(templateUrl);
+		Map<String, String> actualParameters = UrlUtil.getQueryParameters(actualUrl);
+		if (actualParameters.size() != templateParameters.size()) {
+			return false;
+		}
+		for (Entry<String, String> actualParameter : actualParameters.entrySet()) {
+			if (!actualParameter.getValue().matches(templateParameters.get(actualParameter.getKey()))) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private FireboltConnection use(String propName, String propValue, String command, String responseHeadersStr) throws SQLException, IOException {

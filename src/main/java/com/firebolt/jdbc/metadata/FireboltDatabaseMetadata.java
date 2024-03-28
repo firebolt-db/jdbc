@@ -161,7 +161,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 	private final String url;
 	private final FireboltConnection connection;
-	private String databaseVersion;
+	private volatile String databaseVersion;
 
 	public FireboltDatabaseMetadata(String url, FireboltConnection connection) {
 		this.url = url;
@@ -293,10 +293,15 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	private boolean isColumnNullable(ResultSet columnDescription) throws SQLException {
+		final String isNullable = "is_nullable";
 		try {
-			return columnDescription.getInt("is_nullable") == 1;
-		} catch (Exception e) {
-			return columnDescription.getBoolean("is_nullable");
+			return columnDescription.getInt(isNullable) == 1;
+		} catch (SQLException | NumberFormatException e1) {
+			try {
+				return columnDescription.getBoolean(isNullable);
+			} catch (SQLException e2) {
+				return "YES".equals(columnDescription.getString(isNullable));
+			}
 		}
 	}
 
@@ -310,10 +315,10 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 	private List<List<?>> getTablesData(String catalog, String schemaPattern, String tableNamePattern, String[] typesArr) throws SQLException {
 		Set<String> types = typesArr == null ? Set.of(TABLE, VIEW) : Set.of(typesArr);
-		Set<String> tableTypes = Set.of("FACT", "DIMENSION");
+		List<String> tableTypes = List.of("BASE TABLE", "DIMENSION", "FACT");
 		List<String> trulyTableTypes = new ArrayList<>();
 		if (types.contains(TABLE)) {
-			trulyTableTypes.addAll(List.of("FACT", "DIMENSION"));
+			trulyTableTypes.addAll(tableTypes);
 		}
 		if (types.contains(VIEW)) {
 			trulyTableTypes.add(VIEW);
@@ -398,12 +403,8 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	@Override
 	public String getDatabaseProductVersion() throws SQLException {
 		if (databaseVersion == null) {
-			String engine = connection.getEngine();
-			try (Statement statement = connection.createStatement()) {
-				String query = MetadataUtil.getDatabaseVersionQuery(engine);
-				ResultSet rs = statement.executeQuery(query);
-				rs.next();
-				databaseVersion = rs.getString(1);
+			try (Statement statement = connection.createStatement(); ResultSet rs = statement.executeQuery("SELECT VERSION()")) {
+				databaseVersion = rs.next() ? rs.getString(1) : "";
 			}
 		}
 		return databaseVersion;
@@ -1333,7 +1334,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList());
 
 		List<List<?>> rows = new ArrayList<>();
-		String query = MetadataUtil.getTablesQuery(catalog, schemaPattern, tableNamePattern, new String[] {"FACT", "DIMENSION"});
+		String query = MetadataUtil.getTablesQuery(catalog, schemaPattern, tableNamePattern, new String[] {"BASE TABLE", "DIMENSION", "FACT"});
 		try (Statement statement = connection.createStatement();
 			 ResultSet columnDescription = statement.executeQuery(query)) {
 			while (columnDescription.next()) {

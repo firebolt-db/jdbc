@@ -3,6 +3,7 @@ package integration.tests;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.FireboltStatement;
+import integration.EnvironmentCondition;
 import integration.IntegrationTest;
 import lombok.CustomLog;
 import org.junit.jupiter.api.AfterEach;
@@ -17,6 +18,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
+import static integration.EnvironmentCondition.Attribute.databaseVersion;
+import static integration.EnvironmentCondition.Comparison.GE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @CustomLog
@@ -34,8 +37,22 @@ class StatementCancelTest extends IntegrationTest {
 
 	@Test
 	@Timeout(value = 2, unit = TimeUnit.MINUTES)
+	@Tag("v1") // generate_series is supported on all available engine of v2
 	@Tag("slow")
-	void shouldCancelQuery() throws SQLException, InterruptedException {
+	void shouldCancelQueryV1() throws SQLException, InterruptedException {
+		shouldCancelQuery();
+	}
+
+	@Test
+	@Timeout(value = 10, unit = TimeUnit.MINUTES)
+	@EnvironmentCondition(value = "3.33", attribute = databaseVersion, comparison = GE) // generate_series is supported starting from version 3.33 on v2
+	@Tag("v2")
+	@Tag("slow")
+	void shouldCancelQueryV2() throws SQLException, InterruptedException {
+		shouldCancelQuery();
+	}
+
+	private void shouldCancelQuery() throws SQLException, InterruptedException {
 		try (Connection connection = createConnection(); Statement fillStatement = connection.createStatement()) {
 			long now = System.currentTimeMillis();
 			fillStatement.execute("insert into ex_lineitem ( l_orderkey ) SELECT * FROM GENERATE_SERIES(1, 100000000)");

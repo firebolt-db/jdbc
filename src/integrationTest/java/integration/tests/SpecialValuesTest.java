@@ -1,5 +1,6 @@
 package integration.tests;
 
+import integration.EnvironmentCondition;
 import integration.IntegrationTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -32,8 +33,28 @@ public class SpecialValuesTest extends IntegrationTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"select 'inf'::float", "select '+inf'::float"})
+    @EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.LT)
     void infFloatUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Float.POSITIVE_INFINITY);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"select 'inf'::real", "select '+inf'::real"})
+    void infRealUserEngine(String query) throws SQLException {
+        specialSelect(userConnection, query, Float.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Float.POSITIVE_INFINITY);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"select 'inf'::real", "select '+inf'::real"})
+    void infRealSystemEngine(String query) throws SQLException {
+        specialSelect(userConnection, query, Float.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Float.POSITIVE_INFINITY);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"select 'inf'::float", "select '+inf'::float"})
+    @EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.GE)
+    void infFloatAsDoubleUserEngine(String query) throws SQLException {
+        specialSelect(userConnection, query, Float.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
     }
 
     @ParameterizedTest
@@ -51,8 +72,28 @@ public class SpecialValuesTest extends IntegrationTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"select '-inf'::float"})
+    @EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.LT)
     void minusInfFloatUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"select '-inf'::float"})
+    @EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.GE)
+    void minusInfFloatAsDoubleUserEngine(String query) throws SQLException {
+        specialSelect(userConnection, query, Float.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"select '-inf'::real"})
+    void minusInfRealUserEngine(String query) throws SQLException {
+        specialSelect(userConnection, query, Float.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"select '-inf'::real"})
+    void minusInfRealSystemEngine(String query) throws SQLException {
+        specialSelect(systemConnection, query, Float.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
     }
 
     @ParameterizedTest
@@ -70,8 +111,28 @@ public class SpecialValuesTest extends IntegrationTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"select 'nan'::float", "select '+nan'::float", "select '-nan'::float"})
+    @EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.LT)
     void nanFloatUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.NaN, Double.NaN, Float.NaN);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"select 'nan'::real", "select '+nan'::real", "select '-nan'::real"})
+    void nanRealUserEngine(String query) throws SQLException {
+        specialSelect(userConnection, query, Float.NaN, Double.NaN, Float.NaN);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"select 'nan'::real", "select '+nan'::real", "select '-nan'::real"})
+    void nanRealSystemEngine(String query) throws SQLException {
+        specialSelect(systemConnection, query, Float.NaN, Double.NaN, Float.NaN);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"select 'nan'::float", "select '+nan'::float", "select '-nan'::float"})
+    @EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.GE)
+    void nanFloatAsDoubleUserEngine(String query) throws SQLException {
+        specialSelect(userConnection, query, Float.NaN, Double.NaN, Double.NaN);
     }
 
     @ParameterizedTest

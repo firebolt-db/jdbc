@@ -291,7 +291,7 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void shouldGetTables() throws SQLException {
-		String expectedSql = "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('FACT', 'DIMENSION', 'VIEW') AND table_schema LIKE 'def%' AND table_name LIKE 'tab%' order by table_schema, table_name";
+		String expectedSql = "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('BASE TABLE', 'DIMENSION', 'FACT', 'VIEW') AND table_schema LIKE 'def%' AND table_name LIKE 'tab%' order by table_schema, table_name";
 		when(statement.executeQuery(expectedSql)).thenReturn(new FireboltResultSet(getInputStreamForGetTables()));
 		ResultSet resultSet = fireboltDatabaseMetadata.getTables("catalog", "def%", "tab%", null);
 		verify(statement).executeQuery(expectedSql);
@@ -318,7 +318,7 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void shouldGetTablePrivileges() throws SQLException {
-		String expectedSql = "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('FACT', 'DIMENSION') AND table_schema LIKE 'def%' AND table_name LIKE 'tab%' order by table_schema, table_name";
+		String expectedSql = "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('BASE TABLE', 'DIMENSION', 'FACT') AND table_schema LIKE 'def%' AND table_name LIKE 'tab%' order by table_schema, table_name";
 		when(statement.executeQuery(expectedSql)).thenReturn(new FireboltResultSet(getInputStreamForGetTables()));
 		ResultSet resultSet = fireboltDatabaseMetadata.getTablePrivileges("catalog", "def%", "tab%");
 		verify(statement).executeQuery(expectedSql);
@@ -367,32 +367,26 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void shouldGetDatabaseProductVersion() throws SQLException {
-		Statement statement = mock(FireboltStatement.class);
-		when(fireboltConnection.createStatement()).thenReturn(statement);
-		when(fireboltConnection.getEngine()).thenReturn("test");
-		when(statement.executeQuery("SELECT version FROM information_schema.engines WHERE engine_name iLIKE 'test%'"))
-				.thenReturn(new FireboltResultSet(getInputStreamForGetVersion()));
+		mockGetDatabaseVersion();
 		assertEquals("abcd_xxx_123", fireboltDatabaseMetadata.getDatabaseProductVersion());
 	}
 
 	@Test
 	void shouldGetDatabaseMajorVersion() throws SQLException {
-		Statement statement = mock(FireboltStatement.class);
-		when(fireboltConnection.createStatement()).thenReturn(statement);
-		when(fireboltConnection.getEngine()).thenReturn("test");
-		when(statement.executeQuery("SELECT version FROM information_schema.engines WHERE engine_name iLIKE 'test%'"))
-				.thenReturn(new FireboltResultSet(getInputStreamForGetVersion()));
+		mockGetDatabaseVersion();
 		assertEquals(0, fireboltDatabaseMetadata.getDatabaseMajorVersion());
 	}
 
 	@Test
 	void shouldGetDatabaseMinorVersion() throws SQLException {
+		mockGetDatabaseVersion();
+		assertEquals(0, fireboltDatabaseMetadata.getDatabaseMinorVersion());
+	}
+
+	private void mockGetDatabaseVersion() throws SQLException {
 		Statement statement = mock(FireboltStatement.class);
 		when(fireboltConnection.createStatement()).thenReturn(statement);
-		when(fireboltConnection.getEngine()).thenReturn("test");
-		when(statement.executeQuery("SELECT version FROM information_schema.engines WHERE engine_name iLIKE 'test%'"))
-				.thenReturn(new FireboltResultSet(getInputStreamForGetVersion()));
-		assertEquals(0, fireboltDatabaseMetadata.getDatabaseMinorVersion());
+		when(statement.executeQuery("SELECT VERSION()")).thenReturn(new FireboltResultSet(getInputStreamForGetVersion()));
 	}
 
 	@Test

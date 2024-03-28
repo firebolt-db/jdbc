@@ -52,10 +52,4 @@ class MetadataUtilTest {
 				"SELECT table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns",
 				MetadataUtil.getColumnsQuery(null, null, null));
 	}
-
-	@Test
-	void shouldGetVersionQuery() {
-		assertEquals("SELECT version FROM information_schema.engines WHERE engine_name iLIKE 'test%'",
-				MetadataUtil.getDatabaseVersionQuery("test"));
-	}
 }
