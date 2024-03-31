@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.firebolt.jdbc.statement.StatementUtil.replaceParameterMarksWithValues;
+import static com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory.createValidator;
 import static java.sql.Types.VARBINARY;
 
 @CustomLog
@@ -61,6 +62,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		log.debug("Populating PreparedStatement object for SQL: {}", sql);
 		this.providedParameters = new HashMap<>();
 		this.rawStatement = StatementUtil.parseToRawStatementWrapper(sql);
+		rawStatement.getSubStatements().forEach(statement -> createValidator(statement, connection).validate(statement));
 		this.rows = new ArrayList<>();
 	}
 
