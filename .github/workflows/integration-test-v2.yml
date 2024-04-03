@@ -16,6 +16,11 @@ on:
         description: 'Account'
         required: true
         type: string
+      run_setup:
+        description: 'Run setup database and engine using GitHub action'
+        required: true
+        type: boolean
+        default: true
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN:
         required: true
@@ -45,7 +50,7 @@ jobs:
 
       - name: Setup database and engine
         id: setup
-        if: ${{ inputs.database == '' }}
+        if: ${{ (inputs.database == '') && (inputs.run_setup == true) }}
         uses: firebolt-db/integration-testing-setup@v2
         with:
           firebolt-client-id: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
@@ -72,5 +77,14 @@ jobs:
              echo "engine_name=${{ steps.setup.outputs.engine_name }}" >> $GITHUB_OUTPUT
           fi
 
+      - name: Setup env by build
+        id: setup-env
+        run: |
+          if [ inputs.run_setup == true ]; then
+             echo "run_setup=false" >> $GITHUB_OUTPUT
+          else
+             echo "run_setup=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=staging -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ inputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags=v1
+        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=staging -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ inputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags=v1 -Drun_setup="${{ steps.setup-env.outputs.run_setup }}"
