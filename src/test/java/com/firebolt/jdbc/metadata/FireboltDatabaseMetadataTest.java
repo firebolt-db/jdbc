@@ -86,6 +86,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -139,8 +140,10 @@ class FireboltDatabaseMetadataTest {
 				.columns(List.of(
 						Column.builder().name(TABLE_SCHEM).type(TEXT).build(),
 						Column.builder().name(TABLE_CATALOG).type(TEXT).build()))
-				.rows(List.of(List.of("public", "my-db"), List.of("information_schema", "my-db"), List.of("catalog", "my-db")))
+				.rows(List.of(List.of("public", "my-db"), List.of("information_schema", "my-db")))
 				.build());
+
+		when(statement.executeQuery(any())).thenReturn(new FireboltResultSet(getInputStreamForGetSchemas()));
 
 		ResultSet actualResultSet = fireboltDatabaseMetadata.getSchemas();
 
@@ -872,6 +875,10 @@ class FireboltDatabaseMetadataTest {
 
 	private InputStream getInputStreamForGetTables() {
 		return FireboltDatabaseMetadata.class.getResourceAsStream("/responses/metadata/firebolt-response-get-tables-example");
+	}
+
+	private InputStream getInputStreamForGetSchemas() {
+		return FireboltDatabaseMetadata.class.getResourceAsStream("/responses/metadata/firebolt-response-get-schemas-example");
 	}
 
 	private InputStream getInputStreamForGetVersion() {
