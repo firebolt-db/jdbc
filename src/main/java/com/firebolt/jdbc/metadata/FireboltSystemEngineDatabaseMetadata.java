@@ -37,21 +37,6 @@ public class FireboltSystemEngineDatabaseMetadata extends FireboltDatabaseMetada
 	}
 
 	@Override
-	public int getDatabaseMajorVersion() throws SQLException {
-		return 0;
-	}
-
-	@Override
-	public int getDatabaseMinorVersion() throws SQLException {
-		return 0;
-	}
-
-	@Override
-	public String getDatabaseProductVersion() throws SQLException {
-		return "";
-	}
-
-	@Override
 	public boolean isReadOnly() throws SQLException {
 		return true;
 	}

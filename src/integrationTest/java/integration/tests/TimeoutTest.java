@@ -1,6 +1,8 @@
 package integration.tests;
 
 import com.firebolt.jdbc.connection.FireboltConnection;
+import integration.EnvironmentCondition;
+import integration.EnvironmentCondition.Comparison;
 import integration.IntegrationTest;
 import lombok.CustomLog;
 import org.junit.jupiter.api.AfterEach;
@@ -15,13 +17,15 @@ import java.sql.Statement;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static integration.EnvironmentCondition.Attribute.databaseVersion;
+import static integration.EnvironmentCondition.Comparison.GE;
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
 class TimeoutTest extends IntegrationTest {
 	private static final int MIN_TIME_SECONDS = 350;
-	private static final Map<Integer, Long> SERIES_SIZE = Map.of(1, 300000000000L, 2, 500000000000L);
+	private static final Map<Integer, Long> SERIES_SIZE = Map.of(1, 80000000000L, 2, 180000000000L);
 	private long startTime;
 
 	@BeforeEach
@@ -39,11 +43,25 @@ class TimeoutTest extends IntegrationTest {
 
 	@Test
 	@Timeout(value = 10, unit = TimeUnit.MINUTES)
+	@Tag("v1") // generate_series is supported on all available engine of v2
 	@Tag("slow")
-	void shouldExecuteRequestWithoutTimeout() throws SQLException {
+	void shouldExecuteRequestWithoutTimeoutV1() throws SQLException {
+		shouldExecuteRequestWithoutTimeout();
+	}
+
+	@Test
+	@Timeout(value = 10, unit = TimeUnit.MINUTES)
+	@EnvironmentCondition(value = "3.33", attribute = databaseVersion, comparison = GE) // generate_series is supported starting from version 3.33 on v2
+	@Tag("v2")
+	@Tag("slow")
+	void shouldExecuteRequestWithoutTimeoutV2() throws SQLException {
+		shouldExecuteRequestWithoutTimeout();
+	}
+
+	private void shouldExecuteRequestWithoutTimeout() throws SQLException {
 		try (Connection con = createConnection(); Statement stmt = con.createStatement()) {
 			int infraVersion = ((FireboltConnection)con).getInfraVersion();
-			stmt.executeQuery(format("SELECT checksum(*) FROM generate_series(1, %d)", SERIES_SIZE.get(infraVersion)));
+			stmt.executeQuery(format("SELECT (max(x) - min(x))/count(x) + avg(x) FROM generate_series(1,%d) r(x)", SERIES_SIZE.get(infraVersion)));
 		}
 	}
 }

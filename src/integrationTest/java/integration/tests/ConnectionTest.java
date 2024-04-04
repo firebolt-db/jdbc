@@ -4,7 +4,7 @@ import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import integration.ConnectionInfo;
-import integration.InfraVersion;
+import integration.EnvironmentCondition;
 import integration.IntegrationTest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -70,7 +70,7 @@ class ConnectionTest extends IntegrationTest {
      */
     @Test
     @Tag("v2")
-    @InfraVersion(value = 2, comparison = InfraVersion.Comparison.LT)
+    @EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.LT)
     void connectToWrongDbNotAttachedToEngine() throws SQLException {
         ConnectionInfo params = integration.ConnectionInfo.getInstance();
         String enginelessDb = "engineless_db" + System.currentTimeMillis();

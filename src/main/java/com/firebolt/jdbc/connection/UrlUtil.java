@@ -7,8 +7,14 @@ import lombok.experimental.UtilityClass;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.TreeMap;
+
+import static java.lang.String.CASE_INSENSITIVE_ORDER;
+import static java.util.stream.Collectors.toMap;
 
 @CustomLog
 @UtilityClass
@@ -59,5 +65,18 @@ public class UrlUtil {
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
+    }
+
+    @SuppressWarnings("java:S3358") // ternary  operator for null-safe extraction of value
+    public static Map<String, String> getQueryParameters(URL url) {
+        String query = url.getQuery();
+        if (query == null || query.isBlank()) {
+            return Map.of();
+        }
+        return Arrays.stream(query.split("&")).map(String::trim).filter(kv -> !kv.isBlank()).map(kv -> kv.split("=", 2)).filter(kv -> kv.length == 2).collect(toMap(
+                kv -> kv[0],
+                kv -> kv[1],
+                (first, second) -> second, // override duplicate value
+                () -> new TreeMap<>(CASE_INSENSITIVE_ORDER))); // the URL parameters are case-insensitive
     }
 }

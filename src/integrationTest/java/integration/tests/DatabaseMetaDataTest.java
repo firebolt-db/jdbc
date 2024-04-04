@@ -2,8 +2,8 @@ package integration.tests;
 
 import integration.ConnectionInfo;
 import integration.IntegrationTest;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -63,12 +63,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DatabaseMetaDataTest extends IntegrationTest {
 
-	@BeforeEach
+	@BeforeAll
 	void beforeAll() {
 		executeStatementFromFile("/statements/metadata/ddl.sql");
 	}
 
-	@AfterEach
+	@AfterAll
 	void afterEach() {
 		executeStatementFromFile("/statements/metadata/cleanup.sql");
 	}
@@ -121,11 +121,11 @@ class DatabaseMetaDataTest extends IntegrationTest {
 	@ParameterizedTest
 	@CsvSource({
 			// table types
-			",,,,tables;query_history;integration_test,",
-			",,,TABLE;VIEW,tables;query_history;integration_test,",
-			",,,VIEW;TABLE,integration_test;tables;query_history,",
-			",,,TABLE,integration_test,query_history;tables",
-			",,,VIEW,query_history;tables,integration_test",
+			",,,,tables;databases;integration_test,",
+			",,,TABLE;VIEW,tables;databases;integration_test,",
+			",,,VIEW;TABLE,integration_test;tables;databases,",
+			",,,TABLE,integration_test,databases;tables",
+			",,,VIEW,databases;tables,integration_test",
 
 			// table name pattern
 			",,%account%,,service_account_users;service_accounts,tables;columns;databases",
@@ -135,12 +135,17 @@ class DatabaseMetaDataTest extends IntegrationTest {
 			",public,,,integration_test,tables;columns;databases",
 			",information_schema,,,tables;columns,integration_test",
 
-			// They say that catalog schema is deprecated and will be removed. In this case this test will fail and should be changed or removed
-			",catalog,,,query_history,users;views;integration_test",
+			// schema name pattern and table types
+			",public,,TABLE,integration_test,tables;columns;databases",
+			",public,,TABLE;VIEW,integration_test,tables;columns;databases",
+			",public,,VIEW,,tables;columns;databases",
+			",information_schema,,TABLE,,integration_test",
+			",information_schema,,TABLE;VIEW,tables;columns,integration_test",
+			",information_schema,,VIEW,tables;columns,",
 	})
 	void getTables(String catalog, String schemaPattern, String tableNamePattern, String typesStr, String expectedNamesStr, String unexpectedNamesStr) throws SQLException {
 		String[] types = typesStr == null ? null : typesStr.split(";");
-		Collection<String> expectedNames = Set.of(expectedNamesStr.split(";"));
+		Collection<String> expectedNames = expectedNamesStr == null ? Set.of() : Set.of(expectedNamesStr.split(";"));
 		Collection<String> unexpectedNames = unexpectedNamesStr == null ? Set.of() : Set.of(unexpectedNamesStr.split(";"));
 		List<String> names = new ArrayList<>();
 		try (Connection connection = createConnection();
@@ -170,7 +175,7 @@ class DatabaseMetaDataTest extends IntegrationTest {
 		String tableName = "integration_test";
 		String schemaName = "public";
 		assertThat(result.get(SCOPE_TABLE), contains(null, null, null, null, null, null, null));
-		assertThat(result.get(IS_NULLABLE), contains("NO", "YES", "YES", "YES", "YES", "YES", "NO"));
+		assertThat(result.get(IS_NULLABLE), contains("NO", "YES", "YES", "YES", "YES", "NO", "NO"));
 		assertThat(result.get(BUFFER_LENGTH), contains(null, null, null, null, null, null, null));
 		assertThat(result.get(TABLE_CAT), contains(database, database, database, database, database, database, database));
 		assertThat(result.get(SCOPE_CATALOG), contains(null, null, null, null, null, null, null));
@@ -179,7 +184,7 @@ class DatabaseMetaDataTest extends IntegrationTest {
 		assertThat(result.get(COLUMN_NAME), contains("id", "ts", "tstz", "tsntz", "content", "success", "year"));
 		assertThat(result.get(TABLE_SCHEM), contains(schemaName, schemaName, schemaName, schemaName, schemaName, schemaName, schemaName));
 		assertThat(result.get(REMARKS), contains(null, null, null, null, null, null, null));
-		assertThat(result.get(NULLABLE), contains("0", "1", "1", "1", "1", "1", "0"));
+		assertThat(result.get(NULLABLE), contains("0", "1", "1", "1", "1", "0", "0"));
 		assertThat(result.get(DECIMAL_DIGITS), contains("0", "0", "0", "0", "0", "0", "0"));
 		assertThat(result.get(SQL_DATETIME_SUB), contains(null, null, null, null, null, null, null));
 		assertThat(result.get(NUM_PREC_RADIX), contains("10", "10", "10", "10", "10", "10", "10"));

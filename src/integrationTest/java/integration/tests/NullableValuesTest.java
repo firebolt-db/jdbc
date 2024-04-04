@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NullableValuesTest extends IntegrationTest {
     @BeforeEach
-    void beforeAll() {
+    void beforeEach() {
         executeStatementFromFile("/statements/nullable-types/ddl.sql");
     }
 

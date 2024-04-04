@@ -47,6 +47,7 @@ import static com.firebolt.jdbc.exception.ExceptionType.UNAUTHORIZED;
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
+import static java.util.Optional.ofNullable;
 
 @CustomLog
 public class StatementClientImpl extends FireboltClient implements StatementClient {
@@ -57,14 +58,66 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			Pattern.compile("Engine .+? does not exist or not authorized"), "Please grant at least one role to user associated your service account."
 	);
 
-	//QUERY_LABEL - change the code when query_label is supported on sever side
-	@SuppressWarnings("java:S125")
-	//private static final String QUERY_ID_FETCHER = "select query_id from information_schema.query_history where status = 'STARTED_EXECUTION' and  query_label = ?";
-	private static final String QUERY_ID_FETCHER = "select query_id from information_schema.query_history where status = 'STARTED_EXECUTION' and  query_text like ?";
 	private final BiPredicate<Call, String> isCallWithLabel = (call, label) -> call.request().tag() instanceof String && Objects.equals(call.request().tag(), label);
+	// visible for testing
 	static final String HEADER_UPDATE_PARAMETER = "Firebolt-Update-Parameters";
 	static final String HEADER_UPDATE_ENDPOINT = "Firebolt-Update-Endpoint";
 	static final String HEADER_RESET_SESSION = "Firebolt-Reset-Session";
+
+	private enum QueryIdFetcher {
+		/**
+		 * Attach label to statement using trailing comment. This is a hack because label cannot be normally attached to
+		 * statement in old version
+		 */
+		COMMENT {
+			@Override
+			String formatStatement(StatementInfoWrapper statementInfoWrapper) {
+				return QUERY_LABEL.formatStatement(statementInfoWrapper) + "--label:" + statementInfoWrapper.getLabel();
+			}
+
+			@Override
+			String queryIdFetcher() {
+				return "select query_id from information_schema.query_history where status = 'STARTED_EXECUTION' and query_text like ?";
+			}
+
+			@Override
+			String queryIdLabel(String label) {
+				return "%label:" + label;
+			}
+		},
+		/**
+		 * Attach label to query using special request parameters {@code query_label}
+		 */
+		QUERY_LABEL {
+			@Override
+			String formatStatement(StatementInfoWrapper statementInfoWrapper) {
+				return ofNullable(statementInfoWrapper.getInitialStatement()).map(RawStatement::getCleanSql)
+						.filter(cleanSql -> !cleanSql.endsWith(";"))
+						.map(cleanSql -> statementInfoWrapper.getSql() + ";")
+						.orElse(statementInfoWrapper.getSql());
+			}
+
+			@Override
+			String queryIdFetcher() {
+				return "select query_id from information_schema.engine_query_history where status = 'STARTED_EXECUTION' and query_label = ?";
+			}
+
+			@Override
+			String queryIdLabel(String label) {
+				return label;
+			}
+		},
+		;
+
+		abstract String formatStatement(StatementInfoWrapper statementInfoWrapper);
+		abstract String queryIdFetcher();
+		abstract String queryIdLabel(String label);
+
+		static QueryIdFetcher getQueryFetcher(int infraVersion) {
+			return infraVersion < 2 ? COMMENT : QUERY_LABEL;
+		}
+
+	}
 
 	public StatementClientImpl(OkHttpClient httpClient, FireboltConnection connection, String customDrivers, String customClients) {
 		super(httpClient, connection, customDrivers, customClients);
@@ -85,7 +138,8 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	public InputStream executeSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
 										   @NonNull FireboltProperties connectionProperties, boolean systemEngine, int queryTimeout,
 										   boolean standardSql) throws FireboltException {
-		String formattedStatement = formatStatement(statementInfoWrapper);
+		QueryIdFetcher.getQueryFetcher(connection.getInfraVersion()).formatStatement(statementInfoWrapper);
+		String formattedStatement = QueryIdFetcher.getQueryFetcher(connection.getInfraVersion()).formatStatement(statementInfoWrapper);
 		Map<String, String> params = getAllParameters(connectionProperties, statementInfoWrapper, systemEngine, queryTimeout);
 		String label = statementInfoWrapper.getLabel();
 		String errorMessage = format("Error executing statement with label %s: %s", label, formattedStatement);
@@ -120,19 +174,11 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			throws FireboltException, IOException {
 		Request post = createPostRequest(uri, label, formattedStatement, getConnection().getAccessToken().orElse(null));
 		Response response = execute(post, connectionProperties.getHost(), connectionProperties.isCompress());
-		InputStream is = Optional.ofNullable(response.body()).map(ResponseBody::byteStream).orElse(null);
+		InputStream is = ofNullable(response.body()).map(ResponseBody::byteStream).orElse(null);
 		if (is == null) {
 			CloseableUtil.close(response);
 		}
 		return is;
-	}
-
-	private String formatStatement(StatementInfoWrapper statementInfoWrapper) {
-		return Optional.ofNullable(statementInfoWrapper.getInitialStatement())
-				.map(RawStatement::getCleanSql)
-				.map(cleanSql  -> !cleanSql.endsWith(";") ? statementInfoWrapper.getSql() + ";" : statementInfoWrapper.getSql())
-				.map(sql -> sql + "--label:" + statementInfoWrapper.getLabel()) //QUERY_LABEL - remove --label=LABEL
-				.orElse(statementInfoWrapper.getSql());
 	}
 
 	public void abortStatement(@NonNull String statementLabel, @NonNull FireboltProperties properties) throws FireboltException {
@@ -252,7 +298,6 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 	}
 
-	@SuppressWarnings("java:S125") //QUERY_LABEL  - remove when the line of the code is uncommented
 	private Map<String, String> getAllParameters(FireboltProperties fireboltProperties,
 			StatementInfoWrapper statementInfoWrapper, boolean systemEngine, int queryTimeout) {
 		boolean isLocalDb = PropertyUtil.isLocalDb(fireboltProperties);
@@ -266,11 +311,13 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 				params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId());
 			}
 		} else {
-			if (connection.getInfraVersion() >= 2 && fireboltProperties.getAccountId() != null) {
-				params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId());
-				params.put(FireboltQueryParameterKey.ENGINE.getKey(), fireboltProperties.getEngine());
+			if (connection.getInfraVersion() >= 2) {
+				if (fireboltProperties.getAccountId() != null) {
+					params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), fireboltProperties.getAccountId());
+					params.put(FireboltQueryParameterKey.ENGINE.getKey(), fireboltProperties.getEngine());
+				}
+				params.put(FireboltQueryParameterKey.QUERY_LABEL.getKey(), statementInfoWrapper.getLabel()); //QUERY_LABEL
 			}
-			//params.put(FireboltQueryParameterKey.QUERY_LABEL.getKey(), statementInfoWrapper.getLabel()); //QUERY_LABEL - uncomment
 			params.put(FireboltQueryParameterKey.COMPRESS.getKey(), fireboltProperties.isCompress() ? "1" : "0");
 
 			if (queryTimeout > 0) {
@@ -324,8 +371,9 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	private String getStatementId(String label) throws SQLException {
-		try (PreparedStatement ps = connection.prepareStatement(QUERY_ID_FETCHER)) {
-			ps.setString(1, "%label:" + label); //QUERY_LABEL - remove %label:
+		QueryIdFetcher queryIdFetcher = QueryIdFetcher.getQueryFetcher(connection.getInfraVersion());
+		try (PreparedStatement ps = connection.prepareStatement(queryIdFetcher.queryIdFetcher())) {
+			ps.setString(1, queryIdFetcher.queryIdLabel(label));
 			try (ResultSet rs = ps.executeQuery()) {
 				return rs.next() ? rs.getString(1) : null;
 			}

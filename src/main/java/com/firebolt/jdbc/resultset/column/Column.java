@@ -4,10 +4,12 @@ import lombok.Builder;
 import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
 
 @Builder
 @Getter
 @EqualsAndHashCode
+@ToString
 @CustomLog
 public final class Column {
 

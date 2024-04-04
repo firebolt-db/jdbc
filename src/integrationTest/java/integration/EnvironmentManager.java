@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 public class EnvironmentManager {
-    private final String name = "instegration_testing_" + System.currentTimeMillis();
+    private final String name = "integration_testing__" + System.currentTimeMillis();
     private Connection connection;
 
     enum Action {
@@ -49,7 +49,7 @@ public class EnvironmentManager {
     }
 
     private void perform(Properties props, Entity entity, String entityName, Action ... actions) throws SQLException {
-        if (System.getProperty(entity.property) == null) {
+        if (System.getProperty(entity.property, "").isBlank()) {
             for (Action action : actions) {
                 executeSql(String.format("%s %s %s", action, entity, entityName));
                 if (Action.CREATE.equals(action)) {
