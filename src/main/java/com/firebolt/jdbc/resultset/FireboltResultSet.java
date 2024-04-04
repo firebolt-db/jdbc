@@ -48,14 +48,15 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.firebolt.jdbc.util.StringUtil.splitAll;
+import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Optional.ofNullable;
@@ -100,7 +101,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	private FireboltResultSet() {
 		reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream("".getBytes()), UTF_8)); // empty InputStream
 		resultSetMetaData = new FireboltResultSetMetaData(null, null, List.of());
-		columnNameToColumnNumber = new HashMap<>();
+		columnNameToColumnNumber = new TreeMap<>(CASE_INSENSITIVE_ORDER);
 		currentLine = null;
 		columns = new ArrayList<>();
 		statement = null;
@@ -534,7 +535,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	private Map<String, Integer> getColumnNamesToIndexes(String[] fields) {
-		Map<String, Integer> columnNameToFieldIndex = new HashMap<>();
+		Map<String, Integer> columnNameToFieldIndex = new TreeMap<>(CASE_INSENSITIVE_ORDER);
 		if (fields != null) {
 			for (int i = 0; i < fields.length; i++) {
 				columnNameToFieldIndex.put(fields[i], i + 1);
