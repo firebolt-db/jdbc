@@ -11,7 +11,6 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
-import com.firebolt.jdbc.metadata.FireboltSystemEngineDatabaseMetadata;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
@@ -234,11 +233,7 @@ public abstract class FireboltConnection implements Connection {
 	@Override
 	public DatabaseMetaData getMetaData() throws SQLException {
 		validateConnectionIsNotClose();
-		if (!loginProperties.isSystemEngine()) {
-			return new FireboltDatabaseMetadata(httpConnectionUrl, this);
-		} else {
-			return new FireboltSystemEngineDatabaseMetadata(httpConnectionUrl, this);
-		}
+		return new FireboltDatabaseMetadata(httpConnectionUrl, this);
 	}
 
 	@Override
@@ -517,7 +512,7 @@ public abstract class FireboltConnection implements Connection {
 	@Override
 	public boolean isReadOnly() throws SQLException {
 		validateConnectionIsNotClose();
-		return false;
+		return sessionProperties.isSystemEngine(); // connection to system engine is readonly
 	}
 
 	@Override
