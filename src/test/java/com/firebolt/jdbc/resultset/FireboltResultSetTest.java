@@ -24,6 +24,7 @@ import java.net.URL;
 import java.sql.Array;
 import java.sql.Date;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.RowId;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -1240,6 +1241,29 @@ class FireboltResultSetTest {
 		resultSet.next();
 		assertNull(resultSet.getURL(8));
 		assertNull(resultSet.getURL("url"));
+	}
+
+	@Test
+	void shouldBeCaseInsensitive() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = new FireboltResultSet(inputStream, "a_table", "a_db", 65535);
+		resultSet.next();
+		ResultSetMetaData rsmd = resultSet.getMetaData();
+		int n = rsmd.getColumnCount();
+		for (int i = 1; i <= n; i++) {
+			String columnName = rsmd.getColumnName(i);
+			System.out.println(columnName + ", " + rsmd.getColumnType(i));
+			Object value = resultSet.getObject(columnName);
+			Object upperCaseValue = resultSet.getObject(columnName.toUpperCase());
+			Object lowerCaseValue = resultSet.getObject(columnName.toLowerCase());
+			if (rsmd.getColumnType(i) == Types.ARRAY) {
+				assertArrayEquals((Object[])value, (Object[])upperCaseValue);
+				assertArrayEquals((Object[])value, (Object[])lowerCaseValue);
+			} else {
+				assertEquals(value, upperCaseValue);
+				assertEquals(value, lowerCaseValue);
+			}
+		}
 	}
 
 	private void assertStream(byte[] expected, InputStream stream) throws IOException {
