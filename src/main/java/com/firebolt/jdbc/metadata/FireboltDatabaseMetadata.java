@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -139,20 +140,19 @@ import static com.firebolt.jdbc.type.FireboltDataType.REAL;
 import static com.firebolt.jdbc.type.FireboltDataType.TEXT;
 import static com.firebolt.jdbc.type.FireboltDataType.TIMESTAMP;
 import static com.firebolt.jdbc.type.FireboltDataType.TUPLE;
+import static java.lang.String.format;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.Types.VARCHAR;
 import static java.util.Map.entry;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.compile;
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 @CustomLog
 @SuppressWarnings("java:S6204") // compatibility with JDK 11
 public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
-	private static final String PUBLIC_SCHEMA_NAME = "public";
-	private static final String INFORMATION_SCHEMA_NAME = "information_schema";
-	private static final String CATALOG_SCHEMA_NAME = "catalog";
 	private static final String TABLE = "TABLE";
 	private static final String VIEW = "VIEW";
 	private static final String QUOTE = "'";
@@ -175,14 +175,27 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
-		String dbName = connection.getSessionProperties().getDatabase();
-		List<String> publicRow = Arrays.asList(PUBLIC_SCHEMA_NAME, dbName);
-		List<String> informationSchemaRow = Arrays.asList(INFORMATION_SCHEMA_NAME, dbName);
-		List<String> catalogRow = Arrays.asList(CATALOG_SCHEMA_NAME, dbName);
+		String catalogClause = catalog == null ? null : format("%s LIKE '%s'", TABLE_CATALOG, catalog);
+		String schemaClause = schemaPattern == null ? null : format("TABLE_SCHEMA LIKE '%s'", schemaPattern);
+		String where = Stream.of(catalogClause, schemaClause).filter(Objects::nonNull).collect(joining(" AND "));
+		if (!where.isEmpty()) {
+			where = " WHERE " + where;
+		}
+		return getSchemas("SELECT DISTINCT TABLE_SCHEMA AS TABLE_SCHEM, TABLE_CATALOG FROM information_schema.tables" + where);
+	}
+
+	private ResultSet getSchemas(String query) throws SQLException {
+		List<List<?>> rows = new ArrayList<>();
+		try (Statement statement = connection.createStatement();
+			 ResultSet schemaDescription = statement.executeQuery(query)) {
+			while (schemaDescription.next()) {
+				rows.add(List.of(schemaDescription.getString(TABLE_SCHEM), schemaDescription.getString(TABLE_CATALOG)));
+			}
+		}
 		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Arrays.asList(QueryResult.Column.builder().name(TABLE_SCHEM).type(TEXT).build(),
+				.columns(List.of(QueryResult.Column.builder().name(TABLE_SCHEM).type(TEXT).build(),
 						QueryResult.Column.builder().name(TABLE_CATALOG).type(TEXT).build()))
-				.rows(Arrays.asList(publicRow, informationSchemaRow, catalogRow)).build());
+				.rows(rows).build());
 	}
 
 	@Override

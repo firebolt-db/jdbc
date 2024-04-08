@@ -58,13 +58,14 @@ class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
 
     @ParameterizedTest
     @CsvSource({
-            "eng,false",
-            "system,true" // system engine is readonly
+            "eng",
+            "system"
     })
-    void getMetadata(String engine, boolean readOnly) throws SQLException {
+    void getMetadata(String engine) throws SQLException {
         try (FireboltConnection connection = createConnection(format("jdbc:firebolt:db?env=dev&engine=%s&account=dev", engine), connectionProperties)) {
             DatabaseMetaData dbmd = connection.getMetaData();
-            assertEquals(readOnly, dbmd.isReadOnly());
+            assertFalse(connection.isReadOnly());
+            assertFalse(dbmd.isReadOnly());
             assertSame(dbmd, connection.getMetaData());
             connection.close();
             assertThat(assertThrows(SQLException.class, connection::getMetaData).getMessage(), containsString("closed"));
