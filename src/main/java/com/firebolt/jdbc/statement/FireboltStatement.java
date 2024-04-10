@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory.createValidator;
 import static java.util.stream.Collectors.toCollection;
 
 @CustomLog
@@ -92,6 +93,7 @@ public class FireboltStatement implements Statement {
 	}
 
 	private Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper, boolean verifyNotCancelled, boolean isStandardSql) throws SQLException {
+		createValidator(statementInfoWrapper.getInitialStatement(), connection).validate(statementInfoWrapper.getInitialStatement());
 		ResultSet resultSet = null;
 		if (!verifyNotCancelled || isStatementNotCancelled(statementInfoWrapper)) {
 			runningStatementLabel = statementInfoWrapper.getLabel();

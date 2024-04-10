@@ -8,6 +8,7 @@ import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.client.authentication.ServiceAccountAuthenticationRequest;
 import com.firebolt.jdbc.client.gateway.GatewayUrlResponse;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltAccountIdService;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
@@ -20,10 +21,15 @@ import com.firebolt.jdbc.util.PropertyUtil;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
 
+import java.net.URI;
+import java.net.URL;
 import java.sql.SQLException;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
 
+import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.ACCOUNT_ID;
 import static com.firebolt.jdbc.exception.ExceptionType.RESOURCE_NOT_FOUND;
 import static java.lang.String.format;
 
@@ -100,14 +106,23 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
         String systemEngineEndpoint = fireboltGatewayUrlService.getUrl(accessToken, accountName);
         FireboltAccount account = fireboltAccountIdService.getValue(accessToken, accountName);
         infraVersion = account.getInfraVersion();
+        URL systemEngienUrl = UrlUtil.createUrl(systemEngineEndpoint);
+        Map<String, String> systemEngineUrlUrlParams = UrlUtil.getQueryParameters(systemEngienUrl);
+        String accountId = systemEngineUrlUrlParams.getOrDefault(ACCOUNT_ID.getKey(), account.getId());
+        for (Entry<String, String> e : systemEngineUrlUrlParams.entrySet()) {
+            loginProperties.addProperty(e);
+        }
         return loginProperties
                 .toBuilder()
                 .systemEngine(true)
                 .compress(false)
-                .accountId(account.getId())
-                .host(UrlUtil.createUrl(systemEngineEndpoint).getHost())
+                .accountId(accountId)
+                .host(systemEngienUrl.getHost())
                 .build();
     }
+
+
+
 
     private FireboltEngineService getFireboltEngineService() {
         if (fireboltEngineService == null) {

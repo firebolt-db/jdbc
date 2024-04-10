@@ -2,6 +2,7 @@ package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.client.account.FireboltAccountRetriever;
 import com.firebolt.jdbc.client.gateway.GatewayUrlResponse;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import org.junit.jupiter.api.Test;
@@ -10,9 +11,12 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Properties;
 
 import static java.lang.String.format;
+import static java.util.stream.Collectors.toMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -77,19 +81,21 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
 
     @ParameterizedTest(name = "{0}")
     @CsvSource({
-            "http://the-endpoint,the-endpoint",
-            "https://the-endpoint,the-endpoint",
-            "the-endpoint,the-endpoint",
-            "http://the-endpoint?foo=1&bar=2,the-endpoint",
-            "https://the-endpoint?foo=1&bar=2,the-endpoint",
-            "the-endpoint?foo=1&bar=2,the-endpoint",
+            "http://the-endpoint,the-endpoint,",
+            "https://the-endpoint,the-endpoint,",
+            "the-endpoint,the-endpoint,",
+            "http://the-endpoint?foo=1&bar=2,the-endpoint,foo=1;bar=2",
+            "https://the-endpoint?foo=1&bar=2,the-endpoint,foo=1;bar=2",
+            "the-endpoint?foo=1&bar=2,the-endpoint,foo=1;bar=2",
     })
-    void checkSystemEngineEndpoint(String gatewayUrl, String expectedHost) throws SQLException {
+    void checkSystemEngineEndpoint(String gatewayUrl, String expectedHost, String expectedProps) throws SQLException {
         @SuppressWarnings("unchecked") FireboltAccountRetriever<GatewayUrlResponse> fireboltGatewayUrlClient = mock(FireboltAccountRetriever.class);
         when(fireboltGatewayUrlClient.retrieve(any(), any())).thenReturn(new GatewayUrlResponse(gatewayUrl));
         FireboltGatewayUrlService gatewayUrlService = new FireboltGatewayUrlService(fireboltGatewayUrlClient);
         FireboltConnection connection = new FireboltConnectionServiceSecret(SYSTEM_ENGINE_URL, connectionProperties, fireboltAuthenticationService, gatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService);
-        assertEquals(expectedHost, connection.getSessionProperties().getHost());
+        FireboltProperties sessionProperties  = connection.getSessionProperties();
+        assertEquals(expectedHost, sessionProperties.getHost());
+        assertEquals(expectedProps == null ? Map.of() : Arrays.stream(expectedProps.split(";")).map(kv -> kv.split("=")).collect(toMap(kv -> kv[0], kv -> kv[1])), sessionProperties.getAdditionalProperties());
     }
 
     @Test
