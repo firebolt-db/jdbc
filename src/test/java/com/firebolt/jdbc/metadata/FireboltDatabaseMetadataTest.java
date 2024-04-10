@@ -716,7 +716,7 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void getSQLKeywords() throws SQLException {
-		getFunctions(DatabaseMetaData::getSQLKeywords, "BOOL", "COPY", "ISNULL", "WEEK");
+		getFunctions(DatabaseMetaData::getSQLKeywords, "ACCOUNT", "COPY", "ENGINE", "TABLE");
 	}
 
 	@Test
@@ -726,12 +726,12 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void getSystemFunctions() throws SQLException {
-		getFunctions(DatabaseMetaData::getSystemFunctions, "IFNULL");
+		getFunctions(DatabaseMetaData::getSystemFunctions, "VERSION");
 	}
 
 	@Test
 	void getTimeDateFunctions() throws SQLException {
-		getFunctions(DatabaseMetaData::getTimeDateFunctions, "LOCALTIMESTAMP", "DATE_DIFF");
+		getFunctions(DatabaseMetaData::getTimeDateFunctions, "DATE_ADD", "DATE_DIFF");
 	}
 
 	@ParameterizedTest
