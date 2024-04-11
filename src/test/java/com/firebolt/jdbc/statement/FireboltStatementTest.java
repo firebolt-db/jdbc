@@ -23,6 +23,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.sql.Wrapper;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ import java.util.stream.Stream;
 import static java.sql.Statement.CLOSE_CURRENT_RESULT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -61,7 +63,6 @@ class FireboltStatementTest {
 
 	private static Stream<Arguments> unsupported() {
 		return Stream.of(
-				Arguments.of("clearWarnings", (Executable) () -> statement.clearWarnings()),
 				Arguments.of("setCursorName", (Executable) () -> statement.setCursorName("my_cursor")),
 				Arguments.of("addBatch", (Executable) () -> statement.addBatch("insert into people (id, name) values (?, ?))")),
 				Arguments.of("clearBatch", (Executable) () -> statement.clearBatch()),
@@ -237,11 +238,41 @@ class FireboltStatementTest {
 
 	@Test
 	void statementParameters() throws SQLException {
-		try (Statement statement  = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class))) {
+		try (Statement statement = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class))) {
 			assertEquals(ResultSet.FETCH_FORWARD, statement.getFetchDirection());
 			assertEquals(ResultSet.CONCUR_READ_ONLY, statement.getResultSetConcurrency());
 			assertEquals(ResultSet.TYPE_FORWARD_ONLY, statement.getResultSetType());
 			assertEquals(ResultSet.HOLD_CURSORS_OVER_COMMIT, statement.getResultSetHoldability());
+			assertNull(statement.getWarnings());
+		}
+	}
+
+	@Test
+	void setEscapeProcessing() throws SQLException {
+		try (Statement statement = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class))) {
+			assertNull(statement.getWarnings());
+			statement.setEscapeProcessing(false);
+			assertNull(statement.getWarnings());
+			// set escape processing and get 1 warning
+			statement.setEscapeProcessing(true);
+			SQLWarning firstWarning = statement.getWarnings();
+			assertNotNull(firstWarning);
+			assertNull(firstWarning.getNextWarning());
+
+			// now do it again. Now we get 2 warnings: first one - the same, and yet another one - chained
+			statement.setEscapeProcessing(true);
+			assertSame(firstWarning, statement.getWarnings());
+			assertNotNull(firstWarning.getNextWarning());
+			assertNull(firstWarning.getNextWarning().getNextWarning());
+
+			// now disable escape processing. The warnings remain the same
+			statement.setEscapeProcessing(false);
+			assertSame(firstWarning, statement.getWarnings());
+			assertNotNull(firstWarning.getNextWarning());
+			assertNull(firstWarning.getNextWarning().getNextWarning());
+
+			// clean warnings and validate them.
+			statement.clearWarnings();
 			assertNull(statement.getWarnings());
 		}
 	}
@@ -314,5 +345,19 @@ class FireboltStatementTest {
 		FireboltConnection connection = mock(FireboltConnection.class);
 		Statement statement  = new FireboltStatement(fireboltStatementService, null, connection);
 		assertSame(connection, statement.getConnection());
+	}
+
+	@Test
+	void warnings() throws SQLException {
+		FireboltStatement statement  = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class)) {
+			{
+				addWarning(new SQLWarning("test"));
+			}
+		};
+		SQLWarning warning = statement.getWarnings();
+		assertNotNull(warning);
+		assertEquals("test", warning.getMessage());
+		statement.clearWarnings();
+		assertNull(statement.getWarnings());
 	}
 }

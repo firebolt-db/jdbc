@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.JdbcBase;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.client.HttpClientConfig;
@@ -58,7 +59,7 @@ import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
 @CustomLog
-public abstract class FireboltConnection implements Connection {
+public abstract class FireboltConnection extends JdbcBase implements Connection {
 
 	private final FireboltAuthenticationService fireboltAuthenticationService;
 	private final FireboltStatementService fireboltStatementService;
@@ -481,19 +482,6 @@ public abstract class FireboltConnection implements Connection {
 	}
 
 	@Override
-	public boolean isWrapperFor(Class<?> iface) {
-		return iface.isAssignableFrom(getClass());
-	}
-
-	@Override
-	public <T> T unwrap(Class<T> iface) throws SQLException {
-		if (iface.isAssignableFrom(getClass())) {
-			return iface.cast(this);
-		}
-		throw new SQLException("Cannot unwrap to " + iface.getName());
-	}
-
-	@Override
 	public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
 		validateConnectionIsNotClose();
 		networkTimeout = milliseconds;
@@ -524,19 +512,6 @@ public abstract class FireboltConnection implements Connection {
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
 	public void setReadOnly(boolean readOnly) throws SQLException {
-		// no-op
-	}
-
-	@Override
-	@NotImplemented
-	public SQLWarning getWarnings() throws SQLException {
-		return null;
-	}
-
-	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
-	public void clearWarnings() throws SQLException {
 		// no-op
 	}
 

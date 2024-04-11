@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.statement;
 
+import com.firebolt.jdbc.JdbcBase;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
@@ -28,7 +29,7 @@ import static com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory
 import static java.util.stream.Collectors.toCollection;
 
 @CustomLog
-public class FireboltStatement implements Statement {
+public class FireboltStatement extends JdbcBase implements Statement {
 
 	private final FireboltStatementService statementService;
 	private final FireboltProperties sessionProperties;
@@ -330,19 +331,6 @@ public class FireboltStatement implements Statement {
 		queryTimeout = seconds;
 	}
 
-	@Override
-	public boolean isWrapperFor(Class<?> iface) {
-		return iface.isAssignableFrom(getClass());
-	}
-
-	@Override
-	public <T> T unwrap(Class<T> iface) throws SQLException {
-		if (iface.isAssignableFrom(getClass())) {
-			return iface.cast(this);
-		}
-		throw new SQLException("Cannot unwrap to " + iface.getName());
-	}
-
 	protected void validateStatementIsNotClosed() throws SQLException {
 		if (isClosed()) {
 			throw new FireboltException("Cannot proceed: statement closed");
@@ -382,22 +370,10 @@ public class FireboltStatement implements Statement {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public void setEscapeProcessing(boolean enable) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
-	}
-
-	@Override
-	@NotImplemented
-	public SQLWarning getWarnings() throws SQLException {
-		return null;
-	}
-
-	@Override
-	@NotImplemented
-	public void clearWarnings() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+	public void setEscapeProcessing(boolean enable) {
+		if (enable) {
+			addWarning(new SQLWarning("Escape processing is not supported right now", "0A000")); // see https://en.wikipedia.org/wiki/SQLSTATE
+		}
 	}
 
 	@Override
