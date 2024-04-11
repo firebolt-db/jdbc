@@ -6,7 +6,7 @@ import static java.util.stream.Collectors.toList
 plugins {
     id 'java'
     id 'jacoco'
-    id "org.sonarqube" version "4.4.1.3373"
+    id "org.sonarqube" version "5.0.0.4638"
     id 'maven-publish'
     id 'com.github.johnrengelman.shadow' version '8.0.0'
     id 'org.quiltmc.gradle.licenser' version '2.0.1'
@@ -78,7 +78,7 @@ dependencies {
     testCompileOnly 'org.projectlombok:lombok:1.18.32'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.32'
 
-    testImplementation 'ch.qos.logback:logback-classic:1.5.3'
+    testImplementation 'ch.qos.logback:logback-classic:1.5.4'
     testImplementation 'org.mockito:mockito-junit-jupiter:5.10.0'
     testImplementation 'org.mockito:mockito-core:5.10.0'
     testImplementation 'org.mockito:mockito-inline:5.2.0'
@@ -89,7 +89,7 @@ dependencies {
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
     testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
     testImplementation 'com.squareup.okhttp3:okhttp-tls:4.12.0'
-    testImplementation 'io.zonky.test:embedded-postgres:2.0.6'
+    testImplementation 'io.zonky.test:embedded-postgres:2.0.7'
     testCompileOnly 'org.slf4j:slf4j-api:2.0.11'
     testCommonImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
     testImplementation sourceSets.testCommon.output
