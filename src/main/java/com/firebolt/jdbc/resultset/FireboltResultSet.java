@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.resultset;
 
+import com.firebolt.jdbc.JdbcBase;
 import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
@@ -41,7 +42,6 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.RowId;
 import java.sql.SQLException;
-import java.sql.SQLWarning;
 import java.sql.SQLXML;
 import java.sql.Statement;
 import java.sql.Time;
@@ -64,7 +64,7 @@ import static java.util.Optional.ofNullable;
  * ResultSet for InputStream using the format "TabSeparatedWithNamesAndTypes"
  */
 @CustomLog
-public class FireboltResultSet implements ResultSet {
+public class FireboltResultSet extends JdbcBase implements ResultSet {
 	private static final String FORWARD_ONLY_ERROR = "Cannot call %s() for ResultSet of type TYPE_FORWARD_ONLY";
 	private final BufferedReader reader;
 	private final Map<String, Integer> columnNameToColumnNumber;
@@ -611,20 +611,6 @@ public class FireboltResultSet implements ResultSet {
 	@Override
 	public InputStream getBinaryStream(String columnLabel) throws SQLException {
 		return getBinaryStream(findColumn(columnLabel));
-	}
-
-	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public SQLWarning getWarnings() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
-	}
-
-	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public void clearWarnings() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
 	}
 
 	@Override
