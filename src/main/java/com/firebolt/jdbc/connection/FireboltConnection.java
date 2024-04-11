@@ -507,9 +507,8 @@ public abstract class FireboltConnection extends JdbcBase implements Connection 
 	}
 
 	@Override
-	@NotImplemented
-	public String nativeSQL(String sql) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+	public String nativeSQL(String sql) {
+		return sql;
 	}
 
 	@Override
