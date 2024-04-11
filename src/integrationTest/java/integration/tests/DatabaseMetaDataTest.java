@@ -57,8 +57,12 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DatabaseMetaDataTest extends IntegrationTest {
@@ -71,6 +75,17 @@ class DatabaseMetaDataTest extends IntegrationTest {
 	@AfterAll
 	void afterEach() {
 		executeStatementFromFile("/statements/metadata/cleanup.sql");
+	}
+
+	@Test
+	void getMetadata() throws SQLException {
+		try (Connection connection = createConnection()) {
+			DatabaseMetaData databaseMetaData = connection.getMetaData();
+			assertNotNull(databaseMetaData);
+			assertSame(databaseMetaData, connection.getMetaData());
+			connection.close();
+			assertThat(assertThrows(SQLException.class, connection::getMetaData).getMessage(), containsString("closed"));
+		}
 	}
 
 	@Test

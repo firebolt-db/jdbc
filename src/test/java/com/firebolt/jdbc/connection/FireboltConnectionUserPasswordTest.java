@@ -10,9 +10,13 @@ import java.util.Properties;
 
 import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static java.lang.String.format;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -61,6 +65,9 @@ class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
         try (FireboltConnection connection = createConnection(format("jdbc:firebolt:db?env=dev&engine=%s&account=dev", engine), connectionProperties)) {
             DatabaseMetaData dbmd = connection.getMetaData();
             assertEquals(readOnly, dbmd.isReadOnly());
+            assertSame(dbmd, connection.getMetaData());
+            connection.close();
+            assertThat(assertThrows(SQLException.class, connection::getMetaData).getMessage(), containsString("closed"));
         }
     }
 
