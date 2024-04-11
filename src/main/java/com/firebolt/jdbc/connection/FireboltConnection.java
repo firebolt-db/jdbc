@@ -70,6 +70,7 @@ public abstract class FireboltConnection implements Connection {
 	private int networkTimeout;
 	private final String protocolVersion;
 	protected int infraVersion = 1;
+	private DatabaseMetaData databaseMetaData;
 
 	//Properties that are used at the beginning of the connection for authentication
 	protected final FireboltProperties loginProperties;
@@ -158,6 +159,7 @@ public abstract class FireboltConnection implements Connection {
 			// The validation of not local DB is implemented into authenticate() method itself.
 			assertDatabaseExisting(loginProperties.getDatabase());
 		}
+		databaseMetaData = retrieveMetaData();
 
 		log.debug("Connection opened");
 	}
@@ -234,6 +236,10 @@ public abstract class FireboltConnection implements Connection {
 	@Override
 	public DatabaseMetaData getMetaData() throws SQLException {
 		validateConnectionIsNotClose();
+		return databaseMetaData;
+	}
+
+	private DatabaseMetaData retrieveMetaData() {
 		if (!loginProperties.isSystemEngine()) {
 			return new FireboltDatabaseMetadata(httpConnectionUrl, this);
 		} else {
@@ -321,6 +327,7 @@ public abstract class FireboltConnection implements Connection {
 			}
 			statements.clear();
 		}
+		databaseMetaData = null;
 		log.debug("Connection closed");
 	}
 
