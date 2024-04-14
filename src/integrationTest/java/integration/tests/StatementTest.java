@@ -398,4 +398,19 @@ class StatementTest extends IntegrationTest {
 			assertThrows(SQLException.class, () -> statement.execute(query));
 		}
 	}
+
+	@Test
+	void caseInsensitiveGetter() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement();
+			 ResultSet rs = statement.executeQuery("select table_schema, table_name as NAME from information_schema.tables")) {
+			while(rs.next()) {
+				assertEquals(rs.getString("table_schema"), rs.getString("TABLE_SCHEMA"));
+				assertEquals(rs.getString("table_schema"), rs.getString("Table_Schema"));
+				assertEquals(rs.getString("table_schema"), rs.getString("TaBlE_ScHeMa"));
+				assertEquals(rs.getString("name"), rs.getString("NAME"));
+				assertEquals(rs.getString("name"), rs.getString("NaMe"));
+			}
+
+		}
+	}
 }
