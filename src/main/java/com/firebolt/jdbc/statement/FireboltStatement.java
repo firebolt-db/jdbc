@@ -38,6 +38,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	private boolean closeOnCompletion = false;
 	private int currentUpdateCount = -1;
 	private int maxRows;
+	private int maxFieldSize;
 	private volatile boolean isClosed = false;
 	private StatementResultWrapper currentStatementResult;
 	private StatementResultWrapper firstUnclosedStatementResult;
@@ -110,7 +111,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 					log.debug("The property from the query {} was stored", runningStatementLabel);
 				} else {
 					Optional<ResultSet> currentRs = statementService.execute(statementInfoWrapper,
-							sessionProperties, queryTimeout, maxRows, isStandardSql, sessionProperties.isSystemEngine(), this);
+							sessionProperties, queryTimeout, maxRows, maxFieldSize, isStandardSql, sessionProperties.isSystemEngine(), this);
 					if (currentRs.isPresent()) {
 						resultSet = currentRs.get();
 						currentUpdateCount = -1; // Always -1 when returning a ResultSet
@@ -356,17 +357,13 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public int getMaxFieldSize() throws SQLException {
-		return 0;
+		return maxFieldSize;
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void setMaxFieldSize(int max) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		maxFieldSize = max;
 	}
 
 	@Override

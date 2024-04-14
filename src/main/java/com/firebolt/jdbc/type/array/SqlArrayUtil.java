@@ -31,7 +31,7 @@ public class SqlArrayUtil {
 	);
 	private final ColumnType columnType;
 	private final Markers markers;
-	private static final String BYTE_ARRAY_PREFIX = "\\x";
+	public static final String BYTE_ARRAY_PREFIX = "\\x";
 
 	private static final class Markers {
 		private final char leftArrayBracket;

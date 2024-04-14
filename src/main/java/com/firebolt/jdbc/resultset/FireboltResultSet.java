@@ -55,6 +55,7 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.firebolt.jdbc.type.BaseType.isNull;
 import static com.firebolt.jdbc.util.StringUtil.splitAll;
 import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static java.lang.String.format;
@@ -73,6 +74,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	private final FireboltStatement statement;
 	private final List<Column> columns;
 	private final int maxRows;
+	private final int maxFieldSize;
 	private String currentLine;
 	private int currentRow = 0;
 	private int lastSplitRow = -1;
@@ -106,15 +108,16 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 		columns = new ArrayList<>();
 		statement = null;
 		maxRows = 0;
+		maxFieldSize = 0; // 0 value means unlimited
 	}
 
 	public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize, boolean isCompressed,
 							 FireboltStatement statement, boolean logResultSet) throws SQLException {
-		this(is, tableName, dbName, bufferSize, 0, isCompressed, statement, logResultSet);
+		this(is, tableName, dbName, bufferSize, 0, 0, isCompressed, statement, logResultSet);
 	}
 
 	@SuppressWarnings("java:S107") //Number of parameters (8) > max (7). This is the price of the immutability
-	public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize, int maxRows, boolean isCompressed,
+	public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize, int maxRows, int maxFieldSize, boolean isCompressed,
 			FireboltStatement statement, boolean logResultSet) throws SQLException {
 		log.debug("Creating resultSet...");
 		this.statement = statement;
@@ -124,6 +127,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 		this.reader = createStreamReader(is, bufferSize, isCompressed);
 		this.maxRows = maxRows;
+		this.maxFieldSize = maxFieldSize;
 
 		try {
 			next();
@@ -189,9 +193,17 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 		if (ofNullable(columnInfo).map(Column::getType).map(ColumnType::getDataType)
 				.filter(t -> t.equals(FireboltDataType.BYTEA)).isPresent()) {
 			// We do not need to escape when the type is BYTEA
-			return getValueAtColumn(columnIndex);
+			String hex = getValueAtColumn(columnIndex);
+			if (isNull(hex)) {
+				return null;
+			}
+			int maxHexStringSize = maxFieldSize * 2 + 2;
+			if (maxFieldSize > 0 && maxHexStringSize <= hex.length()) {
+				hex = hex.substring(0, maxHexStringSize);
+			}
+			return hex;
 		} else {
-			return BaseType.TEXT.transform(getValueAtColumn(columnIndex));
+			return BaseType.TEXT.transform(getValueAtColumn(columnIndex), null, null, maxFieldSize);
 		}
 	}
 
@@ -246,7 +258,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public byte getByte(int columnIndex) throws SQLException {
-		return ofNullable(getValueAtColumn(columnIndex)).map(v -> BaseType.isNull(v) ? null : v)
+		return ofNullable(getValueAtColumn(columnIndex)).map(v -> isNull(v) ? null : v)
 				.map(Byte::parseByte).orElse((byte) 0);
 	}
 
@@ -269,7 +281,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	@Override
 	public byte[] getBytes(int colNum) throws SQLException {
 		return ofNullable(getValueAtColumn(colNum))
-				.map(v -> BaseType.isNull(v) ? null : v)
+				.map(v -> isNull(v) ? null : v)
 				.map(SqlArrayUtil::hexStringToByteArray)
 				.orElse(null);
 	}
@@ -358,7 +370,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	public Date getDate(int columnIndex, Calendar calendar) throws SQLException {
 		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
 		String value = getValueAtColumn(columnIndex);
-		return BaseType.DATE.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone);
+		return BaseType.DATE.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone, 0);
 	}
 
 	@Override
@@ -380,7 +392,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	public Timestamp getTimestamp(int columnIndex, Calendar calendar) throws SQLException {
 		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
 		String value = getValueAtColumn(columnIndex);
-		return BaseType.TIMESTAMP.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone);
+		return BaseType.TIMESTAMP.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone, 0);
 	}
 
 	@Override
@@ -392,7 +404,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	public Time getTime(int columnIndex, Calendar calendar) throws SQLException {
 		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
 		String value = getValueAtColumn(columnIndex);
-		return BaseType.TIME.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone);
+		return BaseType.TIME.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone, 0);
 	}
 
 	@Override
@@ -444,12 +456,12 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	@Override
 	public Object getObject(int columnIndex) throws SQLException {
 		String value = getValueAtColumn(columnIndex);
-		if (BaseType.isNull(value)) {
+		if (isNull(value)) {
 			return null;
 		}
 		Column columnInfo = columns.get(columnIndex - 1);
 		FireboltDataType columnType = columnInfo.getType().getDataType();
-		Object object = columnType.getBaseType().transform(value, columnInfo, columnInfo.getType().getTimeZone());
+		Object object = columnType.getBaseType().transform(value, columnInfo, columnInfo.getType().getTimeZone(), maxFieldSize);
 		if (columnType == FireboltDataType.ARRAY && object != null) {
 			return ((FireboltArray) object).getArray();
 		} else {
@@ -494,7 +506,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 		if (lastReadValue == null) {
 			throw new IllegalArgumentException("A column must be read before checking nullability");
 		}
-		return BaseType.isNull(lastReadValue);
+		return isNull(lastReadValue);
 	}
 
 	@Override
