@@ -271,10 +271,10 @@ public abstract class FireboltConnection extends JdbcBase implements Connection 
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public void setTransactionIsolation(int level) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		if (level != Connection.TRANSACTION_NONE) {
+			throw new FireboltSQLFeatureNotSupportedException();
+		}
 	}
 
 	@Override
