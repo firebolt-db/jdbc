@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.statement;
 
+import com.firebolt.jdbc.CheckedBiFunction;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
@@ -68,10 +69,10 @@ class FireboltStatementTest {
 				Arguments.of("clearBatch", (Executable) () -> statement.clearBatch()),
 				Arguments.of("executeBatch", (Executable) () -> statement.executeBatch()),
 				Arguments.of("getGeneratedKeys", (Executable) () -> statement.getGeneratedKeys()),
-				Arguments.of("executeUpdate(auto generated keys)", (Executable) () -> statement.executeUpdate("insert", Statement.NO_GENERATED_KEYS)),
+				Arguments.of("executeUpdate(auto generated keys)", (Executable) () -> statement.executeUpdate("insert", Statement.RETURN_GENERATED_KEYS)),
 				Arguments.of("executeUpdate(column indexes)", (Executable) () -> statement.executeUpdate("insert", new int[0])),
 				Arguments.of("executeUpdate(column names)", (Executable) () -> statement.executeUpdate("insert", new String[0])),
-				Arguments.of("execute(auto generated keys)", (Executable) () -> statement.execute("insert", Statement.NO_GENERATED_KEYS)),
+				Arguments.of("execute(auto generated keys)", (Executable) () -> statement.execute("insert", Statement.RETURN_GENERATED_KEYS)),
 				Arguments.of("execute(column indexes)", (Executable) () -> statement.execute("insert", new int[0])),
 				Arguments.of("execute(column names)", (Executable) () -> statement.execute("insert", new String[0])),
 				Arguments.of("setPoolable(true)", (Executable) () -> statement.setPoolable(true))
@@ -136,17 +137,48 @@ class FireboltStatementTest {
 
 	@Test
 	void shouldExecuteIfUpdateStatementWouldNotReturnAResultSet() throws SQLException {
+		shouldExecuteIfUpdateStatementWouldNotReturnAResultSet(Statement::executeUpdate);
+	}
+
+	@Test
+	void shouldExecuteIfUpdateStatementWouldNotReturnAResultSetNoGeneratedKeys() throws SQLException {
+		shouldExecuteIfUpdateStatementWouldNotReturnAResultSet((statement, sql) -> statement.executeUpdate(sql, Statement.NO_GENERATED_KEYS));
+	}
+
+	private void shouldExecuteIfUpdateStatementWouldNotReturnAResultSet(CheckedBiFunction<Statement, String, Integer> executor) throws SQLException {
 		try (FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, fireboltConnection)) {
 			when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
 					.thenReturn(Optional.empty());
-			assertEquals(0, fireboltStatement.executeUpdate("INSERT INTO cars(sales, name) VALUES (500, 'Ford')"));
+			assertEquals(0, executor.apply(fireboltStatement, "INSERT INTO cars(sales, name) VALUES (500, 'Ford')"));
 			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(fireboltProperties),
 					anyInt(), anyInt(), anyBoolean(), anyBoolean(), any());
 			assertEquals("INSERT INTO cars(sales, name) VALUES (500, 'Ford')",
 					queryInfoWrapperArgumentCaptor.getValue().getSql());
 			assertEquals(0, fireboltStatement.getUpdateCount());
 		}
+	}
 
+	@Test
+	void shouldExecuteStatementThatReturnsResultSet() throws SQLException {
+		shouldExecuteStatementThatReturnsResultSet(Statement::execute);
+	}
+
+	@Test
+	void shouldExecuteStatementNoGeneratedKeysThatReturnsResultSet() throws SQLException {
+		shouldExecuteStatementThatReturnsResultSet((statement, sql) -> statement.execute(sql, Statement.NO_GENERATED_KEYS));
+	}
+
+	private void shouldExecuteStatementThatReturnsResultSet(CheckedBiFunction<Statement, String, Boolean> executor) throws SQLException {
+		ResultSet rs = mock(FireboltResultSet.class);
+		FireboltConnection connection = mock(FireboltConnection.class);
+		FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
+		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any())).thenReturn(Optional.of(rs));
+		assertTrue(executor.apply(fireboltStatement, "SELECT 1"));
+		assertEquals(rs, fireboltStatement.getResultSet());
+		assertEquals(-1, fireboltStatement.getUpdateCount());
+		assertFalse(fireboltStatement.getMoreResults());
+		verify(rs).close();
+		assertNull(fireboltStatement.getResultSet());
 	}
 
 	@Test
