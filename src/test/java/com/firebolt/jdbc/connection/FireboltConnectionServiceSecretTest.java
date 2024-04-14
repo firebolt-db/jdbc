@@ -5,7 +5,6 @@ import com.firebolt.jdbc.client.gateway.GatewayUrlResponse;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -21,6 +20,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -73,13 +73,14 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
 
     @ParameterizedTest(name = "{0}")
     @CsvSource({
-            "regular engine,&engine=eng,false",
-            "system engine,'',true" // system engine is readonly
+            "regular engine,&engine=eng",
+            "system engine,''"
     })
-    void getMetadata(String testName, String engineParameter, boolean readOnly) throws SQLException {
+    void getMetadata(String testName, String engineParameter) throws SQLException {
         try (FireboltConnection connection = createConnection(format("jdbc:firebolt:db?env=dev&account=dev%s", engineParameter), connectionProperties)) {
             DatabaseMetaData dbmd = connection.getMetaData();
-            assertEquals(readOnly, dbmd.isReadOnly());
+            assertFalse(connection.isReadOnly());
+            assertFalse(dbmd.isReadOnly());
             assertSame(dbmd, connection.getMetaData());
             connection.close();
             assertThat(assertThrows(SQLException.class, connection::getMetaData).getMessage(), containsString("closed"));

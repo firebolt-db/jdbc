@@ -102,9 +102,9 @@ class DatabaseMetaDataTest extends IntegrationTest {
 				}
 			}
 		}
-		assertThat(schemas, containsInAnyOrder("public", "catalog", "information_schema"));
+		assertThat(schemas, containsInAnyOrder("public", "information_schema"));
 		String dbName = ConnectionInfo.getInstance().getDatabase();
-		assertThat(catalogs, contains(dbName, dbName, dbName));
+		assertThat(catalogs, contains(dbName, dbName));
 	}
 
 	@Test

@@ -1,0 +1,4 @@
+TABLE_SCHEM	TABLE_CATALOG
+String	String
+public	my-db
+information_schema	my-db

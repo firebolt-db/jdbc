@@ -139,9 +139,10 @@ class FireboltDatabaseMetadataTest {
 				.columns(List.of(
 						Column.builder().name(TABLE_SCHEM).type(TEXT).build(),
 						Column.builder().name(TABLE_CATALOG).type(TEXT).build()))
-				.rows(List.of(List.of("public", "my-db"), List.of("information_schema", "my-db"), List.of("catalog", "my-db")))
+				.rows(List.of(List.of("public", "my-db"), List.of("information_schema", "my-db")))
 				.build());
 
+		when(statement.executeQuery(anyString())).thenReturn(new FireboltResultSet(getInputStreamForGetSchemas()));
 		ResultSet actualResultSet = fireboltDatabaseMetadata.getSchemas();
 
 		AssertionUtil.assertResultSetEquality(expectedResultSet, actualResultSet);
@@ -872,6 +873,10 @@ class FireboltDatabaseMetadataTest {
 
 	private InputStream getInputStreamForGetTables() {
 		return FireboltDatabaseMetadata.class.getResourceAsStream("/responses/metadata/firebolt-response-get-tables-example");
+	}
+
+	private InputStream getInputStreamForGetSchemas() {
+		return FireboltDatabaseMetadata.class.getResourceAsStream("/responses/metadata/firebolt-response-get-schemas-example");
 	}
 
 	private InputStream getInputStreamForGetVersion() {
