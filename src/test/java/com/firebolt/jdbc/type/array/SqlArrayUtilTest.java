@@ -23,6 +23,7 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SqlArrayUtilTest {
 	private static final String nullableTwoDimIntArray = "Array(Array(int null) null) null";
@@ -176,6 +177,10 @@ class SqlArrayUtilTest {
 	@CsvSource({
 			"\\x78797A,xyz",
 			"\\x4a4B4c,JKL",
+			"\\x20,' '",
+			"\\x30,0",
+			"\\x2A,*",
+			"\\x2F,/",
 			"hello,hello" // not hex string
 	})
 	void hexStringToByteArray(String hex, String expected) {
@@ -195,6 +200,14 @@ class SqlArrayUtilTest {
 	void byteArrayToHexStringAndBack(String str) {
 		byte[] bytes = SqlArrayUtil.hexStringToByteArray(SqlArrayUtil.byteArrayToHexString(str == null ? null : str.getBytes(), false));
 		assertEquals(str, bytes == null ? null : new String(bytes));
+	}
+
+	@ParameterizedTest
+	@CsvSource({"\\x2G,G", "\\xH0,H"})
+	void wrongHexStringToByteArray(String hex, String expectedWrongCharacter) {
+		@SuppressWarnings("java:S5778") // "Refactor the code of the lambda to have only one invocation possibly throwing a runtime exception" - this is the purpose of this test
+		IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> new String(SqlArrayUtil.hexStringToByteArray(hex)));
+		assertEquals(format("Illegal character %s in hex string", expectedWrongCharacter), e.getMessage());
 	}
 
 	private static Stream<Arguments> biDimensionalIntArray() {

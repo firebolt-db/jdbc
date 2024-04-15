@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.TimeZone;
 
 import static com.firebolt.jdbc.type.array.SqlArrayUtil.BYTE_ARRAY_PREFIX;
-import static com.firebolt.jdbc.util.ByteArrayUtil.hexStringToByteArray;
+import static com.firebolt.jdbc.type.array.SqlArrayUtil.hexStringToByteArray;
 
 /** This class contains the java types the Firebolt datatypes are mapped to */
 @CustomLog
@@ -85,7 +85,7 @@ public enum BaseType {
 			return new byte[] {};
 		}
 		if (s.startsWith(BYTE_ARRAY_PREFIX)) {
-			byte[] bytes = hexStringToByteArray(s.substring(2));
+			byte[] bytes = hexStringToByteArray(s);
 			int limit = conversion.getMaxFieldSize();
 			return limit > 0 && limit <= bytes.length ? Arrays.copyOf(bytes, limit) : bytes;
 		}
