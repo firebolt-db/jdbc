@@ -43,9 +43,9 @@ class FireboltStatementServiceTest {
 			StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1").get(0);
 			FireboltProperties fireboltProperties = fireboltProperties("firebolt1", false);
 			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
-
-			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, 10, -1, 0, true, false,
-					mock(FireboltStatement.class));
+			FireboltStatement statement = mock(FireboltStatement.class);
+			when(statement.getQueryTimeout()).thenReturn(10);
+			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, true, statement);
 			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true);
 			Assertions.assertEquals(1, mocked.constructed().size());
 		}
@@ -57,8 +57,9 @@ class FireboltStatementServiceTest {
 			StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1").get(0);
 			FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
 			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
-			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, -1, 10, 0, true, false,
-					mock(FireboltStatement.class));
+			FireboltStatement statement = mock(FireboltStatement.class);
+			when(statement.getQueryTimeout()).thenReturn(-1);
+			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, true, statement);
 			Assertions.assertEquals(1, mocked.constructed().size());
 			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, -1, true);
 		}
@@ -85,10 +86,11 @@ class FireboltStatementServiceTest {
 	void shouldExecuteQueryWithParametersForSystemEngine() throws SQLException {
 		try (MockedConstruction<FireboltResultSet> mocked = Mockito.mockConstruction(FireboltResultSet.class)) {
 			StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1").get(0);
-			FireboltProperties fireboltProperties = fireboltProperties("firebolt1", false);
+			FireboltProperties fireboltProperties = fireboltProperties("firebolt1", true);
 			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
-			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, 10, 10, 0, true, true,
-					mock(FireboltStatement.class));
+			FireboltStatement statement = mock(FireboltStatement.class);
+			when(statement.getQueryTimeout()).thenReturn(10);
+			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, true, statement);
 			Assertions.assertEquals(1, mocked.constructed().size());
 			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, true, 10, true);
 		}
@@ -99,11 +101,12 @@ class FireboltStatementServiceTest {
 		try (MockedConstruction<FireboltResultSet> mocked = Mockito.mockConstruction(FireboltResultSet.class)) {
 
 			StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1").get(0);
-			FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
+			FireboltProperties fireboltProperties = fireboltProperties("localhost", true);
 
 			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
-			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, -1, 0, 0, false, true,
-					mock(FireboltStatement.class));
+			FireboltStatement statement = mock(FireboltStatement.class);
+			when(statement.getQueryTimeout()).thenReturn(-1);
+			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, false, statement);
 			Assertions.assertEquals(1, mocked.constructed().size());
 			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, true, -1, false);
 		}
@@ -116,8 +119,10 @@ class FireboltStatementServiceTest {
 		FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
 
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
+		FireboltStatement statement = mock(FireboltStatement.class);
+		when(statement.getQueryTimeout()).thenReturn(-1);
 		Assertions.assertEquals(Optional.empty(), fireboltStatementService.execute(statementInfoWrapper,
-				fireboltProperties, -1, 10, 0, true, false, mock(FireboltStatement.class)));
+				fireboltProperties, true, statement));
 		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, -1, true);
 	}
 

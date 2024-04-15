@@ -4,6 +4,7 @@ import com.firebolt.jdbc.JdbcBase;
 import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
@@ -94,11 +95,11 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 		this(is, null, null, null, false, null, false);
 	}
 
-	public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize) throws SQLException {
+	FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize) throws SQLException {
 		this(is, tableName, dbName, bufferSize, false, null, false);
 	}
 
-	public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize,
+	FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize,
 			FireboltStatement fireboltStatement) throws SQLException {
 		this(is, tableName, dbName, bufferSize, false, fireboltStatement, false);
 	}
@@ -114,13 +115,17 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 		maxFieldSize = 0; // 0 value means unlimited
 	}
 
-	public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize, boolean isCompressed,
+	FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize, boolean isCompressed,
 							 FireboltStatement statement, boolean logResultSet) throws SQLException {
-		this(is, tableName, dbName, bufferSize, 0, 0, isCompressed, statement, logResultSet);
+		this(is, tableName, dbName, bufferSize, statement == null ? 0 : statement.getMaxRows(), statement == null ? 0 : statement.getMaxFieldSize(), isCompressed, statement, logResultSet);
+	}
+
+	public FireboltResultSet(InputStream is, String tableName, String dbName, FireboltProperties properties, FireboltStatement statement) throws SQLException {
+		this(is, tableName, dbName, properties.getBufferSize(), statement == null ? 0 : statement.getMaxRows(), statement == null ? 0 : statement.getMaxFieldSize(), properties.isCompress(), statement, properties.isLogResultSet());
 	}
 
 	@SuppressWarnings("java:S107") //Number of parameters (8) > max (7). This is the price of the immutability
-	public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize, int maxRows, int maxFieldSize, boolean isCompressed,
+	private FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize, int maxRows, int maxFieldSize, boolean isCompressed,
 			FireboltStatement statement, boolean logResultSet) throws SQLException {
 		log.debug("Creating resultSet...");
 		this.statement = statement;

@@ -679,6 +679,8 @@ class FireboltResultSetTest {
 	void shouldNotCloseStatementWhenNotCloseOnCompletion() throws SQLException {
 		when(fireboltStatement.isCloseOnCompletion()).thenReturn(false);
 		inputStream = getInputStreamWithCommonResponseExample();
+		when(fireboltStatement.getMaxRows()).thenReturn(1024);
+		when(fireboltStatement.getMaxFieldSize()).thenReturn(0);
 		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535, fireboltStatement);
 		resultSet.close();
 		verifyNoMoreInteractions(fireboltStatement);
