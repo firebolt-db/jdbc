@@ -33,17 +33,19 @@ public class FireboltStatementService {
 	 * @param properties the connection properties
 	 * @param queryTimeout         query timeout
 	 * @param maxRows              max rows
+	 * @param maxFieldSize         max field size
 	 * @param standardSql          indicates if standard sql should be used
 	 * @param systemEngine         indicates if system engine is used
 	 * @param statement           the statement
 	 * @return an InputStream with the result
 	 */
+	@SuppressWarnings("java:S107") //Number of parameters (8) > max (7). Not nice but probably not so bad for internal class
 	public Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper,
-									   FireboltProperties properties, int queryTimeout, int maxRows, boolean standardSql, boolean systemEngine, FireboltStatement statement)
+									   FireboltProperties properties, int queryTimeout, int maxRows, int maxFieldSize, boolean standardSql, boolean systemEngine, FireboltStatement statement)
 			throws SQLException {
 		InputStream is = statementClient.executeSqlStatement(statementInfoWrapper, properties, systemEngine, queryTimeout, standardSql);
 		if (statementInfoWrapper.getType() == StatementType.QUERY) {
-			return Optional.of(createResultSet(is, (QueryRawStatement) statementInfoWrapper.getInitialStatement(), properties, statement, maxRows));
+			return Optional.of(createResultSet(is, (QueryRawStatement) statementInfoWrapper.getInitialStatement(), properties, statement, maxRows, maxFieldSize));
 		} else {
 			// If the statement is not a query, read all bytes from the input stream and close it.
 			// This is needed otherwise the stream with the server will be closed after having received the first chunk of data (resulting in incomplete inserts).
@@ -61,11 +63,11 @@ public class FireboltStatementService {
 		return statementClient.isStatementRunning(statementLabel);
 	}
 
-	private FireboltResultSet createResultSet(InputStream inputStream, QueryRawStatement initialQuery, FireboltProperties properties, FireboltStatement statement, int maxRows)
+	private FireboltResultSet createResultSet(InputStream inputStream, QueryRawStatement initialQuery, FireboltProperties properties, FireboltStatement statement, int maxRows, int maxFieldSize)
 			throws SQLException {
 		return new FireboltResultSet(inputStream, Optional.ofNullable(initialQuery.getTable()).orElse(UNKNOWN_TABLE_NAME),
 				Optional.ofNullable(initialQuery.getDatabase()).orElse(properties.getDatabase()),
-				properties.getBufferSize(), maxRows, properties.isCompress(), statement,
+				properties.getBufferSize(), maxRows, maxFieldSize, properties.isCompress(), statement,
 				properties.isLogResultSet());
 	}
 }

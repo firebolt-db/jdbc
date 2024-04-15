@@ -17,8 +17,10 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.TimeZone;
 
+import static com.firebolt.jdbc.type.array.SqlArrayUtil.BYTE_ARRAY_PREFIX;
 import static com.firebolt.jdbc.util.ByteArrayUtil.hexStringToByteArray;
 
 /** This class contains the java types the Firebolt datatypes are mapped to */
@@ -28,7 +30,11 @@ public enum BaseType {
 	INTEGER(Integer.class, conversion -> Integer.parseInt(checkInfinity(conversion.getValue()))),
 	SHORT(Short.class, conversion -> Short.parseShort(checkInfinity(conversion.getValue()))),
 	BIGINT(BigInteger.class, conversion -> new BigInteger(checkInfinity(conversion.getValue()))),
-	TEXT(String.class, conversion -> StringEscapeUtils.unescapeJava(conversion.getValue())),
+	TEXT(String.class, conversion -> {
+		String escaped = StringEscapeUtils.unescapeJava(conversion.getValue());
+		int limit = conversion.getMaxFieldSize();
+		return limit > 0 && limit <= escaped.length() ? escaped.substring(0, limit) : escaped;
+	}),
 	REAL(Float.class, conversion -> {
 		if (isNan(conversion.getValue())) {
 			return Float.NaN;
@@ -78,8 +84,10 @@ public enum BaseType {
 		if (s == null || s.isEmpty()) {
 			return new byte[] {};
 		}
-		if (s.startsWith("\\x")) {
-			return hexStringToByteArray(s.substring(2));
+		if (s.startsWith(BYTE_ARRAY_PREFIX)) {
+			byte[] bytes = hexStringToByteArray(s.substring(2));
+			int limit = conversion.getMaxFieldSize();
+			return limit > 0 && limit <= bytes.length ? Arrays.copyOf(bytes, limit) : bytes;
 		}
 		// Cannot convert from other formats (such as 'Escape') for the moment
 		throw new FireboltException("Cannot convert binary string in non-hex format to byte array");
@@ -128,14 +136,14 @@ public enum BaseType {
 	}
 
 	public <T> T transform(String value, Column column) throws SQLException {
-		return transform(value, column, null);
+		return transform(value, column, null, 0);
 	}
 
 	public <T> T transform(String value) throws SQLException {
-		return transform(value, null, null);
+		return transform(value, null, null, 0);
 	}
 
-	public <T> T transform(String value, Column column, TimeZone timeZone) throws SQLException {
+	public <T> T transform(String value, Column column, TimeZone timeZone, int maxFieldSize) throws SQLException {
 		TimeZone fromTimeZone;
 		if (column != null && column.getType().getTimeZone() != null) {
 			fromTimeZone = column.getType().getTimeZone();
@@ -143,7 +151,7 @@ public enum BaseType {
 			fromTimeZone = timeZone;
 		}
 		StringToColumnTypeConversion conversion = StringToColumnTypeConversion.builder().value(value).column(column)
-				.timeZone(fromTimeZone).build();
+				.timeZone(fromTimeZone).maxFieldSize(maxFieldSize).build();
 		return transform(conversion);
 	}
 
@@ -162,5 +170,6 @@ public enum BaseType {
 		String value;
 		Column column;
 		TimeZone timeZone;
+		int maxFieldSize;
 	}
 }

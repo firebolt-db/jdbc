@@ -6,8 +6,8 @@ import integration.ConnectionInfo;
 import integration.IntegrationTest;
 import kotlin.collections.ArrayDeque;
 import lombok.CustomLog;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -24,6 +24,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -31,6 +32,7 @@ import java.util.stream.IntStream;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -412,5 +414,37 @@ class StatementTest extends IntegrationTest {
 			}
 
 		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(ints = {1, 3, 5, 50})
+	void maxFieldSize(int maxFieldSize) throws SQLException {
+		String query = "select table_name from information_schema.tables order by table_name";
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			statement.setMaxFieldSize(maxFieldSize);
+			readValues(statement, query, 1).forEach(table -> assertThat(table.length(), Matchers.lessThanOrEqualTo(maxFieldSize)));
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(ints = {0, -1, 100})
+	void unlimitedMaxFieldSize(int maxFieldSize) throws SQLException {
+		String query = "select table_name from information_schema.tables order by table_name";
+		try (Connection connection = createConnection();
+			 Statement unlimitedStatement = connection.createStatement();
+			 Statement limitedStatement = connection.createStatement()) {
+			limitedStatement.setMaxFieldSize(maxFieldSize);
+			assertEquals(readValues(unlimitedStatement, query, 1), readValues(limitedStatement, query, 1));
+		}
+	}
+
+	private Collection<String> readValues(Statement statement, String query, int columnIndex) throws SQLException {
+		List<String> values = new ArrayList<>();
+		try (ResultSet rs = statement.executeQuery(query)) {
+			while(rs.next()) {
+				values.add(rs.getString(columnIndex));
+			}
+		}
+		return values;
 	}
 }
