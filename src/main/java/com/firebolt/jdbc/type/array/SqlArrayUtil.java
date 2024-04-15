@@ -284,8 +284,16 @@ public class SqlArrayUtil {
 		char[] chars = str.substring(2).toCharArray();
 		byte[] bytes = new byte[chars.length / 2];
 		for (int i = 0; i < chars.length; i += 2) {
-			bytes[i / 2] = (byte) ((Character.digit(chars[i], 16) << 4) + Character.digit(chars[i + 1], 16));
+			bytes[i / 2] = (byte) ((hexDigit(chars[i]) << 4) + hexDigit(chars[i + 1]));
 		}
 		return bytes;
+	}
+
+	private static int hexDigit(char c) {
+		int d = Character.digit(c, 16);
+		if (d < 0) {
+			throw new IllegalArgumentException(format("Illegal character %s in hex string", c));
+		}
+		return d;
 	}
 }
