@@ -507,8 +507,18 @@ public abstract class FireboltConnection extends JdbcBase implements Connection 
 	}
 
 	@Override
-	public String nativeSQL(String sql) {
-		return sql;
+	public String nativeSQL(String sql) throws SQLException {
+		return translateSQL(sql, true);
+	}
+
+	private String translateSQL(String sql, boolean escapeProcessing) throws SQLException {
+		if (sql == null) {
+			throw new IllegalArgumentException("SQL is null");
+		}
+		if (!escapeProcessing || sql.indexOf('{') < 0) {
+			return sql;
+		}
+		throw new SQLWarning("Escape processing is not supported right now", "0A000");
 	}
 
 	@Override

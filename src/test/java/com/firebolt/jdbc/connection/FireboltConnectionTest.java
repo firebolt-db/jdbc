@@ -647,5 +647,12 @@ abstract class FireboltConnectionTest {
 		}
 	}
 
+	@Test
+	void unsupportedNativeSql() throws SQLException {
+		try (FireboltConnection connection = createConnection(URL, connectionProperties)) {
+			assertThrows(SQLException.class, () -> connection.nativeSQL("SELECT {d '2001-01-01'} FROM TEST"));
+		}
+	}
+
 	protected abstract FireboltConnection createConnection(String url, Properties props) throws SQLException;
 }
