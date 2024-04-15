@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.CheckedBiFunction;
 import com.firebolt.jdbc.CheckedFunction;
 import com.firebolt.jdbc.client.account.FireboltAccount;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
@@ -176,11 +177,19 @@ abstract class FireboltConnectionTest {
 
 	@Test
 	void shouldPrepareStatement() throws SQLException {
+		shouldPrepareStatement(Connection::prepareStatement);
+	}
+
+	@Test
+	void shouldPrepareStatementNoGeneratedKeys() throws SQLException {
+		shouldPrepareStatement((connection, sql) -> connection.prepareStatement(sql, Statement.NO_GENERATED_KEYS));
+	}
+
+	private void shouldPrepareStatement(CheckedBiFunction<Connection, String, PreparedStatement> preparedStatementFactoryMethod) throws SQLException {
 		when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyBoolean(),anyBoolean(), any()))
 				.thenReturn(Optional.empty());
 		try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
-			PreparedStatement statement = fireboltConnection
-					.prepareStatement("INSERT INTO cars(sales, name) VALUES (?, ?)");
+			PreparedStatement statement = preparedStatementFactoryMethod.apply(fireboltConnection, "INSERT INTO cars(sales, name) VALUES (?, ?)");
 			statement.setObject(1, 500);
 			statement.setObject(2, "Ford");
 			statement.execute();
