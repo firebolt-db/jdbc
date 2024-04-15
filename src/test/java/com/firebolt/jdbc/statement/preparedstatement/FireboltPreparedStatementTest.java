@@ -82,16 +82,19 @@ class FireboltPreparedStatementTest {
 		void set(PreparedStatement ps) throws SQLException;
 	}
 
+	private interface ParameterizedSetter<T> {
+		void set(PreparedStatement statement, int index, T value) throws SQLException;
+	}
+
 	private static class SerialNClob extends SerialClob implements NClob {
 		public SerialNClob(char[] ch) throws SQLException {
 			super(ch);
 		}
 	}
 
+
 	private static Stream<Arguments> unsupported() {
 		return Stream.of(
-					Arguments.of("setByte", (Executable) () -> statement.setByte(1, (byte) 127)),
-					Arguments.of("setURL", (Executable) () -> statement.setURL(1, new URL("http://foo.bar"))),
 					Arguments.of("setRef", (Executable) () -> statement.setRef(1, mock(Ref.class))),
 					Arguments.of("setDate", (Executable) () -> statement.setDate(1, new Date(System.currentTimeMillis()), Calendar.getInstance())),
 					Arguments.of("setTime", (Executable) () -> statement.setTime(1, new Time(System.currentTimeMillis()))),
@@ -184,7 +187,18 @@ class FireboltPreparedStatementTest {
 				Arguments.of("setUnicodeStream(InputStream, length+1)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 6), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
 				Arguments.of("setUnicodeStream(InputStream, 42)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 42), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
 				Arguments.of("setUnicodeStream(InputStream, 1)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 1), "E'\\x68'::BYTEA"),
-				Arguments.of("setUnicodeStream(InputStream, 0)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 0), "E'\\x'::BYTEA")
+				Arguments.of("setUnicodeStream(InputStream, 0)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 0), "E'\\x'::BYTEA"));
+	}
+
+	private static Stream<Arguments> setNumber() {
+		return Stream.of(
+				Arguments.of("byte", (ParameterizedSetter<Byte>) PreparedStatement::setByte, (byte)50),
+				Arguments.of("short", (ParameterizedSetter<Short>) PreparedStatement::setShort, (short)50),
+				Arguments.of("int", (ParameterizedSetter<Integer>) PreparedStatement::setInt, 50),
+				Arguments.of("long", (ParameterizedSetter<Long>) PreparedStatement::setLong, 50L),
+				Arguments.of("float", (ParameterizedSetter<Float>) PreparedStatement::setFloat, 5.5f),
+				Arguments.of("double", (ParameterizedSetter<Double>) PreparedStatement::setDouble, 3.14),
+				Arguments.of("double", (ParameterizedSetter<BigDecimal>) PreparedStatement::setBigDecimal, new BigDecimal("555555555555.55555555"))
 		);
 	}
 
@@ -358,6 +372,26 @@ class FireboltPreparedStatementTest {
 		assertEquals("INSERT INTO cars(available) VALUES (1)", queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
+	@ParameterizedTest
+	@CsvSource(value = {
+			"Nobody,",
+			"Firebolt,http://www.firebolt.io"
+	})
+	void shouldSetUrl(String name, URL url) throws SQLException {
+		statement = createStatementWithSql("INSERT INTO companies (name, url) VALUES (?,?)");
+
+		statement.setString(1, name);
+		statement.setURL(2, url);
+		statement.execute();
+
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		assertEquals(format("INSERT INTO companies (name, url) VALUES (%s,%s)", sqlQuote(name), sqlQuote(url)), queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
+
+	private String sqlQuote(Object value) {
+		return value == null ? "NULL" : format("'%s'", value);
+	}
+
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("unsupported")
 	void shouldThrowSQLFeatureNotSupportedException(String name, Executable function) {
@@ -365,58 +399,15 @@ class FireboltPreparedStatementTest {
 		assertThrows(SQLFeatureNotSupportedException.class, function);
 	}
 
-	@Test
-	void shouldSetInt() throws SQLException {
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("setNumber")
+	<T> void shouldSetNumber(String name, ParameterizedSetter<T> setter, T value) throws SQLException {
 		statement = createStatementWithSql("INSERT INTO cars(price) VALUES (?)");
 
-		statement.setInt(1, 50);
+		setter.set(statement, 1, value);
 		statement.execute();
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
-	}
-
-	@Test
-	void shouldSetLong() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars(price) VALUES (?)");
-
-		statement.setLong(1, 50L);
-		statement.execute();
-
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
-		assertEquals("INSERT INTO cars(price) VALUES (50)", queryInfoWrapperArgumentCaptor.getValue().getSql());
-	}
-
-	@Test
-	void shouldSetFloat() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars(price) VALUES (?)");
-
-		statement.setFloat(1, 5.5F);
-		statement.execute();
-
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
-		assertEquals("INSERT INTO cars(price) VALUES (5.5)", queryInfoWrapperArgumentCaptor.getValue().getSql());
-	}
-
-	@Test
-	void shouldSetDouble() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars(price) VALUES (?)");
-
-		statement.setDouble(1, 5.5);
-		statement.execute();
-
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
-	}
-
-	@Test
-	void shouldSetBigDecimal() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars(price) VALUES (?)");
-
-		statement.setBigDecimal(1, new BigDecimal("555555555555.55555555"));
-		statement.execute();
-
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
-		assertEquals("INSERT INTO cars(price) VALUES (555555555555.55555555)",
-				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
 	@Test

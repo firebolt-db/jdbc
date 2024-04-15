@@ -1,5 +1,7 @@
 package integration.tests;
 
+import com.firebolt.jdbc.CheckedBiFunction;
+import com.firebolt.jdbc.CheckedTriFunction;
 import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.testutils.AssertionUtil;
@@ -13,6 +15,9 @@ import lombok.Value;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.sql.rowset.serial.SerialBlob;
 import javax.sql.rowset.serial.SerialClob;
@@ -20,6 +25,8 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -32,11 +39,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.sql.Statement.SUCCESS_NO_INFO;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
@@ -81,6 +90,59 @@ class PreparedStatementTest extends IntegrationTest {
 							.executeQuery("SELECT sales, make FROM prepared_statement_test ORDER BY make");
 					ResultSet expectedRs = FireboltResultSet.of(queryResult)) {
 				AssertionUtil.assertResultSetEquality(expectedRs, rs);
+			}
+		}
+	}
+
+	Stream<Arguments> numericTypes() {
+		return Stream.of(
+				Arguments.of("byte",
+						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+							s.setByte(i, v.byteValue());
+							return null;
+						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getByte(i)),
+
+				Arguments.of("short",
+						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+							s.setShort(i, v.shortValue());
+							return null;
+						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getShort(i)),
+
+				Arguments.of("int",
+						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+							s.setInt(i, v);
+							return null;
+						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getInt(i)),
+
+				Arguments.of("long",
+						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+							s.setLong(i, v.longValue());
+							return null;
+						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getLong(i))
+		);
+	}
+
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("numericTypes")
+	<T> void shouldInsertRecordsUsingDifferentNumericTypes(String name, CheckedTriFunction<PreparedStatement, Integer, Integer, Void> setter, CheckedBiFunction<ResultSet, Integer, T> getter) throws SQLException {
+		Car car = Car.builder().make("Tesla").sales(42).build();
+		try (Connection connection = createConnection()) {
+
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make) VALUES (?,?)")) {
+				setter.apply(statement, 1, car.getSales());
+				statement.setString(2, car.getMake());
+				statement.executeUpdate();
+			}
+
+			try (Statement statement = connection.createStatement();
+				 ResultSet rs = statement.executeQuery("SELECT sales, make FROM prepared_statement_test ORDER BY make")) {
+				assertTrue(rs.next());
+				assertEquals(car.getSales(), getter.apply(rs, 1));
+				assertEquals(car.getMake(), rs.getString(2));
+				rs.getString(2);
+
+				assertFalse(rs.next());
 			}
 		}
 	}
@@ -286,6 +348,34 @@ class PreparedStatementTest extends IntegrationTest {
 								QueryResult.Column.builder().name("make").type(FireboltDataType.TEXT).build()))
 				.rows(expectedRows).build();
 
+	}
+
+	@Test
+	void shouldInsertAndRetrieveUrl() throws SQLException, MalformedURLException {
+		Car tesla = Car.builder().make("https://www.tesla.com/").sales(300).build();
+		Car nothing = Car.builder().sales(0).build();
+		try (Connection connection = createConnection()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make) VALUES (?,?)")) {
+				statement.setInt(1, tesla.getSales());
+				statement.setURL(2, new URL(tesla.getMake()));
+				statement.executeUpdate();
+				statement.setInt(1, nothing.getSales());
+				statement.setURL(2, null);
+				statement.executeUpdate();
+			}
+
+			try (Statement statement = connection.createStatement();
+				 ResultSet rs = statement.executeQuery("SELECT make FROM prepared_statement_test order by sales")) {
+				assertTrue(rs.next());
+				assertNull(rs.getString(1));
+				assertNull(rs.getURL(1));
+				assertTrue(rs.next());
+				assertEquals("https://www.tesla.com/", rs.getString(1));
+				assertEquals(new URL("https://www.tesla.com/"), rs.getURL(1));
+				assertFalse(rs.next());
+			}
+		}
 	}
 
 	@Builder
