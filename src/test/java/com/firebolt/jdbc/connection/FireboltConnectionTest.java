@@ -52,6 +52,10 @@ import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.ACCE
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.CLIENT_ID;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.CLIENT_SECRET;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.HOST;
+import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
+import static java.sql.Connection.TRANSACTION_READ_UNCOMMITTED;
+import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
+import static java.sql.Connection.TRANSACTION_SERIALIZABLE;
 import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.CONCUR_UPDATABLE;
@@ -122,6 +126,7 @@ abstract class FireboltConnectionTest {
 				Arguments.of("prepareStatement(sql, columnIndexes)", (Executable) () -> connection.prepareStatement("select 1", new int[0])),
 				Arguments.of("prepareStatement(sql, columnNames)", (Executable) () -> connection.prepareStatement("select 1", new String[0])),
 
+				Arguments.of("setTransactionIsolation", (Executable) () -> connection.setTransactionIsolation(1)),
 				Arguments.of("setSavepoint", (Executable) () -> connection.setSavepoint()),
 				Arguments.of("setSavepoint(name)", (Executable) () -> connection.setSavepoint("select 1")),
 				Arguments.of("releaseSavepoint(savepoint)", (Executable) () -> connection.releaseSavepoint(mock(Savepoint.class))),
@@ -582,6 +587,13 @@ abstract class FireboltConnectionTest {
 	void shouldGetNoneTransactionIsolation() throws SQLException {
 		connectionProperties.put("database", "db");
 		try (Connection connection = createConnection(URL, connectionProperties)) {
+			assertEquals(Connection.TRANSACTION_NONE, connection.getTransactionIsolation());
+			connection.setTransactionIsolation(Connection.TRANSACTION_NONE); // should work
+			assertEquals(Connection.TRANSACTION_NONE, connection.getTransactionIsolation());
+			for (int transactionIsolation : new int [] {TRANSACTION_READ_UNCOMMITTED, TRANSACTION_READ_COMMITTED, TRANSACTION_REPEATABLE_READ, TRANSACTION_SERIALIZABLE}) {
+				assertThrows(SQLFeatureNotSupportedException.class, () -> connection.setTransactionIsolation(transactionIsolation));
+			}
+			// despite the failed attempts to change transaction isolation to unsupported value it remains TRANSACTION_NONE
 			assertEquals(Connection.TRANSACTION_NONE, connection.getTransactionIsolation());
 		}
 	}
