@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.statement.preparedstatement;
 
+import com.firebolt.jdbc.client.query.StatementClient;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junitpioneer.jupiter.DefaultTimeZone;
@@ -23,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.math.BigDecimal;
@@ -44,7 +47,10 @@ import java.util.Calendar;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -103,12 +109,10 @@ class FireboltPreparedStatementTest {
 					Arguments.of("setTime", (Executable) () -> statement.setTime(1, new Time(System.currentTimeMillis()))),
 					Arguments.of("setTime(calendar)", (Executable) () -> statement.setTime(1, new Time(System.currentTimeMillis()), Calendar.getInstance())),
 					Arguments.of("setTimestamp", (Executable) () -> statement.setTimestamp(1, new Timestamp(System.currentTimeMillis()), Calendar.getInstance())),
-					Arguments.of("setRowId", (Executable) () -> statement.setRowId(1, mock(RowId.class)),
+					Arguments.of("setRowId", (Executable) () -> statement.setRowId(1, mock(RowId.class))),
 					Arguments.of("setSQLXML", (Executable) () -> statement.setSQLXML(1, mock(SQLXML.class))),
 
 					// TODO: add support of these methods
-					Arguments.of("getParameterMetaData", (Executable) () -> statement.getParameterMetaData())),
-					Arguments.of("setObject", (Executable) () -> statement.setObject(1, mock(SQLXML.class), Types.VARCHAR, 0)),
 					Arguments.of("getParameterMetaData", (Executable) () -> statement.getParameterMetaData())
 		);
 	}
@@ -125,6 +129,26 @@ class FireboltPreparedStatementTest {
 	void afterEach() throws SQLException {
 		if (statement != null) {
 			statement.close();
+		}
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			"INSERT INTO data (field) VALUES (?),false",
+			"SELECT * FROM data WHERE field=?,true",
+	})
+	void getMetadata(String query, boolean expectedResultSet) throws SQLException {
+		StatementClient statementClient = mock(StatementClient.class);
+		when(statementClient.executeSqlStatement(any(), any(), anyBoolean(), anyInt(), anyBoolean())).thenReturn(new ByteArrayInputStream(new byte[0]));
+		statement = new FireboltPreparedStatement(new FireboltStatementService(statementClient), connection, query);
+		assertNull(statement.getMetaData());
+		statement.setObject(1, null);
+		boolean shouldHaveResultSet = statement.execute();
+		assertEquals(expectedResultSet, shouldHaveResultSet);
+		if (shouldHaveResultSet) {
+			assertNotNull(statement.getMetaData());
+		} else {
+			assertNull(statement.getMetaData());
 		}
 	}
 
@@ -152,7 +176,7 @@ class FireboltPreparedStatementTest {
 	void setNullByteArray() throws SQLException {
 		statement = createStatementWithSql("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (?,?,?,?,?,?,?,?)");
 
-		statement.setInt(1, 500);
+		statement.setShort(1, (short)500);
 		statement.setString(2, "Ford");
 		statement.setObject(3, "FOCUS", Types.VARCHAR);
 		statement.setNull(4, Types.VARCHAR);
@@ -391,6 +415,112 @@ class FireboltPreparedStatementTest {
 		assertEquals(
 				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,1,5)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
+
+	@Test
+	@DefaultTimeZone("Europe/London")
+	void shouldSetAllObjectsWithCorrectSqlType() throws SQLException {
+		statement = createStatementWithSql(
+				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) "
+						+ "VALUES (?,?,?,?,?,?,?,?)");
+
+		statement.setObject(1, new Timestamp(1564571713000L), Types.TIMESTAMP);
+		statement.setObject(2, new Date(1564527600000L), Types.DATE);
+		statement.setObject(3, 5.5F, Types.FLOAT);
+		statement.setObject(4, 5L, Types.BIGINT);
+		statement.setObject(5, new BigDecimal("555555555555.55555555"), Types.NUMERIC);
+		statement.setObject(6, null, Types.JAVA_OBJECT);
+		statement.setObject(7, true, Types.BOOLEAN);
+		statement.setObject(8, 5, Types.INTEGER);
+
+		statement.execute();
+
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties),
+				anyInt(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any());
+
+		assertEquals(
+				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,1,5)",
+				queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			"123," + Types.TINYINT + ",3",
+			"123," + Types.SMALLINT + ",1",
+			"123," + Types.INTEGER + ",",
+			"123," + Types.BIGINT + ",",
+	})
+	// scale is ignored for these types
+	void shouldSetIntegerObjectWithCorrectSqlType(int value, int type, Integer scale) throws SQLException {
+		shouldSetObjectWithCorrectSqlType(value, type, scale, String.valueOf(value));
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			"3.14," + Types.DECIMAL + ",2,3.14",
+			"3.1415926," + Types.DECIMAL + ",2,3.14",
+			"2.7," + Types.NUMERIC + ",2,2.70",
+			"2.718281828," + Types.NUMERIC + ",1,2.7",
+			"2.718281828," + Types.NUMERIC + ",5,2.71828",
+	})
+	void shouldSetFloatObjectWithCorrectScalableSqlTypeAndScale(float value, int type, int scale, String expected) throws SQLException {
+		shouldSetObjectWithCorrectSqlType(value, type, scale, expected);
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			"3.14," + Types.DECIMAL + ",2,3.14",
+			"3.1415926," + Types.DECIMAL + ",2,3.14",
+			"2.7," + Types.NUMERIC + ",2,2.70",
+			"2.718281828," + Types.NUMERIC + ",1,2.7",
+			"2.718281828," + Types.NUMERIC + ",5,2.71828",
+	})
+	void shouldSetDoubleObjectWithCorrectScalableSqlTypeAndScale(double value, int type, int scale, String expected) throws SQLException {
+		shouldSetObjectWithCorrectSqlType(value, type, scale, expected);
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			"3.14," + Types.FLOAT + ",",
+			"3.1415926," + Types.DOUBLE + ",",
+			"3.1415926," + Types.DOUBLE + ",3", // scale is ignored for this type
+	})
+	void shouldSetDoubleObjectWithCorrectSqlTypeAndScale(double value, int type, Integer scale) throws SQLException {
+		shouldSetObjectWithCorrectSqlType(value, type, scale, Double.toString(value));
+	}
+
+	@Test
+	void unsupportedType() {
+		statement = createStatementWithSql("INSERT INTO data (column) VALUES (?)");
+		assertThrows(SQLException.class, () -> statement.setObject(1, this));
+		// STRUCT is not supported now, so it can be used as an example of unsupported type
+		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setObject(1, this, Types.STRUCT));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setObject(1, this, Types.STRUCT, 5));
+	}
+
+	private void shouldSetObjectWithCorrectSqlType(Object value, int type, Integer scale, String expected) throws SQLException {
+		statement = createStatementWithSql("INSERT INTO data (column) VALUES (?)");
+		if (scale == null) {
+			statement.setObject(1, value, type);
+		} else {
+			statement.setObject(1, value, type, scale);
+		}
+		statement.execute();
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties),
+				anyInt(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any());
+
+		assertEquals(format("INSERT INTO data (column) VALUES (%s)", expected), queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
+
+	@Test
+	void clearParameters() throws SQLException {
+		statement = createStatementWithSql("INSERT INTO data (column) VALUES (?)");
+		statement.setObject(1, ""); // set parameter
+		statement.execute(); // execute statement - should work because all parameters are set
+		statement.clearParameters(); // clear parameters; now there are no parameters
+		assertThrows(IllegalArgumentException.class, () -> statement.execute()); // execution fails because parameters are not set
+		statement.setObject(1, ""); // set parameter again
+		statement.execute(); // now execution is successful
 	}
 
 	private FireboltPreparedStatement createStatementWithSql(String sql) {

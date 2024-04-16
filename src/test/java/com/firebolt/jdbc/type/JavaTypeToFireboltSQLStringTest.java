@@ -110,7 +110,7 @@ class JavaTypeToFireboltSQLStringTest {
 
 	@Test
 	void shouldTransformDoubleToString() throws FireboltException {
-		assertEquals("105", JavaTypeToFireboltSQLString.DOUBLE.transform(105));
+		assertEquals("105.0", JavaTypeToFireboltSQLString.DOUBLE.transform(105));
 
 		assertEquals("105", JavaTypeToFireboltSQLString.transformAny(105));
 
@@ -124,15 +124,6 @@ class JavaTypeToFireboltSQLStringTest {
 		String expectedDateString = "'2022-05-23'";
 		assertEquals(expectedDateString, JavaTypeToFireboltSQLString.DATE.transform(d));
 		assertEquals(expectedDateString, JavaTypeToFireboltSQLString.transformAny((d)));
-	}
-
-	@Test
-	void shouldTransformTimeToString() throws FireboltException {
-		assertEquals("105", JavaTypeToFireboltSQLString.DOUBLE.transform(105));
-
-		assertEquals("105", JavaTypeToFireboltSQLString.transformAny(105));
-
-		assertEquals("NULL", JavaTypeToFireboltSQLString.DOUBLE.transform(null));
 	}
 
 	@Test
