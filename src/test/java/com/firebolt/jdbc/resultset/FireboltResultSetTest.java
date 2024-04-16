@@ -22,6 +22,7 @@ import java.math.RoundingMode;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Array;
+import java.sql.Clob;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -212,8 +213,8 @@ class FireboltResultSetTest {
 		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateRef("label", null));
 		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBlob(1, mock(java.sql.Blob.class)));
 		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBlob("label", mock(java.sql.Blob.class)));
-		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateClob(1, mock(java.sql.Clob.class)));
-		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateClob("label", mock(java.sql.Clob.class)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateClob(1, mock(Clob.class)));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateClob("label", mock(Clob.class)));
 		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateArray(1, mock(Array.class)));
 		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateArray("label", mock(Array.class)));
 		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateRowId(1, mock(RowId.class)));
@@ -463,6 +464,14 @@ class FireboltResultSetTest {
 		assertEquals(expected, resultSet.getObject(3, String.class));
 		assertEquals(expected, resultSet.getNString(3));
 		assertEquals(expected, resultSet.getNString("name"));
+		assertEquals(expected, getStringFromClob(resultSet.getClob(3)));
+		assertEquals(expected, getStringFromClob(resultSet.getClob("name")));
+		assertEquals(expected, getStringFromClob(resultSet.getNClob(3)));
+		assertEquals(expected, getStringFromClob(resultSet.getNClob("name")));
+	}
+
+	private String getStringFromClob(Clob clob) throws SQLException {
+		return clob.getSubString(1, (int)clob.length());
 	}
 
 	@Test
@@ -485,7 +494,7 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldReturnBytes() throws SQLException {
+	void shouldReturnBytes() throws SQLException, IOException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
 		resultSet.next();
@@ -494,8 +503,11 @@ class FireboltResultSetTest {
 		assertArrayEquals(expected, resultSet.getBytes("name"));
 		assertArrayEquals(expected, resultSet.getObject(3, byte[].class));
 		assertArrayEquals(expected, resultSet.getObject("name", byte[].class));
+		assertArrayEquals(expected, resultSet.getBlob(3).getBinaryStream().readAllBytes());
+		assertArrayEquals(expected, resultSet.getBlob("name").getBinaryStream().readAllBytes());
 		resultSet.next();
 		assertNull(resultSet.getBytes(3));
+		assertNull(resultSet.getBlob(3));
 	}
 
 	@Test
@@ -505,6 +517,7 @@ class FireboltResultSetTest {
 		resultSet.next();
 		resultSet.next();
 		assertNull(resultSet.getBytes(3));
+		assertNull(resultSet.getBlob(3));
 	}
 
 	@Test
@@ -535,6 +548,10 @@ class FireboltResultSetTest {
 		assertNull(resultSet.getString("name"));
 		assertNull(resultSet.getNString(3));
 		assertNull(resultSet.getNString("name"));
+		assertNull(resultSet.getClob(3));
+		assertNull(resultSet.getClob("name"));
+		assertNull(resultSet.getNClob(3));
+		assertNull(resultSet.getNClob("name"));
 	}
 
 	@Test
