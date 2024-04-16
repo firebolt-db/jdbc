@@ -133,8 +133,7 @@ abstract class FireboltConnectionTest {
 
 				Arguments.of("setTypeMap", (Executable) () -> connection.setTypeMap(Map.of())),
 
-				Arguments.of("rollback(savepoint)", (Executable) () -> connection.rollback(mock(Savepoint.class))),
-				Arguments.of("nativeSQL", (Executable) () -> connection.nativeSQL("select 1"))
+				Arguments.of("rollback(savepoint)", (Executable) () -> connection.rollback(mock(Savepoint.class)))
 		);
 	}
 
@@ -638,6 +637,20 @@ abstract class FireboltConnectionTest {
 		try (FireboltConnection connection = createConnection(URL, connectionProperties)) {
 			verify(fireboltEngineService).getEngine(argThat(props -> "engine".equals(props.getEngine()) && "db".equals(props.getDatabase())));
 			assertEquals("http://my_endpoint", connection.getSessionProperties().getHost());
+		}
+	}
+
+	@Test
+	void nativeSql() throws SQLException {
+		try (FireboltConnection connection = createConnection(URL, connectionProperties)) {
+			assertEquals("SELECT 1", connection.nativeSQL("SELECT 1"));
+		}
+	}
+
+	@Test
+	void unsupportedNativeSql() throws SQLException {
+		try (FireboltConnection connection = createConnection(URL, connectionProperties)) {
+			assertThrows(SQLException.class, () -> connection.nativeSQL("SELECT {d '2001-01-01'} FROM TEST"));
 		}
 	}
 
