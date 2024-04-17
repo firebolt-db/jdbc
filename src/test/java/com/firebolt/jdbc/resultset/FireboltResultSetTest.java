@@ -501,6 +501,8 @@ class FireboltResultSetTest {
 		byte[] expected = "Taylor\\'s Prime Steak House".getBytes();
 		assertArrayEquals(expected, resultSet.getBytes(3));
 		assertArrayEquals(expected, resultSet.getBytes("name"));
+		assertArrayEquals(expected, resultSet.getBinaryStream(3).readAllBytes());
+		assertArrayEquals(expected, resultSet.getBinaryStream("name").readAllBytes());
 		assertArrayEquals(expected, resultSet.getObject(3, byte[].class));
 		assertArrayEquals(expected, resultSet.getObject("name", byte[].class));
 		assertArrayEquals(expected, resultSet.getBlob(3).getBinaryStream().readAllBytes());
@@ -1236,8 +1238,6 @@ class FireboltResultSetTest {
 		byte[] expected = expectedStr.getBytes();
 		assertStream(expected, resultSet.getAsciiStream(3));
 		assertStream(expected, resultSet.getAsciiStream("name"));
-		assertStream(expected, resultSet.getBinaryStream(3));
-		assertStream(expected, resultSet.getBinaryStream("name"));
 		//noinspection deprecation
 		assertStream(expected, resultSet.getUnicodeStream(3));
 		//noinspection deprecation

@@ -14,6 +14,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import javax.sql.rowset.serial.SerialBlob;
+import javax.sql.rowset.serial.SerialClob;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.StringReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,6 +31,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.sql.Statement.SUCCESS_NO_INFO;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -195,6 +202,76 @@ class PreparedStatementTest extends IntegrationTest {
 				 ResultSet rs = statement.executeQuery("SELECT sales, make, signature FROM prepared_statement_test")) {
 				while(rs.next()) {
 					actual.add(Car.builder().sales(rs.getInt(1)).make(rs.getString(2)).signature(rs.getBytes(3)).build());
+				}
+			}
+			assertEquals(Set.of(car1, car2), actual);
+		}
+	}
+
+	@Test
+	void shouldInsertAndSelectBlobClob() throws SQLException, IOException {
+		Car car1 = Car.builder().make("Ford").sales(12345).signature("Henry Ford".getBytes()).build();
+		Car car2 = Car.builder().make("Tesla").sales(54321).signature("Elon Musk".getBytes()).build();
+		try (Connection connection = createConnection()) {
+
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, signature) VALUES (?,?,?)")) {
+				statement.setLong(1, car1.getSales());
+				statement.setClob(2, new SerialClob(car1.getMake().toCharArray()));
+				statement.setBlob(3, new SerialBlob(car1.getSignature()));
+				statement.addBatch();
+				statement.setLong(1, car2.getSales());
+				statement.setClob(2, new SerialClob(car2.getMake().toCharArray()));
+				statement.setBlob(3, new SerialBlob(car2.getSignature()));
+				statement.addBatch();
+				int[] result = statement.executeBatch();
+				assertArrayEquals(new int[] { SUCCESS_NO_INFO, SUCCESS_NO_INFO }, result);
+			}
+
+			Set<Car> actual = new HashSet<>();
+			try (Statement statement = connection.createStatement();
+				 ResultSet rs = statement.executeQuery("SELECT sales, make, signature FROM prepared_statement_test")) {
+				while(rs.next()) {
+					actual.add(Car.builder()
+							.sales(rs.getInt(1))
+							.make(new String(new BufferedReader(rs.getClob(2).getCharacterStream()).lines().collect(Collectors.joining(System.lineSeparator()))))
+							.signature(rs.getBlob(3).getBinaryStream().readAllBytes())
+							.build());
+				}
+			}
+			assertEquals(Set.of(car1, car2), actual);
+		}
+	}
+
+	@Test
+	void shouldInsertAndSelectStreams() throws SQLException, IOException {
+		Car car1 = Car.builder().make("Ford").sales(12345).signature("Henry Ford".getBytes()).build();
+		Car car2 = Car.builder().make("Tesla").sales(54321).signature("Elon Musk".getBytes()).build();
+		try (Connection connection = createConnection()) {
+
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, signature) VALUES (?,?,?)")) {
+				statement.setLong(1, car1.getSales());
+				statement.setCharacterStream(2, new StringReader(car1.getMake()));
+				statement.setBinaryStream(3, new ByteArrayInputStream(car1.getSignature()));
+				statement.addBatch();
+				statement.setLong(1, car2.getSales());
+				statement.setCharacterStream(2, new StringReader(car2.getMake()));
+				statement.setBinaryStream(3, new ByteArrayInputStream(car2.getSignature()));
+				statement.addBatch();
+				int[] result = statement.executeBatch();
+				assertArrayEquals(new int[] { SUCCESS_NO_INFO, SUCCESS_NO_INFO }, result);
+			}
+
+			Set<Car> actual = new HashSet<>();
+			try (Statement statement = connection.createStatement();
+				 ResultSet rs = statement.executeQuery("SELECT sales, make, signature FROM prepared_statement_test")) {
+				while(rs.next()) {
+					actual.add(Car.builder()
+							.sales(rs.getInt(1))
+							.make(new String(rs.getAsciiStream(2).readAllBytes()))
+							.signature(rs.getBinaryStream(3).readAllBytes())
+							.build());
 				}
 			}
 			assertEquals(Set.of(car1, car2), actual);

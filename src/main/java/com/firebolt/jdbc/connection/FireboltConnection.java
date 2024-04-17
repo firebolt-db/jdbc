@@ -10,7 +10,6 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
-import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
 import com.firebolt.jdbc.metadata.FireboltSystemEngineDatabaseMetadata;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;

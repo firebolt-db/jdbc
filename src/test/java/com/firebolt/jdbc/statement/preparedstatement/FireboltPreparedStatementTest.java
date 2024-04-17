@@ -25,8 +25,11 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.sql.rowset.serial.SerialBlob;
+import javax.sql.rowset.serial.SerialClob;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.net.URL;
@@ -75,36 +78,21 @@ class FireboltPreparedStatementTest {
 	private final FireboltConnection connection = Mockito.mock(FireboltConnection.class);
 	private static FireboltPreparedStatement statement;
 
+	private interface Setter {
+		void set(PreparedStatement ps) throws SQLException;
+	}
+
+	private static class SerialNClob extends SerialClob implements NClob {
+		public SerialNClob(char[] ch) throws SQLException {
+			super(ch);
+		}
+	}
+
 	private static Stream<Arguments> unsupported() {
 		return Stream.of(
 					Arguments.of("setByte", (Executable) () -> statement.setByte(1, (byte) 127)),
 					Arguments.of("setURL", (Executable) () -> statement.setURL(1, new URL("http://foo.bar"))),
-					Arguments.of("setCharacterStream", (Executable) () -> statement.setCharacterStream(1, new StringReader("hello"))),
-					Arguments.of("setCharacterStream(length)", (Executable) () -> statement.setCharacterStream(1, new StringReader("hello"), 2)),
-					Arguments.of("setCharacterStream(long length)", (Executable) () -> statement.setCharacterStream(1, new StringReader("hello"), 2L)),
-					Arguments.of("setNCharacterStream", (Executable) () -> statement.setNCharacterStream(1, new StringReader("hello"))),
-					Arguments.of("setNCharacterStream(length)", (Executable) () -> statement.setNCharacterStream(1, new StringReader("hello"), 2)),
-					Arguments.of("setNCharacterStream(length)", (Executable) () -> statement.setNCharacterStream(1, new StringReader("hello"), 2L)),
-
 					Arguments.of("setRef", (Executable) () -> statement.setRef(1, mock(Ref.class))),
-					Arguments.of("setBlob", (Executable) () -> statement.setBlob(1, mock(Blob.class))),
-					Arguments.of("setBlob(input stream)", (Executable) () -> statement.setBlob(1, mock(InputStream.class))),
-					Arguments.of("setBlob(input stream, length)", (Executable) () -> statement.setBlob(1, mock(InputStream.class), 123)),
-					Arguments.of("setClob", (Executable) () -> statement.setClob(1, mock(Clob.class))),
-					Arguments.of("setClob(reader)", (Executable) () -> statement.setClob(1, new StringReader("hello"))),
-					Arguments.of("setClob(reader, length)", (Executable) () -> statement.setClob(1, new StringReader("hello"), 1)),
-					Arguments.of("setNClob", (Executable) () -> statement.setNClob(1, mock(NClob.class))),
-					Arguments.of("setNClob(reader)", (Executable) () -> statement.setNClob(1, new StringReader("hello"))),
-					Arguments.of("setNClob(reader, length)", (Executable) () -> statement.setNClob(1, new StringReader("hello"), 1L)),
-
-					Arguments.of("setAsciiStream", (Executable) () -> statement.setAsciiStream(1, mock(InputStream.class))),
-					Arguments.of("setAsciiStream(int length)", (Executable) () -> statement.setAsciiStream(1, mock(InputStream.class), 456)),
-					Arguments.of("setAsciiStream(long length)", (Executable) () -> statement.setAsciiStream(1, mock(InputStream.class), 456L)),
-					Arguments.of("setBinaryStream", (Executable) () -> statement.setBinaryStream(1, mock(InputStream.class))),
-					Arguments.of("setBinaryStream(int length)", (Executable) () -> statement.setBinaryStream(1, mock(InputStream.class), 456)),
-					Arguments.of("setBinaryStream(long length)", (Executable) () -> statement.setBinaryStream(1, mock(InputStream.class), 456L)),
-					Arguments.of("setUnicodeStream(int length)", (Executable) () -> statement.setUnicodeStream(1, mock(InputStream.class), 123)),
-
 					Arguments.of("setDate", (Executable) () -> statement.setDate(1, new Date(System.currentTimeMillis()), Calendar.getInstance())),
 					Arguments.of("setTime", (Executable) () -> statement.setTime(1, new Time(System.currentTimeMillis()))),
 					Arguments.of("setTime(calendar)", (Executable) () -> statement.setTime(1, new Time(System.currentTimeMillis()), Calendar.getInstance())),
@@ -114,6 +102,89 @@ class FireboltPreparedStatementTest {
 
 					// TODO: add support of these methods
 					Arguments.of("getParameterMetaData", (Executable) () -> statement.getParameterMetaData())
+		);
+	}
+
+	private static Stream<Arguments> buffers() {
+		return Stream.of(
+				Arguments.of("setClob((Clob)null)", (Setter) statement -> statement.setClob(1, (Clob)null), "NULL"),
+				Arguments.of("setClob((Reader)null)", (Setter) statement -> statement.setClob(1, (Reader)null), "NULL"),
+				Arguments.of("setClob((Reader)null, length)", (Setter) statement -> statement.setClob(1, null, 1L), "NULL"),
+				Arguments.of("setClob(Reader)", (Setter) statement -> statement.setClob(1, new SerialClob("hello".toCharArray())), "'hello'"),
+				Arguments.of("setClob(Reader, length=)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 5), "'hello'"),
+				Arguments.of("setClob(Reader, length-1)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 4), "'hell'"),
+				Arguments.of("setClob(Reader, length+1)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 6), "'hello'"),
+				Arguments.of("setClob(Reader, 42)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 42), "'hello'"),
+				Arguments.of("setClob(Reader, 1)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 1), "'h'"),
+				Arguments.of("setClob(Reader, 0)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 0), "''"),
+
+				Arguments.of("setNClob((NClob)null)", (Setter) statement -> statement.setNClob(1, (NClob)null), "NULL"),
+				Arguments.of("setNClob((Reader)null)", (Setter) statement -> statement.setNClob(1, (Reader)null), "NULL"),
+				Arguments.of("setNClob((Reader)null, length)", (Setter) statement -> statement.setNClob(1, null, 1L), "NULL"),
+				Arguments.of("setClob(Reader)", (Setter) statement -> statement.setNClob(1, new SerialNClob("hello".toCharArray())), "'hello'"),
+				Arguments.of("setNClob(Reader, length=)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 5), "'hello'"),
+				Arguments.of("setNClob(Reader, length-1)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 4), "'hell'"),
+				Arguments.of("setNClob(Reader, length+1)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 6), "'hello'"),
+				Arguments.of("setNClob(Reader, 42)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 42), "'hello'"),
+				Arguments.of("setNClob(Reader, 1)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 1), "'h'"),
+				Arguments.of("setNClob(Reader, 0)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 0), "''"),
+
+				Arguments.of("setBlob((Blob)null)", (Setter) statement -> statement.setBlob(1, (Blob)null), "NULL"),
+				Arguments.of("setBClob((InputStream)null)", (Setter) statement -> statement.setBlob(1, (InputStream)null), "NULL"),
+				Arguments.of("setBClob((InputStream)null, length)", (Setter) statement -> statement.setBlob(1, null, 1L), "NULL"),
+				Arguments.of("setBlob((Clob)null)", (Setter) statement -> statement.setBlob(1, new SerialBlob("hello".getBytes())), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
+
+				Arguments.of("setCharacterStream(null)", (Setter) statement -> statement.setCharacterStream(1, null), "NULL"),
+				Arguments.of("setCharacterStream(null, int)", (Setter) statement -> statement.setCharacterStream(1, null, 1), "NULL"),
+				Arguments.of("setCharacterStream(null, long)", (Setter) statement -> statement.setCharacterStream(1, null, 1L), "NULL"),
+				Arguments.of("setCharacterStream(Reader)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello")), "'hello'"),
+				Arguments.of("setCharacterStream(Reader, length=)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 5), "'hello'"),
+				Arguments.of("setCharacterStream(Reader, length-1)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 4), "'hell'"),
+				Arguments.of("setCharacterStream(Reader, length+1)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 6), "'hello'"),
+				Arguments.of("setCharacterStream(Reader, 42)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 42), "'hello'"),
+				Arguments.of("setCharacterStream(Reader, 1)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 1), "'h'"),
+				Arguments.of("setCharacterStream(Reader, 0)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 0), "''"),
+
+				Arguments.of("setNCharacterStream(null)", (Setter) statement -> statement.setNCharacterStream(1, null), "NULL"),
+				Arguments.of("setNCharacterStream(null, int)", (Setter) statement -> statement.setNCharacterStream(1, null, 1), "NULL"),
+				Arguments.of("setNCharacterStream(null, long)", (Setter) statement -> statement.setNCharacterStream(1, null, 1L), "NULL"),
+				Arguments.of("setNCharacterStream(Reader)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello")), "'hello'"),
+				Arguments.of("setNCharacterStream(Reader, length=)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 5), "'hello'"),
+				Arguments.of("setNCharacterStream(Reader, length-1)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 4), "'hell'"),
+				Arguments.of("setNCharacterStream(Reader, length+1)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 6), "'hello'"),
+				Arguments.of("setNCharacterStream(Reader, 42)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 42), "'hello'"),
+				Arguments.of("setNCharacterStream(Reader, 1)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 1), "'h'"),
+				Arguments.of("setNCharacterStream(Reader, 0)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 0), "''"),
+
+				Arguments.of("setAsciiStream(null)", (Setter) statement -> statement.setAsciiStream(1, null), "NULL"),
+				Arguments.of("setAsciiStream(null, int)", (Setter) statement -> statement.setAsciiStream(1, null, 1), "NULL"),
+				Arguments.of("setAsciiStream(null, long)", (Setter) statement -> statement.setAsciiStream(1, null, 1L), "NULL"),
+				Arguments.of("setAsciiStream(InputStream)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes())), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
+				Arguments.of("setAsciiStream(InputStream, length=)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 5), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
+				Arguments.of("setAsciiStream(InputStream, length-1)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 4), "E'\\x68\\x65\\x6c\\x6c'::BYTEA"),
+				Arguments.of("setAsciiStream(InputStream, length+1)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 6), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
+				Arguments.of("setAsciiStream(InputStream, 42)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 42), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
+				Arguments.of("setAsciiStream(InputStream, 1)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 1), "E'\\x68'::BYTEA"),
+				Arguments.of("setAsciiStream(InputStream, 0)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 0), "E'\\x'::BYTEA"),
+
+				Arguments.of("setBinaryStream(null)", (Setter) statement -> statement.setBinaryStream(1, null), "NULL"),
+				Arguments.of("setBinaryStream(null, int)", (Setter) statement -> statement.setBinaryStream(1, null, 1), "NULL"),
+				Arguments.of("setBinaryStream(null, long)", (Setter) statement -> statement.setBinaryStream(1, null, 1L), "NULL"),
+				Arguments.of("setBinaryStream(InputStream)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes())), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
+				Arguments.of("setBinaryStream(InputStream, length=)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 5), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
+				Arguments.of("setBinaryStream(InputStream, length-1)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 4), "E'\\x68\\x65\\x6c\\x6c'::BYTEA"),
+				Arguments.of("setBinaryStream(InputStream, length+1)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 6), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
+				Arguments.of("setBinaryStream(InputStream, 42)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 42), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
+				Arguments.of("setBinaryStream(InputStream, 1)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 1), "E'\\x68'::BYTEA"),
+				Arguments.of("setBinaryStream(InputStream, 0)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 0), "E'\\x'::BYTEA"),
+
+				Arguments.of("setUnicodeStream(null, int)", (Setter) statement -> statement.setUnicodeStream(1, null, 1), "NULL"),
+				Arguments.of("setUnicodeStream(InputStream, length=)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 5), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
+				Arguments.of("setUnicodeStream(InputStream, length-1)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 4), "E'\\x68\\x65\\x6c\\x6c'::BYTEA"),
+				Arguments.of("setUnicodeStream(InputStream, length+1)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 6), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
+				Arguments.of("setUnicodeStream(InputStream, 42)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 42), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
+				Arguments.of("setUnicodeStream(InputStream, 1)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 1), "E'\\x68'::BYTEA"),
+				Arguments.of("setUnicodeStream(InputStream, 0)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 0), "E'\\x'::BYTEA")
 		);
 	}
 
@@ -187,6 +258,15 @@ class FireboltPreparedStatementTest {
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("buffers")
+	void setBuffer(String name, Setter setter, String expected) throws SQLException {
+		statement = createStatementWithSql("INSERT INTO data (field) VALUES (?)");
+		setter.set(statement);
+		statement.execute();
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		assertEquals(format("INSERT INTO data (field) VALUES (%s)", expected), queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
 
 	@Test
 	void shouldExecuteBatch() throws SQLException {
@@ -276,13 +356,6 @@ class FireboltPreparedStatementTest {
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
 		assertEquals("INSERT INTO cars(available) VALUES (1)", queryInfoWrapperArgumentCaptor.getValue().getSql());
-	}
-
-	@Test
-	void shouldThrowExceptionWhenTryingToSetCharacterStream() {
-		statement = createStatementWithSql("INSERT INTO cars(make) VALUES (?)");
-		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setCharacterStream(1, new StringReader("hello")));
-		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setCharacterStream(1, new StringReader("hello"), 2));
 	}
 
 	@ParameterizedTest(name = "{0}")
@@ -498,6 +571,13 @@ class FireboltPreparedStatementTest {
 		assertThrows(IllegalArgumentException.class, () -> statement.execute()); // execution fails because parameters are not set
 		statement.setObject(1, ""); // set parameter again
 		statement.execute(); // now execution is successful
+	}
+
+	@Test
+	void shouldThrowExceptionWhenExecutedWithSql() throws SQLException {
+		statement = createStatementWithSql("SELECT 1");
+		statement.execute(); // should work
+		assertThrows(SQLException.class, () -> statement.execute("SELECT 1"));
 	}
 
 	private FireboltPreparedStatement createStatementWithSql(String sql) {
