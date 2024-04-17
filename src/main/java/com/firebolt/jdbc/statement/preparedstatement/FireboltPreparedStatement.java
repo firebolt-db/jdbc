@@ -3,6 +3,7 @@ package com.firebolt.jdbc.statement.preparedstatement;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
@@ -43,6 +44,9 @@ import java.util.Map;
 
 import static com.firebolt.jdbc.statement.StatementUtil.replaceParameterMarksWithValues;
 import static com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory.createValidator;
+import static java.lang.String.format;
+import static java.sql.Types.DECIMAL;
+import static java.sql.Types.NUMERIC;
 import static java.sql.Types.VARBINARY;
 
 @CustomLog
@@ -189,7 +193,14 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public void setObject(int parameterIndex, Object x, int targetSqlType) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		setObject(parameterIndex, x);
+		try {
+			providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x, targetSqlType));
+		} catch (FireboltException fbe) {
+			if (ExceptionType.TYPE_NOT_SUPPORTED.equals(fbe.getType())) {
+				throw new SQLFeatureNotSupportedException(fbe.getMessage(), fbe);
+			}
+			throw fbe;
+		}
 	}
 
 	@Override
@@ -269,7 +280,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	private void validateParamIndex(int paramIndex) throws FireboltException {
 		if (rawStatement.getTotalParams() < paramIndex) {
 			throw new FireboltException(
-					String.format("Cannot set parameter as there is no parameter at index: %d for statement: %s",
+					format("Cannot set parameter as there is no parameter at index: %d for statement: %s",
 							paramIndex, rawStatement));
 		}
 	}
@@ -370,9 +381,24 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	@Override
-	@NotImplemented
 	public void setObject(int parameterIndex, Object x, int targetSqlType, int scaleOrLength) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
+		try {
+			// scaleOfLength should affect only DECIMAL and NUMERIC types
+			boolean isNumber = (DECIMAL == targetSqlType || NUMERIC == targetSqlType) && x instanceof Number;
+			String str = isNumber ? formatDecimalNumber(x, scaleOrLength) : JavaTypeToFireboltSQLString.transformAny(x, targetSqlType);
+			providedParameters.put(parameterIndex, str);
+		} catch (FireboltException fbe) {
+			if (ExceptionType.TYPE_NOT_SUPPORTED.equals(fbe.getType())) {
+				throw new SQLFeatureNotSupportedException(fbe.getMessage(), fbe);
+			}
+		}
+	}
+
+	private String formatDecimalNumber(Object x, int scaleOrLength) {
+		String format = format("%%.%df", scaleOrLength);
+		return format(format, ((Number)x).doubleValue());
 	}
 
 	@Override
