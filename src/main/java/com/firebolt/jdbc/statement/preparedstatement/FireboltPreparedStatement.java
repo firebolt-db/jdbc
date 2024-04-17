@@ -385,15 +385,20 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
 		try {
+			// scaleOfLength should affect only DECIMAL and NUMERIC types
 			boolean isNumber = (DECIMAL == targetSqlType || NUMERIC == targetSqlType) && x instanceof Number;
-			@SuppressWarnings("MalformedFormatString") // the warning is razed because the format is created dynamically.
-			String str = isNumber ? format("%." + scaleOrLength + "f", ((Number)x).doubleValue()) : JavaTypeToFireboltSQLString.transformAny(x, targetSqlType);
+			String str = isNumber ? formatDecimalNumber(x, scaleOrLength) : JavaTypeToFireboltSQLString.transformAny(x, targetSqlType);
 			providedParameters.put(parameterIndex, str);
 		} catch (FireboltException fbe) {
 			if (ExceptionType.TYPE_NOT_SUPPORTED.equals(fbe.getType())) {
 				throw new SQLFeatureNotSupportedException(fbe.getMessage(), fbe);
 			}
 		}
+	}
+
+	private String formatDecimalNumber(Object x, int scaleOrLength) {
+		String format = format("%%.%df", scaleOrLength);
+		return format(format, ((Number)x).doubleValue());
 	}
 
 	@Override
