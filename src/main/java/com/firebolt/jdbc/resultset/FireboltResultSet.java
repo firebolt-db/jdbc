@@ -20,6 +20,8 @@ import com.firebolt.jdbc.util.LoggerUtil;
 import lombok.CustomLog;
 import org.apache.commons.text.StringEscapeUtils;
 
+import javax.sql.rowset.serial.SerialBlob;
+import javax.sql.rowset.serial.SerialClob;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -50,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -681,9 +684,8 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
 	public int getFetchSize() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return 0; // fetch size is not supported; 0 means unlimited like in PostgreSQL and MySQL
 	}
 
 	@Override
@@ -1014,17 +1016,15 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Blob getBlob(int columnIndex) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		byte[] bytes = getBytes(columnIndex);
+		return bytes == null ? null : new SerialBlob(bytes);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Clob getClob(int columnIndex) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		String str = getString(columnIndex);
+		return str == null ? null : new SerialClob(str.toCharArray());
 	}
 
 	@Override
@@ -1042,17 +1042,13 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Blob getBlob(String columnLabel) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getBlob(findColumn(columnLabel));
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Clob getClob(String columnLabel) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getClob(findColumn(columnLabel));
 	}
 
 	@Override
@@ -1177,17 +1173,19 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public NClob getNClob(int columnIndex) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		String str = getString(columnIndex);
+		class FireboltNClob extends SerialClob implements NClob {
+			public FireboltNClob(char[] ch) throws SQLException {
+				super(ch);
+			}
+		}
+		return str == null ? null : new FireboltNClob(str.toCharArray());
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public NClob getNClob(String columnLabel) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getNClob(findColumn(columnLabel));
 	}
 
 	@Override

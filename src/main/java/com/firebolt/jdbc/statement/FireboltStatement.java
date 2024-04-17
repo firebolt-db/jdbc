@@ -5,6 +5,7 @@ import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
@@ -386,15 +387,15 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public void setFetchDirection(int direction) throws SQLException {
-		// no-op
+		if (direction != ResultSet.FETCH_FORWARD) {
+			throw new FireboltException(ExceptionType.TYPE_NOT_SUPPORTED);
+		}
 	}
 
 	@Override
-	@NotImplemented
 	public int getFetchSize() throws SQLException {
-		return 0;
+		return 0; // fetch size is not supported; 0 means unlimited like in PostgreSQL and MySQL
 	}
 
 	@Override
