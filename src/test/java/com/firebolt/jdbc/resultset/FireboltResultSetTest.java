@@ -268,7 +268,7 @@ class FireboltResultSetTest {
 	void fetchSize() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = new FireboltResultSet(inputStream, "any_name", "array_db", 65535);
-		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.getFetchSize());
+		assertEquals(0, resultSet.getFetchSize());
 
 		resultSet.setFetchSize(0); // ignored
 		resultSet.setFetchSize(1); // ignored

@@ -684,9 +684,8 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
 	public int getFetchSize() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return 0; // fetch size is not supported; 0 means unlimited like in PostgreSQL and MySQL
 	}
 
 	@Override
