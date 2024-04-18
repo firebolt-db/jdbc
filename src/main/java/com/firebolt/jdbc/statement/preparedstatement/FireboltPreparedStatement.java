@@ -319,9 +319,8 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	@Override
-	@NotImplemented
-	public void setDate(int parameterIndex, Date x, Calendar cal) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+	public void setDate(int parameterIndex, Date date, Calendar calendar) throws SQLException {
+		setDateTime(parameterIndex, date, calendar, JavaTypeToFireboltSQLString.DATE);
 	}
 
 	@Override
@@ -331,9 +330,18 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	@Override
-	@NotImplemented
-	public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+	public void setTimestamp(int parameterIndex, Timestamp timestamp, Calendar calendar) throws SQLException {
+		setDateTime(parameterIndex, timestamp, calendar, JavaTypeToFireboltSQLString.TIMESTAMP);
+	}
+
+	private <T extends java.util.Date> void setDateTime(int parameterIndex, T datetime, Calendar calendar, JavaTypeToFireboltSQLString type) throws SQLException {
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
+		if (datetime == null || calendar == null) {
+			providedParameters.put(parameterIndex, type.transform(datetime));
+		} else {
+			providedParameters.put(parameterIndex, type.transform(datetime, calendar.getTimeZone().getID()));
+		}
 	}
 
 	@Override

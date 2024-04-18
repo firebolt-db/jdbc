@@ -28,10 +28,13 @@ import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -340,6 +343,34 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
+	@Test
+	void shouldInsertAndSelectDateTime() throws SQLException {
+		Car car1 = Car.builder().make("Ford").sales(12345).ts(new Timestamp(2)).d(new Date(3)).build();
+		try (Connection connection = createConnection()) {
+
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, ts, d) VALUES (?,?,?,?)")) {
+				statement.setLong(1, car1.getSales());
+				statement.setString(2, car1.getMake());
+				statement.setTimestamp(3, car1.getTs());
+				statement.setDate(4, car1.getD());
+				statement.executeUpdate();
+			}
+
+			try (Statement statement = connection.createStatement();
+				 ResultSet rs = statement.executeQuery("SELECT sales, make, ts, d FROM prepared_statement_test")) {
+				assertTrue(rs.next());
+				Car actual = Car.builder().sales(rs.getInt(1)).make(rs.getString(2)).ts(rs.getTimestamp(3)).d(rs.getDate(4)).build();
+				assertFalse(rs.next());
+				// Date type in DB does not really hold the time, so the time part is unpredictable and cannot be compared.
+				// This is the reason to compare string representation of the object: Date.toString() returns the date only
+				// without hours, minutes and seconds.
+				assertEquals(car1.toString(), actual.toString());
+			}
+		}
+	}
+
+
 	private QueryResult createExpectedResult(List<List<?>> expectedRows) {
 		return QueryResult.builder().databaseName(ConnectionInfo.getInstance().getDatabase())
 				.tableName("prepared_statement_test")
@@ -385,6 +416,8 @@ class PreparedStatementTest extends IntegrationTest {
 		Integer sales;
 		String make;
 		byte[] signature;
+		Timestamp ts;
+		Date d;
 	}
 
 }

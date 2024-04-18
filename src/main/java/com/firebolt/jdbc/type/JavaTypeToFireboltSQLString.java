@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.type;
 
+import com.firebolt.jdbc.CheckedBiFunction;
 import com.firebolt.jdbc.CheckedFunction;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.TimeZone;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -39,8 +41,8 @@ public enum JavaTypeToFireboltSQLString {
 	BIG_INTEGER(BigInteger.class, value -> value instanceof BigInteger ? value.toString() : Long.toString(((Number)value).longValue())),
 	FLOAT(Float.class, value -> Float.toString(((Number)value).floatValue())),
 	DOUBLE(Double.class, value -> Double.toString(((Number)value).doubleValue())),
-	DATE(Date.class, date -> SqlDateUtil.transformFromDateToSQLStringFunction.apply((Date) date)),
-	TIMESTAMP(Timestamp.class, time -> SqlDateUtil.transformFromTimestampToSQLStringFunction.apply((Timestamp) time)),
+	DATE(Date.class, date -> SqlDateUtil.transformFromDateToSQLStringFunction.apply((Date) date), (date, tz) -> SqlDateUtil.transformFromDateWithTimezoneToSQLStringFunction.apply((Date) date, toTimeZone(tz))),
+	TIMESTAMP(Timestamp.class, time -> SqlDateUtil.transformFromTimestampToSQLStringFunction.apply((Timestamp) time), (ts, tz) -> SqlDateUtil.transformFromTimestampWithTimezoneToSQLStringFunction.apply((Timestamp) ts, toTimeZone(tz))),
 	BIG_DECIMAL(BigDecimal.class, value -> value == null ? BaseType.NULL_VALUE : ((BigDecimal) value).toPlainString()),
 	ARRAY(Array.class, SqlArrayUtil::arrayToString),
 	BYTE_ARRAY(byte[].class, value -> ofNullable(byteArrayToHexString((byte[])value, true)).map(x  -> format("E'%s'::BYTEA", x)).orElse(null)),
@@ -80,13 +82,21 @@ public enum JavaTypeToFireboltSQLString {
 
 	private final Class<?> sourceType;
 	private final CheckedFunction<Object, String> transformToJavaTypeFunction;
+	private final CheckedBiFunction<Object, Object, String> transformToJavaTypeFunctionWithParameter;
 	public static final String NULL_VALUE = "NULL";
 	private static final Map<Class<?>, JavaTypeToFireboltSQLString> classToType = Stream.of(JavaTypeToFireboltSQLString.values())
 			.collect(toMap(type -> type.sourceType, type -> type));
 
 	JavaTypeToFireboltSQLString(Class<?> sourceType, CheckedFunction<Object, String> transformToSqlStringFunction) {
+		this(sourceType, transformToSqlStringFunction, null);
+	}
+
+	JavaTypeToFireboltSQLString(Class<?> sourceType,
+								CheckedFunction<Object, String> transformToSqlStringFunction,
+								CheckedBiFunction<Object, Object, String> transformToJavaTypeFunctionWithParameter) {
 		this.sourceType = sourceType;
 		this.transformToJavaTypeFunction = transformToSqlStringFunction;
+		this.transformToJavaTypeFunctionWithParameter = transformToJavaTypeFunctionWithParameter;
 	}
 
 	public static String transformAny(Object object) throws FireboltException {
@@ -131,15 +141,29 @@ public enum JavaTypeToFireboltSQLString {
 		return sourceType;
 	}
 
-	public String transform(Object object) throws FireboltException {
+	public String transform(Object object, Object ... more) throws FireboltException {
 		if (object == null) {
 			return NULL_VALUE;
 		} else {
 			try {
+				if (more.length > 0) {
+					return transformToJavaTypeFunctionWithParameter.apply(object, more[0]);
+				}
 				return transformToJavaTypeFunction.apply(object);
 			} catch (Exception e) {
 				throw new FireboltException("Could not convert object to a String ", e, TYPE_TRANSFORMATION_ERROR);
 			}
 		}
+	}
+
+	@SuppressWarnings("java:S6201") // Pattern Matching for "instanceof" was introduced in java 16 while we still try to be compliant with java 11
+	private static TimeZone toTimeZone(Object tz) {
+		if (tz instanceof TimeZone) {
+			return (TimeZone)tz;
+		}
+		if (tz instanceof String) {
+			return TimeZone.getTimeZone((String)tz);
+		}
+		throw new IllegalArgumentException(format("Cannot convert %s to TimeZone", tz));
 	}
 }

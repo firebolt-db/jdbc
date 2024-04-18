@@ -15,6 +15,7 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.UUID;
 
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_NOT_SUPPORTED;
@@ -123,7 +124,23 @@ class JavaTypeToFireboltSQLStringTest {
 		Date d = Date.valueOf(LocalDate.of(2022, 5, 23));
 		String expectedDateString = "'2022-05-23'";
 		assertEquals(expectedDateString, JavaTypeToFireboltSQLString.DATE.transform(d));
-		assertEquals(expectedDateString, JavaTypeToFireboltSQLString.transformAny((d)));
+		assertEquals(expectedDateString, JavaTypeToFireboltSQLString.transformAny(d));
+	}
+
+	@Test
+	void shouldTransformDateWithDefaultTimezoneToString() throws FireboltException {
+		assertEquals("'2022-05-23'", JavaTypeToFireboltSQLString.DATE.transform(Date.valueOf(LocalDate.of(2022, 5, 23)), TimeZone.getDefault()));
+	}
+
+	@Test
+	void shouldTransformDateWithDefaultTimezoneIdToString() throws FireboltException {
+		assertEquals("'2022-05-23'", JavaTypeToFireboltSQLString.DATE.transform(Date.valueOf(LocalDate.of(2022, 5, 23)), TimeZone.getDefault().getID()));
+	}
+
+	@Test
+	void shouldThrowExceptionWhenTransformingDateToStringWithWrongParameter() {
+		assertEquals(IllegalArgumentException.class,
+				assertThrows(SQLException.class, () -> JavaTypeToFireboltSQLString.DATE.transform(Date.valueOf(LocalDate.of(2022, 5, 23)), new Object())).getCause().getClass());
 	}
 
 	@Test
