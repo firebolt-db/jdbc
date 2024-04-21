@@ -18,13 +18,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_NOT_SUPPORTED;
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
 import static com.firebolt.jdbc.type.array.SqlArrayUtil.byteArrayToHexString;
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toMap;
 
 public enum JavaTypeToFireboltSQLString {
 	BOOLEAN(Boolean.class, value -> Boolean.TRUE.equals(value) ? "1" : "0"),
@@ -78,6 +82,8 @@ public enum JavaTypeToFireboltSQLString {
 	private final Class<?> sourceType;
 	private final CheckedFunction<Object, String> transformToJavaTypeFunction;
 	public static final String NULL_VALUE = "NULL";
+	private static final Map<Class<?>, JavaTypeToFireboltSQLString> classToType = Stream.of(JavaTypeToFireboltSQLString.values())
+			.collect(toMap(type -> type.sourceType, type -> type));
 
 	JavaTypeToFireboltSQLString(Class<?> sourceType, CheckedFunction<Object, String> transformToSqlStringFunction) {
 		this.sourceType = sourceType;
@@ -96,10 +102,8 @@ public enum JavaTypeToFireboltSQLString {
 		return object == null ? NULL_VALUE : transformAny(object, classSupplier.get());
 	}
 
-
 	private static String transformAny(Object object, Class<?> objectType) throws FireboltException {
-		JavaTypeToFireboltSQLString converter = Arrays.stream(JavaTypeToFireboltSQLString.values())
-				.filter(c -> c.getSourceType().equals(objectType)).findAny()
+		JavaTypeToFireboltSQLString converter = Optional.ofNullable(classToType.get(objectType))
 				.orElseThrow(() -> new FireboltException(
 						format("Cannot convert type %s. The type is not supported.", objectType),
 						TYPE_NOT_SUPPORTED));
