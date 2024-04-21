@@ -119,10 +119,8 @@ class FireboltStatementTest {
         FireboltConnection connection = mock(FireboltConnection.class);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 
-        when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
-                .thenReturn(Optional.empty());
-        when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
-                .thenReturn(Optional.of(rs));
+        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(Optional.empty());
+        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(Optional.of(rs));
         fireboltStatement.executeQuery("show database");
         fireboltStatement.close();
         verify(rs).close();
@@ -153,11 +151,9 @@ class FireboltStatementTest {
 
     private void shouldExecuteIfUpdateStatementWouldNotReturnAResultSet(CheckedBiFunction<Statement, String, Integer> executor) throws SQLException {
         try (FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, fireboltConnection)) {
-            when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
-                    .thenReturn(Optional.empty());
+            when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(Optional.empty());
             assertEquals(0, executor.apply(fireboltStatement, "INSERT INTO cars(sales, name) VALUES (500, 'Ford')"));
-            verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(fireboltProperties),
-                    anyInt(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any());
+            verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(fireboltProperties),anyBoolean(), any());
             assertEquals("INSERT INTO cars(sales, name) VALUES (500, 'Ford')",
                     queryInfoWrapperArgumentCaptor.getValue().getSql());
             assertEquals(0, fireboltStatement.getUpdateCount());
@@ -178,7 +174,7 @@ class FireboltStatementTest {
         ResultSet rs = mock(FireboltResultSet.class);
         FireboltConnection connection = mock(FireboltConnection.class);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
-        when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any())).thenReturn(Optional.of(rs));
+        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(Optional.of(rs));
         assertTrue(executor.apply(fireboltStatement, "SELECT 1"));
         assertEquals(rs, fireboltStatement.getResultSet());
         assertEquals(-1, fireboltStatement.getUpdateCount());
@@ -194,8 +190,7 @@ class FireboltStatementTest {
         FireboltConnection connection = mock(FireboltConnection.class);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 
-        when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
-                .thenReturn(Optional.of(rs)).thenReturn(Optional.of(rs2));
+        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(Optional.of(rs)).thenReturn(Optional.of(rs2));
         fireboltStatement.execute("SELECT 1; SELECT 2;");
         assertEquals(rs, fireboltStatement.getResultSet());
         assertEquals(-1, fireboltStatement.getUpdateCount());
@@ -213,8 +208,7 @@ class FireboltStatementTest {
     void shouldCloseCurrentAndGetMoreResultWhenCallingGetMoreResultsWithCloseCurrentFlag() throws SQLException {
         FireboltConnection connection = mock(FireboltConnection.class);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
-        when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
-                .thenReturn(Optional.of(mock(FireboltResultSet.class)));
+        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(Optional.of(mock(FireboltResultSet.class)));
         fireboltStatement.execute("SELECT 1; SELECT 2;");
         ResultSet resultSet = fireboltStatement.getResultSet();
         fireboltStatement.getMoreResults(CLOSE_CURRENT_RESULT);
@@ -225,9 +219,7 @@ class FireboltStatementTest {
     void shouldKeepCurrentAndGetMoreResultWhenCallingGetMoreResultsWithKeepCurrentResultFlag() throws SQLException {
         FireboltConnection connection = mock(FireboltConnection.class);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
-        when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
-                .thenReturn(Optional.of(mock(ResultSet.class)));
-
+        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(Optional.of(mock(ResultSet.class)));
         fireboltStatement.execute("SELECT 1; SELECT 2;");
         ResultSet resultSet = fireboltStatement.getResultSet();
         fireboltStatement.getMoreResults(Statement.KEEP_CURRENT_RESULT);
@@ -242,7 +234,7 @@ class FireboltStatementTest {
         FireboltConnection connection = mock(FireboltConnection.class);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 
-        when(fireboltStatementService.execute(any(), any(), anyInt(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any()))
+        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any()))
                 .thenReturn(Optional.of(rs)).thenReturn(Optional.of(rs2)).thenReturn(Optional.of(rs3));
 
         fireboltStatement.execute("SELECT 1; SELECT 2; SELECT 3;");

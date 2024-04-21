@@ -111,8 +111,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 					connection.addProperty(statementInfoWrapper.getParam());
 					log.debug("The property from the query {} was stored", runningStatementLabel);
 				} else {
-					Optional<ResultSet> currentRs = statementService.execute(statementInfoWrapper,
-							sessionProperties, queryTimeout, maxRows, maxFieldSize, isStandardSql, sessionProperties.isSystemEngine(), this);
+					Optional<ResultSet> currentRs = statementService.execute(statementInfoWrapper, sessionProperties, isStandardSql, this);
 					if (currentRs.isPresent()) {
 						resultSet = currentRs.get();
 						currentUpdateCount = -1; // Always -1 when returning a ResultSet
