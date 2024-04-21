@@ -30,9 +30,11 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 import static java.lang.String.format;
+import static java.sql.Statement.SUCCESS_NO_INFO;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -148,6 +150,17 @@ class StatementTest extends IntegrationTest {
 			}
 		}
 		return result;
+	}
+
+	@Test
+	void shouldExecuteBatch() throws SQLException {
+		int size = 10;
+		try (Connection connection = createConnection(); Statement insert = connection.createStatement()) {
+			for (int i = 0; i < size; i++) {
+				insert.addBatch(format("INSERT INTO statement_test(id) values (%d)", i));
+			}
+			assertArrayEquals(IntStream.generate(() -> SUCCESS_NO_INFO).limit(size).toArray(), insert.executeBatch());
+		}
 	}
 
 	@Test

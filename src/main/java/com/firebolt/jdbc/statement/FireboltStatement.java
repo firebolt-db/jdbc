@@ -19,9 +19,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -45,6 +47,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	private StatementResultWrapper firstUnclosedStatementResult;
 	private int queryTimeout = 0; // zero means that there is no limit
 	private String runningStatementLabel;
+	private final List<String> batchStatements = new LinkedList<>();
 
 	public FireboltStatement(FireboltStatementService statementService, FireboltProperties sessionProperties,
 			FireboltConnection connection) {
@@ -417,24 +420,25 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	@NotImplemented
 	public void addBatch(String sql) throws SQLException {
-		// Batch are not supported by the driver
-		throw new FireboltUnsupportedOperationException();
+		batchStatements.add(sql);
 	}
 
 	@Override
-	@NotImplemented
 	public void clearBatch() throws SQLException {
-		// Batch are not supported by the driver
-		throw new FireboltUnsupportedOperationException();
+		batchStatements.clear();
 	}
 
 	@Override
-	@NotImplemented
 	public int[] executeBatch() throws SQLException {
-		// Batch are not supported by the driver
-		throw new FireboltUnsupportedOperationException();
+		List<Integer> result = new ArrayList<>();
+		for (String sql : batchStatements) {
+			for (StatementInfoWrapper query : StatementUtil.parseToStatementInfoWrappers(sql)) {
+				Optional<ResultSet> rs = execute(List.of(query));
+				result.add(rs.map(x -> 0).orElse(SUCCESS_NO_INFO));
+			}
+		}
+		return  result.stream().mapToInt(Integer::intValue).toArray();
 	}
 
 	@Override
