@@ -4,7 +4,6 @@ import com.firebolt.jdbc.JdbcBase;
 import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
@@ -70,6 +69,7 @@ import static java.util.Optional.ofNullable;
 @CustomLog
 public class FireboltResultSet extends JdbcBase implements ResultSet {
 	private static final String FORWARD_ONLY_ERROR = "Cannot call %s() for ResultSet of type TYPE_FORWARD_ONLY";
+	private static final int defaultCharBufferSize = 8192; // the default of BufferedReader
 	private final BufferedReader reader;
 	private final Map<String, Integer> columnNameToColumnNumber;
 	private final FireboltResultSetMetaData resultSetMetaData;
@@ -85,46 +85,8 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	private String lastReadValue = null;
 
-	public FireboltResultSet(InputStream is, String tableName, String dbName) throws SQLException {
-		this(is, tableName, dbName, null, false, null, false);
-	}
-
-	public FireboltResultSet(InputStream is) throws SQLException {
-		this(is, null, null, null, false, null, false);
-	}
-
-	FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize) throws SQLException {
-		this(is, tableName, dbName, bufferSize, false, null, false);
-	}
-
-	FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize,
-			FireboltStatement fireboltStatement) throws SQLException {
-		this(is, tableName, dbName, bufferSize, false, fireboltStatement, false);
-	}
-
-	private FireboltResultSet() {
-		reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream("".getBytes()), UTF_8)); // empty InputStream
-		resultSetMetaData = new FireboltResultSetMetaData(null, null, List.of());
-		columnNameToColumnNumber = new TreeMap<>(CASE_INSENSITIVE_ORDER);
-		currentLine = null;
-		columns = new ArrayList<>();
-		statement = null;
-		maxRows = 0;
-		maxFieldSize = 0; // 0 value means unlimited
-	}
-
-	FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize, boolean isCompressed,
+	public FireboltResultSet(InputStream is, String tableName, String dbName, int bufferSize, boolean isCompressed,
 							 FireboltStatement statement, boolean logResultSet) throws SQLException {
-		this(is, tableName, dbName, bufferSize, statement == null ? 0 : statement.getMaxRows(), statement == null ? 0 : statement.getMaxFieldSize(), isCompressed, statement, logResultSet);
-	}
-
-	public FireboltResultSet(InputStream is, String tableName, String dbName, FireboltProperties properties, FireboltStatement statement) throws SQLException {
-		this(is, tableName, dbName, properties.getBufferSize(), statement == null ? 0 : statement.getMaxRows(), statement == null ? 0 : statement.getMaxFieldSize(), properties.isCompress(), statement, properties.isLogResultSet());
-	}
-
-	@SuppressWarnings("java:S107") //Number of parameters (8) > max (7). This is the price of the immutability
-	private FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize, int maxRows, int maxFieldSize, boolean isCompressed,
-			FireboltStatement statement, boolean logResultSet) throws SQLException {
 		log.debug("Creating resultSet...");
 		this.statement = statement;
 		if (logResultSet) {
@@ -132,18 +94,19 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 		}
 
 		this.reader = createStreamReader(is, bufferSize, isCompressed);
-		this.maxRows = maxRows;
-		this.maxFieldSize = maxFieldSize;
+		if (statement == null) {
+			this.maxRows = 0;
+			this.maxFieldSize = 0;
+		} else {
+			this.maxRows = statement.getMaxRows();
+			this.maxFieldSize = statement.getMaxFieldSize();
+		}
 
 		try {
 			next();
 			String[] fields = toStringArray(currentLine);
 			this.columnNameToColumnNumber = getColumnNamesToIndexes(fields);
-			if (next()) {
-				columns = getColumns(fields, currentLine);
-			} else {
-				columns = new ArrayList<>();
-			}
+			columns = next() ? getColumns(fields, currentLine) : new ArrayList<>();
 			resultSetMetaData = new FireboltResultSetMetaData(dbName, tableName, columns);
 		} catch (Exception e) {
 			log.error("Could not create ResultSet: {}", e.getMessage(), e);
@@ -152,25 +115,20 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 		log.debug("ResultSet created");
 	}
 
-	public static FireboltResultSet empty() {
-		return new FireboltResultSet();
-	}
-
 	public static FireboltResultSet of(QueryResult queryResult) throws SQLException {
 		return new FireboltResultSet(new ByteArrayInputStream(queryResult.toString().getBytes()),
-				queryResult.getTableName(), queryResult.getDatabaseName());
+				queryResult.getTableName(), queryResult.getDatabaseName(), defaultCharBufferSize, false, null, false);
 
 	}
 
-	private BufferedReader createStreamReader(InputStream is, Integer bufferSize, boolean isCompressed) {
+	private BufferedReader createStreamReader(InputStream is, int bufferSize, boolean isCompressed) {
 		InputStreamReader inputStreamReader;
 		if (isCompressed) {
 			inputStreamReader = new InputStreamReader(new LZ4InputStream(is), UTF_8);
 		} else {
 			inputStreamReader = new InputStreamReader(is, UTF_8);
 		}
-		return bufferSize != null && bufferSize != 0 ? new BufferedReader(inputStreamReader, bufferSize)
-				: new BufferedReader(inputStreamReader);
+		return new BufferedReader(inputStreamReader, bufferSize);
 	}
 
 	@Override

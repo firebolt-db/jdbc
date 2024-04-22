@@ -108,7 +108,7 @@ class FireboltDatabaseMetadataTest {
 		lenient().when(fireboltConnection.createStatement()).thenReturn(statement);
 		lenient().when(fireboltConnection.getCatalog()).thenReturn("db_name");
 		lenient().when(fireboltConnection.getSessionProperties()).thenReturn(FireboltProperties.builder().database("my-db").principal("the-user").build());
-		lenient().when(statement.executeQuery(anyString())).thenReturn(FireboltResultSet.empty());
+		lenient().when(statement.executeQuery(anyString())).thenReturn(createResultSet(new ByteArrayInputStream(new byte[0])));
 	}
 
 	@Test
@@ -142,7 +142,7 @@ class FireboltDatabaseMetadataTest {
 				.rows(List.of(List.of("public", "my-db"), List.of("information_schema", "my-db")))
 				.build());
 
-		when(statement.executeQuery(anyString())).thenReturn(new FireboltResultSet(getInputStreamForGetSchemas()));
+		when(statement.executeQuery(anyString())).thenReturn(createResultSet(getInputStreamForGetSchemas()));
 		ResultSet actualResultSet = fireboltDatabaseMetadata.getSchemas();
 
 		AssertionUtil.assertResultSetEquality(expectedResultSet, actualResultSet);
@@ -247,7 +247,7 @@ class FireboltDatabaseMetadataTest {
 						"NO")))
 				.build());
 
-		when(statement.executeQuery(expectedQuery)).thenReturn(new FireboltResultSet(getInputStreamForGetColumns()));
+		when(statement.executeQuery(expectedQuery)).thenReturn(createResultSet(getInputStreamForGetColumns()));
 
 		ResultSet resultSet = fireboltDatabaseMetadata.getColumns("a", "b", "c", "d");
 		verify(statement).executeQuery(expectedQuery);
@@ -276,7 +276,7 @@ class FireboltDatabaseMetadataTest {
 						"NO")))
 				.build());
 
-		when(statement.executeQuery(expectedQuery)).thenReturn(new FireboltResultSet(getInputStreamForGetColumns()));
+		when(statement.executeQuery(expectedQuery)).thenReturn(createResultSet(getInputStreamForGetColumns()));
 
 		ResultSet resultSet = fireboltDatabaseMetadata.getColumnPrivileges("a", "b", "c", "d");
 		verify(statement).executeQuery(expectedQuery);
@@ -286,14 +286,14 @@ class FireboltDatabaseMetadataTest {
 	@Test
 	void shouldGetTypeInfo() throws SQLException {
 		ResultSet resultSet = fireboltDatabaseMetadata.getTypeInfo();
-		ResultSet expectedTypeInfo = new FireboltResultSet(getExpectedTypeInfo());
+		ResultSet expectedTypeInfo = createResultSet(getExpectedTypeInfo());
 		AssertionUtil.assertResultSetEquality(expectedTypeInfo, resultSet);
 	}
 
 	@Test
 	void shouldGetTables() throws SQLException {
 		String expectedSql = "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('BASE TABLE', 'DIMENSION', 'FACT', 'VIEW') AND table_schema LIKE 'def%' AND table_name LIKE 'tab%' order by table_schema, table_name";
-		when(statement.executeQuery(expectedSql)).thenReturn(new FireboltResultSet(getInputStreamForGetTables()));
+		when(statement.executeQuery(expectedSql)).thenReturn(createResultSet(getInputStreamForGetTables()));
 		ResultSet resultSet = fireboltDatabaseMetadata.getTables("catalog", "def%", "tab%", null);
 		verify(statement).executeQuery(expectedSql);
 
@@ -320,7 +320,7 @@ class FireboltDatabaseMetadataTest {
 	@Test
 	void shouldGetTablePrivileges() throws SQLException {
 		String expectedSql = "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('BASE TABLE', 'DIMENSION', 'FACT') AND table_schema LIKE 'def%' AND table_name LIKE 'tab%' order by table_schema, table_name";
-		when(statement.executeQuery(expectedSql)).thenReturn(new FireboltResultSet(getInputStreamForGetTables()));
+		when(statement.executeQuery(expectedSql)).thenReturn(createResultSet(getInputStreamForGetTables()));
 		ResultSet resultSet = fireboltDatabaseMetadata.getTablePrivileges("catalog", "def%", "tab%");
 		verify(statement).executeQuery(expectedSql);
 
@@ -387,7 +387,7 @@ class FireboltDatabaseMetadataTest {
 	private void mockGetDatabaseVersion() throws SQLException {
 		Statement statement = mock(FireboltStatement.class);
 		when(fireboltConnection.createStatement()).thenReturn(statement);
-		when(statement.executeQuery("SELECT VERSION()")).thenReturn(new FireboltResultSet(getInputStreamForGetVersion()));
+		when(statement.executeQuery("SELECT VERSION()")).thenReturn(createResultSet(getInputStreamForGetVersion()));
 	}
 
 	@Test
@@ -898,5 +898,9 @@ class FireboltDatabaseMetadataTest {
 		assertNotNull(functions);
         assertFalse(functions.isEmpty());
 		Arrays.stream(examples).forEach(example -> assertTrue(functions.contains(example), example + " is not found in list"));
+	}
+
+	private ResultSet createResultSet(InputStream is) throws SQLException {
+		return new FireboltResultSet(is, null, null, 65535, false, null, true);
 	}
 }
