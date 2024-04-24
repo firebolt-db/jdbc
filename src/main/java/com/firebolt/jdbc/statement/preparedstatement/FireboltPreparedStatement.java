@@ -104,7 +104,9 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 
 	@Override
 	public void setByte(int parameterIndex, byte x) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		validateStatementIsNotClosed();
+		validateParamIndex(parameterIndex);
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.BYTE.transform(x));
 	}
 
 	@Override
@@ -238,9 +240,8 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	@Override
-	@NotImplemented
-	public void setURL(int parameterIndex, URL x) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+	public void setURL(int parameterIndex, URL url) throws SQLException {
+		setString(parameterIndex, url == null ? null : url.toString());
 	}
 
 	@Override

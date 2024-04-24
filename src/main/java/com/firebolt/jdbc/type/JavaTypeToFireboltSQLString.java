@@ -31,6 +31,7 @@ import static java.util.stream.Collectors.toMap;
 public enum JavaTypeToFireboltSQLString {
 	BOOLEAN(Boolean.class, value -> Boolean.TRUE.equals(value) ? "1" : "0"),
 	UUID(java.util.UUID.class, Object::toString),
+	BYTE(Byte.class, value -> Byte.toString(((Number) value).byteValue())),
 	SHORT(Short.class, value -> Short.toString(((Number) value).shortValue())),
 	STRING(String.class, getSQLStringValueOfString()),
 	LONG(Long.class, value -> Long.toString(((Number)value).longValue())),
