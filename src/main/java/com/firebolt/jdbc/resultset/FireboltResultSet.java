@@ -8,7 +8,6 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
-import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.resultset.column.Column;
 import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
@@ -53,7 +52,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -616,17 +614,17 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public InputStream getBinaryStream(int columnIndex) throws SQLException {
-		return ofNullable(getString(columnIndex)).map(String::getBytes).map(ByteArrayInputStream::new).orElse(null);
+		return ofNullable(getBytes(columnIndex)).map(ByteArrayInputStream::new).orElse(null);
 	}
 
 	@Override
 	public InputStream getAsciiStream(String columnLabel) throws SQLException {
-		return getBinaryStream(columnLabel);
+		return getAsciiStream(findColumn(columnLabel));
 	}
 
 	@Override
 	public InputStream getUnicodeStream(String columnLabel) throws SQLException {
-		return getBinaryStream(columnLabel);
+		return getUnicodeStream(findColumn(columnLabel));
 	}
 
 	@Override
@@ -641,7 +639,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public Reader getCharacterStream(int columnIndex) throws SQLException {
-		return ofNullable(getBinaryStream(columnIndex)).map(InputStreamReader::new).orElse(null);
+		return ofNullable(getUnicodeStream(columnIndex)).map(InputStreamReader::new).orElse(null);
 	}
 
 	@Override

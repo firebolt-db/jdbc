@@ -109,6 +109,8 @@ test {
     maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
     testLogging {
         events 'PASSED', 'FAILED', 'SKIPPED'
+        exceptionFormat = 'full'
+        showStackTraces = true
     }
 }
 

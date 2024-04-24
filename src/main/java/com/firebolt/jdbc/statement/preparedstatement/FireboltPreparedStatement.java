@@ -13,9 +13,11 @@ import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementUtil;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
 import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
+import com.firebolt.jdbc.util.InputStreamUtil;
 import lombok.CustomLog;
 import lombok.NonNull;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -291,9 +293,12 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	@Override
-	@NotImplemented
 	public void setCharacterStream(int parameterIndex, Reader reader, int length) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		try {
+			setString(parameterIndex, reader == null ? null : InputStreamUtil.read(reader, length));
+		} catch (IOException e) {
+			throw new SQLException(e);
+		}
 	}
 
 	@Override
@@ -303,15 +308,13 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	@Override
-	@NotImplemented
-	public void setBlob(int parameterIndex, Blob x) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+	public void setBlob(int parameterIndex, Blob blob) throws SQLException {
+		setBytes(parameterIndex, blob == null ? null : blob.getBytes(1, (int)blob.length()));
 	}
 
 	@Override
-	@NotImplemented
-	public void setClob(int parameterIndex, Clob x) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+	public void setClob(int parameterIndex, Clob clob) throws SQLException {
+		setString(parameterIndex, clob == null ? null : clob.getSubString(1, (int)clob.length()));
 	}
 
 	@Override
@@ -345,33 +348,28 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	@Override
-	@NotImplemented
 	public void setNCharacterStream(int parameterIndex, Reader value, long length) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		setCharacterStream(parameterIndex, value, length);
 	}
 
 	@Override
-	@NotImplemented
 	public void setNClob(int parameterIndex, NClob value) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		setClob(parameterIndex, value);
 	}
 
 	@Override
-	@NotImplemented
 	public void setClob(int parameterIndex, Reader reader, long length) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
-	}
+		setCharacterStream(parameterIndex, reader, length);
+    }
 
 	@Override
-	@NotImplemented
 	public void setBlob(int parameterIndex, InputStream inputStream, long length) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		setBinaryStream(parameterIndex, inputStream, length);
 	}
 
 	@Override
-	@NotImplemented
 	public void setNClob(int parameterIndex, Reader reader, long length) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		setClob(parameterIndex, reader, length);
 	}
 
 	@Override
@@ -402,80 +400,75 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	@Override
-	@NotImplemented
 	public void setAsciiStream(int parameterIndex, InputStream x, long length) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		setBinaryStream(parameterIndex, x, length);
 	}
 
 	@Override
-	@NotImplemented
-	public void setBinaryStream(int parameterIndex, InputStream x, long length) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+	public void setBinaryStream(int parameterIndex, InputStream inputStream, long length) throws SQLException {
+		setBinaryStream(parameterIndex, inputStream, (int)length);
 	}
 
 	@Override
-	@NotImplemented
 	public void setCharacterStream(int parameterIndex, Reader reader, long length) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		setCharacterStream(parameterIndex, reader, (int)length);
 	}
 
 	@Override
-	@NotImplemented
 	public void setAsciiStream(int parameterIndex, InputStream x) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		setBinaryStream(parameterIndex, x);
 	}
 
 	@Override
-	@NotImplemented
 	public void setBinaryStream(int parameterIndex, InputStream x) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		try {
+			setBytes(parameterIndex, x == null ? null : x.readAllBytes());
+		} catch (IOException e) {
+			throw new SQLException(e);
+		}
 	}
 
 	@Override
-	@NotImplemented
 	public void setCharacterStream(int parameterIndex, Reader reader) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		setCharacterStream(parameterIndex, reader, Integer.MAX_VALUE);
 	}
 
 	@Override
-	@NotImplemented
 	public void setNCharacterStream(int parameterIndex, Reader value) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		setCharacterStream(parameterIndex, value);
 	}
 
 	@Override
-	@NotImplemented
 	public void setClob(int parameterIndex, Reader reader) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		setClob(parameterIndex, reader, Integer.MAX_VALUE);
 	}
 
 	@Override
-	@NotImplemented
 	public void setBlob(int parameterIndex, InputStream inputStream) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
-	}
+		setBinaryStream(parameterIndex, inputStream);
+    }
 
 	@Override
-	@NotImplemented
 	public void setNClob(int parameterIndex, Reader reader) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		setClob(parameterIndex, reader);
 	}
 
 	@Override
-	@NotImplemented
 	public void setAsciiStream(int parameterIndex, InputStream x, int length) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		setBinaryStream(parameterIndex, x, length);
 	}
 
 	@Override
-	@NotImplemented
 	public void setUnicodeStream(int parameterIndex, InputStream x, int length) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		setBinaryStream(parameterIndex, x, length);
 	}
 
 	@Override
-	@NotImplemented
-	public void setBinaryStream(int parameterIndex, InputStream x, int length) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+	public void setBinaryStream(int parameterIndex, InputStream inputStream, int length) throws SQLException {
+		try {
+			setBytes(parameterIndex, inputStream == null ? null : inputStream.readNBytes(length));
+		} catch (IOException e) {
+			throw new SQLException(e);
+		}
 	}
 }
