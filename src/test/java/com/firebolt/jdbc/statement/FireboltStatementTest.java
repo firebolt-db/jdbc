@@ -4,6 +4,7 @@ import com.firebolt.jdbc.CheckedBiFunction;
 import com.firebolt.jdbc.client.query.StatementClient;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.service.FireboltStatementService;
@@ -67,7 +68,10 @@ class FireboltStatementTest {
     private FireboltConnection fireboltConnection;
 
     private static FireboltStatement statement;
-    private final FireboltProperties fireboltProperties = FireboltProperties.builder().initialAdditionalProperties(new HashMap<>()).build();
+    private final FireboltProperties fireboltProperties = FireboltProperties.builder()
+            .initialAdditionalProperties(new HashMap<>())
+            .bufferSize(((Number)FireboltSessionProperty.BUFFER_SIZE.getDefaultValue()).intValue())
+            .build();
 
     private static Stream<Arguments> unsupported() {
         return Stream.of(

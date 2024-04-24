@@ -19,6 +19,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
 
+import static java.util.Optional.ofNullable;
+
 @RequiredArgsConstructor
 @CustomLog
 public class FireboltStatementService {
@@ -63,9 +65,9 @@ public class FireboltStatementService {
 	private FireboltResultSet createResultSet(InputStream inputStream, QueryRawStatement initialQuery, FireboltProperties properties, FireboltStatement statement)
 			throws SQLException {
 		return new FireboltResultSet(inputStream,
-				Optional.ofNullable(initialQuery.getTable()).orElse(UNKNOWN_TABLE_NAME),
-				Optional.ofNullable(initialQuery.getDatabase()).orElse(properties.getDatabase()),
-				properties,
-				statement);
+				ofNullable(initialQuery.getTable()).orElse(UNKNOWN_TABLE_NAME),
+				ofNullable(initialQuery.getDatabase()).orElse(properties.getDatabase()),
+				properties.getBufferSize(), properties.isCompress(),
+				statement, properties.isLogResultSet());
 	}
 }
