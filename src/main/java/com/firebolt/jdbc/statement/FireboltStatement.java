@@ -434,6 +434,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		List<Integer> result = new ArrayList<>();
 		for (String sql : batchStatements) {
 			for (StatementInfoWrapper query : StatementUtil.parseToStatementInfoWrappers(sql)) {
+				@SuppressWarnings("java:S6912") // Use "addBatch" and "executeBatch" to execute multiple SQL statements in a single call - this is the implementation of executeBatch
 				Optional<ResultSet> rs = execute(List.of(query));
 				result.add(rs.map(x -> 0).orElse(SUCCESS_NO_INFO));
 			}
