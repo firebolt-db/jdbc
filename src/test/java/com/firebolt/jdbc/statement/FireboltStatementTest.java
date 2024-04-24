@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 
 import static java.lang.String.format;
 import static java.sql.Statement.CLOSE_CURRENT_RESULT;
+import static java.sql.Statement.SUCCESS_NO_INFO;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -71,9 +72,6 @@ class FireboltStatementTest {
     private static Stream<Arguments> unsupported() {
         return Stream.of(
                 Arguments.of("setCursorName", (Executable) () -> statement.setCursorName("my_cursor")),
-                Arguments.of("addBatch", (Executable) () -> statement.addBatch("insert into people (id, name) values (?, ?))")),
-                Arguments.of("clearBatch", (Executable) () -> statement.clearBatch()),
-                Arguments.of("executeBatch", (Executable) () -> statement.executeBatch()),
                 Arguments.of("getGeneratedKeys", (Executable) () -> statement.getGeneratedKeys()),
                 Arguments.of("executeUpdate(auto generated keys)", (Executable) () -> statement.executeUpdate("insert", Statement.RETURN_GENERATED_KEYS)),
                 Arguments.of("executeUpdate(column indexes)", (Executable) () -> statement.executeUpdate("insert", new int[0])),
@@ -437,5 +435,47 @@ class FireboltStatementTest {
         }
 
         assertFalse(rs.next());
+    }
+
+    @Test
+    void shouldExecuteEmptyBatch() throws SQLException {
+        FireboltConnection connection = mock(FireboltConnection.class);
+        FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
+        assertArrayEquals(new int[0], fireboltStatement.executeBatch());
+    }
+
+    @Test
+    void shouldExecuteBatch() throws SQLException {
+        FireboltConnection connection = mock(FireboltConnection.class);
+        FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
+        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(
+                Optional.of(mock(FireboltResultSet.class)), Optional.of(mock(FireboltResultSet.class)), Optional.empty(), Optional.empty(), Optional.of(mock(FireboltResultSet.class))
+        );
+
+        fireboltStatement.addBatch("SELECT 1; SELECT 2;");
+        fireboltStatement.addBatch("INSERT INTO PEOPLE (id, name) VALUES (1, 'Adam')");
+        fireboltStatement.addBatch("INSERT INTO PEOPLE (id, name) VALUES (1, 'Eve')");
+        fireboltStatement.addBatch("SELECT 3");
+
+        int[] actual = fireboltStatement.executeBatch();
+        assertArrayEquals(new int[] {0, 0, SUCCESS_NO_INFO, SUCCESS_NO_INFO, 0}, actual);
+    }
+
+    @Test
+    void shouldClearBatch() throws SQLException {
+        FireboltConnection connection = mock(FireboltConnection.class);
+        FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
+        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(
+                Optional.empty(), Optional.empty()
+        );
+
+        fireboltStatement.addBatch("SELECT 1; SELECT 2;");
+        fireboltStatement.clearBatch();
+        assertArrayEquals(new int[0], fireboltStatement.executeBatch());
+
+        fireboltStatement.addBatch("INSERT INTO PEOPLE (id, name) VALUES (1, 'Adam')");
+        fireboltStatement.addBatch("INSERT INTO PEOPLE (id, name) VALUES (1, 'Eve')");
+
+        assertArrayEquals(new int[] {SUCCESS_NO_INFO, SUCCESS_NO_INFO}, fireboltStatement.executeBatch());
     }
 }
