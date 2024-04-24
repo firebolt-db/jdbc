@@ -69,7 +69,7 @@ import static java.util.Optional.ofNullable;
 @CustomLog
 public class FireboltResultSet extends JdbcBase implements ResultSet {
 	private static final String FORWARD_ONLY_ERROR = "Cannot call %s() for ResultSet of type TYPE_FORWARD_ONLY";
-	private static final int defaultCharBufferSize = 8192; // the default of BufferedReader
+	private static final int DEFAULT_CHAR_BUFFER_SIZE = 8192; // the default of BufferedReader
 	private final BufferedReader reader;
 	private final Map<String, Integer> columnNameToColumnNumber;
 	private final FireboltResultSetMetaData resultSetMetaData;
@@ -117,7 +117,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	public static FireboltResultSet of(QueryResult queryResult) throws SQLException {
 		return new FireboltResultSet(new ByteArrayInputStream(queryResult.toString().getBytes()),
-				queryResult.getTableName(), queryResult.getDatabaseName(), defaultCharBufferSize, false, null, false);
+				queryResult.getTableName(), queryResult.getDatabaseName(), DEFAULT_CHAR_BUFFER_SIZE, false, null, false);
 
 	}
 
