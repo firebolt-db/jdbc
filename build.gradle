@@ -9,7 +9,7 @@ plugins {
     id "org.sonarqube" version "5.0.0.4638"
     id 'maven-publish'
     id 'com.github.johnrengelman.shadow' version '8.0.0'
-    id 'org.quiltmc.gradle.licenser' version '2.0.1'
+    id 'org.quiltmc.gradle.licenser' version '2.0.2'
     id 'signing'
 }
 
