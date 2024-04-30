@@ -46,8 +46,11 @@ import java.sql.SQLXML;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Optional;
+import java.util.TimeZone;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
@@ -96,10 +99,8 @@ class FireboltPreparedStatementTest {
 	private static Stream<Arguments> unsupported() {
 		return Stream.of(
 					Arguments.of("setRef", (Executable) () -> statement.setRef(1, mock(Ref.class))),
-					Arguments.of("setDate", (Executable) () -> statement.setDate(1, new Date(System.currentTimeMillis()), Calendar.getInstance())),
 					Arguments.of("setTime", (Executable) () -> statement.setTime(1, new Time(System.currentTimeMillis()))),
 					Arguments.of("setTime(calendar)", (Executable) () -> statement.setTime(1, new Time(System.currentTimeMillis()), Calendar.getInstance())),
-					Arguments.of("setTimestamp", (Executable) () -> statement.setTimestamp(1, new Timestamp(System.currentTimeMillis()), Calendar.getInstance())),
 					Arguments.of("setRowId", (Executable) () -> statement.setRowId(1, mock(RowId.class))),
 					Arguments.of("setSQLXML", (Executable) () -> statement.setSQLXML(1, mock(SQLXML.class))),
 
@@ -424,6 +425,45 @@ class FireboltPreparedStatementTest {
 	}
 
 	@Test
+	void shouldSetDateWithCalendar() throws SQLException, ParseException {
+		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
+		Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("JST"));
+		calendar.setTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z").parse("2024-04-18 20:00:00 GMT"));
+		statement.setDate(1, new Date(calendar.getTimeInMillis()), calendar);
+		statement.execute();
+
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		assertEquals("INSERT INTO cars(release_date) VALUES ('2024-04-19')",
+				queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
+
+	@Test
+	@DefaultTimeZone("Europe/London")
+	void shouldSetDateWithNullCalendar() throws SQLException, ParseException {
+		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
+
+		statement.setDate(1, new Date(1564527600000L), null);
+		statement.execute();
+
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		assertEquals("INSERT INTO cars(release_date) VALUES ('2019-07-31')",
+				queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
+
+	@Test
+	void shouldSetTimeStampWithCalendar() throws SQLException, ParseException {
+		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
+		Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("JST"));
+		calendar.setTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z").parse("2024-04-18 20:11:01 GMT"));
+		statement.setTimestamp(1, new Timestamp(calendar.getTimeInMillis()), calendar);
+		statement.execute();
+
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		assertEquals("INSERT INTO cars(release_date) VALUES ('2024-04-19 05:11:01')",
+				queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
+
+	@Test
 	@DefaultTimeZone("Europe/London")
 	void shouldSetTimeStamp() throws SQLException {
 		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
@@ -433,6 +473,19 @@ class FireboltPreparedStatementTest {
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
 		assertEquals("INSERT INTO cars(release_date) VALUES ('2019-07-31 12:15:13')",
+				queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
+
+	@Test
+	void shouldSetNullTimeStampWithCalendar() throws SQLException, ParseException {
+		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
+		Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("JST"));
+		calendar.setTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z").parse("2024-04-18 20:11:01 GMT"));
+		statement.setTimestamp(1, null, calendar);
+		statement.execute();
+
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		assertEquals("INSERT INTO cars(release_date) VALUES (NULL)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
