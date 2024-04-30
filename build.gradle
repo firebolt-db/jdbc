@@ -1,7 +1,4 @@
 import java.util.jar.JarFile
-import java.util.stream.Stream
-
-import static java.util.stream.Collectors.toList
 
 plugins {
     id 'java'
@@ -116,25 +113,6 @@ test {
 }
 
 tasks.register('integrationTest', Test) {
-    doFirst {
-        if (Boolean.parseBoolean(System.getProperty("run_setup", "false"))) {
-            URL[] urls = Stream.concat(sourceSets.integrationTest.output.getFiles().stream(), sourceSets.integrationTest.compileClasspath.getFiles().stream())
-                    .map(f -> f.toURI().toURL()).collect(toList()).toArray()
-            ClassLoader classLoader = new URLClassLoader(urls)
-            def mgr = classLoader.loadClass("integration.EnvironmentManager").newInstance(new Object[0]);
-            ext.environmentManager = mgr
-            Properties props = mgr.create()
-            props.each {
-                systemProperty it.key, it.value
-            }
-        }
-    }
-    doLast {
-        if (Boolean.parseBoolean(System.getProperty("run_setup", "false"))) {
-            def mgr = ext.environmentManager
-            mgr.cleanup()
-        }
-    }
     description = 'Runs integration tests.'
     useJUnitPlatform() {
         includeTags(System.getProperty("includeTags", "common").split(","))
