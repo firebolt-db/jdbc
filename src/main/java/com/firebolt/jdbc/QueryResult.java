@@ -1,18 +1,15 @@
 package com.firebolt.jdbc;
 
+import com.firebolt.jdbc.type.FireboltDataType;
+import lombok.Builder;
+import lombok.Value;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import com.firebolt.jdbc.type.FireboltDataType;
-
-import lombok.Builder;
-import lombok.Value;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toUnmodifiableList;
 
 /**
  * Class containing a query result that can be used to create a
