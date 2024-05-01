@@ -11,6 +11,7 @@ import com.firebolt.jdbc.type.FireboltDataType;
 import lombok.Builder;
 import lombok.Value;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toUnmodifiableList;
 
 /**
@@ -36,12 +37,13 @@ public class QueryResult {
 	 *         TabSeparatedWithNamesAndTypes format
 	 */
 	@Override
+	@SuppressWarnings("java:S6204") // JDK 11 compatible
 	public String toString() {
 		StringBuilder stringBuilder = new StringBuilder();
-		appendWithListValues(stringBuilder, columns.stream().map(Column::getName).collect(toUnmodifiableList()));
+		appendWithListValues(stringBuilder, columns.stream().map(Column::getName).collect(toList()));
 		stringBuilder.append(NEXT_LINE);
 		Function<Column, String> columnToString = c -> c.getType().getAliases()[0] + (c.isNullable() ? " null" : "");
-		appendWithListValues(stringBuilder, columns.stream().map(columnToString).collect(toUnmodifiableList()));
+		appendWithListValues(stringBuilder, columns.stream().map(columnToString).collect(toList()));
 		stringBuilder.append(NEXT_LINE);
 
 		for (int i = 0; i < rows.size(); i++) {
