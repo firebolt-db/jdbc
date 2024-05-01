@@ -11,6 +11,8 @@ import com.firebolt.jdbc.type.FireboltDataType;
 import lombok.Builder;
 import lombok.Value;
 
+import static java.util.stream.Collectors.toUnmodifiableList;
+
 /**
  * Class containing a query result that can be used to create a
  * {@link com.firebolt.jdbc.resultset.FireboltResultSet}
@@ -36,10 +38,10 @@ public class QueryResult {
 	@Override
 	public String toString() {
 		StringBuilder stringBuilder = new StringBuilder();
-		appendWithListValues(stringBuilder, columns.stream().map(Column::getName).collect(Collectors.toList()));
+		appendWithListValues(stringBuilder, columns.stream().map(Column::getName).collect(toUnmodifiableList()));
 		stringBuilder.append(NEXT_LINE);
 		Function<Column, String> columnToString = c -> c.getType().getAliases()[0] + (c.isNullable() ? " null" : "");
-		appendWithListValues(stringBuilder, columns.stream().map(columnToString).collect(Collectors.toList()));
+		appendWithListValues(stringBuilder, columns.stream().map(columnToString).collect(toUnmodifiableList()));
 		stringBuilder.append(NEXT_LINE);
 
 		for (int i = 0; i < rows.size(); i++) {
