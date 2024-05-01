@@ -383,21 +383,23 @@ class PreparedStatementTest extends IntegrationTest {
 
 	@Test
 	void shouldInsertAndRetrieveUrl() throws SQLException, MalformedURLException {
-		Car tesla = Car.builder().make("https://www.tesla.com/").sales(300).build();
+		Car tesla = Car.builder().make("Tesla").url(new URL("https://www.tesla.com/")).sales(300).build();
 		Car nothing = Car.builder().sales(0).build();
 		try (Connection connection = createConnection()) {
 			try (PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO prepared_statement_test (sales, make) VALUES (?,?)")) {
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, url) VALUES (?,?,?)")) {
 				statement.setInt(1, tesla.getSales());
-				statement.setURL(2, new URL(tesla.getMake()));
+				statement.setString(2, tesla.getMake());
+				statement.setURL(3, tesla.getUrl());
 				statement.executeUpdate();
 				statement.setInt(1, nothing.getSales());
-				statement.setURL(2, null);
+				statement.setString(2, "");
+				statement.setURL(3, null);
 				statement.executeUpdate();
 			}
 
 			try (Statement statement = connection.createStatement();
-				 ResultSet rs = statement.executeQuery("SELECT make FROM prepared_statement_test order by sales")) {
+				 ResultSet rs = statement.executeQuery("SELECT url FROM prepared_statement_test order by sales")) {
 				assertTrue(rs.next());
 				assertNull(rs.getString(1));
 				assertNull(rs.getURL(1));
@@ -418,6 +420,7 @@ class PreparedStatementTest extends IntegrationTest {
 		byte[] signature;
 		Timestamp ts;
 		Date d;
+		URL url;
 	}
 
 }

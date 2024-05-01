@@ -3,6 +3,7 @@ package com.firebolt.jdbc;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.firebolt.jdbc.type.FireboltDataType;
@@ -37,8 +38,8 @@ public class QueryResult {
 		StringBuilder stringBuilder = new StringBuilder();
 		appendWithListValues(stringBuilder, columns.stream().map(Column::getName).collect(Collectors.toList()));
 		stringBuilder.append(NEXT_LINE);
-		appendWithListValues(stringBuilder, columns.stream().map(Column::getType).map(FireboltDataType::getAliases)
-				.map(aliases -> aliases[0]).collect(Collectors.toList()));
+		Function<Column, String> columnToString = c -> c.getType().getAliases()[0] + (c.isNullable() ? " null" : "");
+		appendWithListValues(stringBuilder, columns.stream().map(columnToString).collect(Collectors.toList()));
 		stringBuilder.append(NEXT_LINE);
 
 		for (int i = 0; i < rows.size(); i++) {
@@ -77,5 +78,6 @@ public class QueryResult {
 	public static class Column {
 		String name;
 		FireboltDataType type;
+		boolean nullable;
 	}
 }
