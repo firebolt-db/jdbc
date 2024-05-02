@@ -42,14 +42,14 @@ class MetadataUtilTest {
 	@Test
 	void shouldGetColumnsQueryWhenGettingQueryWithArguments() {
 		assertEquals(
-				"SELECT table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns WHERE table_name LIKE 'tableName' AND column_name LIKE 'col%' AND table_schema LIKE 'schema'",
-				MetadataUtil.getColumnsQuery("schema", "tableName", "col%"));
+				"SELECT table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns WHERE table_name LIKE 'tableName' AND column_name LIKE 'col%' AND table_schema LIKE 'schema' AND table_catalog LIKE 'db'",
+				MetadataUtil.getColumnsQuery("db", "schema", "tableName", "col%"));
 	}
 
 	@Test
 	void shouldGetColumnsQueryWhenGettingQueryWithoutArguments() {
 		assertEquals(
 				"SELECT table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns",
-				MetadataUtil.getColumnsQuery(null, null, null));
+				MetadataUtil.getColumnsQuery(null, null, null, null));
 	}
 }

@@ -267,7 +267,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 				QueryResult.Column.builder().name(IS_GENERATEDCOLUMN).type(TEXT).build());
 
 		List<List<?>> rows = new ArrayList<>();
-		String query = MetadataUtil.getColumnsQuery(schemaPattern, tableNamePattern, columnNamePattern);
+		String query = MetadataUtil.getColumnsQuery(catalog, schemaPattern, tableNamePattern, columnNamePattern);
 		try (Statement statement = connection.createStatement();
 				ResultSet columnDescription = statement.executeQuery(query)) {
 			while (columnDescription.next()) {
@@ -1316,7 +1316,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList());
 
 		List<List<?>> rows = new ArrayList<>();
-		String query = MetadataUtil.getColumnsQuery(schemaPattern, tableNamePattern, columnNamePattern);
+		String query = MetadataUtil.getColumnsQuery(catalog, schemaPattern, tableNamePattern, columnNamePattern);
 		try (Statement statement = connection.createStatement();
 			 ResultSet columnDescription = statement.executeQuery(query)) {
 			while (columnDescription.next()) {
