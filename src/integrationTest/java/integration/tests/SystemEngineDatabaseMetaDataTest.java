@@ -147,7 +147,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
             ",%schema,%in%,table_name,false",
             ",%form%,%in%,table_schema,false",
             "{database},,%in%,table_catalog,false",
-            "{database},information_schema,%in%,account_id,false",
+            "{database},information_schema,%ac%,account_id,false",
             "{database},information%,%in%,name,false",
             "{database},%schema,%in%,region,false",
             "{database},%form%,%in%,type,false",
