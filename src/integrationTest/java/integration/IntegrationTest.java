@@ -1,7 +1,6 @@
 package integration;
 
 import com.firebolt.jdbc.client.HttpClientConfig;
-import lombok.CustomLog;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
@@ -17,7 +16,6 @@ import java.sql.Statement;
 import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@CustomLog
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Tag("common")
 public abstract class IntegrationTest {

@@ -8,7 +8,6 @@ import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.resultset.column.Column;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.util.VersionUtil;
-import lombok.CustomLog;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -149,7 +148,6 @@ import static java.util.regex.Pattern.compile;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
-@CustomLog
 @SuppressWarnings("java:S6204") // compatibility with JDK 11
 public class FireboltDatabaseMetadata implements DatabaseMetaData {
 

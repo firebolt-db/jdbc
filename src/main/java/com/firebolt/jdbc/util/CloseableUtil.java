@@ -1,14 +1,15 @@
 package com.firebolt.jdbc.util;
 
-import java.io.Closeable;
-import java.io.IOException;
-
-import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
 
-@CustomLog
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 @UtilityClass
 public class CloseableUtil {
+	private static final Logger log = Logger.getLogger(CloseableUtil.class.getName());
 
 	/**
 	 * Closes the {@link Closeable} and log any potential {@link IOException}
@@ -20,7 +21,7 @@ public class CloseableUtil {
 			try {
 				closeable.close();
 			} catch (IOException e) {
-				log.error("An error happened while closing the closeable: {}", e.getMessage());
+				log.log(Level.SEVERE, "An error happened while closing the closeable: {0}", e.getMessage());
 			}
 		}
 	}

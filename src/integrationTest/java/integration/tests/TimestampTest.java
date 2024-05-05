@@ -3,7 +3,6 @@ package integration.tests;
 import com.firebolt.jdbc.testutils.AssertionUtil;
 import integration.IntegrationTest;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
-import lombok.CustomLog;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -37,7 +36,6 @@ import static java.sql.Types.TIMESTAMP;
 import static java.sql.Types.TIMESTAMP_WITH_TIMEZONE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@CustomLog
 @DefaultTimeZone("UTC")
 class TimestampTest extends IntegrationTest {
 	private static final TimeZone UTC_TZ = TimeZone.getTimeZone("UTC");

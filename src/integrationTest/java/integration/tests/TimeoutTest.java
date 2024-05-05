@@ -2,9 +2,7 @@ package integration.tests;
 
 import com.firebolt.jdbc.connection.FireboltConnection;
 import integration.EnvironmentCondition;
-import integration.EnvironmentCondition.Comparison;
 import integration.IntegrationTest;
-import lombok.CustomLog;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -16,16 +14,18 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static integration.EnvironmentCondition.Attribute.databaseVersion;
 import static integration.EnvironmentCondition.Comparison.GE;
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@CustomLog
 class TimeoutTest extends IntegrationTest {
 	private static final int MIN_TIME_SECONDS = 350;
 	private static final Map<Integer, Long> SERIES_SIZE = Map.of(1, 80000000000L, 2, 180000000000L);
+	private static final Logger log = Logger.getLogger(TimeoutTest.class.getName());
 	private long startTime;
 
 	@BeforeEach
@@ -37,7 +37,7 @@ class TimeoutTest extends IntegrationTest {
 	void after() {
 		long endTime = System.nanoTime();
 		long elapsedTimeSeconds = (endTime - startTime) / 1_000_000_000;
-		log.info("Time elapsed: {} seconds", elapsedTimeSeconds);
+		log.log(Level.INFO, "Time elapsed: {0} seconds", elapsedTimeSeconds);
 		assertTrue(elapsedTimeSeconds > MIN_TIME_SECONDS, format("Test is too short. It took %d but should take at least %d seconds", elapsedTimeSeconds, MIN_TIME_SECONDS));
 	}
 

@@ -11,7 +11,6 @@ import com.firebolt.jdbc.statement.StatementType;
 import com.firebolt.jdbc.statement.rawstatement.RawStatement;
 import com.firebolt.jdbc.util.CloseableUtil;
 import com.firebolt.jdbc.util.PropertyUtil;
-import lombok.CustomLog;
 import lombok.NonNull;
 import okhttp3.Call;
 import okhttp3.Dispatcher;
@@ -38,6 +37,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.DEFAULT_FORMAT;
@@ -49,7 +50,6 @@ import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static java.util.Optional.ofNullable;
 
-@CustomLog
 public class StatementClientImpl extends FireboltClient implements StatementClient {
 
 	private static final String TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT = "TabSeparatedWithNamesAndTypes";
@@ -57,6 +57,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			Pattern.compile("HTTP status code: 401"), "Please associate user with your service account.",
 			Pattern.compile("Engine .+? does not exist or not authorized"), "Please grant at least one role to user associated your service account."
 	);
+	private static final Logger log = Logger.getLogger(StatementClientImpl.class.getName());
 
 	private final BiPredicate<Call, String> isCallWithLabel = (call, label) -> call.request().tag() instanceof String && Objects.equals(call.request().tag(), label);
 	// visible for testing
@@ -158,11 +159,11 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	private InputStream executeSqlStatementWithRetryOnUnauthorized(String label, @NonNull FireboltProperties connectionProperties, String formattedStatement, String uri)
 			throws SQLException, IOException {
 		try {
-			log.debug("Posting statement with label {} to URI: {}", label, uri);
+			log.log(Level.FINE, "Posting statement with label {0} to URI: {1}", new Object[] {label, uri});
 			return postSqlStatement(connectionProperties, formattedStatement, uri, label);
 		} catch (FireboltException exception) {
 			if (exception.getType() == UNAUTHORIZED) {
-				log.debug("Retrying to post statement with label {} following a 401 status code to URI: {}",label, uri);
+				log.log(Level.FINE, "Retrying to post statement with label {0} following a 401 status code to URI: {1}", new Object[] {label, uri});
 				return postSqlStatement(connectionProperties, formattedStatement, uri, label);
 			} else {
 				throw exception;
@@ -223,7 +224,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			if (e.getType() == ExceptionType.INVALID_REQUEST || e.getType() == ExceptionType.RESOURCE_NOT_FOUND) {
 				// 400 on that request indicates that the statement does not exist
 				// 404 - the same when working against "real" v2 engine
-				log.warn(e.getMessage());
+				log.warning(e.getMessage());
 			} else {
 				throw e;
 			}

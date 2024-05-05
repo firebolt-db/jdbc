@@ -1,13 +1,11 @@
 package com.firebolt.jdbc.statement.rawstatement;
 
-import lombok.CustomLog;
 import lombok.Value;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@CustomLog
 @Value
 public class RawStatementWrapper {
 

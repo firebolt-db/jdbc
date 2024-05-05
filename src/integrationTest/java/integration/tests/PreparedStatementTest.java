@@ -9,7 +9,6 @@ import com.firebolt.jdbc.type.FireboltDataType;
 import integration.ConnectionInfo;
 import integration.IntegrationTest;
 import lombok.Builder;
-import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.junit.jupiter.api.AfterEach;
@@ -33,7 +32,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,7 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@CustomLog
 class PreparedStatementTest extends IntegrationTest {
 
 	@BeforeEach

@@ -1,7 +1,6 @@
 package com.firebolt.jdbc.type.date;
 
 import com.firebolt.jdbc.CheckedBiFunction;
-import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
 
 import java.sql.Date;
@@ -17,7 +16,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 @UtilityClass
-@CustomLog
 public class SqlDateUtil {
 
 	public static final long ONE_DAY_MILLIS = 86400000L;

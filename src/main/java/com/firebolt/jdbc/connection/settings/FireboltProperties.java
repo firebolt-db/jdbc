@@ -2,7 +2,6 @@ package com.firebolt.jdbc.connection.settings;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
@@ -32,7 +31,6 @@ import static java.lang.String.format;
 @AllArgsConstructor
 @EqualsAndHashCode
 @Builder(toBuilder = true)
-@CustomLog
 public class FireboltProperties {
 
 	private static final Pattern DB_PATH_PATTERN = Pattern.compile("/?([a-zA-Z0-9_*\\-]+)");

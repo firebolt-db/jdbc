@@ -1,6 +1,5 @@
 package com.firebolt.jdbc.util;
 
-import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
 
 import java.io.File;
@@ -12,11 +11,12 @@ import java.util.Enumeration;
 import java.util.Properties;
 import java.util.jar.Attributes.Name;
 import java.util.jar.Manifest;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @UtilityClass
-@CustomLog
 public class VersionUtil {
 
 	private static final Pattern VERSION_PATTERN = Pattern.compile("^\\s*(\\d+)\\.(\\d+).*");
@@ -27,13 +27,14 @@ public class VersionUtil {
 
 	private static String driverVersion = "3.0.4";
 	private static String specificationVersion = "4.3";
+	private static final Logger log = Logger.getLogger(VersionUtil.class.getName());
 
 	static {
 		try {
 			retrieveVersionInfo();
-			log.info("Firebolt driver version used: {}", driverVersion);
+			log.log(Level.INFO, "Firebolt driver version used: {0}", driverVersion);
 		} catch (IOException e) {
-			log.error("Could not get Project Version defined in the build.gradle file", e);
+			log.log(Level.SEVERE, "Could not get Project Version defined in the build.gradle file", e);
 		}
 	}
 
