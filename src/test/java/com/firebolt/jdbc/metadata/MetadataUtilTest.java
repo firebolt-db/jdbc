@@ -22,13 +22,13 @@ class MetadataUtilTest {
 	@Test
 	void shouldGetTablesQueryWhenGettingQueryWithArguments() {
 		assertEquals(
-				"SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('FACT', 'DIMENSION') AND table_schema LIKE 'db' AND table_name LIKE 'tableName' order by table_schema, table_name",
+				"SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('FACT', 'DIMENSION') AND table_catalog LIKE 'catalog' AND table_schema LIKE 'db' AND table_name LIKE 'tableName' order by table_schema, table_name",
 				MetadataUtil.getTablesQuery("catalog", "db", "tableName", new String[] {"FACT", "DIMENSION"}));
 	}
 	@Test
 	void shouldGetViewQueryWhenGettingQueryWithArguments() {
 		assertEquals(
-				"SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('VIEW') AND table_schema LIKE 'db' AND table_name LIKE 'tableName' order by table_schema, table_name",
+				"SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('VIEW') AND table_catalog LIKE 'catalog' AND table_schema LIKE 'db' AND table_name LIKE 'tableName' order by table_schema, table_name",
 				MetadataUtil.getTablesQuery("catalog", "db", "tableName", new String[] {"VIEW"}));
 	}
 
