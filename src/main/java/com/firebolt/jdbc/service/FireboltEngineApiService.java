@@ -44,8 +44,7 @@ public class FireboltEngineApiService implements FireboltEngineService {
      * @param accessToken     the access token
      * @return the engine
      */
-    private Engine getEngine(String connectionUrl, FireboltProperties loginProperties, String accessToken)
-            throws FireboltException {
+    private Engine getEngine(String connectionUrl, FireboltProperties loginProperties, String accessToken) throws SQLException {
         String accountId = null;
         Engine engine;
         try {
@@ -66,8 +65,7 @@ public class FireboltEngineApiService implements FireboltEngineService {
         return engine;
     }
 
-    private Engine getEngineWithName(String connectionUrl, String accountId, String engineName, String accessToken)
-            throws FireboltException, IOException {
+    private Engine getEngineWithName(String connectionUrl, String accountId, String engineName, String accessToken) throws SQLException, IOException {
         FireboltEngineIdResponse response = fireboltAccountClient.getEngineId(connectionUrl, accountId, engineName,
                 accessToken);
         String engineID = ofNullable(response).map(FireboltEngineIdResponse::getEngine)
@@ -84,8 +82,7 @@ public class FireboltEngineApiService implements FireboltEngineService {
                         format(ERROR_NO_ENGINE_WITH_NAME, connectionUrl, engineName)));
     }
 
-    private Engine getDefaultEngine(String connectionUrl, String accountId, String database, String accessToken)
-            throws FireboltException, IOException {
+    private Engine getDefaultEngine(String connectionUrl, String accountId, String database, String accessToken) throws SQLException, IOException {
         FireboltDefaultDatabaseEngineResponse defaultEngine = fireboltAccountClient
                 .getDefaultEngineByDatabaseName(connectionUrl, accountId, database, accessToken);
 
@@ -95,11 +92,11 @@ public class FireboltEngineApiService implements FireboltEngineService {
     }
 
     private Optional<String> getAccountId(String connectionUrl, String account, String accessToken)
-            throws FireboltException, IOException {
+            throws SQLException, IOException {
         return ofNullable(fireboltAccountClient.getAccount(connectionUrl, account, accessToken)).map(FireboltAccountResponse::getAccountId);
     }
 
-    private void validateEngineIsNotStarting(Engine engine) throws FireboltException {
+    private void validateEngineIsNotStarting(Engine engine) throws SQLException {
         String id = engine.getId();
         String status = engine.getStatus();
         if (id != null && !id.isEmpty() && status != null && !status.isEmpty() && ENGINE_NOT_READY_STATUSES.contains(engine.getStatus())) {

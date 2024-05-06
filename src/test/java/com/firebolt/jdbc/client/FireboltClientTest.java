@@ -19,6 +19,7 @@ import org.mockito.Mockito;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.sql.SQLException;
 import java.util.stream.Stream;
 
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
@@ -149,7 +150,7 @@ class FireboltClientTest {
 
 	@ParameterizedTest(name = "{0}:{1}")
 	@MethodSource("goodJson")
-	<T> void goodJsonResponse(Class<T> clazz, String json, T expected) throws IOException, FireboltException {
+	<T> void goodJsonResponse(Class<T> clazz, String json, T expected) throws SQLException, IOException {
 		assertEquals(expected, mockClient(json).getResource("http://foo", "foo", "token", clazz));
 	}
 

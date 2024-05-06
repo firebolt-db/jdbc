@@ -20,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
@@ -72,14 +73,14 @@ class FireboltAccountRetrieverTest {
     }
 
 	@Test
-	void shouldGetGatewayUrlWhenResponseIsOk() throws IOException, FireboltException {
+	void shouldGetGatewayUrlWhenResponseIsOk() throws SQLException, IOException {
         String engineUrl = "http://engine";
         injectMockedResponse(httpClient, HTTP_OK, format("{\"engineUrl\":  \"%s\"}", engineUrl));
         assertEquals(engineUrl, fireboltGatewayUrlClient.retrieve("access_token", "account").getEngineUrl());
 	}
 
     @Test
-    void shouldGetAccountId() throws IOException, FireboltException {
+    void shouldGetAccountId() throws SQLException, IOException {
         FireboltAccount account = new FireboltAccount("12345", "central", 2);
         injectMockedResponse(httpClient, HTTP_OK, "{\"id\": \"12345\", \"region\":\"central\", \"infraVersion\":2}");
         assertEquals(account, fireboltAccountIdResolver.retrieve("access_token", "account"));

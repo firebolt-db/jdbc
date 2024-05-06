@@ -232,7 +232,7 @@ public class SqlArrayUtil {
 		return toString(arr);
 	}
 
-	private static String toString(Object[] arr) throws FireboltException {
+	private static String toString(Object[] arr) throws SQLException {
 		if (arr == null) {
 			return null;
 		}

@@ -66,7 +66,7 @@ class FireboltStatementServiceTest {
 	}
 
 	@Test
-	void shouldCancelQueryWithAllRequiredParams() throws FireboltException {
+	void shouldCancelQueryWithAllRequiredParams() throws SQLException {
 		FireboltProperties fireboltProperties = fireboltProperties("firebolt1", false);
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 		fireboltStatementService.abortStatement("123", fireboltProperties);
@@ -127,7 +127,7 @@ class FireboltStatementServiceTest {
 	}
 
 	@Test
-	void abortStatementHttpRequest() throws FireboltException {
+	void abortStatementHttpRequest() throws SQLException {
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 		fireboltStatementService.abortStatement("id", emptyFireboltProperties);
 		verify(statementClient).abortStatement("id", emptyFireboltProperties);

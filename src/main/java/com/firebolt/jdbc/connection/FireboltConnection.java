@@ -141,7 +141,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection 
 		return 2;
 	}
 
-	protected OkHttpClient getHttpClient(FireboltProperties fireboltProperties) throws FireboltException {
+	protected OkHttpClient getHttpClient(FireboltProperties fireboltProperties) throws SQLException {
 		try {
 			return HttpClientConfig.getInstance() == null ? HttpClientConfig.init(fireboltProperties) : HttpClientConfig.getInstance();
 		} catch (GeneralSecurityException | IOException e) {
@@ -168,15 +168,15 @@ public abstract class FireboltConnection extends JdbcBase implements Connection 
 
 	protected abstract void assertDatabaseExisting(String database) throws SQLException;
 
-	public void removeExpiredTokens() throws FireboltException {
+	public void removeExpiredTokens() throws SQLException {
 		fireboltAuthenticationService.removeConnectionTokens(httpConnectionUrl, loginProperties);
 	}
 
-	public Optional<String> getAccessToken() throws FireboltException {
+	public Optional<String> getAccessToken() throws SQLException {
 		return getAccessToken(sessionProperties);
 	}
 
-	protected Optional<String> getAccessToken(FireboltProperties fireboltProperties) throws FireboltException {
+	protected Optional<String> getAccessToken(FireboltProperties fireboltProperties) throws SQLException {
 		String accessToken = fireboltProperties.getAccessToken();
 		if (accessToken != null) {
 			if (fireboltProperties.getPrincipal() != null || fireboltProperties.getSecret() != null) {
@@ -445,19 +445,19 @@ public abstract class FireboltConnection extends JdbcBase implements Connection 
 		}
 	}
 
-	public void addProperty(@NonNull String key, String value) throws FireboltException {
+	public void addProperty(@NonNull String key, String value) throws SQLException {
 		changeProperty(p -> p.addProperty(key, value), () -> format("Could not set property %s=%s", key, value));
 	}
 
-	public void addProperty(Entry<String, String> property) throws FireboltException {
+	public void addProperty(Entry<String, String> property) throws SQLException {
 		changeProperty(p -> p.addProperty(property), () -> format("Could not set property %s=%s", property.getKey(), property.getValue()));
 	}
 
-	public void reset() throws FireboltException {
+	public void reset() throws SQLException {
 		changeProperty(FireboltProperties::clearAdditionalProperties, () -> "Could not reset connection");
 	}
 
-	private synchronized void changeProperty(Consumer<FireboltProperties> propertiesEditor, Supplier<String> errorMessageFactory) throws FireboltException {
+	private synchronized void changeProperty(Consumer<FireboltProperties> propertiesEditor, Supplier<String> errorMessageFactory) throws SQLException {
 		try {
 			FireboltProperties tmpProperties = FireboltProperties.copy(sessionProperties);
 			propertiesEditor.accept(tmpProperties);

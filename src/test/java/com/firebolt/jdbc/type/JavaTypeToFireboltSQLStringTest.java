@@ -26,18 +26,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class JavaTypeToFireboltSQLStringTest {
 
 	@Test
-	void shouldTransformAnyNullToString() throws FireboltException {
+	void shouldTransformAnyNullToString() throws SQLException {
 		assertEquals("NULL", JavaTypeToFireboltSQLString.transformAny(null));
 	}
 
 	@ParameterizedTest
 	@EnumSource(value = JavaTypeToFireboltSQLString.class)
-	void shouldTransformNull(JavaTypeToFireboltSQLString type) throws FireboltException {
+	void shouldTransformNull(JavaTypeToFireboltSQLString type) throws SQLException {
 		assertEquals("NULL", type.transform(null));
 	}
 
 	@Test
-	void shouldTransformBooleanToString() throws FireboltException {
+	void shouldTransformBooleanToString() throws SQLException {
 		assertEquals("1", JavaTypeToFireboltSQLString.BOOLEAN.transform(true));
 
 		assertEquals("0", JavaTypeToFireboltSQLString.BOOLEAN.transform(false));
@@ -46,7 +46,7 @@ class JavaTypeToFireboltSQLStringTest {
 	}
 
 	@Test
-	void shouldTransformUUIDToString() throws FireboltException {
+	void shouldTransformUUIDToString() throws SQLException {
 		String uuidValue = "2ac03dc8-f7c9-11ec-b939-0242ac120002";
 		UUID uuid = UUID.fromString(uuidValue);
 		assertEquals(uuidValue, JavaTypeToFireboltSQLString.UUID.transform(uuid));
@@ -57,7 +57,7 @@ class JavaTypeToFireboltSQLStringTest {
 	}
 
 	@Test
-	void shouldTransformShortToString() throws FireboltException {
+	void shouldTransformShortToString() throws SQLException {
 		short s = 123;
 		assertEquals("123", JavaTypeToFireboltSQLString.SHORT.transform(s));
 
@@ -67,14 +67,14 @@ class JavaTypeToFireboltSQLStringTest {
 	}
 
 	@Test
-	void shouldEscapeCharactersWhenTransformingFromString() throws FireboltException {
+	void shouldEscapeCharactersWhenTransformingFromString() throws SQLException {
 		assertEquals("'105'' OR 1=1--'' '", JavaTypeToFireboltSQLString.STRING.transform("105' OR 1=1--' "));
 
 		assertEquals("'105'' OR 1=1--'' '", JavaTypeToFireboltSQLString.transformAny("105' OR 1=1--' "));
 	}
 
 	@Test
-	void shouldTransformLongToString() throws FireboltException {
+	void shouldTransformLongToString() throws SQLException {
 		assertEquals("105", JavaTypeToFireboltSQLString.LONG.transform(105L));
 
 		assertEquals("105", JavaTypeToFireboltSQLString.transformAny(105L));
@@ -83,7 +83,7 @@ class JavaTypeToFireboltSQLStringTest {
 	}
 
 	@Test
-	void shouldTransformIntegerToString() throws FireboltException {
+	void shouldTransformIntegerToString() throws SQLException {
 		assertEquals("105", JavaTypeToFireboltSQLString.INTEGER.transform(105));
 
 		assertEquals("105", JavaTypeToFireboltSQLString.transformAny(105));
@@ -92,7 +92,7 @@ class JavaTypeToFireboltSQLStringTest {
 	}
 
 	@Test
-	void shouldTransformBigIntegerToString() throws FireboltException {
+	void shouldTransformBigIntegerToString() throws SQLException {
 		assertEquals("1111111111", JavaTypeToFireboltSQLString.BIG_INTEGER.transform(1111111111));
 
 		assertEquals("1111111111", JavaTypeToFireboltSQLString.transformAny(1111111111));
@@ -101,7 +101,7 @@ class JavaTypeToFireboltSQLStringTest {
 	}
 
 	@Test
-	void shouldTransformFloatToString() throws FireboltException {
+	void shouldTransformFloatToString() throws SQLException {
 		assertEquals("1.5", JavaTypeToFireboltSQLString.FLOAT.transform(1.50f));
 
 		assertEquals("1.5", JavaTypeToFireboltSQLString.transformAny(1.50f));
@@ -110,7 +110,7 @@ class JavaTypeToFireboltSQLStringTest {
 	}
 
 	@Test
-	void shouldTransformDoubleToString() throws FireboltException {
+	void shouldTransformDoubleToString() throws SQLException {
 		assertEquals("105.0", JavaTypeToFireboltSQLString.DOUBLE.transform(105));
 
 		assertEquals("105", JavaTypeToFireboltSQLString.transformAny(105));
@@ -120,7 +120,7 @@ class JavaTypeToFireboltSQLStringTest {
 
 	@Test
 	@DefaultTimeZone("Europe/London")
-	void shouldTransformDateToString() throws FireboltException {
+	void shouldTransformDateToString() throws SQLException {
 		Date d = Date.valueOf(LocalDate.of(2022, 5, 23));
 		String expectedDateString = "'2022-05-23'";
 		assertEquals(expectedDateString, JavaTypeToFireboltSQLString.DATE.transform(d));
@@ -128,12 +128,12 @@ class JavaTypeToFireboltSQLStringTest {
 	}
 
 	@Test
-	void shouldTransformDateWithDefaultTimezoneToString() throws FireboltException {
+	void shouldTransformDateWithDefaultTimezoneToString() throws SQLException {
 		assertEquals("'2022-05-23'", JavaTypeToFireboltSQLString.DATE.transform(Date.valueOf(LocalDate.of(2022, 5, 23)), TimeZone.getDefault()));
 	}
 
 	@Test
-	void shouldTransformDateWithDefaultTimezoneIdToString() throws FireboltException {
+	void shouldTransformDateWithDefaultTimezoneIdToString() throws SQLException {
 		assertEquals("'2022-05-23'", JavaTypeToFireboltSQLString.DATE.transform(Date.valueOf(LocalDate.of(2022, 5, 23)), TimeZone.getDefault().getID()));
 	}
 
@@ -144,7 +144,7 @@ class JavaTypeToFireboltSQLStringTest {
 	}
 
 	@Test
-	void shouldTransformTimeStampToString() throws FireboltException {
+	void shouldTransformTimeStampToString() throws SQLException {
 		Timestamp ts = Timestamp.valueOf(LocalDateTime.of(2022, 5, 23, 12, 57, 13, 173456789));
 		assertEquals("'2022-05-23 12:57:13.173456789'", JavaTypeToFireboltSQLString.TIMESTAMP.transform(ts));
 		assertEquals("'2022-05-23 12:57:13.173456789'", JavaTypeToFireboltSQLString.transformAny(ts));
@@ -168,18 +168,18 @@ class JavaTypeToFireboltSQLStringTest {
 	}
 
 	@Test
-	void shouldTransformJavaArrayOfArray() throws FireboltException {
+	void shouldTransformJavaArrayOfArray() throws SQLException {
 		String[][] arr = new String[][] { { "a", "b" }, { "c" } };
 		assertEquals("[['a','b'],['c']]", JavaTypeToFireboltSQLString.ARRAY.transform(arr));
 	}
 
 	@Test
-	void shouldTransformJavaArrayOfPrimitives() throws FireboltException {
+	void shouldTransformJavaArrayOfPrimitives() throws SQLException {
 		assertEquals("[5]", JavaTypeToFireboltSQLString.ARRAY.transform(new int[] {5}));
 	}
 
 	@Test
-	void shouldTransformEmptyArray() throws FireboltException {
+	void shouldTransformEmptyArray() throws SQLException {
 		assertEquals("[]", JavaTypeToFireboltSQLString.ARRAY.transform(new int[0]));
 	}
 

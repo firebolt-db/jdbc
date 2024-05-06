@@ -101,8 +101,7 @@ public class FieldTypeConverter {
 		});
 	}
 
-	private static <T> void verify(Class<T> toType, BaseType columnBaseType, BaseType... supportedTypes)
-			throws FireboltException {
+	private static <T> void verify(Class<T> toType, BaseType columnBaseType, BaseType... supportedTypes) throws SQLException {
 		if (Arrays.stream(supportedTypes).noneMatch(b -> b.equals(columnBaseType))) {
 			throw new FireboltException(
 					String.format(CONVERSION_NOT_SUPPORTED_EXCEPTION, toType, columnBaseType.getType().getName()));

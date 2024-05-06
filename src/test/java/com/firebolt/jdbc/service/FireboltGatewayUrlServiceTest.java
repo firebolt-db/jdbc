@@ -6,6 +6,8 @@ import com.firebolt.jdbc.exception.FireboltException;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.sql.SQLException;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -20,7 +22,7 @@ class FireboltGatewayUrlServiceTest {
             "https://host?name=value,https://host?name=value",
             "host?name=value,https://host?name=value",
     })
-    void test(String rawUrl, String expectedUrl) throws FireboltException {
+    void test(String rawUrl, String expectedUrl) throws SQLException {
         @SuppressWarnings("unchecked")
         FireboltAccountRetriever<GatewayUrlResponse> fireboltGatewayUrlClient = mock(FireboltAccountRetriever.class);
         when(fireboltGatewayUrlClient.retrieve("token", "account")).thenReturn(new GatewayUrlResponse(rawUrl));

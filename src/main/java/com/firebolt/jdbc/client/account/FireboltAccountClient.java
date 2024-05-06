@@ -12,6 +12,7 @@ import lombok.CustomLog;
 import okhttp3.OkHttpClient;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import static java.lang.String.format;
 
@@ -37,7 +38,7 @@ public class FireboltAccountClient extends FireboltClient {
      * @param accessToken the access token
      * @return the account
      */
-    public FireboltAccountResponse getAccount(String host, String account, String accessToken) throws FireboltException, IOException {
+    public FireboltAccountResponse getAccount(String host, String account, String accessToken) throws SQLException, IOException {
         String uri = format(GET_ACCOUNT_ID_URI, host, account);
         return getResource(uri, host, accessToken, FireboltAccountResponse.class);
     }
@@ -52,7 +53,7 @@ public class FireboltAccountClient extends FireboltClient {
      * @param accessToken the access token
      * @return the engine
      */
-    public FireboltEngineResponse getEngine(String host, String accountId, String engineName, String engineId, String accessToken) throws FireboltException, IOException {
+    public FireboltEngineResponse getEngine(String host, String accountId, String engineName, String engineId, String accessToken) throws SQLException, IOException {
         String uri = createAccountUri(accountId, host, URI_SUFFIX_ACCOUNT_ENGINE_INFO_BY_ENGINE_ID + engineId);
         return getResource(uri, host, accessToken, FireboltEngineResponse.class, format("The address of the engine with name %s and id %s could not be found", engineName, engineId));
     }
@@ -66,7 +67,7 @@ public class FireboltAccountClient extends FireboltClient {
      * @param accessToken the access token
      * @return the default engine for the database
      */
-    public FireboltDefaultDatabaseEngineResponse getDefaultEngineByDatabaseName(String host, String accountId, String dbName, String accessToken) throws FireboltException, IOException {
+    public FireboltDefaultDatabaseEngineResponse getDefaultEngineByDatabaseName(String host, String accountId, String dbName, String accessToken) throws SQLException, IOException {
         String uri = createAccountUri(accountId, host, URI_SUFFIX_DATABASE_INFO_URL + dbName);
         return getResource(uri, host, accessToken, FireboltDefaultDatabaseEngineResponse.class, format("The database with the name %s could not be found", dbName));
     }
@@ -81,13 +82,13 @@ public class FireboltAccountClient extends FireboltClient {
      * @return the engine id
      */
     public FireboltEngineIdResponse getEngineId(String host, String accountId, String engineName, String accessToken)
-            throws FireboltException, IOException {
+            throws SQLException, IOException {
         String uri = createAccountUri(accountId, host, URI_SUFFIX_ENGINE_AND_ACCOUNT_ID_BY_ENGINE_NAME + engineName);
         return getResource(uri, host, accessToken, FireboltEngineIdResponse.class, format("The engine %s could not be found", engineName));
     }
 
 
-    private <R> R getResource(String uri, String host, String accessToken, Class<R> responseType, String notFoundErrorMessage) throws FireboltException, IOException {
+    private <R> R getResource(String uri, String host, String accessToken, Class<R> responseType, String notFoundErrorMessage) throws SQLException, IOException {
         try {
             return getResource(uri, host, accessToken, responseType);
         } catch (FireboltException exception) {

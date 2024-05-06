@@ -10,6 +10,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 @CustomLog
 public abstract class FireboltAuthenticationClient extends FireboltClient {
@@ -29,7 +30,7 @@ public abstract class FireboltAuthenticationClient extends FireboltClient {
 	 * @return the connection tokens
 	 */
 	public FireboltConnectionTokens postConnectionTokens(String host, String user, String password, String environment)
-			throws IOException, FireboltException {
+			throws SQLException, IOException {
 		AuthenticationRequest authenticationRequest = getAuthenticationRequest(user, password, host, environment);
 		String uri = authenticationRequest.getUri();
 		log.debug("Creating connection with url {}", uri);

@@ -79,11 +79,11 @@ class StatementClientImplTest {
 			"false,http://firebolt1:555/?database=db1&output_format=TabSeparatedWithNamesAndTypes&compress=1&max_execution_time=15",
 			"true,http://firebolt1:555/?database=db1&account_id=12345&output_format=TabSeparatedWithNamesAndTypes"
 	})
-	void shouldPostSqlQueryWithExpectedUrl(boolean systemEngine, String expectedUrl) throws FireboltException, IOException {
+	void shouldPostSqlQueryWithExpectedUrl(boolean systemEngine, String expectedUrl) throws SQLException, IOException {
 		assertEquals(expectedUrl, shouldPostSqlQuery(systemEngine).getValue());
 	}
 
-	private Entry<String, String> shouldPostSqlQuery(boolean systemEngine) throws FireboltException, IOException {
+	private Entry<String, String> shouldPostSqlQuery(boolean systemEngine) throws SQLException, IOException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).accountId("12345").systemEngine(systemEngine).build();
 		when(connection.getAccessToken())
 				.thenReturn(Optional.of("token"));
@@ -206,7 +206,7 @@ class StatementClientImplTest {
 	}
 
 	@Test
-	void shouldNotRetryNoMoreThanOnceOnUnauthorized() throws IOException, FireboltException {
+	void shouldNotRetryNoMoreThanOnceOnUnauthorized() throws SQLException, IOException {
 		Call okCall = getMockedCallWithResponse(200, "");
 		Call unauthorizedCall = getMockedCallWithResponse(401, "");
 		when(okHttpClient.newCall(any())).thenReturn(unauthorizedCall).thenReturn(unauthorizedCall).thenReturn(okCall);
@@ -230,7 +230,7 @@ class StatementClientImplTest {
 			"db1,use database db2,,db1", // no header returned
 			"db1,use database db2,database=db3,db3" // use db2 but switched to db3
 	})
-	void useDatabase(String oldDb, String command, String responseHeader, String expectedDb) throws IOException, SQLException {
+	void useDatabase(String oldDb, String command, String responseHeader, String expectedDb) throws SQLException, IOException {
 		try (FireboltConnection connection = use("database", oldDb, command, responseHeader)) {
 			assertEquals(expectedDb, connection.getSessionProperties().getDatabase());
 		}
@@ -243,7 +243,7 @@ class StatementClientImplTest {
 			"e1,use engine e2,,e1", // no header returned
 			"e1,use engine e2,engine=e3,e3" // use e2 but switched to e3
 	})
-	void useEngine(String oldEngine, String command, String responseHeader, String expectedEngine) throws IOException, SQLException {
+	void useEngine(String oldEngine, String command, String responseHeader, String expectedEngine) throws SQLException, IOException {
 		try (FireboltConnection connection = use("engine", oldEngine, command, responseHeader)) {
 			assertEquals(expectedEngine, connection.getSessionProperties().getEngine());
 		}
@@ -344,7 +344,7 @@ class StatementClientImplTest {
 		}
 	}
 
-	private FireboltConnection use(int mockedInfraVersion, Properties props, String useCommand, Map<String, List<String>> responseHeaders) throws IOException, SQLException {
+	private FireboltConnection use(int mockedInfraVersion, Properties props, String useCommand, Map<String, List<String>> responseHeaders) throws SQLException, IOException {
 		props.setProperty(FireboltSessionProperty.CONNECTION_TIMEOUT_MILLIS.getKey(), "0"); // simplifies mocking
 		Call useCall = getMockedCallWithResponse(200, "", responseHeaders);
 		Call select1Call = getMockedCallWithResponse(200, "");
@@ -396,7 +396,7 @@ class StatementClientImplTest {
 					"Engine MyEngine does not exist or not authorized; Please grant at least one role to user associated your service account."
 			},
 			delimiter = ';')
-	void shouldThrowUnauthorizedExceptionWhenNoAssociatedUser(String serverErrorMessage, String exceptionMessage) throws IOException, FireboltException {
+	void shouldThrowUnauthorizedExceptionWhenNoAssociatedUser(String serverErrorMessage, String exceptionMessage) throws SQLException, IOException {
 		when(connection.getAccessToken()).thenReturn(Optional.of("token"));
 		Call unauthorizedCall = getMockedCallWithResponse(500, serverErrorMessage);
 
