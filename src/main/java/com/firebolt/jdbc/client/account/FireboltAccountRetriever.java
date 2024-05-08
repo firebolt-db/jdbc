@@ -6,6 +6,7 @@ import com.firebolt.jdbc.exception.FireboltException;
 import okhttp3.OkHttpClient;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
@@ -23,7 +24,7 @@ public class FireboltAccountRetriever<T> extends FireboltClient {
         this.type = type;
     }
 
-    public T retrieve(String accessToken, String accountName) throws FireboltException {
+    public T retrieve(String accessToken, String accountName) throws SQLException {
         try {
             return getResource(format(URL, host, accountName, path), accessToken, type);
         } catch (IOException e) {
@@ -32,7 +33,7 @@ public class FireboltAccountRetriever<T> extends FireboltClient {
     }
 
     @Override
-    protected void validateResponse(String host, int statusCode, String errorMessageFromServer) throws FireboltException {
+    protected void validateResponse(String host, int statusCode, String errorMessageFromServer) throws SQLException {
         if (statusCode == HTTP_NOT_FOUND) {
             String[] fragments = host.split("/");
             // Second to last because th last element presents action and the second to last is the account name

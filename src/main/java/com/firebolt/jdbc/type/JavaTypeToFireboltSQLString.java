@@ -99,7 +99,7 @@ public enum JavaTypeToFireboltSQLString {
 		this.transformToJavaTypeFunctionWithParameter = transformToJavaTypeFunctionWithParameter;
 	}
 
-	public static String transformAny(Object object) throws FireboltException {
+	public static String transformAny(Object object) throws SQLException {
 		return transformAny(object, () -> getType(object));
 	}
 
@@ -107,11 +107,11 @@ public enum JavaTypeToFireboltSQLString {
 		return transformAny(object, () -> getType(sqlType));
 	}
 
-	private static String transformAny(Object object, Supplier<Class<?>> classSupplier) throws FireboltException {
+	private static String transformAny(Object object, Supplier<Class<?>> classSupplier) throws SQLException {
 		return object == null ? NULL_VALUE : transformAny(object, classSupplier.get());
 	}
 
-	private static String transformAny(Object object, Class<?> objectType) throws FireboltException {
+	private static String transformAny(Object object, Class<?> objectType) throws SQLException {
 		JavaTypeToFireboltSQLString converter = Optional.ofNullable(classToType.get(objectType))
 				.orElseThrow(() -> new FireboltException(
 						format("Cannot convert type %s. The type is not supported.", objectType),
@@ -141,7 +141,7 @@ public enum JavaTypeToFireboltSQLString {
 		return sourceType;
 	}
 
-	public String transform(Object object, Object ... more) throws FireboltException {
+	public String transform(Object object, Object ... more) throws SQLException {
 		if (object == null) {
 			return NULL_VALUE;
 		} else {

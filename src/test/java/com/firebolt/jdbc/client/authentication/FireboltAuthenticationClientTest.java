@@ -18,6 +18,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import static com.firebolt.jdbc.client.UserAgentFormatter.userAgent;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
@@ -61,7 +62,7 @@ class FireboltAuthenticationClientTest {
 	}
 
 	@Test
-	void shouldPostConnectionTokens() throws IOException, FireboltException {
+	void shouldPostConnectionTokens() throws SQLException, IOException {
 		Response response = mock(Response.class);
 		Call call = mock(Call.class);
 		ResponseBody body = mock(ResponseBody.class);

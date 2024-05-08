@@ -5,6 +5,8 @@ import com.firebolt.jdbc.client.gateway.GatewayUrlResponse;
 import com.firebolt.jdbc.exception.FireboltException;
 import lombok.RequiredArgsConstructor;
 
+import java.sql.SQLException;
+
 @RequiredArgsConstructor
 public class FireboltGatewayUrlService {
 
@@ -18,7 +20,7 @@ public class FireboltGatewayUrlService {
         return url;
     }
 
-    public String getUrl(String accessToken, String account) throws FireboltException {
+    public String getUrl(String accessToken, String account) throws SQLException {
         return addProtocolToUrl(fireboltGatewayUrlClient.retrieve(accessToken, account).getEngineUrl());
     }
 }

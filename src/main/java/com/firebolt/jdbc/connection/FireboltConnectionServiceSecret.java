@@ -102,7 +102,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
         }
     }
 
-    private FireboltProperties getSessionPropertiesForSystemEngine(String accessToken, String accountName) throws FireboltException {
+    private FireboltProperties getSessionPropertiesForSystemEngine(String accessToken, String accountName) throws SQLException {
         String systemEngineEndpoint = fireboltGatewayUrlService.getUrl(accessToken, accountName);
         FireboltAccount account = fireboltAccountIdService.getValue(accessToken, accountName);
         infraVersion = account.getInfraVersion();

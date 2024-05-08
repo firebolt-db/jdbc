@@ -54,7 +54,7 @@ public class FireboltStatementService {
 		return Optional.empty();
 	}
 
-	public void abortStatement(@NonNull String statementLabel, @NonNull FireboltProperties properties) throws FireboltException {
+	public void abortStatement(@NonNull String statementLabel, @NonNull FireboltProperties properties) throws SQLException {
 		statementClient.abortStatement(statementLabel, properties);
 	}
 

@@ -12,6 +12,7 @@ import net.jodah.expiringmap.ExpiringMap;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.SQLException;
 
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
@@ -30,7 +31,7 @@ public class FireboltAuthenticationService {
 	private static final String ERROR_MESSAGE_FROM_SERVER = "Failed to connect to Firebolt with the error from the server: %s, see logs for more info.";
 	private final FireboltAuthenticationClient fireboltAuthenticationClient;
 
-	public FireboltConnectionTokens getConnectionTokens(String host, FireboltProperties loginProperties) throws FireboltException {
+	public FireboltConnectionTokens getConnectionTokens(String host, FireboltProperties loginProperties) throws SQLException {
 		try {
 			ConnectParams connectionParams = new ConnectParams(host, loginProperties.getPrincipal(), loginProperties.getSecret());
 			synchronized (this) {
@@ -70,7 +71,7 @@ public class FireboltAuthenticationService {
 	 * @param host            host
 	 * @param loginProperties the login properties linked to the tokens
 	 */
-	public void removeConnectionTokens(String host, FireboltProperties loginProperties) throws FireboltException {
+	public void removeConnectionTokens(String host, FireboltProperties loginProperties) throws SQLException {
 		try {
 			log.debug("Removing connection token for host {}", host);
 			ConnectParams connectionParams = new ConnectParams(host, loginProperties.getPrincipal(), loginProperties.getSecret());

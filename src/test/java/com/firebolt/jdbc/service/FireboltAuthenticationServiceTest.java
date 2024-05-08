@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +42,7 @@ class FireboltAuthenticationServiceTest {
 	}
 
 	@Test
-	void shouldGetConnectionToken() throws IOException, FireboltException {
+	void shouldGetConnectionToken() throws SQLException, IOException {
 		String randomHost = UUID.randomUUID().toString();
 		FireboltConnectionTokens tokens = new FireboltConnectionTokens("access", 52);
 		when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD, ENV)).thenReturn(tokens);
@@ -51,7 +52,7 @@ class FireboltAuthenticationServiceTest {
 	}
 
 	@Test
-	void shouldCallClientOnlyOnceWhenServiceCalledTwiceForTheSameHost() throws IOException, FireboltException {
+	void shouldCallClientOnlyOnceWhenServiceCalledTwiceForTheSameHost() throws SQLException, IOException {
 		String randomHost = UUID.randomUUID().toString();
 		FireboltConnectionTokens tokens = new FireboltConnectionTokens("access", 52);
 		when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD, ENV)).thenReturn(tokens);
@@ -62,7 +63,7 @@ class FireboltAuthenticationServiceTest {
 	}
 
 	@Test
-	void shouldGetConnectionTokenAfterRemoving() throws IOException, FireboltException {
+	void shouldGetConnectionTokenAfterRemoving() throws SQLException, IOException {
 		String randomHost = UUID.randomUUID().toString();
 		FireboltConnectionTokens token1 = new FireboltConnectionTokens("one", 52);
 		FireboltConnectionTokens token2 = new FireboltConnectionTokens("two", 52);
@@ -78,7 +79,7 @@ class FireboltAuthenticationServiceTest {
 	}
 
 	@Test
-	void shouldThrowExceptionWithServerResponseWhenAResponseIsAvailable() throws IOException, FireboltException {
+	void shouldThrowExceptionWithServerResponseWhenAResponseIsAvailable() throws SQLException, IOException {
 		String randomHost = UUID.randomUUID().toString();
 		Mockito.when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD, ENV))
 				.thenThrow(new FireboltException("An error happened during authentication", 403, "INVALID PASSWORD"));
@@ -91,7 +92,7 @@ class FireboltAuthenticationServiceTest {
 	}
 
 	@Test
-	void shouldThrowExceptionWithExceptionMessageWhenAResponseIsNotAvailable() throws IOException, FireboltException {
+	void shouldThrowExceptionWithExceptionMessageWhenAResponseIsNotAvailable() throws SQLException, IOException {
 		String randomHost = UUID.randomUUID().toString();
 		Mockito.when(fireboltAuthenticationClient.postConnectionTokens(randomHost, USER, PASSWORD, ENV))
 				.thenThrow(new NullPointerException("NULL!"));

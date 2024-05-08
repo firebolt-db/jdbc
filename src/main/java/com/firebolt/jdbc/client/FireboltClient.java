@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -55,12 +56,11 @@ public abstract class FireboltClient {
 	}
 
 	protected <T> T getResource(String uri, String accessToken, Class<T> valueType)
-			throws IOException, FireboltException {
+			throws IOException, SQLException {
 		return getResource(uri, uri, accessToken, valueType);
 	}
 
-	protected <T> T getResource(String uri, String host, String accessToken, Class<T> valueType)
-			throws IOException, FireboltException {
+	protected <T> T getResource(String uri, String host, String accessToken, Class<T> valueType) throws SQLException, IOException {
 		Request rq = createGetRequest(uri, accessToken);
 		try (Response response = execute(rq, host)) {
 			return jsonToObject(getResponseAsString(response), valueType);
@@ -85,12 +85,12 @@ public abstract class FireboltClient {
 		return requestBuilder.build();
 	}
 
-	protected Response execute(@NonNull Request request, String host) throws IOException, FireboltException {
+	protected Response execute(@NonNull Request request, String host) throws IOException, SQLException {
 		return execute(request, host, false);
 	}
 
 	protected Response execute(@NonNull Request request, String host, boolean isCompress)
-			throws IOException, FireboltException {
+			throws IOException, SQLException {
 		Response response = null;
 		try {
 			OkHttpClient client = getClientWithTimeouts(connection.getConnectionTimeout(), connection.getNetworkTimeout());
@@ -132,7 +132,7 @@ public abstract class FireboltClient {
 		return createPostRequest(uri, label, requestBody, accessToken);
 	}
 
-	protected void validateResponse(String host, Response response, Boolean isCompress) throws FireboltException {
+	protected void validateResponse(String host, Response response, Boolean isCompress) throws SQLException {
 		int statusCode = response.code();
 		if (!isCallSuccessful(statusCode)) {
 			if (statusCode == HTTP_UNAVAILABLE) {
@@ -153,18 +153,18 @@ public abstract class FireboltClient {
 		}
 	}
 
-	protected void validateResponse(String host, int statusCode, String errorMessageFromServer) throws FireboltException {
+	protected void validateResponse(String host, int statusCode, String errorMessageFromServer) throws SQLException {
 		// empty implementation
 	}
 
-	protected String getResponseAsString(Response response) throws FireboltException, IOException {
+	protected String getResponseAsString(Response response) throws SQLException, IOException {
 		if (response.body() == null) {
 			throw new FireboltException("Cannot get resource: the response from the server is empty");
 		}
 		return response.body().string();
 	}
 
-	private String extractErrorMessage(Response response, boolean isCompress) throws FireboltException {
+	private String extractErrorMessage(Response response, boolean isCompress) throws SQLException {
 		byte[] entityBytes;
 		try {
 			entityBytes = response.body() !=  null ? response.body().bytes() : null;

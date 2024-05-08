@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import static com.firebolt.jdbc.exception.ExceptionType.RESOURCE_NOT_FOUND;
 import static java.lang.String.format;
@@ -43,28 +44,28 @@ class FireboltAccountClientTest {
     }
 
     @Test
-    void getAccount() throws FireboltException, IOException {
+    void getAccount() throws SQLException, IOException {
         String accountId = "123";
         injectMockedResponse(httpClient, HTTP_OK, format("{\"account_id\":\"%s\"}", accountId)); // FireboltAccountResponse
         assertEquals(accountId, client.getAccount("http://host", "account", "token").getAccountId());
     }
 
     @Test
-    void getEngine() throws IOException, FireboltException {
+    void getEngine() throws SQLException, IOException {
         String endpoint = "http://engine/12345";
         injectMockedResponse(httpClient, HTTP_OK, format("{\"engine\": {\"endpoint\": \"%s\", \"current_status\": \"%s\"}}", endpoint, "running")); // FireboltEngineResponse
         assertEquals("http://engine/12345", client.getEngine("http://host", "account-id", "engine", "engine-id", "token").getEngine().getEndpoint());
     }
 
     @Test
-    void getDefaultEngineByDatabaseName() throws FireboltException, IOException {
+    void getDefaultEngineByDatabaseName() throws SQLException, IOException {
         String endpoint = "http://engine/12345";
         injectMockedResponse(httpClient, HTTP_OK, format("{\"engine_url\": \"%s\"}", endpoint)); // FireboltDefaultDatabaseEngineResponse
         assertEquals(endpoint, client.getDefaultEngineByDatabaseName("http://host", "account-id", "db", "token").getEngineUrl());
     }
 
     @Test
-    void getEngineId() throws FireboltException, IOException {
+    void getEngineId() throws SQLException, IOException {
         String engineId = "456";
         injectMockedResponse(httpClient, HTTP_OK, format("{\"engine_id\": {\"engine_id\":\"%s\"}}", engineId)); // FireboltEngineIdResponse
         assertEquals(engineId, client.getEngineId("http://host", "account-id", "db", "token").getEngine().getEngineId());

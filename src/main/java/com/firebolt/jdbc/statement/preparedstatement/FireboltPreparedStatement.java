@@ -280,7 +280,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltException("Cannot call method executeUpdate(String sql) on a PreparedStatement");
 	}
 
-	private void validateParamIndex(int paramIndex) throws FireboltException {
+	private void validateParamIndex(int paramIndex) throws SQLException {
 		if (rawStatement.getTotalParams() < paramIndex) {
 			throw new FireboltException(
 					format("Cannot set parameter as there is no parameter at index: %d for statement: %s",
