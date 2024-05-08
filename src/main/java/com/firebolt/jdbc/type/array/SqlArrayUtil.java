@@ -1,11 +1,9 @@
 package com.firebolt.jdbc.type.array;
 
-import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
 import com.firebolt.jdbc.util.StringUtil;
-import lombok.CustomLog;
 import lombok.NonNull;
 
 import javax.annotation.Nullable;
@@ -15,6 +13,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
@@ -23,15 +23,15 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
-@CustomLog
 public class SqlArrayUtil {
 	private static final Map<Character, Markers> formatMarkers = Map.of(
 			'[', new Markers('[', ']', '\'', '\''),
 			'{', new Markers('{', '}', '"', '\'')
 	);
+	public static final String BYTE_ARRAY_PREFIX = "\\x";
+	private static final Logger log = Logger.getLogger(SqlArrayUtil.class.getName());
 	private final ColumnType columnType;
 	private final Markers markers;
-	public static final String BYTE_ARRAY_PREFIX = "\\x";
 
 	private static final class Markers {
 		private final char leftArrayBracket;
@@ -53,7 +53,7 @@ public class SqlArrayUtil {
     }
 
     public static FireboltArray transformToSqlArray(String value, ColumnType columnType) throws SQLException {
-		log.debug("Transformer array with value {} and type {}", value, columnType);
+		log.log(Level.FINE, "Transformer array with value {0} and type {1}", new Object[] {value, columnType});
 		if (isNullValue(value))  {
 			return null;
 		}

@@ -1,7 +1,6 @@
 package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
-import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
 
 import java.net.MalformedURLException;
@@ -12,15 +11,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static java.util.stream.Collectors.toMap;
 
-@CustomLog
 @UtilityClass
 public class UrlUtil {
 
     public static final String JDBC_PREFIX = "jdbc:firebolt:";
+    private static final Logger log = Logger.getLogger(UrlUtil.class.getName());
 
     public static Properties extractProperties(String jdbcUrl) {
         return parseUriQueryPart(jdbcUrl);
@@ -39,7 +40,7 @@ public class UrlUtil {
                 if (keyValueTokens.length == 2) {
                     uriProperties.put(keyValueTokens[0], keyValueTokens[1]);
                 } else {
-                    log.warn("Cannot parse key-pair: {}", keyValue);
+                    log.log(Level.WARNING, "Cannot parse key-pair: {0}", keyValue);
                 }
             }
         }

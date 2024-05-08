@@ -5,7 +5,6 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
-import lombok.CustomLog;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -17,13 +16,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static integration.EnvironmentCondition.Attribute.databaseVersion;
 import static integration.EnvironmentCondition.Comparison.GE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@CustomLog
 class StatementCancelTest extends IntegrationTest {
+	private static final Logger log = Logger.getLogger(StatementCancelTest.class.getName());
 
 	@BeforeEach
 	void beforeEach() {
@@ -91,11 +92,11 @@ class StatementCancelTest extends IntegrationTest {
 		// data is available.
 		long waitForResultTime = insertTime / 2;
 		long waitForResultDelay = waitForResultTime / 10;
-		log.info("verifyThatNoMoreRecordsAreAdded insertTime={}, waitForResultTime={}", insertTime, waitForResultTime);
+		log.log(Level.INFO, "verifyThatNoMoreRecordsAreAdded insertTime={0}, waitForResultTime={0}", new Object[] {insertTime, waitForResultTime});
 		int count0;
 		int i = 0;
 		for (count0 = count(connection, tableName); i < 10; count0 = count(connection, tableName), i++) {
-			log.info("verifyThatNoMoreRecordsAreAdded count0={}", count0);
+			log.log(Level.INFO, "verifyThatNoMoreRecordsAreAdded count0={0}", count0);
 			if (count0 > 0) {
 				break;
 			}
@@ -108,7 +109,7 @@ class StatementCancelTest extends IntegrationTest {
 		int count1 = count(connection, tableName);
 		Thread.sleep(insertTime); // waiting to see if more records are being added
 		int count2 = count(connection, tableName);
-		log.info("verifyThatNoMoreRecordsAreAdded count1={}, count2={}", count1, count2);
+		log.log(Level.INFO, "verifyThatNoMoreRecordsAreAdded count1={0}, count2={1}", new Object[] {count1, count2});
 		assertEquals(count1, count2);
 	}
 

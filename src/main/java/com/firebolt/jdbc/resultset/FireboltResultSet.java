@@ -16,7 +16,6 @@ import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.array.FireboltArray;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import com.firebolt.jdbc.util.LoggerUtil;
-import lombok.CustomLog;
 import org.apache.commons.text.StringEscapeUtils;
 
 import javax.sql.rowset.serial.SerialBlob;
@@ -53,6 +52,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -66,10 +67,10 @@ import static java.util.Optional.ofNullable;
 /**
  * ResultSet for InputStream using the format "TabSeparatedWithNamesAndTypes"
  */
-@CustomLog
 public class FireboltResultSet extends JdbcBase implements ResultSet {
 	private static final String FORWARD_ONLY_ERROR = "Cannot call %s() for ResultSet of type TYPE_FORWARD_ONLY";
 	private static final int DEFAULT_CHAR_BUFFER_SIZE = 8192; // the default of BufferedReader
+	private static final Logger log = Logger.getLogger(FireboltResultSet.class.getName());
 	private final BufferedReader reader;
 	private final Map<String, Integer> columnNameToColumnNumber;
 	private final FireboltResultSetMetaData resultSetMetaData;
@@ -85,9 +86,10 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	private String lastReadValue = null;
 
+	@SuppressWarnings("java:S2139") // TODO: Exceptions should be either logged or rethrown but not both
 	public FireboltResultSet(InputStream is, String tableName, String dbName, int bufferSize, boolean isCompressed,
 							 FireboltStatement statement, boolean logResultSet) throws SQLException {
-		log.debug("Creating resultSet...");
+		log.fine("Creating resultSet...");
 		this.statement = statement;
 		if (logResultSet) {
 			is = LoggerUtil.logInputStream(is);
@@ -109,10 +111,10 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 			columns = next() ? getColumns(fields, currentLine) : new ArrayList<>();
 			resultSetMetaData = new FireboltResultSetMetaData(dbName, tableName, columns);
 		} catch (Exception e) {
-			log.error("Could not create ResultSet: {}", e.getMessage(), e);
-			throw new FireboltException("Cannot read response from DB: error while creating ResultSet ", e);
+			log.log(Level.SEVERE, e, () -> "Could not create ResultSet: " + e.getMessage());
+			throw new FireboltException("Cannot read response from DB: error while creating ResultSet", e);
 		}
-		log.debug("ResultSet created");
+		log.fine("ResultSet created");
 	}
 
 	public static FireboltResultSet of(QueryResult queryResult) throws SQLException {

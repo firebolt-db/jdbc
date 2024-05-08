@@ -24,7 +24,6 @@ import static com.firebolt.jdbc.type.array.SqlArrayUtil.BYTE_ARRAY_PREFIX;
 import static com.firebolt.jdbc.type.array.SqlArrayUtil.hexStringToByteArray;
 
 /** This class contains the java types the Firebolt datatypes are mapped to */
-@CustomLog
 public enum BaseType {
 	LONG(Long.class, conversion -> Long.parseLong(checkInfinity(conversion.getValue()))),
 	INTEGER(Integer.class, conversion -> Integer.parseInt(checkInfinity(conversion.getValue()))),
