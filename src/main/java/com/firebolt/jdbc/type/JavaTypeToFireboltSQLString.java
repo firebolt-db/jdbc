@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.TimeZone;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_NOT_SUPPORTED;
