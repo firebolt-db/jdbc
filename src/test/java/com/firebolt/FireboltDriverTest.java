@@ -107,7 +107,7 @@ class FireboltDriverTest {
 
 			},
 			delimiter = ',')
-	void getPropertyInfo(String url, String propStr, String expectedInfoStr) throws SQLException {
+	void getPropertyInfo(String url, String propStr, String expectedInfoStr) {
 		Properties expectedProps = toProperties(expectedInfoStr);
 		assertEquals(expectedProps, toMap(new FireboltDriver().getPropertyInfo(url, toProperties(propStr))).entrySet().stream().filter(e -> expectedProps.containsKey(e.getKey())).collect(Collectors.toMap(Entry::getKey, Entry::getValue)));
 	}

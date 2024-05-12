@@ -132,13 +132,11 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	 * @param connectionProperties the connection properties
 	 * @param systemEngine         indicates if system engine is used
 	 * @param queryTimeout         query timeout
-	 * @param standardSql          indicates if standard sql should be used
 	 * @return the server response
 	 */
 	@Override
 	public InputStream executeSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
-										   @NonNull FireboltProperties connectionProperties, boolean systemEngine, int queryTimeout,
-										   boolean standardSql) throws SQLException {
+										   @NonNull FireboltProperties connectionProperties, boolean systemEngine, int queryTimeout) throws SQLException {
 		QueryIdFetcher.getQueryFetcher(connection.getInfraVersion()).formatStatement(statementInfoWrapper);
 		String formattedStatement = QueryIdFetcher.getQueryFetcher(connection.getInfraVersion()).formatStatement(statementInfoWrapper);
 		Map<String, String> params = getAllParameters(connectionProperties, statementInfoWrapper, systemEngine, queryTimeout);

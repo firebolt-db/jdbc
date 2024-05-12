@@ -71,6 +71,11 @@ class StatementUtilTest {
 				StatementUtil.extractParamFromSetStatement(query, null));
 	}
 
+	@Test
+	void shouldReturnEmptyListForEmptySql() {
+		assertTrue(parseToRawStatementWrapper("").getSubStatements().isEmpty());
+	}
+
 	@ParameterizedTest
 	@CsvSource(value = {
 			"1,set database='my_db',Could not set parameter. Set parameter 'DATABASE' is not allowed. Try again with 'USE DATABASE' instead of SET.",

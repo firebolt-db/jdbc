@@ -2,6 +2,7 @@ package com.firebolt.jdbc.type;
 
 import com.firebolt.jdbc.CheckedBiFunction;
 import com.firebolt.jdbc.CheckedFunction;
+import com.firebolt.jdbc.CheckedSupplier;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import com.firebolt.jdbc.type.date.SqlDateUtil;
@@ -107,7 +108,7 @@ public enum JavaTypeToFireboltSQLString {
 		return transformAny(object, () -> getType(sqlType));
 	}
 
-	private static String transformAny(Object object, Supplier<Class<?>> classSupplier) throws SQLException {
+	private static String transformAny(Object object, CheckedSupplier<Class<?>> classSupplier) throws SQLException {
 		return object == null ? NULL_VALUE : transformAny(object, classSupplier.get());
 	}
 
@@ -123,8 +124,14 @@ public enum JavaTypeToFireboltSQLString {
 		return object.getClass().isArray() && !byte[].class.equals(object.getClass()) ? Array.class : object.getClass();
 	}
 
-	private static Class<?> getType(int sqlType) {
-		return jdbcTypeToClass.get(JDBCType.valueOf(sqlType));
+	private static Class<?> getType(int sqlType) throws SQLException {
+		try {
+			JDBCType jdbcType = JDBCType.valueOf(sqlType);
+			return Optional.ofNullable(jdbcTypeToClass.get(jdbcType))
+					.orElseThrow(() -> new FireboltException(format("Unsupported JDBC type %s", jdbcType), TYPE_NOT_SUPPORTED));
+		} catch(IllegalArgumentException e) {
+			throw new FireboltException(format("Unsupported SQL type %d", sqlType), TYPE_NOT_SUPPORTED);
+		}
 	}
 
 	private static CheckedFunction<Object, String> getSQLStringValueOfString() {
