@@ -292,6 +292,15 @@ class FireboltResultSetTest {
 	}
 
 	@Test
+	void maxRows() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		when(fireboltStatement.getMaxRows()).thenReturn(1);
+		resultSet = createResultSet(inputStream);
+		assertTrue(resultSet.next());
+		assertFalse(resultSet.next()); // the result has 2 rows but maxRows=1, so the second next() returns false
+	}
+
+	@Test
 	void shouldReadAllTheData() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);

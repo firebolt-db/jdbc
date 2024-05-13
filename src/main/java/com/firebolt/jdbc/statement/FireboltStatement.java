@@ -1,7 +1,6 @@
 package com.firebolt.jdbc.statement;
 
 import com.firebolt.jdbc.JdbcBase;
-import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
@@ -87,9 +86,9 @@ public class FireboltStatement extends JdbcBase implements Statement {
 			}
 			for (int i = 0; i < statements.size(); i++) {
 				if (i == 0) {
-					resultSet = execute(statements.get(i), true, true);
+					resultSet = execute(statements.get(i));
 				} else {
-					execute(statements.get(i), true, true);
+					execute(statements.get(i));
 				}
 			}
 		} finally {
@@ -101,10 +100,10 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@SuppressWarnings("java:S2139") // TODO: Exceptions should be either logged or rethrown but not both
-	private Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper, boolean verifyNotCancelled, boolean isStandardSql) throws SQLException {
+	private Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper) throws SQLException {
 		createValidator(statementInfoWrapper.getInitialStatement(), connection).validate(statementInfoWrapper.getInitialStatement());
 		ResultSet resultSet = null;
-		if (!verifyNotCancelled || isStatementNotCancelled(statementInfoWrapper)) {
+		if (isStatementNotCancelled(statementInfoWrapper)) {
 			runningStatementLabel = statementInfoWrapper.getLabel();
 			synchronized (this) {
 				validateStatementIsNotClosed();
@@ -116,7 +115,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 					connection.addProperty(statementInfoWrapper.getParam());
 					log.log(Level.FINE, "The property from the query {0} was stored", runningStatementLabel);
 				} else {
-					Optional<ResultSet> currentRs = statementService.execute(statementInfoWrapper, sessionProperties, isStandardSql, this);
+					Optional<ResultSet> currentRs = statementService.execute(statementInfoWrapper, sessionProperties, this);
 					if (currentRs.isPresent()) {
 						resultSet = currentRs.get();
 						currentUpdateCount = -1; // Always -1 when returning a ResultSet
@@ -176,8 +175,6 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		try {
 			statementService.abortStatement(statementLabel, sessionProperties);
 			log.log(Level.FINE, "Statement with label {0} was aborted", statementLabel);
-		} catch (FireboltException e) {
-			throw e;
 		} catch (Exception e) {
 			throw new FireboltException("Could not abort statement", e);
 		} finally {
@@ -384,8 +381,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	public int getFetchDirection() throws SQLException {
+	public int getFetchDirection() {
 		return ResultSet.FETCH_FORWARD;
 	}
 

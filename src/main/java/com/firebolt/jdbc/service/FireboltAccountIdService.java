@@ -2,7 +2,6 @@ package com.firebolt.jdbc.service;
 
 import com.firebolt.jdbc.client.account.FireboltAccount;
 import com.firebolt.jdbc.client.account.FireboltAccountRetriever;
-import com.firebolt.jdbc.exception.FireboltException;
 
 import java.sql.SQLException;
 

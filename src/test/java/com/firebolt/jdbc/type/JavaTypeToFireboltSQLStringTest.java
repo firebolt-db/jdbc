@@ -20,6 +20,7 @@ import java.util.UUID;
 
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_NOT_SUPPORTED;
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
+import static com.firebolt.jdbc.type.JavaTypeToFireboltSQLString.NULL_VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -148,7 +149,7 @@ class JavaTypeToFireboltSQLStringTest {
 		Timestamp ts = Timestamp.valueOf(LocalDateTime.of(2022, 5, 23, 12, 57, 13, 173456789));
 		assertEquals("'2022-05-23 12:57:13.173456789'", JavaTypeToFireboltSQLString.TIMESTAMP.transform(ts));
 		assertEquals("'2022-05-23 12:57:13.173456789'", JavaTypeToFireboltSQLString.transformAny(ts));
-		assertEquals("NULL", JavaTypeToFireboltSQLString.TIMESTAMP.transform(null));
+		assertEquals(NULL_VALUE, JavaTypeToFireboltSQLString.TIMESTAMP.transform(null));
 	}
 
 	@Test
@@ -184,6 +185,16 @@ class JavaTypeToFireboltSQLStringTest {
 	}
 
 	@Test
+	void shouldTransformNullIntSubArray() throws SQLException {
+		assertEquals("[NULL]", JavaTypeToFireboltSQLString.ARRAY.transform(new int[][] {null}));
+	}
+
+	@Test
+	void shouldTransformNullStringSubArray() throws SQLException {
+		assertEquals("[NULL]", JavaTypeToFireboltSQLString.ARRAY.transform(new String[][] {null}));
+	}
+
+	@Test
 	void shouldThrowExceptionWhenObjectTypeIsNotSupported() {
 		FireboltException ex = assertThrows(FireboltException.class, () -> JavaTypeToFireboltSQLString.transformAny(Map.of()));
 		assertEquals(TYPE_NOT_SUPPORTED, ex.getType());
@@ -193,5 +204,11 @@ class JavaTypeToFireboltSQLStringTest {
 	void shouldThrowExceptionWhenObjectCouldNotBeTransformed() {
 		FireboltException ex = assertThrows(FireboltException.class, () -> JavaTypeToFireboltSQLString.ARRAY.transform(Map.of()));
 		assertEquals(TYPE_TRANSFORMATION_ERROR, ex.getType());
+	}
+
+	@ParameterizedTest
+	@EnumSource(JavaTypeToFireboltSQLString.class)
+	void shouldTransformNullValue(JavaTypeToFireboltSQLString type) throws SQLException {
+		assertEquals(NULL_VALUE, type.transform(null));
 	}
 }

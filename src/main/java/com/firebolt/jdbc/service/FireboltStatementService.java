@@ -2,7 +2,6 @@ package com.firebolt.jdbc.service;
 
 import com.firebolt.jdbc.client.query.StatementClient;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
@@ -31,16 +30,15 @@ public class FireboltStatementService {
 	 *
 	 * @param statementInfoWrapper the statement info
 	 * @param properties the connection properties
-	 * @param standardSql          indicates if standard sql should be used
 	 * @param statement           the statement
 	 * @return an InputStream with the result
 	 */
 	public Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper,
-									   FireboltProperties properties, boolean standardSql, FireboltStatement statement)
+									   FireboltProperties properties, FireboltStatement statement)
 			throws SQLException {
 		int queryTimeout = statement.getQueryTimeout();
 		boolean systemEngine = properties.isSystemEngine();
-		InputStream is = statementClient.executeSqlStatement(statementInfoWrapper, properties, systemEngine, queryTimeout, standardSql);
+		InputStream is = statementClient.executeSqlStatement(statementInfoWrapper, properties, systemEngine, queryTimeout);
 		if (statementInfoWrapper.getType() == StatementType.QUERY) {
 			return Optional.of(createResultSet(is, (QueryRawStatement) statementInfoWrapper.getInitialStatement(), properties, statement));
 		} else {
