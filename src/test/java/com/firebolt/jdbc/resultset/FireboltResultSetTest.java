@@ -7,6 +7,7 @@ import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
 import org.junitpioneer.jupiter.DefaultTimeZone;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -45,6 +46,7 @@ import java.util.Calendar;
 import java.util.TimeZone;
 import java.util.concurrent.Callable;
 
+import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
 import static java.lang.String.format;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -1058,15 +1060,47 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithNumericTypes();
 		resultSet = createResultSet(inputStream);
 		resultSet.next();
+		assertEquals((byte)1, resultSet.getObject(1, Byte.class));
+		assertEquals((short)1, resultSet.getObject(1, Short.class));
 		assertEquals(1, resultSet.getObject(1, Integer.class));
+		assertEquals(1L, resultSet.getObject(1, Long.class));
 		assertEquals(new BigInteger("1"), resultSet.getObject(1, BigInteger.class));
 		assertEquals(1, resultSet.getObject(1, Long.class));
+		assertEquals(1, resultSet.getObject(1, Float.class));
+		assertEquals(1, resultSet.getObject(1, Double.class));
+
+		// the number is too big
+		FireboltException e = assertThrows(FireboltException.class, () -> resultSet.getObject(2, Integer.class));
+		assertEquals(TYPE_TRANSFORMATION_ERROR, e.getType());
+		assertEquals(NumberFormatException.class, e.getCause().getClass());
+
 		assertEquals(30000000000L, resultSet.getObject(2, Long.class));
 		assertEquals(new BigInteger("30000000000"), resultSet.getObject(2, BigInteger.class));
+		assertEquals(30000000000f, resultSet.getObject(2, Float.class));
+		assertEquals(30000000000., resultSet.getObject(2, Double.class));
+
+		assertEquals((byte)1, resultSet.getObject(3, Byte.class));
+		assertEquals((short)1, resultSet.getObject(3, Short.class));
+		assertEquals(1, resultSet.getObject(3, Integer.class));
+		assertEquals(1, resultSet.getObject(3, Long.class));
 		assertEquals(1.23f, resultSet.getObject(3, Float.class));
 		assertEquals(new BigDecimal("1.23"), resultSet.getObject(3, BigDecimal.class));
+		assertEquals(1.23, resultSet.getObject(3, Double.class));
+
+		assertEquals((byte)1, resultSet.getObject(4, Byte.class));
+		assertEquals((short)1, resultSet.getObject(4, Short.class));
+		assertEquals(1, resultSet.getObject(4, Integer.class));
+		assertEquals(1, resultSet.getObject(4, Long.class));
+		assertEquals(1.23456789012f, resultSet.getObject(4, Float.class));
 		assertEquals(1.23456789012, resultSet.getObject(4, Double.class));
 		assertEquals(new BigDecimal("1.23456789012"), resultSet.getObject(4, BigDecimal.class));
+
+		//assertEquals((byte)1, resultSet.getObject(5, Byte.class));
+		//assertEquals((short)1231232, resultSet.getObject(5, Short.class));
+		assertEquals(1231232, resultSet.getObject(5, Integer.class));
+		assertEquals(1231232L, resultSet.getObject(5, Long.class));
+		assertEquals(1231232.123459999990457054844258706536f, resultSet.getObject(5, Float.class), 0.01);
+		assertEquals(1231232.123459999990457054844258706536, resultSet.getObject(5, Double.class), 0.01);
 		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"), resultSet.getObject(5, BigDecimal.class));
 	}
 
@@ -1169,15 +1203,20 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithInfinity();
 		resultSet = createResultSet(inputStream);
 		resultSet.next();
-		assertThrows(IllegalArgumentException.class, () -> resultSet.getShort(1));
-		assertThrows(IllegalArgumentException.class, () -> resultSet.getInt(1));
-		assertThrows(IllegalArgumentException.class, () -> resultSet.getLong(1));
 
-		assertThrows(IllegalArgumentException.class, () -> resultSet.getShort(2));
-		assertThrows(IllegalArgumentException.class, () -> resultSet.getInt(2));
-		assertThrows(IllegalArgumentException.class, () -> resultSet.getLong(2));
+		assertIllegalArgumentExceptionCause(() -> resultSet.getShort(1));
+		assertIllegalArgumentExceptionCause(() -> resultSet.getInt(1));
+		assertIllegalArgumentExceptionCause(() -> resultSet.getLong(1));
 
-		assertThrows(IllegalArgumentException.class, () -> resultSet.getObject(1, BigInteger.class));
+		assertIllegalArgumentExceptionCause(() -> resultSet.getShort(2));
+		assertIllegalArgumentExceptionCause(() -> resultSet.getInt(2));
+		assertIllegalArgumentExceptionCause(() -> resultSet.getLong(2));
+
+		assertIllegalArgumentExceptionCause(() -> resultSet.getObject(1, BigInteger.class));
+	}
+
+	private void assertIllegalArgumentExceptionCause(Executable getter) {
+		assertEquals(IllegalArgumentException.class, assertThrows(SQLException.class, getter).getCause().getClass());
 	}
 
 	@Test

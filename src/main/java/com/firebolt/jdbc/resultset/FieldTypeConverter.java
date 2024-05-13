@@ -32,15 +32,15 @@ public class FieldTypeConverter {
 			return BaseType.TEXT.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(Integer.class, (value, columnType, column) -> {
-			verify(Integer.class, columnType, BaseType.INTEGER, BaseType.SHORT);
+			verifyNumeric(Long.class, columnType);
 			return BaseType.INTEGER.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(Long.class, (value, columnType, column) -> {
-			verify(Long.class, columnType, BaseType.INTEGER, BaseType.SHORT, BaseType.LONG);
+			verifyNumeric(Long.class, columnType);
 			return BaseType.LONG.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(Double.class, (value, columnType, column) -> {
-			verify(Double.class, columnType, BaseType.DOUBLE, BaseType.REAL, BaseType.INTEGER, BaseType.SHORT, BaseType.LONG, BaseType.BIGINT);
+			verifyNumeric(Long.class, columnType);
 			return BaseType.DOUBLE.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(Boolean.class, (value, columnType, column) -> {
@@ -48,20 +48,23 @@ public class FieldTypeConverter {
 			return BaseType.BOOLEAN.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(Short.class, (value, columnType, column) -> {
-			verify(Short.class, columnType, BaseType.SHORT);
+			verifyNumeric(Long.class, columnType);
 			return BaseType.SHORT.transform(value, column);
 		});
+		CLASS_TO_CONVERT_FUNCTION.put(Byte.class, (value, columnType, column) -> {
+			verifyNumeric(Float.class, columnType);
+			return BaseType.BYTE.transform(value, column);
+		});
 		CLASS_TO_CONVERT_FUNCTION.put(BigInteger.class, (value, columnType, column) -> {
-			verify(BigInteger.class, columnType, BaseType.INTEGER, BaseType.SHORT, BaseType.LONG, BaseType.BIGINT);
+			verifyNumeric(Long.class, columnType);
 			return BaseType.BIGINT.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(Float.class, (value, columnType, column) -> {
-			verify(Float.class, columnType, BaseType.REAL, BaseType.INTEGER, BaseType.SHORT, BaseType.LONG, BaseType.BIGINT);
+			verifyNumeric(Float.class, columnType);
 			return BaseType.REAL.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(BigDecimal.class, (value, columnType, column) -> {
-			verify(BigDecimal.class, columnType, BaseType.BIGINT, BaseType.NUMERIC, BaseType.INTEGER, BaseType.REAL,
-					BaseType.DOUBLE);
+			verifyNumeric(Long.class, columnType);
 			return BaseType.NUMERIC.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(Date.class, (value, columnType, column) -> {
@@ -81,8 +84,7 @@ public class FieldTypeConverter {
 			return BaseType.ARRAY.transform(value, column);
 		});
 		CLASS_TO_CONVERT_FUNCTION.put(OffsetDateTime.class, (value, columnType, column) -> {
-			verify(OffsetDateTime.class, columnType, BaseType.DATE, BaseType.TIMESTAMP,
-					BaseType.TIMESTAMP_WITH_TIMEZONE);
+			verify(OffsetDateTime.class, columnType, BaseType.DATE, BaseType.TIMESTAMP, BaseType.TIMESTAMP_WITH_TIMEZONE);
 			Timestamp ts = BaseType.TIMESTAMP.transform(value, column);
 			return SqlDateUtil.transformFromTimestampToOffsetDateTime.apply(ts);
 		});
@@ -95,10 +97,13 @@ public class FieldTypeConverter {
 				verify(byte[].class, columnType, BaseType.BYTEA);
 				return BaseType.BYTEA.transform(value, column);
 			} else {
-				return Optional.ofNullable(value).map(v -> BaseType.isNull(v) ? null : v).map(String::getBytes)
-						.orElse(null);
+				return Optional.ofNullable(value).map(v -> BaseType.isNull(v) ? null : v).map(String::getBytes).orElse(null);
 			}
 		});
+	}
+
+	private static <T> void verifyNumeric(Class<T> toType, BaseType columnBaseType) throws SQLException {
+		verify(toType, columnBaseType, BaseType.REAL, BaseType.DOUBLE, BaseType.BYTE, BaseType.SHORT, BaseType.INTEGER, BaseType.LONG, BaseType.BIGINT, BaseType.NUMERIC);
 	}
 
 	private static <T> void verify(Class<T> toType, BaseType columnBaseType, BaseType... supportedTypes) throws SQLException {
@@ -113,6 +118,7 @@ public class FieldTypeConverter {
 			throw new FireboltException(
 					String.format(CONVERSION_NOT_SUPPORTED_EXCEPTION, type.getName(), columnType.getType().getName()));
 		}
+		//noinspection unchecked
 		return (T) CLASS_TO_CONVERT_FUNCTION.get(type).apply(value, columnType, column);
 	}
 }
