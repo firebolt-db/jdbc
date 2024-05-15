@@ -6,10 +6,10 @@ import com.firebolt.jdbc.resultset.column.Column;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import com.firebolt.jdbc.type.date.SqlDateUtil;
 import lombok.Builder;
-import lombok.CustomLog;
 import lombok.Value;
 import org.apache.commons.text.StringEscapeUtils;
 
+import javax.annotation.Nonnull;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Array;
@@ -19,16 +19,20 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.TimeZone;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
+import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
 import static com.firebolt.jdbc.type.array.SqlArrayUtil.BYTE_ARRAY_PREFIX;
 import static com.firebolt.jdbc.type.array.SqlArrayUtil.hexStringToByteArray;
 
 /** This class contains the java types the Firebolt datatypes are mapped to */
 public enum BaseType {
-	LONG(Long.class, conversion -> Long.parseLong(checkInfinity(conversion.getValue()))),
-	INTEGER(Integer.class, conversion -> Integer.parseInt(checkInfinity(conversion.getValue()))),
-	SHORT(Short.class, conversion -> Short.parseShort(checkInfinity(conversion.getValue()))),
-	BIGINT(BigInteger.class, conversion -> new BigInteger(checkInfinity(conversion.getValue()))),
+	LONG(TypePredicate.mayBeFloatingNumber, Long.class, conversion -> Long.parseLong(checkInfinity(conversion.getValue())), conversion -> Double.valueOf(conversion.getValue()).longValue()),
+	INTEGER(TypePredicate.mayBeFloatingNumber, Integer.class, conversion -> Integer.parseInt(checkInfinity(conversion.getValue())), conversion -> Integer.parseInt(Long.toString(Double.valueOf(conversion.getValue()).longValue()))),
+	SHORT(TypePredicate.mayBeFloatingNumber, Short.class, conversion -> Short.parseShort(checkInfinity(conversion.getValue())), conversion -> Short.parseShort(Long.toString(Double.valueOf(conversion.getValue()).longValue()))),
+	BYTE(TypePredicate.mayBeFloatingNumber, Byte.class, conversion -> Byte.parseByte(checkInfinity(conversion.getValue())), conversion -> Byte.parseByte(Long.toString(Double.valueOf(conversion.getValue()).longValue()))),
+	BIGINT(TypePredicate.mayBeFloatingNumber, BigInteger.class, conversion -> new BigInteger(checkInfinity(conversion.getValue())), conversion -> BigInteger.valueOf(Double.valueOf(conversion.getValue()).longValue())),
 	TEXT(String.class, conversion -> {
 		String escaped = StringEscapeUtils.unescapeJava(conversion.getValue());
 		int limit = conversion.getMaxFieldSize();
@@ -70,9 +74,9 @@ public enum BaseType {
 	NUMERIC(BigDecimal.class, conversion -> new BigDecimal(conversion.getValue())),
 	BOOLEAN(Boolean.class, conversion -> {
 		String value = conversion.getValue();
-		if ("0".equalsIgnoreCase(value) || "f".equalsIgnoreCase(value)) {
+		if ("0".equals(value) || "f".equalsIgnoreCase(value)) {
 			return false;
-		} else if ("1".equalsIgnoreCase(value) || "t".equalsIgnoreCase(value)) {
+		} else if ("1".equals(value) || "t".equalsIgnoreCase(value)) {
 			return true;
 		}
 		throw new FireboltException(String.format("Cannot cast %s to type boolean", conversion.getValue()));
@@ -92,13 +96,25 @@ public enum BaseType {
 		throw new FireboltException("Cannot convert binary string in non-hex format to byte array");
 	});
 
+	// this class is needed to prevent back reference because the constant is used from the enum constructor
+	private static final class TypePredicate {
+		private static final Predicate<String> mayBeFloatingNumber = Pattern.compile("[.eE]").asPredicate();
+	}
 	public static final String NULL_VALUE = "\\N";
 	private final Class<?> type;
-	private final CheckedFunction<StringToColumnTypeConversion, Object> transformFunction;
+	private final Predicate<String> shouldTryFallback;
+	private final CheckedFunction<StringToColumnTypeConversion, Object>[] transformFunctions;
 
-	BaseType(Class<?> type, CheckedFunction<StringToColumnTypeConversion, Object> transformFunction) {
+	@SafeVarargs
+	BaseType(Class<?> type, CheckedFunction<StringToColumnTypeConversion, Object>... transformFunctions) {
+		this(s -> true, type, transformFunctions);
+	}
+
+	@SafeVarargs
+	BaseType(Predicate<String> shouldTryFallback, Class<?> type, CheckedFunction<StringToColumnTypeConversion, Object>... transformFunctions) {
 		this.type = type;
-		this.transformFunction = transformFunction;
+		this.shouldTryFallback = shouldTryFallback;
+		this.transformFunctions = transformFunctions;
 	}
 
 	private static boolean isPositiveInf(String value) {
@@ -142,7 +158,7 @@ public enum BaseType {
 		return transform(value, null, null, 0);
 	}
 
-	public <T> T transform(String value, Column column, TimeZone timeZone, int maxFieldSize) throws SQLException {
+	public <T> T transform(@Nonnull String value, Column column, TimeZone timeZone, int maxFieldSize) throws SQLException {
 		TimeZone fromTimeZone;
 		if (column != null && column.getType().getTimeZone() != null) {
 			fromTimeZone = column.getType().getTimeZone();
@@ -159,8 +175,18 @@ public enum BaseType {
 		if (isNull(conversion.getValue())) {
 			return null;
 		}
-		//noinspection unchecked
-		return (T) transformFunction.apply(conversion);
+		for (int i = 0; i < transformFunctions.length; i++) {
+			try {
+				//noinspection unchecked
+				return (T) transformFunctions[i].apply(conversion);
+			} catch (RuntimeException e) {
+				if (i == transformFunctions.length - 1 || !shouldTryFallback.test(conversion.getValue())) {
+					throw new FireboltException(e.getMessage(), e, TYPE_TRANSFORMATION_ERROR);
+				}
+			}
+		}
+		// this can happen only if transformationFunctions is empty that is wrong, but we must satisfy the compiler.
+		throw new IllegalStateException();
 	}
 
 	@Builder

@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.resultset;
 
+import com.firebolt.jdbc.CheckedFunction;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.util.LoggerUtil;
@@ -7,6 +8,7 @@ import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
 import org.junitpioneer.jupiter.DefaultTimeZone;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -45,6 +47,7 @@ import java.util.Calendar;
 import java.util.TimeZone;
 import java.util.concurrent.Callable;
 
+import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
 import static java.lang.String.format;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -327,7 +330,7 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldGetBigDecimal() throws SQLException {
+	void shouldGetBigDecimalSimple() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
 		resultSet.next();
@@ -1054,20 +1057,200 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldGetObjectsForNumericTypes() throws SQLException {
+	void shouldGetByte() throws SQLException {
+		inputStream = getInputStreamWithNumericTypes();
+		resultSet = createResultSet(inputStream);
+		resultSet.next();
+
+		assertEquals((byte)1, resultSet.getObject(1, Byte.class));
+		assertEquals((byte)1, resultSet.getByte(1));
+
+		assertTransformationError(2, Byte.class);
+		assertTransformationError(2, i -> resultSet.getByte(i));
+
+		assertEquals((byte)1, resultSet.getObject(3, Byte.class));
+		assertEquals((byte)1, resultSet.getByte(3));
+
+		assertEquals((byte)1, resultSet.getObject(4, Byte.class));
+		assertEquals((byte)1, resultSet.getByte(4));
+
+		assertTransformationError(5, Byte.class);
+		assertTransformationError(5, i -> resultSet.getByte(i));
+
+		assertTransformationError(6, Byte.class);
+		assertTransformationError(6, i -> resultSet.getByte(i));
+	}
+
+	@Test
+	void shouldGetShort() throws SQLException {
+		inputStream = getInputStreamWithNumericTypes();
+		resultSet = createResultSet(inputStream);
+		resultSet.next();
+		assertEquals((short)1, resultSet.getObject(1, Short.class));
+		assertEquals((short)1, resultSet.getShort(1));
+
+		assertTransformationError(2, Short.class);
+		assertTransformationError(2, i -> resultSet.getShort(i));
+
+		assertEquals((short)1, resultSet.getObject(3, Short.class));
+		assertEquals((short)1, resultSet.getShort(3));
+
+		assertEquals((short)1, resultSet.getObject(4, Short.class));
+		assertEquals((short)1, resultSet.getShort(4));
+
+		assertTransformationError(5, Short.class);
+		assertTransformationError(5, i -> resultSet.getShort(i));
+
+		assertEquals((short)30000, resultSet.getObject(6, Short.class));
+		assertEquals((short)30000, resultSet.getShort(6));
+	}
+
+	@Test
+	void shouldGetInt() throws SQLException {
 		inputStream = getInputStreamWithNumericTypes();
 		resultSet = createResultSet(inputStream);
 		resultSet.next();
 		assertEquals(1, resultSet.getObject(1, Integer.class));
-		assertEquals(new BigInteger("1"), resultSet.getObject(1, BigInteger.class));
-		assertEquals(1, resultSet.getObject(1, Long.class));
+		assertEquals(1, resultSet.getInt(1));
+
+		assertTransformationError(2, Integer.class);
+		assertTransformationError(2, i -> resultSet.getInt(i));
+
+		assertEquals(1, resultSet.getObject(3, Integer.class));
+		assertEquals(1, resultSet.getInt(3));
+
+		assertEquals(1, resultSet.getObject(4, Integer.class));
+		assertEquals(1, resultSet.getInt(4));
+
+		assertEquals(1231232, resultSet.getObject(5, Integer.class));
+		assertEquals(1231232, resultSet.getInt(5));
+
+		assertEquals(30000, resultSet.getObject(6, Integer.class));
+		assertEquals(30000, resultSet.getInt(6));
+	}
+
+	@Test
+	void shouldGetLong() throws SQLException {
+		inputStream = getInputStreamWithNumericTypes();
+		resultSet = createResultSet(inputStream);
+		resultSet.next();
+
+		assertEquals(1L, resultSet.getObject(1, Long.class));
+		assertEquals(1L, resultSet.getLong(1));
+
 		assertEquals(30000000000L, resultSet.getObject(2, Long.class));
+		assertEquals(30000000000L, resultSet.getLong(2));
+
+		assertEquals(1, resultSet.getObject(3, Long.class));
+		assertEquals(1, resultSet.getLong(3));
+
+		assertEquals(1, resultSet.getObject(4, Long.class));
+		assertEquals(1, resultSet.getLong(4));
+
+		assertEquals(1231232L, resultSet.getObject(5, Long.class));
+		assertEquals(1231232L, resultSet.getLong(5));
+
+		assertEquals(30000L, resultSet.getObject(6, Long.class));
+		assertEquals(30000L, resultSet.getLong(6));
+	}
+
+	@Test
+	void shouldGetBigInteger() throws SQLException {
+		inputStream = getInputStreamWithNumericTypes();
+		resultSet = createResultSet(inputStream);
+		resultSet.next();
+
+		assertEquals(new BigInteger("1"), resultSet.getObject(1, BigInteger.class));
 		assertEquals(new BigInteger("30000000000"), resultSet.getObject(2, BigInteger.class));
+		assertEquals(new BigInteger("1"), resultSet.getObject(3, BigInteger.class));
+		assertEquals(new BigInteger("1"), resultSet.getObject(4, BigInteger.class));
+		assertEquals(new BigInteger("1231232"), resultSet.getObject(5, BigInteger.class));
+		assertEquals(new BigInteger("30000"), resultSet.getObject(6, BigInteger.class));
+	}
+
+	@Test
+	void shouldGetFloat() throws SQLException {
+		inputStream = getInputStreamWithNumericTypes();
+		resultSet = createResultSet(inputStream);
+		resultSet.next();
+
+		assertEquals(1, resultSet.getObject(1, Float.class));
+		assertEquals(1.F, resultSet.getFloat(1));
+
+		assertEquals(30000000000f, resultSet.getObject(2, Float.class));
+		assertEquals(30000000000.F, resultSet.getFloat(2));
+
 		assertEquals(1.23f, resultSet.getObject(3, Float.class));
-		assertEquals(new BigDecimal("1.23"), resultSet.getObject(3, BigDecimal.class));
+		assertEquals(1.23f, resultSet.getFloat(3));
+
+		assertEquals(1.23456789012f, resultSet.getObject(4, Float.class));
+		assertEquals(1.23456789012f, resultSet.getFloat(4));
+
+		assertEquals(1231232.123459999990457054844258706536f, resultSet.getObject(5, Float.class), 0.01);
+		assertEquals(1231232.123459999990457054844258706536f, resultSet.getFloat(5), 0.01);
+
+		assertEquals(30000.F, resultSet.getObject(6, Float.class));
+		assertEquals(30000.F, resultSet.getFloat(6));
+	}
+
+	@Test
+	void shouldGetDouble() throws SQLException {
+		inputStream = getInputStreamWithNumericTypes();
+		resultSet = createResultSet(inputStream);
+		resultSet.next();
+
+		assertEquals(1, resultSet.getObject(1, Double.class));
+		assertEquals(1., resultSet.getDouble(1));
+
+		assertEquals(30000000000., resultSet.getObject(2, Double.class));
+		assertEquals(30000000000., resultSet.getDouble(2));
+
+		assertEquals(1.23, resultSet.getObject(3, Double.class));
+		assertEquals(1.23, resultSet.getDouble(3));
+
 		assertEquals(1.23456789012, resultSet.getObject(4, Double.class));
+		assertEquals(new BigDecimal("1.23456789012"), resultSet.getBigDecimal(4));
+
+		assertEquals(1231232.123459999990457054844258706536, resultSet.getObject(5, Double.class), 0.01);
+		assertEquals(1231232.123459999990457054844258706536, resultSet.getDouble(5), 0.01);
+
+		assertEquals(30000., resultSet.getObject(6, Double.class));
+		assertEquals(30000., resultSet.getDouble(6));
+	}
+
+	@Test
+	void shouldGetBigDecimal() throws SQLException {
+		inputStream = getInputStreamWithNumericTypes();
+		resultSet = createResultSet(inputStream);
+		resultSet.next();
+
+		assertEquals(new BigDecimal("1"), resultSet.getObject(1, BigDecimal.class));
+		assertEquals(new BigDecimal("1"), resultSet.getBigDecimal(1));
+
+		assertEquals(new BigDecimal("30000000000"), resultSet.getObject(2, BigDecimal.class));
+		assertEquals(new BigDecimal("30000000000"), resultSet.getBigDecimal(2));
+
+		assertEquals(new BigDecimal("1.23"), resultSet.getObject(3, BigDecimal.class));
+		assertEquals(new BigDecimal("1.23"), resultSet.getBigDecimal(3));
+
 		assertEquals(new BigDecimal("1.23456789012"), resultSet.getObject(4, BigDecimal.class));
+		assertEquals(new BigDecimal("1.23456789012"), resultSet.getBigDecimal(4));
+
 		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"), resultSet.getObject(5, BigDecimal.class));
+		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"), resultSet.getBigDecimal(5));
+
+		assertEquals(new BigDecimal("30000"), resultSet.getObject(6, BigDecimal.class));
+		assertEquals(new BigDecimal("30000"), resultSet.getBigDecimal(6));
+	}
+
+	private <T> void assertTransformationError(int columnIndex, Class<T> type) {
+		assertTransformationError(columnIndex, i -> resultSet.getObject(i, type));
+	}
+
+	private <T> void assertTransformationError(int columnIndex, CheckedFunction<Integer, T> getter) {
+		FireboltException e = assertThrows(FireboltException.class, () -> getter.apply(columnIndex));
+		assertEquals(TYPE_TRANSFORMATION_ERROR, e.getType());
+		assertEquals(NumberFormatException.class, e.getCause().getClass());
 	}
 
 	@Test
@@ -1102,7 +1285,7 @@ class FireboltResultSetTest {
 		assertEquals(38, resultSet.getMetaData().getPrecision(5));
 		assertEquals(30, resultSet.getMetaData().getScale(5));
 		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"), resultSet.getObject(5));
-		assertEquals(80000, resultSet.getObject(6));
+		assertEquals(30000, resultSet.getObject(6));
 		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(6));
 		assertEquals(30000000000L, resultSet.getObject(7));
 		assertEquals(Types.BIGINT, resultSet.getMetaData().getColumnType(7));
@@ -1169,15 +1352,20 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithInfinity();
 		resultSet = createResultSet(inputStream);
 		resultSet.next();
-		assertThrows(IllegalArgumentException.class, () -> resultSet.getShort(1));
-		assertThrows(IllegalArgumentException.class, () -> resultSet.getInt(1));
-		assertThrows(IllegalArgumentException.class, () -> resultSet.getLong(1));
 
-		assertThrows(IllegalArgumentException.class, () -> resultSet.getShort(2));
-		assertThrows(IllegalArgumentException.class, () -> resultSet.getInt(2));
-		assertThrows(IllegalArgumentException.class, () -> resultSet.getLong(2));
+		assertIllegalArgumentExceptionCause(() -> resultSet.getShort(1));
+		assertIllegalArgumentExceptionCause(() -> resultSet.getInt(1));
+		assertIllegalArgumentExceptionCause(() -> resultSet.getLong(1));
 
-		assertThrows(IllegalArgumentException.class, () -> resultSet.getObject(1, BigInteger.class));
+		assertIllegalArgumentExceptionCause(() -> resultSet.getShort(2));
+		assertIllegalArgumentExceptionCause(() -> resultSet.getInt(2));
+		assertIllegalArgumentExceptionCause(() -> resultSet.getLong(2));
+
+		assertIllegalArgumentExceptionCause(() -> resultSet.getObject(1, BigInteger.class));
+	}
+
+	private void assertIllegalArgumentExceptionCause(Executable getter) {
+		assertEquals(IllegalArgumentException.class, assertThrows(SQLException.class, getter).getCause().getClass());
 	}
 
 	@Test
@@ -1234,6 +1422,7 @@ class FireboltResultSetTest {
 	}
 
 	@Test
+	@SuppressWarnings("java:S1874") // getUnicodeStream is deprecated byt must be tested
 	void shouldReturnStream() throws SQLException, IOException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
