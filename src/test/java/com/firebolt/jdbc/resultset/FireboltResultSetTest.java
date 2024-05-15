@@ -1345,6 +1345,7 @@ class FireboltResultSetTest {
 	}
 
 	@Test
+	@SuppressWarnings("java:S1874") // getUnicodeStream is deprecated byt must be tested
 	void shouldReturnStream() throws SQLException, IOException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);

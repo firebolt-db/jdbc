@@ -140,7 +140,7 @@ public enum BaseType {
 		return "nan".equalsIgnoreCase(value) || "+nan".equalsIgnoreCase(value) || "-nan".equalsIgnoreCase(value);
 	}
 
-	private static void validateObjectNotNull(String value) throws SQLException {
+	private static void validateObjectNotNull(String value) {
 		if (value == null) {
 			throw new IllegalArgumentException("The value cannot be null");
 		}
