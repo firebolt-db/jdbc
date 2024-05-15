@@ -136,7 +136,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection 
 		}
 		FireboltProperties props = new FireboltProperties(new Properties[] {propertiesFromUrl, connectionSettings});
 		String principal = props.getPrincipal();
-		if (principal != null && principal.contains("@")) {
+		if (props.getAccessToken() != null || (principal != null && principal.contains("@"))) {
 			return 1;
 		}
 		return 2;
