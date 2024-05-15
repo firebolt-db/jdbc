@@ -224,8 +224,8 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public byte getByte(int columnIndex) throws SQLException {
-		return ofNullable(getValueAtColumn(columnIndex)).map(v -> isNull(v) ? null : v)
-				.map(Byte::parseByte).orElse((byte) 0);
+		Byte value = BaseType.BYTE.transform(getValueAtColumn(columnIndex));
+		return value == null ? 0 : value;
 	}
 
 	@Override

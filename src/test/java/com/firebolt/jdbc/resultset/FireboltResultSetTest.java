@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.resultset;
 
+import com.firebolt.jdbc.CheckedFunction;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.util.LoggerUtil;
@@ -1055,6 +1056,7 @@ class FireboltResultSetTest {
 		assertNull(resultSet.getObject(13));
 	}
 
+	@SuppressWarnings("java:S5961") // all assertions are necessary
 	@Test
 	void shouldGetObjectsForNumericTypes() throws SQLException {
 		inputStream = getInputStreamWithNumericTypes();
@@ -1070,9 +1072,9 @@ class FireboltResultSetTest {
 		assertEquals(1, resultSet.getObject(1, Double.class));
 
 		// the number is too big
-		FireboltException e = assertThrows(FireboltException.class, () -> resultSet.getObject(2, Integer.class));
-		assertEquals(TYPE_TRANSFORMATION_ERROR, e.getType());
-		assertEquals(NumberFormatException.class, e.getCause().getClass());
+		assertTransformationError(2, Integer.class);
+		assertTransformationError(2, Short.class);
+		assertTransformationError(2, Byte.class);
 
 		assertEquals(30000000000L, resultSet.getObject(2, Long.class));
 		assertEquals(new BigInteger("30000000000"), resultSet.getObject(2, BigInteger.class));
@@ -1095,13 +1097,83 @@ class FireboltResultSetTest {
 		assertEquals(1.23456789012, resultSet.getObject(4, Double.class));
 		assertEquals(new BigDecimal("1.23456789012"), resultSet.getObject(4, BigDecimal.class));
 
-		//assertEquals((byte)1, resultSet.getObject(5, Byte.class));
-		//assertEquals((short)1231232, resultSet.getObject(5, Short.class));
+		assertTransformationError(5, Byte.class);
+		assertTransformationError(5, Short.class);
 		assertEquals(1231232, resultSet.getObject(5, Integer.class));
 		assertEquals(1231232L, resultSet.getObject(5, Long.class));
 		assertEquals(1231232.123459999990457054844258706536f, resultSet.getObject(5, Float.class), 0.01);
 		assertEquals(1231232.123459999990457054844258706536, resultSet.getObject(5, Double.class), 0.01);
 		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"), resultSet.getObject(5, BigDecimal.class));
+
+		assertTransformationError(6, Byte.class);
+		assertEquals((short)30000, resultSet.getObject(6, Short.class));
+		assertEquals(30000, resultSet.getObject(6, Integer.class));
+		assertEquals(30000L, resultSet.getObject(6, Long.class));
+		assertEquals(30000.F, resultSet.getObject(6, Float.class));
+		assertEquals(30000., resultSet.getObject(6, Double.class));
+	}
+
+	private <T> void assertTransformationError(int columnIndex, Class<T> type) {
+		assertTransformationError(columnIndex, i -> resultSet.getObject(i, type));
+	}
+
+	private <T> void assertTransformationError(int columnIndex, CheckedFunction<Integer, T> getter) {
+		FireboltException e = assertThrows(FireboltException.class, () -> getter.apply(columnIndex));
+		assertEquals(TYPE_TRANSFORMATION_ERROR, e.getType());
+		assertEquals(NumberFormatException.class, e.getCause().getClass());
+	}
+
+	@SuppressWarnings("java:S5961") // all assertions are necessary
+	@Test
+	void shouldGetTypedValuesForNumericTypes() throws SQLException {
+		inputStream = getInputStreamWithNumericTypes();
+		resultSet = createResultSet(inputStream);
+		resultSet.next();
+
+		assertEquals((byte)1, resultSet.getByte(1));
+		assertEquals((short)1, resultSet.getShort(1));
+		assertEquals(1, resultSet.getInt(1));
+		assertEquals(1L, resultSet.getLong(1));
+		assertEquals(1.F, resultSet.getFloat(1));
+		assertEquals(1., resultSet.getDouble(1));
+
+		assertTransformationError(2, i -> resultSet.getByte(i));
+		assertTransformationError(2, i -> resultSet.getShort(i));
+		assertTransformationError(2, i -> resultSet.getInt(i));
+		assertEquals(30000000000L, resultSet.getLong(2));
+		assertEquals(30000000000.F, resultSet.getFloat(2));
+		assertEquals(30000000000., resultSet.getDouble(2));
+
+		assertEquals((byte)1, resultSet.getByte(3));
+		assertEquals((short)1, resultSet.getShort(3));
+		assertEquals(1, resultSet.getInt(3));
+		assertEquals(1, resultSet.getLong(3));
+		assertEquals(1.23f, resultSet.getFloat(3));
+		assertEquals(new BigDecimal("1.23"), resultSet.getBigDecimal(3));
+		assertEquals(1.23, resultSet.getDouble(3));
+
+		assertEquals((byte)1, resultSet.getByte(4));
+		assertEquals((short)1, resultSet.getShort(4));
+		assertEquals(1, resultSet.getInt(4));
+		assertEquals(1, resultSet.getLong(4));
+		assertEquals(1.23456789012f, resultSet.getFloat(4));
+		assertEquals(1.23456789012, resultSet.getDouble(4));
+		assertEquals(new BigDecimal("1.23456789012"), resultSet.getBigDecimal(4));
+
+		assertTransformationError(5, i -> resultSet.getByte(i));
+		assertTransformationError(5, i -> resultSet.getShort(i));
+		assertEquals(1231232, resultSet.getInt(5));
+		assertEquals(1231232L, resultSet.getLong(5));
+		assertEquals(1231232.123459999990457054844258706536f, resultSet.getFloat(5), 0.01);
+		assertEquals(1231232.123459999990457054844258706536, resultSet.getDouble(5), 0.01);
+		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"), resultSet.getBigDecimal(5));
+
+		assertTransformationError(6, i -> resultSet.getByte(i));
+		assertEquals((short)30000, resultSet.getShort(6));
+		assertEquals(30000, resultSet.getInt(6));
+		assertEquals(30000L, resultSet.getLong(6));
+		assertEquals(30000.F, resultSet.getFloat(6));
+		assertEquals(30000., resultSet.getDouble(6));
 	}
 
 	@Test
@@ -1136,7 +1208,7 @@ class FireboltResultSetTest {
 		assertEquals(38, resultSet.getMetaData().getPrecision(5));
 		assertEquals(30, resultSet.getMetaData().getScale(5));
 		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"), resultSet.getObject(5));
-		assertEquals(80000, resultSet.getObject(6));
+		assertEquals(30000, resultSet.getObject(6));
 		assertEquals(Types.INTEGER, resultSet.getMetaData().getColumnType(6));
 		assertEquals(30000000000L, resultSet.getObject(7));
 		assertEquals(Types.BIGINT, resultSet.getMetaData().getColumnType(7));

@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Value;
 import org.apache.commons.text.StringEscapeUtils;
 
+import javax.annotation.Nonnull;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Array;
@@ -28,9 +29,9 @@ import static com.firebolt.jdbc.type.array.SqlArrayUtil.hexStringToByteArray;
 /** This class contains the java types the Firebolt datatypes are mapped to */
 public enum BaseType {
 	LONG(TypePredicate.mayBeFloatingNumber, Long.class, conversion -> Long.parseLong(checkInfinity(conversion.getValue())), conversion -> Double.valueOf(conversion.getValue()).longValue()),
-	INTEGER(TypePredicate.mayBeFloatingNumber, Integer.class, conversion -> Integer.parseInt(checkInfinity(conversion.getValue())), conversion -> Double.valueOf(conversion.getValue()).intValue()),
-	SHORT(TypePredicate.mayBeFloatingNumber, Short.class, conversion -> Short.parseShort(checkInfinity(conversion.getValue())), conversion -> Double.valueOf(conversion.getValue()).shortValue()),
-	BYTE(TypePredicate.mayBeFloatingNumber, Byte.class, conversion -> Byte.parseByte(checkInfinity(conversion.getValue())), conversion -> Double.valueOf(conversion.getValue()).byteValue()),
+	INTEGER(TypePredicate.mayBeFloatingNumber, Integer.class, conversion -> Integer.parseInt(checkInfinity(conversion.getValue())), conversion -> Integer.parseInt(Long.toString(Double.valueOf(conversion.getValue()).longValue()))),
+	SHORT(TypePredicate.mayBeFloatingNumber, Short.class, conversion -> Short.parseShort(checkInfinity(conversion.getValue())), conversion -> Short.parseShort(Long.toString(Double.valueOf(conversion.getValue()).longValue()))),
+	BYTE(TypePredicate.mayBeFloatingNumber, Byte.class, conversion -> Byte.parseByte(checkInfinity(conversion.getValue())), conversion -> Byte.parseByte(Long.toString(Double.valueOf(conversion.getValue()).longValue()))),
 	BIGINT(TypePredicate.mayBeFloatingNumber, BigInteger.class, conversion -> new BigInteger(checkInfinity(conversion.getValue())), conversion -> BigInteger.valueOf(Double.valueOf(conversion.getValue()).longValue())),
 	TEXT(String.class, conversion -> {
 		String escaped = StringEscapeUtils.unescapeJava(conversion.getValue());
@@ -141,7 +142,7 @@ public enum BaseType {
 
 	private static void validateObjectNotNull(String value) throws SQLException {
 		if (value == null) {
-			throw new FireboltException("The value cannot be null");
+			throw new IllegalArgumentException("The value cannot be null");
 		}
 	}
 
@@ -157,7 +158,7 @@ public enum BaseType {
 		return transform(value, null, null, 0);
 	}
 
-	public <T> T transform(String value, Column column, TimeZone timeZone, int maxFieldSize) throws SQLException {
+	public <T> T transform(@Nonnull String value, Column column, TimeZone timeZone, int maxFieldSize) throws SQLException {
 		TimeZone fromTimeZone;
 		if (column != null && column.getType().getTimeZone() != null) {
 			fromTimeZone = column.getType().getTimeZone();
@@ -174,22 +175,18 @@ public enum BaseType {
 		if (isNull(conversion.getValue())) {
 			return null;
 		}
-		for (int i = 0; i < transformFunctions.length - 1; i++) {
+		for (int i = 0; i < transformFunctions.length; i++) {
 			try {
 				//noinspection unchecked
 				return (T) transformFunctions[i].apply(conversion);
 			} catch (RuntimeException e) {
-				if (!shouldTryFallback.test(conversion.getValue())) {
+				if (i == transformFunctions.length - 1 || !shouldTryFallback.test(conversion.getValue())) {
 					throw new FireboltException(e.getMessage(), e, TYPE_TRANSFORMATION_ERROR);
 				}
 			}
 		}
-		try {
-			//noinspection unchecked
-			return (T) transformFunctions[transformFunctions.length - 1].apply(conversion);
-		} catch (RuntimeException e) {
-			throw new FireboltException(e.getMessage(), e, TYPE_TRANSFORMATION_ERROR);
-		}
+		// this can happen only if transformationFunctions is empty that is wrong, but we must satisfy the compiler.
+		throw new IllegalStateException();
 	}
 
 	@Builder
