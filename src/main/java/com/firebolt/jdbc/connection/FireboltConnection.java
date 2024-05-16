@@ -7,6 +7,7 @@ import com.firebolt.jdbc.client.HttpClientConfig;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.client.query.StatementClientImpl;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
@@ -54,9 +55,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.getNonDeprecatedProperties;
 import static java.lang.String.format;
 import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static java.util.stream.Collectors.toMap;
 
 public abstract class FireboltConnection extends JdbcBase implements Connection {
 
@@ -629,15 +632,15 @@ public abstract class FireboltConnection extends JdbcBase implements Connection 
 	}
 
 	@Override
-	@NotImplemented
 	public String getClientInfo(String name) throws SQLException {
-		return null;
+		return Optional.ofNullable(FireboltSessionProperty.byAlias(name.toUpperCase()).getValue(sessionProperties)).map(Object::toString).orElse(null);
 	}
 
 	@Override
-	@NotImplemented
 	public Properties getClientInfo() throws SQLException {
-		return new Properties();
+		return getNonDeprecatedProperties().stream()
+				.filter(key -> key.getValue(sessionProperties) != null)
+				.collect(toMap(FireboltSessionProperty::getKey, key -> key.getValue(sessionProperties).toString(), (o, t) -> t, Properties::new));
 	}
 
 	@Override

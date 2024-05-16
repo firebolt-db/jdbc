@@ -137,8 +137,6 @@ abstract class FireboltConnectionTest {
 
 	private static Stream<Arguments> empty() {
 		return Stream.of(
-				Arguments.of("getClientInfo", (Callable<?>) () -> connection.getClientInfo(), new Properties()),
-				Arguments.of("getClientInfo(name)", (Callable<?>) () -> connection.getClientInfo("something"), null),
 				Arguments.of("getTypeMap", (Callable<?>) () -> connection.getTypeMap(), Map.of()),
 				Arguments.of("getWarnings", (Callable<?>) () -> connection.getWarnings(), null)
 		);
@@ -648,6 +646,31 @@ abstract class FireboltConnectionTest {
 	void unsupportedNativeSql() throws SQLException {
 		try (FireboltConnection connection = createConnection(URL, connectionProperties)) {
 			assertThrows(SQLException.class, () -> connection.nativeSQL("SELECT {d '2001-01-01'} FROM TEST"));
+		}
+	}
+
+	@Test
+	void getClientInfo() throws SQLException {
+		try (FireboltConnection connection = createConnection(URL, connectionProperties)) {
+			Properties info = connection.getClientInfo();
+			System.out.println(info);
+			// from URL
+			assertEquals("dev", info.getProperty("environment"));
+			assertEquals("dev", connection.getClientInfo("environment")); 	// key
+			assertEquals("dev", connection.getClientInfo("env"));			// alias
+
+			// from connectionProperties
+			assertEquals("somebody", info.getProperty("client_id"));
+			assertEquals("somebody", connection.getClientInfo("client_id"));	// key
+			assertEquals("somebody", connection.getClientInfo("user"));			// alias
+
+			// default value
+			assertEquals("60", info.getProperty("tcp_keep_idle"));
+			assertEquals("60", connection.getClientInfo("tcp_keep_idle"));
+
+			// deprecated - should not appear
+			assertFalse(info.containsKey("time_to_live_millis"));
+			assertNull(connection.getClientInfo("time_to_live_millis"));
 		}
 	}
 
