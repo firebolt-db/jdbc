@@ -50,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.logging.Level;
@@ -180,8 +181,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public int getInt(int columnIndex) throws SQLException {
-		Integer value = BaseType.INTEGER.transform(getValueAtColumn(columnIndex));
-		return value == null ? 0 : value;
+		return getValue(columnIndex, BaseType.INTEGER, 0);
 	}
 
 	@Override
@@ -190,15 +190,13 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public long getLong(int colNum) throws SQLException {
-		Long value = BaseType.LONG.transform(getValueAtColumn(colNum));
-		return value == null ? 0 : value;
+	public long getLong(int columnIndex) throws SQLException {
+		return getValue(columnIndex, BaseType.LONG, 0L);
 	}
 
 	@Override
 	public float getFloat(int columnIndex) throws SQLException {
-		Float value = BaseType.REAL.transform(getValueAtColumn(columnIndex));
-		return value == null ? 0 : value;
+		return getValue(columnIndex, BaseType.REAL, 0.0F);
 	}
 
 	@Override
@@ -208,8 +206,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public double getDouble(int columnIndex) throws SQLException {
-		Double value = BaseType.DOUBLE.transform(getValueAtColumn(columnIndex));
-		return value == null ? 0 : value;
+		return getValue(columnIndex, BaseType.DOUBLE, 0.0);
 	}
 
 	@Override
@@ -224,14 +221,12 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public byte getByte(int columnIndex) throws SQLException {
-		Byte value = BaseType.BYTE.transform(getValueAtColumn(columnIndex));
-		return value == null ? 0 : value;
+		return getValue(columnIndex, BaseType.BYTE, (byte)0);
 	}
 
 	@Override
 	public short getShort(int columnIndex) throws SQLException {
-		Short value = BaseType.SHORT.transform(getValueAtColumn(columnIndex));
-		return value == null ? 0 : value;
+		return getValue(columnIndex, BaseType.SHORT, (short)0);
 	}
 
 	@Override
@@ -242,6 +237,11 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	@Override
 	public short getShort(String columnLabel) throws SQLException {
 		return getShort(findColumn(columnLabel));
+	}
+
+	private <T> T getValue(int columnIndex, BaseType type, T defaultValue) throws SQLException {
+		T value = type.transform(getValueAtColumn(columnIndex));
+		return value == null ? defaultValue : value;
 	}
 
 	@Override
@@ -280,8 +280,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex) throws SQLException {
-		String value = getValueAtColumn(columnIndex);
-		return value == null || value.isEmpty() ? null : BaseType.NUMERIC.transform(value);
+		return getValue(columnIndex, BaseType.NUMERIC, null);
 	}
 
 	@Override
@@ -291,8 +290,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
-		BigDecimal bigDecimal = getBigDecimal(columnIndex);
-		return bigDecimal == null ? null : bigDecimal.setScale(scale, RoundingMode.HALF_UP);
+		return Optional.ofNullable(getBigDecimal(columnIndex)).map(d -> d.setScale(scale, RoundingMode.HALF_UP)).orElse(null);
 	}
 
 	@Override
@@ -302,8 +300,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public Array getArray(int columnIndex) throws SQLException {
-		String value = getValueAtColumn(columnIndex);
-		return BaseType.ARRAY.transform(value, resultSetMetaData.getColumn(columnIndex));
+		return BaseType.ARRAY.transform(getValueAtColumn(columnIndex), resultSetMetaData.getColumn(columnIndex));
 	}
 
 	@Override
@@ -334,9 +331,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public Date getDate(int columnIndex, Calendar calendar) throws SQLException {
-		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
-		String value = getValueAtColumn(columnIndex);
-		return BaseType.DATE.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone, 0);
+		return getDateTime(columnIndex, calendar, BaseType.DATE);
 	}
 
 	@Override
@@ -356,9 +351,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public Timestamp getTimestamp(int columnIndex, Calendar calendar) throws SQLException {
-		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
-		String value = getValueAtColumn(columnIndex);
-		return BaseType.TIMESTAMP.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone, 0);
+		return getDateTime(columnIndex, calendar, BaseType.TIMESTAMP);
 	}
 
 	@Override
@@ -368,9 +361,13 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public Time getTime(int columnIndex, Calendar calendar) throws SQLException {
+		return getDateTime(columnIndex, calendar, BaseType.TIME);
+	}
+
+	private <T extends java.util.Date> T getDateTime(int columnIndex, Calendar calendar, BaseType type) throws SQLException {
 		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
 		String value = getValueAtColumn(columnIndex);
-		return BaseType.TIME.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone, 0);
+		return type.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone, 0);
 	}
 
 	@Override
