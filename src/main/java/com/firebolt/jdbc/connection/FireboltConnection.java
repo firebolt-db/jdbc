@@ -627,6 +627,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection 
 	}
 
 	@Override
+	@NotImplemented
 	public void setClientInfo(String name, String value) throws SQLClientInfoException {
 		// Not supported
 	}
@@ -644,7 +645,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection 
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
+	@NotImplemented
 	public void setClientInfo(Properties properties) throws SQLClientInfoException {
 		// Not supported
 	}
