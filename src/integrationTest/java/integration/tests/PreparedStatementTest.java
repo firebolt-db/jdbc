@@ -18,14 +18,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.sql.rowset.serial.SerialBlob;
-import javax.sql.rowset.serial.SerialClob;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -279,12 +279,12 @@ class PreparedStatementTest extends IntegrationTest {
 			try (PreparedStatement statement = connection
 					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, signature) VALUES (?,?,?)")) {
 				statement.setLong(1, car1.getSales());
-				statement.setClob(2, new SerialClob(car1.getMake().toCharArray()));
-				statement.setBlob(3, new SerialBlob(car1.getSignature()));
+				statement.setClob(2, clob(connection, car1.getMake()));
+				statement.setBlob(3, blob(connection, car1.getSignature()));
 				statement.addBatch();
 				statement.setLong(1, car2.getSales());
-				statement.setClob(2, new SerialClob(car2.getMake().toCharArray()));
-				statement.setBlob(3, new SerialBlob(car2.getSignature()));
+				statement.setClob(2, clob(connection, car2.getMake()));
+				statement.setBlob(3, blob(connection, car2.getSignature()));
 				statement.addBatch();
 				int[] result = statement.executeBatch();
 				assertArrayEquals(new int[] { SUCCESS_NO_INFO, SUCCESS_NO_INFO }, result);
@@ -303,6 +303,18 @@ class PreparedStatementTest extends IntegrationTest {
 			}
 			assertEquals(Set.of(car1, car2), actual);
 		}
+	}
+
+	private Blob blob(Connection connection, byte[] bytes) throws SQLException {
+		Blob blob = connection.createBlob();
+		blob.setBytes(1, bytes);
+		return blob;
+	}
+
+	private Clob clob(Connection connection, String text) throws SQLException {
+		Clob clob = connection.createClob();
+		clob.setString(1, text);
+		return clob;
 	}
 
 	@Test

@@ -18,6 +18,8 @@ import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.array.FireboltArray;
+import com.firebolt.jdbc.type.lob.FireboltBlob;
+import com.firebolt.jdbc.type.lob.FireboltClob;
 import com.firebolt.jdbc.util.PropertyUtil;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
@@ -600,21 +602,18 @@ public abstract class FireboltConnection extends JdbcBase implements Connection 
 	}
 
 	@Override
-	@NotImplemented
-	public Clob createClob() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+	public Clob createClob() {
+		return new FireboltClob();
 	}
 
 	@Override
-	@NotImplemented
-	public Blob createBlob() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+	public Blob createBlob() {
+		return new FireboltBlob();
 	}
 
 	@Override
-	@NotImplemented
-	public NClob createNClob() throws SQLException {
-		throw new SQLFeatureNotSupportedException();
+	public NClob createNClob() {
+		return new FireboltClob();
 	}
 
 	@Override
