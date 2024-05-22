@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.function.Function;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -103,9 +104,8 @@ public enum FireboltSessionProperty {
 	private final String description;
 	private final Function<FireboltProperties, Object> valueGetter;
 	private final String[] aliases;
-	private static final Map<String, FireboltSessionProperty> aliasToProperty = Arrays.stream(values())
-			.flatMap(p -> Stream.concat(Stream.of(p.key), Arrays.stream(p.aliases)).map(a -> Map.entry(a, p)))
-			.collect(toMap(Entry::getKey, Entry::getValue, (o, t) -> t, () -> new TreeMap<>(CASE_INSENSITIVE_ORDER)));
+	private static final Map<String, FireboltSessionProperty> aliasToProperty =
+			Arrays.stream(values()).flatMap(FireboltSessionProperty::getAllPropertyMapping).collect(caseInsensitiveMap());
 
 	FireboltSessionProperty(String key, Object defaultValue, Class<?> clazz, String description, Function<FireboltProperties, Object> valueGetter, String... aliases) {
 		this.key = key;
@@ -137,5 +137,17 @@ public enum FireboltSessionProperty {
 
 	public Object getValue(FireboltProperties fireboltProperties) {
 		return valueGetter.apply(fireboltProperties);
+	}
+
+	private static Stream<String> getAllAliases(FireboltSessionProperty property) {
+		return Stream.concat(Stream.of(property.key), Arrays.stream(property.aliases));
+	}
+
+	private static Stream<Map.Entry<String, FireboltSessionProperty>> getAllPropertyMapping(FireboltSessionProperty property) {
+		return getAllAliases(property).map(a -> Map.entry(a, property));
+	}
+
+	private static Collector<Entry<String, FireboltSessionProperty>, ?, Map<String, FireboltSessionProperty>> caseInsensitiveMap() {
+		return toMap(Entry::getKey, Entry::getValue, (o, t) -> t, () -> new TreeMap<>(CASE_INSENSITIVE_ORDER));
 	}
 }
