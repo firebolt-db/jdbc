@@ -1,6 +1,5 @@
 package com.firebolt.jdbc.type.lob;
 
-import javax.sql.rowset.serial.SerialException;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -43,16 +42,6 @@ public class FireboltClob implements NClob {
             throw new SQLException("Invalid position and substring length");
         }
         return new String(buf, from, Math.min(buf.length - from, length));
-    }
-
-    private void checkRange(long pos, int length) throws SQLException {
-        int from = (int)(pos - 1);
-        if (from < 0 || from > length()) {
-            throw new SQLException("Invalid position in Clob object set");
-        }
-        if (from + length > length()) {
-            throw new SQLException("Invalid position and substring length");
-        }
     }
 
     @Override
@@ -134,12 +123,15 @@ public class FireboltClob implements NClob {
             }
             public void close() {
                 int length = characters.size();
-                int newLength = length + (int)pos - 1;
-                if (buf.length != newLength) {
-                    buf = new char[length];
+                int newLength = Math.max(buf.length, length + (int)pos - 1);
+                if (newLength > buf.length) {
+                    char[] newBuf = new char[newLength];
+                    System.arraycopy(buf, 0, newBuf, 0, buf.length);
+                    buf = newBuf;
                 }
-                for (int i = 0; i < length; i++) {
-                    buf[i + (int)pos - 1] = characters.get(i);
+                int i = (int)(pos - 1);
+                for (char c : characters) {
+                    buf[i++] = c;
                 }
             }
         };

@@ -111,12 +111,15 @@ public class FireboltBlob implements Blob {
             }
             public void close() {
                 int length = bytes.size();
-                int newLength = length + (int)pos - 1;
-                if (buf.length != newLength) {
-                    buf = new byte[length];
+                int newLength = Math.max(buf.length, length + (int)pos - 1);
+                if (newLength > buf.length) {
+                    byte[] newBuf = new byte[newLength];
+                    System.arraycopy(buf, 0, newBuf, 0, buf.length);
+                    buf = newBuf;
                 }
-                for (int i = 0; i < length; i++) {
-                    buf[i + (int)pos - 1] = bytes.get(i);
+                int i = (int)(pos - 1);
+                for (byte b : bytes) {
+                    buf[i++] = b;
                 }
             }
         };

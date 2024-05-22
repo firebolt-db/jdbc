@@ -51,13 +51,31 @@ class FireboltBlobTest {
     }
 
     @Test
-    void binaryStream() throws SQLException, IOException {
+    void binaryStreamToEmptyBlob() throws SQLException, IOException {
         String str = "hello, world!";
         Blob blob = new FireboltBlob();
         try (OutputStream os = blob.setBinaryStream(1)) {
             os.write(str.getBytes());
         }
         assertEquals(str, new String(blob.getBinaryStream().readAllBytes()));
+    }
+
+    @Test
+    void binaryStreamReplace() throws SQLException, IOException {
+        Blob blob = new FireboltBlob("hey, world!".getBytes());
+        try (OutputStream os = blob.setBinaryStream(1)) {
+            os.write("bye".getBytes());
+        }
+        assertEquals("bye, world!", new String(blob.getBinaryStream().readAllBytes()));
+    }
+
+    @Test
+    void binaryStreamReplaceLongerContent() throws SQLException, IOException {
+        Blob blob = new FireboltBlob("hello, all!".getBytes());
+        try (OutputStream os = blob.setBinaryStream(8)) {
+            os.write("world!".getBytes());
+        }
+        assertEquals("hello, world!", new String(blob.getBinaryStream().readAllBytes()));
     }
 
     @Test

@@ -73,6 +73,24 @@ class FireboltClobTest {
     }
 
     @Test
+    void characterStreamReplace() throws SQLException, IOException {
+        Clob clob = new FireboltClob("hey, world!".toCharArray());
+        try (Writer writer = clob.setCharacterStream(1)) {
+            writer.write("bye");
+        }
+        assertEquals("bye, world!", readAll(clob.getCharacterStream()));
+    }
+
+    @Test
+    void characterStreamReplaceLongerContent() throws SQLException, IOException {
+        Clob clob = new FireboltClob("hello, all!".toCharArray());
+        try (Writer writer = clob.setCharacterStream(8)) {
+            writer.write("world!");
+        }
+        assertEquals("hello, world!", readAll(clob.getCharacterStream()));
+    }
+
+    @Test
     void setStringToEmptyClob() throws SQLException {
         String str = "hello, world!";
         Clob clob = new FireboltClob();
