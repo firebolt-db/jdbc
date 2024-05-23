@@ -137,8 +137,6 @@ abstract class FireboltConnectionTest {
 
 	private static Stream<Arguments> empty() {
 		return Stream.of(
-				Arguments.of("getClientInfo", (Callable<?>) () -> connection.getClientInfo(), new Properties()),
-				Arguments.of("getClientInfo(name)", (Callable<?>) () -> connection.getClientInfo("something"), null),
 				Arguments.of("getTypeMap", (Callable<?>) () -> connection.getTypeMap(), Map.of()),
 				Arguments.of("getWarnings", (Callable<?>) () -> connection.getWarnings(), null)
 		);
@@ -502,8 +500,8 @@ abstract class FireboltConnectionTest {
 		if (configuredAccessToken != null) {
 			propsWithToken.setProperty(ACCESS_TOKEN.getKey(), configuredAccessToken);
 		}
-		try (FireboltConnection connection = createConnection(URL, propsWithToken)) {
-			assertEquals(expectedAccessToken, connection.getAccessToken().orElse(null));
+		try (FireboltConnection fireboltConnection = createConnection(URL, propsWithToken)) {
+			assertEquals(expectedAccessToken, fireboltConnection.getAccessToken().orElse(null));
 			Mockito.verifyNoMoreInteractions(fireboltAuthenticationService);
 		}
 	}
@@ -549,65 +547,65 @@ abstract class FireboltConnectionTest {
 
 	@Test
 	void shouldThrowExceptionWhenTryingToUseClosedConnection() throws SQLException {
-		try (Connection connection = createConnection(URL, connectionProperties)) {
-			connection.close();
-			assertThrows(FireboltException.class, connection::getCatalog);
+		try (Connection fireboltConnection = createConnection(URL, connectionProperties)) {
+			fireboltConnection.close();
+			assertThrows(FireboltException.class, fireboltConnection::getCatalog);
 		}
 	}
 
 	@Test
 	void shouldUnwrapFireboltConnection() throws SQLException {
-		try (Connection connection = createConnection(URL, connectionProperties)) {
-			assertTrue(connection.isWrapperFor(FireboltConnection.class));
-			assertEquals(connection, connection.unwrap(FireboltConnection.class));
+		try (Connection fireboltConnection = createConnection(URL, connectionProperties)) {
+			assertTrue(fireboltConnection.isWrapperFor(FireboltConnection.class));
+			assertEquals(fireboltConnection, fireboltConnection.unwrap(FireboltConnection.class));
 		}
 	}
 
 	@Test
 	void shouldThrowExceptionWhenCannotUnwrap() throws SQLException {
-		try (Connection connection = createConnection(URL, connectionProperties)) {
-			assertFalse(connection.isWrapperFor(String.class));
-			assertThrows(SQLException.class, () -> connection.unwrap(String.class));
+		try (Connection fireboltConnection = createConnection(URL, connectionProperties)) {
+			assertFalse(fireboltConnection.isWrapperFor(String.class));
+			assertThrows(SQLException.class, () -> fireboltConnection.unwrap(String.class));
 		}
 	}
 
 	@Test
 	void shouldGetDatabaseWhenGettingCatalog() throws SQLException {
 		connectionProperties.put("database", "db");
-		try (Connection connection = createConnection(URL, connectionProperties)) {
-			assertEquals("noname", connection.getCatalog()); // retrieved engine's DB's name is "noname". Firebolt treats DB as catalog
+		try (Connection fireboltConnection = createConnection(URL, connectionProperties)) {
+			assertEquals("noname", fireboltConnection.getCatalog()); // retrieved engine's DB's name is "noname". Firebolt treats DB as catalog
 		}
 	}
 
 	@Test
 	void shouldGetNoneTransactionIsolation() throws SQLException {
 		connectionProperties.put("database", "db");
-		try (Connection connection = createConnection(URL, connectionProperties)) {
-			assertEquals(Connection.TRANSACTION_NONE, connection.getTransactionIsolation());
-			connection.setTransactionIsolation(Connection.TRANSACTION_NONE); // should work
-			assertEquals(Connection.TRANSACTION_NONE, connection.getTransactionIsolation());
+		try (Connection fireboltConnection = createConnection(URL, connectionProperties)) {
+			assertEquals(Connection.TRANSACTION_NONE, fireboltConnection.getTransactionIsolation());
+			fireboltConnection.setTransactionIsolation(Connection.TRANSACTION_NONE); // should work
+			assertEquals(Connection.TRANSACTION_NONE, fireboltConnection.getTransactionIsolation());
 			for (int transactionIsolation : new int [] {TRANSACTION_READ_UNCOMMITTED, TRANSACTION_READ_COMMITTED, TRANSACTION_REPEATABLE_READ, TRANSACTION_SERIALIZABLE}) {
-				assertThrows(SQLFeatureNotSupportedException.class, () -> connection.setTransactionIsolation(transactionIsolation));
+				assertThrows(SQLFeatureNotSupportedException.class, () -> fireboltConnection.setTransactionIsolation(transactionIsolation));
 			}
 			// despite the failed attempts to change transaction isolation to unsupported value it remains TRANSACTION_NONE
-			assertEquals(Connection.TRANSACTION_NONE, connection.getTransactionIsolation());
+			assertEquals(Connection.TRANSACTION_NONE, fireboltConnection.getTransactionIsolation());
 		}
 	}
 
 	@Test
 	void shouldThrowExceptionWhenPreparingStatementWIthInvalidResultSetType() throws SQLException {
 		connectionProperties.put("database", "db");
-		try (Connection connection = createConnection(URL, connectionProperties)) {
+		try (Connection fireboltConnection = createConnection(URL, connectionProperties)) {
 			assertThrows(SQLFeatureNotSupportedException.class,
-					() -> connection.prepareStatement("any", TYPE_SCROLL_INSENSITIVE, 0));
+					() -> fireboltConnection.prepareStatement("any", TYPE_SCROLL_INSENSITIVE, 0));
 		}
 	}
 
 	@Test
 	void createArray() throws SQLException {
-		try (Connection connection = createConnection(URL, connectionProperties)) {
+		try (Connection fireboltConnection = createConnection(URL, connectionProperties)) {
 			Object[] data = new Object[] {"red", "green", "blue"};
-			Array array = connection.createArrayOf("text", data);
+			Array array = fireboltConnection.createArrayOf("text", data);
 			assertEquals(Types.VARCHAR, array.getBaseType());
 			assertArrayEquals(data, (Object[])array.getArray());
 		}
@@ -631,23 +629,47 @@ abstract class FireboltConnectionTest {
 	void shouldGetEngineUrlWhenEngineIsProvided() throws SQLException {
 		connectionProperties.put("engine", "engine");
 		when(fireboltEngineService.getEngine(any())).thenReturn(new Engine("http://my_endpoint", null, null, null, null));
-		try (FireboltConnection connection = createConnection(URL, connectionProperties)) {
+		try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
 			verify(fireboltEngineService).getEngine(argThat(props -> "engine".equals(props.getEngine()) && "db".equals(props.getDatabase())));
-			assertEquals("http://my_endpoint", connection.getSessionProperties().getHost());
+			assertEquals("http://my_endpoint", fireboltConnection.getSessionProperties().getHost());
 		}
 	}
 
 	@Test
 	void nativeSql() throws SQLException {
-		try (FireboltConnection connection = createConnection(URL, connectionProperties)) {
-			assertEquals("SELECT 1", connection.nativeSQL("SELECT 1"));
+		try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
+			assertEquals("SELECT 1", fireboltConnection.nativeSQL("SELECT 1"));
 		}
 	}
 
 	@Test
 	void unsupportedNativeSql() throws SQLException {
-		try (FireboltConnection connection = createConnection(URL, connectionProperties)) {
-			assertThrows(SQLException.class, () -> connection.nativeSQL("SELECT {d '2001-01-01'} FROM TEST"));
+		try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
+			assertThrows(SQLException.class, () -> fireboltConnection.nativeSQL("SELECT {d '2001-01-01'} FROM TEST"));
+		}
+	}
+
+	@Test
+	void getClientInfo() throws SQLException {
+		try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
+			Properties info = fireboltConnection.getClientInfo();
+			// from URL
+			assertEquals("dev", info.getProperty("environment"));
+			assertEquals("dev", fireboltConnection.getClientInfo("environment")); 	// key
+			assertEquals("dev", fireboltConnection.getClientInfo("env"));			// alias
+
+			// from connectionProperties
+			assertEquals("somebody", info.getProperty("client_id"));
+			assertEquals("somebody", fireboltConnection.getClientInfo("client_id"));	// key
+			assertEquals("somebody", fireboltConnection.getClientInfo("user"));			// alias
+
+			// default value
+			assertEquals("60", info.getProperty("tcp_keep_idle"));
+			assertEquals("60", fireboltConnection.getClientInfo("tcp_keep_idle"));
+
+			// deprecated - should not appear
+			assertFalse(info.containsKey("time_to_live_millis"));
+			assertNull(fireboltConnection.getClientInfo("time_to_live_millis"));
 		}
 	}
 
