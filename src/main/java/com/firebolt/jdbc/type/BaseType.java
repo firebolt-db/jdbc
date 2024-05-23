@@ -26,7 +26,7 @@ import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERRO
 import static com.firebolt.jdbc.type.array.SqlArrayUtil.BYTE_ARRAY_PREFIX;
 import static com.firebolt.jdbc.type.array.SqlArrayUtil.hexStringToByteArray;
 
-/** This class contains the java types the Firebolt datatypes are mapped to */
+/** This class contains the java types the Firebolt data types are mapped to */
 public enum BaseType {
 	LONG(TypePredicate.mayBeFloatingNumber, Long.class, conversion -> Long.parseLong(checkInfinity(conversion.getValue())), conversion -> Double.valueOf(conversion.getValue()).longValue()),
 	INTEGER(TypePredicate.mayBeFloatingNumber, Integer.class, conversion -> Integer.parseInt(checkInfinity(conversion.getValue())), conversion -> Integer.parseInt(Long.toString(Double.valueOf(conversion.getValue()).longValue()))),

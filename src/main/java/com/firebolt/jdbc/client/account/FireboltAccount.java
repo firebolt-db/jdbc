@@ -15,6 +15,7 @@ public class FireboltAccount {
         this.infraVersion = infraVersion;
     }
 
+    @SuppressWarnings("unused") // used  by FireboltAccountRetriever that in turn calls its base class` method FireboltClient.jsonToObject() that calls this constructor by reflection
     FireboltAccount(JSONObject json) {
         this(json.getString("id"), json.getString("region"), json.optInt("infraVersion", 1));
     }

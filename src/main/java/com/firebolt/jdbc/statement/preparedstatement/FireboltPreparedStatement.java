@@ -188,7 +188,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	@Override
-	public void clearParameters() throws SQLException {
+	public void clearParameters() {
 		providedParameters.clear();
 		rows.clear();
 	}
@@ -221,7 +221,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	@Override
-	public void addBatch() throws SQLException {
+	public void addBatch() {
 		rows.add(providedParameters);
 		providedParameters = new HashMap<>();
 	}

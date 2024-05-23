@@ -143,10 +143,6 @@ public enum JavaTypeToFireboltSQLString {
 		};
 	}
 
-	public Class<?> getSourceType() {
-		return sourceType;
-	}
-
 	public String transform(Object object, Object ... more) throws SQLException {
 		if (object == null) {
 			return NULL_VALUE;

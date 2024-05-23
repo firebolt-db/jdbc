@@ -14,7 +14,7 @@ import static com.firebolt.jdbc.statement.StatementType.QUERY;
 
 /**
  * A query statement is a statement that returns data (Typically starts with
- * SELECT, SHOW, etc)
+ * SELECT, SHOW, etc.)
  */
 @Getter
 @EqualsAndHashCode(callSuper = true)

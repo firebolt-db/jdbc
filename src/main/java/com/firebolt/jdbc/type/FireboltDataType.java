@@ -34,7 +34,7 @@ public enum FireboltDataType {
 	DATE_32(Types.DATE, FireboltDataTypeDisplayNames.PGDATE, BaseType.DATE, false, false, 10, 0, 0, true,"Date32", "PGDate"),
 	DATE_TIME_64(Types.TIMESTAMP, FireboltDataTypeDisplayNames.TIMESTAMP, BaseType.TIMESTAMP, false, false, 19, 0, 6, true, "DateTime64", "TIMESTAMP"),
 	TIMESTAMP(Types.TIMESTAMP,  FireboltDataTypeDisplayNames.TIMESTAMP, BaseType.TIMESTAMP, false, false, 6, 0, 0, true,"DateTime", "TIMESTAMP", "TimestampNtz"),
-	TIMESTAMP_WITH_TIMEZONE(Types.TIMESTAMP_WITH_TIMEZONE, FireboltDataTypeDisplayNames.TIMESTAMPTZ, BaseType.TIMESTAMP_WITH_TIMEZONE, false, false, 6, 0, 0, true,"Timestamptz"),
+	TIMESTAMP_WITH_TIMEZONE(Types.TIMESTAMP_WITH_TIMEZONE, FireboltDataTypeDisplayNames.TIMESTAMPTZ, BaseType.TIMESTAMP_WITH_TIMEZONE, false, false, 6, 0, 0, true,"TimestampTz"),
 	NOTHING(Types.NULL, FireboltDataTypeDisplayNames.NULL, BaseType.NULL, false, false, 0, 0, 0, false,"Nothing", "NULL"),
 	UNKNOWN(Types.OTHER, FireboltDataTypeDisplayNames.UNKNOWN, BaseType.OTHER, false, false, 0, 0, 0, false,"Unknown"),
 	NUMERIC(Types.NUMERIC, FireboltDataTypeDisplayNames.NUMERIC, BaseType.NUMERIC, true, false, 38, 0, 37, false, "Decimal", "DEC", "NUMERIC"),

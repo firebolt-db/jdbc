@@ -43,6 +43,7 @@ public class LoggerUtil {
 	 * @return a copy of the {@link InputStream} provided
 	 */
 	public InputStream logInputStream(InputStream is) {
+		@SuppressWarnings("SpellCheckingInspection") // BAOS means byte array output stream
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
 			byte[] buffer = new byte[1024];
