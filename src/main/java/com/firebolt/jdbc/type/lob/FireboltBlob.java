@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-public class FireboltBlob implements Blob {
+public class FireboltBlob extends FireboltLob implements Blob {
     private byte[] buf;
 
     public FireboltBlob() {
@@ -27,14 +27,9 @@ public class FireboltBlob implements Blob {
 
     @Override
     public byte[] getBytes(long pos, int length) throws SQLException {
-        isValid();
+        isValid(buf);
+        validateGetRange(pos, length, buf.length);
         int from = (int)pos - 1;
-        if (from < 0 || from > length()) {
-            throw new SQLException("Invalid position in Clob object set");
-        }
-        if (length < 0 || from + length > length()) {
-            throw new SQLException("Invalid position and substring length");
-        }
         byte[] bytes = new byte[length];
         System.arraycopy(buf, from, bytes, 0, bytes.length);
         return bytes;
@@ -42,14 +37,14 @@ public class FireboltBlob implements Blob {
 
     @Override
     public InputStream getBinaryStream() throws SQLException {
-        isValid();
+        isValid(buf);
         return new ByteArrayInputStream(buf);
     }
 
     @Override
     @SuppressWarnings("StatementWithEmptyBody") // so what?
     public long position(byte[] pattern, long start) throws SQLException {
-        isValid();
+        isValid(buf);
         if (start < 1 || start > buf.length || buf.length == 0) {
             return -1;
         }
@@ -87,13 +82,8 @@ public class FireboltBlob implements Blob {
 
     @Override
     public int setBytes(long pos, byte[] bytes, int offset, int len) throws SQLException {
-        isValid();
-        if (offset < 0 || offset + len > bytes.length) {
-            throw new SQLException("Invalid offset in byte array set");
-        }
-        if (pos < 1) {
-            throw new SQLException("Invalid position in Clob object set");
-        }
+        isValid(buf);
+        validateSetRange(pos, bytes.length, offset, len);
         int index = (int)(pos - 1);
         int newLength = Math.max(buf.length, index + len);
         byte[] buffer = new byte[newLength];
@@ -105,7 +95,7 @@ public class FireboltBlob implements Blob {
 
     @Override
     public OutputStream setBinaryStream(long pos) throws SQLException {
-        isValid();
+        isValid(buf);
         return new OutputStream() {
             private final List<Byte> bytes = new LinkedList<>();
             @Override
@@ -130,25 +120,19 @@ public class FireboltBlob implements Blob {
 
     @Override
     public void truncate(long length) throws SQLException {
-        isValid();
+        isValid(buf);
         buf = length == 0 ? new byte[0] : getBytes(1, (int)length);
     }
 
     @Override
     public void free() throws SQLException {
-        isValid();
+        isValid(buf);
         buf = null;
     }
 
     @Override
     public InputStream getBinaryStream(long pos, long length) throws SQLException {
         return new ByteArrayInputStream(getBytes(pos, (int)length));
-    }
-
-    private void isValid() throws SQLException {
-        if (buf == null) {
-            throw new SQLException("Error: You cannot call a method on a Blob instance once free() has been called.");
-        }
     }
 
     @Override

@@ -14,7 +14,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-public class FireboltClob implements NClob {
+public class FireboltClob extends FireboltLob implements NClob {
     private char[] buf;
 
     public FireboltClob() {
@@ -27,32 +27,27 @@ public class FireboltClob implements NClob {
 
     @Override
     public long length() throws SQLException {
-        isValid();
+        isValid(buf);
         return buf.length;
     }
 
     @Override
     public String getSubString(long pos, int length) throws SQLException {
-        isValid();
+        isValid(buf);
+        validateGetRange(pos, length, buf.length);
         int from = (int)(pos - 1);
-        if (from < 0 || from > length()) {
-            throw new SQLException("Invalid position in Clob object set");
-        }
-        if (length < 0 || from + length > length()) {
-            throw new SQLException("Invalid position and substring length");
-        }
         return new String(buf, from, Math.min(buf.length - from, length));
     }
 
     @Override
     public Reader getCharacterStream() throws SQLException {
-        isValid();
+        isValid(buf);
         return new StringReader(new String(buf));
     }
 
     @Override
     public InputStream getAsciiStream() throws SQLException {
-        isValid();
+        isValid(buf);
         return new ByteArrayInputStream(new String(buf).getBytes());
     }
 
@@ -62,7 +57,7 @@ public class FireboltClob implements NClob {
     }
 
     private long position(char[] pattern, long start) throws SQLException {
-        isValid();
+        isValid(buf);
         if (start < 1 || start > buf.length || buf.length == 0) {
             return -1;
         }
@@ -100,29 +95,24 @@ public class FireboltClob implements NClob {
 
     @Override
     public int setString(long pos, String str, int offset, int len) throws SQLException {
-        return setBytes(pos, str.toCharArray(), offset, len);
+        return setChars(pos, str.toCharArray(), offset, len);
     }
 
-    private int setBytes(long pos, char[] bytes, int offset, int len) throws SQLException {
-        isValid();
-        if (offset < 0 || offset + len > bytes.length) {
-            throw new SQLException("Invalid offset in byte array set");
-        }
-        if (pos < 1) {
-            throw new SQLException("Invalid position in Clob object set");
-        }
+    private int setChars(long pos, char[] chars, int offset, int len) throws SQLException {
+        isValid(buf);
+        validateSetRange(pos, chars.length, offset, len);
         int index = (int)(pos - 1);
         int newLength = Math.max(buf.length, index + len);
         char[] buffer = new char[newLength];
         System.arraycopy(buf, 0, buffer, 0, buf.length);
-        System.arraycopy(bytes, offset, buffer, index, len);
+        System.arraycopy(chars, offset, buffer, index, len);
         buf = buffer;
         return len;
     }
 
     @Override
     public OutputStream setAsciiStream(long pos) throws SQLException {
-        isValid();
+        isValid(buf);
         return new OutputStream() {
             private final List<Character> characters = new LinkedList<>();
             @Override
@@ -152,25 +142,19 @@ public class FireboltClob implements NClob {
 
     @Override
     public void truncate(long length) throws SQLException {
-        isValid();
+        isValid(buf);
         buf = length == 0 ? new char[0] : getSubString(1, (int)length).toCharArray();
     }
 
     @Override
     public void free() throws SQLException {
-        isValid();
+        isValid(buf);
         buf = null;
     }
 
     @Override
     public Reader getCharacterStream(long pos, long length) throws SQLException {
         return new StringReader(getSubString(pos, (int)length));
-    }
-
-    private void isValid() throws SQLException {
-        if (buf == null) {
-            throw new SQLException("Error: You cannot call a method on a Clob instance once free() has been called.");
-        }
     }
 
     @Override
