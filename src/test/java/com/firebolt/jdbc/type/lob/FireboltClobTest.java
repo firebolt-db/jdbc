@@ -2,7 +2,8 @@ package com.firebolt.jdbc.type.lob;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class FireboltClobTest {
+class FireboltClobTest extends FireboltLobTest {
     @Test
     void empty() throws SQLException, IOException {
         Clob clob = new FireboltClob();
@@ -26,10 +27,14 @@ class FireboltClobTest {
         assertEquals(0, clob.getSubString(1, 0).length());
         assertThrows(SQLException.class, () -> clob.getSubString(1, 1));
         assertThrows(SQLException.class, () -> clob.getSubString(1, 123));
+        assertThrows(SQLException.class, () -> clob.getSubString(0, 123));
+        assertThrows(SQLException.class, () -> clob.getSubString(0, 1));
+        assertThrows(SQLException.class, () -> clob.getSubString(1, -1));
 
         assertEquals(-1, clob.getCharacterStream(1, 0).read());
         assertThrows(SQLException.class, () -> clob.getCharacterStream(1, 1));
         assertThrows(SQLException.class, () -> clob.getCharacterStream(1, 123));
+        assertThrows(SQLException.class, () -> clob.getCharacterStream(1, -1));
 
         assertEquals(-1, clob.getAsciiStream().read());
         assertEquals("", readAll(clob.getCharacterStream()));
@@ -45,7 +50,12 @@ class FireboltClobTest {
         assertEquals("", clob.getSubString(1, 0));
         assertEquals("h", clob.getSubString(1, 1));
         assertEquals(str, clob.getSubString(1, str.length()));
+        assertEquals("hello", clob.getSubString(1, 5));
+        assertEquals("world", clob.getSubString(8, 5));
+        assertEquals("world!", clob.getSubString(8, 6));
         assertThrows(SQLException.class, () -> clob.getCharacterStream(1, str.length() + 1));
+        assertThrows(SQLException.class, () -> clob.getCharacterStream(0, str.length()));
+        assertThrows(SQLException.class, () -> clob.getCharacterStream(0, str.length() + 1));
 
         assertEquals(str, new String(clob.getAsciiStream().readAllBytes()));
 
@@ -72,22 +82,40 @@ class FireboltClobTest {
         assertEquals(str, readAll(clob.getCharacterStream()));
     }
 
-    @Test
-    void characterStreamReplace() throws SQLException, IOException {
-        Clob clob = new FireboltClob("hey, world!".toCharArray());
-        try (Writer writer = clob.setCharacterStream(1)) {
-            writer.write("bye");
+    @ParameterizedTest
+    @MethodSource("replace")
+    void binaryStreamReplace(String initial, String replacement, int pos, String expected) throws SQLException, IOException {
+        Clob clob = new FireboltClob(initial.toCharArray());
+        try (Writer writer = clob.setCharacterStream(pos)) {
+            writer.write(replacement);
         }
-        assertEquals("bye, world!", readAll(clob.getCharacterStream()));
+        assertEquals(expected, readAll(clob.getCharacterStream()));
     }
 
-    @Test
-    void characterStreamReplaceLongerContent() throws SQLException, IOException {
-        Clob clob = new FireboltClob("hello, all!".toCharArray());
-        try (Writer writer = clob.setCharacterStream(8)) {
-            writer.write("world!");
-        }
-        assertEquals("hello, world!", readAll(clob.getCharacterStream()));
+    @ParameterizedTest
+    @MethodSource("replace")
+    void stringReplaceCharacters(String initial, String replacement, int pos, String expected) throws SQLException {
+        Clob clob = new FireboltClob(initial.toCharArray());
+        assertEquals(initial, clob.getSubString(1, initial.length()));
+        clob.setString(pos, replacement);
+        assertEquals(expected, clob.getSubString(1, expected.length()));
+    }
+
+    @ParameterizedTest
+    @MethodSource("partialReplace")
+    void partialStringReplace(String initial, String replacement, int pos, int offset, int length, String expected) throws SQLException {
+        Clob clob = new FireboltClob(initial.toCharArray());
+        assertEquals(initial, clob.getSubString(1, initial.length()));
+        clob.setString(pos, replacement, offset, length);
+        assertEquals(expected, clob.getSubString(1, expected.length()));
+    }
+
+    @ParameterizedTest
+    @MethodSource("wrongReplace")
+    void wrongReplace(String initial, String replacement, int pos, int offset, int length) throws SQLException {
+        Clob clob = new FireboltClob(initial.toCharArray());
+        assertEquals(initial, clob.getSubString(1, initial.length()));
+        assertThrows(SQLException.class, () -> clob.setString(pos, replacement, offset, length));
     }
 
     @Test
@@ -98,38 +126,20 @@ class FireboltClobTest {
         assertEquals(str, clob.getSubString(1, str.length()));
     }
 
-    @Test
-    void setStringReplaceCharacters() throws SQLException {
-        String str = "hey, world!";
+    @ParameterizedTest
+    @MethodSource("truncate")
+    void truncate(String str, int length, String expected) throws SQLException, IOException {
         Clob clob = new FireboltClob(str.toCharArray());
-        assertEquals(str, clob.getSubString(1, str.length()));
-        clob.setString(1, "bye");
-        assertEquals("bye, world!", clob.getSubString(1, str.length()));
+        clob.truncate(length);
+        assertEquals(expected, new String(clob.getAsciiStream().readAllBytes()));
     }
 
-    @Test
-    void setStringReplaceCharactersLongerString() throws SQLException {
-        String str1 = "hello, all!";
-        Clob clob = new FireboltClob(str1.toCharArray());
-        assertEquals(str1, clob.getSubString(1, str1.length()));
-        clob.setString(8, "world!");
-        String str2 = "hello, world!";
-        assertEquals(str2, clob.getSubString(1, str2.length()));
-    }
-
-    @Test
-    void truncate() throws SQLException, IOException {
+    @ParameterizedTest
+    @ValueSource(longs = {14L, -1L})
+    void truncateWrongNumber(long length) {
         String str = "hello, world!";
         Clob clob = new FireboltClob(str.toCharArray());
-        clob.truncate(5);
-        assertEquals("hello", new String(clob.getAsciiStream().readAllBytes()));
-    }
-
-    @Test
-    void truncateLargeNumber() {
-        String str = "hello, world!";
-        Clob clob = new FireboltClob(str.toCharArray());
-        assertThrows(SQLException.class, () -> clob.truncate(str.length() + 1));
+        assertThrows(SQLException.class, () -> clob.truncate(length));
     }
 
     @Test
@@ -141,32 +151,25 @@ class FireboltClobTest {
     }
 
     @ParameterizedTest
-    @CsvSource({
-            "hello,1,1",
-            "world,1,8",
-            "world,3,8",
-            "world,8,8",
-            "world,9,-1",
-            "world,0,-1",
-            "world,14,-1",
-    })
-    void position(String search, int start, int expected) throws SQLException {
-        String str = "hello, world!";
+    @MethodSource("position")
+    void position(String str, String search, int start, int expected) throws SQLException {
         Clob clob = new FireboltClob(str.toCharArray());
         assertEquals(expected, clob.position(search, start));
         assertEquals(expected, clob.position(new FireboltClob(search.toCharArray()), start));
     }
 
-    @Test
-    void equalsAndHashCode() {
-        Clob clob1_1 = new FireboltClob("one".toCharArray());
-        Clob clob1_2 = new FireboltClob("one".toCharArray());
-        assertEquals(clob1_1, clob1_2);
-        assertEquals(clob1_1.hashCode(), clob1_2.hashCode());
-
-        Clob clob2_1 = new FireboltClob("two".toCharArray());
-        assertNotEquals(clob1_1, clob2_1);
-        assertNotEquals(clob1_1.hashCode(), clob2_1.hashCode());
+    @ParameterizedTest
+    @MethodSource("equalsAndHashCode")
+    void equalsAndHashCode(String s1, String s2, boolean expectedEquals) {
+        Clob clob1 = new FireboltClob(s1.toCharArray());
+        Clob clob2 = new FireboltClob(s2.toCharArray());
+        if (expectedEquals) {
+            assertEquals(clob1, clob2);
+            assertEquals(clob1.hashCode(), clob2.hashCode());
+        } else {
+            assertNotEquals(clob1, clob2);
+            assertNotEquals(clob1.hashCode(), clob2.hashCode());
+        }
     }
 
     private String readAll(Reader reader) {

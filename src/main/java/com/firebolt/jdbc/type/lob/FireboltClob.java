@@ -38,7 +38,7 @@ public class FireboltClob implements NClob {
         if (from < 0 || from > length()) {
             throw new SQLException("Invalid position in Clob object set");
         }
-        if (from + length > length()) {
+        if (length < 0 || from + length > length()) {
             throw new SQLException("Invalid position and substring length");
         }
         return new String(buf, from, Math.min(buf.length - from, length));
@@ -58,30 +58,34 @@ public class FireboltClob implements NClob {
 
     @Override
     public long position(String searchStr, long start) throws SQLException {
+        return position(searchStr.toCharArray(), start);
+    }
+
+    private long position(char[] pattern, long start) throws SQLException {
         isValid();
-        if (start < 1 || start > buf.length) {
+        if (start < 1 || start > buf.length || buf.length == 0) {
             return -1;
         }
+        if (pattern.length == 0) {
+            return 1;
+        }
 
-        char[] pattern = searchStr.toCharArray();
-
-        int pos = (int)(start - 1);
-        int i = 0;
-        long patlen = pattern.length;
-
-        while (pos < buf.length) {
-            if (pattern[i] == buf[pos]) {
-                if (i + 1 == patlen) {
-                    return (pos + 1) - (patlen - 1);
+        int fromIndex = (int)(start - 1L);
+        int max = buf.length - pattern.length;
+        for (int i = fromIndex; i <= max; i++) {
+            if (buf[i] != pattern[0]) {
+                for (i++; i < max && buf[i] != pattern[0]; i++);
+            }
+            if (i <= max) {
+                int j = i + 1;
+                int end = j + pattern.length - 1;
+                for (int k = 1; j < end && buf[j] == pattern[k]; j++, k++);
+                if (j == end) {
+                    return i + 1;
                 }
-                // increment pos, and i
-                i++;
-                pos++;
-            } else if (pattern[i] != buf[pos]) {
-                pos++; // increment pos only
             }
         }
-        return -1; // not found
+        return -1;
     }
 
     @Override
@@ -96,20 +100,24 @@ public class FireboltClob implements NClob {
 
     @Override
     public int setString(long pos, String str, int offset, int len) throws SQLException {
+        return setBytes(pos, str.toCharArray(), offset, len);
+    }
+
+    private int setBytes(long pos, char[] bytes, int offset, int len) throws SQLException {
         isValid();
-        if (offset < 0 || offset > str.length()) {
+        if (offset < 0 || offset + len > bytes.length) {
             throw new SQLException("Invalid offset in byte array set");
         }
         if (pos < 1) {
             throw new SQLException("Invalid position in Clob object set");
         }
         int index = (int)(pos - 1);
-        int newLength = Math.max(buf.length, index + len - offset);
+        int newLength = Math.max(buf.length, index + len);
         char[] buffer = new char[newLength];
         System.arraycopy(buf, 0, buffer, 0, buf.length);
-        System.arraycopy(str.toCharArray(), offset, buffer, index, str.length());
+        System.arraycopy(bytes, offset, buffer, index, len);
         buf = buffer;
-        return str.length() - index;
+        return len;
     }
 
     @Override
@@ -130,8 +138,8 @@ public class FireboltClob implements NClob {
                     buf = newBuf;
                 }
                 int i = (int)(pos - 1);
-                for (char c : characters) {
-                    buf[i++] = c;
+                for (char b : characters) {
+                    buf[i++] = b;
                 }
             }
         };
@@ -145,9 +153,6 @@ public class FireboltClob implements NClob {
     @Override
     public void truncate(long length) throws SQLException {
         isValid();
-        if (length > buf.length) {
-            throw new SQLException("Length more than what can be truncated");
-        }
         buf = length == 0 ? new char[0] : getSubString(1, (int)length).toCharArray();
     }
 
