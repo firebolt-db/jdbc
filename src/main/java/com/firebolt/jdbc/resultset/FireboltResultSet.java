@@ -444,10 +444,11 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public boolean isAfterLast() throws SQLException {
+	public boolean isAfterLast() {
 		return !hasNext() && currentLine == null;
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	private boolean hasNext() {
 		return reader.lines().iterator().hasNext();
 	}
@@ -459,7 +460,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public boolean isLast() throws SQLException {
+	public boolean isLast() {
 		return !hasNext() && currentLine != null;
 	}
 
@@ -543,19 +544,6 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public boolean isWrapperFor(Class<?> iface) {
-		return iface.isAssignableFrom(getClass());
-	}
-
-	@Override
-	public <T> T unwrap(Class<T> iface) throws SQLException {
-		if (iface.isAssignableFrom(getClass())) {
-			return iface.cast(this);
-		}
-		throw new SQLException("Cannot unwrap to " + iface.getName());
-	}
-
-	@Override
 	public InputStream getAsciiStream(int columnIndex) throws SQLException {
 		return getTextStream(columnIndex, StandardCharsets.US_ASCII);
 	}
@@ -632,7 +620,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public int getFetchDirection() throws SQLException {
+	public int getFetchDirection() {
 		return ResultSet.FETCH_FORWARD;
 	}
 
@@ -644,7 +632,8 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public int getFetchSize() throws SQLException {
+	@SuppressWarnings("SpellCheckingInspection")
+	public int getFetchSize() {
 		return 0; // fetch size is not supported; 0 means unlimited like in PostgreSQL and MySQL
 	}
 
@@ -658,7 +647,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public int getConcurrency() throws SQLException {
+	public int getConcurrency() {
 		return ResultSet.CONCUR_READ_ONLY;
 	}
 
@@ -957,7 +946,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public Statement getStatement() throws SQLException {
+	public Statement getStatement() {
 		return statement;
 	}
 
@@ -1104,7 +1093,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public int getHoldability() throws SQLException {
+	public int getHoldability() {
 		return ResultSet.HOLD_CURSORS_OVER_COMMIT;
 	}
 

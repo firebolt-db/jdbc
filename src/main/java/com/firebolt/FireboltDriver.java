@@ -15,7 +15,7 @@ import java.util.logging.Logger;
 public class FireboltDriver implements Driver {
 
 	public static final String JDBC_FIREBOLT = "jdbc:firebolt:";
-	private static Logger rootLog;
+	private static final Logger rootLog;
 	private static final Logger log;
 
 	static {

@@ -1,6 +1,6 @@
 package com.firebolt.jdbc.resultset;
 
-import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.GenericWrapper;
 import com.firebolt.jdbc.resultset.column.Column;
 
 import java.sql.ResultSetMetaData;
@@ -11,7 +11,7 @@ import java.util.Objects;
 import static java.lang.String.format;
 
 @SuppressWarnings("java:S4144") // Methods should not have identical implementations - many methods here have trivial identical implementation
-public class FireboltResultSetMetaData implements ResultSetMetaData {
+public class FireboltResultSetMetaData implements ResultSetMetaData, GenericWrapper {
 	private final String dbName;
 	private final String tableName;
 	private final List<Column> columns;
@@ -87,20 +87,6 @@ public class FireboltResultSetMetaData implements ResultSetMetaData {
 	Column getColumn(int column) throws SQLException {
 		checkColumnNumber(column);
 		return columns.get(column - 1);
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public <T> T unwrap(Class<T> interfaceName) throws SQLException {
-		if (isWrapperFor(interfaceName)) {
-			return (T) this;
-		}
-		throw new FireboltException("Unable unwrap to " + interfaceName);
-	}
-
-	@Override
-	public boolean isWrapperFor(Class<?> interfaceName) throws SQLException {
-		return interfaceName != null && interfaceName.isAssignableFrom(getClass());
 	}
 
 	@Override

@@ -67,7 +67,7 @@ public class StatementUtil {
 	/**
 	 * Parse sql statement to a {@link RawStatementWrapper}. The method construct
 	 * the {@link RawStatementWrapper} by splitting it in a list of sub-statements
-	 * (supports multistatements)
+	 * (supports multi-statements)
 	 * 
 	 * @param sql the sql statement
 	 * @return a list of {@link StatementInfoWrapper}
@@ -88,7 +88,7 @@ public class StatementUtil {
 		boolean isInSingleLineComment = false;
 		boolean isInMultipleLinesComment = false;
 		boolean isInComment = false;
-		boolean foundSubqueryEndingSemicolon = false;
+		boolean foundSubQueryEndingSemicolon = false;
 		char previousChar;
 		int subQueryParamsCount = 0;
 		boolean isPreviousCharInComment;
@@ -103,16 +103,16 @@ public class StatementUtil {
 			isInComment = isInSingleLineComment || isInMultipleLinesComment;
 			if (!isInComment) {
 				// Although the ending semicolon may have been found, we need to include any
-				// potential comments to the subquery
+				// potential comments to the sub-query
 				if (!isCurrentSubstringBetweenQuotes && isEndingSemicolon(currentChar, previousChar,
-						foundSubqueryEndingSemicolon, isPreviousCharInComment)) {
-					foundSubqueryEndingSemicolon = true;
-					if (isEndOfSubquery(currentChar)) {
+						foundSubQueryEndingSemicolon, isPreviousCharInComment)) {
+					foundSubQueryEndingSemicolon = true;
+					if (isEndOfSubQuery(currentChar)) {
 						subStatements.add(RawStatement.of(sql.substring(subQueryStart, currentIndex),
 								subStatementParamMarkersPositions, cleanedSubQuery.toString().trim()));
 						subStatementParamMarkersPositions = new ArrayList<>();
 						subQueryStart = currentIndex;
-						foundSubqueryEndingSemicolon = false;
+						foundSubQueryEndingSemicolon = false;
 						cleanedSubQuery = new StringBuilder();
 					}
 				} else if (currentChar == '?' && !isCurrentSubstringBetweenQuotes
@@ -134,15 +134,15 @@ public class StatementUtil {
 		return new RawStatementWrapper(subStatements);
 	}
 
-	private boolean isEndingSemicolon(char currentChar, char previousChar, boolean foundSubqueryEndingSemicolon,
+	private boolean isEndingSemicolon(char currentChar, char previousChar, boolean foundSubQueryEndingSemicolon,
 			boolean isPreviousCharInComment) {
-		if (foundSubqueryEndingSemicolon) {
+		if (foundSubQueryEndingSemicolon) {
 			return true;
 		}
 		return (';' == previousChar && currentChar != ';' && !isPreviousCharInComment);
 	}
 
-	private boolean isEndOfSubquery(char currentChar) {
+	private boolean isEndOfSubQuery(char currentChar) {
 		return currentChar != '-' && currentChar != '/' && currentChar != ' ' && currentChar != '\n';
 	}
 
@@ -226,14 +226,14 @@ public class StatementUtil {
 	public List<StatementInfoWrapper> replaceParameterMarksWithValues(@NonNull Map<Integer, String> params,
 			@NonNull RawStatementWrapper rawStatement) {
 		List<StatementInfoWrapper> subQueries = new ArrayList<>();
-		for (int subqueryIndex = 0; subqueryIndex < rawStatement.getSubStatements().size(); subqueryIndex++) {
+		for (int subQueryIndex = 0; subQueryIndex < rawStatement.getSubStatements().size(); subQueryIndex++) {
 			int currentPos;
 			/*
 			 * As the parameter markers are being placed then the statement sql keeps
 			 * getting bigger, which is why we need to keep track of the offset
 			 */
 			int offset = 0;
-			RawStatement subQuery = rawStatement.getSubStatements().get(subqueryIndex);
+			RawStatement subQuery = rawStatement.getSubStatements().get(subQueryIndex);
 			String subQueryWithParams = subQuery.getSql();
 
 			if (params.size() != rawStatement.getTotalParams()) {
