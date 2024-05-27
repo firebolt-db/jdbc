@@ -85,12 +85,12 @@ class FireboltStatementTest {
         return Stream.of(
                 Arguments.of("setCursorName", (Executable) () -> statement.setCursorName("my_cursor")),
                 Arguments.of("getGeneratedKeys", (Executable) () -> statement.getGeneratedKeys()),
-                Arguments.of("executeUpdate(auto generated keys)", (Executable) () -> statement.executeUpdate("insert", Statement.RETURN_GENERATED_KEYS)),
-                Arguments.of("executeUpdate(column indexes)", (Executable) () -> statement.executeUpdate("insert", new int[0])),
-                Arguments.of("executeUpdate(column names)", (Executable) () -> statement.executeUpdate("insert", new String[0])),
+                Arguments.of("executeUpdate(column indexes)", (Executable) () -> statement.executeUpdate("insert", new int[] {1})),
+                Arguments.of("executeUpdate(column names)", (Executable) () -> statement.executeUpdate("insert", new String[] {"foo"})),
                 Arguments.of("execute(auto generated keys)", (Executable) () -> statement.execute("insert", Statement.RETURN_GENERATED_KEYS)),
-                Arguments.of("execute(column indexes)", (Executable) () -> statement.execute("insert", new int[0])),
-                Arguments.of("execute(column names)", (Executable) () -> statement.execute("insert", new String[0])),
+                Arguments.of("execute(column indexes)", (Executable) () -> statement.execute("insert", new int[] {1})),
+                Arguments.of("execute(column names)", (Executable) () -> statement.execute("insert", new String[] {"foo"})),
+                Arguments.of("execute(auto generated keys)", (Executable) () -> statement.execute("insert", Statement.RETURN_GENERATED_KEYS)),
                 Arguments.of("setPoolable(true)", (Executable) () -> statement.setPoolable(true))
         );
     }
@@ -156,7 +156,17 @@ class FireboltStatementTest {
 
     @Test
     void shouldExecuteIfUpdateStatementWouldNotReturnAResultSetNoGeneratedKeys() throws SQLException {
-        shouldExecuteIfUpdateStatementWouldNotReturnAResultSet((statement, sql) -> statement.executeUpdate(sql, Statement.NO_GENERATED_KEYS));
+        shouldExecuteIfUpdateStatementWouldNotReturnAResultSet((fireboltStatement, sql) -> fireboltStatement.executeUpdate(sql, Statement.NO_GENERATED_KEYS));
+    }
+
+    @Test
+    void shouldExecuteIfUpdateStatementWithIndexesWouldNotReturnAResultSet() throws SQLException {
+        shouldExecuteIfUpdateStatementWouldNotReturnAResultSet((fireboltStatement, sql) -> fireboltStatement.executeUpdate(sql, new int[0]));
+    }
+
+    @Test
+    void shouldExecuteIfUpdateStatementWithNamesWouldNotReturnAResultSet() throws SQLException {
+        shouldExecuteIfUpdateStatementWouldNotReturnAResultSet((fireboltStatement, sql) -> fireboltStatement.executeUpdate(sql, new String[0]));
     }
 
     private void shouldExecuteIfUpdateStatementWouldNotReturnAResultSet(CheckedBiFunction<Statement, String, Integer> executor) throws SQLException {
@@ -177,8 +187,19 @@ class FireboltStatementTest {
 
     @Test
     void shouldExecuteStatementNoGeneratedKeysThatReturnsResultSet() throws SQLException {
-        shouldExecuteStatementThatReturnsResultSet((statement, sql) -> statement.execute(sql, Statement.NO_GENERATED_KEYS));
+        shouldExecuteStatementThatReturnsResultSet((fireboltStatement, sql) -> fireboltStatement.execute(sql, Statement.NO_GENERATED_KEYS));
     }
+
+    @Test
+    void shouldExecuteStatementWithIndexesWouldNotReturnAResultSet() throws SQLException {
+        shouldExecuteStatementThatReturnsResultSet((fireboltStatement, sql) -> fireboltStatement.execute(sql, new int[0]));
+    }
+
+    @Test
+    void shouldExecuteStatementWithNamesWouldNotReturnAResultSet() throws SQLException {
+        shouldExecuteStatementThatReturnsResultSet((fireboltStatement, sql) -> fireboltStatement.execute(sql, new String[0]));
+    }
+
 
     private void shouldExecuteStatementThatReturnsResultSet(CheckedBiFunction<Statement, String, Boolean> executor) throws SQLException {
         ResultSet rs = mock(FireboltResultSet.class);
