@@ -85,7 +85,11 @@ class FireboltStatementTest {
         return Stream.of(
                 Arguments.of("setCursorName", (Executable) () -> statement.setCursorName("my_cursor")),
                 Arguments.of("getGeneratedKeys", (Executable) () -> statement.getGeneratedKeys()),
-                Arguments.of("executeUpdate(auto generated keys)", (Executable) () -> statement.executeUpdate("insert", Statement.RETURN_GENERATED_KEYS)),
+                Arguments.of("executeUpdate(column indexes)", (Executable) () -> statement.executeUpdate("insert", new int[] {1})),
+                Arguments.of("executeUpdate(column names)", (Executable) () -> statement.executeUpdate("insert", new String[] {"foo"})),
+                Arguments.of("execute(auto generated keys)", (Executable) () -> statement.execute("insert", Statement.RETURN_GENERATED_KEYS)),
+                Arguments.of("execute(column indexes)", (Executable) () -> statement.execute("insert", new int[] {1})),
+                Arguments.of("execute(column names)", (Executable) () -> statement.execute("insert", new String[] {"foo"})),
                 Arguments.of("execute(auto generated keys)", (Executable) () -> statement.execute("insert", Statement.RETURN_GENERATED_KEYS)),
                 Arguments.of("setPoolable(true)", (Executable) () -> statement.setPoolable(true))
         );
