@@ -1,6 +1,7 @@
 package com.firebolt.jdbc.type.lob;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Blob;
@@ -98,22 +99,36 @@ public class FireboltBlob extends FireboltLob implements Blob {
         isValid(buf);
         return new OutputStream() {
             private final List<Byte> bytes = new LinkedList<>();
+            private int from = (int)(pos - 1);
+            private volatile boolean closed = false;
+
             @Override
-            public void write(int b) {
+            public void write(int b) throws IOException {
+                if (closed) {
+                    throw new IOException("Stream is closed");
+                }
                 bytes.add((byte)b);
             }
-            public void close() {
+
+            @Override
+            public void flush() {
                 int length = bytes.size();
-                int newLength = Math.max(buf.length, length + (int)pos - 1);
+                int newLength = Math.max(buf.length, length + from);
                 if (newLength > buf.length) {
                     byte[] newBuf = new byte[newLength];
                     System.arraycopy(buf, 0, newBuf, 0, buf.length);
                     buf = newBuf;
                 }
-                int i = (int)(pos - 1);
                 for (byte b : bytes) {
-                    buf[i++] = b;
+                    buf[from++] = b;
                 }
+                bytes.clear();
+            }
+
+            @Override
+            public void close() {
+                flush();
+                closed = true;
             }
         };
     }

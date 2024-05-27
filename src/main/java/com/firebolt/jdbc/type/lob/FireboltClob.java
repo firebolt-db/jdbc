@@ -1,6 +1,7 @@
 package com.firebolt.jdbc.type.lob;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -115,22 +116,35 @@ public class FireboltClob extends FireboltLob implements NClob {
         isValid(buf);
         return new OutputStream() {
             private final List<Character> characters = new LinkedList<>();
+            private int from = (int)(pos - 1);
+            private volatile boolean closed = false;
+
             @Override
-            public void write(int b) {
+            public void write(int b) throws IOException {
+                if (closed) {
+                    throw new IOException("Stream is closed");
+                }
                 characters.add((char)b);
             }
-            public void close() {
+
+            @Override
+            public void flush() {
                 int length = characters.size();
-                int newLength = Math.max(buf.length, length + (int)pos - 1);
+                int newLength = Math.max(buf.length, length + from);
                 if (newLength > buf.length) {
                     char[] newBuf = new char[newLength];
                     System.arraycopy(buf, 0, newBuf, 0, buf.length);
                     buf = newBuf;
                 }
-                int i = (int)(pos - 1);
                 for (char b : characters) {
-                    buf[i++] = b;
+                    buf[from++] = b;
                 }
+                characters.clear();
+            }
+
+            public void close() {
+                flush();
+                closed = true;
             }
         };
     }

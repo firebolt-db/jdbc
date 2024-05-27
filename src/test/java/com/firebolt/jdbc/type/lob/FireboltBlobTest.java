@@ -7,7 +7,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Writer;
 import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -65,6 +67,32 @@ class FireboltBlobTest extends FireboltLobTest {
             os.write(str.getBytes());
         }
         assertEquals(str, new String(blob.getBinaryStream().readAllBytes()));
+    }
+
+    @Test
+    void characterStreamWithFlush() throws SQLException, IOException {
+        String str = "hello, world!";
+        Blob blob = new FireboltBlob(str.getBytes());
+        try (OutputStream os = blob.setBinaryStream(8)) {
+            os.write("all".getBytes());
+            assertEquals(str, new String(blob.getBinaryStream().readAllBytes()));
+            os.flush();
+            assertEquals("hello, allld!", new String(blob.getBinaryStream().readAllBytes()));
+            os.write(" ".getBytes());
+            os.write("people".getBytes());
+            os.write("!".getBytes());
+            assertEquals("hello, allld!", new String(blob.getBinaryStream().readAllBytes()));
+        }
+        // the rest is flushed automatically when writer is closed
+        assertEquals("hello, all people!", new String(blob.getBinaryStream().readAllBytes()));
+    }
+
+    @Test
+    void failedToWriteToClosedWriter() throws SQLException, IOException {
+        Blob blob = new FireboltBlob();
+        OutputStream os = blob.setBinaryStream(1);
+        os.close();
+        assertThrows(IOException.class, () -> os.write(1));
     }
 
     @ParameterizedTest

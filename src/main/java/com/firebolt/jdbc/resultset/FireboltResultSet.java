@@ -1134,12 +1134,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	@Override
 	public NClob getNClob(int columnIndex) throws SQLException {
 		String str = getString(columnIndex);
-		class FireboltNClob extends SerialClob implements NClob {
-			public FireboltNClob(char[] ch) throws SQLException {
-				super(ch);
-			}
-		}
-		return str == null ? null : new FireboltNClob(str.toCharArray());
+		return str == null ? null : new FireboltClob(str.toCharArray());
 	}
 
 	@Override

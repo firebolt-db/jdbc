@@ -82,6 +82,32 @@ class FireboltClobTest extends FireboltLobTest {
         assertEquals(str, readAll(clob.getCharacterStream()));
     }
 
+    @Test
+    void characterStreamWithFlush() throws SQLException, IOException {
+        String str = "hello, world!";
+        Clob clob = new FireboltClob(str.toCharArray());
+        try (Writer writer = clob.setCharacterStream(8)) {
+            writer.write("all");
+            assertEquals(str, readAll(clob.getCharacterStream()));
+            writer.flush();
+            assertEquals("hello, allld!", readAll(clob.getCharacterStream()));
+            writer.write(" ");
+            writer.write("people");
+            writer.write("!");
+            assertEquals("hello, allld!", readAll(clob.getCharacterStream()));
+        }
+        // the rest is flushed automatically when writer is closed
+        assertEquals("hello, all people!", readAll(clob.getCharacterStream()));
+    }
+
+    @Test
+    void failedToWriteToClosedWriter() throws SQLException, IOException {
+        Clob clob = new FireboltClob();
+        Writer writer = clob.setCharacterStream(1);
+        writer.close();
+        assertThrows(IOException.class, () -> writer.write("x"));
+    }
+
     @ParameterizedTest
     @MethodSource("replace")
     void binaryStreamReplace(String initial, String replacement, int pos, String expected) throws SQLException, IOException {
