@@ -453,16 +453,30 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		return executeUpdate(sql);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * Due to Firebolt maintains all indexes automatically the give parameter {@code columnIndexes} have no sense and is just ignored.
+	 * So, this method is equivalent to {@link #executeUpdate(String)}
+	 * @see <href a="https://docs.firebolt.io/godocs/using-indexes/using-indexes.html">Using Firebolt Indexes</href>
+	 */
 	@Override
-	@NotImplemented
 	public int executeUpdate(String sql, int[] columnIndexes) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return executeUpdate(sql);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * Due to Firebolt maintains all indexes automatically the give parameter {@code columnNames} have no sense and is just ignored.
+	 * So, this method is equivalent to {@link #executeUpdate(String)}
+	 * @see <href a="https://docs.firebolt.io/godocs/using-indexes/using-indexes.html">Using Firebolt Indexes</href>
+	 */
 	@Override
-	@NotImplemented
 	public int executeUpdate(String sql, String[] columnNames) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return executeUpdate(sql);
 	}
 
 	@Override
@@ -473,20 +487,33 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		return execute(sql);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * Due to Firebolt maintains all indexes automatically the give parameter {@code columnIndexes} have no sense and is just ignored.
+	 * So, this method is equivalent to {@link #executeUpdate(String)}
+	 * @see <href a="https://docs.firebolt.io/godocs/using-indexes/using-indexes.html">Using Firebolt Indexes</href>
+	 */
 	@Override
-	@NotImplemented
 	public boolean execute(String sql, int[] columnIndexes) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return execute(sql);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * Due to Firebolt maintains all indexes automatically the give parameter {@code columnNames} have no sense and is just ignored.
+	 * So, this method is equivalent to {@link #executeUpdate(String)}
+	 * @see <href a="https://docs.firebolt.io/godocs/using-indexes/using-indexes.html">Using Firebolt Indexes</href>
+	 */
 	@Override
-	@NotImplemented
 	public boolean execute(String sql, String[] columnNames) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return execute(sql);
 	}
 
 	@Override
-	@NotImplemented
 	public int getResultSetHoldability() throws SQLException {
 		// N/A applicable as we do not support transactions => commits do not affect anything => kind of hold cursors over commit
 		return ResultSet.HOLD_CURSORS_OVER_COMMIT;
