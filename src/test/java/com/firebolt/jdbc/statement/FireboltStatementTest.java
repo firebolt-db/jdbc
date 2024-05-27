@@ -156,17 +156,17 @@ class FireboltStatementTest {
 
     @Test
     void shouldExecuteIfUpdateStatementWouldNotReturnAResultSetNoGeneratedKeys() throws SQLException {
-        shouldExecuteIfUpdateStatementWouldNotReturnAResultSet((statement, sql) -> statement.executeUpdate(sql, Statement.NO_GENERATED_KEYS));
+        shouldExecuteIfUpdateStatementWouldNotReturnAResultSet((fireboltStatement, sql) -> fireboltStatement.executeUpdate(sql, Statement.NO_GENERATED_KEYS));
     }
 
     @Test
     void shouldExecuteIfUpdateStatementWithIndexesWouldNotReturnAResultSet() throws SQLException {
-        shouldExecuteIfUpdateStatementWouldNotReturnAResultSet((statement, sql) -> statement.executeUpdate(sql, new int[0]));
+        shouldExecuteIfUpdateStatementWouldNotReturnAResultSet((fireboltStatement, sql) -> fireboltStatement.executeUpdate(sql, new int[0]));
     }
 
     @Test
     void shouldExecuteIfUpdateStatementWithNamesWouldNotReturnAResultSet() throws SQLException {
-        shouldExecuteIfUpdateStatementWouldNotReturnAResultSet((statement, sql) -> statement.executeUpdate(sql, new String[0]));
+        shouldExecuteIfUpdateStatementWouldNotReturnAResultSet((fireboltStatement, sql) -> fireboltStatement.executeUpdate(sql, new String[0]));
     }
 
     private void shouldExecuteIfUpdateStatementWouldNotReturnAResultSet(CheckedBiFunction<Statement, String, Integer> executor) throws SQLException {
@@ -187,17 +187,17 @@ class FireboltStatementTest {
 
     @Test
     void shouldExecuteStatementNoGeneratedKeysThatReturnsResultSet() throws SQLException {
-        shouldExecuteStatementThatReturnsResultSet((statement, sql) -> statement.execute(sql, Statement.NO_GENERATED_KEYS));
+        shouldExecuteStatementThatReturnsResultSet((fireboltStatement, sql) -> fireboltStatement.execute(sql, Statement.NO_GENERATED_KEYS));
     }
 
     @Test
     void shouldExecuteStatementWithIndexesWouldNotReturnAResultSet() throws SQLException {
-        shouldExecuteStatementThatReturnsResultSet((statement, sql) -> statement.execute(sql, new int[0]));
+        shouldExecuteStatementThatReturnsResultSet((fireboltStatement, sql) -> fireboltStatement.execute(sql, new int[0]));
     }
 
     @Test
     void shouldExecuteStatementWithNamesWouldNotReturnAResultSet() throws SQLException {
-        shouldExecuteStatementThatReturnsResultSet((statement, sql) -> statement.execute(sql, new String[0]));
+        shouldExecuteStatementThatReturnsResultSet((fireboltStatement, sql) -> fireboltStatement.execute(sql, new String[0]));
     }
 
 
