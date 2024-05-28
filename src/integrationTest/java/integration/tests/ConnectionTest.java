@@ -76,7 +76,7 @@ class ConnectionTest extends IntegrationTest {
         String enginelessDb = "engineless_db" + System.currentTimeMillis();
         try (Connection systemConnection = createConnection(null)) {
             try {
-                systemConnection.createStatement().executeUpdate(format("CREATE DATABASE IF NOT EXISTS %s", enginelessDb));
+                systemConnection.createStatement().executeUpdate(format("CREATE DATABASE IF NOT EXISTS \"%s\"", enginelessDb));
                 String url = format("jdbc:firebolt:%s?env=%s&account=%s&engine=%s", enginelessDb, params.getEnv(), params.getAccount(), params.getEngine());
                 String errorMessage = format("The engine with the name %s is not attached to database %s", params.getEngine(), enginelessDb);
                 assertEquals(errorMessage, assertThrows(FireboltException.class, () -> DriverManager.getConnection(url, params.getPrincipal(), params.getSecret())).getMessage());

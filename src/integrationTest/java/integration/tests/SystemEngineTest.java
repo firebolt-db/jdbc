@@ -36,6 +36,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Map.entry;
@@ -134,23 +135,23 @@ public class SystemEngineTest extends IntegrationTest {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
 		try (Connection connection = createConnection(getSystemEngineName())) {
 			try {
-				connection.createStatement().executeUpdate(format("USE %s %s", entityType, current.getDatabase())); // use current DB; shouldn't have any effect
+				connection.createStatement().executeUpdate(format("USE %s \"%s\"", entityType, current.getDatabase())); // use current DB; shouldn't have any effect
 				assertNull(getTableDbName(connection, TABLE1)); // the table does not exist yet
-				connection.createStatement().executeUpdate(format("CREATE TABLE %s ( id LONG)", TABLE1)); // create table1 in current DB
+				connection.createStatement().executeUpdate(format("CREATE TABLE \"%s\" ( id LONG)", TABLE1)); // create table1 in current DB
 				assertEquals(current.getDatabase(), getTableDbName(connection, TABLE1)); // now table t1 exists
 				Assert.assertThrows(SQLException.class, () -> connection.createStatement().executeUpdate(format("USE %s %s", entityType, USE_DATABASE_NAME))); // DB does not exist
-				connection.createStatement().executeUpdate(format("CREATE DATABASE IF NOT EXISTS %s", USE_DATABASE_NAME)); // create DB
+				connection.createStatement().executeUpdate(format("CREATE DATABASE IF NOT EXISTS \"%s\"", USE_DATABASE_NAME)); // create DB
 				connection.createStatement().executeUpdate(format("USE %s %s", entityType, USE_DATABASE_NAME)); // Now this should succeed
-				connection.createStatement().executeUpdate(format("CREATE TABLE %s ( id LONG)", TABLE2)); // create table2 in other DB
+				connection.createStatement().executeUpdate(format("CREATE TABLE \"%s\" ( id LONG)", TABLE2)); // create table2 in other DB
 				assertNull(getTableDbName(connection, TABLE1)); // table1 does not exist here
 				assertEquals(USE_DATABASE_NAME, getTableDbName(connection, TABLE2)); // but table2 does exist
 			} finally {
 				// now clean up everything
 				for (String query : new String[] {
-						format("USE %s %s", entityType, USE_DATABASE_NAME), // switch to DB that should be current just in case because the previous code can fail at any phase
+						format("USE %s \"%s\"", entityType, USE_DATABASE_NAME), // switch to DB that should be current just in case because the previous code can fail at any phase
 						format("DROP TABLE %s", TABLE2),
-						format("DROP DATABASE %s", USE_DATABASE_NAME),
-						format("USE %s %s", entityType, current.getDatabase()), // now switch back
+						format("DROP DATABASE \"%s\"", USE_DATABASE_NAME),
+						format("USE %s \"%s\"", entityType, current.getDatabase()), // now switch back
 						format("DROP TABLE %s", TABLE1)}) {
 					try (Statement statement = connection.createStatement()) {
 						statement.executeUpdate(query);
@@ -169,23 +170,65 @@ public class SystemEngineTest extends IntegrationTest {
 	void useEngine() throws SQLException {
 		try (Connection connection = createConnection(getSystemEngineName())) {
 			try {
-				connection.createStatement().executeUpdate("USE ENGINE SYSTEM");
-				assertThrows(SQLException.class, () -> connection.createStatement().executeUpdate(format("USE ENGINE %s", ENGINE_NAME)));
-				connection.createStatement().executeUpdate(format("CREATE ENGINE %s", ENGINE_NAME));
-				connection.createStatement().executeUpdate(format("USE ENGINE %s", ENGINE_NAME));
-				connection.createStatement().executeUpdate(format("CREATE DATABASE IF NOT EXISTS %s", USE_DATABASE_NAME));
-				connection.createStatement().executeUpdate(format("USE DATABASE %s", USE_DATABASE_NAME));
-				connection.createStatement().executeUpdate(format("CREATE TABLE %s ( id LONG)", TABLE1));
+				connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", SYSTEM_ENGINE_NAME));
+				assertThrows(SQLException.class, () -> connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", ENGINE_NAME)));
+				connection.createStatement().executeUpdate(format("CREATE ENGINE \"%s\"", ENGINE_NAME));
+				connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", ENGINE_NAME));
+				connection.createStatement().executeUpdate(format("CREATE DATABASE IF NOT EXISTS \"%s\"", USE_DATABASE_NAME));
+				connection.createStatement().executeUpdate(format("USE DATABASE \"%s\"", USE_DATABASE_NAME));
+				connection.createStatement().executeUpdate(format("CREATE TABLE \"%s\" ( id LONG)", TABLE1));
 				connection.createStatement().executeUpdate(format("INSERT INTO %s (id) VALUES (1)", TABLE1)); // should succeed using user engine
 				// switch back to the system engine
-				connection.createStatement().executeUpdate("USE ENGINE SYSTEM");
+				connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", SYSTEM_ENGINE_NAME));
 				assertThrows(SQLException.class, () -> connection.createStatement().executeUpdate(format("INSERT INTO %s (id) VALUES (1)", TABLE1))); // system engine cannot insert data
 			} finally {
-				connection.createStatement().executeUpdate(format("USE DATABASE %s", USE_DATABASE_NAME));
+				connection.createStatement().executeUpdate(format("USE DATABASE \"%s\"", USE_DATABASE_NAME));
 				connection.createStatement().executeUpdate(format("DROP TABLE %s", TABLE1));
-				connection.createStatement().executeUpdate(format("DROP DATABASE %s", USE_DATABASE_NAME));
-				connection.createStatement().executeUpdate(format("STOP ENGINE %s", ENGINE_NAME));
-				connection.createStatement().executeUpdate(format("DROP ENGINE %s", ENGINE_NAME));
+				connection.createStatement().executeUpdate(format("DROP DATABASE \"%s\"", USE_DATABASE_NAME));
+				connection.createStatement().executeUpdate(format("STOP ENGINE \"%s\"", ENGINE_NAME));
+				connection.createStatement().executeUpdate(format("DROP ENGINE \"%s\"", ENGINE_NAME));
+			}
+		}
+	}
+
+	@Test
+	@Tag("v2")
+	@Tag("slow")
+	@EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.GE)
+	void useEngineMixedCase() throws SQLException {
+		String mixedCaseEngineName = "JavaIntegrationTestMixedCase" + ID;
+		try (Connection connection = createConnection(getSystemEngineName())) {
+			try {
+				connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", SYSTEM_ENGINE_NAME));
+				connection.createStatement().executeUpdate(format("CREATE ENGINE \"%s\"", mixedCaseEngineName));
+				connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", mixedCaseEngineName));
+				assertThrows(SQLException.class, () -> connection.createStatement().executeUpdate(format("USE ENGINE %s", mixedCaseEngineName)));
+			} finally {
+				connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", SYSTEM_ENGINE_NAME));
+				connection.createStatement().executeUpdate(format("STOP ENGINE \"%s\"", mixedCaseEngineName));
+				connection.createStatement().executeUpdate(format("DROP ENGINE \"%s\"", mixedCaseEngineName));
+			}
+		}
+	}
+
+	@Test
+	@Tag("v2")
+	@Tag("slow")
+	@EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.GE)
+	void useEngineMixedCaseToLowerCase() throws SQLException {
+		String mixedCaseEngineName = "JavaIntegrationTestToLowerCase" + ID;
+		try (Connection connection = createConnection(getSystemEngineName())) {
+			try {
+				connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", SYSTEM_ENGINE_NAME));
+				// engine name is lower cased because it is not quoted
+				connection.createStatement().executeUpdate(format("CREATE ENGINE %s", mixedCaseEngineName));
+				connection.createStatement().executeUpdate(format("USE ENGINE %s", mixedCaseEngineName));
+				// engine name remains mixed case and statement fails because engine name was not quoted when we created the engine
+				assertThrows(SQLException.class, () -> connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", mixedCaseEngineName)));
+			} finally {
+				connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", SYSTEM_ENGINE_NAME));
+				connection.createStatement().executeUpdate(format("STOP ENGINE %s", mixedCaseEngineName));
+				connection.createStatement().executeUpdate(format("DROP ENGINE %s", mixedCaseEngineName));
 			}
 		}
 	}
@@ -259,20 +302,20 @@ public class SystemEngineTest extends IntegrationTest {
 			try {
 				boolean attachEngineToDb = ((FireboltConnection)connection).getInfraVersion() < 2;
 				List<String> queries = Stream.of(
-								entry(true, format("CREATE DATABASE IF NOT EXISTS %s", SECOND_DATABASE_NAME)),
-								entry(true, format("CREATE ENGINE %s", ENGINE_NAME)),
-								entry(attachEngineToDb, format("ATTACH ENGINE %s TO %s;", ENGINE_NAME, SECOND_DATABASE_NAME)),
-								entry(true, format("ALTER DATABASE %s SET DESCRIPTION = 'JDBC Integration test'", SECOND_DATABASE_NAME)),
-								entry(true, format("ALTER ENGINE %s RENAME TO %s", ENGINE_NAME, ENGINE_NEW_NAME)),
-								entry(true, format("START ENGINE %s", ENGINE_NEW_NAME)))
+								entry(true, format("CREATE DATABASE IF NOT EXISTS \"%s\"", SECOND_DATABASE_NAME)),
+								entry(true, format("CREATE ENGINE \"%s\"", ENGINE_NAME)),
+								entry(attachEngineToDb, format("ATTACH ENGINE \"%s\" TO \"%s\";", ENGINE_NAME, SECOND_DATABASE_NAME)),
+								entry(true, format("ALTER DATABASE \"%s\" SET DESCRIPTION = 'JDBC Integration test'", SECOND_DATABASE_NAME)),
+								entry(true, format("ALTER ENGINE \"%s\" RENAME TO \"%s\"", ENGINE_NAME, ENGINE_NEW_NAME)),
+								entry(true, format("START ENGINE \"%s\"", ENGINE_NEW_NAME)))
 						.filter(Map.Entry::getKey).map(Map.Entry::getValue).collect(toList());
 				executeAll(connection, queries);
 			} finally {
 				// now clean up everything
 				for (String query : new String[]{
-						format("STOP ENGINE %s", ENGINE_NEW_NAME),
-						format("DROP ENGINE %s", ENGINE_NEW_NAME),
-						format("DROP DATABASE %s", SECOND_DATABASE_NAME)}) {
+						format("STOP ENGINE \"%s\"", ENGINE_NEW_NAME),
+						format("DROP ENGINE \"%s\"", ENGINE_NEW_NAME),
+						format("DROP DATABASE \"%s\"", SECOND_DATABASE_NAME)}) {
 					try (Statement statement = connection.createStatement()) {
 						statement.executeUpdate(query);
 					} catch (SQLException e) { // catch just in case to do our best to clean everything even if test has failed
