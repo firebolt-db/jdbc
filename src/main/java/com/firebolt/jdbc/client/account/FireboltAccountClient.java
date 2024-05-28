@@ -12,6 +12,8 @@ import okhttp3.OkHttpClient;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static java.lang.String.format;
 
@@ -23,6 +25,7 @@ public class FireboltAccountClient extends FireboltClient {
     private static final String URI_SUFFIX_DATABASE_INFO_URL = "engines:getURLByDatabaseName?databaseName=";
     private static final String URI_PREFIX_WITH_ACCOUNT_RESOURCE = "%s/core/v1/accounts/%s/%s";
     private static final String URI_PREFIX_WITHOUT_ACCOUNT_RESOURCE = "%s/core/v1/account/%s";
+    private final Map<String, Object> resourceCache = new HashMap<>();
 
     public FireboltAccountClient(OkHttpClient httpClient, FireboltConnection fireboltConnection, String customDrivers, String customClients) {
         super(httpClient, fireboltConnection, customDrivers, customClients);
@@ -38,7 +41,12 @@ public class FireboltAccountClient extends FireboltClient {
      */
     public FireboltAccountResponse getAccount(String host, String account, String accessToken) throws SQLException, IOException {
         String uri = format(GET_ACCOUNT_ID_URI, host, account);
-        return getResource(uri, host, accessToken, FireboltAccountResponse.class);
+        FireboltAccountResponse accountResponse = (FireboltAccountResponse)resourceCache.get(uri);
+        if (accountResponse == null) {
+            accountResponse = getResource(uri, host, accessToken, FireboltAccountResponse.class);
+            resourceCache.put(uri, accountResponse);
+        }
+        return accountResponse;
     }
 
     /**
