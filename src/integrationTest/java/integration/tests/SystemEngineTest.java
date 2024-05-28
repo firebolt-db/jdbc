@@ -36,6 +36,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Map.entry;
@@ -169,7 +170,7 @@ public class SystemEngineTest extends IntegrationTest {
 	void useEngine() throws SQLException {
 		try (Connection connection = createConnection(getSystemEngineName())) {
 			try {
-				connection.createStatement().executeUpdate("USE ENGINE \"SYSTEM\"");
+				connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", SYSTEM_ENGINE_NAME));
 				assertThrows(SQLException.class, () -> connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", ENGINE_NAME)));
 				connection.createStatement().executeUpdate(format("CREATE ENGINE \"%s\"", ENGINE_NAME));
 				connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", ENGINE_NAME));
@@ -178,7 +179,7 @@ public class SystemEngineTest extends IntegrationTest {
 				connection.createStatement().executeUpdate(format("CREATE TABLE \"%s\" ( id LONG)", TABLE1));
 				connection.createStatement().executeUpdate(format("INSERT INTO %s (id) VALUES (1)", TABLE1)); // should succeed using user engine
 				// switch back to the system engine
-				connection.createStatement().executeUpdate("USE ENGINE SYSTEM");
+				connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", SYSTEM_ENGINE_NAME));
 				assertThrows(SQLException.class, () -> connection.createStatement().executeUpdate(format("INSERT INTO %s (id) VALUES (1)", TABLE1))); // system engine cannot insert data
 			} finally {
 				connection.createStatement().executeUpdate(format("USE DATABASE \"%s\"", USE_DATABASE_NAME));
