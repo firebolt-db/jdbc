@@ -193,6 +193,48 @@ public class SystemEngineTest extends IntegrationTest {
 
 	@Test
 	@Tag("v2")
+	@Tag("slow")
+	@EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.GE)
+	void useEngineMixedCase() throws SQLException {
+		String mixedCaseEngineName = "JavaIntegrationTestMixedCase" + ID;
+		try (Connection connection = createConnection(getSystemEngineName())) {
+			try {
+				connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", SYSTEM_ENGINE_NAME));
+				connection.createStatement().executeUpdate(format("CREATE ENGINE \"%s\"", mixedCaseEngineName));
+				connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", mixedCaseEngineName));
+				assertThrows(SQLException.class, () -> connection.createStatement().executeUpdate(format("USE ENGINE %s", mixedCaseEngineName)));
+			} finally {
+				connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", SYSTEM_ENGINE_NAME));
+				connection.createStatement().executeUpdate(format("STOP ENGINE \"%s\"", mixedCaseEngineName));
+				connection.createStatement().executeUpdate(format("DROP ENGINE \"%s\"", mixedCaseEngineName));
+			}
+		}
+	}
+
+	@Test
+	@Tag("v2")
+	@Tag("slow")
+	@EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.GE)
+	void useEngineMixedCaseToLowerCase() throws SQLException {
+		String mixedCaseEngineName = "JavaIntegrationTestToLowerCase" + ID;
+		try (Connection connection = createConnection(getSystemEngineName())) {
+			try {
+				connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", SYSTEM_ENGINE_NAME));
+				// engine name is lower cased because it is not quoted
+				connection.createStatement().executeUpdate(format("CREATE ENGINE %s", mixedCaseEngineName));
+				connection.createStatement().executeUpdate(format("USE ENGINE %s", mixedCaseEngineName));
+				// engine name remains mixed case and statement fails because engine name was not quoted when we created the engine
+				assertThrows(SQLException.class, () -> connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", mixedCaseEngineName)));
+			} finally {
+				connection.createStatement().executeUpdate(format("USE ENGINE \"%s\"", SYSTEM_ENGINE_NAME));
+				connection.createStatement().executeUpdate(format("STOP ENGINE %s", mixedCaseEngineName));
+				connection.createStatement().executeUpdate(format("DROP ENGINE %s", mixedCaseEngineName));
+			}
+		}
+	}
+
+	@Test
+	@Tag("v2")
 	void connectToAccountWithoutUser() throws SQLException, IOException {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
 		String database = current.getDatabase();
