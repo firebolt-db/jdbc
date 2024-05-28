@@ -27,7 +27,10 @@ import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -110,9 +113,6 @@ abstract class FireboltConnectionTest {
 
 	private static Stream<Arguments> unsupported() {
 		return Stream.of(
-				Arguments.of("createClob", (Executable) () -> connection.createClob()),
-				Arguments.of("createNClob", (Executable) () -> connection.createNClob()),
-				Arguments.of("createBlob", (Executable) () -> connection.createBlob()),
 				Arguments.of("createSQLXML", (Executable) () -> connection.createSQLXML()),
 				Arguments.of("createStruct", (Executable) () -> connection.createStruct("text", new Object[] {"name"})),
 
@@ -608,6 +608,26 @@ abstract class FireboltConnectionTest {
 			Array array = fireboltConnection.createArrayOf("text", data);
 			assertEquals(Types.VARCHAR, array.getBaseType());
 			assertArrayEquals(data, (Object[])array.getArray());
+		}
+	}
+
+	@Test
+	void createBlob() throws SQLException, IOException {
+		try (Connection fireboltConnection = createConnection(URL, connectionProperties)) {
+			Blob blob = fireboltConnection.createBlob();
+			String str = "hello";
+			blob.setBytes(1, str.getBytes());
+			assertEquals(str, new String(blob.getBinaryStream().readAllBytes()));
+		}
+	}
+
+	@Test
+	void createClob() throws SQLException, IOException {
+		try (Connection fireboltConnection = createConnection(URL, connectionProperties)) {
+			Clob clob = fireboltConnection.createClob();
+			String str = "hello";
+			clob.setString(1, str);
+			assertEquals(str, new String(clob.getAsciiStream().readAllBytes()));
 		}
 	}
 

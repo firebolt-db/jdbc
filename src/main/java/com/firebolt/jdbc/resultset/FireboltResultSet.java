@@ -15,11 +15,11 @@ import com.firebolt.jdbc.type.BaseType;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.array.FireboltArray;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
+import com.firebolt.jdbc.type.lob.FireboltBlob;
+import com.firebolt.jdbc.type.lob.FireboltClob;
 import com.firebolt.jdbc.util.LoggerUtil;
 import org.apache.commons.text.StringEscapeUtils;
 
-import javax.sql.rowset.serial.SerialBlob;
-import javax.sql.rowset.serial.SerialClob;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -966,14 +966,12 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public Blob getBlob(int columnIndex) throws SQLException {
-		byte[] bytes = getBytes(columnIndex);
-		return bytes == null ? null : new SerialBlob(bytes);
+		return Optional.ofNullable(getBytes(columnIndex)).map(FireboltBlob::new).orElse(null);
 	}
 
 	@Override
 	public Clob getClob(int columnIndex) throws SQLException {
-		String str = getString(columnIndex);
-		return str == null ? null : new SerialClob(str.toCharArray());
+		return Optional.ofNullable(getString(columnIndex)).map(String::toCharArray).map(FireboltClob::new).orElse(null);
 	}
 
 	@Override
@@ -1124,12 +1122,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	@Override
 	public NClob getNClob(int columnIndex) throws SQLException {
 		String str = getString(columnIndex);
-		class FireboltNClob extends SerialClob implements NClob {
-			public FireboltNClob(char[] ch) throws SQLException {
-				super(ch);
-			}
-		}
-		return str == null ? null : new FireboltNClob(str.toCharArray());
+		return str == null ? null : new FireboltClob(str.toCharArray());
 	}
 
 	@Override

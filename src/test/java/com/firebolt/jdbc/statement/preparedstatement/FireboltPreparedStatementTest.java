@@ -8,6 +8,8 @@ import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.array.FireboltArray;
+import com.firebolt.jdbc.type.lob.FireboltBlob;
+import com.firebolt.jdbc.type.lob.FireboltClob;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,8 +27,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.sql.rowset.serial.SerialBlob;
-import javax.sql.rowset.serial.SerialClob;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -90,13 +90,6 @@ class FireboltPreparedStatementTest {
 		void set(PreparedStatement statement, int index, T value) throws SQLException;
 	}
 
-	private static class SerialNClob extends SerialClob implements NClob {
-		public SerialNClob(char[] ch) throws SQLException {
-			super(ch);
-		}
-	}
-
-
 	private static Stream<Arguments> unsupported() {
 		return Stream.of(
 					Arguments.of("setRef", (Executable) () -> statement.setRef(1, mock(Ref.class))),
@@ -115,7 +108,7 @@ class FireboltPreparedStatementTest {
 				Arguments.of("setClob((Clob)null)", (Setter) statement -> statement.setClob(1, (Clob)null), "NULL"),
 				Arguments.of("setClob((Reader)null)", (Setter) statement -> statement.setClob(1, (Reader)null), "NULL"),
 				Arguments.of("setClob((Reader)null, length)", (Setter) statement -> statement.setClob(1, null, 1L), "NULL"),
-				Arguments.of("setClob(Reader)", (Setter) statement -> statement.setClob(1, new SerialClob("hello".toCharArray())), "'hello'"),
+				Arguments.of("setClob(Reader)", (Setter) statement -> statement.setClob(1, new FireboltClob("hello".toCharArray())), "'hello'"),
 				Arguments.of("setClob(Reader, length=)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 5), "'hello'"),
 				Arguments.of("setClob(Reader, length-1)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 4), "'hell'"),
 				Arguments.of("setClob(Reader, length+1)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 6), "'hello'"),
@@ -126,7 +119,7 @@ class FireboltPreparedStatementTest {
 				Arguments.of("setNClob((NClob)null)", (Setter) statement -> statement.setNClob(1, (NClob)null), "NULL"),
 				Arguments.of("setNClob((Reader)null)", (Setter) statement -> statement.setNClob(1, (Reader)null), "NULL"),
 				Arguments.of("setNClob((Reader)null, length)", (Setter) statement -> statement.setNClob(1, null, 1L), "NULL"),
-				Arguments.of("setClob(Reader)", (Setter) statement -> statement.setNClob(1, new SerialNClob("hello".toCharArray())), "'hello'"),
+				Arguments.of("setClob(Reader)", (Setter) statement -> statement.setNClob(1, new FireboltClob("hello".toCharArray())), "'hello'"),
 				Arguments.of("setNClob(Reader, length=)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 5), "'hello'"),
 				Arguments.of("setNClob(Reader, length-1)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 4), "'hell'"),
 				Arguments.of("setNClob(Reader, length+1)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 6), "'hello'"),
@@ -137,7 +130,7 @@ class FireboltPreparedStatementTest {
 				Arguments.of("setBlob((Blob)null)", (Setter) statement -> statement.setBlob(1, (Blob)null), "NULL"),
 				Arguments.of("setBClob((InputStream)null)", (Setter) statement -> statement.setBlob(1, (InputStream)null), "NULL"),
 				Arguments.of("setBClob((InputStream)null, length)", (Setter) statement -> statement.setBlob(1, null, 1L), "NULL"),
-				Arguments.of("setBlob((Clob)null)", (Setter) statement -> statement.setBlob(1, new SerialBlob("hello".getBytes())), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
+				Arguments.of("setBlob((Clob)null)", (Setter) statement -> statement.setBlob(1, new FireboltBlob("hello".getBytes())), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
 
 				Arguments.of("setCharacterStream(null)", (Setter) statement -> statement.setCharacterStream(1, null), "NULL"),
 				Arguments.of("setCharacterStream(null, int)", (Setter) statement -> statement.setCharacterStream(1, null, 1), "NULL"),
