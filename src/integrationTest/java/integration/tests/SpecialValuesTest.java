@@ -190,9 +190,9 @@ public class SpecialValuesTest extends IntegrationTest {
     private void specialSelect(Connection connection, String query, Number floatGetObjectValue, Number doubleGetObjectValue, Number expectedGetObjectValue) throws SQLException {
         try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(query)) {
             resultSet.next();
-            assertThrows(IllegalArgumentException.class, () -> resultSet.getShort(1));
-            assertThrows(IllegalArgumentException.class, () -> resultSet.getInt(1));
-            assertThrows(IllegalArgumentException.class, () -> resultSet.getLong(1));
+            assertThrows(SQLException.class, () -> resultSet.getShort(1));
+            assertThrows(SQLException.class, () -> resultSet.getInt(1));
+            assertThrows(SQLException.class, () -> resultSet.getLong(1));
             assertEquals(floatGetObjectValue, resultSet.getFloat(1));
             assertEquals(doubleGetObjectValue, resultSet.getDouble(1));
             assertEquals(expectedGetObjectValue, resultSet.getObject(1));
