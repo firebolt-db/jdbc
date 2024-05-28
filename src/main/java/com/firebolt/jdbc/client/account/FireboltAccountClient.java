@@ -25,7 +25,7 @@ public class FireboltAccountClient extends FireboltClient {
     private static final String URI_SUFFIX_DATABASE_INFO_URL = "engines:getURLByDatabaseName?databaseName=";
     private static final String URI_PREFIX_WITH_ACCOUNT_RESOURCE = "%s/core/v1/accounts/%s/%s";
     private static final String URI_PREFIX_WITHOUT_ACCOUNT_RESOURCE = "%s/core/v1/account/%s";
-    private final Map<String, Object> resourceCache = new ConcurrentHashMap<>();
+    private static final Map<String, Object> resourceCache = new ConcurrentHashMap<>();
 
     public FireboltAccountClient(OkHttpClient httpClient, FireboltConnection fireboltConnection, String customDrivers, String customClients) {
         super(httpClient, fireboltConnection, customDrivers, customClients);

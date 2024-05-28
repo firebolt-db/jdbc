@@ -18,7 +18,7 @@ public class FireboltAccountRetriever<T> extends FireboltClient {
     private final String host;
     private final String path;
     private final Class<T> type;
-    private final Map<String, T> valueCache = new ConcurrentHashMap<>();
+    private static final Map<String, Object> valueCache = new ConcurrentHashMap<>();
 
     public FireboltAccountRetriever(OkHttpClient httpClient, FireboltConnection connection, String customDrivers, String customClients, String host, String path, Class<T> type) {
         super(httpClient, connection, customDrivers, customClients);
@@ -29,7 +29,8 @@ public class FireboltAccountRetriever<T> extends FireboltClient {
 
     public T retrieve(String accessToken, String accountName) throws SQLException {
         try {
-            T value = valueCache.get(accountName);
+            @SuppressWarnings("unchecked")
+            T value = (T)valueCache.get(accountName);
             if (value == null) {
                 value = getResource(format(URL, host, accountName, path), accessToken, type);
                 valueCache.put(accountName, value);
