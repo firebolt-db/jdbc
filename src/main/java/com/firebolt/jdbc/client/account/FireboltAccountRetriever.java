@@ -7,8 +7,8 @@ import okhttp3.OkHttpClient;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
@@ -18,7 +18,7 @@ public class FireboltAccountRetriever<T> extends FireboltClient {
     private final String host;
     private final String path;
     private final Class<T> type;
-    private final Map<String, T> valueCache = new HashMap<>();
+    private final Map<String, T> valueCache = new ConcurrentHashMap<>();
 
     public FireboltAccountRetriever(OkHttpClient httpClient, FireboltConnection connection, String customDrivers, String customClients, String host, String path, Class<T> type) {
         super(httpClient, connection, customDrivers, customClients);

@@ -12,8 +12,8 @@ import okhttp3.OkHttpClient;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.String.format;
 
@@ -25,7 +25,7 @@ public class FireboltAccountClient extends FireboltClient {
     private static final String URI_SUFFIX_DATABASE_INFO_URL = "engines:getURLByDatabaseName?databaseName=";
     private static final String URI_PREFIX_WITH_ACCOUNT_RESOURCE = "%s/core/v1/accounts/%s/%s";
     private static final String URI_PREFIX_WITHOUT_ACCOUNT_RESOURCE = "%s/core/v1/account/%s";
-    private final Map<String, Object> resourceCache = new HashMap<>();
+    private final Map<String, Object> resourceCache = new ConcurrentHashMap<>();
 
     public FireboltAccountClient(OkHttpClient httpClient, FireboltConnection fireboltConnection, String customDrivers, String customClients) {
         super(httpClient, fireboltConnection, customDrivers, customClients);
@@ -39,6 +39,7 @@ public class FireboltAccountClient extends FireboltClient {
      * @param accessToken the access token
      * @return the account
      */
+    @SuppressWarnings("java:S3824") // cannot use computeIfAbsent() because getResource() throws checked exceptions
     public FireboltAccountResponse getAccount(String host, String account, String accessToken) throws SQLException, IOException {
         String uri = format(GET_ACCOUNT_ID_URI, host, account);
         FireboltAccountResponse accountResponse = (FireboltAccountResponse)resourceCache.get(uri);
