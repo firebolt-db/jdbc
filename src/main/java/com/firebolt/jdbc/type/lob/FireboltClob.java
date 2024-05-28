@@ -96,6 +96,6 @@ public class FireboltClob extends FireboltLob<char[], Character> implements NClo
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(buf);
+        return 31 * FireboltClob.class.hashCode() + Arrays.hashCode(buf);
     }
 }

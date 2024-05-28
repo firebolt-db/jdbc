@@ -50,18 +50,19 @@ abstract class FireboltLobTest {
 
     protected static Stream<Arguments> position() {
         return Stream.of(
-            Arguments.of("hello, world!", "hello", 1, 1),
-            Arguments.of("hello, world!", "world", 1, 8),
-            Arguments.of("hello, world!", "world", 3, 8),
-            Arguments.of("hello, world!", "world", 8, 8),
-            Arguments.of("hello, world!", "world", 9, -1),
-            Arguments.of("hello, world!", "world", 0, -1),
-            Arguments.of("hello, world!", "world", 14, -1),
-            Arguments.of("hello, world!", "bye", 1, -1),
-            Arguments.of("hello, world!", "hello", 5, -1),
-            Arguments.of("1212", "112", 1, -1),
-            Arguments.of("", "", 1, -1),
-            Arguments.of("hello", "",1, 1)
+                Arguments.of("hello, world!", "hello", 1, 1),
+                Arguments.of("hello, world!", "world", 1, 8),
+                Arguments.of("hello, world!", "world", 3, 8),
+                Arguments.of("hello, world!", "world", 8, 8),
+                Arguments.of("hello, world!", "world", 9, -1),
+                Arguments.of("hello, world!", "world", 0, -1),
+                Arguments.of("hello, world!", "world", 14, -1),
+                Arguments.of("hello, world!", "bye", 1, -1),
+                Arguments.of("hello, world!", "hello", 5, -1),
+                Arguments.of("1212", "112", 1, -1),
+                Arguments.of("", "", 1, -1),
+                Arguments.of("hello", "h", 0, -1),
+                Arguments.of("hello", "", 1, 1)
         );
     }
 

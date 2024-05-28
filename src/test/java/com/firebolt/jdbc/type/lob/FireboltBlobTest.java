@@ -182,4 +182,11 @@ class FireboltBlobTest extends FireboltLobTest {
             assertNotEquals(blob1.hashCode(), blob2.hashCode());
         }
     }
+
+    @Test
+    void equalsNotCompatibleObject() {
+        String text = "hello";
+        Blob blob = new FireboltBlob(text.getBytes());
+        assertNotEquals(blob, text);
+    }
 }

@@ -198,6 +198,13 @@ class FireboltClobTest extends FireboltLobTest {
         }
     }
 
+    @Test
+    void equalsNotCompatibleObject() {
+        String text = "hello";
+        Clob clob = new FireboltClob(text.toCharArray());
+        assertNotEquals(clob, text);
+    }
+
     private String readAll(Reader reader) {
         return new BufferedReader(reader).lines().collect(Collectors.joining(System.lineSeparator()));
     }

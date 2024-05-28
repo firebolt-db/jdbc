@@ -78,6 +78,6 @@ public class FireboltBlob extends FireboltLob<byte[], Byte> implements Blob {
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(buf);
+        return 31 * FireboltBlob.class.hashCode() + Arrays.hashCode(buf);
     }
 }
