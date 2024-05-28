@@ -78,7 +78,7 @@ abstract class FireboltLob<T, E> {
         buf = null;
     }
 
-    @SuppressWarnings("StatementWithEmptyBody") // so what?
+    @SuppressWarnings({"StatementWithEmptyBody", "java:S3776", "java:S127"})
     protected long position(T pattern, long start) throws SQLException {
         isValid(buf);
         int bufLength = Array.getLength(buf);
@@ -100,7 +100,7 @@ abstract class FireboltLob<T, E> {
                 int end = j + patternLength - 1;
                 for (int k = 1; j < end && elementGetter.apply(buf, j) == elementGetter.apply(pattern, k); j++, k++);
                 if (j == end) {
-                    return i + 1;
+                    return i + 1L;
                 }
             }
         }
@@ -138,6 +138,7 @@ abstract class FireboltLob<T, E> {
                 temp.clear();
             }
 
+            @Override
             public void close() {
                 flush();
                 closed = true;

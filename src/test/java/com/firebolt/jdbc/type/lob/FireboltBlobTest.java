@@ -7,9 +7,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.sql.Blob;
-import java.sql.Clob;
 import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;

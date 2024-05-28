@@ -605,9 +605,9 @@ abstract class FireboltConnectionTest {
 
 	@Test
 	void createArray() throws SQLException {
-		try (Connection connection = createConnection(URL, connectionProperties)) {
+		try (Connection fireboltConnection = createConnection(URL, connectionProperties)) {
 			Object[] data = new Object[] {"red", "green", "blue"};
-			Array array = connection.createArrayOf("text", data);
+			Array array = fireboltConnection.createArrayOf("text", data);
 			assertEquals(Types.VARCHAR, array.getBaseType());
 			assertArrayEquals(data, (Object[])array.getArray());
 		}
@@ -615,8 +615,8 @@ abstract class FireboltConnectionTest {
 
 	@Test
 	void createBlob() throws SQLException, IOException {
-		try (Connection connection = createConnection(URL, connectionProperties)) {
-			Blob blob = connection.createBlob();
+		try (Connection fireboltConnection = createConnection(URL, connectionProperties)) {
+			Blob blob = fireboltConnection.createBlob();
 			String str = "hello";
 			blob.setBytes(1, str.getBytes());
 			assertEquals(str, new String(blob.getBinaryStream().readAllBytes()));
@@ -625,8 +625,8 @@ abstract class FireboltConnectionTest {
 
 	@Test
 	void createClob() throws SQLException, IOException {
-		try (Connection connection = createConnection(URL, connectionProperties)) {
-			Clob clob = connection.createClob();
+		try (Connection fireboltConnection = createConnection(URL, connectionProperties)) {
+			Clob clob = fireboltConnection.createClob();
 			String str = "hello";
 			clob.setString(1, str);
 			assertEquals(str, new String(clob.getAsciiStream().readAllBytes()));

@@ -71,6 +71,7 @@ public class FireboltBlob extends FireboltLob<byte[], Byte> implements Blob {
     }
 
     @Override
+    @SuppressWarnings("java:S6201") // Pattern Matching for "instanceof" was introduced in java 16 while we still try to be compliant with java 11
     public boolean equals(Object obj) {
         return this == obj || (obj instanceof FireboltBlob && Arrays.equals(buf, ((FireboltBlob)obj).buf));
     }

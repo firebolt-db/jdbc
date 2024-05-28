@@ -20,7 +20,6 @@ import com.firebolt.jdbc.type.lob.FireboltClob;
 import com.firebolt.jdbc.util.LoggerUtil;
 import org.apache.commons.text.StringEscapeUtils;
 
-import javax.sql.rowset.serial.SerialClob;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

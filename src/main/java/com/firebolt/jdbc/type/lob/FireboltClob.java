@@ -89,6 +89,7 @@ public class FireboltClob extends FireboltLob<char[], Character> implements NClo
     }
 
     @Override
+    @SuppressWarnings("java:S6201") // Pattern Matching for "instanceof" was introduced in java 16 while we still try to be compliant with java 11
     public boolean equals(Object obj) {
         return this == obj || (obj instanceof FireboltClob && Arrays.equals(buf, ((FireboltClob)obj).buf));
     }
