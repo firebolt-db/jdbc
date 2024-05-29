@@ -43,6 +43,9 @@ import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -61,7 +64,7 @@ import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.util.stream.Collectors.toMap;
 
-public abstract class FireboltConnection extends JdbcBase implements Connection {
+public abstract class FireboltConnection extends JdbcBase implements Connection, CacheListener {
 
 	private static final Logger log = Logger.getLogger(FireboltConnection.class.getName());
 	private final FireboltAuthenticationService fireboltAuthenticationService;
@@ -78,6 +81,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection 
 
 	//Properties that are used at the beginning of the connection for authentication
 	protected final FireboltProperties loginProperties;
+	private final Collection<CacheListener> cacheListeners = Collections.newSetFromMap(new IdentityHashMap<>());
 
 	protected FireboltConnection(@NonNull String url,
 								 Properties connectionSettings,
@@ -668,5 +672,14 @@ public abstract class FireboltConnection extends JdbcBase implements Connection 
 
 	public int getInfraVersion() {
 		return infraVersion;
+	}
+
+	public void register(CacheListener listener) {
+		cacheListeners.add(listener);
+	}
+
+	@Override
+	public void cleanup() {
+		cacheListeners.forEach(CacheListener::cleanup);
 	}
 }

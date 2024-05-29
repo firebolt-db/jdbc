@@ -110,4 +110,8 @@ public class FireboltAccountClient extends FireboltClient {
         return account == null || account.isEmpty() ? format(URI_PREFIX_WITHOUT_ACCOUNT_RESOURCE, host, suffix) : format(URI_PREFIX_WITH_ACCOUNT_RESOURCE, host, account, suffix);
     }
 
+    @Override
+    public void cleanup() {
+        resourceCache.clear();
+    }
 }
