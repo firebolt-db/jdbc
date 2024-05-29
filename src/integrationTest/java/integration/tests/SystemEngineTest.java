@@ -1,5 +1,6 @@
 package integration.tests;
 
+import com.firebolt.jdbc.connection.CacheListener;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
@@ -257,6 +258,7 @@ public class SystemEngineTest extends IntegrationTest {
 //				}
 				String jdbcUrl = format("jdbc:firebolt:%s?env=%s&account=%s&engine=%s", database, current.getEnv(), current.getAccount(), current.getEngine());
 
+				((CacheListener)connection).cleanup();
 				SQLException e = assertThrows(SQLException.class, () -> DriverManager.getConnection(jdbcUrl, clientId, clientSecret));
 				assertTrue(e.getMessage().matches(format("Account '%s' does not exist in this organization or is not authorized.+RBAC.+", current.getAccount())), "Unexpected exception message: " + e.getMessage());
 			} finally {

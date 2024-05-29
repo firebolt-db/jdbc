@@ -1,21 +1,25 @@
 package com.firebolt.jdbc.client.account;
 
 import com.firebolt.jdbc.client.FireboltClient;
+import com.firebolt.jdbc.connection.CacheListener;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
 import okhttp3.OkHttpClient;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 
-public class FireboltAccountRetriever<T> extends FireboltClient {
+public class FireboltAccountRetriever<T> extends FireboltClient implements CacheListener {
     private static final String URL = "https://%s/web/v3/account/%s/%s";
     private final String host;
     private final String path;
     private final Class<T> type;
+    private static final Map<String, Object> valueCache = new ConcurrentHashMap<>();
 
     public FireboltAccountRetriever(OkHttpClient httpClient, FireboltConnection connection, String customDrivers, String customClients, String host, String path, Class<T> type) {
         super(httpClient, connection, customDrivers, customClients);
@@ -26,7 +30,14 @@ public class FireboltAccountRetriever<T> extends FireboltClient {
 
     public T retrieve(String accessToken, String accountName) throws SQLException {
         try {
-            return getResource(format(URL, host, accountName, path), accessToken, type);
+            String url = format(URL, host, accountName, path);
+            @SuppressWarnings("unchecked")
+            T value = (T)valueCache.get(url);
+            if (value == null) {
+                value = getResource(url, accessToken, type);
+                valueCache.put(url, value);
+            }
+            return value;
         } catch (IOException e) {
             throw new FireboltException(String.format("Failed to get %s url for account %s: %s", path, accountName, e.getMessage()), e);
         }
@@ -45,5 +56,10 @@ public class FireboltAccountRetriever<T> extends FireboltClient {
                            "Please verify the account name and make sure your service account has the correct RBAC permissions and is linked to a user.", account),
                     statusCode, errorMessageFromServer);
         }
+    }
+
+    @Override
+    public void cleanup() {
+        valueCache.clear();
     }
 }

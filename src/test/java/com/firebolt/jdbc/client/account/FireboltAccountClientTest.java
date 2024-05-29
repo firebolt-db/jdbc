@@ -28,6 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,9 +47,16 @@ class FireboltAccountClientTest {
 
     @Test
     void getAccount() throws SQLException, IOException {
+        client.cleanup();
         String accountId = "123";
         injectMockedResponse(httpClient, HTTP_OK, format("{\"account_id\":\"%s\"}", accountId)); // FireboltAccountResponse
         assertEquals(accountId, client.getAccount("http://host", "account", "token").getAccountId());
+        verify(httpClient, times(1)).newCall(any());
+        assertEquals(accountId, client.getAccount("http://host", "account", "token").getAccountId());
+        verify(httpClient, times(1)).newCall(any());
+        client.cleanup();
+        assertEquals(accountId, client.getAccount("http://host", "account", "token").getAccountId());
+        verify(httpClient, times(2)).newCall(any());
     }
 
     @Test

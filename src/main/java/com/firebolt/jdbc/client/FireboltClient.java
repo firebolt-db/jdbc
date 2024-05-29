@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.client;
 
+import com.firebolt.jdbc.connection.CacheListener;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
@@ -38,7 +39,7 @@ import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 import static java.util.Optional.ofNullable;
 
 @Getter
-public abstract class FireboltClient {
+public abstract class FireboltClient implements CacheListener {
 
 	private static final String HEADER_AUTHORIZATION = "Authorization";
 	private static final String HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE = "Bearer ";
@@ -54,6 +55,7 @@ public abstract class FireboltClient {
 		this.connection = connection;
 		this.headerUserAgentValue = UsageTrackerUtil.getUserAgentString(customDrivers != null ? customDrivers : "",
 				customClients != null ? customClients : "");
+		connection.register(this);
 	}
 
 	protected <T> T getResource(String uri, String accessToken, Class<T> valueType)
@@ -208,4 +210,8 @@ public abstract class FireboltClient {
 		return response.toString() + "\n" + response.headers();
 	}
 
+	@Override
+	public void cleanup() {
+		// empty default implementation
+	}
 }
