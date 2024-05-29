@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
@@ -50,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -81,9 +83,17 @@ class FireboltAccountRetrieverTest {
 
     @Test
     void shouldGetAccountId() throws SQLException, IOException {
+        fireboltAccountIdResolver.cleanup();
         FireboltAccount account = new FireboltAccount("12345", "central", 2);
         injectMockedResponse(httpClient, HTTP_OK, "{\"id\": \"12345\", \"region\":\"central\", \"infraVersion\":2}");
         assertEquals(account, fireboltAccountIdResolver.retrieve("access_token", "account"));
+        Mockito.verify(httpClient, times(1)).newCall(any());
+        // Do this again. The response is cached, so the invocation count will remain 1
+        assertEquals(account, fireboltAccountIdResolver.retrieve("access_token", "account"));
+        // now clean the cache and call resolve() again. The invocation counter will be incremented.
+        fireboltAccountIdResolver.cleanup();
+        assertEquals(account, fireboltAccountIdResolver.retrieve("access_token", "account"));
+        Mockito.verify(httpClient, times(2)).newCall(any());
     }
 
     @Test
