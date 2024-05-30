@@ -14,6 +14,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -21,6 +22,7 @@ import java.util.stream.IntStream;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -54,21 +56,28 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
 
     @ParameterizedTest
     @CsvSource(value = {
-            ",",
-            ",information_schema",
-            ",information%",
-            ",%schema",
-            ",%form%",
-            "{database},",
-            "{database},information_schema",
-            "{database},information%",
-            "{database},%schema",
-            "{database},%form%",
+            ",,information_schema",
+            ",information_schema,information_schema",
+            ",information%,information_schema",
+            ",%schema,information_schema",
+            ",%form%,information_schema",
+            "{database},,information_schema",
+            "{database},information_schema,information_schema",
+            "{database},information%,information_schema",
+            "{database},%schema,information_schema",
+            "{database},%form%,information_schema",
+
+            "wrong_catalog,,",
+            "wrong_catalog,%form%,",
     })
-    void getSchemasInformationSchema(String catalog, String schemaPattern) throws SQLException {
+    void getSchemasInformationSchema(String catalog, String schemaPattern, String expectedSchemasStr) throws SQLException {
         String database = integration.ConnectionInfo.getInstance().getDatabase();
         String cat = catalog == null ? null :  catalog.replace("{database}", database);
-        assertEquals(List.of(List.of("information_schema", database)), getSchemas(dbmd -> dbmd.getSchemas(cat, schemaPattern)));
+        List<List<String>> expectedSchemas = expectedSchemasStr == null ?
+                List.of()
+                :
+                Arrays.stream(expectedSchemasStr.split(";")).map(schema -> List.of(schema, database)).collect(toList());
+        assertEquals(expectedSchemas, getSchemas(dbmd -> dbmd.getSchemas(cat, schemaPattern)));
     }
 
     @ParameterizedTest
@@ -109,6 +118,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
             ",,,VIEW;TABLE,engines,",
             ",,%in%,VIEW;TABLE,engines,tables",
             ",,,TABLE,,",
+            "wrong_catalog,%form%,%in%,VIEW,,engines",
     })
     void getTables(String catalog, String schemaPattern, String tableNamePattern, String types, String requiredTableName, String forbiddenTableName) throws SQLException {
         String database = integration.ConnectionInfo.getInstance().getDatabase();
@@ -125,7 +135,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
             System.out.println(row.get(2));
         }
         if (requiredTableName == null) {
-            assertTrue(tables.isEmpty());
+            assertTrue(tables.isEmpty(), "List of tables must be empty but it was not");
         } else {
             assertTrue(tables.contains(requiredTableName), format("Required table %s is not found", requiredTableName));
         }
@@ -172,6 +182,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
             ",,,nobody,,information_schema.columns.column_name",
             ",,%in%,no-one,,information_schema.columns.column_name",
             ",,,does-not-exist,,information_schema.columns.column_name",
+            "wrong_catalog,%form%,%in%,type,,information_schema.engines.type",
     })
     void getColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern, String requiredColumn, String forbiddenColumn) throws SQLException {
         String database = integration.ConnectionInfo.getInstance().getDatabase();
@@ -186,7 +197,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
             columns.add(IntStream.of(1, 2, 3).boxed().map(i -> (String)row.get(i)).collect(joining(".")));
         }
         if (requiredColumn == null) {
-            assertTrue(columns.isEmpty());
+            assertTrue(columns.isEmpty(), "List of columns must be empty but it was not");
         } else {
             assertTrue(columns.contains(requiredColumn), format("Required column %s is not found", requiredColumn));
         }
