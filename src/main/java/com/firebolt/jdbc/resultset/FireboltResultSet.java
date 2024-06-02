@@ -36,6 +36,7 @@ import java.sql.Array;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Date;
+import java.sql.JDBCType;
 import java.sql.NClob;
 import java.sql.Ref;
 import java.sql.ResultSet;
@@ -50,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.TreeMap;
@@ -57,6 +59,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static com.firebolt.jdbc.type.BaseType.isNull;
 import static com.firebolt.jdbc.util.StringUtil.splitAll;
@@ -951,10 +954,21 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Object getObject(int columnIndex, Map<String, Class<?>> map) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		FireboltDataType dataType = resultSetMetaData.getColumn(columnIndex).getType().getDataType();
+		Map<String, Class<?>> caseInsensitiveMap = new TreeMap<>(CASE_INSENSITIVE_ORDER);
+		caseInsensitiveMap.putAll(map);
+		Class<?> type = getAllNames(dataType).map(caseInsensitiveMap::get).filter(Objects::nonNull).findFirst()
+				.orElseThrow(() -> new FireboltException(format("Cannot find type %s in provided types map", dataType)));
+		return getObject(columnIndex, type);
+	}
+
+	private Stream<String> getAllNames(FireboltDataType dataType) {
+		return Stream.concat(Stream.of(dataType.getDisplayName(), getJdbcType(dataType)).filter(Objects::nonNull), Stream.of(dataType.getAliases()));
+	}
+
+	private String getJdbcType(FireboltDataType dataType) {
+		return JDBCType.valueOf(dataType.getSqlType()).getName();
 	}
 
 	@Override
@@ -975,10 +989,8 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Object getObject(String columnLabel, Map<String, Class<?>> map) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getObject(findColumn(columnLabel), map);
 	}
 
 	@Override

@@ -118,7 +118,19 @@ class PreparedStatementTest extends IntegrationTest {
 						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
 							s.setLong(i, v.longValue());
 							return null;
-						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getLong(i))
+						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getLong(i)),
+
+				Arguments.of("getObject(Long.class)",
+						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+							s.setLong(i, v.longValue());
+							return null;
+						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> rs.getObject(i, Long.class).intValue()),
+
+				Arguments.of("getObject(i, java.util.Map.of(\"long\", Integer.class)",
+						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+							s.setLong(i, v.longValue());
+							return null;
+						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getObject(i, java.util.Map.of("long", Integer.class)))
 		);
 	}
 
