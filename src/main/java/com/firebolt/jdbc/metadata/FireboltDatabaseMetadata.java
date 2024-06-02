@@ -2,8 +2,6 @@ package com.firebolt.jdbc.metadata;
 
 import com.firebolt.jdbc.GenericWrapper;
 import com.firebolt.jdbc.QueryResult;
-import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
-import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.resultset.column.Column;
