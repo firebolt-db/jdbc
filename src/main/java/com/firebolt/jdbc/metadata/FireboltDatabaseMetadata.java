@@ -2,8 +2,6 @@ package com.firebolt.jdbc.metadata;
 
 import com.firebolt.jdbc.GenericWrapper;
 import com.firebolt.jdbc.QueryResult;
-import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
-import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.resultset.column.Column;
@@ -958,21 +956,16 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData, GenericWrappe
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public int getMaxRowSize() {
 		return 0;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean doesMaxRowSizeIncludeBlobs() {
-		return false;
+		return true;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public int getMaxStatementLength() {
 		return 0;
 	}
