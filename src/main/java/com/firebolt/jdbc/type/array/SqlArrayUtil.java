@@ -47,7 +47,7 @@ public class SqlArrayUtil {
 		}
 	}
 
-    public SqlArrayUtil(ColumnType columnType, Markers markers) {
+    private SqlArrayUtil(ColumnType columnType, Markers markers) {
         this.columnType = columnType;
         this.markers  = markers;
     }

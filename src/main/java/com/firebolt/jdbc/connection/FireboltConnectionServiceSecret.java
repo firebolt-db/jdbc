@@ -8,7 +8,6 @@ import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.client.authentication.ServiceAccountAuthenticationRequest;
 import com.firebolt.jdbc.client.gateway.GatewayUrlResponse;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltAccountIdService;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
@@ -21,7 +20,6 @@ import com.firebolt.jdbc.util.PropertyUtil;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
 
-import java.net.URI;
 import java.net.URL;
 import java.sql.SQLException;
 import java.util.Map;

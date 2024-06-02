@@ -234,7 +234,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
-	public void setAutoCommit(boolean autoCommit) throws SQLException {
+	public void setAutoCommit(boolean autoCommit) {
 		// No-op as Firebolt does not support transactions
 	}
 
@@ -265,7 +265,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	@Override
 	@NotImplemented
-	public void setCatalog(String catalog) throws SQLException {
+	public void setCatalog(String catalog) {
 		// no-op as catalogs are not supported
 	}
 
@@ -490,7 +490,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	@Override
 	@NotImplemented
-	public void commit() throws SQLException {
+	public void commit() {
 		// no-op as transactions are not supported
 	}
 
@@ -539,7 +539,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
-	public void setReadOnly(boolean readOnly) throws SQLException {
+	public void setReadOnly(boolean readOnly) {
 		// no-op
 	}
 
@@ -551,7 +551,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	@Override
 	@NotImplemented
-	public Map<String, Class<?>> getTypeMap() throws SQLException {
+	public Map<String, Class<?>> getTypeMap() {
 		// Since setTypeMap is currently not supported, an empty map is returned (refer to the doc for more info)
 		return Map.of();
 	}
@@ -570,7 +570,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
-	public void setHoldability(int holdability) throws SQLException {
+	public void setHoldability(int holdability) {
 		// No support for transaction
 	}
 
@@ -636,7 +636,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	}
 
 	@Override
-	public String getClientInfo(String name) throws SQLException {
+	public String getClientInfo(String name) {
 		return Optional.ofNullable(FireboltSessionProperty.byAlias(name.toUpperCase()).getValue(sessionProperties)).map(Object::toString).orElse(null);
 	}
 
