@@ -958,21 +958,16 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData, GenericWrappe
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public int getMaxRowSize() {
 		return 0;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public boolean doesMaxRowSizeIncludeBlobs() {
-		return false;
+		return true;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
 	public int getMaxStatementLength() {
 		return 0;
 	}
