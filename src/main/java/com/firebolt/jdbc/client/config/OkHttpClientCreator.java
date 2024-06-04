@@ -93,7 +93,7 @@ public class OkHttpClientCreator {
 	}
 
 	private static Optional<SSLConfig> getSSLConfig(FireboltProperties fireboltProperties) throws CertificateException,
-			NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException {
+			NoSuchAlgorithmException, KeyStoreException, IOException {
 		if (!fireboltProperties.isSsl()) {
 			return Optional.empty();
 		}

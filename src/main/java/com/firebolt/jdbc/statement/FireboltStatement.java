@@ -247,7 +247,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	public int getMaxRows() throws SQLException {
+	public int getMaxRows() {
 		return maxRows;
 	}
 
@@ -290,12 +290,12 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	public boolean isClosed() throws SQLException {
+	public boolean isClosed() {
 		return isClosed;
 	}
 
 	@Override
-	public synchronized ResultSet getResultSet() throws SQLException {
+	public synchronized ResultSet getResultSet() {
 		return firstUnclosedStatementResult != null ? firstUnclosedStatementResult.getResultSet() : null;
 	}
 
@@ -309,27 +309,27 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	public int getUpdateCount() throws SQLException {
+	public int getUpdateCount() {
 		return currentUpdateCount;
 	}
 
 	@Override
-	public void closeOnCompletion() throws SQLException {
+	public void closeOnCompletion() {
 		closeOnCompletion = true;
 	}
 
 	@Override
-	public boolean isCloseOnCompletion() throws SQLException {
+	public boolean isCloseOnCompletion() {
 		return closeOnCompletion;
 	}
 
 	@Override
-	public int getQueryTimeout() throws SQLException {
+	public int getQueryTimeout() {
 		return queryTimeout;
 	}
 
 	@Override
-	public void setQueryTimeout(int seconds) throws SQLException {
+	public void setQueryTimeout(int seconds) {
 		queryTimeout = seconds;
 	}
 
@@ -358,12 +358,12 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	public int getMaxFieldSize() throws SQLException {
+	public int getMaxFieldSize() {
 		return maxFieldSize;
 	}
 
 	@Override
-	public void setMaxFieldSize(int max) throws SQLException {
+	public void setMaxFieldSize(int max) {
 		maxFieldSize = max;
 	}
 
@@ -417,12 +417,12 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	public void addBatch(String sql) throws SQLException {
+	public void addBatch(String sql) {
 		batchStatements.add(sql);
 	}
 
 	@Override
-	public void clearBatch() throws SQLException {
+	public void clearBatch() {
 		batchStatements.clear();
 	}
 
