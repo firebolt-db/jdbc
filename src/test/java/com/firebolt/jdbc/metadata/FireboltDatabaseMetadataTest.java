@@ -630,6 +630,9 @@ class FireboltDatabaseMetadataTest {
 		assertEquals(0, fireboltDatabaseMetadata.getMaxStatements());
 		assertEquals(63, fireboltDatabaseMetadata.getMaxUserNameLength());
 		assertEquals(0, fireboltDatabaseMetadata.getMaxTablesInSelect());
+		assertEquals(0, fireboltDatabaseMetadata.getMaxRowSize());
+		assertEquals(0, fireboltDatabaseMetadata.getMaxStatementLength());
+		assertTrue(fireboltDatabaseMetadata.doesMaxRowSizeIncludeBlobs());
 	}
 
 	@Test
