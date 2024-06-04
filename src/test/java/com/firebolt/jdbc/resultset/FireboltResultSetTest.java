@@ -44,6 +44,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Calendar;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.Callable;
 
@@ -192,7 +193,7 @@ class FireboltResultSetTest {
 		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateFloat("label", 0.0f));
 		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateDouble("label", 0.0));
 		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBigDecimal("label", new BigDecimal(0)));
-		;
+
 		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateString("label", ""));
 		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateBytes("label", new byte[0]));
 		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateDate("label", new Date(0)));
@@ -428,6 +429,11 @@ class FireboltResultSetTest {
 		assertEquals(1, resultSet.getInt(1));
 		assertEquals(1, resultSet.getInt("id"));
 		assertEquals(1, resultSet.getObject(1, Long.class));
+		assertEquals(1L, resultSet.getObject(1, Map.of("int", Long.class)));
+		assertEquals(1L, resultSet.getObject("id", Map.of("INTEGER", Long.class)));
+		assertEquals(1., resultSet.getObject(1, Map.of("int32", Double.class)));
+		assertThrows(SQLException.class, () -> resultSet.getObject(1, Map.of("real", Double.class))); // exising type that does not match column type
+		assertThrows(SQLException.class, () -> resultSet.getObject(1, Map.of("notatype", Double.class))); // type alias that does not exist
 
 		resultSet.next();
 		assertEquals(2, resultSet.getInt(1));
@@ -446,6 +452,8 @@ class FireboltResultSetTest {
 		assertEquals(14.6f, resultSet.getFloat(6));
 		assertEquals(14.6f, resultSet.getFloat("a_double"));
 		assertEquals(14.6f, resultSet.getObject(6, Float.class));
+		assertEquals(14.6, resultSet.getObject(6, Map.of("Float32", Double.class)));
+		assertEquals((short)14, resultSet.getObject(6, Map.of("Float32", Short.class)));
 
 		resultSet.next();
 		assertEquals(0, resultSet.getFloat(6));
@@ -1209,6 +1217,7 @@ class FireboltResultSetTest {
 		assertEquals(1.23, resultSet.getDouble(3));
 
 		assertEquals(1.23456789012, resultSet.getObject(4, Double.class));
+		assertEquals(1.23456789012, (double)resultSet.getObject(4, Map.of("double precision", Double.class)), 0.01);
 		assertEquals(new BigDecimal("1.23456789012"), resultSet.getBigDecimal(4));
 
 		assertEquals(1231232.123459999990457054844258706536, resultSet.getObject(5, Double.class), 0.01);
