@@ -110,7 +110,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 			}
 			InputStream inputStream = null;
 			try {
-				log.log(Level.INFO, "Executing the statement with label {0} : {1}", new Object[] {statementInfoWrapper.getLabel(), statementInfoWrapper.getSql()});
+				log.log(Level.FINE, "Executing the statement with label {0} : {1}", new Object[] {statementInfoWrapper.getLabel(), statementInfoWrapper.getSql()});
 				if (statementInfoWrapper.getType() == StatementType.PARAM_SETTING) {
 					connection.addProperty(statementInfoWrapper.getParam());
 					log.log(Level.FINE, "The property from the query {0} was stored", runningStatementLabel);

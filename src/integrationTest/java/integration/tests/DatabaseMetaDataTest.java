@@ -136,24 +136,24 @@ class DatabaseMetaDataTest extends IntegrationTest {
 	@ParameterizedTest
 	@CsvSource({
 			// table types
-			",,,,tables;databases;integration_test,",
-			",,,TABLE;VIEW,tables;databases;integration_test,",
-			",,,VIEW;TABLE,integration_test;tables;databases,",
-			",,,TABLE,integration_test,databases;tables",
-			",,,VIEW,databases;tables,integration_test",
+			",,,,tables;views;integration_test,",
+			",,,TABLE;VIEW,tables;views;integration_test,",
+			",,,VIEW;TABLE,integration_test;tables;views,",
+			",,,TABLE,integration_test,views;tables",
+			",,,VIEW,views;tables,integration_test",
 
 			// table name pattern
-			",,%account%,,service_account_users;service_accounts,tables;columns;databases",
-			",,%test,,integration_test,tables;columns;databases",
+			",,%account%,,service_account_users;service_accounts,tables;columns;views",
+			",,%test,,integration_test,tables;columns;views",
 
 			// schema name pattern
-			",public,,,integration_test,tables;columns;databases",
+			",public,,,integration_test,tables;columns;views",
 			",information_schema,,,tables;columns,integration_test",
 
 			// schema name pattern and table types
-			",public,,TABLE,integration_test,tables;columns;databases",
-			",public,,TABLE;VIEW,integration_test,tables;columns;databases",
-			",public,,VIEW,,tables;columns;databases",
+			",public,,TABLE,integration_test,tables;columns;views",
+			",public,,TABLE;VIEW,integration_test,tables;columns;views",
+			",public,,VIEW,,tables;columns;views",
 			",information_schema,,TABLE,,integration_test",
 			",information_schema,,TABLE;VIEW,tables;columns,integration_test",
 			",information_schema,,VIEW,tables;columns,",

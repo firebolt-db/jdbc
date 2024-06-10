@@ -59,16 +59,8 @@ public class SpecialValuesTest extends IntegrationTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"select 'inf'::float", "select '+inf'::float"})
-    @EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.GE)
     void infFloatAsDoubleSystemEngine(String query) throws SQLException {
         specialSelect(systemConnection, query, Float.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"select 'inf'::float", "select '+inf'::float"})
-    @EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.LT)
-    void infFloatSystemEngine(String query) throws SQLException {
-        specialSelect(systemConnection, query, Float.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Float.POSITIVE_INFINITY);
     }
 
     @ParameterizedTest
@@ -111,16 +103,8 @@ public class SpecialValuesTest extends IntegrationTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"select '-inf'::float"})
-    @EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.GE)
     void minusInfFloatAsDoubleSystemEngine(String query) throws SQLException {
         specialSelect(systemConnection, query, Float.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"select '-inf'::float"})
-    @EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.LT)
-    void minusInfSystemEngine(String query) throws SQLException {
-        specialSelect(systemConnection, query, Float.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
     }
 
     @ParameterizedTest
@@ -167,18 +151,8 @@ public class SpecialValuesTest extends IntegrationTest {
     @ValueSource(strings = {
             "select 'nan'::float", "select '+nan'::float", "select '-nan'::float",
     })
-    @EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.GE)
     void nanFloatAsDoubleSystemEngine(String query) throws SQLException {
         specialSelect(systemConnection, query, Float.NaN, Double.NaN, Double.NaN);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "select 'nan'::float", "select '+nan'::float", "select '-nan'::float",
-    })
-    @EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.LT)
-    void nanFloatSystemEngine(String query) throws SQLException {
-        specialSelect(systemConnection, query, Float.NaN, Double.NaN, Float.NaN);
     }
 
     @ParameterizedTest
