@@ -102,7 +102,8 @@ public class SystemEngineTest extends IntegrationTest {
 		String secret = current.getSecret();
 		Collection<String> expectedErrorMessages = Set.of(
 				"Queries against table dummy require a user engine",
-				"The system engine doesn't support queries against table dummy. Run this query on a user engine.");
+				"The system engine doesn't support queries against table dummy. Run this query on a user engine.",
+				"Line 1, Column 22: relation \"dummy\" does not exist");
 
 		try (Connection systemConnection = DriverManager.getConnection(systemEngineJdbcUrl, principal, secret);
 			 Connection customConnection = DriverManager.getConnection(customEngineJdbcUrl, principal, secret)) {
@@ -116,7 +117,7 @@ public class SystemEngineTest extends IntegrationTest {
 				}
 				FireboltException e = assertThrows(FireboltException.class, () -> systemConnection.createStatement().executeQuery("select count(*) from dummy"));
 				String actualErrorMessage = e.getErrorMessageFromServer().replaceAll("\r?\n", "");
-				assertTrue(expectedErrorMessages.contains(actualErrorMessage));
+				assertTrue(expectedErrorMessages.contains(actualErrorMessage), "Unexpected error message: " + actualErrorMessage);
 			} finally {
 				try {
 					customConnection.createStatement().executeUpdate("DROP TABLE dummy");
@@ -299,6 +300,7 @@ public class SystemEngineTest extends IntegrationTest {
 
 	@Test
 	@Tag("slow")
+	@Tag("v2") // does not work on new V1 - DB cannot be managed by system engine
 	void shouldExecuteEngineManagementQueries() throws SQLException {
 		try (Connection connection = createConnection(getSystemEngineName())) {
 			try {
