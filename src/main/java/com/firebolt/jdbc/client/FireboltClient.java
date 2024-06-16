@@ -3,6 +3,8 @@ package com.firebolt.jdbc.client;
 import com.firebolt.jdbc.connection.CacheListener;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.exception.ServerError;
+import com.firebolt.jdbc.exception.ServerError.Error.Location;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import com.firebolt.jdbc.util.CloseableUtil;
 import lombok.Getter;
@@ -13,6 +15,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -24,6 +27,7 @@ import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -31,6 +35,8 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
@@ -46,6 +52,7 @@ public abstract class FireboltClient implements CacheListener {
 	private static final String HEADER_USER_AGENT = "User-Agent";
 	private static final String HEADER_PROTOCOL_VERSION = "Firebolt-Protocol-Version";
 	private static final Logger log = Logger.getLogger(FireboltClient.class.getName());
+	private static final Pattern plainErrorPattern = Pattern.compile("Line (\\d+), Column (\\d+): (.*)$", Pattern.MULTILINE);
 	private final OkHttpClient httpClient;
 	private final String headerUserAgentValue;
 	protected final FireboltConnection connection;
@@ -142,17 +149,19 @@ public abstract class FireboltClient implements CacheListener {
 				throw new FireboltException(format("Could not query Firebolt at %s. The engine is not running.", host), statusCode);
 			}
 			String errorMessageFromServer = extractErrorMessage(response, isCompress);
-			validateResponse(host, statusCode, errorMessageFromServer);
+			ServerError serverError = parseServerError(errorMessageFromServer);
+			String processedErrorMessage = serverError.getErrorMessage();
+			validateResponse(host, statusCode, processedErrorMessage);
 			String errorResponseMessage = format(
 					"Server failed to execute query with the following error:%n%s%ninternal error:%n%s",
-					errorMessageFromServer, getInternalErrorWithHeadersText(response));
+					processedErrorMessage, getInternalErrorWithHeadersText(response));
 			if (statusCode == HTTP_UNAUTHORIZED) {
 				getConnection().removeExpiredTokens();
 				throw new FireboltException(format(
 						"Could not query Firebolt at %s. The operation is not authorized or the token is expired and has been cleared from the cache.%n%s",
-						host, errorResponseMessage), statusCode, errorMessageFromServer);
+						host, errorResponseMessage), statusCode, processedErrorMessage);
 			}
-			throw new FireboltException(errorResponseMessage, statusCode, errorMessageFromServer);
+			throw new FireboltException(errorResponseMessage, statusCode, processedErrorMessage);
 		}
 	}
 
@@ -192,6 +201,49 @@ public abstract class FireboltClient implements CacheListener {
 			}
 		}
 		return new String(entityBytes, StandardCharsets.UTF_8);
+	}
+
+	private ServerError parseServerError(String responseText) {
+		try {
+			if (responseText == null) {
+				return new ServerError(null, null);
+			}
+			ServerError serverError = new ServerError(new JSONObject(responseText));
+			ServerError.Error[] errors = serverError.getErrors() == null ? null : Arrays.stream(serverError.getErrors()).map(this::updateError).toArray(ServerError.Error[]::new);
+			return new ServerError(serverError.getQuery(), errors);
+		} catch (JSONException e) {
+			String message = responseText;
+			Location location = null;
+			Entry<Location, String> locationAndText = getLocationFromMessage(responseText);
+			if (locationAndText != null) {
+				location = locationAndText.getKey();
+				message = locationAndText.getValue();
+			}
+			return new ServerError(null, new ServerError.Error[] {new ServerError.Error(null, message, null, null, null, null, null, location)});
+		}
+	}
+
+	private ServerError.Error updateError(ServerError.Error error) {
+		if (error == null || error.getDescription() == null) {
+			return error;
+		}
+		Entry<Location, String> locationAndText = getLocationFromMessage(error.getDescription());
+		if (locationAndText == null) {
+			return error;
+		}
+		return new ServerError.Error(error.getCode(), error.getName(), error.getSeverity(), error.getSource(),
+				locationAndText.getValue(), error.getResolution(), error.getHelpLink(), locationAndText.getKey());
+	}
+
+	private Entry<Location, String> getLocationFromMessage(String responseText) {
+		Matcher m = plainErrorPattern.matcher(responseText);
+		if (m.find()) {
+			int line = Integer.parseInt(m.group(1));
+			int column = Integer.parseInt(m.group(2));
+			String message = m.group(3);
+			return Map.entry(new Location(line, column, column), message);
+		}
+		return null;
 	}
 
 	protected boolean isCallSuccessful(int statusCode) {

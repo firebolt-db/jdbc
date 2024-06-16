@@ -13,6 +13,7 @@ import okhttp3.ResponseBody;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
@@ -104,8 +105,16 @@ class FireboltClientTest {
 		}
 	}
 
-	@Test
-	void canExtractErrorMessage() throws IOException {
+	@ParameterizedTest
+	@CsvSource(value = {
+			"Error happened; Error happened",
+			"Error happened on server: Line 16, Column 64: Something bad happened; Something bad happened",
+			"{}; null",
+			"{\"errors:\": [null]}; null",
+			"{errors: [{\"name\": \"Something wrong happened\"}]}; Something wrong happened",
+			"{errors: [{\"description\": \"Error happened on server: Line 16, Column 64: Something bad happened\"}]}; Something bad happened"
+	}, delimiter = ';')
+	void canExtractErrorMessage(String rawMessage, String expectedMessage) throws IOException {
 		try (Response response = mock(Response.class)) {
 			when(response.code()).thenReturn(HTTP_NOT_FOUND);
 			ResponseBody responseBody = mock(ResponseBody.class);
@@ -113,7 +122,7 @@ class FireboltClientTest {
 
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			OutputStream compressedStream = new LZ4OutputStream(baos, 100);
-			compressedStream.write("Error happened".getBytes());
+			compressedStream.write(rawMessage.getBytes());
 			compressedStream.flush();
 			compressedStream.close();
 			when(responseBody.bytes()).thenReturn(baos.toByteArray()); // compressed error message
@@ -121,7 +130,7 @@ class FireboltClientTest {
 			FireboltClient client = Mockito.mock(FireboltClient.class, Mockito.CALLS_REAL_METHODS);
 			FireboltException e = assertThrows(FireboltException.class, () -> client.validateResponse("the_host", response, true));
 			assertEquals(ExceptionType.RESOURCE_NOT_FOUND, e.getType());
-			assertTrue(e.getMessage().contains("Error happened")); // compressed error message is used as-is
+			assertTrue(e.getMessage().contains(expectedMessage)); // compressed error message is used as-is
 		}
 	}
 

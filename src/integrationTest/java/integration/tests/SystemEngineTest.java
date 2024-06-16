@@ -38,6 +38,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
+import static integration.EnvironmentCondition.Attribute.fireboltVersion;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Map.entry;
@@ -92,6 +93,25 @@ public class SystemEngineTest extends IntegrationTest {
 	}
 
 	@Test
+	void shouldThrowExceptionWhenExecutingWrongQuery() throws SQLException {
+		try (Connection connection = createConnection(getSystemEngineName()); Statement statement = connection.createStatement()) {
+			String errorMessage = assertThrows(FireboltException.class, () -> statement.executeQuery("select wrong query")).getMessage();
+			assertTrue(errorMessage.contains("Column 'wrong' does not exist."));
+		}
+	}
+
+	@Test
+	@EnvironmentCondition(value = "4.2.0", attribute = fireboltVersion, comparison = EnvironmentCondition.Comparison.GE)
+	void shouldThrowExceptionWhenExecutingWrongQueryWithJsonError() throws SQLException {
+		try (Connection connection = createConnection(getSystemEngineName()); Statement statement = connection.createStatement()) {
+			statement.execute("set advanced_mode=1");
+			statement.execute("set enable_json_error_output_format=true");
+			String errorMessage = assertThrows(FireboltException.class, () -> statement.executeQuery("select wrong query")).getMessage();
+			assertTrue(errorMessage.contains("Column 'wrong' does not exist."));
+		}
+	}
+
+	@Test
 	void shouldFailToSelectFromCustomDbUsingSystemEngine() throws SQLException {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
 		String systemEngineJdbcUrl = new ConnectionInfo(current.getPrincipal(), current.getSecret(),
@@ -103,7 +123,7 @@ public class SystemEngineTest extends IntegrationTest {
 		Collection<String> expectedErrorMessages = Set.of(
 				"Queries against table dummy require a user engine",
 				"The system engine doesn't support queries against table dummy. Run this query on a user engine.",
-				"Line 1, Column 22: relation \"dummy\" does not exist");
+				"relation \"dummy\" does not exist");
 
 		try (Connection systemConnection = DriverManager.getConnection(systemEngineJdbcUrl, principal, secret);
 			 Connection customConnection = DriverManager.getConnection(customEngineJdbcUrl, principal, secret)) {
