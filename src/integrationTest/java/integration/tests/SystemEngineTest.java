@@ -240,7 +240,7 @@ public class SystemEngineTest extends IntegrationTest {
 	void connectToAccountWithoutUser() throws SQLException, IOException {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
 		String database = current.getDatabase();
-		String serviceAccountName = format("%s_sa_no_user_%d", database, System.currentTimeMillis());
+		String serviceAccountName = format("%s_%d_sa_no_user", database, System.currentTimeMillis());
 		try (Connection connection = createConnection(getSystemEngineName())) {
 			try {
 				connection.createStatement().executeUpdate(format("CREATE SERVICE ACCOUNT \"%s\" WITH DESCRIPTION = 'Ecosytem test with no user'", serviceAccountName));
