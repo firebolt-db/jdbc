@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.FireboltDriver;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.client.account.FireboltAccountClient;
 import com.firebolt.jdbc.client.authentication.AuthenticationRequest;
@@ -27,15 +28,16 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
                                    Properties connectionSettings,
                                    FireboltAuthenticationService fireboltAuthenticationService,
                                    FireboltStatementService fireboltStatementService,
-                                   FireboltEngineInformationSchemaService fireboltEngineService) throws SQLException {
-        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION);
+                                   FireboltEngineInformationSchemaService fireboltEngineService,
+                                   FireboltDriver driver) throws SQLException {
+        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION, driver);
         this.fireboltEngineService = fireboltEngineService;
         connect();
     }
 
     @ExcludeFromJacocoGeneratedReport
-    FireboltConnectionUserPassword(@NonNull String url, Properties connectionSettings) throws SQLException {
-        super(url, connectionSettings, PROTOCOL_VERSION);
+    FireboltConnectionUserPassword(@NonNull String url, Properties connectionSettings, FireboltDriver driver) throws SQLException {
+        super(url, connectionSettings, PROTOCOL_VERSION, driver);
         OkHttpClient httpClient = getHttpClient(loginProperties);
         this.fireboltEngineService = new FireboltEngineApiService(new FireboltAccountClient(httpClient, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
         connect();

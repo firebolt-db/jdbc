@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.client.query;
 
+import com.firebolt.FireboltDriver;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
@@ -349,7 +350,7 @@ class StatementClientImplTest {
 		Call useCall = getMockedCallWithResponse(200, "", responseHeaders);
 		Call select1Call = getMockedCallWithResponse(200, "");
 		when(okHttpClient.newCall(any())).thenReturn(useCall, select1Call);
-		FireboltConnection connection = new FireboltConnection("url", props, "0") {
+		FireboltConnection connection = new FireboltConnection("url", props, "0", mock(FireboltDriver.class)) {
 			{
 				this.infraVersion = mockedInfraVersion;
 				try {
