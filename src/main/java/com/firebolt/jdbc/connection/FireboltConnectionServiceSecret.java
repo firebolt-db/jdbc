@@ -38,6 +38,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
     private final FireboltAccountIdService fireboltAccountIdService;
     private FireboltEngineService fireboltEngineService; // depends on infra version and is discovered during authentication
 
+    @SuppressWarnings("java:S107") // the price of the immutability
     FireboltConnectionServiceSecret(@NonNull String url,
                                     Properties connectionSettings,
                                     FireboltAuthenticationService fireboltAuthenticationService,
