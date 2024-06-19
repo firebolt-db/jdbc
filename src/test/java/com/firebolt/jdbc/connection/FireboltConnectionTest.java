@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.FireboltDriver;
 import com.firebolt.jdbc.CheckedBiFunction;
 import com.firebolt.jdbc.CheckedFunction;
 import com.firebolt.jdbc.client.account.FireboltAccount;
@@ -104,6 +105,8 @@ abstract class FireboltConnectionTest {
 	protected FireboltAccountIdService fireboltAccountIdService;
 	protected Properties connectionProperties = new Properties();
 	private static Connection connection;
+	@Mock
+	protected FireboltDriver driver;
 
 	private final String URL;
 

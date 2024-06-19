@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.FireboltDriver;
 import com.firebolt.jdbc.JdbcBase;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
@@ -80,6 +81,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	private final String protocolVersion;
 	protected int infraVersion = 1;
 	private DatabaseMetaData databaseMetaData;
+	private final FireboltDriver driver;
 
 	//Properties that are used at the beginning of the connection for authentication
 	protected final FireboltProperties loginProperties;
@@ -89,7 +91,8 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 								 Properties connectionSettings,
 								 FireboltAuthenticationService fireboltAuthenticationService,
 							  	 FireboltStatementService fireboltStatementService,
-								 String protocolVersion) {
+								 String protocolVersion,
+								 FireboltDriver driver) {
 		this.loginProperties = extractFireboltProperties(url, connectionSettings);
 
 		this.fireboltAuthenticationService = fireboltAuthenticationService;
@@ -100,11 +103,12 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
 		this.protocolVersion = protocolVersion;
+		this.driver = driver;
 	}
 
 	// This code duplication between constructors is done because of back reference: dependent services require reference to current instance of FireboltConnection that prevents using constructor chaining or factory method.
 	@ExcludeFromJacocoGeneratedReport
-	protected FireboltConnection(@NonNull String url, Properties connectionSettings, String protocolVersion) throws SQLException {
+	protected FireboltConnection(@NonNull String url, Properties connectionSettings, String protocolVersion, FireboltDriver driver) throws SQLException {
 		this.loginProperties = extractFireboltProperties(url, connectionSettings);
 		OkHttpClient httpClient = getHttpClient(loginProperties);
 
@@ -116,18 +120,19 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
 		this.protocolVersion = protocolVersion;
+		this.driver = driver;
 	}
 
 	protected abstract FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient);
 
-	public static FireboltConnection create(@NonNull String url, Properties connectionSettings) throws SQLException {
-		return createConnectionInstance(url, connectionSettings);
+	public static FireboltConnection create(@NonNull String url, Properties connectionSettings, FireboltDriver driver) throws SQLException {
+		return createConnectionInstance(url, connectionSettings, driver);
 	}
 
-	private static FireboltConnection createConnectionInstance(@NonNull String url, Properties connectionSettings) throws SQLException {
+	private static FireboltConnection createConnectionInstance(@NonNull String url, Properties connectionSettings, FireboltDriver driver) throws SQLException {
 		switch(getUrlVersion(url, connectionSettings)) {
-			case 1: return new FireboltConnectionUserPassword(url, connectionSettings);
-			case 2: return new FireboltConnectionServiceSecret(url, connectionSettings);
+			case 1: return new FireboltConnectionUserPassword(url, connectionSettings, driver);
+			case 2: return new FireboltConnectionServiceSecret(url, connectionSettings, driver);
 			default: throw new IllegalArgumentException(format("Cannot distinguish version from url %s", url));
 		}
 	}
@@ -338,6 +343,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 			statements.clear();
 		}
 		databaseMetaData = null;
+		driver.removeClosedConnection(this);
 		log.warning("Connection closed");
 	}
 

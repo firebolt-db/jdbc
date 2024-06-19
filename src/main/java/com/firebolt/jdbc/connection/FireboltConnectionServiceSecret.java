@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.FireboltDriver;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.client.account.FireboltAccount;
 import com.firebolt.jdbc.client.account.FireboltAccountRetriever;
@@ -37,14 +38,16 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
     private final FireboltAccountIdService fireboltAccountIdService;
     private FireboltEngineService fireboltEngineService; // depends on infra version and is discovered during authentication
 
+    @SuppressWarnings("java:S107") // the price of the immutability
     FireboltConnectionServiceSecret(@NonNull String url,
                                     Properties connectionSettings,
                                     FireboltAuthenticationService fireboltAuthenticationService,
                                     FireboltGatewayUrlService fireboltGatewayUrlService,
                                     FireboltStatementService fireboltStatementService,
                                     FireboltEngineInformationSchemaService fireboltEngineService,
-                                    FireboltAccountIdService fireboltAccountIdService) throws SQLException {
-        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION);
+                                    FireboltAccountIdService fireboltAccountIdService,
+                                    FireboltDriver driver) throws SQLException {
+        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION, driver);
         this.fireboltGatewayUrlService = fireboltGatewayUrlService;
         this.fireboltAccountIdService = fireboltAccountIdService;
         this.fireboltEngineService = fireboltEngineService;
@@ -52,8 +55,8 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
     }
 
     @ExcludeFromJacocoGeneratedReport
-    FireboltConnectionServiceSecret(@NonNull String url, Properties connectionSettings) throws SQLException {
-        super(url, connectionSettings, PROTOCOL_VERSION);
+    FireboltConnectionServiceSecret(@NonNull String url, Properties connectionSettings, FireboltDriver driver) throws SQLException {
+        super(url, connectionSettings, PROTOCOL_VERSION, driver);
         OkHttpClient httpClient = getHttpClient(loginProperties);
         this.fireboltGatewayUrlService = new FireboltGatewayUrlService(createFireboltAccountRetriever(httpClient,"engineUrl", GatewayUrlResponse.class));
         this.fireboltAccountIdService = new FireboltAccountIdService(createFireboltAccountRetriever(httpClient,"resolve", FireboltAccount.class));

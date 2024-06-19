@@ -73,6 +73,6 @@ class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
     }
 
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
-        return new FireboltConnectionUserPassword(url, props, fireboltAuthenticationService, fireboltStatementService, fireboltEngineService);
+        return new FireboltConnectionUserPassword(url, props, fireboltAuthenticationService, fireboltStatementService, fireboltEngineService, driver);
     }
 }
