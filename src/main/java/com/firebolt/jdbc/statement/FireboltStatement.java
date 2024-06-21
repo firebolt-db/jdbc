@@ -73,6 +73,10 @@ public class FireboltStatement extends JdbcBase implements Statement {
 
 	@Override
 	public boolean execute(String sql) throws SQLException {
+		// if sql starts with DETACH - ignore it
+		if (sql.trim().toUpperCase().startsWith("DETACH")) {
+			return true;
+		}
 		return execute(StatementUtil.parseToStatementInfoWrappers(sql)).isPresent();
 	}
 
