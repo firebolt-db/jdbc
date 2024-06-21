@@ -178,7 +178,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData, GenericWrappe
 		if (!where.isEmpty()) {
 			where = " WHERE " + where;
 		}
-		return getSchemas("SELECT 'public' as TABLE_SCHEM, 'petro_test_general_purpose' AS TABLE_CATALOG UNION ALL SELECT DISTINCT TABLE_SCHEMA AS TABLE_SCHEM, TABLE_CATALOG FROM information_schema.tables" + where);
+		return getSchemas("SELECT DISTINCT TABLE_SCHEMA AS TABLE_SCHEM, TABLE_CATALOG FROM information_schema.tables" + where);
 	}
 
 	private ResultSet getSchemas(String query) throws SQLException {
@@ -199,7 +199,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData, GenericWrappe
 
 	@Override
 	public ResultSet getCatalogs() throws SQLException {
-		return createResultSet(Stream.of(entry(TABLE_CAT, TEXT)), List.of(List.of(connection.getCatalog())));
+		return createResultSet(Stream.of(entry(TABLE_CAT, TEXT)), List.of(List.of(connection.getCatalog(), "petro_test_create_delete")));
 	}
 
 	@Override
