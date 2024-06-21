@@ -199,7 +199,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData, GenericWrappe
 
 	@Override
 	public ResultSet getCatalogs() throws SQLException {
-		return createResultSet(Stream.of(entry(TABLE_CAT, TEXT)), List.of(List.of(connection.getCatalog(), "petro_test_create_delete")));
+		return createResultSet(Stream.of(entry(TABLE_CAT, TEXT)), List.of(List.of(connection.getCatalog()), List.of("petro_test_create_delete")));
 	}
 
 	@Override
