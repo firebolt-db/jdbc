@@ -178,7 +178,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData, GenericWrappe
 		if (!where.isEmpty()) {
 			where = " WHERE " + where;
 		}
-		return getSchemas("SELECT DISTINCT TABLE_SCHEMA AS TABLE_SCHEM, TABLE_CATALOG FROM information_schema.tables" + where);
+		return getSchemas("SELECT 'public' as TABLE_SCHEM, 'petro_test_general_purpose' AS TABLE_CATALOG UNION ALL SELECT DISTINCT TABLE_SCHEMA AS TABLE_SCHEM, TABLE_CATALOG FROM information_schema.tables" + where);
 	}
 
 	private ResultSet getSchemas(String query) throws SQLException {
