@@ -150,4 +150,18 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
         };
     }
 
+
+	@Override
+	public void setCatalog(String catalog) {
+        // execute USE DATABASE command to switch to the database
+        if (catalog != null) {
+            try {
+                createStatement().execute("USE DATABASE " + catalog);
+            } catch (SQLException e) {
+                // print a warning and continue
+                e.printStackTrace();
+            }
+        }
+	}
+
 }
