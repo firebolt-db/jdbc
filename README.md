@@ -6,6 +6,7 @@
 
 The official JDBC driver for Firebolt.
 
+
 ## Documentation
 To download the JDBC driver and learn how to use it, please see the official [Firebolt documentation](https://docs.firebolt.io/developing-with-firebolt/connecting-with-jdbc.html).
 
