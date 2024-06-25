@@ -103,15 +103,15 @@ public abstract class FireboltClient implements CacheListener {
 	protected Response execute(@NonNull Request request, String host, boolean isCompress)
 			throws IOException, SQLException {
 		Response response = null;
-		try {
-			OkHttpClient client = getClientWithTimeouts(connection.getConnectionTimeout(), connection.getNetworkTimeout());
-			Call call = client.newCall(request);
-			response = call.execute();
-			validateResponse(host, response, isCompress);
-		} catch (Exception e) {
-			CloseableUtil.close(response);
-			throw e;
-		}
+		// try {
+		OkHttpClient client = getClientWithTimeouts(connection.getConnectionTimeout(), connection.getNetworkTimeout());
+		Call call = client.newCall(request);
+		response = call.execute();
+		validateResponse(host, response, isCompress);
+		// } catch (Exception e) {
+		// 	CloseableUtil.close(response);
+		// 	throw e;
+		// }
 		return response;
 	}
 
