@@ -3,6 +3,7 @@ package com.firebolt.jdbc.client;
 import com.firebolt.jdbc.connection.CacheListener;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.exception.SQLState;
 import com.firebolt.jdbc.exception.ServerError;
 import com.firebolt.jdbc.exception.ServerError.Error.Location;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
@@ -41,6 +42,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 import static java.util.Optional.ofNullable;
@@ -147,7 +149,8 @@ public abstract class FireboltClient implements CacheListener {
 		int statusCode = response.code();
 		if (!isCallSuccessful(statusCode)) {
 			if (statusCode == HTTP_UNAVAILABLE) {
-				throw new FireboltException(format("Could not query Firebolt at %s. The engine is not running.", host), statusCode);
+				throw new FireboltException(format("Could not query Firebolt at %s. The engine is not running.", host),
+						statusCode, SQLState.CONNECTION_FAILURE);
 			}
 			String errorMessageFromServer = extractErrorMessage(response, isCompress);
 			ServerError serverError = parseServerError(errorMessageFromServer);
@@ -156,12 +159,16 @@ public abstract class FireboltClient implements CacheListener {
 			String errorResponseMessage = format(
 					"Server failed to execute query with the following error:%n%s%ninternal error:%n%s",
 					processedErrorMessage, getInternalErrorWithHeadersText(response));
-			if (statusCode == HTTP_UNAUTHORIZED) {
+			if (statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN) {
+				// log the error message and throw an exception
+				log.log(Level.WARNING, "encountered unauthorized or forbidden error");
 				getConnection().removeExpiredTokens();
 				throw new FireboltException(format(
 						"Could not query Firebolt at %s. The operation is not authorized or the token is expired and has been cleared from the cache.%n%s",
-						host, errorResponseMessage), statusCode, processedErrorMessage);
+						host, errorResponseMessage), statusCode, processedErrorMessage,
+						SQLState.INVALID_AUTHORIZATION_SPECIFICATION);
 			}
+			log.log(Level.WARNING, "encountered some other error");
 			throw new FireboltException(errorResponseMessage, statusCode, processedErrorMessage);
 		}
 	}
