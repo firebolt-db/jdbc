@@ -160,15 +160,12 @@ public abstract class FireboltClient implements CacheListener {
 					"Server failed to execute query with the following error:%n%s%ninternal error:%n%s",
 					processedErrorMessage, getInternalErrorWithHeadersText(response));
 			if (statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN) {
-				// log the error message and throw an exception
-				log.log(Level.WARNING, "encountered unauthorized or forbidden error");
 				getConnection().removeExpiredTokens();
 				throw new FireboltException(format(
 						"Could not query Firebolt at %s. The operation is not authorized or the token is expired and has been cleared from the cache.%n%s",
 						host, errorResponseMessage), statusCode, processedErrorMessage,
 						SQLState.INVALID_AUTHORIZATION_SPECIFICATION);
 			}
-			log.log(Level.WARNING, "encountered some other error");
 			throw new FireboltException(errorResponseMessage, statusCode, processedErrorMessage);
 		}
 	}
