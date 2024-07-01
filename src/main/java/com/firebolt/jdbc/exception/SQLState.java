@@ -103,7 +103,8 @@ public enum SQLState {
     ASSERT_FAILURE("P0004"),
     INTERNAL_ERROR("XX000"),
     DATA_CORRUPTED("XX001"),
-    INDEX_CORRUPTED("XX002");
+    INDEX_CORRUPTED("XX002"),
+    STATE_NOT_DEFINED(null);
 
     private final String code;
 
@@ -117,10 +118,10 @@ public enum SQLState {
 
     public static SQLState fromCode(String sqlState) {
         for (SQLState state : SQLState.values()) {
-            if (state.code.equals(sqlState)) {
+            if (state.code != null && state.code.equals(sqlState)) {
                 return state;
             }
         }
-        return null;
+        return STATE_NOT_DEFINED;
     }
 }

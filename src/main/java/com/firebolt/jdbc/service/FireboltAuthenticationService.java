@@ -54,9 +54,6 @@ public class FireboltAuthenticationService {
 			log.log(Level.SEVERE, "Failed to connect to Firebolt", e);
 			String msg = ofNullable(e.getErrorMessageFromServer()).map(m -> format(ERROR_MESSAGE_FROM_SERVER, m)).orElse(format(ERROR_MESSAGE, e.getMessage()));
 			SQLState sqlState = SQLState.fromCode(e.getSQLState());
-			if (sqlState == null) {
-				throw new FireboltException(msg, e);
-			}
 			throw new FireboltException(msg, e, sqlState);
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "Failed to connect to Firebolt", e);
