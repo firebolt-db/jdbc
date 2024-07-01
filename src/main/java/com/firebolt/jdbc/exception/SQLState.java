@@ -1,5 +1,9 @@
 package com.firebolt.jdbc.exception;
 
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
+
 // https://en.wikipedia.org/wiki/SQLSTATE
 public enum SQLState {
     SUCCESS("00000"),
@@ -107,6 +111,11 @@ public enum SQLState {
     STATE_NOT_DEFINED(null);
 
     private final String code;
+    private static final Map<String, SQLState> codeMap = new HashMap<>();
+    static {
+        for (SQLState s : EnumSet.allOf(SQLState.class))
+            codeMap.put(s.getCode(), s);
+    }
 
     SQLState(String code) {
         this.code = code;
@@ -117,11 +126,6 @@ public enum SQLState {
     }
 
     public static SQLState fromCode(String sqlState) {
-        for (SQLState state : SQLState.values()) {
-            if (state.code != null && state.code.equals(sqlState)) {
-                return state;
-            }
-        }
-        return STATE_NOT_DEFINED;
+        return codeMap.get(sqlState);
     }
 }
