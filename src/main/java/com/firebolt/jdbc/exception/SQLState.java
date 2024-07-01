@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.exception;
 
+// https://en.wikipedia.org/wiki/SQLSTATE
 public enum SQLState {
     SUCCESS("00000"),
     WARNING("01000"),
