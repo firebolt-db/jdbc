@@ -138,7 +138,6 @@ class FireboltAccountRetrieverTest {
     @CsvSource({
             HTTP_BAD_REQUEST + "," + GENERIC_ERROR_MESSAGE,
             HTTP_PAYMENT_REQUIRED + "," + GENERIC_ERROR_MESSAGE,
-            HTTP_FORBIDDEN + "," + GENERIC_ERROR_MESSAGE,
             HTTP_BAD_METHOD + "," + GENERIC_ERROR_MESSAGE,
             HTTP_NOT_ACCEPTABLE + "," + GENERIC_ERROR_MESSAGE,
             HTTP_PROXY_AUTH + "," + GENERIC_ERROR_MESSAGE,
@@ -157,8 +156,12 @@ class FireboltAccountRetrieverTest {
             HTTP_VERSION + "," + GENERIC_ERROR_MESSAGE,
 
             HTTP_NOT_FOUND + "," + "Account '%s' does not exist",
-            HTTP_UNAVAILABLE + "," + "Could not query Firebolt at https://test-firebolt.io/web/v3/account/%s/%s. The engine is not running.",
-            HTTP_UNAUTHORIZED + "," + "Could not query Firebolt at https://test-firebolt.io/web/v3/account/%s/%s. The operation is not authorized"
+            HTTP_UNAVAILABLE + ","
+                    + "Could not query Firebolt at https://test-firebolt.io/web/v3/account/%s/%s. The engine is not running.",
+            HTTP_FORBIDDEN + ","
+                    + "Could not query Firebolt at https://test-firebolt.io/web/v3/account/%s/%s. The operation is not authorized",
+            HTTP_UNAUTHORIZED + ","
+                    + "Could not query Firebolt at https://test-firebolt.io/web/v3/account/%s/%s. The operation is not authorized"
     })
     void testFailedAccountDataRetrieving(int statusCode, String errorMessageTemplate) throws IOException {
         injectMockedResponse(httpClient, statusCode, null);

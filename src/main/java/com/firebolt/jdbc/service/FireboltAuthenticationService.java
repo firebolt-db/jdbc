@@ -4,6 +4,8 @@ import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.exception.SQLState;
+
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import net.jodah.expiringmap.ExpiringMap;
@@ -51,7 +53,8 @@ public class FireboltAuthenticationService {
 		} catch (FireboltException e) {
 			log.log(Level.SEVERE, "Failed to connect to Firebolt", e);
 			String msg = ofNullable(e.getErrorMessageFromServer()).map(m -> format(ERROR_MESSAGE_FROM_SERVER, m)).orElse(format(ERROR_MESSAGE, e.getMessage()));
-			throw new FireboltException(msg, e);
+			SQLState sqlState = SQLState.fromCode(e.getSQLState());
+			throw new FireboltException(msg, e, sqlState);
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "Failed to connect to Firebolt", e);
 			throw new FireboltException(format(ERROR_MESSAGE, e.getMessage()), e);
@@ -69,7 +72,7 @@ public class FireboltAuthenticationService {
 
 	/**
 	 * Removes connection tokens from the cache.
-	 * 
+	 *
 	 * @param host            host
 	 * @param loginProperties the login properties linked to the tokens
 	 */
