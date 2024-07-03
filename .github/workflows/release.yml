@@ -3,6 +3,11 @@ name: Release new version
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name to publish'
+        required: true
 
 jobs:
   build:
@@ -15,7 +20,7 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v3
       with:
-        ref: ${{ github.event.release.tag_name }}
+        ref: ${{ github.event.release.tag_name || github.event.inputs.tag_name}}
     - name: Download uber-jar
       uses: actions/download-artifact@v3
       with:
