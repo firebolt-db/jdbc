@@ -36,7 +36,7 @@ jobs:
         file: ${{ needs.build.outputs.uber-jar }}
         tags: true
         draft: false
-    - name: Deploy to Repsy repository
+    - name: Deploy to Maven Central repository
       run: ./gradlew publish
       env:
         MAVEN_REPO_USERNAME: ${{ secrets.MAVEN_REPO_USERNAME }}
