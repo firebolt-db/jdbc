@@ -6,6 +6,7 @@ plugins {
     id "org.sonarqube" version "5.0.0.4638"
     id 'maven-publish'
     id 'com.github.johnrengelman.shadow' version '8.0.0'
+    id 'signing'
 }
 
 group 'io.firebolt'
@@ -332,6 +333,14 @@ task generateJavadoc(type: Javadoc) {
         links = ['https://docs.oracle.com/javase/8/docs/api/']
     }
     options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+signing {
+    def signingKey = System.getenv("GRADLE_SIGNING_KEY")
+    def signingPassword = System.getenv("GRADLE_SIGNING_PASSWORD")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+
+    sign publishing.publications
 }
 
 if (hasProperty('buildScan')) {
