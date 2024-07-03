@@ -337,9 +337,10 @@ task generateJavadoc(type: Javadoc) {
 
 signing {
     def signingKey = System.getenv("GRADLE_SIGNING_KEY")
-    def signingPassword = findProperty("GRADLE_SIGNING_PASSWORD")
+    def signingPassword = System.getenv("GRADLE_SIGNING_PASSWORD")
     useInMemoryPgpKeys(signingKey, signingPassword)
-    sign publising.publications
+
+    sign publishing.publications
 }
 
 if (hasProperty('buildScan')) {
