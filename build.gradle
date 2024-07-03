@@ -6,7 +6,6 @@ plugins {
     id "org.sonarqube" version "5.0.0.4638"
     id 'maven-publish'
     id 'com.github.johnrengelman.shadow' version '8.0.0'
-    id 'dev.yumi.gradle.licenser' version '1.2.0'
     id 'signing'
 }
 
@@ -28,8 +27,8 @@ java {
 }
 
 compileJava {
-    sourceCompatibility = '17'
-    targetCompatibility = '17'
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
 }
 
 configurations {
