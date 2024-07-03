@@ -1,28 +1,30 @@
 package integration.tests;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import com.firebolt.jdbc.exception.ExceptionType;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.statement.FireboltStatement;
+import integration.EnvironmentCondition;
+import integration.IntegrationTest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import static integration.EnvironmentCondition.Attribute.databaseVersion;
+import static integration.EnvironmentCondition.Comparison.GE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.firebolt.jdbc.exception.ExceptionType;
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.statement.FireboltStatement;
-
-import integration.IntegrationTest;
-import lombok.CustomLog;
-
-@CustomLog
 class StatementCancelTest extends IntegrationTest {
+	private static final Logger log = Logger.getLogger(StatementCancelTest.class.getName());
 
 	@BeforeEach
 	void beforeEach() {
@@ -36,21 +38,32 @@ class StatementCancelTest extends IntegrationTest {
 
 	@Test
 	@Timeout(value = 2, unit = TimeUnit.MINUTES)
-	void shouldCancelQuery() throws SQLException, InterruptedException {
-		try (Connection connection = createConnection()) {
-			long totalRecordsToInsert;
-			try (Statement statement = connection.createStatement()) {
-				ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) from ex_lineitem");
-				resultSet.next();
-				totalRecordsToInsert = resultSet.getInt(1);
-			}
+	@Tag("v1") // generate_series is supported on all available engine of v2
+	@Tag("slow")
+	void shouldCancelQueryV1() throws SQLException, InterruptedException {
+		shouldCancelQuery();
+	}
 
-			try (FireboltStatement insertStatement = (FireboltStatement) connection.createStatement()) {
+	@Test
+	@Timeout(value = 10, unit = TimeUnit.MINUTES)
+	@EnvironmentCondition(value = "3.33", attribute = databaseVersion, comparison = GE) // generate_series is supported starting from version 3.33 on v2
+	@Tag("v2")
+	@Tag("slow")
+	void shouldCancelQueryV2() throws SQLException, InterruptedException {
+		shouldCancelQuery();
+	}
+
+	private void shouldCancelQuery() throws SQLException, InterruptedException {
+		try (Connection connection = createConnection(); Statement fillStatement = connection.createStatement()) {
+			long now = System.currentTimeMillis();
+			fillStatement.execute("insert into ex_lineitem ( l_orderkey ) SELECT * FROM GENERATE_SERIES(1, 100000000)");
+			long insertTime = System.currentTimeMillis() - now;
+
+			try (Statement insertStatement = connection.createStatement()) {
 
 				Thread thread = new Thread(() -> {
 					try {
-						insertStatement.execute(
-								"INSERT INTO first_statement_cancel_test SELECT * FROM ex_lineitem; INSERT INTO second_statement_cancel_test SELECT * FROM ex_lineitem;");
+						insertStatement.execute("INSERT INTO first_statement_cancel_test SELECT * FROM ex_lineitem; INSERT INTO second_statement_cancel_test SELECT * FROM ex_lineitem;");
 					} catch (FireboltException e) {
 						if (!e.getType().equals(ExceptionType.CANCELED)) {
 							throw new RuntimeException(e);
@@ -61,45 +74,54 @@ class StatementCancelTest extends IntegrationTest {
 					}
 				});
 				thread.start();
-				while (!insertStatement.isStatementRunning()) {
-					Thread.sleep(1000);
+				// Wait until copying started
+				while (!((FireboltStatement)insertStatement).isStatementRunning()) {
+					Thread.sleep(100);
 				}
-				insertStatement.cancel();
+				Thread.sleep(insertTime / 10); // wait 10% of time that was spent to fill data to give chance to the insert statement to copy data
+				insertStatement.cancel(); // now cancel the statement
 			}
-			Thread.sleep(5000);
-			verifyThatNoMoreRecordsAreAdded(connection, "first_statement_cancel_test", totalRecordsToInsert);
+			verifyThatNoMoreRecordsAreAdded(connection, "first_statement_cancel_test", insertTime);
 			verifyThatSecondStatementWasNotExecuted(connection, "second_statement_cancel_test");
-
 		}
 	}
 
-	private void verifyThatNoMoreRecordsAreAdded(Connection connection, String tableName, long totalRecordsToInsert)
-			throws SQLException, InterruptedException {
-		String countAddedRecordsQuery = String.format("SELECT COUNT(*) FROM %s", tableName);
-		try (Statement countStatement = connection.createStatement()) {
-			ResultSet rs = countStatement.executeQuery(countAddedRecordsQuery);
-			rs.next();
-			long count = rs.getInt(1);
-			log.info("{} records were added to table {} before the statement got cancelled", count, tableName);
-			Thread.sleep(5000); // waiting to see if more records are being added
-			rs = countStatement.executeQuery(countAddedRecordsQuery);
-			rs.next();
-			assertEquals(count, rs.getInt(1));
-			// The dataset is too small so all the data might already be ingested
-			// assertTrue(count <= totalRecordsToInsert, "No new records were added
-			// following the cancellation");
-			rs.close();
+	private void verifyThatNoMoreRecordsAreAdded(Connection connection, String tableName, long insertTime) throws SQLException, InterruptedException {
+		// Get number of rows in the table. Do it several times until we get something. Wait for 10% of time that spent to fill the table.
+		// We need several attempts because this DB does not support transactions, so sometimes it takes time until the
+		// data is available.
+		long waitForResultTime = insertTime / 2;
+		long waitForResultDelay = waitForResultTime / 10;
+		log.log(Level.INFO, "verifyThatNoMoreRecordsAreAdded insertTime={0}, waitForResultTime={0}", new Object[] {insertTime, waitForResultTime});
+		int count0;
+		int i = 0;
+		for (count0 = count(connection, tableName); i < 10; count0 = count(connection, tableName), i++) {
+			log.log(Level.INFO, "verifyThatNoMoreRecordsAreAdded count0={0}", count0);
+			if (count0 > 0) {
+				break;
+			}
+			Thread.sleep(waitForResultDelay);
 		}
 
+		// Wait for more time that we spent to fill the table.
+		// We want to wait enough to give a chance to the query to fill more data.
+		Thread.sleep(insertTime); // waiting to see if more records are being added
+		int count1 = count(connection, tableName);
+		Thread.sleep(insertTime); // waiting to see if more records are being added
+		int count2 = count(connection, tableName);
+		log.log(Level.INFO, "verifyThatNoMoreRecordsAreAdded count1={0}, count2={1}", new Object[] {count1, count2});
+		assertEquals(count1, count2);
+	}
+
+	private int count(Connection connection, String tableName) throws SQLException {
+		String countAddedRecordsQuery = String.format("SELECT COUNT(*) FROM %s", tableName);
+		try (Statement countStatement = connection.createStatement(); ResultSet rs = countStatement.executeQuery(countAddedRecordsQuery)) {
+			return rs.next() ? rs.getInt(1) : 0;
+		}
 	}
 
 	private void verifyThatSecondStatementWasNotExecuted(Connection connection, String tableName) throws SQLException {
-		String countAddedRecordsQuery = String.format("SELECT COUNT(*) FROM %s", tableName);
-		try (Statement countStatement = connection.createStatement()) {
-			ResultSet rs = countStatement.executeQuery(countAddedRecordsQuery);
-			rs.next();
-			assertEquals(0, rs.getInt(1));
-		}
+		assertEquals(0, count(connection, tableName));
 	}
 
 	/**
@@ -111,11 +133,10 @@ class StatementCancelTest extends IntegrationTest {
 			ResultSet resultSet = statement.executeQuery("SHOW tables");
 			while (resultSet.next() && tableName == null) {
 				log.info(resultSet.getString(1));
-				if (StringUtils.startsWith(resultSet.getString(1), testTableName)
-						&& StringUtils.endsWith(resultSet.getString(1), "_distributed")) {
+				String rsTableName = resultSet.getString(1);
+				if (rsTableName != null && rsTableName.startsWith(testTableName) && rsTableName.endsWith("_distributed")) {
 					tableName = resultSet.getString(1);
 				}
-
 			}
 		}
 		return tableName;

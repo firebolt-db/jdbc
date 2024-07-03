@@ -3,78 +3,56 @@ name: Run integration tests
 on:
   workflow_dispatch:
     inputs:
-      database:
-        description: 'Database - a new one will be created if not provided'
+      database1:
+        description: 'Database (v1) - a new one will be created if not provided'
         required: false
         default: ''
-      environment:
-        description: 'Environment to run the tests against'
-        type: choice
+      database-with-engine-v2:
+        description: 'Database (v2) for Firebolt v2 - a new one will be created if not provided'
+        required: false
+        default: ''
+      engine1:
+        description: 'Engine (v1) - a new one will be created if not provided'
+        required: false
+      engine_v2_fb_2_0:
+        description: 'Engine (v2) for Firebolt v2 - a new one will be created if not provided'
+        required: false
+      run-v1:
+        description: 'Run tests against Firebolt DB v1'
         required: true
-        default: 'staging'
+        default: true
+        type: choice
         options:
-          - dev
-          - staging
+          - 'true'
+          - 'false'
+      run-database-with-engine-v2:
+        description: 'Run tests against Firebolt DB v2 and Engine V2'
+        required: true
+        default: true
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
 jobs:
-  run-integration-tests:
-    runs-on: ubuntu-latest
+  run-integration-tests1:
+    if: ${{ inputs.run-v1 == 'true' }}
+    uses: ./.github/workflows/integration-test-v1.yml
+    with:
+      database: ${{ inputs.database1 }}
+      engine: ${{ inputs.engine1 }}
+    secrets:
+      FIREBOLT_STG_USERNAME: ${{ secrets.FIREBOLT_STG_USERNAME }}
+      FIREBOLT_STG_PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
 
-    steps:
-      - name: "Foresight: Collect Workflow Telemetry"
-        uses: runforesight/foresight-workflow-kit-action@v1
-        if: ${{ always() }}
-      - name: Check out code
-        uses: actions/checkout@v3
+  run-integration-tests-engine2:
+    if: ${{ inputs.run-database-with-engine-v2 == 'true' }}
+    uses: ./.github/workflows/integration-test-v2.yml
+    with:
+      database: ${{ inputs.database-with-engine-v2 }}
+      engine: ${{ inputs.engine_v2_fb_2_0 }}
+      account: ${{ vars.FIREBOLT_ACCOUNT_V2 }}
+    secrets:
+      FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
+      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
 
-      - name: Prepare java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-      - name: Determine env variables
-        run: |
-          if [ "${{ github.event.inputs.environment }}" == 'staging' ]; then
-             echo "USERNAME=${{ secrets.FIREBOLT_USERNAME_STAGING }}" >> "$GITHUB_ENV"
-             echo "PASSWORD=${{ secrets.FIREBOLT_PASSWORD_STAGING }}" >> "$GITHUB_ENV"
-             echo "SERVICE_ACCOUNT_ID=${{ secrets.SERVICE_ACCOUNT_ID_STAGING }}" >> "$GITHUB_ENV"
-             echo "SERVICE_ACCOUNT_SECRET=${{ secrets.SERVICE_ACCOUNT_SECRET_STAGING }}" >> "$GITHUB_ENV"
-          else
-             echo "USERNAME=${{ secrets.FIREBOLT_USERNAME_DEV }}" >> "$GITHUB_ENV"
-             echo "PASSWORD=${{ secrets.FIREBOLT_PASSWORD_DEV }}" >> "$GITHUB_ENV"
-             echo "SERVICE_ACCOUNT_ID=${{ secrets.SERVICE_ACCOUNT_ID_DEV }}" >> "$GITHUB_ENV"
-             echo "SERVICE_ACCOUNT_SECRET=${{ secrets.SERVICE_ACCOUNT_SECRET_DEV }}" >> "$GITHUB_ENV"
-          fi
-      - name: Setup database and engine
-        id: setup
-        if: ${{ github.event.inputs.database == '' }}
-        uses: firebolt-db/integration-testing-setup@v1
-        with:
-          firebolt-username: ${{ env.USERNAME }}
-          firebolt-password: ${{ env.PASSWORD }}
-          api-endpoint: "api.${{ github.event.inputs.environment }}.firebolt.io"
-          region: "us-east-1"
-          instance-type: "B2"
-
-      - name: Determine database name
-        id: find-database-name
-        run: |
-          if ! [[ -z "${{ github.event.inputs.database }}" ]]; then
-             echo "database_name=${{ github.event.inputs.database }}" >> $GITHUB_OUTPUT
-          else
-             echo "database_name=${{ steps.setup.outputs.database_name }}" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Dapi=api.${{ github.event.inputs.environment }}.firebolt.io -Dpassword="${{ env.SERVICE_ACCOUNT_SECRET }}" -Duser="${{ env.SERVICE_ACCOUNT_ID }}"
-
-      - name: "Foresight: Analyze Test Results"
-        uses: runforesight/foresight-test-kit-action@v1
-        if: success() || failure()
-        with:
-          test_format: JUNIT
-          test_framework: JUNIT
-          test_path: ./build/test-results/
-          tags: |
-            type:"integration"
-            language:"Java"

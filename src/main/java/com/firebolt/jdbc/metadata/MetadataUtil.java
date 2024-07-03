@@ -1,14 +1,17 @@
 package com.firebolt.jdbc.metadata;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import com.firebolt.jdbc.Query;
-
-import lombok.NonNull;
+import lombok.Builder;
+import lombok.Value;
 import lombok.experimental.UtilityClass;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+
+import static java.lang.String.format;
+import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.joining;
 
 @UtilityClass
 public class MetadataUtil {
@@ -38,68 +41,77 @@ public class MetadataUtil {
 				.from("information_schema.columns");
 
 		List<String> conditions = new ArrayList<>();
-		Optional.ofNullable(tableNamePattern)
-				.ifPresent(pattern -> conditions.add(String.format("table_name LIKE '%s'", pattern)));
-		Optional.ofNullable(columnNamePattern)
-				.ifPresent(pattern -> conditions.add(String.format("column_name LIKE '%s'", pattern)));
-		Optional.ofNullable(schemaPattern)
-				.ifPresent(pattern -> conditions.add(String.format("table_schema LIKE '%s'", pattern)));
+		ofNullable(tableNamePattern).ifPresent(pattern -> conditions.add(format("table_name LIKE '%s'", pattern)));
+		ofNullable(columnNamePattern).ifPresent(pattern -> conditions.add(format("column_name LIKE '%s'", pattern)));
+		ofNullable(schemaPattern).ifPresent(pattern -> conditions.add(format("table_schema LIKE '%s'", pattern)));
 		return queryBuilder.conditions(conditions).build().toSql();
 	}
 
-	public String getTablesQuery(String catalog, String schema, String tableName) {
-		Query.QueryBuilder queryBuilder = Query.builder().select("table_schema, table_name, table_type")
-				.from("information_schema.tables");
-
-		List<String> conditions = getConditionsForTables(catalog, schema, tableName);
-
-		queryBuilder.orderBy("table_schema, table_name");
-		return queryBuilder.conditions(conditions).build().toSql();
-	}
-
-	public String getViewsQuery(String catalog, String schemaPattern, String tableNamePattern) {
-
-		Query.QueryBuilder queryBuilder = Query.builder().select("table_schema, table_name")
-				.from("information_schema.views");
-
-		List<String> conditions = getConditionsForViews(catalog, schemaPattern, tableNamePattern);
-
-		queryBuilder.orderBy("table_schema, table_name");
-		return queryBuilder.conditions(conditions).build().toSql();
-	}
-
-	@NonNull
-	private List<String> getConditionsForTables(String catalog, String schema, String tableName) {
-		return getConditionsForTablesAndViews(catalog, schema, tableName, true);
-	}
-
-	@NonNull
-	private List<String> getConditionsForViews(String catalog, String schema, String tableName) {
-		return getConditionsForTablesAndViews(catalog, schema, tableName, false);
-	}
-
-	@NonNull
-	private List<String> getConditionsForTablesAndViews(String catalog, String schema, String tableName,
-			boolean isTable) {
+	public String getTablesQuery(@SuppressWarnings("java:S1172") String catalog, String schema, String tableName, String[] types) {
+		Query.QueryBuilder queryBuilder = Query.builder().select("table_schema, table_name, table_type").from("information_schema.tables");
 		List<String> conditions = new ArrayList<>();
-		Optional.ofNullable(schema)
-				.ifPresent(pattern -> conditions.add(String.format("table_schema LIKE '%s'", pattern)));
+		conditions.add(format("table_type IN (%s)", Arrays.stream(types).map(t -> format("'%s'", t)).collect(joining(", "))));
+		// Uncomment once table catalogs are supported. Remove suppress warning ava:S1172 from the first parameter also.
+		//ofNullable(catalog).ifPresent(pattern -> conditions.add(String.format("table_catalog LIKE '%s'",pattern)));
+		ofNullable(schema).ifPresent(pattern -> conditions.add(format("table_schema LIKE '%s'", pattern)));
+		ofNullable(tableName).ifPresent(pattern -> conditions.add(format("table_name LIKE '%s'", pattern)));
+		return queryBuilder.conditions(conditions).orderBy("table_schema, table_name").build().toSql();
+	}
 
-		Optional.ofNullable(tableName)
-				.ifPresent(pattern -> conditions.add(String.format("table_name LIKE '%s'", pattern)));
-		// Uncomment once table catalogs are supported
-		// Optional.ofNullable(catalog)
-		// .ifPresent(pattern -> conditions.add(String.format("table_catalog LIKE '%s'",
-		// pattern)));
-		if (isTable) {
-			conditions.add("table_type NOT LIKE 'EXTERNAL'");
+	/**
+	 * Represents a SQL query that can be sent to Firebolt to receive metadata info
+	 */
+	@Builder
+	@Value
+	public static class Query {
+		String select;
+		String from;
+		String innerJoin;
+		String orderBy;
+		List<String> conditions;
+
+		/**
+		 * Parse the object to a SQL query that can be sent to Firebolt
+		 *
+		 * @return SQL query that can be sent to Firebolt
+		 */
+		public String toSql() {
+			StringBuilder query = new StringBuilder();
+			if (select == null || select.isBlank()) {
+				throw new IllegalStateException("Cannot create query: SELECT cannot be blank");
+			}
+			if (from == null || from.isBlank()) {
+				throw new IllegalStateException("Cannot create query: FROM cannot be blank");
+			}
+
+			query.append("SELECT ").append(select);
+			query.append(" FROM ").append(from);
+			if (innerJoin != null && !innerJoin.isBlank()) {
+				query.append(" JOIN ").append(innerJoin);
+			}
+			query.append(getConditionsPart());
+			if (orderBy != null && !orderBy.isBlank()) {
+				query.append(" order by ").append(orderBy);
+			}
+			return query.toString();
 		}
-		return conditions;
+
+		private String getConditionsPart() {
+			StringBuilder agg = new StringBuilder();
+			Iterator<String> iter = conditions.iterator();
+			if (iter.hasNext()) {
+				agg.append(" WHERE ");
+			}
+			if (iter.hasNext()) {
+				String entry = iter.next();
+				agg.append(entry);
+			}
+			while (iter.hasNext()) {
+				String entry = iter.next();
+				agg.append(" AND ").append(entry);
+			}
+			return agg.toString();
+		}
 	}
 
-	public static String getDatabaseVersionQuery(String engine) {
-		return Query.builder().select("version").from("information_schema.engines")
-				.conditions(Collections.singletonList(String.format("engine_name iLIKE '%s%%'", engine))).build()
-				.toSql();
-	}
 }

@@ -1,18 +1,14 @@
 package com.firebolt.jdbc.client.config.socket;
 
-import static com.firebolt.jdbc.client.config.socket.SocketUtil.wrap;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
 
+import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 
-import javax.net.ssl.SSLSocketFactory;
+import static com.firebolt.jdbc.client.config.socket.SocketUtil.wrap;
 
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-
-import lombok.CustomLog;
-
-@CustomLog
 public class FireboltSSLSocketFactory extends SSLSocketFactory {
 	private final SSLSocketFactory delegate;
 	private final FireboltProperties fireboltProperties;

@@ -1,20 +1,35 @@
 package com.firebolt.jdbc.client.account.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.json.JSONObject;
 
-import lombok.Builder;
-import lombok.Value;
-
-@Value
-@Builder
 public class FireboltEngineIdResponse {
-	@JsonProperty("engine_id")
-	Engine engine;
+	private final Engine engine;
 
-	@Value
-	@Builder
+	public FireboltEngineIdResponse(Engine engine) {
+        this.engine = engine;
+    }
+
+	FireboltEngineIdResponse(JSONObject json) {
+		this(new Engine(json.getJSONObject("engine_id")));
+	}
+
+	public Engine getEngine() {
+		return engine;
+	}
+
 	public static class Engine {
-		@JsonProperty("engine_id")
-		String engineId;
+		private final String engineId;
+
+        public Engine(String engineId) {
+            this.engineId = engineId;
+        }
+
+		private Engine(JSONObject json) {
+			this(json.getString("engine_id"));
+		}
+
+		public String getEngineId() {
+			return engineId;
+		}
 	}
 }

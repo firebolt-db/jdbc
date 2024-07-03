@@ -10,4 +10,8 @@ public class FireboltSQLFeatureNotSupportedException extends SQLFeatureNotSuppor
 		super(String.format(FEATURE_NOT_SUPPORTED, Thread.currentThread().getStackTrace()[2].getMethodName(),
 				Thread.currentThread().getStackTrace()[2].getLineNumber()));
 	}
+
+	public FireboltSQLFeatureNotSupportedException(String message) {
+		super(message);
+	}
 }

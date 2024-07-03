@@ -1,27 +1,41 @@
 package com.firebolt.jdbc.connection.settings;
 
-import java.util.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.ToString;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
+import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
+import static com.firebolt.jdbc.util.PropertyUtil.mergeProperties;
+import static java.lang.String.format;
 
-import lombok.Builder;
-import lombok.CustomLog;
-import lombok.NonNull;
-import lombok.Value;
-
-@Value
+@Getter
+@ToString
+@AllArgsConstructor
+@EqualsAndHashCode
 @Builder(toBuilder = true)
-@CustomLog
 public class FireboltProperties {
 
-	private static final Pattern DB_PATH_PATTERN = Pattern.compile("/([a-zA-Z0-9_*\\-]+)");
+	private static final Pattern DB_PATH_PATTERN = Pattern.compile("/?([a-zA-Z0-9_*\\-]+)");
 	private static final int FIREBOLT_SSL_PROXY_PORT = 443;
 	private static final int FIREBOLT_NO_SSL_PROXY_PORT = 9090;
-	private static final String SYSTEM_ENGINE_NAME = "system";
 
 	private static final Set<String> sessionPropertyKeys = Arrays.stream(FireboltSessionProperty.values())
 			.map(property -> {
@@ -31,89 +45,118 @@ public class FireboltProperties {
 				return keys;
 			}).flatMap(List::stream).collect(Collectors.toSet());
 
-	int keepAliveTimeoutMillis;
-	int maxConnectionsTotal;
-	int maxRetries;
-	int bufferSize;
-	int clientBufferSize;
-	int socketTimeoutMillis;
-	int connectionTimeoutMillis;
-	Integer port;
-	String host;
-	String database;
-	String path;
-	boolean ssl;
-	String sslCertificatePath;
-	String sslMode;
-	boolean compress;
-	String user;
-	String password;
-	String engine;
-	String account;
-	Integer tcpKeepIdle;
-	Integer tcpKeepCount;
-	Integer tcpKeepInterval;
-	boolean logResultSet;
-	boolean systemEngine;
-	String userDrivers;
-	String userClients;
-	String accessToken;
-
+	private final int keepAliveTimeoutMillis;
+	private final int maxConnectionsTotal;
+	private final int maxRetries;
+	private final int bufferSize;
+	private final int socketTimeoutMillis;
+	private final int connectionTimeoutMillis;
+	private final Integer port;
+	private final String host;
+	private String database; // updatable using use statement
+	private final String path;
+	private final boolean ssl;
+	private final String sslCertificatePath;
+	private final String sslMode;
+	private final boolean compress;
+	private final String principal;
+	private final String secret;
+	private String engine; // updatable using use statement
+	private final String account;
+	private String accountId;
+	private final int tcpKeepIdle;
+	private final int tcpKeepCount;
+	private final int tcpKeepInterval;
+	private final boolean logResultSet;
+	private boolean systemEngine;
+	private final String environment;
+	private final String userDrivers;
+	private final String userClients;
+	private final String accessToken;
 	@Builder.Default
-	Map<String, String> additionalProperties = new HashMap<>();
+	private Map<String, String> initialAdditionalProperties = new HashMap<>();
+	@Builder.Default
+	private Map<String, String> runtimeAdditionalProperties = new HashMap<>();
 
-	public static FireboltProperties of(Properties... properties) {
-		Properties mergedProperties = mergeProperties(properties);
-		boolean ssl = getSetting(mergedProperties, FireboltSessionProperty.SSL);
-		String sslRootCertificate = getSetting(mergedProperties, FireboltSessionProperty.SSL_CERTIFICATE_PATH);
-		String sslMode = getSetting(mergedProperties, FireboltSessionProperty.SSL_MODE);
-		String user = getSetting(mergedProperties, FireboltSessionProperty.USER);
-		String password = getSetting(mergedProperties, FireboltSessionProperty.PASSWORD);
-		String path = getSetting(mergedProperties, FireboltSessionProperty.PATH);
-		String engine = getSetting(mergedProperties, FireboltSessionProperty.ENGINE);
-		boolean isSystemEngine = isSystemEngine(engine);
-		boolean compress = ((Boolean) getSetting(mergedProperties, FireboltSessionProperty.COMPRESS))
-				&& !isSystemEngine;
-		String account = getSetting(mergedProperties, FireboltSessionProperty.ACCOUNT);
-		int keepAliveMillis = getSetting(mergedProperties, FireboltSessionProperty.KEEP_ALIVE_TIMEOUT_MILLIS);
-		int maxTotal = getSetting(mergedProperties, FireboltSessionProperty.MAX_CONNECTIONS_TOTAL);
-		int maxRetries = getSetting(mergedProperties, FireboltSessionProperty.MAX_RETRIES);
-		int bufferSize = getSetting(mergedProperties, FireboltSessionProperty.BUFFER_SIZE);
-		int socketTimeout = getSetting(mergedProperties, FireboltSessionProperty.SOCKET_TIMEOUT_MILLIS);
-		int connectionTimeout = getSetting(mergedProperties, FireboltSessionProperty.CONNECTION_TIMEOUT_MILLIS);
-		int tcpKeepInterval = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_INTERVAL);
-		int tcpKeepIdle = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_IDLE);
-		int tcpKeepCount = getSetting(mergedProperties, FireboltSessionProperty.TCP_KEEP_COUNT);
-		boolean logResultSet = getSetting(mergedProperties, FireboltSessionProperty.LOG_RESULT_SET);
-		String driverVersions = getSetting(mergedProperties, FireboltSessionProperty.USER_DRIVERS);
-		String clientVersions = getSetting(mergedProperties, FireboltSessionProperty.USER_CLIENTS);
-
-		String host = getHost(mergedProperties);
-		Integer port = getPort(mergedProperties, ssl);
-		String database = getDatabase(mergedProperties, path);
-		String accessToken =  getSetting(mergedProperties, FireboltSessionProperty.ACCESS_TOKEN);
-		Map<String, String> additionalProperties = getFireboltCustomProperties(mergedProperties);
-
-		return FireboltProperties.builder().ssl(ssl).sslCertificatePath(sslRootCertificate).sslMode(sslMode).path(path)
-				.port(port).database(database).compress(compress).user(user).password(password).host(host)
-				.additionalProperties(additionalProperties).account(account).engine(engine)
-				.keepAliveTimeoutMillis(keepAliveMillis).maxConnectionsTotal(maxTotal).maxRetries(maxRetries)
-				.bufferSize(bufferSize).socketTimeoutMillis(socketTimeout).connectionTimeoutMillis(connectionTimeout)
-				.tcpKeepInterval(tcpKeepInterval).tcpKeepCount(tcpKeepCount).tcpKeepIdle(tcpKeepIdle)
-				.logResultSet(logResultSet).systemEngine(isSystemEngine)
-				.userDrivers(driverVersions)
-				.userClients(clientVersions)
-				.accessToken(accessToken)
-				.build();
+	public FireboltProperties(Properties[] allProperties) {
+		this(mergeProperties(allProperties));
 	}
 
-	private static String getHost(Properties properties) {
+	public FireboltProperties(Properties properties) {
+		ssl = getSetting(properties, FireboltSessionProperty.SSL);
+		sslCertificatePath = getSetting(properties, FireboltSessionProperty.SSL_CERTIFICATE_PATH);
+		sslMode = getSetting(properties, FireboltSessionProperty.SSL_MODE);
+		principal = getSetting(properties, FireboltSessionProperty.CLIENT_ID);
+		secret = getSetting(properties, FireboltSessionProperty.CLIENT_SECRET);
+		path = getSetting(properties, FireboltSessionProperty.PATH);
+		database = getDatabase(properties, path);
+		engine = getEngine(properties);
+		systemEngine = isSystemEngine(engine);
+		compress = ((Boolean) getSetting(properties, FireboltSessionProperty.COMPRESS)) && !systemEngine;
+		account = getSetting(properties, FireboltSessionProperty.ACCOUNT);
+		accountId = getSetting(properties, FireboltSessionProperty.ACCOUNT_ID);
+		keepAliveTimeoutMillis = getSetting(properties, FireboltSessionProperty.KEEP_ALIVE_TIMEOUT_MILLIS);
+		maxConnectionsTotal = getSetting(properties, FireboltSessionProperty.MAX_CONNECTIONS_TOTAL);
+		maxRetries = getSetting(properties, FireboltSessionProperty.MAX_RETRIES);
+		bufferSize = getSetting(properties, FireboltSessionProperty.BUFFER_SIZE);
+		socketTimeoutMillis = getSetting(properties, FireboltSessionProperty.SOCKET_TIMEOUT_MILLIS);
+		connectionTimeoutMillis = getSetting(properties, FireboltSessionProperty.CONNECTION_TIMEOUT_MILLIS);
+		tcpKeepInterval = getSetting(properties, FireboltSessionProperty.TCP_KEEP_INTERVAL);
+		tcpKeepIdle = getSetting(properties, FireboltSessionProperty.TCP_KEEP_IDLE);
+		tcpKeepCount = getSetting(properties, FireboltSessionProperty.TCP_KEEP_COUNT);
+		logResultSet = getSetting(properties, FireboltSessionProperty.LOG_RESULT_SET);
+		String configuredEnvironment = getSetting(properties, FireboltSessionProperty.ENVIRONMENT);
+		userDrivers = getSetting(properties, FireboltSessionProperty.USER_DRIVERS);
+		userClients = getSetting(properties, FireboltSessionProperty.USER_CLIENTS);
+
+		environment = getEnvironment(configuredEnvironment, properties);
+		host = getHost(configuredEnvironment, properties);
+		port = getPort(properties, ssl);
+		accessToken =  getSetting(properties, FireboltSessionProperty.ACCESS_TOKEN);
+
+		initialAdditionalProperties = getFireboltCustomProperties(properties);
+		runtimeAdditionalProperties = new HashMap<>();
+	}
+
+	private static String getEngine(Properties mergedProperties) {
+		return getSetting(mergedProperties, FireboltSessionProperty.ENGINE);
+	}
+
+	private static String getHost(String environment, Properties properties ) {
 		String host = getSetting(properties, FireboltSessionProperty.HOST);
-		if (StringUtils.isEmpty(host)) {
-			throw new IllegalArgumentException("Invalid host: The host is missing or empty");
-		} else {
-			return host;
+		return host == null || host.isEmpty() ? format("api.%s.firebolt.io", environment) : host;
+	}
+
+	/**
+	 * Discovers environment name from host if it matches pattern {@code api.ENV.firebolt.io}
+	 * @param environment - the environment from properties or default value as defined in {@link FireboltSessionProperty#ENVIRONMENT}
+	 * @param properties - configuration properties
+	 * @return the environment value
+	 * @throws IllegalStateException if environment extracted from host is not equal to given one.
+	 */
+	private static String getEnvironment(String environment, @NotNull Properties properties) {
+		Pattern environmentalHost = Pattern.compile("api\\.(.+?)\\.firebolt\\.io");
+		String envFromProps = Stream.concat(Stream.of(FireboltSessionProperty.ENVIRONMENT.getKey()), Stream.of(FireboltSessionProperty.ENVIRONMENT.getAliases()))
+				.map(properties::getProperty)
+				.filter(Objects::nonNull).findFirst()
+				.orElse(null);
+		String envFromHost = null;
+		String host = getSetting(properties, FireboltSessionProperty.HOST);
+		if (host != null) {
+			Matcher m = environmentalHost.matcher(host);
+			if (m.find() && m.group(1) != null) {
+				envFromHost = m.group(1);
+			}
 		}
+		if (envFromHost != null) {
+			if (envFromProps == null) {
+				return envFromHost;
+			}
+			if (!Objects.equals(environment, envFromHost)) {
+				throw new IllegalStateException(format("Environment %s does not match host %s", environment, host));
+			}
+		}
+		return environment;
 	}
 
 	@NonNull
@@ -127,15 +170,15 @@ public class FireboltProperties {
 
 	private static String getDatabase(Properties properties, String path) throws IllegalArgumentException {
 		String database = getSetting(properties, FireboltSessionProperty.DATABASE);
-		if (StringUtils.isEmpty(database)) {
-			if ("/".equals(path)) {
-				throw new IllegalArgumentException("A database must be provided");
+		if (database == null || database.isEmpty()) {
+			if ("/".equals(path) || "".equals(path)) {
+				return null;
 			} else {
 				Matcher m = DB_PATH_PATTERN.matcher(path);
 				if (m.matches()) {
 					return m.group(1);
 				} else {
-					throw new IllegalArgumentException(String.format("The database provided is invalid %s", path));
+					throw new IllegalArgumentException(format("The database provided is invalid %s", path));
 				}
 			}
 		} else {
@@ -170,38 +213,64 @@ public class FireboltProperties {
 			return (T) clazz.cast(Long.valueOf(val));
 		}
 		if (clazz == boolean.class || clazz == Boolean.class) {
-			boolean boolValue;
-			if (StringUtils.isNumeric(val)) {
-				boolValue = Integer.parseInt(val) > 0;
-			} else {
-				boolValue = Boolean.parseBoolean(val);
-			}
+			boolean boolValue = val.chars().allMatch(Character::isDigit) ? Integer.parseInt(val) > 0 : Boolean.parseBoolean(val);
 			return (T) clazz.cast(boolValue);
 		}
 		return (T) clazz.cast(val);
 	}
 
-	private static Properties mergeProperties(Properties... properties) {
-		Properties mergedProperties = new Properties();
-		for (Properties p : properties) {
-			mergedProperties.putAll(p);
-		}
-		return mergedProperties;
-	}
-
 	public static FireboltProperties copy(FireboltProperties properties) {
-		return properties.toBuilder().additionalProperties(new HashMap<>(properties.getAdditionalProperties())).build();
+		return properties.toBuilder().runtimeAdditionalProperties(new HashMap<>(properties.getRuntimeAdditionalProperties())).build();
 	}
 
 	private static boolean isSystemEngine(String engine) {
-		return StringUtils.equalsIgnoreCase(SYSTEM_ENGINE_NAME, engine);
+		return engine == null;
+	}
+
+	public Map<String, String> getAdditionalProperties() {
+		Map<String, String> additionalProperties = new HashMap<>(initialAdditionalProperties);
+		additionalProperties.putAll(runtimeAdditionalProperties);
+		return additionalProperties;
 	}
 
 	public void addProperty(@NonNull String key, String value) {
-		additionalProperties.put(key, value);
+		// This a bad patch but there is nothing to do right now. We will refactor this class and make solution more generic
+		switch (key) {
+			case "database": database = value; break;
+			case "engine":
+				engine = value;
+				systemEngine = SYSTEM_ENGINE_NAME.equalsIgnoreCase(engine);
+				break;
+			case "account_id":
+				if (accountId != null && !accountId.equalsIgnoreCase(value)) {
+					throw new IllegalStateException("Failed to execute command. Account parameter mismatch. Contact support");
+				}
+				this.accountId = value;
+				break;
+			default: runtimeAdditionalProperties.put(key, value);
+		}
 	}
 
-	public void addProperty(Pair<String, String> property) {
-		this.addProperty(property.getLeft(), property.getRight());
+	public void addProperty(Entry<String, String> property) {
+		addProperty(property.getKey(), property.getValue());
+	}
+
+	public String getHttpConnectionUrl() {
+		String hostAndPort = host + (port == null ? "" : ":" + port);
+		String protocol = isSsl() ? "https://" : "http://";
+		return protocol + hostAndPort;
+	}
+
+	public void clearAdditionalProperties() {
+		runtimeAdditionalProperties.clear();
+	}
+
+	public String processEngineUrl(String endpoint) {
+		String[] engineUrl = endpoint.split("\\?", 2);
+		String engineHost = engineUrl[0].replaceFirst("^https?://", ""); // just in case remove URL scheme although right now server never returns it
+		String[] engineQuery = engineUrl.length > 1 ? engineUrl[1].split("&") : new String[0];
+		// get properties from query string and update values
+		Arrays.stream(engineQuery).map(prop -> prop.split("=")).filter(a -> a.length == 2).forEach(prop -> addProperty(prop[0], prop[1]));
+		return engineHost;
 	}
 }

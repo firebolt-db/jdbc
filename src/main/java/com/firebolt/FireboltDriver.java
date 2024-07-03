@@ -1,27 +1,28 @@
 package com.firebolt;
 
-import java.sql.*;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.util.LoggerUtil;
+import com.firebolt.jdbc.util.PropertyUtil;
+import com.firebolt.jdbc.util.VersionUtil;
+
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverPropertyInfo;
+import java.sql.SQLException;
 import java.util.Properties;
 import java.util.logging.Logger;
 
-import org.apache.commons.lang3.StringUtils;
-
-import com.firebolt.jdbc.util.PropertyUtil;
-import com.firebolt.jdbc.util.VersionUtil;
-import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
-
-import lombok.CustomLog;
-
-@CustomLog
 public class FireboltDriver implements Driver {
 
 	public static final String JDBC_FIREBOLT = "jdbc:firebolt:";
-	private static final String JDBC_FIREBOLT_PREFIX = JDBC_FIREBOLT + "//";
+	private static final Logger rootLog;
+	private static final Logger log;
 
 	static {
 		try {
 			java.sql.DriverManager.registerDriver(new FireboltDriver());
+			rootLog = LoggerUtil.getRootLogger();
+			log = Logger.getLogger(FireboltDriver.class.getName());
 			log.info("Firebolt Driver registered");
 		} catch (SQLException ex) {
 			throw new RuntimeException("Cannot register the driver");
@@ -30,16 +31,16 @@ public class FireboltDriver implements Driver {
 
 	@Override
 	public Connection connect(String url, Properties connectionSettings) throws SQLException {
-		return acceptsURL(url) ? new FireboltConnection(url, connectionSettings) : null;
+		return acceptsURL(url) ? FireboltConnection.create(url, connectionSettings) : null;
 	}
 
 	@Override
 	public boolean acceptsURL(String url) {
-		return StringUtils.isNotEmpty(url) && url.startsWith(JDBC_FIREBOLT_PREFIX);
+		return url != null && url.startsWith(JDBC_FIREBOLT);
 	}
 
 	@Override
-	public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
+	public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) {
 		return PropertyUtil.getPropertyInfo(url, info);
 	}
 
@@ -59,7 +60,7 @@ public class FireboltDriver implements Driver {
 	}
 
 	@Override
-	public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-		throw new FireboltSQLFeatureNotSupportedException();
+	public Logger getParentLogger() {
+		return rootLog;
 	}
 }

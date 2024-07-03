@@ -1,18 +1,20 @@
 package com.firebolt.jdbc;
 
+import com.firebolt.jdbc.type.FireboltDataType;
+import lombok.Builder;
+import lombok.Value;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
-import com.firebolt.jdbc.type.FireboltDataType;
-
-import lombok.Builder;
-import lombok.Value;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Class containing a query result that can be used to create a
  * {@link com.firebolt.jdbc.resultset.FireboltResultSet}
+ * It is particularly useful for metadata methods as a ResulSet containing metadata info must be returned.
  */
 @Builder
 @Value
@@ -32,12 +34,13 @@ public class QueryResult {
 	 *         TabSeparatedWithNamesAndTypes format
 	 */
 	@Override
+	@SuppressWarnings("java:S6204") // JDK 11 compatible
 	public String toString() {
 		StringBuilder stringBuilder = new StringBuilder();
-		this.appendWithListValues(stringBuilder, columns.stream().map(Column::getName).collect(Collectors.toList()));
+		appendWithListValues(stringBuilder, columns.stream().map(Column::getName).collect(toList()));
 		stringBuilder.append(NEXT_LINE);
-		this.appendWithListValues(stringBuilder, columns.stream().map(Column::getType)
-				.map(FireboltDataType::getAliases).map( aliases -> aliases[0]).collect(Collectors.toList()));
+		Function<Column, String> columnToString = c -> c.getType().getAliases()[0] + (c.isNullable() ? " null" : "");
+		appendWithListValues(stringBuilder, columns.stream().map(columnToString).collect(toList()));
 		stringBuilder.append(NEXT_LINE);
 
 		for (int i = 0; i < rows.size(); i++) {
@@ -76,5 +79,6 @@ public class QueryResult {
 	public static class Column {
 		String name;
 		FireboltDataType type;
+		boolean nullable;
 	}
 }

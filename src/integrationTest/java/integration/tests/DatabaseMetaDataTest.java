@@ -2,9 +2,11 @@ package integration.tests;
 
 import integration.ConnectionInfo;
 import integration.IntegrationTest;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -14,9 +16,11 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import static com.firebolt.jdbc.metadata.MetadataColumns.BUFFER_LENGTH;
@@ -48,22 +52,40 @@ import static com.firebolt.jdbc.metadata.MetadataColumns.TABLE_TYPE;
 import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_CAT;
 import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_NAME;
 import static com.firebolt.jdbc.metadata.MetadataColumns.TYPE_SCHEM;
+import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DatabaseMetaDataTest extends IntegrationTest {
 
-	@BeforeEach
+	@BeforeAll
 	void beforeAll() {
 		executeStatementFromFile("/statements/metadata/ddl.sql");
 	}
 
-	@AfterEach
+	@AfterAll
 	void afterEach() {
 		executeStatementFromFile("/statements/metadata/cleanup.sql");
+	}
+
+	@Test
+	void getMetadata() throws SQLException {
+		try (Connection connection = createConnection()) {
+			DatabaseMetaData databaseMetaData = connection.getMetaData();
+			assertNotNull(databaseMetaData);
+			assertSame(databaseMetaData, connection.getMetaData());
+			connection.close();
+			assertThat(assertThrows(SQLException.class, connection::getMetaData).getMessage(), containsString("closed"));
+		}
 	}
 
 	@Test
@@ -80,22 +102,20 @@ class DatabaseMetaDataTest extends IntegrationTest {
 				}
 			}
 		}
-		assertThat(schemas, containsInAnyOrder("public", "catalog", "information_schema"));
+		assertThat(schemas, containsInAnyOrder("public", "information_schema"));
 		String dbName = ConnectionInfo.getInstance().getDatabase();
-		assertThat(catalogs, contains(dbName, dbName, dbName));
+		assertThat(catalogs, contains(dbName, dbName));
 	}
 
 	@Test
 	void shouldReturnTable() throws SQLException {
 		Map<String, List<String>> result = new HashMap<>();
-		try (Connection connection = createConnection()) {
-			try (ResultSet rs = connection.getMetaData().getTables(connection.getCatalog(), "public",
-					"integration_test", null)) {
-				ResultSetMetaData metadata = rs.getMetaData();
-				while (rs.next()) {
-					for (int i = 1; i <= metadata.getColumnCount(); i++) {
-						result.computeIfAbsent(metadata.getColumnName(i), k -> new ArrayList<>()).add(rs.getString(i));
-					}
+		try (Connection connection = createConnection();
+			 ResultSet rs = connection.getMetaData().getTables(connection.getCatalog(), "public", "integration_test", null)) {
+			ResultSetMetaData metadata = rs.getMetaData();
+			while (rs.next()) {
+				for (int i = 1; i <= metadata.getColumnCount(); i++) {
+					result.computeIfAbsent(metadata.getColumnName(i), k -> new ArrayList<>()).add(rs.getString(i));
 				}
 			}
 		}
@@ -113,17 +133,56 @@ class DatabaseMetaDataTest extends IntegrationTest {
 		assertNull(result.get(TYPE_NAME).get(0));
 	}
 
+	@ParameterizedTest
+	@CsvSource({
+			// table types
+			",,,,tables;views;integration_test,",
+			",,,TABLE;VIEW,tables;views;integration_test,",
+			",,,VIEW;TABLE,integration_test;tables;views,",
+			",,,TABLE,integration_test,views;tables",
+			",,,VIEW,views;tables,integration_test",
+
+			// table name pattern
+			",,%account%,,service_account_users;service_accounts,tables;columns;views",
+			",,%test,,integration_test,tables;columns;views",
+
+			// schema name pattern
+			",public,,,integration_test,tables;columns;views",
+			",information_schema,,,tables;columns,integration_test",
+
+			// schema name pattern and table types
+			",public,,TABLE,integration_test,tables;columns;views",
+			",public,,TABLE;VIEW,integration_test,tables;columns;views",
+			",public,,VIEW,,tables;columns;views",
+			",information_schema,,TABLE,,integration_test",
+			",information_schema,,TABLE;VIEW,tables;columns,integration_test",
+			",information_schema,,VIEW,tables;columns,",
+	})
+	void getTables(String catalog, String schemaPattern, String tableNamePattern, String typesStr, String expectedNamesStr, String unexpectedNamesStr) throws SQLException {
+		String[] types = typesStr == null ? null : typesStr.split(";");
+		Collection<String> expectedNames = expectedNamesStr == null ? Set.of() : Set.of(expectedNamesStr.split(";"));
+		Collection<String> unexpectedNames = unexpectedNamesStr == null ? Set.of() : Set.of(unexpectedNamesStr.split(";"));
+		List<String> names = new ArrayList<>();
+		try (Connection connection = createConnection();
+			 ResultSet rs = connection.getMetaData().getTables(catalog, schemaPattern, tableNamePattern, types)) {
+			while (rs.next()) {
+				names.add(rs.getString(TABLE_NAME));
+			}
+		}
+		assertTrue(names.containsAll(expectedNames), format("List %s does not contain expected items %s", names, expectedNames));
+		List<String> foundUnexpectedItems = names.stream().filter(unexpectedNames::contains).distinct().collect(toList());
+		assertTrue(foundUnexpectedItems.isEmpty(), format("List %s contains unexpected items %s", names, foundUnexpectedItems));
+	}
+
 	@Test
 	void shouldReturnColumns() throws SQLException {
 		Map<String, List<String>> result = new HashMap<>();
-		try (Connection connection = createConnection()) {
-			try (ResultSet rs = connection.getMetaData().getColumns(connection.getCatalog(), "public",
-					"integration_test", null)) {
-				ResultSetMetaData metadata = rs.getMetaData();
-				while (rs.next()) {
-					for (int i = 1; i <= metadata.getColumnCount(); i++) {
-						result.computeIfAbsent(metadata.getColumnName(i), k -> new ArrayList<>()).add(rs.getString(i));
-					}
+		try (Connection connection = createConnection();
+			 ResultSet rs = connection.getMetaData().getColumns(connection.getCatalog(), "public", "integration_test", null)) {
+			ResultSetMetaData metadata = rs.getMetaData();
+			while (rs.next()) {
+				for (int i = 1; i <= metadata.getColumnCount(); i++) {
+					result.computeIfAbsent(metadata.getColumnName(i), k -> new ArrayList<>()).add(rs.getString(i));
 				}
 			}
 		}
@@ -131,7 +190,7 @@ class DatabaseMetaDataTest extends IntegrationTest {
 		String tableName = "integration_test";
 		String schemaName = "public";
 		assertThat(result.get(SCOPE_TABLE), contains(null, null, null, null, null, null, null));
-		assertThat(result.get(IS_NULLABLE), contains("NO", "YES", "YES", "YES", "YES", "YES", "NO"));
+		assertThat(result.get(IS_NULLABLE), contains("NO", "YES", "YES", "YES", "YES", "NO", "NO"));
 		assertThat(result.get(BUFFER_LENGTH), contains(null, null, null, null, null, null, null));
 		assertThat(result.get(TABLE_CAT), contains(database, database, database, database, database, database, database));
 		assertThat(result.get(SCOPE_CATALOG), contains(null, null, null, null, null, null, null));
@@ -140,7 +199,7 @@ class DatabaseMetaDataTest extends IntegrationTest {
 		assertThat(result.get(COLUMN_NAME), contains("id", "ts", "tstz", "tsntz", "content", "success", "year"));
 		assertThat(result.get(TABLE_SCHEM), contains(schemaName, schemaName, schemaName, schemaName, schemaName, schemaName, schemaName));
 		assertThat(result.get(REMARKS), contains(null, null, null, null, null, null, null));
-		assertThat(result.get(NULLABLE), contains("0", "1", "1", "1", "1", "1", "0"));
+		assertThat(result.get(NULLABLE), contains("0", "1", "1", "1", "1", "0", "0"));
 		assertThat(result.get(DECIMAL_DIGITS), contains("0", "0", "0", "0", "0", "0", "0"));
 		assertThat(result.get(SQL_DATETIME_SUB), contains(null, null, null, null, null, null, null));
 		assertThat(result.get(NUM_PREC_RADIX), contains("10", "10", "10", "10", "10", "10", "10"));
@@ -159,20 +218,19 @@ class DatabaseMetaDataTest extends IntegrationTest {
 	@Test
 	void shouldReturnColumnsFromSelect() throws SQLException {
 		Map<Integer, Map<String, Object>> result = new TreeMap<>();
-		try (Connection connection = createConnection()) {
-			try (ResultSet rs = connection.createStatement().executeQuery("select * from integration_test")) {
-				ResultSetMetaData metadata = rs.getMetaData();
-				for (int i = 1; i <= metadata.getColumnCount(); i++) {
-					result.put(i,
-							new TreeMap<>(Map.of(
-									"type", metadata.getColumnType(i),
-									"typeName", metadata.getColumnTypeName(i),
-									"className", metadata.getColumnClassName(i),
-									"label", metadata.getColumnLabel(i),
-									"name", metadata.getColumnName(i),
-									"displaySize", metadata.getColumnDisplaySize(i)
-							)));
-				}
+		try (Connection connection = createConnection();
+			 ResultSet rs = connection.createStatement().executeQuery("select * from integration_test")) {
+			ResultSetMetaData metadata = rs.getMetaData();
+			for (int i = 1; i <= metadata.getColumnCount(); i++) {
+				result.put(i,
+						new TreeMap<>(Map.of(
+								"type", metadata.getColumnType(i),
+								"typeName", metadata.getColumnTypeName(i),
+								"className", metadata.getColumnClassName(i),
+								"label", metadata.getColumnLabel(i),
+								"name", metadata.getColumnName(i),
+								"displaySize", metadata.getColumnDisplaySize(i)
+						)));
 			}
 		}
 

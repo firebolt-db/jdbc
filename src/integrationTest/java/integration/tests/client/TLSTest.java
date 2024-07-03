@@ -1,6 +1,11 @@
 package integration.tests.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import integration.MockWebServerAwareIntegrationTest;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.tls.HandshakeCertificates;
+import okhttp3.tls.HeldCertificate;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -11,32 +16,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.UUID;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import com.firebolt.jdbc.connection.FireboltConnection;
-
-import integration.IntegrationTest;
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.tls.HandshakeCertificates;
-import okhttp3.tls.HeldCertificate;
-
-public class TLSTest extends IntegrationTest {
-	private MockWebServer mockBackEnd;
-
-	@BeforeEach
-	void setUp() throws IOException {
-		mockBackEnd = new MockWebServer();
-		mockBackEnd.start();
-	}
-
-	@AfterEach
-	void tearDown() throws IOException {
-		mockBackEnd.close();
-	}
-
+public class TLSTest extends MockWebServerAwareIntegrationTest {
 	@Test
 	public void shouldUseTLS() throws SQLException, IOException, NoSuchFieldException, IllegalAccessException {
 		mockBackEnd.enqueue(new MockResponse().setResponseCode(200));
@@ -61,7 +41,7 @@ public class TLSTest extends IntegrationTest {
 
 		// Write the public certificate to a file that will be used by the driver for
 		// the TLS handshake
-		String path = this.getClass().getResource("/").getPath() + UUID.randomUUID() + ".pem";
+		String path = getClass().getResource("/").getPath() + UUID.randomUUID() + ".pem";
 		try (Writer out = new FileWriter(new File(path).getAbsoluteFile())) {
 			out.write(localhostCertificate.certificatePem());
 		}
@@ -70,7 +50,7 @@ public class TLSTest extends IntegrationTest {
 				String.format("?ssl_certificate_path=%s&port=%s", path, mockBackEnd.getPort()));
 				Statement statement = fireboltConnection.createStatement()) {
 			statement.execute("SELECT 1;");
-			assertEquals(1, mockBackEnd.getRequestCount());
+			assertMockBackendRequestsCount(1);
 		} finally {
 			removeExistingClient();
 		}

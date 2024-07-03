@@ -8,17 +8,17 @@ class VersionUtilTest {
 
 	@Test
 	void shouldGetDriverMajorVersion() {
-		assertEquals(2, VersionUtil.getMajorDriverVersion());
+		assertEquals(3, VersionUtil.getMajorDriverVersion());
 	}
 
 	@Test
 	void shouldGetDriverMinorVersion() {
-		assertEquals(4, VersionUtil.getDriverMinorVersion());
+		assertEquals(0, VersionUtil.getDriverMinorVersion());
 	}
 
 	@Test
 	void shouldGetProjectVersion() {
-		assertEquals("2.4.6", VersionUtil.getDriverVersion());
+		assertEquals("3.0.4-SNAPSHOT", VersionUtil.getDriverVersion());
 	}
 
 	@Test

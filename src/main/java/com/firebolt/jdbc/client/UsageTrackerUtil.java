@@ -1,17 +1,17 @@
 package com.firebolt.jdbc.client;
 
 import com.firebolt.jdbc.util.VersionUtil;
-import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-@CustomLog
 @UtilityClass
 public class UsageTrackerUtil {
 
+	private static final Logger log = Logger.getLogger(UsageTrackerUtil.class.getName());
 	public static final Map<String, String> CLIENT_MAP = Map.of(
 			"Tableau", "com.tableau",
 			"Looker", "com.looker",
@@ -25,7 +25,7 @@ public class UsageTrackerUtil {
 			Class<?> c = Class.forName(name);
 			return c.getPackage().getImplementationVersion();
 		} catch (ClassNotFoundException e) {
-			log.debug("Unable to get version for class " + name);
+			log.log(Level.FINE, "Unable to get version for class {0}", name);
 			return "";
 		}
 	}
@@ -37,15 +37,15 @@ public class UsageTrackerUtil {
 		}
 		for (StackTraceElement s : stack) {
 			for (Map.Entry<String, String> connectorEntry : clientMap.entrySet()) {
-				if (StringUtils.contains(s.getClassName(), connectorEntry.getValue())) {
+				if (s.getClassName().contains(connectorEntry.getValue())) {
 					String version = getVersionForClass(s.getClassName());
-					log.debug("Detected running from " + connectorEntry.getKey() + " Version " + version);
+					log.log(Level.FINE, "Detected running from {0} Version {1}", new Object[] {connectorEntry.getKey(), version});
 					clients.put(connectorEntry.getKey(), version);
 				}
 			}
 		}
 		if (clients.isEmpty()) {
-			log.debug("No clients detected for tracking");
+			log.log(Level.FINE, "No clients detected for tracking");
 		}
 		return clients;
 	}
@@ -60,7 +60,7 @@ public class UsageTrackerUtil {
 				nameToVersion.put(connectorInfo[0], connectorInfo[1]);
 			}
 		} else {
-			log.debug(String.format("Incorrect connector format is provided: %s, Expected: ConnA:1.0.2,ConnB:2.9.3", namesAndVersions));
+			log.log(Level.FINE, "Incorrect connector format is provided: {0}, Expected: ConnA:1.0.2,ConnB:2.9.3", namesAndVersions);
 		}
 		return nameToVersion;
 	}

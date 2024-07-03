@@ -1,0 +1,75 @@
+name: Run integration tests v2
+
+on:
+  workflow_call:
+    inputs:
+      database:
+        description: 'Database - a new one will be created if not provided'
+        required: false
+        default: ''
+        type: string
+      engine:
+        description: 'Engine - a new one will be created if not provided'
+        required: false
+        type: string
+      account:
+        description: 'Account'
+        required: true
+        type: string
+    secrets:
+      FIREBOLT_CLIENT_ID_STG_NEW_IDN:
+        required: true
+      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
+        required: true
+
+jobs:
+  run-integration-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate database and engine
+        if: ${{ (inputs.database == '') != (inputs.engine == '') }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed("Database and Engine parameters should be provided simultaneously")
+
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Prepare java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup database and engine
+        id: setup
+        if: ${{ inputs.database == '' }}
+        uses: firebolt-db/integration-testing-setup@v2
+        with:
+          firebolt-client-id: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
+          firebolt-client-secret: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+          account: ${{ inputs.account }}
+          api-endpoint: "api.staging.firebolt.io"
+
+      - name: Determine database name
+        id: find-database-name
+        run: |
+          if ! [[ -z "${{ inputs.database }}" ]]; then
+             echo "database_name=${{ inputs.database }}" >> $GITHUB_OUTPUT
+          else
+             echo "database_name=${{ steps.setup.outputs.database_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine engine name
+        id: find-engine-name
+        run: |
+          if ! [[ -z "${{ inputs.engine }}" ]]; then
+             echo "engine_name=${{ inputs.engine }}" >> $GITHUB_OUTPUT
+          else
+             echo "engine_name=${{ steps.setup.outputs.engine_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run integration tests
+        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=staging -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ inputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags=v1

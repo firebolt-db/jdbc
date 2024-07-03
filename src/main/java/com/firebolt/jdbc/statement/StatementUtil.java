@@ -1,30 +1,32 @@
 package com.firebolt.jdbc.statement;
 
-import java.util.*;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.RegExUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-
 import com.firebolt.jdbc.statement.rawstatement.RawStatement;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
 import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
-
-import lombok.CustomLog;
+import com.firebolt.jdbc.util.StringUtil;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 @UtilityClass
-@CustomLog
 public class StatementUtil {
 
 	private static final String SET_PREFIX = "set";
 	private static final Pattern SET_WITH_SPACE_REGEX = Pattern.compile(SET_PREFIX + " ", Pattern.CASE_INSENSITIVE);
 	private static final String[] SELECT_KEYWORDS = new String[] { "show", "select", "describe", "exists", "explain",
 			"with", "call" };
+	private static final Logger log = Logger.getLogger(StatementUtil.class.getName());
 
 	/**
 	 * Returns true if the statement is a query (eg: SELECT, SHOW).
@@ -33,12 +35,11 @@ public class StatementUtil {
 	 * @return true if the statement is a query (eg: SELECT, SHOW).
 	 */
 	public static boolean isQuery(String cleanSql) {
-		if (StringUtils.isNotEmpty(cleanSql)) {
-			cleanSql = cleanSql.replace("(", "");
-			return StringUtils.startsWithAny(cleanSql.toLowerCase(), SELECT_KEYWORDS);
-		} else {
+		if (cleanSql == null || cleanSql.isEmpty()) {
 			return false;
 		}
+		String lowerCaseSql = cleanSql.replace("(", "").toLowerCase();
+		return Arrays.stream(SELECT_KEYWORDS).anyMatch(lowerCaseSql::startsWith);
 	}
 
 	/**
@@ -48,11 +49,8 @@ public class StatementUtil {
 	 * @param sql      the sql statement
 	 * @return an optional parameter represented with a pair of key/value
 	 */
-	public Optional<Pair<String, String>> extractParamFromSetStatement(@NonNull String cleanSql, String sql) {
-		if (StringUtils.startsWithIgnoreCase(cleanSql, SET_PREFIX)) {
-			return extractPropertyPair(cleanSql, sql);
-		}
-		return Optional.empty();
+	public Optional<Entry<String, String>> extractParamFromSetStatement(@NonNull String cleanSql, String sql) {
+		return cleanSql.toLowerCase().startsWith(SET_PREFIX) ? extractPropertyPair(cleanSql, sql) : Optional.empty();
 	}
 
 	/**
@@ -69,7 +67,7 @@ public class StatementUtil {
 	/**
 	 * Parse sql statement to a {@link RawStatementWrapper}. The method construct
 	 * the {@link RawStatementWrapper} by splitting it in a list of sub-statements
-	 * (supports multistatements)
+	 * (supports multi-statements)
 	 * 
 	 * @param sql the sql statement
 	 * @return a list of {@link StatementInfoWrapper}
@@ -90,7 +88,7 @@ public class StatementUtil {
 		boolean isInSingleLineComment = false;
 		boolean isInMultipleLinesComment = false;
 		boolean isInComment = false;
-		boolean foundSubqueryEndingSemicolon = false;
+		boolean foundSubQueryEndingSemicolon = false;
 		char previousChar;
 		int subQueryParamsCount = 0;
 		boolean isPreviousCharInComment;
@@ -105,16 +103,16 @@ public class StatementUtil {
 			isInComment = isInSingleLineComment || isInMultipleLinesComment;
 			if (!isInComment) {
 				// Although the ending semicolon may have been found, we need to include any
-				// potential comments to the subquery
+				// potential comments to the sub-query
 				if (!isCurrentSubstringBetweenQuotes && isEndingSemicolon(currentChar, previousChar,
-						foundSubqueryEndingSemicolon, isPreviousCharInComment)) {
-					foundSubqueryEndingSemicolon = true;
-					if (isEndOfSubquery(currentChar)) {
+						foundSubQueryEndingSemicolon, isPreviousCharInComment)) {
+					foundSubQueryEndingSemicolon = true;
+					if (isEndOfSubQuery(currentChar)) {
 						subStatements.add(RawStatement.of(sql.substring(subQueryStart, currentIndex),
 								subStatementParamMarkersPositions, cleanedSubQuery.toString().trim()));
 						subStatementParamMarkersPositions = new ArrayList<>();
 						subQueryStart = currentIndex;
-						foundSubqueryEndingSemicolon = false;
+						foundSubQueryEndingSemicolon = false;
 						cleanedSubQuery = new StringBuilder();
 					}
 				} else if (currentChar == '?' && !isCurrentSubstringBetweenQuotes
@@ -136,15 +134,15 @@ public class StatementUtil {
 		return new RawStatementWrapper(subStatements);
 	}
 
-	private boolean isEndingSemicolon(char currentChar, char previousChar, boolean foundSubqueryEndingSemicolon,
+	private boolean isEndingSemicolon(char currentChar, char previousChar, boolean foundSubQueryEndingSemicolon,
 			boolean isPreviousCharInComment) {
-		if (foundSubqueryEndingSemicolon) {
+		if (foundSubQueryEndingSemicolon) {
 			return true;
 		}
 		return (';' == previousChar && currentChar != ';' && !isPreviousCharInComment);
 	}
 
-	private boolean isEndOfSubquery(char currentChar) {
+	private boolean isEndOfSubQuery(char currentChar) {
 		return currentChar != '-' && currentChar != '/' && currentChar != ' ' && currentChar != '\n';
 	}
 
@@ -180,25 +178,26 @@ public class StatementUtil {
 	 * @param cleanSql the clean sql query
 	 * @return the database name and the table name from the sql query as a pair
 	 */
-	public Pair<Optional<String>, Optional<String>> extractDbNameAndTableNamePairFromCleanQuery(String cleanSql) {
+	public Entry<Optional<String>, Optional<String>> extractDbNameAndTableNamePairFromCleanQuery(String cleanSql) {
 		Optional<String> from = Optional.empty();
 		if (isQuery(cleanSql)) {
-			log.debug("Extracting DB and Table name for SELECT: {}", cleanSql);
-			String withoutQuotes = StringUtils.replace(cleanSql, "'", "").trim();
-			if (StringUtils.startsWithIgnoreCase(withoutQuotes, "select")) {
-				int fromIndex = StringUtils.indexOfIgnoreCase(withoutQuotes, "from");
+			log.log(Level.FINE, "Extracting DB and Table name for SELECT: {0}", cleanSql);
+			String withoutQuotes = cleanSql.replace("'", "").trim();
+			String withoutQuotesUpperCase = withoutQuotes.toUpperCase();
+			if (withoutQuotesUpperCase.startsWith("SELECT")) {
+				int fromIndex = withoutQuotesUpperCase.indexOf("FROM");
 				if (fromIndex != -1) {
-					from = Optional.of(withoutQuotes.substring(fromIndex + "from".length()).trim().split(" ")[0]);
+					from = Optional.of(withoutQuotes.substring(fromIndex + "FROM".length()).trim().split(" ")[0]);
 				}
-			} else if (StringUtils.startsWithIgnoreCase(withoutQuotes, "DESCRIBE")) {
+			} else if (withoutQuotesUpperCase.startsWith("DESCRIBE")) {
 				from = Optional.of("tables");
-			} else if (StringUtils.startsWithIgnoreCase(withoutQuotes, "SHOW")) {
+			} else if (withoutQuotesUpperCase.startsWith("SHOW")) {
 				from = Optional.empty(); // Depends on the information requested
 			} else {
-				log.debug("Could not find table name for query {}. This may happen when there is no table.", cleanSql);
+				log.log(Level.FINE, "Could not find table name for query {0}. This may happen when there is no table.", cleanSql);
 			}
 		}
-		return new ImmutablePair<>(extractDbNameFromFromPartOfTheQuery(from.orElse(null)),
+		return Map.entry(extractDbNameFromFromPartOfTheQuery(from.orElse(null)),
 				extractTableNameFromFromPartOfTheQuery(from.orElse(null)));
 	}
 
@@ -227,14 +226,14 @@ public class StatementUtil {
 	public List<StatementInfoWrapper> replaceParameterMarksWithValues(@NonNull Map<Integer, String> params,
 			@NonNull RawStatementWrapper rawStatement) {
 		List<StatementInfoWrapper> subQueries = new ArrayList<>();
-		for (int subqueryIndex = 0; subqueryIndex < rawStatement.getSubStatements().size(); subqueryIndex++) {
+		for (int subQueryIndex = 0; subQueryIndex < rawStatement.getSubStatements().size(); subQueryIndex++) {
 			int currentPos;
 			/*
 			 * As the parameter markers are being placed then the statement sql keeps
 			 * getting bigger, which is why we need to keep track of the offset
 			 */
 			int offset = 0;
-			RawStatement subQuery = rawStatement.getSubStatements().get(subqueryIndex);
+			RawStatement subQuery = rawStatement.getSubStatements().get(subQueryIndex);
 			String subQueryWithParams = subQuery.getSql();
 
 			if (params.size() != rawStatement.getTotalParams()) {
@@ -255,31 +254,25 @@ public class StatementUtil {
 						+ subQueryWithParams.substring(currentPos + 1);
 				offset += value.length() - 1;
 			}
-			Pair<String, String> additionalParams = subQuery.getStatementType() == StatementType.PARAM_SETTING
+			Entry<String, String> additionalParams = subQuery.getStatementType() == StatementType.PARAM_SETTING
 					? ((SetParamRawStatement) subQuery).getAdditionalProperty()
 					: null;
-			subQueries.add(new StatementInfoWrapper(subQueryWithParams, UUID.randomUUID().toString(),
-					subQuery.getStatementType(), additionalParams, subQuery));
-
+			subQueries.add(new StatementInfoWrapper(subQueryWithParams, subQuery.getStatementType(), additionalParams, subQuery));
 		}
 		return subQueries;
 	}
 
 	private Optional<String> extractTableNameFromFromPartOfTheQuery(String from) {
 		return Optional.ofNullable(from).map(s -> s.replace("\"", "")).map(fromPartOfTheQuery -> {
-			if (StringUtils.contains(fromPartOfTheQuery, ".")) {
-				int indexOfTableName = StringUtils.lastIndexOf(fromPartOfTheQuery, ".");
-				return fromPartOfTheQuery.substring(indexOfTableName + 1);
-			} else {
-				return fromPartOfTheQuery;
-			}
+			int indexOfTableName = fromPartOfTheQuery.lastIndexOf('.');
+			return indexOfTableName >= 0 && indexOfTableName < fromPartOfTheQuery.length() - 1 ? fromPartOfTheQuery.substring(indexOfTableName + 1) : fromPartOfTheQuery;
 		});
 	}
 
 	private static Optional<String> extractDbNameFromFromPartOfTheQuery(String from) {
 		return Optional.ofNullable(from).map(s -> s.replace("\"", ""))
-				.filter(s -> StringUtils.countMatches(s, ".") == 2).map(fromPartOfTheQuery -> {
-					int dbNameEndPos = StringUtils.indexOf(fromPartOfTheQuery, ".");
+				.filter(s -> s.chars().filter(c -> '.' == c).count() == 2).map(fromPartOfTheQuery -> {
+					int dbNameEndPos = fromPartOfTheQuery.indexOf('.');
 					return fromPartOfTheQuery.substring(0, dbNameEndPos);
 				});
 	}
@@ -294,19 +287,14 @@ public class StatementUtil {
 		return isInSingleLineComment;
 	}
 
-	private Optional<Pair<String, String>> extractPropertyPair(String cleanStatement, String sql) {
-		String setQuery = RegExUtils.removeFirst(cleanStatement, SET_WITH_SPACE_REGEX);
-		String[] values = StringUtils.split(setQuery, "=");
+	private Optional<Entry<String, String>> extractPropertyPair(String cleanStatement, String sql) {
+		String setQuery = SET_WITH_SPACE_REGEX.matcher(cleanStatement).replaceFirst("");
+		String[] values = setQuery.split("=");
 		if (values.length == 2) {
-			String value = StringUtils.removeEnd(values[1], ";").trim();
-			if (StringUtils.isNumeric(value)){
-				return Optional.of(Pair.of(values[0].trim(), value.trim()));
-			} else {
-				return Optional.of(Pair.of(values[0].trim(), StringUtils.removeEnd(StringUtils.removeStart(value, "'"), "'")));
-			}
-		} else {
-			throw new IllegalArgumentException(
-					"Cannot parse the additional properties provided in the statement: " + sql);
+			String value = (values[1].endsWith(";") ? values[1].substring(0, values[1].length() - 1) : values[1]).trim();
+			String pureValue = value.chars().allMatch(Character::isDigit) ? value : StringUtil.strip(value, '\'');
+			return Optional.of(Map.entry(values[0].trim(), pureValue));
 		}
+		throw new IllegalArgumentException("Cannot parse the additional properties provided in the statement: " + sql);
 	}
 }

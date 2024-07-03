@@ -1,11 +1,13 @@
 package com.firebolt.jdbc.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.firebolt.jdbc.connection.CacheListener;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.exception.SQLState;
+import com.firebolt.jdbc.exception.ServerError;
+import com.firebolt.jdbc.exception.ServerError.Error.Location;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import com.firebolt.jdbc.util.CloseableUtil;
-import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NonNull;
 import okhttp3.Call;
@@ -14,70 +16,97 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static java.lang.String.format;
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
+import static java.util.Optional.ofNullable;
 
 @Getter
-@CustomLog
-public abstract class FireboltClient {
+public abstract class FireboltClient implements CacheListener {
 
-	public static final String HEADER_AUTHORIZATION = "Authorization";
-	public static final String HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE = "Bearer ";
-	public static final String HEADER_USER_AGENT = "User-Agent";
-	protected final ObjectMapper objectMapper;
-	private final String headerUserAgentValue;
+	private static final String HEADER_AUTHORIZATION = "Authorization";
+	private static final String HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE = "Bearer ";
+	private static final String HEADER_USER_AGENT = "User-Agent";
+	private static final String HEADER_PROTOCOL_VERSION = "Firebolt-Protocol-Version";
+	private static final Logger log = Logger.getLogger(FireboltClient.class.getName());
+	private static final Pattern plainErrorPattern = Pattern.compile("Line (\\d+), Column (\\d+): (.*)$", Pattern.MULTILINE);
 	private final OkHttpClient httpClient;
-	private final FireboltConnection connection;
+	private final String headerUserAgentValue;
+	protected final FireboltConnection connection;
 
-	protected FireboltClient(OkHttpClient httpClient, FireboltConnection connection, String customDrivers,
-			String customClients, ObjectMapper objectMapper) {
+	protected FireboltClient(OkHttpClient httpClient, FireboltConnection connection, String customDrivers, String customClients) {
 		this.httpClient = httpClient;
 		this.connection = connection;
-		this.objectMapper = objectMapper;
 		this.headerUserAgentValue = UsageTrackerUtil.getUserAgentString(customDrivers != null ? customDrivers : "",
 				customClients != null ? customClients : "");
+		connection.register(this);
 	}
 
-	protected <T> T getResource(String uri, String host, String accessToken, Class<T> valueType)
-			throws IOException, FireboltException {
+	protected <T> T getResource(String uri, String accessToken, Class<T> valueType)
+			throws IOException, SQLException {
+		return getResource(uri, uri, accessToken, valueType);
+	}
+
+	protected <T> T getResource(String uri, String host, String accessToken, Class<T> valueType) throws SQLException, IOException {
 		Request rq = createGetRequest(uri, accessToken);
-		try (Response response = this.execute(rq, host)) {
-			return objectMapper.readValue(getResponseAsString(response), valueType);
+		try (Response response = execute(rq, host)) {
+			return jsonToObject(getResponseAsString(response), valueType);
 		}
 	}
 
+	@SuppressWarnings("java:S3011") // setAccessible() is required here :(
+	protected <T> T jsonToObject(String json, Class<T> valueType) throws IOException {
+        try {
+			Constructor<T> constructor = valueType.getDeclaredConstructor(JSONObject.class);
+			constructor.setAccessible(true);
+            return json == null ? null : constructor.newInstance(new JSONObject(json));
+        } catch (ReflectiveOperationException | RuntimeException e) {
+			Throwable cause = Optional.ofNullable(e.getCause()).orElse(e);
+			throw new IOException(cause.getMessage(), cause);
+        }
+    }
+
 	private Request createGetRequest(String uri, String accessToken) {
 		Request.Builder requestBuilder = new Request.Builder().url(uri);
-		this.createHeaders(accessToken)
-				.forEach(header -> requestBuilder.addHeader(header.getLeft(), header.getRight()));
+		createHeaders(accessToken).forEach(header -> requestBuilder.addHeader(header.getKey(), header.getValue()));
 		return requestBuilder.build();
 	}
 
-	protected Response execute(@NonNull Request request, String host) throws IOException, FireboltException {
+	protected Response execute(@NonNull Request request, String host) throws IOException, SQLException {
 		return execute(request, host, false);
 	}
 
 	protected Response execute(@NonNull Request request, String host, boolean isCompress)
-			throws IOException, FireboltException {
+			throws IOException, SQLException {
 		Response response = null;
 		try {
-			OkHttpClient client = getClientWithTimeouts(this.connection.getConnectionTimeout(),
-					this.connection.getNetworkTimeout());
+			OkHttpClient client = getClientWithTimeouts(connection.getConnectionTimeout(), connection.getNetworkTimeout());
 			Call call = client.newCall(request);
 			response = call.execute();
 			validateResponse(host, response, isCompress);
@@ -89,83 +118,81 @@ public abstract class FireboltClient {
 	}
 
 	private OkHttpClient getClientWithTimeouts(int connectionTimeout, int networkTimeout) {
-		if (connectionTimeout != this.httpClient.connectTimeoutMillis()
-				|| networkTimeout != this.httpClient.readTimeoutMillis()) {
+		if (connectionTimeout != httpClient.connectTimeoutMillis()
+				|| networkTimeout != httpClient.readTimeoutMillis()) {
 			// This creates a shallow copy using the same connection pool
-			return this.httpClient.newBuilder().readTimeout(this.connection.getNetworkTimeout(), TimeUnit.MILLISECONDS)
-					.connectTimeout(this.connection.getConnectionTimeout(), TimeUnit.MILLISECONDS).build();
+			return httpClient.newBuilder().readTimeout(connection.getNetworkTimeout(), TimeUnit.MILLISECONDS)
+					.connectTimeout(connection.getConnectionTimeout(), TimeUnit.MILLISECONDS).build();
 		} else {
-			return this.httpClient;
+			return httpClient;
 		}
 	}
 
-	protected Request createPostRequest(String uri, RequestBody requestBody) {
-		return createPostRequest(uri, requestBody, null, null);
-	}
-
-	protected Request createPostRequest(String uri, RequestBody body, String accessToken, String id) {
-		Request.Builder requestBuilder = new Request.Builder().url(uri);
-		this.createHeaders(accessToken)
-				.forEach(header -> requestBuilder.addHeader(header.getLeft(), header.getRight()));
+	protected Request createPostRequest(String uri, String label, RequestBody body, String accessToken) {
+		Request.Builder requestBuilder = new Request.Builder().url(uri).tag(label);
+		createHeaders(accessToken).forEach(header -> requestBuilder.addHeader(header.getKey(), header.getValue()));
 		if (body != null) {
 			requestBuilder.post(body);
-		}
-		if (id != null) {
-			requestBuilder.tag(id);
 		}
 		return requestBuilder.build();
 	}
 
-	protected Request createPostRequest(String uri, String accessToken, String id) {
-		return createPostRequest(uri, (RequestBody) null, accessToken, id);
-	}
-
-	protected Request createPostRequest(String uri, String json, String accessToken, String id) {
+	protected Request createPostRequest(String uri, String label, String json, String accessToken) {
 		RequestBody requestBody = null;
 		if (json != null) {
 			requestBody = RequestBody.create(json, MediaType.parse("application/json"));
 		}
-		return createPostRequest(uri, requestBody, accessToken, id);
+		return createPostRequest(uri, label, requestBody, accessToken);
 	}
 
-	protected void validateResponse(String host, Response response, Boolean isCompress) throws FireboltException {
+	protected void validateResponse(String host, Response response, Boolean isCompress) throws SQLException {
 		int statusCode = response.code();
 		if (!isCallSuccessful(statusCode)) {
 			if (statusCode == HTTP_UNAVAILABLE) {
-				throw new FireboltException(
-						String.format("Could not query Firebolt at %s. The engine is not running.", host), statusCode);
+				throw new FireboltException(format("Could not query Firebolt at %s. The engine is not running.", host),
+						statusCode, SQLState.CONNECTION_FAILURE);
 			}
-			String errorResponseMessage;
-			try {
-				String errorMessageFromServer = extractErrorMessage(response, isCompress);
-				errorResponseMessage = String.format(
-						"Server failed to execute query with the following error:%n%s%ninternal error:%n%s",
-						errorMessageFromServer, this.getInternalErrorWithHeadersText(response));
-				if (statusCode == HTTP_UNAUTHORIZED) {
-					this.getConnection().removeExpiredTokens();
-					throw new FireboltException(String.format(
-							"Could not query Firebolt at %s. The operation is not authorized or the token is expired and has been cleared from the cache.%n%s",
-							host, errorResponseMessage), statusCode, errorMessageFromServer);
-				}
-				throw new FireboltException(errorResponseMessage, statusCode, errorMessageFromServer);
-			} catch (IOException e) {
-				log.warn("Could not parse response containing the error message from Firebolt", e);
-				errorResponseMessage = String.format("Server failed to execute query%ninternal error:%n%s",
-						this.getInternalErrorWithHeadersText(response));
-				throw new FireboltException(errorResponseMessage, statusCode, e);
+			String errorMessageFromServer = extractErrorMessage(response, isCompress);
+			ServerError serverError = parseServerError(errorMessageFromServer);
+			String processedErrorMessage = serverError.getErrorMessage();
+			validateResponse(host, statusCode, processedErrorMessage);
+			String errorResponseMessage = format(
+					"Server failed to execute query with the following error:%n%s%ninternal error:%n%s",
+					processedErrorMessage, getInternalErrorWithHeadersText(response));
+			if (statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN) {
+				getConnection().removeExpiredTokens();
+				throw new FireboltException(format(
+						"Could not query Firebolt at %s. The operation is not authorized or the token is expired and has been cleared from the cache.%n%s",
+						host, errorResponseMessage), statusCode, processedErrorMessage,
+						SQLState.INVALID_AUTHORIZATION_SPECIFICATION);
 			}
+			throw new FireboltException(errorResponseMessage, statusCode, processedErrorMessage);
 		}
 	}
 
-	protected String getResponseAsString(Response response) throws FireboltException, IOException {
+	protected void validateResponse(String host, int statusCode, String errorMessageFromServer) throws SQLException {
+		// empty implementation
+	}
+
+	protected String getResponseAsString(Response response) throws SQLException, IOException {
 		if (response.body() == null) {
 			throw new FireboltException("Cannot get resource: the response from the server is empty");
 		}
 		return response.body().string();
 	}
 
-	private String extractErrorMessage(Response response, boolean isCompress) throws IOException {
-		byte[] entityBytes = response.body() !=  null ? response.body().bytes() : null;
+	@SuppressWarnings("java:S2139") // TODO: Exceptions should be either logged or rethrown but not both
+	private String extractErrorMessage(Response response, boolean isCompress) throws SQLException {
+		byte[] entityBytes;
+		try {
+			entityBytes = response.body() !=  null ? response.body().bytes() : null;
+		} catch (IOException e) {
+			log.log(Level.WARNING, "Could not parse response containing the error message from Firebolt", e);
+			String errorResponseMessage = format("Server failed to execute query%ninternal error:%n%s",
+					getInternalErrorWithHeadersText(response));
+			throw new FireboltException(errorResponseMessage, response.code(), e);
+		}
+
 		if (entityBytes == null) {
 			return null;
 		}
@@ -175,21 +202,65 @@ public abstract class FireboltClient {
 				return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8)).lines()
 						.collect(Collectors.joining("\n")) + "\n";
 			} catch (Exception e) {
-				log.warn("Could not decompress error from server");
+				log.log(Level.WARNING, "Could not decompress error from server");
 			}
 		}
 		return new String(entityBytes, StandardCharsets.UTF_8);
 	}
 
-	private boolean isCallSuccessful(int statusCode) {
+	private ServerError parseServerError(String responseText) {
+		try {
+			if (responseText == null) {
+				return new ServerError(null, null);
+			}
+			ServerError serverError = new ServerError(new JSONObject(responseText));
+			ServerError.Error[] errors = serverError.getErrors() == null ? null : Arrays.stream(serverError.getErrors()).map(this::updateError).toArray(ServerError.Error[]::new);
+			return new ServerError(serverError.getQuery(), errors);
+		} catch (JSONException e) {
+			String message = responseText;
+			Location location = null;
+			Entry<Location, String> locationAndText = getLocationFromMessage(responseText);
+			if (locationAndText != null) {
+				location = locationAndText.getKey();
+				message = locationAndText.getValue();
+			}
+			return new ServerError(null, new ServerError.Error[] {new ServerError.Error(null, message, null, null, null, null, null, location)});
+		}
+	}
+
+	private ServerError.Error updateError(ServerError.Error error) {
+		if (error == null || error.getDescription() == null) {
+			return error;
+		}
+		Entry<Location, String> locationAndText = getLocationFromMessage(error.getDescription());
+		if (locationAndText == null) {
+			return error;
+		}
+		Location location = Objects.requireNonNullElse(error.getLocation(), locationAndText.getKey());
+		return new ServerError.Error(error.getCode(), error.getName(), error.getSeverity(), error.getSource(),
+				locationAndText.getValue(), error.getResolution(), error.getHelpLink(), location);
+	}
+
+	private Entry<Location, String> getLocationFromMessage(String responseText) {
+		Matcher m = plainErrorPattern.matcher(responseText);
+		if (m.find()) {
+			int line = Integer.parseInt(m.group(1));
+			int column = Integer.parseInt(m.group(2));
+			String message = m.group(3);
+			return Map.entry(new Location(line, column, column), message);
+		}
+		return null;
+	}
+
+	protected boolean isCallSuccessful(int statusCode) {
 		return statusCode >= 200 && statusCode <= 299; // Call is considered successful when the status code is 2XX
 	}
 
-	private List<Pair<String, String>> createHeaders(String accessToken) {
-		List<Pair<String, String>> headers = new ArrayList<>();
-		headers.add(new ImmutablePair<>(HEADER_USER_AGENT, this.getHeaderUserAgentValue()));
-		Optional.ofNullable(accessToken).ifPresent(token -> headers.add(
-				new ImmutablePair<>(HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken)));
+	private List<Entry<String, String>> createHeaders(String accessToken) {
+		List<Entry<String, String>> headers = new ArrayList<>();
+		headers.add(Map.entry(HEADER_USER_AGENT, getHeaderUserAgentValue()));
+		ofNullable(connection.getProtocolVersion()).ifPresent(version -> headers.add(Map.entry(HEADER_PROTOCOL_VERSION, version)));
+		ofNullable(accessToken).ifPresent(token -> headers.add(Map.entry(HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken)));
 		return headers;
 	}
 
@@ -197,4 +268,8 @@ public abstract class FireboltClient {
 		return response.toString() + "\n" + response.headers();
 	}
 
+	@Override
+	public void cleanup() {
+		// empty default implementation
+	}
 }

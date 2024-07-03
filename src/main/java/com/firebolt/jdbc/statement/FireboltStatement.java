@@ -1,16 +1,15 @@
 package com.firebolt.jdbc.statement;
 
-import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
+import com.firebolt.jdbc.JdbcBase;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.util.CloseableUtil;
-import lombok.Builder;
-import lombok.CustomLog;
 
 import java.io.InputStream;
 import java.sql.Connection;
@@ -18,171 +17,164 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-@CustomLog
-public class FireboltStatement implements Statement {
+import static com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory.createValidator;
+import static java.lang.String.format;
+import static java.util.stream.Collectors.toCollection;
 
+public class FireboltStatement extends JdbcBase implements Statement {
+
+	private static final Logger log = Logger.getLogger(FireboltStatement.class.getName());
 	private final FireboltStatementService statementService;
 	private final FireboltProperties sessionProperties;
 	private final FireboltConnection connection;
-	private final Collection<String> statementsToExecuteIds = new HashSet<>();
+	private final Collection<String> statementsToExecuteLabels = new HashSet<>();
 	private boolean closeOnCompletion = false;
 	private int currentUpdateCount = -1;
 	private int maxRows;
+	private int maxFieldSize;
 	private volatile boolean isClosed = false;
 	private StatementResultWrapper currentStatementResult;
 	private StatementResultWrapper firstUnclosedStatementResult;
-	private int queryTimeout = 0; // zero means that there is not limit
-	private String runningStatementId;
+	private int queryTimeout = 0; // zero means that there is no limit
+	private String runningStatementLabel;
+	private final List<String> batchStatements = new LinkedList<>();
 
-	@Builder
 	public FireboltStatement(FireboltStatementService statementService, FireboltProperties sessionProperties,
 			FireboltConnection connection) {
 		this.statementService = statementService;
 		this.sessionProperties = sessionProperties;
 		this.connection = connection;
-		log.debug("Created Statement");
+		log.fine("Created Statement");
 	}
 
 	@Override
 	public ResultSet executeQuery(String sql) throws SQLException {
-		return this.executeQuery(StatementUtil.parseToStatementInfoWrappers(sql));
+		return executeQuery(StatementUtil.parseToStatementInfoWrappers(sql));
 	}
 
 	protected ResultSet executeQuery(List<StatementInfoWrapper> statementInfoList) throws SQLException {
 		StatementInfoWrapper query = getOneQueryStatementInfo(statementInfoList);
-		Optional<ResultSet> resultSet = this.execute(Collections.singletonList(query));
+		Optional<ResultSet> resultSet = execute(Collections.singletonList(query));
 		synchronized (this) {
-			if (!resultSet.isPresent()) {
-				throw new FireboltException("Could not return ResultSet - the query returned no result.");
-			} else {
-				return resultSet.get();
-			}
+			return resultSet.orElseThrow(() -> new FireboltException("Could not return ResultSet - the query returned no result."));
 		}
 	}
 
 	@Override
 	public boolean execute(String sql) throws SQLException {
-		return this.execute(StatementUtil.parseToStatementInfoWrappers(sql)).isPresent();
+		return execute(StatementUtil.parseToStatementInfoWrappers(sql)).isPresent();
 	}
 
 	protected Optional<ResultSet> execute(List<StatementInfoWrapper> statements) throws SQLException {
 		Optional<ResultSet> resultSet = Optional.empty();
-		this.closeAllResults();
-		Set<String> queryIds = statements.stream().map(StatementInfoWrapper::getId)
-				.collect(Collectors.toCollection(HashSet::new));
+		closeAllResults();
+		Set<String> queryLabels = statements.stream().map(StatementInfoWrapper::getLabel).collect(toCollection(HashSet::new));
 		try {
-			synchronized (statementsToExecuteIds) {
-				statementsToExecuteIds.addAll(queryIds);
+			synchronized (statementsToExecuteLabels) {
+				statementsToExecuteLabels.addAll(queryLabels);
 			}
 			for (int i = 0; i < statements.size(); i++) {
 				if (i == 0) {
-					resultSet = execute(statements.get(i), true, true);
+					resultSet = execute(statements.get(i));
 				} else {
-					execute(statements.get(i), true, true);
+					execute(statements.get(i));
 				}
 			}
 		} finally {
-			synchronized (statementsToExecuteIds) {
-				statementsToExecuteIds.removeAll(queryIds);
+			synchronized (statementsToExecuteLabels) {
+				statementsToExecuteLabels.removeAll(queryLabels);
 			}
 		}
 		return resultSet;
 	}
 
-	private Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper, boolean verifyNotCancelled,
-			boolean isStandardSql) throws SQLException {
+	@SuppressWarnings("java:S2139") // TODO: Exceptions should be either logged or rethrown but not both
+	private Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper) throws SQLException {
+		createValidator(statementInfoWrapper.getInitialStatement(), connection).validate(statementInfoWrapper.getInitialStatement());
 		ResultSet resultSet = null;
-		if (!verifyNotCancelled || isStatementNotCancelled(statementInfoWrapper)) {
-			runningStatementId = statementInfoWrapper.getId();
+		if (isStatementNotCancelled(statementInfoWrapper)) {
+			runningStatementLabel = statementInfoWrapper.getLabel();
 			synchronized (this) {
-				this.validateStatementIsNotClosed();
+				validateStatementIsNotClosed();
 			}
 			InputStream inputStream = null;
 			try {
-				log.info("Executing the statement with id {} : {}", statementInfoWrapper.getId(),
-						statementInfoWrapper.getSql());
+				log.log(Level.FINE, "Executing the statement with label {0} : {1}", new Object[] {statementInfoWrapper.getLabel(), statementInfoWrapper.getSql()});
 				if (statementInfoWrapper.getType() == StatementType.PARAM_SETTING) {
-					this.connection.addProperty(statementInfoWrapper.getParam());
-					log.debug("The property from the query {} was stored", runningStatementId);
+					connection.addProperty(statementInfoWrapper.getParam());
+					log.log(Level.FINE, "The property from the query {0} was stored", runningStatementLabel);
 				} else {
-					Optional<ResultSet> currentRs = statementService.execute(statementInfoWrapper,
-							this.sessionProperties, this.queryTimeout, this.maxRows, isStandardSql, this);
+					Optional<ResultSet> currentRs = statementService.execute(statementInfoWrapper, sessionProperties, this);
 					if (currentRs.isPresent()) {
 						resultSet = currentRs.get();
 						currentUpdateCount = -1; // Always -1 when returning a ResultSet
 					} else {
 						currentUpdateCount = 0;
 					}
-					log.info("The query with the id {} was executed with success", runningStatementId);
+					log.log(Level.INFO, "The query with the label {0} was executed with success", runningStatementLabel);
 				}
 			} catch (Exception ex) {
 				CloseableUtil.close(inputStream);
-				log.error(String.format("An error happened while executing the statement with the id %s",
-						runningStatementId), ex);
+				log.log(Level.SEVERE, ex, () -> format("An error happened while executing the statement with the id %s", runningStatementLabel));
 				throw ex;
 			} finally {
-				runningStatementId = null;
+				runningStatementLabel = null;
 			}
 			synchronized (this) {
-				if (this.firstUnclosedStatementResult == null) {
-					this.firstUnclosedStatementResult = this.currentStatementResult = new StatementResultWrapper(
-							resultSet, statementInfoWrapper);
+				if (firstUnclosedStatementResult == null) {
+					firstUnclosedStatementResult = currentStatementResult = new StatementResultWrapper(resultSet, statementInfoWrapper);
 				} else {
-					this.firstUnclosedStatementResult
-							.append(new StatementResultWrapper(resultSet, statementInfoWrapper));
+					firstUnclosedStatementResult.append(new StatementResultWrapper(resultSet, statementInfoWrapper));
 				}
 			}
 		} else {
-			log.warn("Aborted query with id {}", statementInfoWrapper.getId());
+			log.log(Level.FINE, "Aborted query with id {0}", statementInfoWrapper.getLabel());
 		}
 		return Optional.ofNullable(resultSet);
 	}
 
 	private boolean isStatementNotCancelled(StatementInfoWrapper statementInfoWrapper) {
-		synchronized (statementsToExecuteIds) {
-			return statementsToExecuteIds.contains(statementInfoWrapper.getId());
+		synchronized (statementsToExecuteLabels) {
+			return statementsToExecuteLabels.contains(statementInfoWrapper.getLabel());
 		}
 	}
 
 	private void closeAllResults() {
 		synchronized (this) {
-			if (this.firstUnclosedStatementResult != null) {
-				this.firstUnclosedStatementResult.close();
-				this.firstUnclosedStatementResult = null;
+			if (firstUnclosedStatementResult != null) {
+				firstUnclosedStatementResult.close();
+				firstUnclosedStatementResult = null;
 			}
 		}
 	}
 
 	@Override
 	public void cancel() throws SQLException {
-		synchronized (statementsToExecuteIds) {
-			statementsToExecuteIds.clear();
+		synchronized (statementsToExecuteLabels) {
+			statementsToExecuteLabels.clear();
 		}
-		String statementId = runningStatementId;
-		if (statementId != null) {
-			log.info("Cancelling statement with id " + statementId);
-			try {
-				statementService.abortStatementHttpRequest(statementId);
-			} finally {
-				abortStatementRunningOnFirebolt(statementId);
-			}
+		String statementLabel = runningStatementLabel;
+		if (statementLabel != null) {
+			log.log(Level.INFO, "Cancelling statement with label {0}", statementLabel);
+			abortStatementRunningOnFirebolt(statementLabel);
 		}
 	}
 
-	private void abortStatementRunningOnFirebolt(String statementId) throws SQLException {
+	private void abortStatementRunningOnFirebolt(String statementLabel) throws SQLException {
 		try {
-			statementService.abortStatement(statementId, this.sessionProperties);
-			log.debug("Statement with id {} was aborted", statementId);
-		} catch (FireboltException e) {
-			throw e;
+			statementService.abortStatement(statementLabel, sessionProperties);
+			log.log(Level.FINE, "Statement with label {0} was aborted", statementLabel);
 		} catch (Exception e) {
 			throw new FireboltException("Could not abort statement", e);
 		} finally {
@@ -194,14 +186,14 @@ public class FireboltStatement implements Statement {
 
 	@Override
 	public int executeUpdate(String sql) throws SQLException {
-		return this.executeUpdate(StatementUtil.parseToStatementInfoWrappers(sql));
+		return executeUpdate(StatementUtil.parseToStatementInfoWrappers(sql));
 	}
 
 	protected int executeUpdate(List<StatementInfoWrapper> sql) throws SQLException {
-		this.execute(sql);
+		execute(sql);
 		StatementResultWrapper response;
 		synchronized (this) {
-			response = this.firstUnclosedStatementResult;
+			response = firstUnclosedStatementResult;
 		}
 		try {
 			while (response != null && response.getResultSet() != null) {
@@ -218,7 +210,7 @@ public class FireboltStatement implements Statement {
 
 	@Override
 	public Connection getConnection() {
-		return this.connection;
+		return connection;
 	}
 
 	@Override
@@ -226,20 +218,20 @@ public class FireboltStatement implements Statement {
 		synchronized (this) {
 			validateStatementIsNotClosed();
 
-			if (current == Statement.CLOSE_CURRENT_RESULT && this.currentStatementResult != null
-					&& this.currentStatementResult.getResultSet() != null) {
-				this.currentStatementResult.getResultSet().close();
+			if (current == Statement.CLOSE_CURRENT_RESULT && currentStatementResult != null
+					&& currentStatementResult.getResultSet() != null) {
+				currentStatementResult.getResultSet().close();
 			}
 
-			if (this.currentStatementResult != null) {
-				this.currentStatementResult = this.currentStatementResult.getNext();
+			if (currentStatementResult != null) {
+				currentStatementResult = currentStatementResult.getNext();
 			}
 
 			if (current == Statement.CLOSE_ALL_RESULTS) {
 				closeUnclosedProcessedResults();
 			}
 
-			return (this.currentStatementResult != null && this.currentStatementResult.getResultSet() != null);
+			return (currentStatementResult != null && currentStatementResult.getResultSet() != null);
 		}
 	}
 
@@ -255,14 +247,14 @@ public class FireboltStatement implements Statement {
 	}
 
 	@Override
-	public int getMaxRows() throws SQLException {
+	public int getMaxRows() {
 		return maxRows;
 	}
 
 	@Override
 	public void setMaxRows(int max) throws SQLException {
 		if (max < 0) {
-			throw new FireboltException(String.format("Illegal maxRows value: %d", max));
+			throw new FireboltException(format("Illegal maxRows value: %d", max));
 		}
 		maxRows = max;
 	}
@@ -288,23 +280,23 @@ public class FireboltStatement implements Statement {
 			}
 			isClosed = true;
 		}
-		this.closeAllResults();
+		closeAllResults();
 
-		if (removeFromConnection) {
+		if (removeFromConnection && connection != null) {
 			connection.removeClosedStatement(this);
 		}
 		cancel();
-		log.debug("Statement closed");
+		log.fine("Statement closed");
 	}
 
 	@Override
-	public boolean isClosed() throws SQLException {
-		return this.isClosed;
+	public boolean isClosed() {
+		return isClosed;
 	}
 
 	@Override
-	public synchronized ResultSet getResultSet() throws SQLException {
-		return this.firstUnclosedStatementResult != null ? this.firstUnclosedStatementResult.getResultSet() : null;
+	public synchronized ResultSet getResultSet() {
+		return firstUnclosedStatementResult != null ? firstUnclosedStatementResult.getResultSet() : null;
 	}
 
 	@Override
@@ -317,41 +309,28 @@ public class FireboltStatement implements Statement {
 	}
 
 	@Override
-	public int getUpdateCount() throws SQLException {
+	public int getUpdateCount() {
 		return currentUpdateCount;
 	}
 
 	@Override
-	public void closeOnCompletion() throws SQLException {
+	public void closeOnCompletion() {
 		closeOnCompletion = true;
 	}
 
 	@Override
-	public boolean isCloseOnCompletion() throws SQLException {
+	public boolean isCloseOnCompletion() {
 		return closeOnCompletion;
 	}
 
 	@Override
-	public int getQueryTimeout() throws SQLException {
+	public int getQueryTimeout() {
 		return queryTimeout;
 	}
 
 	@Override
-	public void setQueryTimeout(int seconds) throws SQLException {
+	public void setQueryTimeout(int seconds) {
 		queryTimeout = seconds;
-	}
-
-	@Override
-	public boolean isWrapperFor(Class<?> iface) {
-		return iface.isAssignableFrom(getClass());
-	}
-
-	@Override
-	public <T> T unwrap(Class<T> iface) throws SQLException {
-		if (iface.isAssignableFrom(getClass())) {
-			return iface.cast(this);
-		}
-		throw new SQLException("Cannot unwrap to " + iface.getName());
 	}
 
 	protected void validateStatementIsNotClosed() throws SQLException {
@@ -375,40 +354,24 @@ public class FireboltStatement implements Statement {
 	 * @return true if the statement is currently running
 	 */
 	public boolean isStatementRunning() {
-		return this.runningStatementId != null && statementService.isStatementRunning(this.runningStatementId);
+		return runningStatementLabel != null && statementService.isStatementRunning(runningStatementLabel);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public int getMaxFieldSize() throws SQLException {
-		return 0;
+	public int getMaxFieldSize() {
+		return maxFieldSize;
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public void setMaxFieldSize(int max) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+	public void setMaxFieldSize(int max) {
+		maxFieldSize = max;
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public void setEscapeProcessing(boolean enable) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
-	}
-
-	@Override
-	@NotImplemented
-	public SQLWarning getWarnings() throws SQLException {
-		return null;
-	}
-
-	@Override
-	@NotImplemented
-	public void clearWarnings() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+	public void setEscapeProcessing(boolean enable) {
+		if (enable) {
+			addWarning(new SQLWarning("Escape processing is not supported right now", "0A000")); // see https://en.wikipedia.org/wiki/SQLSTATE
+		}
 	}
 
 	@Override
@@ -418,21 +381,20 @@ public class FireboltStatement implements Statement {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	public int getFetchDirection() throws SQLException {
+	public int getFetchDirection() {
 		return ResultSet.FETCH_FORWARD;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
 	public void setFetchDirection(int direction) throws SQLException {
-		// no-op
+		if (direction != ResultSet.FETCH_FORWARD) {
+			throw new FireboltException(ExceptionType.TYPE_NOT_SUPPORTED);
+		}
 	}
 
 	@Override
-	@NotImplemented
 	public int getFetchSize() throws SQLException {
-		return 0;
+		return 0; // fetch size is not supported; 0 means unlimited like in PostgreSQL and MySQL
 	}
 
 	@Override
@@ -455,24 +417,26 @@ public class FireboltStatement implements Statement {
 	}
 
 	@Override
-	@NotImplemented
-	public void addBatch(String sql) throws SQLException {
-		// Batch are not supported by the driver
-		throw new FireboltUnsupportedOperationException();
+	public void addBatch(String sql) {
+		batchStatements.add(sql);
 	}
 
 	@Override
-	@NotImplemented
-	public void clearBatch() throws SQLException {
-		// Batch are not supported by the driver
-		throw new FireboltUnsupportedOperationException();
+	public void clearBatch() {
+		batchStatements.clear();
 	}
 
 	@Override
-	@NotImplemented
 	public int[] executeBatch() throws SQLException {
-		// Batch are not supported by the driver
-		throw new FireboltUnsupportedOperationException();
+		List<Integer> result = new ArrayList<>();
+		for (String sql : batchStatements) {
+			for (StatementInfoWrapper query : StatementUtil.parseToStatementInfoWrappers(sql)) {
+				@SuppressWarnings("java:S6912") // Use "addBatch" and "executeBatch" to execute multiple SQL statements in a single call - this is the implementation of executeBatch
+				Optional<ResultSet> rs = execute(List.of(query));
+				result.add(rs.map(x -> 0).orElse(SUCCESS_NO_INFO));
+			}
+		}
+		return  result.stream().mapToInt(Integer::intValue).toArray();
 	}
 
 	@Override
@@ -482,50 +446,61 @@ public class FireboltStatement implements Statement {
 	}
 
 	@Override
-	@NotImplemented
 	public int executeUpdate(String sql, int autoGeneratedKeys) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		if (autoGeneratedKeys != Statement.NO_GENERATED_KEYS) {
+			throw new FireboltSQLFeatureNotSupportedException();
+		}
+		return executeUpdate(sql);
 	}
 
 	@Override
-	@NotImplemented
 	public int executeUpdate(String sql, int[] columnIndexes) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		if (columnIndexes == null || columnIndexes.length == 0) {
+			return executeUpdate(sql);
+		}
+		throw new FireboltSQLFeatureNotSupportedException("Returning autogenerated keys by column index is not supported.");
 	}
 
 	@Override
-	@NotImplemented
 	public int executeUpdate(String sql, String[] columnNames) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		if (columnNames == null || columnNames.length == 0) {
+			return executeUpdate(sql);
+		}
+		throw new FireboltSQLFeatureNotSupportedException("Returning autogenerated keys by column name is not supported.");
 	}
 
 	@Override
-	@NotImplemented
 	public boolean execute(String sql, int autoGeneratedKeys) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		if (autoGeneratedKeys != Statement.NO_GENERATED_KEYS) {
+			throw new FireboltSQLFeatureNotSupportedException();
+		}
+		return execute(sql);
 	}
 
 	@Override
-	@NotImplemented
 	public boolean execute(String sql, int[] columnIndexes) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		if (columnIndexes == null || columnIndexes.length == 0) {
+			return execute(sql);
+		}
+		throw new FireboltSQLFeatureNotSupportedException("Returning autogenerated keys by column index is not supported.");
 	}
 
 	@Override
-	@NotImplemented
 	public boolean execute(String sql, String[] columnNames) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		if (columnNames == null || columnNames.length == 0) {
+			return execute(sql);
+		}
+		throw new FireboltSQLFeatureNotSupportedException("Returning autogenerated keys by column name is not supported.");
 	}
 
 	@Override
-	@NotImplemented
-	public int getResultSetHoldability() throws SQLException {
+	public int getResultSetHoldability() {
 		// N/A applicable as we do not support transactions => commits do not affect anything => kind of hold cursors over commit
 		return ResultSet.HOLD_CURSORS_OVER_COMMIT;
 	}
 
 	@Override
-	public boolean isPoolable() throws SQLException {
+	public boolean isPoolable() {
 		return false;
 	}
 
@@ -541,6 +516,6 @@ public class FireboltStatement implements Statement {
 	 * @return true if the statement has more results
 	 */
 	public boolean hasMoreResults() {
-		return this.currentStatementResult.getNext() != null;
+		return currentStatementResult.getNext() != null;
 	}
 }

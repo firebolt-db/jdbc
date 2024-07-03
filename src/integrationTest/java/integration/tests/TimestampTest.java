@@ -3,7 +3,6 @@ package integration.tests;
 import com.firebolt.jdbc.testutils.AssertionUtil;
 import integration.IntegrationTest;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
-import lombok.CustomLog;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -37,7 +36,6 @@ import static java.sql.Types.TIMESTAMP;
 import static java.sql.Types.TIMESTAMP_WITH_TIMEZONE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@CustomLog
 @DefaultTimeZone("UTC")
 class TimestampTest extends IntegrationTest {
 	private static final TimeZone UTC_TZ = TimeZone.getTimeZone("UTC");
@@ -58,9 +56,9 @@ class TimestampTest extends IntegrationTest {
 
 	@Test
 	void shouldGetTimeObjectsInDefaultUTCTimezone() throws SQLException {
-		try (Connection connection = this.createConnection();
-				Statement statement = connection.createStatement();
-				ResultSet resultSet = statement.executeQuery("SELECT TO_TIMESTAMP('1975/01/01 23:01:01', 'yyyy/MM/DD hh24:mi:ss');")) {
+		try (Connection connection = createConnection();
+			 Statement statement = connection.createStatement();
+			 ResultSet resultSet = statement.executeQuery("SELECT TO_TIMESTAMP('1975/01/01 23:01:01', 'yyyy/MM/DD hh24:mi:ss');")) {
 			resultSet.next();
 			ZonedDateTime zonedDateTime = ZonedDateTime.of(1975, 1, 1, 23, 1, 1, 0,
 					TimeZone.getTimeZone("UTC").toZoneId());
@@ -80,10 +78,9 @@ class TimestampTest extends IntegrationTest {
 
 	@Test
 	void shouldGetParsedTimeStampExtTimeObjects() throws SQLException {
-		try (Connection connection = this.createConnection();
-				Statement statement = connection.createStatement();
-				ResultSet resultSet = statement
-						.executeQuery("SELECT CAST('1111-11-11 ' || '12:00:03' AS timestamptz);")) {
+		try (Connection connection = createConnection();
+			 Statement statement = connection.createStatement();
+			 ResultSet resultSet = statement.executeQuery("SELECT CAST('1111-11-11 ' || '12:00:03' AS timestamptz);")) {
 			resultSet.next();
 			ZonedDateTime expectedTimestampZdt = ZonedDateTime.of(1111, 11, 11, 12, 0, 3, 0,
 					TimeZone.getTimeZone("UTC").toZoneId());
@@ -110,7 +107,7 @@ class TimestampTest extends IntegrationTest {
 		// Asia/Kolkata had an offset of +05:21:10 in 1899 vs +05:30 today. The
 		// timestamp returned should have the time 00:00:00 (so without the difference
 		// of 08:50).
-		try (Connection connection = this.createConnection();
+		try (Connection connection = createConnection();
 				Statement statement = connection.createStatement();
 				ResultSet resultSet = statement.executeQuery("SELECT CAST('1899-01-01 00:00:00' AS timestampntz);")) {
 			resultSet.next();
@@ -133,7 +130,7 @@ class TimestampTest extends IntegrationTest {
 		// Asia/Kolkata had an offset of +05:21:10 in 1899 vs +05:30 today. The
 		// timestamp returned should have the time 00:00:00 (so without the difference
 		// of 08:50).
-		try (Connection connection = this.createConnection();
+		try (Connection connection = createConnection();
 				Statement statement = connection.createStatement();
 				ResultSet resultSet = statement.executeQuery("SELECT CAST('2100-05-11 00:00:00' AS timestamp);")) {
 			resultSet.next();
@@ -143,7 +140,7 @@ class TimestampTest extends IntegrationTest {
 
 	@Test
 	void shouldReturnTimestampFromTimestampntz() throws SQLException {
-		try (Connection connection = this.createConnection();
+		try (Connection connection = createConnection();
 				Statement statement = connection.createStatement();
 				ResultSet resultSet = statement.executeQuery("SELECT '2022-05-10 23:01:02.123'::timestampntz;")) {
 			resultSet.next();
@@ -165,13 +162,13 @@ class TimestampTest extends IntegrationTest {
 
 	@Test
 	void shouldReturnTimestampFromTimestamptz() throws SQLException {
-		try (Connection connection = this.createConnection();
+		try (Connection connection = createConnection();
 				Statement statement = connection.createStatement();
 				Statement statementWithTzInQuery = connection.createStatement();
 				ResultSet resultSetWithTzInQuery = statementWithTzInQuery
 						.executeQuery("SELECT '1975-05-10 23:01:02.123 EST'::timestamptz;")) {
 			// Same as: SELECT '1975-05-10 23:01:02.123 Europe/Berlin'::timestamptz;
-			statement.execute("SET advanced_mode=1;SET time_zone = 'EST';");
+			statement.execute("SET time_zone = 'EST';");
 			ResultSet resultSetWithTzAsQueryParam = statement
 					.executeQuery("SELECT '1975-05-10 23:01:02.123'::timestamptz;");
 			resultSetWithTzInQuery.next();
@@ -202,8 +199,8 @@ class TimestampTest extends IntegrationTest {
 
 	@Test
 	void shouldReturnTimestampFromTimestampTzWithTzWithHoursAndMinutes() throws SQLException {
-		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
-			statement.execute("SET advanced_mode=1;SET time_zone = 'Asia/Calcutta';"); // The server will return a tz in
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			statement.execute("SET time_zone = 'Asia/Calcutta';"); // The server will return a tz in
 			// the format +05:30
 			ResultSet resultSet = statement.executeQuery("SELECT '1975-05-10 23:01:02.123'::timestamptz;");
 			resultSet.next();
@@ -214,8 +211,8 @@ class TimestampTest extends IntegrationTest {
 
 	@Test
 	void shouldReturnTimestampFromTimestampTzWithTzWithHoursAndMinutesAndSeconds() throws SQLException {
-		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
-			statement.execute("SET advanced_mode=1;SET time_zone = 'Asia/Calcutta';"); // The server will return a tz in
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			statement.execute("SET time_zone = 'Asia/Calcutta';"); // The server will return a tz in
 			// the format +05:30
 			ResultSet resultSet = statement.executeQuery("SELECT '1111-01-05 17:04:42.123456'::timestamptz");
 			resultSet.next();
@@ -231,8 +228,8 @@ class TimestampTest extends IntegrationTest {
 
 	@Test
 	void shouldReturnTimestampFromDate() throws SQLException {
-		try (Connection connection = this.createConnection(); Statement statement = connection.createStatement()) {
-			statement.execute("SET advanced_mode=1; SET time_zone='Europe/Berlin';");
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			statement.execute("SET time_zone='Europe/Berlin';");
 			ResultSet resultSet = statement.executeQuery("SELECT '2022-05-10'::pgdate;");
 			resultSet.next();
 			ZonedDateTime expectedZdt = ZonedDateTime.of(2022, 5, 10, 0, 0, 0, 0, UTC_TZ.toZoneId());
@@ -253,7 +250,7 @@ class TimestampTest extends IntegrationTest {
 
 	@Test
 	void shouldCompareAllTimeStampsWithMultipleThreads() throws SQLException, InterruptedException, ExecutionException {
-		try (Connection connection = this.createConnection();
+		try (Connection connection = createConnection();
 				Statement statement = connection.createStatement();
 				ResultSet resultSet = statement.executeQuery("SELECT CAST('1899-01-01 00:00:00' AS timestamptz);")) {
 			resultSet.next();

@@ -1,24 +1,23 @@
 package com.firebolt.jdbc.client.authentication;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.firebolt.jdbc.client.FireboltClient;
-import com.firebolt.jdbc.client.authentication.response.FireboltAuthenticationResponse;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
-import com.firebolt.jdbc.exception.FireboltException;
-import lombok.CustomLog;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
 import java.io.IOException;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-@CustomLog
-public class FireboltAuthenticationClient extends FireboltClient {
+public abstract class FireboltAuthenticationClient extends FireboltClient {
+	private static final Logger log = Logger.getLogger(FireboltAuthenticationClient.class.getName());
 
-	public FireboltAuthenticationClient(OkHttpClient httpClient, ObjectMapper objectMapper,
-			FireboltConnection connection, String customDrivers, String customClients) {
-		super(httpClient, connection, customDrivers, customClients, objectMapper);
+	protected FireboltAuthenticationClient(OkHttpClient httpClient,
+										   FireboltConnection connection, String customDrivers, String customClients) {
+		super(httpClient, connection, customDrivers, customClients);
 	}
 
 	/**
@@ -27,40 +26,36 @@ public class FireboltAuthenticationClient extends FireboltClient {
 	 * @param host     the host
 	 * @param user     the username
 	 * @param password the password
+	 * @param environment the environment
 	 * @return the connection tokens
 	 */
-	public FireboltConnectionTokens postConnectionTokens(String host, String user, String password)
-			throws IOException, FireboltException {
-		AuthenticationRequest authenticationRequest = AuthenticationRequestFactory.getAuthenticationRequest(user,
-				password, host);
+	public FireboltConnectionTokens postConnectionTokens(String host, String user, String password, String environment)
+			throws SQLException, IOException {
+		AuthenticationRequest authenticationRequest = getAuthenticationRequest(user, password, host, environment);
 		String uri = authenticationRequest.getUri();
-		log.debug("Creating connection with url {}", uri);
-		Request request = this.createPostRequest(uri, authenticationRequest.getRequestBody());
-		try (Response response = this.execute(request, host)) {
+		log.log(Level.FINE, "Creating connection with url {0}", uri);
+		Request request = createPostRequest(uri, null, authenticationRequest.getRequestBody(), null);
+		try (Response response = execute(request, host)) {
 			String responseString = getResponseAsString(response);
-			FireboltAuthenticationResponse authenticationResponse = objectMapper.readValue(responseString,
-					FireboltAuthenticationResponse.class);
-			FireboltConnectionTokens authenticationTokens = FireboltConnectionTokens.builder()
-					.accessToken(authenticationResponse.getAccessToken())
-					.refreshToken(authenticationResponse.getRefreshToken())
-					.expiresInSeconds(authenticationResponse.getExpiresIn()).build();
+			FireboltConnectionTokens authenticationTokens = jsonToObject(responseString, FireboltConnectionTokens.class);
 			log.info("Successfully fetched connection token");
-			logToken(authenticationResponse);
+			logToken(authenticationTokens);
 			return authenticationTokens;
 		}
 	}
 
-	private void logToken(FireboltAuthenticationResponse connectionTokens) {
+	private void logToken(FireboltConnectionTokens connectionTokens) {
 		logIfPresent(connectionTokens.getAccessToken(), "Retrieved access_token");
-		logIfPresent(connectionTokens.getRefreshToken(), "Retrieved refresh_token");
-		if (connectionTokens.getExpiresIn() >=- 0) {
-			log.debug("Retrieved expires_in");
+		if (connectionTokens.getExpiresInSeconds() >=- 0) {
+			log.log(Level.FINE, "Retrieved expires_in");
 		}
 	}
 
 	private void logIfPresent(String token, String message) {
 		if (token != null && !token.isEmpty()) {
-			log.debug(message);
+			log.log(Level.FINE, message);
 		}
 	}
+
+	protected abstract AuthenticationRequest getAuthenticationRequest(String username, String password, String host, String environment);
 }

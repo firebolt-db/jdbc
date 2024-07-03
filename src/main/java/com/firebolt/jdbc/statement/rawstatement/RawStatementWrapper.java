@@ -1,14 +1,11 @@
 package com.firebolt.jdbc.statement.rawstatement;
 
-import java.util.Collection;
-import java.util.List;
-
-import org.apache.commons.lang3.StringUtils;
-
-import lombok.CustomLog;
 import lombok.Value;
 
-@CustomLog
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Value
 public class RawStatementWrapper {
 
@@ -23,7 +20,7 @@ public class RawStatementWrapper {
 
 	@Override
 	public String toString() {
-		return "SqlQueryWrapper{" + "subQueries=" + StringUtils.join(subStatements, "|") + ", totalParams="
+		return "SqlQueryWrapper{" + "subQueries=" + subStatements.stream().map(RawStatement::toString).collect(Collectors.joining("|")) + ", totalParams="
 				+ totalParams + '}';
 	}
 

@@ -1,27 +1,12 @@
 package com.firebolt.jdbc.resultset;
 
-import java.io.*;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.sql.*;
-import java.sql.Date;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.commons.text.StringEscapeUtils;
-
-import com.firebolt.jdbc.util.LoggerUtil;
+import com.firebolt.jdbc.JdbcBase;
 import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
+import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
-import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.resultset.column.Column;
 import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
@@ -29,20 +14,74 @@ import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.type.BaseType;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.array.FireboltArray;
+import com.firebolt.jdbc.type.array.SqlArrayUtil;
+import com.firebolt.jdbc.type.lob.FireboltBlob;
+import com.firebolt.jdbc.type.lob.FireboltClob;
+import com.firebolt.jdbc.util.LoggerUtil;
+import org.apache.commons.text.StringEscapeUtils;
 
-import lombok.CustomLog;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Date;
+import java.sql.JDBCType;
+import java.sql.NClob;
+import java.sql.Ref;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.RowId;
+import java.sql.SQLException;
+import java.sql.SQLXML;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.TimeZone;
+import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import static com.firebolt.jdbc.type.BaseType.isNull;
+import static com.firebolt.jdbc.util.StringUtil.splitAll;
+import static java.lang.String.CASE_INSENSITIVE_ORDER;
+import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Optional.ofNullable;
 
 /**
  * ResultSet for InputStream using the format "TabSeparatedWithNamesAndTypes"
  */
-@CustomLog
-public class FireboltResultSet implements ResultSet {
+public class FireboltResultSet extends JdbcBase implements ResultSet {
+	private static final String FORWARD_ONLY_ERROR = "Cannot call %s() for ResultSet of type TYPE_FORWARD_ONLY";
+	private static final int DEFAULT_CHAR_BUFFER_SIZE = 8192; // the default of BufferedReader
+	private static final Logger log = Logger.getLogger(FireboltResultSet.class.getName());
 	private final BufferedReader reader;
 	private final Map<String, Integer> columnNameToColumnNumber;
 	private final FireboltResultSetMetaData resultSetMetaData;
 	private final FireboltStatement statement;
 	private final List<Column> columns;
 	private final int maxRows;
+	private final int maxFieldSize;
 	private String currentLine;
 	private int currentRow = 0;
 	private int lastSplitRow = -1;
@@ -51,89 +90,51 @@ public class FireboltResultSet implements ResultSet {
 
 	private String lastReadValue = null;
 
-	public FireboltResultSet(InputStream is, String tableName, String dbName) throws SQLException {
-		this(is, tableName, dbName, null, false, null, false);
-	}
-
-	public FireboltResultSet(InputStream is) throws SQLException {
-		this(is, null, null, null, false, null, false);
-	}
-
-	public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize) throws SQLException {
-		this(is, tableName, dbName, bufferSize, false, null, false);
-	}
-
-	public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize,
-			FireboltStatement fireboltStatement) throws SQLException {
-		this(is, tableName, dbName, bufferSize, false, fireboltStatement, false);
-	}
-
-	private FireboltResultSet() {
-		reader = // empty InputStream
-				new BufferedReader(
-						new InputStreamReader(new ByteArrayInputStream("".getBytes()), StandardCharsets.UTF_8));
-		resultSetMetaData = FireboltResultSetMetaData.builder().columns(new ArrayList<>()).build();
-		columnNameToColumnNumber = new HashMap<>();
-		currentLine = null;
-		columns = new ArrayList<>();
-		statement = null;
-		maxRows = 0;
-	}
-
-	public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize, boolean isCompressed,
+	@SuppressWarnings("java:S2139") // TODO: Exceptions should be either logged or rethrown but not both
+	public FireboltResultSet(InputStream is, String tableName, String dbName, int bufferSize, boolean isCompressed,
 							 FireboltStatement statement, boolean logResultSet) throws SQLException {
-		this(is, tableName, dbName, bufferSize, 0, isCompressed, statement, logResultSet);
-	}
-
-	@SuppressWarnings("java:S107") //Number of parameters (8) > max (7). This is the price of the immutability
-	public FireboltResultSet(InputStream is, String tableName, String dbName, Integer bufferSize, int maxRows, boolean isCompressed,
-			FireboltStatement statement, boolean logResultSet) throws SQLException {
-		log.debug("Creating resultSet...");
+		log.fine("Creating resultSet...");
 		this.statement = statement;
 		if (logResultSet) {
 			is = LoggerUtil.logInputStream(is);
 		}
 
 		this.reader = createStreamReader(is, bufferSize, isCompressed);
-		this.maxRows = maxRows;
+		if (statement == null) {
+			this.maxRows = 0;
+			this.maxFieldSize = 0;
+		} else {
+			this.maxRows = statement.getMaxRows();
+			this.maxFieldSize = statement.getMaxFieldSize();
+		}
 
 		try {
-			this.next();
+			next();
 			String[] fields = toStringArray(currentLine);
 			this.columnNameToColumnNumber = getColumnNamesToIndexes(fields);
-			if (this.next()) {
-				this.columns = getColumns(fields, currentLine);
-			} else {
-				this.columns = new ArrayList<>();
-			}
-			resultSetMetaData = FireboltResultSetMetaData.builder().columns(this.columns).tableName(tableName)
-					.dbName(dbName).build();
+			columns = next() ? getColumns(fields, currentLine) : new ArrayList<>();
+			resultSetMetaData = new FireboltResultSetMetaData(dbName, tableName, columns);
 		} catch (Exception e) {
-			log.error("Could not create ResultSet: " + ExceptionUtils.getStackTrace(e), e);
-			throw new FireboltException("Cannot read response from DB: error while creating ResultSet ", e);
+			log.log(Level.SEVERE, e, () -> "Could not create ResultSet: " + e.getMessage());
+			throw new FireboltException("Cannot read response from DB: error while creating ResultSet", e);
 		}
-		log.debug("ResultSet created");
-	}
-
-	public static FireboltResultSet empty() {
-		return new FireboltResultSet();
+		log.fine("ResultSet created");
 	}
 
 	public static FireboltResultSet of(QueryResult queryResult) throws SQLException {
 		return new FireboltResultSet(new ByteArrayInputStream(queryResult.toString().getBytes()),
-				queryResult.getTableName(), queryResult.getDatabaseName());
+				queryResult.getTableName(), queryResult.getDatabaseName(), DEFAULT_CHAR_BUFFER_SIZE, false, null, false);
 
 	}
 
-	private BufferedReader createStreamReader(InputStream is, Integer bufferSize, boolean isCompressed) {
+	private BufferedReader createStreamReader(InputStream is, int bufferSize, boolean isCompressed) {
 		InputStreamReader inputStreamReader;
 		if (isCompressed) {
-			inputStreamReader = new InputStreamReader(new LZ4InputStream(is), StandardCharsets.UTF_8);
+			inputStreamReader = new InputStreamReader(new LZ4InputStream(is), UTF_8);
 		} else {
-			inputStreamReader = new InputStreamReader(is, StandardCharsets.UTF_8);
+			inputStreamReader = new InputStreamReader(is, UTF_8);
 		}
-		return bufferSize != null && bufferSize != 0 ? new BufferedReader(inputStreamReader, bufferSize)
-				: new BufferedReader(inputStreamReader);
+		return new BufferedReader(inputStreamReader, bufferSize);
 	}
 
 	@Override
@@ -158,13 +159,21 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public String getString(int columnIndex) throws SQLException {
-		Column columnInfo = this.columns.get(columnIndex - 1);
-		if (Optional.ofNullable(columnInfo).map(Column::getType).map(ColumnType::getDataType)
+		Column columnInfo = columns.get(columnIndex - 1);
+		if (ofNullable(columnInfo).map(Column::getType).map(ColumnType::getDataType)
 				.filter(t -> t.equals(FireboltDataType.BYTEA)).isPresent()) {
 			// We do not need to escape when the type is BYTEA
-			return this.getValueAtColumn(columnIndex);
+			String hex = getValueAtColumn(columnIndex);
+			if (isNull(hex)) {
+				return null;
+			}
+			int maxHexStringSize = maxFieldSize * 2 + 2;
+			if (maxFieldSize > 0 && maxHexStringSize <= hex.length()) {
+				hex = hex.substring(0, maxHexStringSize);
+			}
+			return hex;
 		} else {
-			return BaseType.TEXT.transform(this.getValueAtColumn(columnIndex));
+			return BaseType.TEXT.transform(getValueAtColumn(columnIndex), null, null, maxFieldSize);
 		}
 	}
 
@@ -175,93 +184,93 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public int getInt(int columnIndex) throws SQLException {
-		Integer value = BaseType.INTEGER.transform(getValueAtColumn(columnIndex));
-		return value == null ? 0 : value;
+		return getValue(columnIndex, BaseType.INTEGER, 0);
 	}
 
 	@Override
 	public int getInt(String columnName) throws SQLException {
-		return this.getInt(findColumn(columnName));
+		return getInt(findColumn(columnName));
 	}
 
 	@Override
-	public long getLong(int colNum) throws SQLException {
-		Long value = BaseType.LONG.transform(getValueAtColumn(colNum));
-		return value == null ? 0 : value;
+	public long getLong(int columnIndex) throws SQLException {
+		return getValue(columnIndex, BaseType.LONG, 0L);
 	}
 
 	@Override
 	public float getFloat(int columnIndex) throws SQLException {
-		Float value = BaseType.REAL.transform(getValueAtColumn(columnIndex));
-		return value == null ? 0 : value;
+		return getValue(columnIndex, BaseType.REAL, 0.0F);
 	}
 
 	@Override
 	public float getFloat(String columnLabel) throws SQLException {
-		return this.getFloat(findColumn(columnLabel));
+		return getFloat(findColumn(columnLabel));
 	}
 
 	@Override
 	public double getDouble(int columnIndex) throws SQLException {
-		Double value = BaseType.DOUBLE.transform(getValueAtColumn(columnIndex));
-		return value == null ? 0 : value;
+		return getValue(columnIndex, BaseType.DOUBLE, 0.0);
 	}
 
 	@Override
 	public double getDouble(String columnLabel) throws SQLException {
-		return this.getDouble(findColumn(columnLabel));
+		return getDouble(findColumn(columnLabel));
 	}
 
 	@Override
 	public long getLong(String column) throws SQLException {
-		return this.getLong(findColumn(column));
+		return getLong(findColumn(column));
 	}
 
 	@Override
 	public byte getByte(int columnIndex) throws SQLException {
-		return Optional.ofNullable(getValueAtColumn(columnIndex)).map(v -> BaseType.isNull(v) ? null : v)
-				.map(Byte::parseByte).orElse((byte) 0);
+		return getValue(columnIndex, BaseType.BYTE, (byte)0);
 	}
 
 	@Override
 	public short getShort(int columnIndex) throws SQLException {
-		Short value = BaseType.SHORT.transform(getValueAtColumn(columnIndex));
-		return value == null ? 0 : value;
+		return getValue(columnIndex, BaseType.SHORT, (short)0);
 	}
 
 	@Override
 	public byte getByte(String column) throws SQLException {
-		return this.getByte(findColumn(column));
+		return getByte(findColumn(column));
 	}
 
 	@Override
 	public short getShort(String columnLabel) throws SQLException {
-		return this.getShort(findColumn(columnLabel));
+		return getShort(findColumn(columnLabel));
+	}
+
+	private <T> T getValue(int columnIndex, BaseType type, T defaultValue) throws SQLException {
+		T value = type.transform(getValueAtColumn(columnIndex));
+		return value == null ? defaultValue : value;
 	}
 
 	@Override
 	public byte[] getBytes(int colNum) throws SQLException {
-		return Optional.ofNullable(getValueAtColumn(colNum)).map(v -> BaseType.isNull(v) ? null : v)
-				.map(String::getBytes).orElse(null);
+		return ofNullable(getValueAtColumn(colNum))
+				.map(v -> isNull(v) ? null : v)
+				.map(SqlArrayUtil::hexStringToByteArray)
+				.orElse(null);
 	}
 
 	@Override
 	public byte[] getBytes(String column) throws SQLException {
-		return this.getBytes(findColumn(column));
+		return getBytes(findColumn(column));
 	}
 
 	@Override
 	public synchronized void close() throws SQLException {
-		if (!this.isClosed) {
+		if (!isClosed) {
 			try {
-				this.reader.close();
-				this.isClosed = true;
+				reader.close();
+				isClosed = true;
 			} catch (IOException e) {
 				throw new SQLException("Could not close data stream when closing ResultSet", e);
 			} finally {
-				if (this.statement != null
-						&& (this.statement.isCloseOnCompletion() && !this.statement.hasMoreResults())) {
-					this.statement.close();
+				if (statement != null && (statement.isCloseOnCompletion() && !statement.hasMoreResults())) {
+					statement.close();
 				}
 			}
 		}
@@ -274,54 +283,48 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex) throws SQLException {
-		String value = getValueAtColumn(columnIndex);
-		if (StringUtils.isEmpty(value)) {
-			return null;
-		}
-		return BaseType.NUMERIC.transform(value);
+		return getValue(columnIndex, BaseType.NUMERIC, null);
 	}
 
 	@Override
 	public BigDecimal getBigDecimal(String columnLabel) throws SQLException {
-		return getBigDecimal(this.findColumn(columnLabel));
+		return getBigDecimal(findColumn(columnLabel));
 	}
 
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
-		BigDecimal bigDecimal = this.getBigDecimal(columnIndex);
-		return bigDecimal == null ? null : bigDecimal.setScale(scale, RoundingMode.HALF_UP);
+		return Optional.ofNullable(getBigDecimal(columnIndex)).map(d -> d.setScale(scale, RoundingMode.HALF_UP)).orElse(null);
 	}
 
 	@Override
 	public BigDecimal getBigDecimal(String columnLabel, int scale) throws SQLException {
-		return getBigDecimal(this.findColumn(columnLabel), scale);
+		return getBigDecimal(findColumn(columnLabel), scale);
 	}
 
 	@Override
 	public Array getArray(int columnIndex) throws SQLException {
-		String value = getValueAtColumn(columnIndex);
-		return BaseType.ARRAY.transform(value, this.resultSetMetaData.getColumn(columnIndex));
+		return BaseType.ARRAY.transform(getValueAtColumn(columnIndex), resultSetMetaData.getColumn(columnIndex));
 	}
 
 	@Override
 	public Array getArray(String column) throws SQLException {
-		return this.getArray(this.findColumn(column));
+		return getArray(findColumn(column));
 	}
 
 	@Override
 	public boolean getBoolean(String columnLabel) throws SQLException {
-		return getBoolean(this.findColumn(columnLabel));
+		return getBoolean(findColumn(columnLabel));
 	}
 
 	@Override
 	public boolean getBoolean(int columnIndex) throws SQLException {
-		Boolean value = BaseType.BOOLEAN.transform(this.getValueAtColumn(columnIndex), this.resultSetMetaData.getColumn(columnIndex));
+		Boolean value = BaseType.BOOLEAN.transform(getValueAtColumn(columnIndex), resultSetMetaData.getColumn(columnIndex));
 		return value != null && value;
 	}
 
 	@Override
 	public Date getDate(String columnLabel) throws SQLException {
-		return getDate(this.findColumn(columnLabel));
+		return getDate(findColumn(columnLabel));
 	}
 
 	@Override
@@ -331,43 +334,43 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public Date getDate(int columnIndex, Calendar calendar) throws SQLException {
-		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
-		String value = this.getValueAtColumn(columnIndex);
-		return BaseType.DATE.transform(value, this.resultSetMetaData.getColumn(columnIndex), timeZone);
+		return getDateTime(columnIndex, calendar, BaseType.DATE);
 	}
 
 	@Override
 	public Date getDate(String columnLabel, Calendar cal) throws SQLException {
-		return getDate(this.findColumn(columnLabel), cal);
+		return getDate(findColumn(columnLabel), cal);
 	}
 
 	@Override
 	public Timestamp getTimestamp(int columnIndex) throws SQLException {
-		return this.getTimestamp(columnIndex, null);
+		return getTimestamp(columnIndex, null);
 	}
 
 	@Override
 	public Timestamp getTimestamp(String columnLabel) throws SQLException {
-		return getTimestamp(this.findColumn(columnLabel));
+		return getTimestamp(findColumn(columnLabel));
 	}
 
 	@Override
 	public Timestamp getTimestamp(int columnIndex, Calendar calendar) throws SQLException {
-		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
-		String value = this.getValueAtColumn(columnIndex);
-		return BaseType.TIMESTAMP.transform(value, this.resultSetMetaData.getColumn(columnIndex), timeZone);
+		return getDateTime(columnIndex, calendar, BaseType.TIMESTAMP);
 	}
 
 	@Override
 	public Timestamp getTimestamp(String columnLabel, Calendar calendar) throws SQLException {
-		return getTimestamp(this.findColumn(columnLabel), calendar);
+		return getTimestamp(findColumn(columnLabel), calendar);
 	}
 
 	@Override
 	public Time getTime(int columnIndex, Calendar calendar) throws SQLException {
+		return getDateTime(columnIndex, calendar, BaseType.TIME);
+	}
+
+	private <T extends java.util.Date> T getDateTime(int columnIndex, Calendar calendar, BaseType type) throws SQLException {
 		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
-		String value = this.getValueAtColumn(columnIndex);
-		return BaseType.TIME.transform(value, this.resultSetMetaData.getColumn(columnIndex), timeZone);
+		String value = getValueAtColumn(columnIndex);
+		return type.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone, 0);
 	}
 
 	@Override
@@ -375,35 +378,35 @@ public class FireboltResultSet implements ResultSet {
 		if (type == null) {
 			throw new FireboltException("The type provided is null");
 		}
-		String value = this.getValueAtColumn(columnIndex);
-		Column column = this.resultSetMetaData.getColumn(columnIndex);
+		String value = getValueAtColumn(columnIndex);
+		Column column = resultSetMetaData.getColumn(columnIndex);
 		BaseType columnType = column.getType().getDataType().getBaseType();
 		return FieldTypeConverter.convert(type, value, columnType, column);
 	}
 
 	@Override
 	public <T> T getObject(String columnLabel, Class<T> type) throws SQLException {
-		return getObject(this.findColumn(columnLabel), type);
+		return getObject(findColumn(columnLabel), type);
 	}
 
 	@Override
 	public Time getTime(String columnLabel) throws SQLException {
-		return getTime(this.findColumn(columnLabel));
+		return getTime(findColumn(columnLabel));
 	}
 
 	@Override
 	public Time getTime(int columnIndex) throws SQLException {
-		return this.getTime(columnIndex, null);
+		return getTime(columnIndex, null);
 	}
 
 	@Override
 	public Time getTime(String columnLabel, Calendar cal) throws SQLException {
-		return getTime(this.findColumn(columnLabel), cal);
+		return getTime(findColumn(columnLabel), cal);
 	}
 
 	@Override
 	public int getRow() {
-		return currentRow;
+		return currentRow - 2;
 	}
 
 	@Override
@@ -413,18 +416,18 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	public ResultSetMetaData getMetaData() throws SQLException {
-		return this.resultSetMetaData;
+		return resultSetMetaData;
 	}
 
 	@Override
 	public Object getObject(int columnIndex) throws SQLException {
 		String value = getValueAtColumn(columnIndex);
-		if (BaseType.isNull(value)) {
+		if (isNull(value)) {
 			return null;
 		}
-		Column columnInfo = this.columns.get(columnIndex - 1);
+		Column columnInfo = columns.get(columnIndex - 1);
 		FireboltDataType columnType = columnInfo.getType().getDataType();
-		Object object = columnType.getBaseType().transform(value, columnInfo, columnInfo.getType().getTimeZone());
+		Object object = columnType.getBaseType().transform(value, columnInfo, columnInfo.getType().getTimeZone(), maxFieldSize);
 		if (columnType == FireboltDataType.ARRAY && object != null) {
 			return ((FireboltArray) object).getArray();
 		} else {
@@ -444,10 +447,11 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	@Override
-	public boolean isAfterLast() throws SQLException {
+	public boolean isAfterLast() {
 		return !hasNext() && currentLine == null;
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	private boolean hasNext() {
 		return reader.lines().iterator().hasNext();
 	}
@@ -459,7 +463,7 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	@Override
-	public boolean isLast() throws SQLException {
+	public boolean isLast() {
 		return !hasNext() && currentLine != null;
 	}
 
@@ -469,28 +473,22 @@ public class FireboltResultSet implements ResultSet {
 		if (lastReadValue == null) {
 			throw new IllegalArgumentException("A column must be read before checking nullability");
 		}
-		return BaseType.isNull(lastReadValue);
+		return isNull(lastReadValue);
 	}
 
 	@Override
 	public boolean first() throws SQLException {
-		throw new FireboltException("Cannot call first() for ResultSet of type TYPE_FORWARD_ONLY");
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "first"));
 	}
 
 	@Override
 	public boolean last() throws SQLException {
-		throw new FireboltException("Cannot call last() for ResultSet of type TYPE_FORWARD_ONLY");
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "last"));
 	}
 
 	private String[] toStringArray(String stringToSplit) {
 		if (currentRow != lastSplitRow) {
-			if (StringUtils.isNotEmpty(stringToSplit)) {
-				arr = StringUtils.splitPreserveAllTokens(stringToSplit, '\t');
-			} else if (StringUtils.equals(stringToSplit, "")) {
-				arr = new String[] { "" };
-			} else {
-				arr = new String[0];
-			}
+			arr = splitAll(stringToSplit, '\t');
 			lastSplitRow = currentRow;
 		}
 		return arr;
@@ -516,7 +514,7 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	private Map<String, Integer> getColumnNamesToIndexes(String[] fields) {
-		Map<String, Integer> columnNameToFieldIndex = new HashMap<>();
+		Map<String, Integer> columnNameToFieldIndex = new TreeMap<>(CASE_INSENSITIVE_ORDER);
 		if (fields != null) {
 			for (int i = 0; i < fields.length; i++) {
 				columnNameToFieldIndex.put(fields[i], i + 1);
@@ -534,7 +532,7 @@ public class FireboltResultSet implements ResultSet {
 	private void validateColumnNumber(int columnNumber) throws SQLException {
 		if (columnNumber > columns.size()) {
 			throw new SQLException(
-					String.format("There is no column with number %d. Total of of columns available: %d ", columnNumber,
+					format("There is no column with number %d. Total of of columns available: %d ", columnNumber,
 							columns.size()));
 		}
 	}
@@ -543,153 +541,103 @@ public class FireboltResultSet implements ResultSet {
 	public int findColumn(String columnName) throws SQLException {
 		Integer index = columnNameToColumnNumber.get(columnName);
 		if (index == null) {
-			throw new SQLException(String.format("There is no column with name %s ", columnName));
+			throw new SQLException(format("There is no column with name %s ", columnName));
 		}
 		return index;
 	}
 
 	@Override
-	public boolean isWrapperFor(Class<?> iface) {
-		return iface.isAssignableFrom(getClass());
-	}
-
-	@Override
-	public <T> T unwrap(Class<T> iface) throws SQLException {
-		if (iface.isAssignableFrom(getClass())) {
-			return iface.cast(this);
-		}
-		throw new SQLException("Cannot unwrap to " + iface.getName());
-	}
-
-	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public InputStream getAsciiStream(int columnIndex) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return getTextStream(columnIndex, StandardCharsets.US_ASCII);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public InputStream getUnicodeStream(int columnIndex) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getTextStream(columnIndex, StandardCharsets.UTF_8);
+	}
+
+	private InputStream getTextStream(int columnIndex, Charset charset) throws SQLException {
+		return ofNullable(getString(columnIndex)).map(str -> str.getBytes(charset)).map(ByteArrayInputStream::new).orElse(null);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public InputStream getBinaryStream(int columnIndex) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return ofNullable(getBytes(columnIndex)).map(ByteArrayInputStream::new).orElse(null);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public InputStream getAsciiStream(String columnLabel) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return getAsciiStream(findColumn(columnLabel));
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public InputStream getUnicodeStream(String columnLabel) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getUnicodeStream(findColumn(columnLabel));
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public InputStream getBinaryStream(String columnLabel) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return getBinaryStream(findColumn(columnLabel));
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public SQLWarning getWarnings() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
-	}
-
-	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public void clearWarnings() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
-	}
-
-	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public String getCursorName() throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Reader getCharacterStream(int columnIndex) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return ofNullable(getUnicodeStream(columnIndex)).map(InputStreamReader::new).orElse(null);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Reader getCharacterStream(String columnLabel) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		return getCharacterStream(findColumn(columnLabel));
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void beforeFirst() throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "beforeFirst"));
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void afterLast() throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "afterLast"));
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public boolean absolute(int row) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "absolute"));
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public boolean relative(int rows) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "relative"));
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public boolean previous() throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "previous"));
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public int getFetchDirection() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+	public int getFetchDirection() {
+		return ResultSet.FETCH_FORWARD;
 	}
 
 	@Override
 	public void setFetchDirection(int direction) throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+		if (direction != ResultSet.FETCH_FORWARD) {
+			throw new FireboltException(ExceptionType.TYPE_NOT_SUPPORTED);
+		}
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public int getFetchSize() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+	@SuppressWarnings("SpellCheckingInspection")
+	public int getFetchSize() {
+		return 0; // fetch size is not supported; 0 means unlimited like in PostgreSQL and MySQL
 	}
 
 	@Override
@@ -702,141 +650,117 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public int getConcurrency() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+	public int getConcurrency() {
+		return ResultSet.CONCUR_READ_ONLY;
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public boolean rowUpdated() throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public boolean rowInserted() throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public boolean rowDeleted() throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNull(int columnIndex) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBoolean(int columnIndex, boolean x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateByte(int columnIndex, byte x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateShort(int columnIndex, short x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateInt(int columnIndex, int x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateLong(int columnIndex, long x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateFloat(int columnIndex, float x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateDouble(int columnIndex, double x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBigDecimal(int columnIndex, BigDecimal x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateString(int columnIndex, String x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBytes(int columnIndex, byte[] x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateDate(int columnIndex, Date x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateTime(int columnIndex, Time x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateTimestamp(int columnIndex, Timestamp x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateAsciiStream(int columnIndex, InputStream x, int length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBinaryStream(int columnIndex, InputStream x, int length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
@@ -850,63 +774,54 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateObject(int columnIndex, Object x, int scaleOrLength) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateObject(int columnIndex, Object x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNull(String columnLabel) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBoolean(String columnLabel, boolean x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateByte(String columnLabel, byte x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateShort(String columnLabel, short x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateInt(String columnLabel, int x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateLong(String columnLabel, long x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateFloat(String columnLabel, float x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
@@ -920,77 +835,66 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBigDecimal(String columnLabel, BigDecimal x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateString(String columnLabel, String x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBytes(String columnLabel, byte[] x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateDate(String columnLabel, Date x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateTime(String columnLabel, Time x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateTimestamp(String columnLabel, Timestamp x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateAsciiStream(String columnLabel, InputStream x, int length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBinaryStream(String columnLabel, InputStream x, int length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateCharacterStream(String columnLabel, Reader reader, int length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateObject(String columnLabel, Object x, int scaleOrLength) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateObject(String columnLabel, Object x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
@@ -1045,17 +949,26 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public Statement getStatement() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+	public Statement getStatement() {
+		return statement;
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Object getObject(int columnIndex, Map<String, Class<?>> map) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		FireboltDataType dataType = resultSetMetaData.getColumn(columnIndex).getType().getDataType();
+		Map<String, Class<?>> caseInsensitiveMap = new TreeMap<>(CASE_INSENSITIVE_ORDER);
+		caseInsensitiveMap.putAll(map);
+		Class<?> type = getAllNames(dataType).map(caseInsensitiveMap::get).filter(Objects::nonNull).findFirst()
+				.orElseThrow(() -> new FireboltException(format("Cannot find type %s in provided types map", dataType)));
+		return getObject(columnIndex, type);
+	}
+
+	private Stream<String> getAllNames(FireboltDataType dataType) {
+		return Stream.concat(Stream.of(dataType.getDisplayName(), getJdbcType(dataType)).filter(Objects::nonNull), Stream.of(dataType.getAliases()));
+	}
+
+	private String getJdbcType(FireboltDataType dataType) {
+		return JDBCType.valueOf(dataType.getSqlType()).getName();
 	}
 
 	@Override
@@ -1066,24 +979,18 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Blob getBlob(int columnIndex) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return Optional.ofNullable(getBytes(columnIndex)).map(FireboltBlob::new).orElse(null);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Clob getClob(int columnIndex) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return Optional.ofNullable(getString(columnIndex)).map(String::toCharArray).map(FireboltClob::new).orElse(null);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Object getObject(String columnLabel, Map<String, Class<?>> map) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getObject(findColumn(columnLabel), map);
 	}
 
 	@Override
@@ -1094,85 +1001,77 @@ public class FireboltResultSet implements ResultSet {
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Blob getBlob(String columnLabel) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getBlob(findColumn(columnLabel));
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Clob getClob(String columnLabel) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getClob(findColumn(columnLabel));
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public URL getURL(int columnIndex) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
-	}
+		return createURL(getString(columnIndex));
+    }
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public URL getURL(String columnLabel) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return createURL(getString(columnLabel));
+	}
+
+	private URL createURL(String url) throws SQLException {
+		try {
+			return url == null ? null : new URL(url);
+		} catch (MalformedURLException e) {
+			throw new SQLException(e);
+		}
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateRef(int columnIndex, Ref x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateRef(String columnLabel, Ref x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBlob(int columnIndex, Blob x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBlob(String columnLabel, Blob x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateClob(int columnIndex, Clob x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateClob(String columnLabel, Clob x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateArray(int columnIndex, Array x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateArray(String columnLabel, Array x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
@@ -1193,65 +1092,54 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateRowId(int columnIndex, RowId x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateRowId(String columnLabel, RowId x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
-	public int getHoldability() throws SQLException {
-		throw new FireboltUnsupportedOperationException();
+	public int getHoldability() {
+		return ResultSet.HOLD_CURSORS_OVER_COMMIT;
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNString(int columnIndex, String nString) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNString(String columnLabel, String nString) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNClob(int columnIndex, NClob nClob) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNClob(String columnLabel, NClob nClob) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public NClob getNClob(int columnIndex) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		String str = getString(columnIndex);
+		return str == null ? null : new FireboltClob(str.toCharArray());
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public NClob getNClob(String columnLabel) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getNClob(findColumn(columnLabel));
 	}
 
 	@Override
@@ -1270,240 +1158,201 @@ public class FireboltResultSet implements ResultSet {
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateSQLXML(int columnIndex, SQLXML xmlObject) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateSQLXML(String columnLabel, SQLXML xmlObject) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public String getNString(int columnIndex) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getString(columnIndex);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public String getNString(String columnLabel) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getString(columnLabel);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Reader getNCharacterStream(int columnIndex) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getCharacterStream(columnIndex);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Reader getNCharacterStream(String columnLabel) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getCharacterStream(columnLabel);
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNCharacterStream(int columnIndex, Reader x, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNCharacterStream(String columnLabel, Reader reader, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateAsciiStream(int columnIndex, InputStream x, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBinaryStream(int columnIndex, InputStream x, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateCharacterStream(int columnIndex, Reader x, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateAsciiStream(String columnLabel, InputStream x, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBinaryStream(String columnLabel, InputStream x, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateCharacterStream(String columnLabel, Reader reader, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBlob(int columnIndex, InputStream inputStream, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBlob(String columnLabel, InputStream inputStream, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateClob(int columnIndex, Reader reader, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateClob(String columnLabel, Reader reader, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNClob(int columnIndex, Reader reader, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNClob(String columnLabel, Reader reader, long length) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNCharacterStream(int columnIndex, Reader x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNCharacterStream(String columnLabel, Reader reader) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateAsciiStream(int columnIndex, InputStream x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBinaryStream(int columnIndex, InputStream x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateCharacterStream(int columnIndex, Reader x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateAsciiStream(String columnLabel, InputStream x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBinaryStream(String columnLabel, InputStream x) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateCharacterStream(String columnLabel, Reader reader) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBlob(int columnIndex, InputStream inputStream) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateBlob(String columnLabel, InputStream inputStream) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateClob(int columnIndex, Reader reader) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateClob(String columnLabel, Reader reader) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
 
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNClob(int columnIndex, Reader reader) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
+
 	@Override
 	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public void updateNClob(String columnLabel, Reader reader) throws SQLException {
 		throw new FireboltSQLFeatureNotSupportedException();
 	}
-
-
 }
