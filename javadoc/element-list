@@ -12,6 +12,7 @@ com.firebolt.jdbc.client.query
 com.firebolt.jdbc.connection
 com.firebolt.jdbc.connection.settings
 com.firebolt.jdbc.exception
+com.firebolt.jdbc.log
 com.firebolt.jdbc.metadata
 com.firebolt.jdbc.resultset
 com.firebolt.jdbc.resultset.column
@@ -23,5 +24,4 @@ com.firebolt.jdbc.statement.rawstatement
 com.firebolt.jdbc.type
 com.firebolt.jdbc.type.array
 com.firebolt.jdbc.type.date
-com.firebolt.jdbc.type.lob
 com.firebolt.jdbc.util
