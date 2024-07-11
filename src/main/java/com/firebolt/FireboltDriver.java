@@ -1,28 +1,27 @@
 package com.firebolt;
 
 import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.util.LoggerUtil;
+import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.util.PropertyUtil;
 import com.firebolt.jdbc.util.VersionUtil;
+import lombok.CustomLog;
 
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
 import java.util.logging.Logger;
 
+@CustomLog
 public class FireboltDriver implements Driver {
 
 	public static final String JDBC_FIREBOLT = "jdbc:firebolt:";
-	private static final Logger rootLog;
-	private static final Logger log;
 
 	static {
 		try {
 			java.sql.DriverManager.registerDriver(new FireboltDriver());
-			rootLog = LoggerUtil.getRootLogger();
-			log = Logger.getLogger(FireboltDriver.class.getName());
 			log.info("Firebolt Driver registered");
 		} catch (SQLException ex) {
 			throw new RuntimeException("Cannot register the driver");
@@ -60,7 +59,7 @@ public class FireboltDriver implements Driver {
 	}
 
 	@Override
-	public Logger getParentLogger() {
-		return rootLog;
+	public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+		throw new FireboltSQLFeatureNotSupportedException();
 	}
 }

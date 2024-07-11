@@ -1,18 +1,20 @@
 package com.firebolt.jdbc.client;
 
-import com.firebolt.jdbc.client.config.OkHttpClientCreator;
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import okhttp3.OkHttpClient;
-
 import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
-import java.util.logging.Logger;
 
+import com.firebolt.jdbc.client.config.OkHttpClientCreator;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
+
+import lombok.CustomLog;
+import okhttp3.OkHttpClient;
+
+@CustomLog
 public class HttpClientConfig {
-	private static final Logger log = Logger.getLogger(HttpClientConfig.class.getName());
+
 	private static OkHttpClient instance;
 
 	private HttpClientConfig() {

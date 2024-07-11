@@ -1,23 +1,23 @@
 package com.firebolt.jdbc.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.Test;
-import org.slf4j.bridge.SLF4JBridgeHandler;
+
+import com.firebolt.jdbc.log.FireboltLogger;
+import com.firebolt.jdbc.log.SLF4JLogger;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.logging.Logger;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LoggerUtilTest {
 
 	@Test
 	void shouldGetSLF4JLoggerWhenAvailable() {
-		Logger fireboltLogger = LoggerUtil.getRootLogger();
+		FireboltLogger fireboltLogger = LoggerUtil.getLogger("myLogger");
 		// Should be true since SLF4J is available
-		assertTrue(Arrays.stream(fireboltLogger.getHandlers()).anyMatch(handler -> handler instanceof SLF4JBridgeHandler));
+		assertTrue(fireboltLogger instanceof SLF4JLogger);
 	}
 
 	@Test

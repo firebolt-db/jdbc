@@ -4,10 +4,13 @@ import com.firebolt.jdbc.connection.Engine;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
+import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.TreeSet;
 import java.util.stream.Stream;
@@ -16,6 +19,9 @@ import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toCollection;
 
+
+@RequiredArgsConstructor
+@CustomLog
 public class FireboltEngineInformationSchemaService implements FireboltEngineService {
     private static final String ENGINE_URL = "url";
     private static final String STATUS_FIELD = "status";

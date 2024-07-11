@@ -12,12 +12,12 @@ import java.io.StringReader;
 import java.sql.Connection;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.logging.Logger;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mockConstruction;
 
 class FireboltDriverTest {
@@ -80,8 +81,7 @@ class FireboltDriverTest {
 
 	@Test
 	void getParentLogger() {
-		Logger logger = new FireboltDriver().getParentLogger();
-		assertNotNull(logger);
+		assertThrows(SQLFeatureNotSupportedException.class, () -> new FireboltDriver().getParentLogger());
 	}
 
 	@Test
