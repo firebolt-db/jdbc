@@ -1,16 +1,16 @@
 package com.firebolt.jdbc.statement;
 
-import lombok.Data;
-
-import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.sql.ResultSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import javax.annotation.Nullable;
+
+import lombok.CustomLog;
+import lombok.Data;
 
 @Data
+@CustomLog
 public class StatementResultWrapper implements Closeable {
-	private static final Logger log = Logger.getLogger(StatementResultWrapper.class.getName());
 	private ResultSet resultSet;
 	private int updateCount;
 	private StatementInfoWrapper statementInfoWrapper;
@@ -29,7 +29,7 @@ public class StatementResultWrapper implements Closeable {
 				resultSet.close();
 			}
 		} catch (Exception e) {
-			log.log(Level.WARNING, "Could not close ResultSet", e);
+			log.warn("Could not close ResultSet", e);
 		}
 		if (next != null) {
 			next.close();

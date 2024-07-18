@@ -9,6 +9,7 @@ import com.firebolt.jdbc.statement.StatementType;
 import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
 import com.firebolt.jdbc.util.CloseableUtil;
 import com.firebolt.jdbc.util.InputStreamUtil;
+import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +21,7 @@ import java.util.Optional;
 import static java.util.Optional.ofNullable;
 
 @RequiredArgsConstructor
+@CustomLog
 public class FireboltStatementService {
 
 	private static final String UNKNOWN_TABLE_NAME = "unknown";
