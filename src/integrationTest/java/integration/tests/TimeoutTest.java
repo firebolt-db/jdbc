@@ -2,7 +2,6 @@ package integration.tests;
 
 import com.firebolt.jdbc.connection.FireboltConnection;
 import integration.EnvironmentCondition;
-import integration.EnvironmentCondition.Comparison;
 import integration.IntegrationTest;
 import lombok.CustomLog;
 import org.junit.jupiter.api.AfterEach;

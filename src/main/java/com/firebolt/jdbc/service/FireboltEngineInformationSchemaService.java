@@ -5,7 +5,6 @@ import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,8 +18,6 @@ import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toCollection;
 
-
-@RequiredArgsConstructor
 @CustomLog
 public class FireboltEngineInformationSchemaService implements FireboltEngineService {
     private static final String ENGINE_URL = "url";
