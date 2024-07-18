@@ -110,6 +110,7 @@ public class SystemEngineTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag("v2")
 	void shouldFailToSelectFromCustomDbUsingSystemEngine() throws SQLException {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
 		String systemEngineJdbcUrl = new ConnectionInfo(current.getPrincipal(), current.getSecret(),
