@@ -18,7 +18,7 @@ on:
         default: ''
         type: string
       engine:
-        description: 'Database override'
+        description: 'Engine override'
         required: false
         type: string
     secrets:
