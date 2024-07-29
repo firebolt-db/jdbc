@@ -2,6 +2,7 @@ package com.firebolt.jdbc.resultset.column;
 
 import com.firebolt.jdbc.type.FireboltDataType;
 import lombok.Builder;
+import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
@@ -16,8 +17,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -28,6 +27,7 @@ import static com.firebolt.jdbc.type.FireboltDataType.ofType;
 /**
  * This class represents a Column type returned by the server
  */
+@CustomLog
 @Builder
 @Value
 @EqualsAndHashCode
@@ -40,7 +40,6 @@ public class ColumnType {
 	private static final Set<String> TIMEZONES = Arrays.stream(TimeZone.getAvailableIDs())
 			.collect(Collectors.toCollection(HashSet::new));
 	private static final Pattern COMMA_WITH_SPACES = Pattern.compile("\\s*,\\s*");
-	private static final Logger log = Logger.getLogger(ColumnType.class.getName());
 	@EqualsAndHashCode.Exclude
 	String name;
 	FireboltDataType dataType;
@@ -167,7 +166,7 @@ public class ColumnType {
 			if (TIMEZONES.contains(id)) {
 				timeZone = TimeZone.getTimeZone(timeZoneArgument.replace("\\'", ""));
 			} else {
-				log.log(Level.FINE, "Could not use the timezone returned by the server with the id {0} as it is not supported.", id);
+				log.warn("Could not use the timezone returned by the server with the id {} as it is not supported.", id);
 			}
 		}
 		return timeZone;

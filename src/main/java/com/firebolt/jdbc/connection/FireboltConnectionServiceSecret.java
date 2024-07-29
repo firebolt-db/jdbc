@@ -125,7 +125,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
 
 
 
-    private FireboltEngineService getFireboltEngineService() {
+    private FireboltEngineService getFireboltEngineService() throws SQLException {
         if (fireboltEngineService == null) {
             int currentInfraVersion = Optional.ofNullable(loginProperties.getAdditionalProperties().get("infraVersion")).map(Integer::parseInt).orElse(infraVersion);
             fireboltEngineService = currentInfraVersion >= 2 ? new FireboltEngineVersion2Service(this) : new FireboltEngineInformationSchemaService(this);

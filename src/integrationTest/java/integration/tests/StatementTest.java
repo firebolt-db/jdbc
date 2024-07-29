@@ -3,8 +3,10 @@ package integration.tests;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
 import integration.ConnectionInfo;
+import integration.EnvironmentCondition;
 import integration.IntegrationTest;
 import kotlin.collections.ArrayDeque;
+import lombok.CustomLog;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@CustomLog
 class StatementTest extends IntegrationTest {
 
 	@BeforeEach
@@ -96,6 +99,25 @@ class StatementTest extends IntegrationTest {
 			statement.executeQuery("SELECT 1;");
 			assertTrue(statement.isCloseOnCompletion());
 			assertThrows(FireboltException.class, () -> statement.executeQuery("SELECT 1;"));
+		}
+	}
+
+	@Test
+	void shouldThrowExceptionWhenExecutingWrongQuery() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			String errorMessage = assertThrows(FireboltException.class, () -> statement.executeQuery("select wrong query")).getMessage();
+			assertTrue(errorMessage.contains("Column 'wrong' does not exist."));
+		}
+	}
+
+	@Test
+	@EnvironmentCondition(value = "4.2.0", comparison = EnvironmentCondition.Comparison.GE)
+	void shouldThrowExceptionWhenExecutingWrongQueryWithJsonError() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			statement.execute("set advanced_mode=1");
+			statement.execute("set enable_json_error_output_format=true");
+			String errorMessage = assertThrows(FireboltException.class, () -> statement.executeQuery("select wrong query")).getMessage();
+			assertTrue(errorMessage.contains("Column 'wrong' does not exist."));
 		}
 	}
 

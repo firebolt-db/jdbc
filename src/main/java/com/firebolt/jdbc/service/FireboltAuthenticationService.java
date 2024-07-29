@@ -4,6 +4,10 @@ import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.exception.SQLState;
+
+
+import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import net.jodah.expiringmap.ExpiringMap;
@@ -12,8 +16,6 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
@@ -21,9 +23,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.jodah.expiringmap.ExpirationPolicy.CREATED;
 
 @RequiredArgsConstructor
+@CustomLog
 public class FireboltAuthenticationService {
 
-	private static final Logger log = Logger.getLogger(FireboltAuthenticationService.class.getName());
 	private static final ExpiringMap<ConnectParams, FireboltConnectionTokens> tokensMap = ExpiringMap.builder()
 			.variableExpiration().build();
 	private static final long TOKEN_EXPIRATION_OFFSET = 5L;
@@ -32,14 +34,13 @@ public class FireboltAuthenticationService {
 	private static final String ERROR_MESSAGE_FROM_SERVER = "Failed to connect to Firebolt with the error from the server: %s, see logs for more info.";
 	private final FireboltAuthenticationClient fireboltAuthenticationClient;
 
-	@SuppressWarnings("java:S2139") // TODO: Exceptions should be either logged or rethrown but not both
 	public FireboltConnectionTokens getConnectionTokens(String host, FireboltProperties loginProperties) throws SQLException {
 		try {
 			ConnectParams connectionParams = new ConnectParams(host, loginProperties.getPrincipal(), loginProperties.getSecret());
 			synchronized (this) {
 				FireboltConnectionTokens foundToken = tokensMap.get(connectionParams);
 				if (foundToken != null) {
-					log.log(Level.FINE, "Using the token of {} from the cache", host);
+					log.debug("Using the token of {} from the cache", host);
 					return foundToken;
 				}
 				FireboltConnectionTokens fireboltConnectionTokens = fireboltAuthenticationClient
@@ -49,11 +50,12 @@ public class FireboltAuthenticationService {
 				return fireboltConnectionTokens;
 			}
 		} catch (FireboltException e) {
-			log.log(Level.SEVERE, "Failed to connect to Firebolt", e);
+			log.error("Failed to connect to Firebolt", e);
 			String msg = ofNullable(e.getErrorMessageFromServer()).map(m -> format(ERROR_MESSAGE_FROM_SERVER, m)).orElse(format(ERROR_MESSAGE, e.getMessage()));
-			throw new FireboltException(msg, e);
+			SQLState sqlState = SQLState.fromCode(e.getSQLState());
+			throw new FireboltException(msg, e, sqlState);
 		} catch (Exception e) {
-			log.log(Level.SEVERE, "Failed to connect to Firebolt", e);
+			log.error("Failed to connect to Firebolt", e);
 			throw new FireboltException(format(ERROR_MESSAGE, e.getMessage()), e);
 		}
 	}
@@ -69,13 +71,13 @@ public class FireboltAuthenticationService {
 
 	/**
 	 * Removes connection tokens from the cache.
-	 * 
+	 *
 	 * @param host            host
 	 * @param loginProperties the login properties linked to the tokens
 	 */
 	public void removeConnectionTokens(String host, FireboltProperties loginProperties) throws SQLException {
 		try {
-			log.log(Level.FINE, "Removing connection token for host {0}", host);
+			log.debug("Removing connection token for host {}", host);
 			ConnectParams connectionParams = new ConnectParams(host, loginProperties.getPrincipal(), loginProperties.getSecret());
 			tokensMap.remove(connectionParams);
 		} catch (NoSuchAlgorithmException e) {

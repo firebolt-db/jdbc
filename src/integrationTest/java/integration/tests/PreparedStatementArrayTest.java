@@ -3,6 +3,7 @@ package integration.tests;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.array.FireboltArray;
 import integration.IntegrationTest;
+import lombok.CustomLog;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+@CustomLog
 class PreparedStatementArrayTest extends IntegrationTest {
 	enum PreparedStatementValueSetter {
 		ARRAY {

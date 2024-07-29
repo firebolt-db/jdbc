@@ -7,6 +7,7 @@ import com.firebolt.jdbc.exception.FireboltException;
 import integration.ConnectionInfo;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
+import lombok.CustomLog;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -33,11 +34,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
+import static integration.EnvironmentCondition.Attribute.fireboltVersion;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Map.entry;
@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@CustomLog
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SystemEngineTest extends IntegrationTest {
 
@@ -61,14 +62,12 @@ public class SystemEngineTest extends IntegrationTest {
 	private static final String TABLE1 = TABLE + "_1";
 	private static final String TABLE2 = TABLE + "_2";
 
-	private static final Logger log = Logger.getLogger(SystemEngineTest.class.getName());
-
 	@BeforeAll
 	void beforeAll() {
 		try {
 			executeStatementFromFile("/statements/system/ddl.sql", getSystemEngineName());
 		} catch (Exception e) {
-			log.log(Level.WARNING, "Could not execute statement", e);
+			log.warn("Could not execute statement", e);
 		}
 	}
 
@@ -77,7 +76,7 @@ public class SystemEngineTest extends IntegrationTest {
 		try {
 			executeStatementFromFile("/statements/system/cleanup.sql", getSystemEngineName());
 		} catch (Exception e) {
-			log.log(Level.WARNING, "Could not execute statement", e);
+			log.warn("Could not execute statement", e);
 		}
 	}
 
@@ -92,6 +91,26 @@ public class SystemEngineTest extends IntegrationTest {
 	}
 
 	@Test
+	void shouldThrowExceptionWhenExecutingWrongQuery() throws SQLException {
+		try (Connection connection = createConnection(getSystemEngineName()); Statement statement = connection.createStatement()) {
+			String errorMessage = assertThrows(FireboltException.class, () -> statement.executeQuery("select wrong query")).getMessage();
+			assertTrue(errorMessage.contains("Column 'wrong' does not exist."));
+		}
+	}
+
+	@Test
+	@EnvironmentCondition(value = "4.2.0", attribute = fireboltVersion, comparison = EnvironmentCondition.Comparison.GE)
+	void shouldThrowExceptionWhenExecutingWrongQueryWithJsonError() throws SQLException {
+		try (Connection connection = createConnection(getSystemEngineName()); Statement statement = connection.createStatement()) {
+			statement.execute("set advanced_mode=1");
+			statement.execute("set enable_json_error_output_format=true");
+			String errorMessage = assertThrows(FireboltException.class, () -> statement.executeQuery("select wrong query")).getMessage();
+			assertTrue(errorMessage.contains("Column 'wrong' does not exist."));
+		}
+	}
+
+	@Test
+	@Tag("v2")
 	void shouldFailToSelectFromCustomDbUsingSystemEngine() throws SQLException {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
 		String systemEngineJdbcUrl = new ConnectionInfo(current.getPrincipal(), current.getSecret(),
@@ -103,7 +122,7 @@ public class SystemEngineTest extends IntegrationTest {
 		Collection<String> expectedErrorMessages = Set.of(
 				"Queries against table dummy require a user engine",
 				"The system engine doesn't support queries against table dummy. Run this query on a user engine.",
-				"Line 1, Column 22: relation \"dummy\" does not exist");
+				"relation \"dummy\" does not exist");
 
 		try (Connection systemConnection = DriverManager.getConnection(systemEngineJdbcUrl, principal, secret);
 			 Connection customConnection = DriverManager.getConnection(customEngineJdbcUrl, principal, secret)) {
@@ -158,7 +177,7 @@ public class SystemEngineTest extends IntegrationTest {
 					try (Statement statement = connection.createStatement()) {
 						statement.executeUpdate(query);
 					} catch (SQLException e) { // catch just in case to do our best to clean everything even if test has failed
-						log.log(Level.WARNING, "Cannot perform query " + query, e);
+						log.warn("Cannot perform query {}",  query, e);
 					}
 				}
 			}
@@ -240,7 +259,7 @@ public class SystemEngineTest extends IntegrationTest {
 	void connectToAccountWithoutUser() throws SQLException, IOException {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
 		String database = current.getDatabase();
-		String serviceAccountName = format("%s_sa_no_user_%d", database, System.currentTimeMillis());
+		String serviceAccountName = format("%s_%d_sa_no_user", database, System.currentTimeMillis());
 		try (Connection connection = createConnection(getSystemEngineName())) {
 			try {
 				connection.createStatement().executeUpdate(format("CREATE SERVICE ACCOUNT \"%s\" WITH DESCRIPTION = 'Ecosytem test with no user'", serviceAccountName));
@@ -322,8 +341,9 @@ public class SystemEngineTest extends IntegrationTest {
 						format("DROP DATABASE \"%s\"", SECOND_DATABASE_NAME)}) {
 					try (Statement statement = connection.createStatement()) {
 						statement.executeUpdate(query);
-					} catch (SQLException e) { // catch just in case to do our best to clean everything even if test has failed
-						log.log(Level.WARNING, "Cannot perform query " + query, e);
+					} catch (
+							SQLException e) { // catch just in case to do our best to clean everything even if test has failed
+						log.warn("Cannot perform query {}", query, e);
 					}
 				}
 			}

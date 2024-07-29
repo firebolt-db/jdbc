@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.client.config;
 
+import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import okhttp3.Interceptor;
@@ -10,8 +11,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_CLIENT_TIMEOUT;
@@ -19,11 +18,11 @@ import static java.net.HttpURLConnection.HTTP_GATEWAY_TIMEOUT;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 
 @RequiredArgsConstructor
+@CustomLog
 public class RetryInterceptor implements Interceptor {
 
 	private static final Set<Integer> RETRYABLE_RESPONSE_CODES = new HashSet<>(
 			Arrays.asList(HTTP_CLIENT_TIMEOUT, HTTP_BAD_GATEWAY, HTTP_UNAVAILABLE, HTTP_GATEWAY_TIMEOUT));
-	private static final Logger log = Logger.getLogger(RetryInterceptor.class.getName());
 
 	private final int maxRetries;
 
@@ -45,7 +44,7 @@ public class RetryInterceptor implements Interceptor {
 				failureInfo = String.format("Failure #%d - Response code: %d. Retrying to send the request.", tryCount,
 						response.code());
 			}
-			log.log(Level.WARNING, failureInfo);
+			log.warn(failureInfo);
 
 			// retry the request
 			response.close();

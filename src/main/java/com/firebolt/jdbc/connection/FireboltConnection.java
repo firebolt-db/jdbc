@@ -23,6 +23,7 @@ import com.firebolt.jdbc.type.array.FireboltArray;
 import com.firebolt.jdbc.type.lob.FireboltBlob;
 import com.firebolt.jdbc.type.lob.FireboltClob;
 import com.firebolt.jdbc.util.PropertyUtil;
+import lombok.CustomLog;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
 
@@ -57,8 +58,6 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.getNonDeprecatedProperties;
@@ -67,9 +66,9 @@ import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.util.stream.Collectors.toMap;
 
+@CustomLog
 public abstract class FireboltConnection extends JdbcBase implements Connection, CacheListener {
 
-	private static final Logger log = Logger.getLogger(FireboltConnection.class.getName());
 	private final FireboltAuthenticationService fireboltAuthenticationService;
 	private final FireboltStatementService fireboltStatementService;
 	protected String httpConnectionUrl;
@@ -176,7 +175,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		}
 		databaseMetaData = retrieveMetaData();
 
-		log.fine("Connection opened");
+		log.debug("Connection opened");
 	}
 
 	protected abstract void authenticate() throws SQLException;
@@ -324,7 +323,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	@Override
 	public void close() {
-		log.fine("Closing connection");
+		log.debug("Closing connection");
 		synchronized (this) {
 			if (isClosed()) {
 				return;
@@ -337,7 +336,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 				try {
 					statement.close(false);
 				} catch (Exception e) {
-					log.log(Level.WARNING, "Could not close statement", e);
+					log.warn("Could not close statement", e);
 				}
 			}
 			statements.clear();
@@ -441,9 +440,9 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 			// This error cannot be ignored when testing the connection to validate a param.
 			if (ignoreToManyRequestsError && e instanceof FireboltException
 					&& ((FireboltException) e).getType() == ExceptionType.TOO_MANY_REQUESTS) {
-				log.log(Level.WARNING, "Too many requests are being sent to the server", e);
+				log.warn("Too many requests are being sent to the server", e);
 			} else {
-				log.log(Level.WARNING, "Connection is not valid", e);
+				log.warn("Connection is not valid", e);
 				throw e;
 			}
 		}
