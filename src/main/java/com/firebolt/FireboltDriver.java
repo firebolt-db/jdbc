@@ -23,8 +23,6 @@ import static java.lang.String.format;
 public class FireboltDriver implements Driver {
 
 	public static final String JDBC_FIREBOLT = "jdbc:firebolt:";
-	private static final Logger rootLog;
-	private static final Logger log;
 	private final List<Connection> connections = new LinkedList<>();
 
 	static {
@@ -91,7 +89,7 @@ public class FireboltDriver implements Driver {
 					connection.close();
 				}
 			} catch (SQLException e) {
-				log.log(Level.WARNING, format("Cannot close connection on process shutting down %s", connection), e);
+				log.warn(format("Cannot close connection on process shutting down %s", connection), e);
 			}
 		}
 	}

@@ -343,7 +343,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		}
 		databaseMetaData = null;
 		driver.removeClosedConnection(this);
-		log.warning("Connection closed");
+		log.warn("Connection closed");
 	}
 
 	protected FireboltProperties extractFireboltProperties(String jdbcUri, Properties connectionProperties) {
