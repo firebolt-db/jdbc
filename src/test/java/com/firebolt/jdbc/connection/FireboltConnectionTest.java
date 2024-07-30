@@ -336,6 +336,7 @@ abstract class FireboltConnectionTest {
 			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
 					propertiesArgumentCaptor.capture(), any());
 			assertEquals(List.of("SELECT 1"), queryInfoWrapperArgumentCaptor.getAllValues().stream().map(StatementInfoWrapper::getSql).collect(toList()));
+			assertEquals(Map.of("auto_start_stop_control", "ignore"), propertiesArgumentCaptor.getValue().getAdditionalProperties());
 		}
 	}
 
