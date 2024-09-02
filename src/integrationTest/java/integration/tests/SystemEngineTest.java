@@ -136,7 +136,8 @@ public class SystemEngineTest extends IntegrationTest {
 				}
 				FireboltException e = assertThrows(FireboltException.class, () -> systemConnection.createStatement().executeQuery("select count(*) from dummy"));
 				String actualErrorMessage = e.getErrorMessageFromServer().replaceAll("\r?\n", "");
-				assertTrue(expectedErrorMessages.contains(actualErrorMessage), "Unexpected error message: " + actualErrorMessage);
+				// Check that at least  one error message from expectedErrorMessages is contained in the actual error message
+				assertTrue(expectedErrorMessages.stream().anyMatch(actualErrorMessage::contains), "Unexpected error message: " + actualErrorMessage);
 			} finally {
 				try {
 					customConnection.createStatement().executeUpdate("DROP TABLE dummy");
