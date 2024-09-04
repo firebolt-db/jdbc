@@ -109,7 +109,6 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
                 .toBuilder()
                 .systemEngine(true)
                 .compress(false)
-                .accountId(null)
                 .host(systemEngienUrl.getHost())
                 .build();
     }
