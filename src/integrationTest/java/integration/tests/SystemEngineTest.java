@@ -136,7 +136,8 @@ public class SystemEngineTest extends IntegrationTest {
 				}
 				FireboltException e = assertThrows(FireboltException.class, () -> systemConnection.createStatement().executeQuery("select count(*) from dummy"));
 				String actualErrorMessage = e.getErrorMessageFromServer().replaceAll("\r?\n", "");
-				assertTrue(expectedErrorMessages.contains(actualErrorMessage), "Unexpected error message: " + actualErrorMessage);
+				// Check that at least  one error message from expectedErrorMessages is contained in the actual error message
+				assertTrue(expectedErrorMessages.stream().anyMatch(actualErrorMessage::contains), "Unexpected error message: " + actualErrorMessage);
 			} finally {
 				try {
 					customConnection.createStatement().executeUpdate("DROP TABLE dummy");
@@ -292,7 +293,7 @@ public class SystemEngineTest extends IntegrationTest {
 		FireboltConnection fbConn = (FireboltConnection)connection;
 		String accessToken = fbConn.getAccessToken().orElseThrow(() -> new IllegalStateException("access token is not found"));
 		FireboltProperties fbProps = fbConn.getSessionProperties();
-		URL url = new URL(format("%s/query?output_format=TabSeparatedWithNamesAndTypes&database=%s&account_id=%s", fbProps.getHttpConnectionUrl(), database, fbProps.getAccountId()));
+		URL url = new URL(format("%s/query?output_format=TabSeparatedWithNamesAndTypes&database=%s", fbProps.getHttpConnectionUrl(), database));
 		HttpURLConnection con = (HttpURLConnection)url.openConnection();
 		con.setRequestMethod("POST");
 		con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");

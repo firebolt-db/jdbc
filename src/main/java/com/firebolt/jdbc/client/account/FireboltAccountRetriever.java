@@ -15,22 +15,20 @@ import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 
 public class FireboltAccountRetriever<T> extends FireboltClient implements CacheListener {
-    private static final String URL = "https://%s/web/v3/account/%s/%s";
+    private static final String URL = "https://%s/web/v3/account/%s/engineUrl";
     private final String host;
-    private final String path;
     private final Class<T> type;
     private static final Map<String, Object> valueCache = new ConcurrentHashMap<>();
 
-    public FireboltAccountRetriever(OkHttpClient httpClient, FireboltConnection connection, String customDrivers, String customClients, String host, String path, Class<T> type) {
+    public FireboltAccountRetriever(OkHttpClient httpClient, FireboltConnection connection, String customDrivers, String customClients, String host, Class<T> type) {
         super(httpClient, connection, customDrivers, customClients);
         this.host = host;
-        this.path = path;
         this.type = type;
     }
 
     public T retrieve(String accessToken, String accountName) throws SQLException {
         try {
-            String url = format(URL, host, accountName, path);
+            String url = format(URL, host, accountName);
             @SuppressWarnings("unchecked")
             T value = (T)valueCache.get(url);
             if (value == null) {
@@ -39,7 +37,7 @@ public class FireboltAccountRetriever<T> extends FireboltClient implements Cache
             }
             return value;
         } catch (IOException e) {
-            throw new FireboltException(String.format("Failed to get %s url for account %s: %s", path, accountName, e.getMessage()), e);
+            throw new FireboltException(String.format("Failed to get engine url for account %s: %s", accountName, e.getMessage()), e);
         }
     }
 
