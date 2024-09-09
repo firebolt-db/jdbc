@@ -293,7 +293,7 @@ public class SystemEngineTest extends IntegrationTest {
 		FireboltConnection fbConn = (FireboltConnection)connection;
 		String accessToken = fbConn.getAccessToken().orElseThrow(() -> new IllegalStateException("access token is not found"));
 		FireboltProperties fbProps = fbConn.getSessionProperties();
-		URL url = new URL(format("%s/query?output_format=TabSeparatedWithNamesAndTypes&database=%s&account_id=%s", fbProps.getHttpConnectionUrl(), database, fbProps.getAccountId()));
+		URL url = new URL(format("%s/query?output_format=TabSeparatedWithNamesAndTypes&database=%s", fbProps.getHttpConnectionUrl(), database));
 		HttpURLConnection con = (HttpURLConnection)url.openConnection();
 		con.setRequestMethod("POST");
 		con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");

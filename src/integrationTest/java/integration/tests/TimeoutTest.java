@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @CustomLog
 class TimeoutTest extends IntegrationTest {
 	private static final int MIN_TIME_SECONDS = 350;
-	private static final Map<Integer, Long> SERIES_SIZE = Map.of(1, 80000000000L, 2, 180000000000L);
+	private static final Map<Integer, Long> SERIES_SIZE = Map.of(1, 80000000000L, 2, 450000000000L);
 	private long startTime;
 
 	@BeforeEach
