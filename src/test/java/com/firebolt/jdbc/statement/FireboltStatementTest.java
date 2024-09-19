@@ -33,14 +33,10 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.sql.Wrapper;
-import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.logging.Handler;
-import java.util.logging.LogRecord;
 import java.util.stream.Stream;
 import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.Level;
@@ -274,7 +270,7 @@ class FireboltStatementTest {
         assertNull(fireboltStatement.getResultSet());
         fireboltStatement.getMoreResults(CLOSE_CURRENT_RESULT);
         verify(fireboltStatementService, times(0)).execute(any(), any(), any());
-        
+
         List<ILoggingEvent> logsList = listAppender.list;
         assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("Aborted query with id other label")));
     }
