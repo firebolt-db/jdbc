@@ -69,9 +69,15 @@ class JavaTypeToFireboltSQLStringTest {
 
 	@Test
 	void shouldEscapeCharactersWhenTransformingFromString() throws SQLException {
+		// quotes are escaped
 		assertEquals("'105'' OR 1=1--'' '", JavaTypeToFireboltSQLString.STRING.transform("105' OR 1=1--' "));
-
 		assertEquals("'105'' OR 1=1--'' '", JavaTypeToFireboltSQLString.transformAny("105' OR 1=1--' "));
+		// \0 is not escaped
+		assertEquals("'105\0'", JavaTypeToFireboltSQLString.STRING.transform("105\0"));
+		assertEquals("'105\0'", JavaTypeToFireboltSQLString.transformAny("105\0"));
+		// backslashes are not escaped
+		assertEquals("'105\\'", JavaTypeToFireboltSQLString.STRING.transform("105\\"));
+		assertEquals("'105\\'", JavaTypeToFireboltSQLString.transformAny("105\\"));
 	}
 
 	@Test

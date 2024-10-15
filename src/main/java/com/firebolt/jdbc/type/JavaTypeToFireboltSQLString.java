@@ -48,7 +48,7 @@ public enum JavaTypeToFireboltSQLString {
 	BYTE_ARRAY(byte[].class, value -> ofNullable(byteArrayToHexString((byte[])value, true)).map(x  -> format("E'%s'::BYTEA", x)).orElse(null)),
 	;
 	private static final List<Entry<String, String>> characterToEscapedCharacterPairs = List.of(
-			Map.entry("\0", "\\0"), Map.entry("\\", "\\\\"), Map.entry("'", "''"));
+			Map.entry("'", "''"));
 	//https://docs.oracle.com/javase/1.5.0/docs/guide/jdbc/getstart/mapping.html
 	private static final Map<JDBCType, Class<?>> jdbcTypeToClass = Map.ofEntries(
 			Map.entry(JDBCType.CHAR, String.class),
