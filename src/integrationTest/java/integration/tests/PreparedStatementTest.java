@@ -439,16 +439,18 @@ class PreparedStatementTest extends IntegrationTest {
 	void shouldFetchSpecialCharacters() throws SQLException, MalformedURLException {
 		try (Connection connection = createConnection()) {
 			try (PreparedStatement statement = connection
-					.prepareStatement("SELECT ? as a, ? as b, ? as c ")) {
-				statement.setString(1, "\\0");
-				statement.setString(2, "\\");
-				statement.setString(3, "don't");
+					.prepareStatement("SELECT ? as a, ? as b, ? as c, ? as d")) {
+				statement.setString(1, "ї");
+				statement.setString(2, "\n");
+				statement.setString(3, "\\");
+				statement.setString(4, "don't");
 				statement.execute();
 				ResultSet rs = statement.getResultSet();
 				assertTrue(rs.next());
-				assertEquals("\\0", rs.getString(1));
-				assertEquals("\\", rs.getString(2));
-				assertEquals("don't", rs.getString(3));
+				assertEquals("ї", rs.getString(1));
+				assertEquals("\n", rs.getString(2));
+				assertEquals("\\", rs.getString(3));
+				assertEquals("don't", rs.getString(4));
 			}
 		}
 	}

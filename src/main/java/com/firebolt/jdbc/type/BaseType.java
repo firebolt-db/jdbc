@@ -102,7 +102,7 @@ public enum BaseType {
 	private static final class TypePredicate {
 		private static final Predicate<String> mayBeFloatingNumber = Pattern.compile("[.eE]").asPredicate();
 	}
-	public static final String NULL_VALUE = "\\N";
+	public static final String NULL_VALUE = "NULL";
 	private final Class<?> type;
 	private final Predicate<String> shouldTryFallback;
 	private final CheckedFunction<StringToColumnTypeConversion, Object>[] transformFunctions;
