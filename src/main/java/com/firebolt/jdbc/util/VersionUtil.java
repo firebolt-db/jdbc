@@ -25,7 +25,7 @@ public class VersionUtil {
 	private static final String SPECIFICATION_VERSION = "Specification-Version";
 	private static final String FIREBOLT_IMPLEMENTATION_TITLE = "Firebolt JDBC driver"; // This value must be the same as one defined in build.gradle/jar/manifest/attributes
 
-	private static String driverVersion = "3.0.4";
+	private static String driverVersion = "3.2.1";
 	private static String specificationVersion = "4.3";
 
 	static {
