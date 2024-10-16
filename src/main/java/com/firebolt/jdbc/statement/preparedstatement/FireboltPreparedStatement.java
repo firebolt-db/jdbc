@@ -2,6 +2,7 @@ package com.firebolt.jdbc.statement.preparedstatement;
 
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.connection.FireboltConnectionUserPassword;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
@@ -155,7 +156,12 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public void setString(int parameterIndex, String x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.STRING.transform(x));
+		if (this.getConnection().getClass() == FireboltConnectionUserPassword.class){
+			// Old Firebolt required escaping additional characters in the string
+			providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.STRING.transform(x, "legacy"));
+		} else {
+			providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.STRING.transform(x));
+		}
 	}
 
 	@Override

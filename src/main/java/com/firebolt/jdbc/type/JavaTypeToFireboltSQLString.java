@@ -35,7 +35,7 @@ public enum JavaTypeToFireboltSQLString {
 	UUID(java.util.UUID.class, Object::toString),
 	BYTE(Byte.class, value -> Byte.toString(((Number) value).byteValue())),
 	SHORT(Short.class, value -> Short.toString(((Number) value).shortValue())),
-	STRING(String.class, getSQLStringValueOfString()),
+	STRING(String.class, getSQLStringValueOfString(), getSQLStringValueOfStringWithEscape()),
 	LONG(Long.class, value -> Long.toString(((Number)value).longValue())),
 	INTEGER(Integer.class, value -> Integer.toString(((Number)value).intValue())),
 	BIG_INTEGER(BigInteger.class, value -> value instanceof BigInteger ? value.toString() : Long.toString(((Number)value).longValue())),
@@ -47,6 +47,9 @@ public enum JavaTypeToFireboltSQLString {
 	ARRAY(Array.class, SqlArrayUtil::arrayToString),
 	BYTE_ARRAY(byte[].class, value -> ofNullable(byteArrayToHexString((byte[])value, true)).map(x  -> format("E'%s'::BYTEA", x)).orElse(null)),
 	;
+
+	private static final List<Entry<String, String>> legacyCharacterToEscapedCharacterPairs = List.of(
+			Map.entry("\0", "\\0"), Map.entry("\\", "\\\\"), Map.entry("'", "''"));
 	private static final List<Entry<String, String>> characterToEscapedCharacterPairs = List.of(
 			Map.entry("'", "''"));
 	//https://docs.oracle.com/javase/1.5.0/docs/guide/jdbc/getstart/mapping.html
@@ -133,9 +136,22 @@ public enum JavaTypeToFireboltSQLString {
 		}
 	}
 
+	private static CheckedBiFunction<Object, Object, String> getSQLStringValueOfStringWithEscape() {
+		return (value, escape) -> {
+			boolean legacyStringEscape = escape == "legacy";
+			return getSQLStringValueOfString(legacyStringEscape).apply(value);
+		};
+	}
 	private static CheckedFunction<Object, String> getSQLStringValueOfString() {
+		return getSQLStringValueOfString(false);
+	}
+
+	private static CheckedFunction<Object, String> getSQLStringValueOfString(boolean legacyStringEscape) {
 		return value -> {
 			String escaped = (String) value;
+			List<Entry<String, String>> characterToEscapedCharacterPairs = legacyStringEscape
+					? JavaTypeToFireboltSQLString.legacyCharacterToEscapedCharacterPairs
+					: JavaTypeToFireboltSQLString.characterToEscapedCharacterPairs;
 			for (Entry<String, String> specialCharacter : characterToEscapedCharacterPairs) {
 				escaped = escaped.replace(specialCharacter.getKey(), specialCharacter.getValue());
 			}
