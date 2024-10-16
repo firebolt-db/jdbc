@@ -440,13 +440,13 @@ class PreparedStatementTest extends IntegrationTest {
 		try (Connection connection = createConnection()) {
 			try (PreparedStatement statement = connection
 					.prepareStatement("SELECT ? as a, ? as b, ? as c ")) {
-				statement.setString(1, "\0");
+				statement.setString(1, "\\0");
 				statement.setString(2, "\\");
 				statement.setString(3, "don't");
 				statement.execute();
 				ResultSet rs = statement.getResultSet();
 				assertTrue(rs.next());
-				assertEquals("\0", rs.getString(1));
+				assertEquals("\\0", rs.getString(1));
 				assertEquals("\\", rs.getString(2));
 				assertEquals("don't", rs.getString(3));
 			}
