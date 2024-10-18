@@ -108,9 +108,8 @@ public class FireboltStatement extends JdbcBase implements Statement {
 			}
 			InputStream inputStream = null;
 			try {
-
-				log.info("Executing the statement with label {} : {}", statementInfoWrapper.getLabel(),
-						statementInfoWrapper.getSql());
+				log.debug("Executing the statement with label {} : {}", statementInfoWrapper.getLabel(),
+						sanitizeSql(statementInfoWrapper.getSql()));
 				if (statementInfoWrapper.getType() == StatementType.PARAM_SETTING) {
 					connection.addProperty(statementInfoWrapper.getParam());
 					log.debug("The property from the query {} was stored", runningStatementLabel);
@@ -518,5 +517,12 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	 */
 	public boolean hasMoreResults() {
 		return currentStatementResult.getNext() != null;
+	}
+
+	private String sanitizeSql(String sql) {
+		// Replace any occurrence of secrets with ***
+		 return sql.replaceAll("AWS_KEY_ID\\s*=\\s*[\\S]*", "AWS_KEY_ID=***")
+		 .replaceAll("AWS_SECRET_KEY\\s*=\\s*[\\S]*",
+		 "AWS_SECRET_KEY=***");
 	}
 }

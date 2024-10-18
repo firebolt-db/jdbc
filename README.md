@@ -7,7 +7,7 @@
 The official JDBC driver for Firebolt.
 
 ## Documentation
-To download the JDBC driver and learn how to use it, please see the official [Firebolt documentation](https://docs.firebolt.io/developing-with-firebolt/connecting-with-jdbc.html).
+To download the JDBC driver and learn how to use it, please see the official [Firebolt documentation](https://docs.firebolt.io/Guides/developing-with-firebolt/connecting-with-jdbc.html).
 
 ## Development
 The code of this repository is formatted using the Eclipse formatter, which was chosen because it is supported by multiple modern IDEs (such as Intellij).

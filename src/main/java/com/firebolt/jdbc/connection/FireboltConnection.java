@@ -417,7 +417,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		}
 		try {
 			if (!loginProperties.isSystemEngine()) {
-				validateConnection(getSessionProperties(), true);
+				validateConnection(getSessionProperties(), true, true);
 			}
 			return true;
 		} catch (Exception e) {
@@ -425,9 +425,13 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		}
 	}
 
-	private void validateConnection(FireboltProperties fireboltProperties, boolean ignoreToManyRequestsError)
+	private void validateConnection(FireboltProperties fireboltProperties, boolean ignoreToManyRequestsError, boolean isInternalRequest)
 			throws SQLException {
-		try (Statement s = createStatement(fireboltProperties)) {
+		FireboltProperties propertiesCopy = FireboltProperties.copy(fireboltProperties);
+		if (isInternalRequest) {
+			propertiesCopy.addProperty("auto_start_stop_control", "ignore");
+		}
+		try (Statement s = createStatement(propertiesCopy)) {
 			s.execute("SELECT 1");
 		} catch (Exception e) {
 			// A connection is not invalid when too many requests are being sent.
@@ -470,7 +474,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		try {
 			FireboltProperties tmpProperties = FireboltProperties.copy(sessionProperties);
 			propertiesEditor.accept(tmpProperties);
-			validateConnection(tmpProperties, false);
+			validateConnection(tmpProperties, false, false);
 			propertiesEditor.accept(sessionProperties);
 		} catch (FireboltException e) {
 			throw e;

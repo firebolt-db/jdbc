@@ -314,9 +314,12 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			}
 		} else {
 			if (connection.getInfraVersion() >= 2) {
+				String engine = fireboltProperties.getEngine();
 				if (accountId != null) {
 					params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), accountId);
-					params.put(FireboltQueryParameterKey.ENGINE.getKey(), fireboltProperties.getEngine());
+				}
+				if (engine != null) {
+					params.put(FireboltQueryParameterKey.ENGINE.getKey(), engine);
 				}
 				params.put(FireboltQueryParameterKey.QUERY_LABEL.getKey(), statementInfoWrapper.getLabel()); //QUERY_LABEL
 			}
