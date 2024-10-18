@@ -1,10 +1,10 @@
 package integration.tests;
 
 import integration.IntegrationTest;
+import lombok.CustomLog;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -16,22 +16,27 @@ import java.sql.Statement;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@CustomLog
 public class SpecialValuesTest extends IntegrationTest {
     private Connection systemConnection;
     private Connection userConnection;
 
     @BeforeAll
-    void beforeAll(TestInfo testInfo) throws SQLException {
-        if (testInfo.getTags().contains("v2")) {
+    void beforeAll() throws SQLException {
+        try {
             systemConnection = createConnection(getSystemEngineName());
+        } catch (Exception e) {
+            log.warn("Could not create system engine connection", e);
         }
         userConnection = createConnection();
     }
 
     @AfterAll
-    void afterAll(TestInfo testInfo) throws SQLException {
-        if (testInfo.getTags().contains("v2")) {
+    void afterAll() throws SQLException {
+        try {
             systemConnection.close();
+        } catch (Exception e) {
+            log.warn("Could not create system engine connection", e);
         }
         userConnection.close();
     }
