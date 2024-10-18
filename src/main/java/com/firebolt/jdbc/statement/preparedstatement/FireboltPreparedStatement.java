@@ -2,6 +2,7 @@ package com.firebolt.jdbc.statement.preparedstatement;
 
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.connection.FireboltConnectionUserPassword;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
@@ -12,6 +13,7 @@ import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementUtil;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
+import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
 import com.firebolt.jdbc.util.InputStreamUtil;
 import lombok.CustomLog;
@@ -155,7 +157,13 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public void setString(int parameterIndex, String x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.STRING.transform(x));
+		if (this.getConnection().getClass() == FireboltConnectionUserPassword.class){
+			// Old Firebolt required escaping additional characters in the string
+			providedParameters.put(parameterIndex,
+					JavaTypeToFireboltSQLString.STRING.transform(x, ParserVersion.LEGACY));
+		} else {
+			providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.STRING.transform(x));
+		}
 	}
 
 	@Override
@@ -198,6 +206,14 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
 		try {
+			if (this.getConnection().getClass() == FireboltConnectionUserPassword.class) {
+				// We don't know the targetSqlType, so we let JavaTypeToFireboltSQLString deal
+				// with legacy conversion
+				providedParameters.put(parameterIndex,
+						JavaTypeToFireboltSQLString.transformAny(x, targetSqlType, ParserVersion.LEGACY));
+			} else {
+				providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x, targetSqlType));
+			}
 			providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x, targetSqlType));
 		} catch (FireboltException fbe) {
 			if (ExceptionType.TYPE_NOT_SUPPORTED.equals(fbe.getType())) {

@@ -69,9 +69,30 @@ class JavaTypeToFireboltSQLStringTest {
 
 	@Test
 	void shouldEscapeCharactersWhenTransformingFromString() throws SQLException {
+		// quotes are escaped
 		assertEquals("'105'' OR 1=1--'' '", JavaTypeToFireboltSQLString.STRING.transform("105' OR 1=1--' "));
-
 		assertEquals("'105'' OR 1=1--'' '", JavaTypeToFireboltSQLString.transformAny("105' OR 1=1--' "));
+		// \0 is not escaped
+		assertEquals("'105\0'", JavaTypeToFireboltSQLString.STRING.transform("105\0"));
+		assertEquals("'105\0'", JavaTypeToFireboltSQLString.transformAny("105\0"));
+		// backslashes are not escaped
+		assertEquals("'105\\'", JavaTypeToFireboltSQLString.STRING.transform("105\\"));
+		assertEquals("'105\\'", JavaTypeToFireboltSQLString.transformAny("105\\"));
+	}
+
+	@Test
+	void shouldEscapeCharactersWhenTransformingFromStringLegacy() throws SQLException {
+		// quotes are escaped
+		assertEquals("'105'' OR 1=1--'' '",
+				JavaTypeToFireboltSQLString.STRING.transform("105' OR 1=1--' ", ParserVersion.LEGACY));
+		assertEquals("'105'' OR 1=1--'' '",
+				JavaTypeToFireboltSQLString.transformAny("105' OR 1=1--' ", ParserVersion.LEGACY));
+		// \0 is escaped
+		assertEquals("'105\\\\0'", JavaTypeToFireboltSQLString.STRING.transform("105\0", ParserVersion.LEGACY));
+		assertEquals("'105\\\\0'", JavaTypeToFireboltSQLString.transformAny("105\0", ParserVersion.LEGACY));
+		// backslashes are escaped
+		assertEquals("'105\\\\'", JavaTypeToFireboltSQLString.STRING.transform("105\\", ParserVersion.LEGACY));
+		assertEquals("'105\\\\'", JavaTypeToFireboltSQLString.transformAny("105\\", ParserVersion.LEGACY));
 	}
 
 	@Test
