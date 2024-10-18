@@ -35,7 +35,7 @@ public enum JavaTypeToFireboltSQLString {
 	UUID(java.util.UUID.class, Object::toString),
 	BYTE(Byte.class, value -> Byte.toString(((Number) value).byteValue())),
 	SHORT(Short.class, value -> Short.toString(((Number) value).shortValue())),
-	STRING(String.class, getSQLStringValueOfString(), getSQLStringValueOfStringWithEscape()),
+	STRING(String.class, getSQLStringValueOfString(FireboltVersion.CURRENT), getSQLStringValueOfStringVersioned()),
 	LONG(Long.class, value -> Long.toString(((Number)value).longValue())),
 	INTEGER(Integer.class, value -> Integer.toString(((Number)value).intValue())),
 	BIG_INTEGER(BigInteger.class, value -> value instanceof BigInteger ? value.toString() : Long.toString(((Number)value).longValue())),
@@ -103,22 +103,33 @@ public enum JavaTypeToFireboltSQLString {
 	}
 
 	public static String transformAny(Object object) throws SQLException {
-		return transformAny(object, () -> getType(object));
+		return transformAny(object, FireboltVersion.CURRENT);
+	}
+
+	public static String transformAny(Object object, FireboltVersion version) throws SQLException {
+		return transformAny(object, () -> getType(object), version);
 	}
 
 	public static String transformAny(Object object, int sqlType) throws SQLException {
-		return transformAny(object, () -> getType(sqlType));
+		return transformAny(object, sqlType, FireboltVersion.CURRENT);
 	}
 
-	private static String transformAny(Object object, CheckedSupplier<Class<?>> classSupplier) throws SQLException {
-		return object == null ? NULL_VALUE : transformAny(object, classSupplier.get());
+	public static String transformAny(Object object, int sqlType, FireboltVersion version) throws SQLException {
+		return transformAny(object, () -> getType(sqlType), version);
 	}
 
-	private static String transformAny(Object object, Class<?> objectType) throws SQLException {
+	private static String transformAny(Object object, CheckedSupplier<Class<?>> classSupplier, FireboltVersion version) throws SQLException {
+		return object == null ? NULL_VALUE : transformAny(object, classSupplier.get(), version);
+	}
+
+	private static String transformAny(Object object, Class<?> objectType, FireboltVersion version) throws SQLException {
 		JavaTypeToFireboltSQLString converter = Optional.ofNullable(classToType.get(objectType))
 				.orElseThrow(() -> new FireboltException(
 						format("Cannot convert type %s. The type is not supported.", objectType),
 						TYPE_NOT_SUPPORTED));
+		if (version == FireboltVersion.LEGACY && object instanceof String) {
+			return converter.transform(object, version);
+		}
 		return converter.transform(object);
 	}
 
@@ -136,23 +147,15 @@ public enum JavaTypeToFireboltSQLString {
 		}
 	}
 
-	private static CheckedBiFunction<Object, Object, String> getSQLStringValueOfStringWithEscape() {
-		return (value, escape) -> {
-			boolean legacyStringEscape = escape == "legacy";
-			return getSQLStringValueOfString(legacyStringEscape).apply(value);
-		};
-	}
-	private static CheckedFunction<Object, String> getSQLStringValueOfString() {
-		return getSQLStringValueOfString(false);
+	private static CheckedBiFunction<Object, Object, String> getSQLStringValueOfStringVersioned() {
+		return (value, version) -> getSQLStringValueOfString((FireboltVersion) version).apply(value);
 	}
 
-	private static CheckedFunction<Object, String> getSQLStringValueOfString(boolean legacyStringEscape) {
+	private static CheckedFunction<Object, String> getSQLStringValueOfString(FireboltVersion version) {
 		return value -> {
 			String escaped = (String) value;
-			List<Entry<String, String>> characterToEscapedCharacterPairs = legacyStringEscape
-					? JavaTypeToFireboltSQLString.legacyCharacterToEscapedCharacterPairs
-					: JavaTypeToFireboltSQLString.characterToEscapedCharacterPairs;
-			for (Entry<String, String> specialCharacter : characterToEscapedCharacterPairs) {
+			List<Entry<String, String>> charactersToEscape = version == FireboltVersion.LEGACY ? legacyCharacterToEscapedCharacterPairs : characterToEscapedCharacterPairs;
+			for (Entry<String, String> specialCharacter : charactersToEscape) {
 				escaped = escaped.replace(specialCharacter.getKey(), specialCharacter.getValue());
 			}
 			return format("'%s'", escaped);
