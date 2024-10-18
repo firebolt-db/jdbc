@@ -84,15 +84,15 @@ class JavaTypeToFireboltSQLStringTest {
 	void shouldEscapeCharactersWhenTransformingFromStringLegacy() throws SQLException {
 		// quotes are escaped
 		assertEquals("'105'' OR 1=1--'' '",
-				JavaTypeToFireboltSQLString.STRING.transform("105' OR 1=1--' ", FireboltVersion.LEGACY));
+				JavaTypeToFireboltSQLString.STRING.transform("105' OR 1=1--' ", ParserVersion.LEGACY));
 		assertEquals("'105'' OR 1=1--'' '",
-				JavaTypeToFireboltSQLString.transformAny("105' OR 1=1--' ", FireboltVersion.LEGACY));
+				JavaTypeToFireboltSQLString.transformAny("105' OR 1=1--' ", ParserVersion.LEGACY));
 		// \0 is escaped
-		assertEquals("'105\\\\0'", JavaTypeToFireboltSQLString.STRING.transform("105\0", FireboltVersion.LEGACY));
-		assertEquals("'105\\\\0'", JavaTypeToFireboltSQLString.transformAny("105\0", FireboltVersion.LEGACY));
+		assertEquals("'105\\\\0'", JavaTypeToFireboltSQLString.STRING.transform("105\0", ParserVersion.LEGACY));
+		assertEquals("'105\\\\0'", JavaTypeToFireboltSQLString.transformAny("105\0", ParserVersion.LEGACY));
 		// backslashes are escaped
-		assertEquals("'105\\\\'", JavaTypeToFireboltSQLString.STRING.transform("105\\", FireboltVersion.LEGACY));
-		assertEquals("'105\\\\'", JavaTypeToFireboltSQLString.transformAny("105\\", FireboltVersion.LEGACY));
+		assertEquals("'105\\\\'", JavaTypeToFireboltSQLString.STRING.transform("105\\", ParserVersion.LEGACY));
+		assertEquals("'105\\\\'", JavaTypeToFireboltSQLString.transformAny("105\\", ParserVersion.LEGACY));
 	}
 
 	@Test

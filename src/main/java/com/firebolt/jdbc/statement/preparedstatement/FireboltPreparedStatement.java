@@ -13,7 +13,7 @@ import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementUtil;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
-import com.firebolt.jdbc.type.FireboltVersion;
+import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
 import com.firebolt.jdbc.util.InputStreamUtil;
 import lombok.CustomLog;
@@ -160,7 +160,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		if (this.getConnection().getClass() == FireboltConnectionUserPassword.class){
 			// Old Firebolt required escaping additional characters in the string
 			providedParameters.put(parameterIndex,
-					JavaTypeToFireboltSQLString.STRING.transform(x, FireboltVersion.LEGACY));
+					JavaTypeToFireboltSQLString.STRING.transform(x, ParserVersion.LEGACY));
 		} else {
 			providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.STRING.transform(x));
 		}
@@ -210,7 +210,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 				// We don't know the targetSqlType, so we let JavaTypeToFireboltSQLString deal
 				// with legacy conversion
 				providedParameters.put(parameterIndex,
-						JavaTypeToFireboltSQLString.transformAny(x, targetSqlType, FireboltVersion.LEGACY));
+						JavaTypeToFireboltSQLString.transformAny(x, targetSqlType, ParserVersion.LEGACY));
 			} else {
 				providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x, targetSqlType));
 			}

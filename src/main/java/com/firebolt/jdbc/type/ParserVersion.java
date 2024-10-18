@@ -1,5 +1,5 @@
 package com.firebolt.jdbc.type;
 
-public enum FireboltVersion {
+public enum ParserVersion {
     LEGACY, CURRENT
 }
