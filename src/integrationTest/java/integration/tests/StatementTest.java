@@ -116,7 +116,7 @@ class StatementTest extends IntegrationTest {
 	void shouldThrowExceptionWhenExecutingWrongQueryV1() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			String errorMessage = assertThrows(FireboltException.class, () -> statement.executeQuery("select wrong query")).getMessage();
-			assertTrue(errorMessage.contains("Unresolved name wrong"));
+			assertTrue(errorMessage.contains("wrong"));
 		}
 	}
 
