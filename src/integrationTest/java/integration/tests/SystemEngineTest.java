@@ -49,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
+@Tag("v2")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SystemEngineTest extends IntegrationTest {
 

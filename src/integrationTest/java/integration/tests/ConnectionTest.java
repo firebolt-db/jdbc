@@ -55,7 +55,7 @@ class ConnectionTest extends IntegrationTest {
         String url = format("jdbc:firebolt:%s?env=%s&account=%s%s", database, params.getEnv(), params.getAccount(), engineSuffix);
         FireboltException e = assertThrows(FireboltException.class, () -> DriverManager.getConnection(url, params.getPrincipal(), params.getSecret()));
         if (infraVersion >= 2) {
-            assertEquals(ExceptionType.ERROR, e.getType());
+            assertEquals(ExceptionType.INVALID_REQUEST, e.getType());
             String expectedMessage = format("Database '%s' does not exist or not authorized", database);
             assertTrue(e.getMessage().contains(expectedMessage), format("Error message '%s' does not match '%s'", e.getMessage(), expectedMessage));
         } else {

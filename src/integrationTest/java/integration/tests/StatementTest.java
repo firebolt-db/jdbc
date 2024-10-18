@@ -102,6 +102,7 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag("v2")
 	@Test
 	void shouldThrowExceptionWhenExecutingWrongQuery() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
@@ -110,7 +111,17 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag("v1")
 	@Test
+	void shouldThrowExceptionWhenExecutingWrongQueryV1() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			String errorMessage = assertThrows(FireboltException.class, () -> statement.executeQuery("select wrong query")).getMessage();
+			assertTrue(errorMessage.contains("wrong"));
+		}
+	}
+
+	@Test
+	@Tag("v2")
 	@EnvironmentCondition(value = "4.2.0", comparison = EnvironmentCondition.Comparison.GE)
 	void shouldThrowExceptionWhenExecutingWrongQueryWithJsonError() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
@@ -334,14 +345,6 @@ class StatementTest extends IntegrationTest {
 	void empty(String sql) throws SQLException {
 		try (Connection connection = createConnection()) {
 			assertFalse(connection.createStatement().execute(sql));
-		}
-	}
-
-	@Test
-	@Tag("v1")
-	void divisionByZero() throws SQLException {
-		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
-			assertThrows(SQLException.class, () -> statement.executeQuery("SELECT 1/0"));
 		}
 	}
 
