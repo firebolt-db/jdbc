@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="../../../../script-dir/jquery-ui.min.css" title="Style">
 <link rel="stylesheet" type="text/css" href="../../../../jquery-ui.overrides.css" title="Style">
 <script type="text/javascript" src="../../../../script.js"></script>
-<script type="text/javascript" src="../../../../script-dir/jquery-3.6.1.min.js"></script>
+<script type="text/javascript" src="../../../../script-dir/jquery-3.7.1.min.js"></script>
 <script type="text/javascript" src="../../../../script-dir/jquery-ui.min.js"></script>
 </head>
 <body class="class-declaration-page">
@@ -110,9 +110,12 @@ implements <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.sql/
 <div class="col-first even-row-color"><code>protected final <a href="settings/FireboltProperties.html" title="class in com.firebolt.jdbc.connection.settings">FireboltProperties</a></code></div>
 <div class="col-second even-row-color"><code><a href="#loginProperties" class="member-name-link">loginProperties</a></code></div>
 <div class="col-last even-row-color">&nbsp;</div>
-<div class="col-first odd-row-color"><code>protected <a href="settings/FireboltProperties.html" title="class in com.firebolt.jdbc.connection.settings">FireboltProperties</a></code></div>
-<div class="col-second odd-row-color"><code><a href="#sessionProperties" class="member-name-link">sessionProperties</a></code></div>
+<div class="col-first odd-row-color"><code>final <a href="../type/ParserVersion.html" title="enum class in com.firebolt.jdbc.type">ParserVersion</a></code></div>
+<div class="col-second odd-row-color"><code><a href="#parserVersion" class="member-name-link">parserVersion</a></code></div>
 <div class="col-last odd-row-color">&nbsp;</div>
+<div class="col-first even-row-color"><code>protected <a href="settings/FireboltProperties.html" title="class in com.firebolt.jdbc.connection.settings">FireboltProperties</a></code></div>
+<div class="col-second even-row-color"><code><a href="#sessionProperties" class="member-name-link">sessionProperties</a></code></div>
+<div class="col-last even-row-color">&nbsp;</div>
 </div>
 <div class="inherited-list">
 <h3 id="fields-inherited-from-class-java.sql.Connection">Fields inherited from interface&nbsp;java.sql.<a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.sql/java/sql/Connection.html" title="class or interface in java.sql" class="external-link">Connection</a></h3>
@@ -129,16 +132,18 @@ implements <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.sql/
 <div class="table-header col-second">Constructor</div>
 <div class="table-header col-last">Description</div>
 <div class="col-first even-row-color"><code>protected </code></div>
-<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.util.Properties,com.firebolt.jdbc.service.FireboltAuthenticationService,com.firebolt.jdbc.service.FireboltStatementService,java.lang.String)" class="member-name-link">FireboltConnection</a><wbr>(@NonNull <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url,
+<div class="col-constructor-name even-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.util.Properties,com.firebolt.jdbc.service.FireboltAuthenticationService,com.firebolt.jdbc.service.FireboltStatementService,java.lang.String,com.firebolt.jdbc.type.ParserVersion)" class="member-name-link">FireboltConnection</a><wbr>(@NonNull <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Properties.html" title="class or interface in java.util" class="external-link">Properties</a>&nbsp;connectionSettings,
  <a href="../service/FireboltAuthenticationService.html" title="class in com.firebolt.jdbc.service">FireboltAuthenticationService</a>&nbsp;fireboltAuthenticationService,
  <a href="../service/FireboltStatementService.html" title="class in com.firebolt.jdbc.service">FireboltStatementService</a>&nbsp;fireboltStatementService,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;protocolVersion)</code></div>
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;protocolVersion,
+ <a href="../type/ParserVersion.html" title="enum class in com.firebolt.jdbc.type">ParserVersion</a>&nbsp;parserVersion)</code></div>
 <div class="col-last even-row-color">&nbsp;</div>
 <div class="col-first odd-row-color"><code>protected </code></div>
-<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.util.Properties,java.lang.String)" class="member-name-link">FireboltConnection</a><wbr>(@NonNull <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url,
+<div class="col-constructor-name odd-row-color"><code><a href="#%3Cinit%3E(java.lang.String,java.util.Properties,java.lang.String,com.firebolt.jdbc.type.ParserVersion)" class="member-name-link">FireboltConnection</a><wbr>(@NonNull <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Properties.html" title="class or interface in java.util" class="external-link">Properties</a>&nbsp;connectionSettings,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;protocolVersion)</code></div>
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;protocolVersion,
+ <a href="../type/ParserVersion.html" title="enum class in com.firebolt.jdbc.type">ParserVersion</a>&nbsp;parserVersion)</code></div>
 <div class="col-last odd-row-color">&nbsp;</div>
 </div>
 </section>
@@ -446,6 +451,12 @@ implements <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.sql/
 <div class="member-signature"><span class="modifiers">protected final</span>&nbsp;<span class="return-type"><a href="settings/FireboltProperties.html" title="class in com.firebolt.jdbc.connection.settings">FireboltProperties</a></span>&nbsp;<span class="element-name">loginProperties</span></div>
 </section>
 </li>
+<li>
+<section class="detail" id="parserVersion">
+<h3>parserVersion</h3>
+<div class="member-signature"><span class="modifiers">public final</span>&nbsp;<span class="return-type"><a href="../type/ParserVersion.html" title="enum class in com.firebolt.jdbc.type">ParserVersion</a></span>&nbsp;<span class="element-name">parserVersion</span></div>
+</section>
+</li>
 </ul>
 </section>
 </li>
@@ -455,23 +466,25 @@ implements <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.sql/
 <h2>Constructor Details</h2>
 <ul class="member-list">
 <li>
-<section class="detail" id="&lt;init&gt;(java.lang.String,java.util.Properties,com.firebolt.jdbc.service.FireboltAuthenticationService,com.firebolt.jdbc.service.FireboltStatementService,java.lang.String)">
+<section class="detail" id="&lt;init&gt;(java.lang.String,java.util.Properties,com.firebolt.jdbc.service.FireboltAuthenticationService,com.firebolt.jdbc.service.FireboltStatementService,java.lang.String,com.firebolt.jdbc.type.ParserVersion)">
 <h3>FireboltConnection</h3>
 <div class="member-signature"><span class="modifiers">protected</span>&nbsp;<span class="element-name">FireboltConnection</span><wbr><span class="parameters">(@NonNull
  @NonNull <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Properties.html" title="class or interface in java.util" class="external-link">Properties</a>&nbsp;connectionSettings,
  <a href="../service/FireboltAuthenticationService.html" title="class in com.firebolt.jdbc.service">FireboltAuthenticationService</a>&nbsp;fireboltAuthenticationService,
  <a href="../service/FireboltStatementService.html" title="class in com.firebolt.jdbc.service">FireboltStatementService</a>&nbsp;fireboltStatementService,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;protocolVersion)</span></div>
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;protocolVersion,
+ <a href="../type/ParserVersion.html" title="enum class in com.firebolt.jdbc.type">ParserVersion</a>&nbsp;parserVersion)</span></div>
 </section>
 </li>
 <li>
-<section class="detail" id="&lt;init&gt;(java.lang.String,java.util.Properties,java.lang.String)">
+<section class="detail" id="&lt;init&gt;(java.lang.String,java.util.Properties,java.lang.String,com.firebolt.jdbc.type.ParserVersion)">
 <h3>FireboltConnection</h3>
 <div class="member-signature"><span class="modifiers">protected</span>&nbsp;<span class="element-name">FireboltConnection</span><wbr><span class="parameters">(@NonNull
  @NonNull <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;url,
  <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Properties.html" title="class or interface in java.util" class="external-link">Properties</a>&nbsp;connectionSettings,
- <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;protocolVersion)</span>
+ <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html" title="class or interface in java.lang" class="external-link">String</a>&nbsp;protocolVersion,
+ <a href="../type/ParserVersion.html" title="enum class in com.firebolt.jdbc.type">ParserVersion</a>&nbsp;parserVersion)</span>
                       throws <span class="exceptions"><a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.sql/java/sql/SQLException.html" title="class or interface in java.sql" class="external-link">SQLException</a></span></div>
 <dl class="notes">
 <dt>Throws:</dt>
