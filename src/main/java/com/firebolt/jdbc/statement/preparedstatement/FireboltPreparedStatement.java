@@ -214,7 +214,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 			} else {
 				providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x, targetSqlType));
 			}
-			providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x, targetSqlType));
 		} catch (FireboltException fbe) {
 			if (ExceptionType.TYPE_NOT_SUPPORTED.equals(fbe.getType())) {
 				throw new SQLFeatureNotSupportedException(fbe.getMessage(), fbe);
