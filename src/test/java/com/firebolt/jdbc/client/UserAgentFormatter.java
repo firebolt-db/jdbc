@@ -8,7 +8,8 @@ public class UserAgentFormatter {
     }
 
     public static String userAgent(String format, String driverVersion, String javaVersion, String osName, String osVersion) {
-        return String.format(format, driverVersion, javaVersion, osName, osVersion);
+        // Mac OS is renamed to Darwin in the user agent string
+        return String.format(format, driverVersion, javaVersion, osName, osVersion).replace("Mac OS X", "Darwin");
     }
 
     public static String osName() {
