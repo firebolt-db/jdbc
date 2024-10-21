@@ -143,7 +143,7 @@ class DatabaseMetaDataTest extends IntegrationTest {
 			",,,VIEW,views;tables,integration_test",
 
 			// table name pattern
-			",,%account%,,service_account_users;service_accounts,tables;columns;views",
+			",,%account%,,accounts;service_accounts,tables;columns;views",
 			",,%test,,integration_test,tables;columns;views",
 
 			// schema name pattern
