@@ -16,6 +16,7 @@ import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltEngineVersion2Service;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
+import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.util.PropertyUtil;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
@@ -42,16 +43,19 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
                                     FireboltGatewayUrlService fireboltGatewayUrlService,
                                     FireboltStatementService fireboltStatementService,
                                     FireboltEngineInformationSchemaService fireboltEngineService,
-                                    FireboltAccountIdService fireboltAccountIdService) throws SQLException {
-        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION);
+            FireboltAccountIdService fireboltAccountIdService,
+            ParserVersion parserVersion) throws SQLException {
+        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION,
+                parserVersion);
         this.fireboltGatewayUrlService = fireboltGatewayUrlService;
         this.fireboltEngineService = fireboltEngineService;
         connect();
     }
 
     @ExcludeFromJacocoGeneratedReport
-    FireboltConnectionServiceSecret(@NonNull String url, Properties connectionSettings) throws SQLException {
-        super(url, connectionSettings, PROTOCOL_VERSION);
+    FireboltConnectionServiceSecret(@NonNull String url, Properties connectionSettings, ParserVersion parserVersion)
+            throws SQLException {
+        super(url, connectionSettings, PROTOCOL_VERSION, parserVersion);
         OkHttpClient httpClient = getHttpClient(loginProperties);
         this.fireboltGatewayUrlService = new FireboltGatewayUrlService(createFireboltAccountRetriever(httpClient, GatewayUrlResponse.class));
         connect();

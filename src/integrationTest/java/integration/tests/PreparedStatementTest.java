@@ -435,6 +435,26 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
+	@Test
+	void shouldFetchSpecialCharacters() throws SQLException, MalformedURLException {
+		try (Connection connection = createConnection()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("SELECT ? as a, ? as b, ? as c, ? as d")) {
+				statement.setString(1, "ї");
+				statement.setString(2, "\n");
+				statement.setString(3, "\\");
+				statement.setString(4, "don't");
+				statement.execute();
+				ResultSet rs = statement.getResultSet();
+				assertTrue(rs.next());
+				assertEquals("ї", rs.getString(1));
+				assertEquals("\n", rs.getString(2));
+				assertEquals("\\", rs.getString(3));
+				assertEquals("don't", rs.getString(4));
+			}
+		}
+	}
+
 	@Builder
 	@Value
 	@EqualsAndHashCode

@@ -135,7 +135,7 @@ public enum BaseType {
 	}
 
 	public static boolean isNull(String value) {
-		return NULL_VALUE.equalsIgnoreCase(value);
+		return NULL_VALUE.equals(value);
 	}
 
 	private static boolean isNan(String value) {
