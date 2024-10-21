@@ -58,7 +58,6 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
         super(url, connectionSettings, PROTOCOL_VERSION, parserVersion);
         OkHttpClient httpClient = getHttpClient(loginProperties);
         this.fireboltGatewayUrlService = new FireboltGatewayUrlService(createFireboltAccountRetriever(httpClient, GatewayUrlResponse.class));
-        // initialization of fireboltEngineService depends on the infraVersion (the version of engine)
         connect();
     }
 
