@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.type.ParserVersion;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -73,6 +74,7 @@ class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
     }
 
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
-        return new FireboltConnectionUserPassword(url, props, fireboltAuthenticationService, fireboltStatementService, fireboltEngineService);
+        return new FireboltConnectionUserPassword(url, props, fireboltAuthenticationService, fireboltStatementService,
+                fireboltEngineService, ParserVersion.LEGACY);
     }
 }

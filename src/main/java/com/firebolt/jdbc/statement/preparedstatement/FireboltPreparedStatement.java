@@ -14,7 +14,6 @@ import com.firebolt.jdbc.statement.StatementUtil;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
 import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
-import com.firebolt.jdbc.util.ConnectionParserResolver;
 import com.firebolt.jdbc.util.InputStreamUtil;
 import lombok.CustomLog;
 import lombok.NonNull;
@@ -73,7 +72,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		this.rawStatement = StatementUtil.parseToRawStatementWrapper(sql);
 		rawStatement.getSubStatements().forEach(statement -> createValidator(statement, connection).validate(statement));
 		this.rows = new ArrayList<>();
-		this.parserVersion = ConnectionParserResolver.getParserFromConnection(connection);
+		this.parserVersion = connection.getParserVersion();
 	}
 
 	@Override

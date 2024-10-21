@@ -18,11 +18,13 @@ import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
 import com.firebolt.jdbc.type.FireboltDataType;
+import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.type.array.FireboltArray;
 import com.firebolt.jdbc.type.lob.FireboltBlob;
 import com.firebolt.jdbc.type.lob.FireboltClob;
 import com.firebolt.jdbc.util.PropertyUtil;
 import lombok.CustomLog;
+import lombok.Getter;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
 
@@ -83,12 +85,16 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	//Properties that are used at the beginning of the connection for authentication
 	protected final FireboltProperties loginProperties;
 	private final Collection<CacheListener> cacheListeners = Collections.newSetFromMap(new IdentityHashMap<>());
+	// Parameter parser is determined by the version we're running on
+	@Getter
+	public final ParserVersion parserVersion;
 
 	protected FireboltConnection(@NonNull String url,
 								 Properties connectionSettings,
 								 FireboltAuthenticationService fireboltAuthenticationService,
 							  	 FireboltStatementService fireboltStatementService,
-								 String protocolVersion) {
+			String protocolVersion,
+			ParserVersion parserVersion) {
 		this.loginProperties = extractFireboltProperties(url, connectionSettings);
 
 		this.fireboltAuthenticationService = fireboltAuthenticationService;
@@ -99,11 +105,13 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
 		this.protocolVersion = protocolVersion;
+		this.parserVersion = parserVersion;
 	}
 
 	// This code duplication between constructors is done because of back reference: dependent services require reference to current instance of FireboltConnection that prevents using constructor chaining or factory method.
 	@ExcludeFromJacocoGeneratedReport
-	protected FireboltConnection(@NonNull String url, Properties connectionSettings, String protocolVersion) throws SQLException {
+	protected FireboltConnection(@NonNull String url, Properties connectionSettings, String protocolVersion,
+			ParserVersion parserVersion) throws SQLException {
 		this.loginProperties = extractFireboltProperties(url, connectionSettings);
 		OkHttpClient httpClient = getHttpClient(loginProperties);
 
@@ -115,6 +123,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
 		this.protocolVersion = protocolVersion;
+		this.parserVersion = parserVersion;
 	}
 
 	protected abstract FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient);
@@ -125,8 +134,10 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	private static FireboltConnection createConnectionInstance(@NonNull String url, Properties connectionSettings) throws SQLException {
 		switch(getUrlVersion(url, connectionSettings)) {
-			case 1: return new FireboltConnectionUserPassword(url, connectionSettings);
-			case 2: return new FireboltConnectionServiceSecret(url, connectionSettings);
+			case 1:
+				return new FireboltConnectionUserPassword(url, connectionSettings, ParserVersion.LEGACY);
+			case 2:
+				return new FireboltConnectionServiceSecret(url, connectionSettings, ParserVersion.CURRENT);
 			default: throw new IllegalArgumentException(format("Cannot distinguish version from url %s", url));
 		}
 	}
