@@ -48,6 +48,7 @@ class FireboltPropertiesTest {
 		properties.put("path", "example");
 		properties.put("someCustomProperties", "custom_value");
 		properties.put("compress", "1");
+		properties.put("validate_on_system_engine", "true");
 
 		Map<String, String> customProperties = new HashMap<>();
 		customProperties.put("someCustomProperties", "custom_value");
@@ -57,7 +58,8 @@ class FireboltPropertiesTest {
 				.port(443).principal(null).secret(null).host("myDummyHost").ssl(true).systemEngine(false)
 				.initialAdditionalProperties(customProperties).keepAliveTimeoutMillis(300000)
 				.maxConnectionsTotal(300).maxRetries(3).socketTimeoutMillis(20).connectionTimeoutMillis(60000)
-				.tcpKeepInterval(30).tcpKeepIdle(60).tcpKeepCount(10).environment("app").build();
+				.tcpKeepInterval(30).tcpKeepIdle(60).tcpKeepCount(10).environment("app").validateOnSystemEngine(true)
+				.build();
 		assertEquals(expectedDefaultProperties, new FireboltProperties(properties));
 	}
 

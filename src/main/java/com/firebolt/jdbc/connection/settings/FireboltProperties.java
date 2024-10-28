@@ -75,6 +75,7 @@ public class FireboltProperties {
 	private final String userDrivers;
 	private final String userClients;
 	private final String accessToken;
+	private final boolean validateOnSystemEngine;
 	@Builder.Default
 	private Map<String, String> initialAdditionalProperties = new HashMap<>();
 	@Builder.Default
@@ -110,6 +111,7 @@ public class FireboltProperties {
 		String configuredEnvironment = getSetting(properties, FireboltSessionProperty.ENVIRONMENT);
 		userDrivers = getSetting(properties, FireboltSessionProperty.USER_DRIVERS);
 		userClients = getSetting(properties, FireboltSessionProperty.USER_CLIENTS);
+		validateOnSystemEngine = getSetting(properties, FireboltSessionProperty.VALIDATE_ON_SYSTEM_ENGINE);
 
 		environment = getEnvironment(configuredEnvironment, properties);
 		host = getHost(configuredEnvironment, properties);

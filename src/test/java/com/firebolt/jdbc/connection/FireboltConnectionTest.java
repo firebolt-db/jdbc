@@ -709,5 +709,16 @@ abstract class FireboltConnectionTest {
 		}
 	}
 
+	@Test
+	void shouldValidateOnUserEngineByDefault() throws SQLException {
+		try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
+			assertEquals("false", fireboltConnection.getClientInfo().get("validate_on_system_engine"));
+		}
+		connectionProperties.put("validate_on_system_engine", "true");
+		try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
+			assertEquals("true", fireboltConnection.getClientInfo().get("validate_on_system_engine"));
+		}
+	}
+
 	protected abstract FireboltConnection createConnection(String url, Properties props) throws SQLException;
 }
