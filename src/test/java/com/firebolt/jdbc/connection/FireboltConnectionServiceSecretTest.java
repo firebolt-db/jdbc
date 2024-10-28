@@ -40,15 +40,6 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
     }
 
     @Test
-    void shouldNotValidateConnectionWhenCallingIsValidWhenUsingSystemEngine() throws SQLException {
-        Properties propertiesWithSystemEngine = new Properties(connectionProperties);
-        try (FireboltConnection fireboltConnection = createConnection(SYSTEM_ENGINE_URL, propertiesWithSystemEngine)) {
-            fireboltConnection.isValid(500);
-            verifyNoInteractions(fireboltStatementService);
-        }
-    }
-
-    @Test
     void shouldNotGetEngineUrlOrDefaultEngineUrlWhenUsingSystemEngine() throws SQLException {
         connectionProperties.put("database", "my_db");
         when(fireboltGatewayUrlService.getUrl(any(), any())).thenReturn("http://my_endpoint");

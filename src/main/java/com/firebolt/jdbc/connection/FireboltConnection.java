@@ -427,9 +427,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 			return false;
 		}
 		try {
-			if (!loginProperties.isSystemEngine()) {
-				validateConnection(getSessionProperties(), true, true);
-			}
+			validateConnection(getSessionProperties(), true, true);
 			return true;
 		} catch (Exception e) {
 			return false;
