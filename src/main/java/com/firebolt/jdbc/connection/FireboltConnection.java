@@ -61,6 +61,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
+import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.getNonDeprecatedProperties;
 import static java.lang.String.format;
 import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
@@ -427,18 +428,21 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 			return false;
 		}
 		try {
-			validateConnection(getSessionProperties(), true, true);
+			validateConnection(getSessionProperties(), true, true, getSessionProperties().isValidateOnSystemEngine());
 			return true;
 		} catch (Exception e) {
 			return false;
 		}
 	}
 
-	private void validateConnection(FireboltProperties fireboltProperties, boolean ignoreToManyRequestsError, boolean isInternalRequest)
+	private void validateConnection(FireboltProperties fireboltProperties, boolean ignoreToManyRequestsError, boolean isInternalRequest, boolean forceSystemEngine)
 			throws SQLException {
 		FireboltProperties propertiesCopy = FireboltProperties.copy(fireboltProperties);
 		if (isInternalRequest) {
 			propertiesCopy.addProperty("auto_start_stop_control", "ignore");
+		}
+		if (forceSystemEngine) {
+			propertiesCopy.addProperty("engine", SYSTEM_ENGINE_NAME);
 		}
 		try (Statement s = createStatement(propertiesCopy)) {
 			s.execute("SELECT 1");
@@ -483,7 +487,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		try {
 			FireboltProperties tmpProperties = FireboltProperties.copy(sessionProperties);
 			propertiesEditor.accept(tmpProperties);
-			validateConnection(tmpProperties, false, false);
+			validateConnection(tmpProperties, false, false, false);
 			propertiesEditor.accept(sessionProperties);
 		} catch (FireboltException e) {
 			throw e;

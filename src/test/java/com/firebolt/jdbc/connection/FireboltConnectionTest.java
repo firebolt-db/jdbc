@@ -51,6 +51,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.ACCESS_TOKEN;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.CLIENT_ID;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.CLIENT_SECRET;
@@ -352,6 +353,23 @@ abstract class FireboltConnectionTest {
 					propertiesArgumentCaptor.capture(), any());
 			assertEquals(List.of("SELECT 1"), queryInfoWrapperArgumentCaptor.getAllValues().stream().map(StatementInfoWrapper::getSql).collect(toList()));
 			assertEquals(Map.of("auto_start_stop_control", "ignore"), propertiesArgumentCaptor.getValue().getAdditionalProperties());
+		}
+	}
+
+	@Test
+	void shouldForceSystemEngineWhenValidateOnSystemEngineIsSet() throws SQLException {
+		when(fireboltStatementService.execute(any(), any(), any()))
+				.thenReturn(Optional.empty());
+		Properties propertiesCopy = new Properties(connectionProperties);
+		propertiesCopy.put("validate_on_system_engine", "true");
+		try (FireboltConnection fireboltConnection = createConnection(URL, propertiesCopy)) {
+			fireboltConnection.isValid(500);
+			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
+					propertiesArgumentCaptor.capture(), any());
+			assertEquals(List.of("SELECT 1"), queryInfoWrapperArgumentCaptor.getAllValues().stream().map(StatementInfoWrapper::getSql).collect(toList()));
+			assertEquals(Map.of("auto_start_stop_control", "ignore"), propertiesArgumentCaptor.getValue().getAdditionalProperties());
+			assertEquals(SYSTEM_ENGINE_NAME, propertiesArgumentCaptor.getValue().getEngine());
+			assertTrue(propertiesArgumentCaptor.getValue().isSystemEngine());
 		}
 	}
 
