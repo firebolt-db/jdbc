@@ -13,6 +13,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -37,9 +39,13 @@ public abstract class IntegrationTest {
 	}
 
 	protected Connection createConnection(String engine) throws SQLException {
+		return createConnection(engine, new HashMap<>());
+	}
+
+	protected Connection createConnection(String engine, Map<String, String> extra) throws SQLException {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
 		ConnectionInfo updated = new ConnectionInfo(current.getPrincipal(), current.getSecret(),
-				current.getEnv(), current.getDatabase(), current.getAccount(), engine, current.getApi());
+				current.getEnv(), current.getDatabase(), current.getAccount(), engine, current.getApi(), extra);
 		return DriverManager.getConnection(updated.toJdbcUrl(),
 				integration.ConnectionInfo.getInstance().getPrincipal(),
 				integration.ConnectionInfo.getInstance().getSecret());

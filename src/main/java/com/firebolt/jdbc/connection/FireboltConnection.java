@@ -51,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -61,7 +62,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.getNonDeprecatedProperties;
 import static java.lang.String.format;
 import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
@@ -428,23 +428,24 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 			return false;
 		}
 		try {
-			validateConnection(getSessionProperties(), true, true, getSessionProperties().isValidateOnSystemEngine());
+			validateConnection(getSessionProperties(), true, true);
 			return true;
 		} catch (Exception e) {
 			return false;
 		}
 	}
 
-	private void validateConnection(FireboltProperties fireboltProperties, boolean ignoreToManyRequestsError, boolean isInternalRequest, boolean forceSystemEngine)
+	private void validateConnection(FireboltProperties fireboltProperties, boolean ignoreToManyRequestsError, boolean isInternalRequest)
 			throws SQLException {
-		FireboltProperties propertiesCopy = FireboltProperties.copy(fireboltProperties);
+		HashMap<String, String> runtimeProperties = new HashMap<>(fireboltProperties.getRuntimeAdditionalProperties());
 		if (isInternalRequest) {
-			propertiesCopy.addProperty("auto_start_stop_control", "ignore");
+			runtimeProperties.put("auto_start_stop_control", "ignore");
 		}
-		if (forceSystemEngine) {
-			propertiesCopy.addProperty("engine", SYSTEM_ENGINE_NAME);
+		var propertiesBuilder = fireboltProperties.toBuilder().runtimeAdditionalProperties(runtimeProperties);
+		if (getSessionProperties().isValidateOnSystemEngine()) {
+			propertiesBuilder.compress(false).engine(null).systemEngine(true);
 		}
-		try (Statement s = createStatement(propertiesCopy)) {
+		try (Statement s = createStatement(propertiesBuilder.build())) {
 			s.execute("SELECT 1");
 		} catch (Exception e) {
 			// A connection is not invalid when too many requests are being sent.
@@ -487,7 +488,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		try {
 			FireboltProperties tmpProperties = FireboltProperties.copy(sessionProperties);
 			propertiesEditor.accept(tmpProperties);
-			validateConnection(tmpProperties, false, false, false);
+			validateConnection(tmpProperties, false, false);
 			propertiesEditor.accept(sessionProperties);
 		} catch (FireboltException e) {
 			throw e;
