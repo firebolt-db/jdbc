@@ -12,6 +12,9 @@ import lombok.CustomLog;
 import okhttp3.OkHttpClient;
 
 import java.io.IOException;
+import java.sql.SQLException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.String.format;
 
@@ -24,6 +27,7 @@ public class FireboltAccountClient extends FireboltClient {
     private static final String URI_SUFFIX_DATABASE_INFO_URL = "engines:getURLByDatabaseName?databaseName=";
     private static final String URI_PREFIX_WITH_ACCOUNT_RESOURCE = "%s/core/v1/accounts/%s/%s";
     private static final String URI_PREFIX_WITHOUT_ACCOUNT_RESOURCE = "%s/core/v1/account/%s";
+    private static final Map<String, Object> resourceCache = new ConcurrentHashMap<>();
 
     public FireboltAccountClient(OkHttpClient httpClient, FireboltConnection fireboltConnection, String customDrivers, String customClients) {
         super(httpClient, fireboltConnection, customDrivers, customClients);
@@ -37,9 +41,15 @@ public class FireboltAccountClient extends FireboltClient {
      * @param accessToken the access token
      * @return the account
      */
-    public FireboltAccountResponse getAccount(String host, String account, String accessToken) throws FireboltException, IOException {
+    @SuppressWarnings("java:S3824") // cannot use computeIfAbsent() because getResource() throws checked exceptions
+    public FireboltAccountResponse getAccount(String host, String account, String accessToken) throws SQLException, IOException {
         String uri = format(GET_ACCOUNT_ID_URI, host, account);
-        return getResource(uri, host, accessToken, FireboltAccountResponse.class);
+        FireboltAccountResponse accountResponse = (FireboltAccountResponse)resourceCache.get(uri);
+        if (accountResponse == null) {
+            accountResponse = getResource(uri, host, accessToken, FireboltAccountResponse.class);
+            resourceCache.put(uri, accountResponse);
+        }
+        return accountResponse;
     }
 
     /**
@@ -52,7 +62,7 @@ public class FireboltAccountClient extends FireboltClient {
      * @param accessToken the access token
      * @return the engine
      */
-    public FireboltEngineResponse getEngine(String host, String accountId, String engineName, String engineId, String accessToken) throws FireboltException, IOException {
+    public FireboltEngineResponse getEngine(String host, String accountId, String engineName, String engineId, String accessToken) throws SQLException, IOException {
         String uri = createAccountUri(accountId, host, URI_SUFFIX_ACCOUNT_ENGINE_INFO_BY_ENGINE_ID + engineId);
         return getResource(uri, host, accessToken, FireboltEngineResponse.class, format("The address of the engine with name %s and id %s could not be found", engineName, engineId));
     }
@@ -66,7 +76,7 @@ public class FireboltAccountClient extends FireboltClient {
      * @param accessToken the access token
      * @return the default engine for the database
      */
-    public FireboltDefaultDatabaseEngineResponse getDefaultEngineByDatabaseName(String host, String accountId, String dbName, String accessToken) throws FireboltException, IOException {
+    public FireboltDefaultDatabaseEngineResponse getDefaultEngineByDatabaseName(String host, String accountId, String dbName, String accessToken) throws SQLException, IOException {
         String uri = createAccountUri(accountId, host, URI_SUFFIX_DATABASE_INFO_URL + dbName);
         return getResource(uri, host, accessToken, FireboltDefaultDatabaseEngineResponse.class, format("The database with the name %s could not be found", dbName));
     }
@@ -81,13 +91,13 @@ public class FireboltAccountClient extends FireboltClient {
      * @return the engine id
      */
     public FireboltEngineIdResponse getEngineId(String host, String accountId, String engineName, String accessToken)
-            throws FireboltException, IOException {
+            throws SQLException, IOException {
         String uri = createAccountUri(accountId, host, URI_SUFFIX_ENGINE_AND_ACCOUNT_ID_BY_ENGINE_NAME + engineName);
         return getResource(uri, host, accessToken, FireboltEngineIdResponse.class, format("The engine %s could not be found", engineName));
     }
 
 
-    private <R> R getResource(String uri, String host, String accessToken, Class<R> responseType, String notFoundErrorMessage) throws FireboltException, IOException {
+    private <R> R getResource(String uri, String host, String accessToken, Class<R> responseType, String notFoundErrorMessage) throws SQLException, IOException {
         try {
             return getResource(uri, host, accessToken, responseType);
         } catch (FireboltException exception) {
@@ -102,4 +112,8 @@ public class FireboltAccountClient extends FireboltClient {
         return account == null || account.isEmpty() ? format(URI_PREFIX_WITHOUT_ACCOUNT_RESOURCE, host, suffix) : format(URI_PREFIX_WITH_ACCOUNT_RESOURCE, host, account, suffix);
     }
 
+    @Override
+    public void cleanup() {
+        resourceCache.clear();
+    }
 }

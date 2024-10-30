@@ -10,6 +10,7 @@ import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementUtil;
+import com.firebolt.jdbc.type.ParserVersion;
 import lombok.NonNull;
 import okhttp3.Call;
 import okhttp3.Dispatcher;
@@ -79,11 +80,11 @@ class StatementClientImplTest {
 			"false,http://firebolt1:555/?database=db1&output_format=TabSeparatedWithNamesAndTypes&compress=1&max_execution_time=15",
 			"true,http://firebolt1:555/?database=db1&account_id=12345&output_format=TabSeparatedWithNamesAndTypes"
 	})
-	void shouldPostSqlQueryWithExpectedUrl(boolean systemEngine, String expectedUrl) throws FireboltException, IOException {
+	void shouldPostSqlQueryWithExpectedUrl(boolean systemEngine, String expectedUrl) throws SQLException, IOException {
 		assertEquals(expectedUrl, shouldPostSqlQuery(systemEngine).getValue());
 	}
 
-	private Entry<String, String> shouldPostSqlQuery(boolean systemEngine) throws FireboltException, IOException {
+	private Entry<String, String> shouldPostSqlQuery(boolean systemEngine) throws SQLException, IOException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).accountId("12345").systemEngine(systemEngine).build();
 		when(connection.getAccessToken())
 				.thenReturn(Optional.of("token"));
@@ -92,7 +93,7 @@ class StatementClientImplTest {
 		Call call = getMockedCallWithResponse(200, "");
 		when(okHttpClient.newCall(any())).thenReturn(call);
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
-		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, fireboltProperties.isSystemEngine(), 15, true);
+		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, fireboltProperties.isSystemEngine(), 15);
 
 		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
 		Request actualRequest = requestArgumentCaptor.getValue();
@@ -198,7 +199,7 @@ class StatementClientImplTest {
 		when(okHttpClient.newCall(any())).thenReturn(unauthorizedCall).thenReturn(okCall);
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
-		statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, false, 5, true);
+		statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, false, 5);
 		verify(okHttpClient, times(2)).newCall(requestArgumentCaptor.capture());
 		assertEquals("Bearer oldToken", requestArgumentCaptor.getAllValues().get(0).headers().get("Authorization")); // legit:ignore-secrets
 		assertEquals("Bearer newToken", requestArgumentCaptor.getAllValues().get(1).headers().get("Authorization")); // legit:ignore-secrets
@@ -206,13 +207,13 @@ class StatementClientImplTest {
 	}
 
 	@Test
-	void shouldNotRetryNoMoreThanOnceOnUnauthorized() throws IOException, FireboltException {
+	void shouldNotRetryNoMoreThanOnceOnUnauthorized() throws SQLException, IOException {
 		Call okCall = getMockedCallWithResponse(200, "");
 		Call unauthorizedCall = getMockedCallWithResponse(401, "");
 		when(okHttpClient.newCall(any())).thenReturn(unauthorizedCall).thenReturn(unauthorizedCall).thenReturn(okCall);
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
-		FireboltException ex = assertThrows(FireboltException.class, () -> statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, false, 5, true));
+		FireboltException ex = assertThrows(FireboltException.class, () -> statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, false, 5));
 		assertEquals(ExceptionType.UNAUTHORIZED, ex.getType());
 		verify(okHttpClient, times(2)).newCall(any());
 		verify(connection, times(2)).removeExpiredTokens();
@@ -230,7 +231,7 @@ class StatementClientImplTest {
 			"db1,use database db2,,db1", // no header returned
 			"db1,use database db2,database=db3,db3" // use db2 but switched to db3
 	})
-	void useDatabase(String oldDb, String command, String responseHeader, String expectedDb) throws IOException, SQLException {
+	void useDatabase(String oldDb, String command, String responseHeader, String expectedDb) throws SQLException, IOException {
 		try (FireboltConnection connection = use("database", oldDb, command, responseHeader)) {
 			assertEquals(expectedDb, connection.getSessionProperties().getDatabase());
 		}
@@ -243,7 +244,7 @@ class StatementClientImplTest {
 			"e1,use engine e2,,e1", // no header returned
 			"e1,use engine e2,engine=e3,e3" // use e2 but switched to e3
 	})
-	void useEngine(String oldEngine, String command, String responseHeader, String expectedEngine) throws IOException, SQLException {
+	void useEngine(String oldEngine, String command, String responseHeader, String expectedEngine) throws SQLException, IOException {
 		try (FireboltConnection connection = use("engine", oldEngine, command, responseHeader)) {
 			assertEquals(expectedEngine, connection.getSessionProperties().getEngine());
 		}
@@ -344,12 +345,12 @@ class StatementClientImplTest {
 		}
 	}
 
-	private FireboltConnection use(int mockedInfraVersion, Properties props, String useCommand, Map<String, List<String>> responseHeaders) throws IOException, SQLException {
+	private FireboltConnection use(int mockedInfraVersion, Properties props, String useCommand, Map<String, List<String>> responseHeaders) throws SQLException, IOException {
 		props.setProperty(FireboltSessionProperty.CONNECTION_TIMEOUT_MILLIS.getKey(), "0"); // simplifies mocking
 		Call useCall = getMockedCallWithResponse(200, "", responseHeaders);
 		Call select1Call = getMockedCallWithResponse(200, "");
 		when(okHttpClient.newCall(any())).thenReturn(useCall, select1Call);
-		FireboltConnection connection = new FireboltConnection("url", props, "0") {
+		FireboltConnection connection = new FireboltConnection("url", props, "0", ParserVersion.CURRENT) {
 			{
 				this.infraVersion = mockedInfraVersion;
 				try {
@@ -396,14 +397,14 @@ class StatementClientImplTest {
 					"Engine MyEngine does not exist or not authorized; Please grant at least one role to user associated your service account."
 			},
 			delimiter = ';')
-	void shouldThrowUnauthorizedExceptionWhenNoAssociatedUser(String serverErrorMessage, String exceptionMessage) throws IOException, FireboltException {
+	void shouldThrowUnauthorizedExceptionWhenNoAssociatedUser(String serverErrorMessage, String exceptionMessage) throws SQLException, IOException {
 		when(connection.getAccessToken()).thenReturn(Optional.of("token"));
 		Call unauthorizedCall = getMockedCallWithResponse(500, serverErrorMessage);
 
 		when(okHttpClient.newCall(any())).thenReturn(unauthorizedCall);
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
-		FireboltException exception = assertThrows(FireboltException.class, () -> statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, false, 5, true));
+		FireboltException exception = assertThrows(FireboltException.class, () -> statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, false, 5));
 		assertEquals(ExceptionType.UNAUTHORIZED, exception.getType());
 		assertEquals(format("Could not query Firebolt at %s. %s", HOST, exceptionMessage), exception.getMessage());
 	}
@@ -420,7 +421,7 @@ class StatementClientImplTest {
 		when(okHttpClient.newCall(any())).thenReturn(call);
 		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "", "");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("select 1").get(0);
-		FireboltException ex = assertThrows(FireboltException.class, () -> statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, false, 5, true));
+		FireboltException ex = assertThrows(FireboltException.class, () -> statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, false, 5));
 		assertEquals(exceptionType, ex.getType());
 		assertEquals(exceptionClass, ex.getCause().getClass());
 	}

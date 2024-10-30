@@ -31,6 +31,6 @@ public class FireboltEngineVersion2Service implements FireboltEngineService {
     }
 
     private String use(String entity, String name) {
-        return format("USE %s %s", entity, name);
+        return format("USE %s \"%s\"", entity, name);
     }
 }

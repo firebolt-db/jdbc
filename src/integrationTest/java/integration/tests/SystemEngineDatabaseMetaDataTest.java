@@ -4,6 +4,7 @@ import com.firebolt.jdbc.CheckedFunction;
 import integration.IntegrationTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -49,6 +50,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
     }
 
     @Test
+    @Tag("v2")
     void getSchemas() throws SQLException {
         String database = integration.ConnectionInfo.getInstance().getDatabase();
         assertEquals(List.of(List.of("information_schema", database)), getSchemas(DatabaseMetaData::getSchemas));
@@ -70,6 +72,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
             "wrong_catalog,,",
             "wrong_catalog,%form%,",
     })
+    @Tag("v2")
     void getSchemasInformationSchema(String catalog, String schemaPattern, String expectedSchemasStr) throws SQLException {
         String database = integration.ConnectionInfo.getInstance().getDatabase();
         String cat = catalog == null ? null :  catalog.replace("{database}", database);
@@ -120,6 +123,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
             ",,,TABLE,,",
             "wrong_catalog,%form%,%in%,VIEW,,engines",
     })
+    @Tag("v2")
     void getTables(String catalog, String schemaPattern, String tableNamePattern, String types, String requiredTableName, String forbiddenTableName) throws SQLException {
         String database = integration.ConnectionInfo.getInstance().getDatabase();
         String requiredCatalog = catalog == null ? null : catalog.replace("{database}", database);
@@ -184,6 +188,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
             ",,,does-not-exist,,information_schema.columns.column_name",
             "wrong_catalog,%form%,%in%,type,,information_schema.engines.type",
     })
+    @Tag("v2")
     void getColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern, String requiredColumn, String forbiddenColumn) throws SQLException {
         String database = integration.ConnectionInfo.getInstance().getDatabase();
         String requiredCatalog = catalog == null ? null : catalog.replace("{database}", database);

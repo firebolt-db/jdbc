@@ -2,6 +2,7 @@ package com.firebolt.jdbc.type;
 
 import lombok.experimental.UtilityClass;
 
+@SuppressWarnings("SpellCheckingInspection")
 @UtilityClass
 public class FireboltDataTypeDisplayNames {
 	static final String INTEGER = "integer";

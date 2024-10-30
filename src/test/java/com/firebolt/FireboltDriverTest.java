@@ -46,6 +46,8 @@ class FireboltDriverTest {
 			"FireboltConnectionServiceSecret, jdbc:firebolt://api.dev.firebolt.io/db_name,'client_id=not-email;client_secret=any'", // clientId and client_secret are defined - v2
 			"FireboltConnectionUserPassword, jdbc:firebolt://api.dev.firebolt.io/db_name?user=sherlok@holmes.uk&password=watson,", // user is email as URL parameter - v1 // legit:ignore-secrets
 			"FireboltConnectionServiceSecret, jdbc:firebolt://api.dev.firebolt.io/db_name?client_id=not-email&client_secret=any,", // clientId and client_secret as URL parameters - v2
+			"FireboltConnectionUserPassword, jdbc:firebolt://api.dev.firebolt.io/db_name?access_token=aaabbbccc,", // old URL, no credentials but with access token
+			"FireboltConnectionServiceSecret,jdbc:firebolt:db_name,", // new URL, no credentials but with access token
 	})
 	void validateConnectionWhenUrlIsValid(String expectedConnectionTypeName, String jdbcUrl, String propsString) throws SQLException, IOException, ClassNotFoundException {
 		Properties properties = null;
@@ -91,7 +93,7 @@ class FireboltDriverTest {
 	void version() {
 		FireboltDriver fireboltDriver = new FireboltDriver();
 		assertEquals(3, fireboltDriver.getMajorVersion());
-		assertEquals(0, fireboltDriver.getMinorVersion());
+		assertEquals(2, fireboltDriver.getMinorVersion());
 	}
 
 	@ParameterizedTest
@@ -107,7 +109,7 @@ class FireboltDriverTest {
 
 			},
 			delimiter = ',')
-	void getPropertyInfo(String url, String propStr, String expectedInfoStr) throws SQLException {
+	void getPropertyInfo(String url, String propStr, String expectedInfoStr) {
 		Properties expectedProps = toProperties(expectedInfoStr);
 		assertEquals(expectedProps, toMap(new FireboltDriver().getPropertyInfo(url, toProperties(propStr))).entrySet().stream().filter(e -> expectedProps.containsKey(e.getKey())).collect(Collectors.toMap(Entry::getKey, Entry::getValue)));
 	}

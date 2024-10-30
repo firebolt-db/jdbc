@@ -55,7 +55,7 @@ class ConnectionTest extends IntegrationTest {
         String url = format("jdbc:firebolt:%s?env=%s&account=%s%s", database, params.getEnv(), params.getAccount(), engineSuffix);
         FireboltException e = assertThrows(FireboltException.class, () -> DriverManager.getConnection(url, params.getPrincipal(), params.getSecret()));
         if (infraVersion >= 2) {
-            assertEquals(ExceptionType.ERROR, e.getType());
+            assertEquals(ExceptionType.INVALID_REQUEST, e.getType());
             String expectedMessage = format("Database '%s' does not exist or not authorized", database);
             assertTrue(e.getMessage().contains(expectedMessage), format("Error message '%s' does not match '%s'", e.getMessage(), expectedMessage));
         } else {
@@ -76,7 +76,7 @@ class ConnectionTest extends IntegrationTest {
         String enginelessDb = "engineless_db" + System.currentTimeMillis();
         try (Connection systemConnection = createConnection(null)) {
             try {
-                systemConnection.createStatement().executeUpdate(format("CREATE DATABASE IF NOT EXISTS %s", enginelessDb));
+                systemConnection.createStatement().executeUpdate(format("CREATE DATABASE IF NOT EXISTS \"%s\"", enginelessDb));
                 String url = format("jdbc:firebolt:%s?env=%s&account=%s&engine=%s", enginelessDb, params.getEnv(), params.getAccount(), params.getEngine());
                 String errorMessage = format("The engine with the name %s is not attached to database %s", params.getEngine(), enginelessDb);
                 assertEquals(errorMessage, assertThrows(FireboltException.class, () -> DriverManager.getConnection(url, params.getPrincipal(), params.getSecret())).getMessage());

@@ -2,84 +2,17 @@ name: Run integration tests
 
 on:
   workflow_dispatch:
-    inputs:
-      database1:
-        description: 'Database (v1) - a new one will be created if not provided'
-        required: false
-        default: ''
-      database2:
-        description: 'Database (v2) - a new one will be created if not provided'
-        required: false
-        default: ''
-      database-with-engine-v2:
-        description: 'Database (v2) for Firebolt v2 - a new one will be created if not provided'
-        required: false
-        default: ''
-      engine1:
-        description: 'Engine (v1) - a new one will be created if not provided'
-        required: false
-      engine2:
-        description: 'Engine (v2) - a new one will be created if not provided'
-        required: false
-      engine_v2_fb_2_0:
-        description: 'Engine (v2) for Firebolt v2 - a new one will be created if not provided'
-        required: false
-      run-v1:
-        description: 'Run tests against Firebolt DB v1'
-        required: true
-        default: true
-        type: choice
-        options:
-          - 'true'
-          - 'false'
-      run-v2:
-        description: 'Run tests against Firebolt DB v2'
-        required: true
-        default: true
-        type: choice
-        options:
-          - 'true'
-          - 'false'
-      run-database-with-engine-v2:
-        description: 'Run tests against Firebolt DB v2 and Engine V2'
-        required: true
-        default: true
-        type: choice
-        options:
-          - 'true'
-          - 'false'
+  workflow_call:
 
 jobs:
   run-integration-tests1:
-    if: ${{ inputs.run-v1 == 'true' }}
     uses: ./.github/workflows/integration-test-v1.yml
-    with:
-      database: ${{ inputs.database1 }}
-      engine: ${{ inputs.engine1 }}
     secrets:
       FIREBOLT_STG_USERNAME: ${{ secrets.FIREBOLT_STG_USERNAME }}
       FIREBOLT_STG_PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
 
-  run-integration-tests2:
-    if: ${{ inputs.run-v2 == 'true' }}
-    uses: ./.github/workflows/integration-test-v2.yml
-    with:
-      database: ${{ inputs.database2 }}
-      engine: ${{ inputs.engine2 }}
-      account: ${{ vars.FIREBOLT_ACCOUNT_V1 }}
-      run_setup: true
-    secrets:
-      FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
-      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
-
   run-integration-tests-engine2:
-    if: ${{ inputs.run-database-with-engine-v2 == 'true' }}
     uses: ./.github/workflows/integration-test-v2.yml
-    with:
-      database: ${{ inputs.database-with-engine-v2 }}
-      engine: ${{ inputs.engine_v2_fb_2_0 }}
-      account: ${{ vars.FIREBOLT_ACCOUNT_V2 }}
-      run_setup: false
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}

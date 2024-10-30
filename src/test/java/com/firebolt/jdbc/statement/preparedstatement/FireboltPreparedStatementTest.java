@@ -8,6 +8,8 @@ import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.array.FireboltArray;
+import com.firebolt.jdbc.type.lob.FireboltBlob;
+import com.firebolt.jdbc.type.lob.FireboltClob;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,9 +27,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.sql.rowset.serial.SerialBlob;
-import javax.sql.rowset.serial.SerialClob;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
@@ -89,13 +90,6 @@ class FireboltPreparedStatementTest {
 		void set(PreparedStatement statement, int index, T value) throws SQLException;
 	}
 
-	private static class SerialNClob extends SerialClob implements NClob {
-		public SerialNClob(char[] ch) throws SQLException {
-			super(ch);
-		}
-	}
-
-
 	private static Stream<Arguments> unsupported() {
 		return Stream.of(
 					Arguments.of("setRef", (Executable) () -> statement.setRef(1, mock(Ref.class))),
@@ -114,7 +108,7 @@ class FireboltPreparedStatementTest {
 				Arguments.of("setClob((Clob)null)", (Setter) statement -> statement.setClob(1, (Clob)null), "NULL"),
 				Arguments.of("setClob((Reader)null)", (Setter) statement -> statement.setClob(1, (Reader)null), "NULL"),
 				Arguments.of("setClob((Reader)null, length)", (Setter) statement -> statement.setClob(1, null, 1L), "NULL"),
-				Arguments.of("setClob(Reader)", (Setter) statement -> statement.setClob(1, new SerialClob("hello".toCharArray())), "'hello'"),
+				Arguments.of("setClob(Reader)", (Setter) statement -> statement.setClob(1, new FireboltClob("hello".toCharArray())), "'hello'"),
 				Arguments.of("setClob(Reader, length=)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 5), "'hello'"),
 				Arguments.of("setClob(Reader, length-1)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 4), "'hell'"),
 				Arguments.of("setClob(Reader, length+1)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 6), "'hello'"),
@@ -125,7 +119,7 @@ class FireboltPreparedStatementTest {
 				Arguments.of("setNClob((NClob)null)", (Setter) statement -> statement.setNClob(1, (NClob)null), "NULL"),
 				Arguments.of("setNClob((Reader)null)", (Setter) statement -> statement.setNClob(1, (Reader)null), "NULL"),
 				Arguments.of("setNClob((Reader)null, length)", (Setter) statement -> statement.setNClob(1, null, 1L), "NULL"),
-				Arguments.of("setClob(Reader)", (Setter) statement -> statement.setNClob(1, new SerialNClob("hello".toCharArray())), "'hello'"),
+				Arguments.of("setClob(Reader)", (Setter) statement -> statement.setNClob(1, new FireboltClob("hello".toCharArray())), "'hello'"),
 				Arguments.of("setNClob(Reader, length=)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 5), "'hello'"),
 				Arguments.of("setNClob(Reader, length-1)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 4), "'hell'"),
 				Arguments.of("setNClob(Reader, length+1)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 6), "'hello'"),
@@ -136,7 +130,7 @@ class FireboltPreparedStatementTest {
 				Arguments.of("setBlob((Blob)null)", (Setter) statement -> statement.setBlob(1, (Blob)null), "NULL"),
 				Arguments.of("setBClob((InputStream)null)", (Setter) statement -> statement.setBlob(1, (InputStream)null), "NULL"),
 				Arguments.of("setBClob((InputStream)null, length)", (Setter) statement -> statement.setBlob(1, null, 1L), "NULL"),
-				Arguments.of("setBlob((Clob)null)", (Setter) statement -> statement.setBlob(1, new SerialBlob("hello".getBytes())), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
+				Arguments.of("setBlob((Clob)null)", (Setter) statement -> statement.setBlob(1, new FireboltBlob("hello".getBytes())), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
 
 				Arguments.of("setCharacterStream(null)", (Setter) statement -> statement.setCharacterStream(1, null), "NULL"),
 				Arguments.of("setCharacterStream(null, int)", (Setter) statement -> statement.setCharacterStream(1, null, 1), "NULL"),
@@ -207,7 +201,7 @@ class FireboltPreparedStatementTest {
 	void beforeEach() throws SQLException {
 		when(connection.getSessionProperties()).thenReturn(properties);
 		lenient().when(properties.getBufferSize()).thenReturn(10);
-		lenient().when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(Optional.empty());
+		lenient().when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
 	}
 
 	@AfterEach
@@ -224,7 +218,7 @@ class FireboltPreparedStatementTest {
 	})
 	void getMetadata(String query, boolean expectedResultSet) throws SQLException {
 		StatementClient statementClient = mock(StatementClient.class);
-		when(statementClient.executeSqlStatement(any(), any(), anyBoolean(), anyInt(), anyBoolean())).thenReturn(new ByteArrayInputStream(new byte[0]));
+		when(statementClient.executeSqlStatement(any(), any(), anyBoolean(), anyInt())).thenReturn(new ByteArrayInputStream(new byte[0]));
 		statement = new FireboltPreparedStatement(new FireboltStatementService(statementClient), connection, query);
 		assertNull(statement.getMetaData());
 		statement.setObject(1, null);
@@ -250,7 +244,7 @@ class FireboltPreparedStatementTest {
 		statement.setArray(7, new FireboltArray(FireboltDataType.TEXT, new String[] {"sedan", "hatchback", "coupe"}));
 		statement.setBytes(8, "HarryFord".getBytes());
 		statement.execute();
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (500,'Ford','FOCUS',NULL,NULL,'sedan',['sedan','hatchback','coupe'],E'\\x48\\x61\\x72\\x72\\x79\\x46\\x6f\\x72\\x64'::BYTEA)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
@@ -268,7 +262,7 @@ class FireboltPreparedStatementTest {
 		statement.setArray(7, new FireboltArray(FireboltDataType.TEXT, new String[] {"sedan", "hatchback", "coupe"}));
 		statement.setBytes(8, null);
 		statement.execute();
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (500,'Ford','FOCUS',NULL,NULL,'sedan',['sedan','hatchback','coupe'],NULL)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
@@ -279,8 +273,32 @@ class FireboltPreparedStatementTest {
 		statement = createStatementWithSql("INSERT INTO data (field) VALUES (?)");
 		setter.set(statement);
 		statement.execute();
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals(format("INSERT INTO data (field) VALUES (%s)", expected), queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
+
+	@Test
+	void setFailingCharacterStream() throws IOException {
+		statement = createStatementWithSql("INSERT INTO data (field) VALUES (?)");
+		Reader reader = mock(Reader.class);
+		when(reader.read(any(), anyInt(), anyInt())).thenThrow(new IOException());
+		assertEquals(IOException.class, assertThrows(SQLException.class, () -> statement.setCharacterStream(1, reader)).getCause().getClass());
+	}
+
+	@Test
+	void setFailingBinaryStream() throws IOException {
+		statement = createStatementWithSql("INSERT INTO data (field) VALUES (?)");
+		InputStream is = mock(InputStream.class);
+		when(is.readAllBytes()).thenThrow(new IOException());
+		assertEquals(IOException.class, assertThrows(SQLException.class, () -> statement.setBinaryStream(1, is)).getCause().getClass());
+	}
+
+	@Test
+	void setFailingLimitedBinaryStream() throws IOException {
+		statement = createStatementWithSql("INSERT INTO data (field) VALUES (?)");
+		InputStream is = mock(InputStream.class);
+		when(is.readNBytes(1024)).thenThrow(new IOException());
+		assertEquals(IOException.class, assertThrows(SQLException.class, () -> statement.setBinaryStream(1, is, 1024)).getCause().getClass());
 	}
 
 	@Test
@@ -294,7 +312,7 @@ class FireboltPreparedStatementTest {
 		statement.setObject(2, "Tesla");
 		statement.addBatch();
 		statement.executeBatch();
-		verify(fireboltStatementService, times(2)).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService, times(2)).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals("INSERT INTO cars (sales, make) VALUES (150,'Ford')",
 				queryInfoWrapperArgumentCaptor.getAllValues().get(0).getSql());
 		assertEquals("INSERT INTO cars (sales, make) VALUES (300,'Tesla')",
@@ -324,7 +342,7 @@ class FireboltPreparedStatementTest {
 		String expectedSql = "INSERT INTO cars (model ,sales, make) VALUES ('?',' ?','(?:^|[^\\\\p{L}\\\\p{N}])(?i)(phone)(?:[^\\\\p{L}\\\\p{N}]|$)')";
 
 		statement.execute();
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals(expectedSql, queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
@@ -339,7 +357,22 @@ class FireboltPreparedStatementTest {
 	}
 
 	@Test
-	void shouldThrowsExceptionWhenTryingToExecuteUpdate() throws SQLException {
+	void shouldExecuteUpdate() throws SQLException {
+		statement  = createStatementWithSql("update cars set sales = ? where make = ?");
+
+		statement.setObject(1, 150);
+		statement.setObject(2, "Ford");
+
+		assertEquals(0, statement.executeUpdate()); // we are not able to return number of affected lines right now
+
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
+		assertEquals("update cars set sales = 150 where make = 'Ford'",
+				queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
+
+
+	@Test
+	void shouldThrowsExceptionWhenTryingToExecuteUpdateWithQuery() throws SQLException {
 		statement  = createStatementWithSql("update cars set sales = ? where make = ?");
 
 		statement.setObject(1, 150);
@@ -357,7 +390,7 @@ class FireboltPreparedStatementTest {
 		statement.setNull(2, 0);
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals("INSERT INTO cars (sales, make) VALUES (NULL,NULL)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
@@ -369,7 +402,7 @@ class FireboltPreparedStatementTest {
 		statement.setBoolean(1, true);
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals("INSERT INTO cars(available) VALUES (1)", queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
@@ -385,7 +418,7 @@ class FireboltPreparedStatementTest {
 		statement.setURL(2, url);
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals(format("INSERT INTO companies (name, url) VALUES (%s,%s)", sqlQuote(name), sqlQuote(url)), queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
@@ -408,7 +441,7 @@ class FireboltPreparedStatementTest {
 		setter.set(statement, 1, value);
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 	}
 
 	@Test
@@ -419,7 +452,7 @@ class FireboltPreparedStatementTest {
 		statement.setDate(1, new Date(1564527600000L));
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals("INSERT INTO cars(release_date) VALUES ('2019-07-31')",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
@@ -432,7 +465,7 @@ class FireboltPreparedStatementTest {
 		statement.setDate(1, new Date(calendar.getTimeInMillis()), calendar);
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals("INSERT INTO cars(release_date) VALUES ('2024-04-19')",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
@@ -445,7 +478,7 @@ class FireboltPreparedStatementTest {
 		statement.setDate(1, new Date(1564527600000L), null);
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals("INSERT INTO cars(release_date) VALUES ('2019-07-31')",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
@@ -458,7 +491,7 @@ class FireboltPreparedStatementTest {
 		statement.setTimestamp(1, new Timestamp(calendar.getTimeInMillis()), calendar);
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals("INSERT INTO cars(release_date) VALUES ('2024-04-19 05:11:01')",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
@@ -471,7 +504,7 @@ class FireboltPreparedStatementTest {
 		statement.setTimestamp(1, new Timestamp(1564571713000L));
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals("INSERT INTO cars(release_date) VALUES ('2019-07-31 12:15:13')",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
@@ -484,7 +517,7 @@ class FireboltPreparedStatementTest {
 		statement.setTimestamp(1, null, calendar);
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals("INSERT INTO cars(release_date) VALUES (NULL)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
@@ -507,7 +540,7 @@ class FireboltPreparedStatementTest {
 
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals(
 				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,1,5)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
@@ -531,7 +564,7 @@ class FireboltPreparedStatementTest {
 
 		statement.execute();
 
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 
 		assertEquals(
 				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,1,5)",
@@ -589,8 +622,15 @@ class FireboltPreparedStatementTest {
 		statement = createStatementWithSql("INSERT INTO data (column) VALUES (?)");
 		assertThrows(SQLException.class, () -> statement.setObject(1, this));
 		// STRUCT is not supported now, so it can be used as an example of unsupported type
-		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setObject(1, this, Types.STRUCT));
-		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setObject(1, this, Types.STRUCT, 5));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setObject(1, "", Types.STRUCT));
+		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setObject(1, "", Types.STRUCT, 5));
+
+		// this test definitely cannot be passed to the prepared statement, so exception is expected here.
+		assertThrows(SQLException.class, () -> statement.setObject(1, this, Types.VARCHAR));
+		assertThrows(SQLException.class, () -> statement.setObject(1, this));
+
+		// unsupported SQL Type
+		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setObject(1, "", 999999));
 	}
 
 	private void shouldSetObjectWithCorrectSqlType(Object value, int type, Integer scale, String expected) throws SQLException {
@@ -601,7 +641,7 @@ class FireboltPreparedStatementTest {
 			statement.setObject(1, value, type, scale);
 		}
 		statement.execute();
-		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), anyBoolean(), any());
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 
 		assertEquals(format("INSERT INTO data (column) VALUES (%s)", expected), queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}

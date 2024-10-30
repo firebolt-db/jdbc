@@ -39,8 +39,18 @@ public class FireboltException extends SQLException {
 		this.errorMessageFromServer = errorMessageFromServer;
 	}
 
+	public FireboltException(String message, Integer httpStatusCode, String errorMessageFromServer, SQLState state) {
+		super(message, state.getCode());
+		type = getExceptionType(httpStatusCode);
+		this.errorMessageFromServer = errorMessageFromServer;
+	}
+
 	public FireboltException(String message, Throwable cause) {
 		this(message, cause, ExceptionType.ERROR);
+	}
+
+	public FireboltException(String message, Throwable cause, SQLState state) {
+		this(message, cause, ExceptionType.ERROR, state);
 	}
 
 	public FireboltException(String message, ExceptionType type) {
@@ -56,6 +66,18 @@ public class FireboltException extends SQLException {
 	public FireboltException(String message, Throwable cause, ExceptionType type) {
 		super(message, cause);
 		this.type = type;
+		errorMessageFromServer = null;
+	}
+
+	public FireboltException(String message, Throwable cause, ExceptionType type, SQLState state) {
+		super(message, state.getCode(), cause);
+		this.type = type;
+		errorMessageFromServer = null;
+	}
+
+	public FireboltException(String message, int httpStatusCode, SQLState state) {
+		super(message, state.getCode());
+		type = getExceptionType(httpStatusCode);
 		errorMessageFromServer = null;
 	}
 

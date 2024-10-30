@@ -47,7 +47,7 @@ public class SqlArrayUtil {
 		}
 	}
 
-    public SqlArrayUtil(ColumnType columnType, Markers markers) {
+    private SqlArrayUtil(ColumnType columnType, Markers markers) {
         this.columnType = columnType;
         this.markers  = markers;
     }
@@ -232,7 +232,7 @@ public class SqlArrayUtil {
 		return toString(arr);
 	}
 
-	private static String toString(Object[] arr) throws FireboltException {
+	private static String toString(Object[] arr) throws SQLException {
 		if (arr == null) {
 			return null;
 		}

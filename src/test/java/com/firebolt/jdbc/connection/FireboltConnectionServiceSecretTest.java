@@ -5,6 +5,7 @@ import com.firebolt.jdbc.client.gateway.GatewayUrlResponse;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
+import com.firebolt.jdbc.type.ParserVersion;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -100,7 +101,9 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         @SuppressWarnings("unchecked") FireboltAccountRetriever<GatewayUrlResponse> fireboltGatewayUrlClient = mock(FireboltAccountRetriever.class);
         when(fireboltGatewayUrlClient.retrieve(any(), any())).thenReturn(new GatewayUrlResponse(gatewayUrl));
         FireboltGatewayUrlService gatewayUrlService = new FireboltGatewayUrlService(fireboltGatewayUrlClient);
-        FireboltConnection connection = new FireboltConnectionServiceSecret(SYSTEM_ENGINE_URL, connectionProperties, fireboltAuthenticationService, gatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService);
+        FireboltConnection connection = new FireboltConnectionServiceSecret(SYSTEM_ENGINE_URL, connectionProperties,
+                fireboltAuthenticationService, gatewayUrlService, fireboltStatementService, fireboltEngineService,
+                fireboltAccountIdService, ParserVersion.CURRENT);
         FireboltProperties sessionProperties  = connection.getSessionProperties();
         assertEquals(expectedHost, sessionProperties.getHost());
         assertEquals(expectedProps == null ? Map.of() : Arrays.stream(expectedProps.split(";")).map(kv -> kv.split("=")).collect(toMap(kv -> kv[0], kv -> kv[1])), sessionProperties.getAdditionalProperties());
@@ -113,6 +116,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
     }
 
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
-        return new FireboltConnectionServiceSecret(url, props, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, fireboltAccountIdService);
+        return new FireboltConnectionServiceSecret(url, props, fireboltAuthenticationService, fireboltGatewayUrlService,
+                fireboltStatementService, fireboltEngineService, fireboltAccountIdService, ParserVersion.CURRENT);
     }
 }

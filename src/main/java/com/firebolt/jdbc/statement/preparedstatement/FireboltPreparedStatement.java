@@ -12,6 +12,7 @@ import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementUtil;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
+import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
 import com.firebolt.jdbc.util.InputStreamUtil;
 import lombok.CustomLog;
@@ -57,6 +58,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	private final RawStatementWrapper rawStatement;
 	private final List<Map<Integer, String>> rows;
 	private Map<Integer, String> providedParameters;
+	private final ParserVersion parserVersion;
 
 	public FireboltPreparedStatement(FireboltStatementService statementService, FireboltConnection connection, String sql) {
 		this(statementService, connection.getSessionProperties(), connection, sql);
@@ -70,6 +72,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		this.rawStatement = StatementUtil.parseToRawStatementWrapper(sql);
 		rawStatement.getSubStatements().forEach(statement -> createValidator(statement, connection).validate(statement));
 		this.rows = new ArrayList<>();
+		this.parserVersion = connection.getParserVersion();
 	}
 
 	@Override
@@ -155,7 +158,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public void setString(int parameterIndex, String x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.STRING.transform(x));
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.STRING.transform(x, parserVersion));
 	}
 
 	@Override
@@ -188,7 +191,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	@Override
-	public void clearParameters() throws SQLException {
+	public void clearParameters() {
 		providedParameters.clear();
 		rows.clear();
 	}
@@ -198,7 +201,8 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
 		try {
-			providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x, targetSqlType));
+			providedParameters.put(parameterIndex,
+							JavaTypeToFireboltSQLString.transformAny(x, targetSqlType, parserVersion));
 		} catch (FireboltException fbe) {
 			if (ExceptionType.TYPE_NOT_SUPPORTED.equals(fbe.getType())) {
 				throw new SQLFeatureNotSupportedException(fbe.getMessage(), fbe);
@@ -221,7 +225,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	@Override
-	public void addBatch() throws SQLException {
+	public void addBatch() {
 		rows.add(providedParameters);
 		providedParameters = new HashMap<>();
 	}
@@ -280,7 +284,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltException("Cannot call method executeUpdate(String sql) on a PreparedStatement");
 	}
 
-	private void validateParamIndex(int paramIndex) throws FireboltException {
+	private void validateParamIndex(int paramIndex) throws SQLException {
 		if (rawStatement.getTotalParams() < paramIndex) {
 			throw new FireboltException(
 					format("Cannot set parameter as there is no parameter at index: %d for statement: %s",

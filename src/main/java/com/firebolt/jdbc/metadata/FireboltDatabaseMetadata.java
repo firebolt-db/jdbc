@@ -1,8 +1,7 @@
 package com.firebolt.jdbc.metadata;
 
+import com.firebolt.jdbc.GenericWrapper;
 import com.firebolt.jdbc.QueryResult;
-import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
-import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.resultset.column.Column;
@@ -21,9 +20,9 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -151,7 +150,7 @@ import static java.util.stream.Collectors.toList;
 
 @CustomLog
 @SuppressWarnings("java:S6204") // compatibility with JDK 11
-public class FireboltDatabaseMetadata implements DatabaseMetaData {
+public class FireboltDatabaseMetadata implements DatabaseMetaData, GenericWrapper {
 
 	private static final String TABLE = "TABLE";
 	private static final String VIEW = "VIEW";
@@ -192,24 +191,17 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 				rows.add(List.of(schemaDescription.getString(TABLE_SCHEM), schemaDescription.getString(TABLE_CATALOG)));
 			}
 		}
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(List.of(QueryResult.Column.builder().name(TABLE_SCHEM).type(TEXT).build(),
-						QueryResult.Column.builder().name(TABLE_CATALOG).type(TEXT).build()))
-				.rows(rows).build());
+		return createResultSet(Stream.of(entry(TABLE_SCHEM, TEXT), entry(TABLE_CATALOG, TEXT)), rows);
 	}
 
 	@Override
 	public ResultSet getTableTypes() throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(List.of(QueryResult.Column.builder().name(TABLE_TYPE).type(TEXT).build()))
-				.rows(List.of(List.of(TABLE), List.of(VIEW))).build());
+		return createResultSet(Stream.of(entry(TABLE_TYPE, TEXT)), List.of(List.of(TABLE), List.of(VIEW)));
 	}
 
 	@Override
 	public ResultSet getCatalogs() throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Collections.singletonList(QueryResult.Column.builder().name(TABLE_CAT).type(TEXT).build()))
-				.rows(Collections.singletonList(Collections.singletonList(connection.getCatalog()))).build());
+		return createResultSet(Stream.of(entry(TABLE_CAT, TEXT)), List.of(List.of(connection.getCatalog())));
 	}
 
 	@Override
@@ -218,54 +210,28 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	public String getDatabaseProductName() throws SQLException {
+	public String getDatabaseProductName() {
 		return "Firebolt";
 	}
 
 	@Override
-	public String getURL() throws SQLException {
+	public String getURL() {
 		return url;
 	}
 
 	@Override
-	public String getDriverName() throws SQLException {
+	public String getDriverName() {
 		return "Firebolt JDBC Driver";
 	}
 
 	@Override
-	public boolean supportsTransactionIsolationLevel(int level) throws SQLException {
+	public boolean supportsTransactionIsolationLevel(int level) {
 		return level == Connection.TRANSACTION_NONE;
 	}
 
 	@Override
 	public ResultSet getColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern)
 			throws SQLException {
-		List<QueryResult.Column> columns = Arrays.asList(
-				QueryResult.Column.builder().name(TABLE_CAT).type(TEXT).build(),
-				QueryResult.Column.builder().name(TABLE_SCHEM).type(TEXT).build(),
-				QueryResult.Column.builder().name(TABLE_NAME).type(TEXT).build(),
-				QueryResult.Column.builder().name(COLUMN_NAME).type(TEXT).build(),
-				QueryResult.Column.builder().name(DATA_TYPE).type(INTEGER).build(),
-				QueryResult.Column.builder().name(TYPE_NAME).type(TEXT).build(),
-				QueryResult.Column.builder().name(COLUMN_SIZE).type(INTEGER).build(),
-				QueryResult.Column.builder().name(BUFFER_LENGTH).type(INTEGER).build(),
-				QueryResult.Column.builder().name(DECIMAL_DIGITS).type(INTEGER).build(),
-				QueryResult.Column.builder().name(NUM_PREC_RADIX).type(INTEGER).build(),
-				QueryResult.Column.builder().name(NULLABLE).type(INTEGER).build(),
-				QueryResult.Column.builder().name(REMARKS).type(TEXT).build(),
-				QueryResult.Column.builder().name(COLUMN_DEF).type(TEXT).build(),
-				QueryResult.Column.builder().name(SQL_DATA_TYPE).type(INTEGER).build(),
-				QueryResult.Column.builder().name(SQL_DATETIME_SUB).type(INTEGER).build(),
-				QueryResult.Column.builder().name(CHAR_OCTET_LENGTH).type(INTEGER).build(),
-				QueryResult.Column.builder().name(ORDINAL_POSITION).type(INTEGER).build(),
-				QueryResult.Column.builder().name(IS_NULLABLE).type(TEXT).build(),
-				QueryResult.Column.builder().name(SCOPE_CATALOG).type(TEXT).build(),
-				QueryResult.Column.builder().name(SCOPE_SCHEMA).type(TEXT).build(),
-				QueryResult.Column.builder().name(SCOPE_TABLE).type(TEXT).build(),
-				QueryResult.Column.builder().name(SOURCE_DATA_TYPE).type(INTEGER).build(),
-				QueryResult.Column.builder().name(IS_AUTOINCREMENT).type(TEXT).build(),
-				QueryResult.Column.builder().name(IS_GENERATEDCOLUMN).type(TEXT).build());
-
 		List<List<?>> rows = new ArrayList<>();
 		String query = MetadataUtil.getColumnsQuery(catalog, schemaPattern, tableNamePattern, columnNamePattern);
 		try (Statement statement = connection.createStatement();
@@ -301,7 +267,33 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 						"NO", // IS_AUTOINCREMENT - Not supported
 						"NO")); // IS_GENERATEDCOLUMN - Not supported
 			}
-			return FireboltResultSet.of(QueryResult.builder().rows(rows).columns(columns).build());
+			return createResultSet(
+					Stream.of(
+							entry(TABLE_CAT, TEXT),
+							entry(TABLE_SCHEM, TEXT),
+							entry(TABLE_NAME, TEXT),
+							entry(COLUMN_NAME, TEXT),
+							entry(DATA_TYPE, INTEGER),
+							entry(TYPE_NAME, TEXT),
+							entry(COLUMN_SIZE, INTEGER),
+							entry(BUFFER_LENGTH, INTEGER),
+							entry(DECIMAL_DIGITS, INTEGER),
+							entry(NUM_PREC_RADIX, INTEGER),
+							entry(NULLABLE, INTEGER),
+							entry(REMARKS, TEXT),
+							entry(COLUMN_DEF, TEXT),
+							entry(SQL_DATA_TYPE, INTEGER),
+							entry(SQL_DATETIME_SUB, INTEGER),
+							entry(CHAR_OCTET_LENGTH, INTEGER),
+							entry(ORDINAL_POSITION, INTEGER),
+							entry(IS_NULLABLE, TEXT),
+							entry(SCOPE_CATALOG, TEXT),
+							entry(SCOPE_SCHEMA, TEXT),
+							entry(SCOPE_TABLE, TEXT),
+							entry(SOURCE_DATA_TYPE, INTEGER),
+							entry(IS_AUTOINCREMENT, TEXT),
+							entry(IS_GENERATEDCOLUMN, TEXT)),
+					rows);
 		}
 	}
 
@@ -320,10 +312,10 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public ResultSet getTables(String catalog, String schemaPattern, String tableNamePattern, String[] typesArr) throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Stream.of(TABLE_CAT, TABLE_SCHEM, TABLE_NAME, TABLE_TYPE, REMARKS, TYPE_CAT, TYPE_SCHEM, TYPE_NAME, SELF_REFERENCING_COL_NAME, REF_GENERATION)
-						.map(name -> QueryResult.Column.builder().name(name).type(TEXT).build()).collect(toList()))
-				.rows(getTablesData(catalog, schemaPattern, tableNamePattern, typesArr)).build());
+		return createResultSet(
+				Stream.of(TABLE_CAT, TABLE_SCHEM, TABLE_NAME, TABLE_TYPE, REMARKS, TYPE_CAT, TYPE_SCHEM, TYPE_NAME, SELF_REFERENCING_COL_NAME, REF_GENERATION)
+						.map(name -> entry(name, TEXT)),
+				getTablesData(catalog, schemaPattern, tableNamePattern, typesArr));
 	}
 
 	private List<List<?>> getTablesData(String catalog, String schemaPattern, String tableNamePattern, String[] typesArr) throws SQLException {
@@ -353,26 +345,6 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 
 	@Override
 	public ResultSet getTypeInfo() throws SQLException {
-		List<QueryResult.Column> columns = Arrays.asList(
-				QueryResult.Column.builder().name(TYPE_NAME).type(TEXT).build(),
-				QueryResult.Column.builder().name(DATA_TYPE).type(INTEGER).build(),
-				QueryResult.Column.builder().name(PRECISION).type(INTEGER).build(),
-				QueryResult.Column.builder().name(LITERAL_PREFIX).type(TEXT).build(),
-				QueryResult.Column.builder().name(LITERAL_SUFFIX).type(TEXT).build(),
-				QueryResult.Column.builder().name(CREATE_PARAMS).type(TEXT).build(),
-				QueryResult.Column.builder().name(NULLABLE).type(INTEGER).build(),
-				QueryResult.Column.builder().name(CASE_SENSITIVE).type(BOOLEAN).build(),
-				QueryResult.Column.builder().name(SEARCHABLE).type(INTEGER).build(),
-				QueryResult.Column.builder().name(UNSIGNED_ATTRIBUTE).type(BOOLEAN).build(),
-				QueryResult.Column.builder().name(FIXED_PREC_SCALE).type(BOOLEAN).build(),
-				QueryResult.Column.builder().name(AUTO_INCREMENT).type(BOOLEAN).build(),
-				QueryResult.Column.builder().name(LOCAL_TYPE_NAME).type(TEXT).build(),
-				QueryResult.Column.builder().name(MINIMUM_SCALE).type(INTEGER).build(),
-				QueryResult.Column.builder().name(MAXIMUM_SCALE).type(INTEGER).build(),
-				QueryResult.Column.builder().name(SQL_DATA_TYPE).type(INTEGER).build(),
-				QueryResult.Column.builder().name(SQL_DATETIME_SUB).type(INTEGER).build(),
-				QueryResult.Column.builder().name(NUM_PREC_RADIX).type(INTEGER).build());
-
 		List<FireboltDataType> usableTypes = Arrays.asList(INTEGER, BIG_INT, REAL, DOUBLE_PRECISION, TEXT, DATE,
 				TIMESTAMP, NUMERIC, ARRAY, TUPLE, BYTEA, BOOLEAN);
 		List<List<?>> rows = usableTypes.stream().map(type ->
@@ -400,7 +372,27 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 						COMMON_RADIX))
 				.collect(toList());
 
-		return FireboltResultSet.of(QueryResult.builder().columns(columns).rows(rows).build());
+		return createResultSet(
+				Stream.of(
+						entry(TYPE_NAME, TEXT),
+						entry(DATA_TYPE, INTEGER),
+						entry(PRECISION, INTEGER),
+						entry(LITERAL_PREFIX, TEXT),
+						entry(LITERAL_SUFFIX, TEXT),
+						entry(CREATE_PARAMS, TEXT),
+						entry(NULLABLE, INTEGER),
+						entry(CASE_SENSITIVE, BOOLEAN),
+						entry(SEARCHABLE, INTEGER),
+						entry(UNSIGNED_ATTRIBUTE, BOOLEAN),
+						entry(FIXED_PREC_SCALE, BOOLEAN),
+						entry(AUTO_INCREMENT, BOOLEAN),
+						entry(LOCAL_TYPE_NAME, TEXT),
+						entry(MINIMUM_SCALE, INTEGER),
+						entry(MAXIMUM_SCALE, INTEGER),
+						entry(SQL_DATA_TYPE, INTEGER),
+						entry(SQL_DATETIME_SUB, INTEGER),
+						entry(NUM_PREC_RADIX, INTEGER)),
+				rows);
 	}
 
 	@Override
@@ -434,45 +426,32 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	public int getJDBCMajorVersion() throws SQLException {
+	public int getJDBCMajorVersion() {
 		return VersionUtil.extractMajorVersion(VersionUtil.getSpecificationVersion());
 	}
 
 	@Override
-	public int getJDBCMinorVersion() throws SQLException {
+	public int getJDBCMinorVersion() {
 		return VersionUtil.extractMinorVersion(VersionUtil.getSpecificationVersion());
 	}
 
 	@Override
-	public String getDriverVersion() throws SQLException {
+	public String getDriverVersion() {
 		return VersionUtil.getDriverVersion();
 	}
 
 	@Override
-	public boolean isWrapperFor(Class<?> iface) throws SQLException {
-		return iface.isAssignableFrom(getClass());
-	}
-
-	@Override
-	public <T> T unwrap(Class<T> iface) throws SQLException {
-		if (isWrapperFor(iface)) {
-			return iface.cast(this);
-		}
-		throw new SQLException("Cannot unwrap to " + iface.getName());
-	}
-
-	@Override
-	public boolean allProceduresAreCallable() throws SQLException {
+	public boolean allProceduresAreCallable() {
 		return false;
 	}
 
 	@Override
-	public boolean allTablesAreSelectable() throws SQLException {
+	public boolean allTablesAreSelectable() {
 		return true;
 	}
 
 	@Override
-	public String getUserName() throws SQLException {
+	public String getUserName() {
 		return connection.getSessionProperties().getPrincipal();
 	}
 
@@ -482,77 +461,77 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	public boolean nullsAreSortedHigh() throws SQLException {
+	public boolean nullsAreSortedHigh() {
 		return false;
 	}
 
 	@Override
-	public boolean nullsAreSortedLow() throws SQLException {
+	public boolean nullsAreSortedLow() {
 		return !nullsAreSortedHigh();
 	}
 
 	@Override
-	public boolean nullsAreSortedAtStart() throws SQLException {
+	public boolean nullsAreSortedAtStart() {
 		return false;
 	}
 
 	@Override
-	public boolean nullsAreSortedAtEnd() throws SQLException {
+	public boolean nullsAreSortedAtEnd() {
 		return !nullsAreSortedAtStart();
 	}
 
 	@Override
-	public boolean usesLocalFiles() throws SQLException {
+	public boolean usesLocalFiles() {
 		return false;
 	}
 
 	@Override
-	public boolean usesLocalFilePerTable() throws SQLException {
+	public boolean usesLocalFilePerTable() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsMixedCaseIdentifiers() throws SQLException {
+	public boolean supportsMixedCaseIdentifiers() {
 		return false;
 	}
 
 	@Override
-	public boolean storesUpperCaseIdentifiers() throws SQLException {
+	public boolean storesUpperCaseIdentifiers() {
 		return false;
 	}
 
 	@Override
-	public boolean storesLowerCaseIdentifiers() throws SQLException {
+	public boolean storesLowerCaseIdentifiers() {
 		return true;
 	}
 
 	@Override
-	public boolean storesMixedCaseIdentifiers() throws SQLException {
+	public boolean storesMixedCaseIdentifiers() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsMixedCaseQuotedIdentifiers() throws SQLException {
+	public boolean supportsMixedCaseQuotedIdentifiers() {
 		return true;
 	}
 
 	@Override
-	public boolean storesUpperCaseQuotedIdentifiers() throws SQLException {
+	public boolean storesUpperCaseQuotedIdentifiers() {
 		return false;
 	}
 
 	@Override
-	public boolean storesLowerCaseQuotedIdentifiers() throws SQLException {
+	public boolean storesLowerCaseQuotedIdentifiers() {
 		return false;
 	}
 
 	@Override
-	public boolean storesMixedCaseQuotedIdentifiers() throws SQLException {
+	public boolean storesMixedCaseQuotedIdentifiers() {
 		return true;
 	}
 
 	@Override
-	public String getIdentifierQuoteString() throws SQLException {
+	public String getIdentifierQuoteString() {
 		return "\"";
 	}
 
@@ -587,102 +566,101 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	}
 
 	@Override
-	public String getSearchStringEscape() throws SQLException {
+	public String getSearchStringEscape() {
 		return "\\";
 	}
 
 	/**
 	 * Returns empty string for compatibility with PostgreSQL.
 	 * @return empty string
-	 * @throws SQLException - if fact does not throw exception because the implementation is trivial
 	 */
 	@Override
-	public String getExtraNameCharacters() throws SQLException {
+	public String getExtraNameCharacters() {
 		return "";
 	}
 
 	@Override
-	public boolean supportsAlterTableWithAddColumn() throws SQLException {
+	public boolean supportsAlterTableWithAddColumn() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsAlterTableWithDropColumn() throws SQLException {
+	public boolean supportsAlterTableWithDropColumn() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsColumnAliasing() throws SQLException {
+	public boolean supportsColumnAliasing() {
 		return true;
 	}
 
 	@Override
-	public boolean nullPlusNonNullIsNull() throws SQLException {
+	public boolean nullPlusNonNullIsNull() {
 		return true;
 	}
 
 	@Override
-	public boolean supportsConvert() throws SQLException {
+	public boolean supportsConvert() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsConvert(int fromType, int toType) throws SQLException {
+	public boolean supportsConvert(int fromType, int toType) {
 		return false;
 	}
 
 	@Override
-	public boolean supportsTableCorrelationNames() throws SQLException {
+	public boolean supportsTableCorrelationNames() {
 		return true;
 	}
 
 	@Override
-	public boolean supportsDifferentTableCorrelationNames() throws SQLException {
+	public boolean supportsDifferentTableCorrelationNames() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsExpressionsInOrderBy() throws SQLException {
+	public boolean supportsExpressionsInOrderBy() {
 		return true;
 	}
 
 	@Override
-	public boolean supportsOrderByUnrelated() throws SQLException {
+	public boolean supportsOrderByUnrelated() {
 		return true;
 	}
 
 	@Override
-	public boolean supportsGroupBy() throws SQLException {
+	public boolean supportsGroupBy() {
 		return true;
 	}
 
 	@Override
-	public boolean supportsGroupByUnrelated() throws SQLException {
+	public boolean supportsGroupByUnrelated() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsGroupByBeyondSelect() throws SQLException {
+	public boolean supportsGroupByBeyondSelect() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsLikeEscapeClause() throws SQLException {
+	public boolean supportsLikeEscapeClause() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsMultipleResultSets() throws SQLException {
+	public boolean supportsMultipleResultSets() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsMultipleTransactions() throws SQLException {
+	public boolean supportsMultipleTransactions() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsNonNullableColumns() throws SQLException {
+	public boolean supportsNonNullableColumns() {
 		return true;
 	}
 
@@ -694,7 +672,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
      * @throws SQLException - actually never throws
      */
 	@Override
-	public boolean supportsMinimumSQLGrammar() throws SQLException {
+	public boolean supportsMinimumSQLGrammar() {
 		return true;
 	}
 
@@ -702,363 +680,357 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	 * Does this driver support the Core ODBC SQL grammar. We need SQL-92 conformance for this.
 	 *
 	 * @return false
-	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public boolean supportsCoreSQLGrammar() throws SQLException {
+	public boolean supportsCoreSQLGrammar() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsExtendedSQLGrammar() throws SQLException {
+	public boolean supportsExtendedSQLGrammar() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsANSI92EntryLevelSQL() throws SQLException {
+	public boolean supportsANSI92EntryLevelSQL() {
 		// We do not support it (eg: we would need to be compliant with JDBC and support 'schema')
 		return false;
 	}
 
 	@Override
-	public boolean supportsANSI92IntermediateSQL() throws SQLException {
+	public boolean supportsANSI92IntermediateSQL() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsANSI92FullSQL() throws SQLException {
+	public boolean supportsANSI92FullSQL() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsIntegrityEnhancementFacility() throws SQLException {
+	public boolean supportsIntegrityEnhancementFacility() {
 		// Similar approach as pgjdbc: we assume it means supported constraints
 		return false;
 	}
 
 	@Override
-	public boolean supportsOuterJoins() throws SQLException {
+	public boolean supportsOuterJoins() {
 		return true;
 	}
 
 	@Override
-	public boolean supportsFullOuterJoins() throws SQLException {
+	public boolean supportsFullOuterJoins() {
 		return true;
 	}
 
 	@Override
-	public boolean supportsLimitedOuterJoins() throws SQLException {
+	public boolean supportsLimitedOuterJoins() {
 		return true;
 	}
 
 	@Override
-	public String getSchemaTerm() throws SQLException {
+	public String getSchemaTerm() {
 		return "schema";
 	}
 
 	@Override
-	public String getProcedureTerm() throws SQLException {
+	public String getProcedureTerm() {
 		return "procedure";
 	}
 
 	@Override
-	public String getCatalogTerm() throws SQLException {
+	public String getCatalogTerm() {
 		return "database";
 	}
 
 	@Override
-	public boolean isCatalogAtStart() throws SQLException {
+	public boolean isCatalogAtStart() {
 		// it is currently not supported but it will be soon
 		return false;
 	}
 
 	@Override
-	public String getCatalogSeparator() throws SQLException {
+	public String getCatalogSeparator() {
 		return ".";
 	}
 
 	@Override
-	public boolean supportsSchemasInDataManipulation() throws SQLException {
+	public boolean supportsSchemasInDataManipulation() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsSchemasInProcedureCalls() throws SQLException {
+	public boolean supportsSchemasInProcedureCalls() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsSchemasInTableDefinitions() throws SQLException {
+	public boolean supportsSchemasInTableDefinitions() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsSchemasInIndexDefinitions() throws SQLException {
+	public boolean supportsSchemasInIndexDefinitions() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsSchemasInPrivilegeDefinitions() throws SQLException {
+	public boolean supportsSchemasInPrivilegeDefinitions() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsCatalogsInDataManipulation() throws SQLException {
+	public boolean supportsCatalogsInDataManipulation() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsCatalogsInProcedureCalls() throws SQLException {
+	public boolean supportsCatalogsInProcedureCalls() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsCatalogsInTableDefinitions() throws SQLException {
+	public boolean supportsCatalogsInTableDefinitions() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsCatalogsInIndexDefinitions() throws SQLException {
+	public boolean supportsCatalogsInIndexDefinitions() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsCatalogsInPrivilegeDefinitions() throws SQLException {
+	public boolean supportsCatalogsInPrivilegeDefinitions() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsPositionedDelete() throws SQLException {
+	public boolean supportsPositionedDelete() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsPositionedUpdate() throws SQLException {
+	public boolean supportsPositionedUpdate() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsSelectForUpdate() throws SQLException {
+	public boolean supportsSelectForUpdate() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsStoredProcedures() throws SQLException {
+	public boolean supportsStoredProcedures() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsSubqueriesInComparisons() throws SQLException {
+	public boolean supportsSubqueriesInComparisons() {
 		return true;
 	}
 
 	@Override
-	public boolean supportsSubqueriesInExists() throws SQLException {
+	public boolean supportsSubqueriesInExists() {
 		return true;
 	}
 
 	@Override
-	public boolean supportsSubqueriesInIns() throws SQLException {
+	public boolean supportsSubqueriesInIns() {
 		return true;
 	}
 
 	@Override
-	public boolean supportsSubqueriesInQuantifieds() throws SQLException {
+	public boolean supportsSubqueriesInQuantifieds() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsCorrelatedSubqueries() throws SQLException {
+	public boolean supportsCorrelatedSubqueries() {
 		return true;
 	}
 
 	@Override
-	public boolean supportsUnion() throws SQLException {
+	public boolean supportsUnion() {
 		return true;
 	}
 
 	@Override
-	public boolean supportsUnionAll() throws SQLException {
+	public boolean supportsUnionAll() {
 		return true;
 	}
 
 	@Override
-	public boolean supportsOpenCursorsAcrossCommit() throws SQLException {
+	public boolean supportsOpenCursorsAcrossCommit() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsOpenCursorsAcrossRollback() throws SQLException {
+	public boolean supportsOpenCursorsAcrossRollback() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsOpenStatementsAcrossCommit() throws SQLException {
+	public boolean supportsOpenStatementsAcrossCommit() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsOpenStatementsAcrossRollback() throws SQLException {
+	public boolean supportsOpenStatementsAcrossRollback()  {
 		return false;
 	}
 
 	@Override
 	@SuppressWarnings("java:S4144") // identical implementation
-	public int getMaxBinaryLiteralLength() throws SQLException {
+	public int getMaxBinaryLiteralLength() {
 		return MAX_LITERAL_LENGTH;
 	}
 
 	@Override
 	@SuppressWarnings("java:S4144") // identical implementation
-	public int getMaxCharLiteralLength() throws SQLException {
+	public int getMaxCharLiteralLength() {
 		return MAX_LITERAL_LENGTH;
 	}
 
 	@Override
 	@SuppressWarnings("java:S4144") // identical implementation
-	public int getMaxColumnNameLength() throws SQLException {
+	public int getMaxColumnNameLength() {
 		return MAX_IDENTIFIER_LENGTH;
 	}
 
 	@Override
-	public int getMaxColumnsInGroupBy() throws SQLException {
+	public int getMaxColumnsInGroupBy() {
 		return 0x10000; //65536
 	}
 
 	/**
 	 * Indexes are not supported, so the value is irrelevant.
 	 * @return 0
-	 * @throws SQLException never thrown
 	 */
-	public int getMaxColumnsInIndex() throws SQLException {
+	public int getMaxColumnsInIndex() {
 		return 0;
 	}
 
 	@Override
-	public int getMaxColumnsInOrderBy() throws SQLException {
+	public int getMaxColumnsInOrderBy() {
 		return 16384;
 	}
 
 	@Override
-	public int getMaxColumnsInSelect() throws SQLException {
+	public int getMaxColumnsInSelect() {
 		return 8192;
 	}
 
 	@Override
-	public int getMaxColumnsInTable() throws SQLException {
+	public int getMaxColumnsInTable() {
 		return 1000;
 	}
 
 	@Override
-	public int getMaxConnections() throws SQLException {
+	public int getMaxConnections() {
 		return 0;
 	}
 
 	@Override
-	public int getMaxCursorNameLength() throws SQLException {
+	public int getMaxCursorNameLength() {
 		return 0;
 	}
 
 	@Override
-	public int getMaxIndexLength() throws SQLException {
-		return 0;
-	}
-
-	@Override
-	@SuppressWarnings("java:S4144") // identical implementation
-	public int getMaxSchemaNameLength() throws SQLException {
-		return MAX_IDENTIFIER_LENGTH;
-	}
-
-	@Override
-	public int getMaxProcedureNameLength() throws SQLException {
+	public int getMaxIndexLength() {
 		return 0;
 	}
 
 	@Override
 	@SuppressWarnings("java:S4144") // identical implementation
-	public int getMaxCatalogNameLength() throws SQLException {
+	public int getMaxSchemaNameLength() {
 		return MAX_IDENTIFIER_LENGTH;
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
-	public int getMaxRowSize() throws SQLException {
-		return 0;
-	}
-
-	@Override
-	@ExcludeFromJacocoGeneratedReport
-	public boolean doesMaxRowSizeIncludeBlobs() throws SQLException {
-		return false;
-	}
-
-	@Override
-	@ExcludeFromJacocoGeneratedReport
-	@NotImplemented
-	public int getMaxStatementLength() throws SQLException {
-		return 0;
-	}
-
-	@Override
-	public int getMaxStatements() throws SQLException {
+	public int getMaxProcedureNameLength() {
 		return 0;
 	}
 
 	@Override
 	@SuppressWarnings("java:S4144") // identical implementation
-	public int getMaxTableNameLength() throws SQLException {
+	public int getMaxCatalogNameLength() {
 		return MAX_IDENTIFIER_LENGTH;
 	}
 
 	@Override
-	public int getMaxTablesInSelect() throws SQLException {
+	public int getMaxRowSize() {
 		return 0;
 	}
 
 	@Override
-	public int getMaxUserNameLength() throws SQLException {
+	public boolean doesMaxRowSizeIncludeBlobs() {
+		return true;
+	}
+
+	@Override
+	public int getMaxStatementLength() {
+		return 0;
+	}
+
+	@Override
+	public int getMaxStatements() {
+		return 0;
+	}
+
+	@Override
+	@SuppressWarnings("java:S4144") // identical implementation
+	public int getMaxTableNameLength() {
 		return MAX_IDENTIFIER_LENGTH;
 	}
 
 	@Override
-	public int getDefaultTransactionIsolation() throws SQLException {
+	public int getMaxTablesInSelect() {
+		return 0;
+	}
+
+	@Override
+	@SuppressWarnings("java:S4144") // identical implementation
+	public int getMaxUserNameLength() {
+		return MAX_IDENTIFIER_LENGTH;
+	}
+
+	@Override
+	public int getDefaultTransactionIsolation() {
 		return Connection.TRANSACTION_NONE;
 	}
 
 	@Override
-	public boolean supportsTransactions() throws SQLException {
+	public boolean supportsTransactions() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsDataDefinitionAndDataManipulationTransactions() throws SQLException {
+	public boolean supportsDataDefinitionAndDataManipulationTransactions() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsDataManipulationTransactionsOnly() throws SQLException {
+	public boolean supportsDataManipulationTransactionsOnly() {
 		return false;
 	}
 
 	@Override
-	public boolean dataDefinitionCausesTransactionCommit() throws SQLException {
+	public boolean dataDefinitionCausesTransactionCommit() {
 		return false;
 	}
 
 	@Override
-	public boolean dataDefinitionIgnoredInTransactions() throws SQLException {
+	public boolean dataDefinitionIgnoredInTransactions() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsResultSetType(int type) throws SQLException {
+	public boolean supportsResultSetType(int type) {
 		return TYPE_FORWARD_ONLY == type;
 	}
 
 	@Override
-	public boolean supportsResultSetConcurrency(int type, int concurrency) throws SQLException {
+	public boolean supportsResultSetConcurrency(int type, int concurrency) {
 		return type == ResultSet.TYPE_FORWARD_ONLY && concurrency == ResultSet.CONCUR_READ_ONLY;
 	}
 
@@ -1067,79 +1039,79 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	 * since we do not support updating ResultSet objects
 	 */
 	@Override
-	public boolean ownUpdatesAreVisible(int type) throws SQLException {
+	public boolean ownUpdatesAreVisible(int type) {
 		return false;
 	}
 
 	@Override
-	public boolean ownDeletesAreVisible(int type) throws SQLException {
+	public boolean ownDeletesAreVisible(int type) {
 		return false;
 	}
 
 	@Override
-	public boolean ownInsertsAreVisible(int type) throws SQLException {
+	public boolean ownInsertsAreVisible(int type) {
 		return false;
 	}
 
 	@Override
-	public boolean othersUpdatesAreVisible(int type) throws SQLException {
+	public boolean othersUpdatesAreVisible(int type) {
 		return false;
 	}
 
 	@Override
-	public boolean othersDeletesAreVisible(int type) throws SQLException {
+	public boolean othersDeletesAreVisible(int type) {
 		return false;
 	}
 
 	@Override
-	public boolean othersInsertsAreVisible(int type) throws SQLException {
+	public boolean othersInsertsAreVisible(int type) {
 		return false;
 	}
 
 	@Override
-	public boolean updatesAreDetected(int type) throws SQLException {
+	public boolean updatesAreDetected(int type) {
 		return false;
 	}
 
 	@Override
-	public boolean deletesAreDetected(int type) throws SQLException {
+	public boolean deletesAreDetected(int type) {
 		return false;
 	}
 
 	@Override
-	public boolean insertsAreDetected(int type) throws SQLException {
+	public boolean insertsAreDetected(int type) {
 		return false;
 	}
 
 	@Override
-	public boolean supportsBatchUpdates() throws SQLException {
+	public boolean supportsBatchUpdates() {
 		// We support it partially (via FireboltPreparedStatement but not with the
 		// 'basic' FireboltStatement )
 		return false;
 	}
 
 	@Override
-	public boolean supportsSavepoints() throws SQLException {
+	public boolean supportsSavepoints() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsNamedParameters() throws SQLException {
+	public boolean supportsNamedParameters() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsMultipleOpenResults() throws SQLException {
+	public boolean supportsMultipleOpenResults() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsGetGeneratedKeys() throws SQLException {
+	public boolean supportsGetGeneratedKeys() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsResultSetHoldability(int holdability) throws SQLException {
+	public boolean supportsResultSetHoldability(int holdability) {
 		return holdability == ResultSet.HOLD_CURSORS_OVER_COMMIT;
 	}
 
@@ -1147,174 +1119,144 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 	 * Since Firebolt does not support transactions commit does not affect the existing {@code ResultSet} and therefore
 	 * it behaves as if it is held between transaction. Therefore, it returns {@link ResultSet#HOLD_CURSORS_OVER_COMMIT}
 	 * @return {@link ResultSet#HOLD_CURSORS_OVER_COMMIT}
-	 * @throws SQLException if something is going wrong
 	 */
 	@Override
-	public int getResultSetHoldability() throws SQLException {
+	public int getResultSetHoldability() {
 		return ResultSet.HOLD_CURSORS_OVER_COMMIT;
 	}
 
 	@Override
-	public int getSQLStateType() throws SQLException {
+	public int getSQLStateType() {
 		return sqlStateSQL;
 	}
 
 	@Override
-	public boolean locatorsUpdateCopy() throws SQLException {
+	public boolean locatorsUpdateCopy() {
 		return false;
 	}
 
 	@Override
-	public boolean supportsStatementPooling() throws SQLException {
+	public boolean supportsStatementPooling() {
 		return false;
 	}
 
 	@Override
-	public RowIdLifetime getRowIdLifetime() throws SQLException {
+	public RowIdLifetime getRowIdLifetime() {
 		return RowIdLifetime.ROWID_UNSUPPORTED;
 	}
 
 	@Override
-	public boolean supportsStoredFunctionsUsingCallSyntax() throws SQLException {
+	public boolean supportsStoredFunctionsUsingCallSyntax() {
 		return false;
 	}
 
 	@Override
-	public boolean autoCommitFailureClosesAllResultSets() throws SQLException {
+	public boolean autoCommitFailureClosesAllResultSets() {
 		return false;
 	}
 
 	@Override
 	public ResultSet getProcedureColumns(String catalog, String schemaPattern, String procedureNamePattern, String columnNamePattern) throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Stream.of(
-						entry(PROCEDURE_CAT, TEXT),
-						entry(PROCEDURE_SCHEM, TEXT),
-						entry(PROCEDURE_NAME, TEXT),
-						entry(COLUMN_NAME, TEXT),
-						entry(COLUMN_TYPE, INTEGER), // Short
-						entry(DATA_TYPE, INTEGER),
-						entry(TYPE_NAME, TEXT),
-						entry(PRECISION, INTEGER),
-						entry(LENGTH, INTEGER),
-						entry(SCALE, INTEGER), // short
-						entry(RADIX, INTEGER), // short
-						entry(NULLABLE, INTEGER), // short
-						entry(REMARKS, TEXT),
-						entry(COLUMN_DEF, TEXT),
-						entry(SQL_DATA_TYPE, INTEGER),
-						entry(SQL_DATETIME_SUB, INTEGER),
-						entry(CHAR_OCTET_LENGTH, INTEGER),
-						entry(ORDINAL_POSITION, INTEGER),
-						entry(IS_NULLABLE, TEXT),
-						entry(SPECIFIC_NAME, TEXT)
-				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
-				.rows(List.of())
-				.build());
+		return createEmptyResultSet(Stream.of(
+				entry(PROCEDURE_CAT, TEXT),
+				entry(PROCEDURE_SCHEM, TEXT),
+				entry(PROCEDURE_NAME, TEXT),
+				entry(COLUMN_NAME, TEXT),
+				entry(COLUMN_TYPE, INTEGER), // Short
+				entry(DATA_TYPE, INTEGER),
+				entry(TYPE_NAME, TEXT),
+				entry(PRECISION, INTEGER),
+				entry(LENGTH, INTEGER),
+				entry(SCALE, INTEGER), // short
+				entry(RADIX, INTEGER), // short
+				entry(NULLABLE, INTEGER), // short
+				entry(REMARKS, TEXT),
+				entry(COLUMN_DEF, TEXT),
+				entry(SQL_DATA_TYPE, INTEGER),
+				entry(SQL_DATETIME_SUB, INTEGER),
+				entry(CHAR_OCTET_LENGTH, INTEGER),
+				entry(ORDINAL_POSITION, INTEGER),
+				entry(IS_NULLABLE, TEXT),
+				entry(SPECIFIC_NAME, TEXT)
+		));
 	}
 
 	@Override
 	public ResultSet getUDTs(String catalog, String schemaPattern, String typeNamePattern, int[] types) throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Stream.of(
-						entry(TYPE_CAT, TEXT),
-						entry(TYPE_SCHEM, TEXT),
-						entry(TYPE_NAME, TEXT),
-						entry(CLASS_NAME, TEXT),
-						entry(DATA_TYPE, INTEGER),
-						entry(REMARKS, TEXT),
-						entry(BASE_TYPE, INTEGER) // short
-				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
-				.rows(List.of())
-				.build());
+		return createEmptyResultSet(Stream.of(
+				entry(TYPE_CAT, TEXT),
+				entry(TYPE_SCHEM, TEXT),
+				entry(TYPE_NAME, TEXT),
+				entry(CLASS_NAME, TEXT),
+				entry(DATA_TYPE, INTEGER),
+				entry(REMARKS, TEXT),
+				entry(BASE_TYPE, INTEGER) // short
+		));
 	}
 
 	@Override
 	public ResultSet getSuperTypes(String catalog, String schemaPattern, String typeNamePattern) throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Stream.of(
-						entry(TYPE_CAT, TEXT),
-						entry(TYPE_SCHEM, TEXT),
-						entry(TYPE_NAME, TEXT),
-						entry(SUPERTYPE_CAT, TEXT),
-						entry(SUPERTYPE_SCHEM, TEXT),
-						entry(SUPERTYPE_NAME, TEXT)
-				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
-				.rows(List.of())
-				.build());
+		return createEmptyResultSet(Stream.of(
+				entry(TYPE_CAT, TEXT),
+				entry(TYPE_SCHEM, TEXT),
+				entry(TYPE_NAME, TEXT),
+				entry(SUPERTYPE_CAT, TEXT),
+				entry(SUPERTYPE_SCHEM, TEXT),
+				entry(SUPERTYPE_NAME, TEXT)
+		));
 	}
 
 	@Override
 	public ResultSet getSuperTables(String catalog, String schemaPattern, String tableNamePattern) throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Stream.of(
-						entry(TYPE_CAT, TEXT),
-						entry(TYPE_SCHEM, TEXT),
-						entry(TYPE_NAME, TEXT),
-						entry(SUPERTABLE_NAME, TEXT)
-				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
-				.rows(List.of())
-				.build());
+		return createEmptyResultSet(Stream.of(
+				entry(TYPE_CAT, TEXT),
+				entry(TYPE_SCHEM, TEXT),
+				entry(TYPE_NAME, TEXT),
+				entry(SUPERTABLE_NAME, TEXT)
+		));
 	}
 
 	@Override
 	public ResultSet getAttributes(String catalog, String schemaPattern, String typeNamePattern, String attributeNamePattern) throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Stream.of(
-						entry(TYPE_CAT, TEXT),
-						entry(TYPE_SCHEM, TEXT),
-						entry(TYPE_NAME, TEXT),
-						entry(ATTR_NAME, TEXT),
-						entry(DATA_TYPE, INTEGER),
-						entry(ATTR_TYPE_NAME, TEXT),
-						entry(ATTR_SIZE, INTEGER),
-						entry(DECIMAL_DIGITS, INTEGER),
-						entry(NUM_PREC_RADIX, INTEGER),
-						entry(NULLABLE, INTEGER),
-						entry(REMARKS, TEXT),
-						entry(ATTR_DEF, TEXT),
-						entry(SQL_DATA_TYPE, INTEGER),
-						entry(SQL_DATETIME_SUB, INTEGER),
-						entry(CHAR_OCTET_LENGTH, INTEGER),
-						entry(ORDINAL_POSITION, INTEGER),
-						entry(IS_NULLABLE, TEXT),
-						entry(SCOPE_CATALOG, TEXT),
-						entry(SCOPE_SCHEMA, TEXT),
-						entry(SCOPE_TABLE, TEXT),
-						entry(SOURCE_DATA_TYPE, INTEGER) // short
-				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
-				.rows(List.of())
-				.build());
+		return createEmptyResultSet(Stream.of(
+				entry(TYPE_CAT, TEXT),
+				entry(TYPE_SCHEM, TEXT),
+				entry(TYPE_NAME, TEXT),
+				entry(ATTR_NAME, TEXT),
+				entry(DATA_TYPE, INTEGER),
+				entry(ATTR_TYPE_NAME, TEXT),
+				entry(ATTR_SIZE, INTEGER),
+				entry(DECIMAL_DIGITS, INTEGER),
+				entry(NUM_PREC_RADIX, INTEGER),
+				entry(NULLABLE, INTEGER),
+				entry(REMARKS, TEXT),
+				entry(ATTR_DEF, TEXT),
+				entry(SQL_DATA_TYPE, INTEGER),
+				entry(SQL_DATETIME_SUB, INTEGER),
+				entry(CHAR_OCTET_LENGTH, INTEGER),
+				entry(ORDINAL_POSITION, INTEGER),
+				entry(IS_NULLABLE, TEXT),
+				entry(SCOPE_CATALOG, TEXT),
+				entry(SCOPE_SCHEMA, TEXT),
+				entry(SCOPE_TABLE, TEXT),
+				entry(SOURCE_DATA_TYPE, INTEGER) // short
+		));
 	}
 
 	@Override
 	public ResultSet getProcedures(String catalog, String schemaPattern, String procedureNamePattern) throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Stream.of(
-						entry(PROCEDURE_CAT, TEXT),
-						entry(PROCEDURE_SCHEM, TEXT),
-						entry(PROCEDURE_NAME, TEXT),
-						entry(REMARKS, TEXT),
-						entry(PROCEDURE_TYPE, INTEGER), // short
-						entry(SPECIFIC_NAME, TEXT)
-				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
-				.rows(List.of())
-				.build());
+		return createEmptyResultSet(Stream.of(
+				entry(PROCEDURE_CAT, TEXT),
+				entry(PROCEDURE_SCHEM, TEXT),
+				entry(PROCEDURE_NAME, TEXT),
+				entry(REMARKS, TEXT),
+				entry(PROCEDURE_TYPE, INTEGER), // short
+				entry(SPECIFIC_NAME, TEXT)
+		));
 	}
 
 	@Override
 	public ResultSet getColumnPrivileges(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern) throws SQLException {
-		List<com.firebolt.jdbc.QueryResult.Column> columns = Stream.of(
-				entry(TABLE_CAT, TEXT),
-				entry(TABLE_SCHEM, TEXT),
-				entry(TABLE_NAME, TEXT),
-				entry(COLUMN_NAME, TEXT),
-				entry(GRANTOR, TEXT),
-				entry(GRANTEE, TEXT),
-				entry(PRIVILEGE, TEXT),
-				entry(IS_GRANTABLE, TEXT)
-		).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList());
-
 		List<List<?>> rows = new ArrayList<>();
 		String query = MetadataUtil.getColumnsQuery(catalog, schemaPattern, tableNamePattern, columnNamePattern);
 		try (Statement statement = connection.createStatement();
@@ -1330,21 +1272,20 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 						"NO")); // is_grantable
 			}
 		}
-		return FireboltResultSet.of(QueryResult.builder().columns(columns).rows(rows).build());
-	}
-
-	@Override
-	public ResultSet getTablePrivileges(String catalog, String schemaPattern, String tableNamePattern) throws SQLException {
-		List<com.firebolt.jdbc.QueryResult.Column> columns = Stream.of(
+		return createResultSet(Stream.of(
 				entry(TABLE_CAT, TEXT),
 				entry(TABLE_SCHEM, TEXT),
 				entry(TABLE_NAME, TEXT),
+				entry(COLUMN_NAME, TEXT),
 				entry(GRANTOR, TEXT),
 				entry(GRANTEE, TEXT),
 				entry(PRIVILEGE, TEXT),
 				entry(IS_GRANTABLE, TEXT)
-		).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList());
+		), rows);
+	}
 
+	@Override
+	public ResultSet getTablePrivileges(String catalog, String schemaPattern, String tableNamePattern) throws SQLException {
 		List<List<?>> rows = new ArrayList<>();
 		String query = MetadataUtil.getTablesQuery(catalog, schemaPattern, tableNamePattern, new String[] {"BASE TABLE", "DIMENSION", "FACT"});
 		try (Statement statement = connection.createStatement();
@@ -1359,172 +1300,122 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 						"NO")); // is_grantable
 			}
 		}
-		return FireboltResultSet.of(QueryResult.builder().columns(columns).rows(rows).build());
+		return createResultSet(Stream.of(
+				entry(TABLE_CAT, TEXT),
+				entry(TABLE_SCHEM, TEXT),
+				entry(TABLE_NAME, TEXT),
+				entry(GRANTOR, TEXT),
+				entry(GRANTEE, TEXT),
+				entry(PRIVILEGE, TEXT),
+				entry(IS_GRANTABLE, TEXT)
+		),  rows);
 	}
 
 	@Override
 	public ResultSet getBestRowIdentifier(String catalog, String schema, String table, int scope, boolean nullable) throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Stream.of(
-						entry(SCOPE, INTEGER), // short
-						entry(COLUMN_NAME, TEXT),
-						entry(DATA_TYPE, INTEGER),
-						entry(TYPE_NAME, TEXT),
-						entry(COLUMN_SIZE, INTEGER),
-						entry(BUFFER_LENGTH, INTEGER),
-						entry(DECIMAL_DIGITS, INTEGER), // short
-						entry(PSEUDO_COLUMN, INTEGER) // short
-				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
-				.rows(List.of())
-				.build());
+		return createEmptyResultSet(Stream.of(
+				entry(SCOPE, INTEGER), // short
+				entry(COLUMN_NAME, TEXT),
+				entry(DATA_TYPE, INTEGER),
+				entry(TYPE_NAME, TEXT),
+				entry(COLUMN_SIZE, INTEGER),
+				entry(BUFFER_LENGTH, INTEGER),
+				entry(DECIMAL_DIGITS, INTEGER), // short
+				entry(PSEUDO_COLUMN, INTEGER) // short
+		));
 	}
 
 	@Override
 	public ResultSet getVersionColumns(String catalog, String schema, String table) throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Stream.of(
-						entry(SCOPE, INTEGER), // short
-						entry(COLUMN_NAME, TEXT),
-						entry(DATA_TYPE, INTEGER),
-						entry(TYPE_NAME, TEXT),
-						entry(COLUMN_SIZE, INTEGER),
-						entry(BUFFER_LENGTH, INTEGER),
-						entry(DECIMAL_DIGITS, INTEGER), // short
-						entry(PSEUDO_COLUMN, INTEGER) // short
-				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
-				.rows(List.of())
-				.build());
+		return createEmptyResultSet(Stream.of(
+				entry(SCOPE, INTEGER), // short
+				entry(COLUMN_NAME, TEXT),
+				entry(DATA_TYPE, INTEGER),
+				entry(TYPE_NAME, TEXT),
+				entry(COLUMN_SIZE, INTEGER),
+				entry(BUFFER_LENGTH, INTEGER),
+				entry(DECIMAL_DIGITS, INTEGER), // short
+				entry(PSEUDO_COLUMN, INTEGER) // short
+		));
 	}
 
 	@Override
 	public ResultSet getPrimaryKeys(String catalog, String schema, String table) throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Stream.of(
-						entry(TABLE_CAT, TEXT),
-						entry(TABLE_SCHEM, TEXT),
-						entry(TABLE_NAME, TEXT),
-						entry(COLUMN_NAME, TEXT),
-						entry(KEY_SEQ, INTEGER), // short
-						entry(PK_NAME, TEXT)
-				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
-				.rows(List.of())
-				.build());
+		return createEmptyResultSet(Stream.of(
+				entry(TABLE_CAT, TEXT),
+				entry(TABLE_SCHEM, TEXT),
+				entry(TABLE_NAME, TEXT),
+				entry(COLUMN_NAME, TEXT),
+				entry(KEY_SEQ, INTEGER), // short
+				entry(PK_NAME, TEXT)
+		));
 	}
 
 	@Override
 	public ResultSet getImportedKeys(String catalog, String schema, String table) throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Stream.of(
-						entry(PKTABLE_CAT, TEXT),
-						entry(PKTABLE_SCHEM, TEXT),
-						entry(PKTABLE_NAME, TEXT),
-						entry(PKCOLUMN_NAME, TEXT),
-						entry(FKTABLE_CAT, TEXT),
-						entry(FKTABLE_SCHEM, TEXT),
-						entry(FKTABLE_NAME, TEXT),
-						entry(FKCOLUMN_NAME, TEXT),
-						entry(KEY_SEQ, INTEGER), // short
-						entry(UPDATE_RULE, INTEGER), // short
-						entry(DELETE_RULE, INTEGER), // short
-						entry(FK_NAME, TEXT),
-						entry(PK_NAME, TEXT),
-						entry(DEFERRABILITY, INTEGER) // short
-						).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
-				.rows(List.of())
-				.build());
+		return getKeys();
 	}
 
 	@Override
 	public ResultSet getExportedKeys(String catalog, String schema, String table) throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Stream.of(
-						entry(PKTABLE_CAT, TEXT),
-						entry(PKTABLE_SCHEM, TEXT),
-						entry(PKTABLE_NAME, TEXT),
-						entry(PKCOLUMN_NAME, TEXT),
-						entry(FKTABLE_CAT, TEXT),
-						entry(FKTABLE_SCHEM, TEXT),
-						entry(FKTABLE_NAME, TEXT),
-						entry(FKCOLUMN_NAME, TEXT),
-						entry(KEY_SEQ, INTEGER), // short
-						entry(UPDATE_RULE, INTEGER), // short
-						entry(DELETE_RULE, INTEGER), // short
-						entry(FK_NAME, TEXT),
-						entry(PK_NAME, TEXT),
-						entry(DEFERRABILITY, INTEGER) // short
-				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
-				.rows(List.of())
-				.build());
+		return getKeys();
 	}
-
 	@Override
 	public ResultSet getCrossReference(String parentCatalog, String parentSchema, String parentTable,
 			String foreignCatalog, String foreignSchema, String foreignTable) throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Stream.of(
-						entry(PKTABLE_CAT, TEXT),
-						entry(PKTABLE_SCHEM, TEXT),
-						entry(PKTABLE_NAME, TEXT),
-						entry(PKCOLUMN_NAME, TEXT),
-						entry(FKTABLE_CAT, TEXT),
-						entry(FKTABLE_SCHEM, TEXT),
-						entry(FKTABLE_NAME, TEXT),
-						entry(FKCOLUMN_NAME, TEXT),
-						entry(KEY_SEQ, INTEGER), // short
-						entry(UPDATE_RULE, INTEGER), // short
-						entry(DELETE_RULE, INTEGER), // short
-						entry(FK_NAME, TEXT),
-						entry(PK_NAME, TEXT),
-						entry(DEFERRABILITY, INTEGER) // short
-				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
-				.rows(List.of())
-				.build());
+		return getKeys();
+	}
+
+	private ResultSet getKeys() throws SQLException {
+		return createEmptyResultSet(Stream.of(
+				entry(PKTABLE_CAT, TEXT),
+				entry(PKTABLE_SCHEM, TEXT),
+				entry(PKTABLE_NAME, TEXT),
+				entry(PKCOLUMN_NAME, TEXT),
+				entry(FKTABLE_CAT, TEXT),
+				entry(FKTABLE_SCHEM, TEXT),
+				entry(FKTABLE_NAME, TEXT),
+				entry(FKCOLUMN_NAME, TEXT),
+				entry(KEY_SEQ, INTEGER), // short
+				entry(UPDATE_RULE, INTEGER), // short
+				entry(DELETE_RULE, INTEGER), // short
+				entry(FK_NAME, TEXT),
+				entry(PK_NAME, TEXT),
+				entry(DEFERRABILITY, INTEGER) // short
+		));
 	}
 
 	@Override
 	public ResultSet getIndexInfo(String catalog, String schema, String table, boolean unique, boolean approximate) throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Stream.of(
-						entry(TABLE_CAT, TEXT),
-						entry(TABLE_SCHEM, TEXT),
-						entry(TABLE_NAME, TEXT),
-						entry(NON_UNIQUE, BOOLEAN),
-						entry(INDEX_QUALIFIER, TEXT),
-						entry(INDEX_NAME, TEXT),
-						entry(TYPE, INTEGER), // short
-						entry(ORDINAL_POSITION, INTEGER), // short
-						entry(COLUMN_NAME, TEXT),
-						entry(ASC_OR_DESC, TEXT),
-						entry(CARDINALITY, BIG_INT), // long
-						entry(PAGES, BIG_INT), // long
-						entry(FILTER_CONDITION, INTEGER)
-				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
-				.rows(List.of())
-				.build());
+		return createEmptyResultSet(Stream.of(
+				entry(TABLE_CAT, TEXT),
+				entry(TABLE_SCHEM, TEXT),
+				entry(TABLE_NAME, TEXT),
+				entry(NON_UNIQUE, BOOLEAN),
+				entry(INDEX_QUALIFIER, TEXT),
+				entry(INDEX_NAME, TEXT),
+				entry(TYPE, INTEGER), // short
+				entry(ORDINAL_POSITION, INTEGER), // short
+				entry(COLUMN_NAME, TEXT),
+				entry(ASC_OR_DESC, TEXT),
+				entry(CARDINALITY, BIG_INT), // long
+				entry(PAGES, BIG_INT), // long
+				entry(FILTER_CONDITION, INTEGER)
+		));
 	}
 
 	@Override
 	public ResultSet getClientInfoProperties() throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Stream.of(
-						entry(NAME, TEXT),
-						entry(MAX_LEN, INTEGER),
-						entry(DEFAULT_VALUE, TEXT),
-						entry(DESCRIPTION, TEXT)
-				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
-				.rows(List.of())
-				.build());
+		return createEmptyResultSet(Stream.of(
+				entry(NAME, TEXT),
+				entry(MAX_LEN, INTEGER),
+				entry(DEFAULT_VALUE, TEXT),
+				entry(DESCRIPTION, TEXT)
+		));
 	}
 
 	@Override
 	public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern) throws SQLException {
-		List<QueryResult.Column> columns = Arrays.asList(
-				QueryResult.Column.builder().name(FUNCTION_CAT).type(TEXT).build(),
-				QueryResult.Column.builder().name(FUNCTION_SCHEM).type(TEXT).build(),
-				QueryResult.Column.builder().name(FUNCTION_NAME).type(TEXT).build(),
-				QueryResult.Column.builder().name(REMARKS).type(TEXT).build(),
-				QueryResult.Column.builder().name(FUNCTION_TYPE).type(INTEGER).build(),
-				QueryResult.Column.builder().name(SPECIFIC_NAME).type(TEXT).build());
 		Predicate<String> functionFilter = functionNamePattern == null ? f -> true : compile(functionNamePattern, CASE_INSENSITIVE).asPredicate();
 
 		List<List<?>> rows = Arrays.stream(String.join(",", getStringFunctions(), getNumericFunctions(), getTimeDateFunctions(), getSystemFunctions()).split(","))
@@ -1534,31 +1425,17 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 				.distinct() // some functions belong to different categories, e.g. TO_DATE is both date-time and string function
 				.map(function -> Arrays.asList(null, null, function, null, functionNoTable, function))
 				.collect(toList());
-		return FireboltResultSet.of(QueryResult.builder().columns(columns).rows(rows).build());
+		return createResultSet(Stream.of(
+				entry(FUNCTION_CAT, TEXT),
+				entry(FUNCTION_SCHEM, TEXT),
+				entry(FUNCTION_NAME, TEXT),
+				entry(REMARKS, TEXT),
+				entry(FUNCTION_TYPE, INTEGER),
+				entry(SPECIFIC_NAME, TEXT)), rows);
 	}
 
 	@Override
 	public ResultSet getFunctionColumns(String catalog, String schemaPattern, String functionNamePattern, String columnNamePattern) throws SQLException {
-
-		List<QueryResult.Column> columns = Arrays.asList(
-				QueryResult.Column.builder().name(FUNCTION_CAT).type(TEXT).build(),
-				QueryResult.Column.builder().name(FUNCTION_SCHEM).type(TEXT).build(),
-				QueryResult.Column.builder().name(FUNCTION_NAME).type(TEXT).build(),
-				QueryResult.Column.builder().name(COLUMN_NAME).type(TEXT).build(),
-				QueryResult.Column.builder().name(COLUMN_TYPE).type(INTEGER).build(),
-				QueryResult.Column.builder().name(DATA_TYPE).type(INTEGER).build(),
-				QueryResult.Column.builder().name(TYPE_NAME).type(TEXT).build(),
-				QueryResult.Column.builder().name(PRECISION).type(INTEGER).build(),
-				QueryResult.Column.builder().name(LENGTH).type(INTEGER).build(),
-				QueryResult.Column.builder().name(SCALE).type(INTEGER).build(),
-				QueryResult.Column.builder().name(RADIX).type(INTEGER).build(),
-				QueryResult.Column.builder().name(NULLABLE).type(INTEGER).build(),
-				QueryResult.Column.builder().name(REMARKS).type(TEXT).build(),
-				QueryResult.Column.builder().name(CHAR_OCTET_LENGTH).type(INTEGER).build(),
-				QueryResult.Column.builder().name(ORDINAL_POSITION).type(INTEGER).build(),
-				QueryResult.Column.builder().name(IS_NULLABLE).type(TEXT).build(),
-				QueryResult.Column.builder().name(SPECIFIC_NAME).type(TEXT).build()
-		);
 		Predicate<String> functionFilter = functionNamePattern == null ? f -> true : compile(functionNamePattern, CASE_INSENSITIVE).asPredicate();
 
 		List<List<?>> stringFunctions = Arrays.stream(String.join(",", getStringFunctions()).split(",")).map(String::trim).filter(functionFilter)
@@ -1594,31 +1471,56 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData {
 		};
 		List<List<?>> allFunctions = Stream.of(stringFunctions, numericFunctions, timeDateFunctions, systemFunctions).flatMap(Collection::stream).sorted(comparator).collect(toList());
 
-		return FireboltResultSet.of(QueryResult.builder().columns(columns).rows(allFunctions).build());
+		return createResultSet(Stream.of(
+				entry(FUNCTION_CAT, TEXT),
+				entry(FUNCTION_SCHEM, TEXT),
+				entry(FUNCTION_NAME, TEXT),
+				entry(COLUMN_NAME, TEXT),
+				entry(COLUMN_TYPE, INTEGER),
+				entry(DATA_TYPE, INTEGER),
+				entry(TYPE_NAME, TEXT),
+				entry(PRECISION, INTEGER),
+				entry(LENGTH, INTEGER),
+				entry(SCALE, INTEGER),
+				entry(RADIX, INTEGER),
+				entry(NULLABLE, INTEGER),
+				entry(REMARKS, TEXT),
+				entry(CHAR_OCTET_LENGTH, INTEGER),
+				entry(ORDINAL_POSITION, INTEGER),
+				entry(IS_NULLABLE, TEXT),
+				entry(SPECIFIC_NAME, TEXT)), allFunctions);
 	}
 	@Override
 	public ResultSet getPseudoColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern) throws SQLException {
-		return FireboltResultSet.of(QueryResult.builder()
-				.columns(Stream.of(
-						entry(TABLE_CAT, TEXT),
-						entry(TABLE_SCHEM, TEXT),
-						entry(TABLE_NAME, TEXT),
-						entry(COLUMN_NAME, TEXT),
-						entry(DATA_TYPE, INTEGER),
-						entry(COLUMN_SIZE, INTEGER),
-						entry(DECIMAL_DIGITS, INTEGER),
-						entry(NUM_PREC_RADIX, INTEGER),
-						entry(COLUMN_USAGE, TEXT),
-						entry(REMARKS, TEXT),
-						entry(CHAR_OCTET_LENGTH, INTEGER),
-						entry(IS_NULLABLE, TEXT)
-				).map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
-				.rows(List.of())
-				.build());
+		return createEmptyResultSet(Stream.of(
+				entry(TABLE_CAT, TEXT),
+				entry(TABLE_SCHEM, TEXT),
+				entry(TABLE_NAME, TEXT),
+				entry(COLUMN_NAME, TEXT),
+				entry(DATA_TYPE, INTEGER),
+				entry(COLUMN_SIZE, INTEGER),
+				entry(DECIMAL_DIGITS, INTEGER),
+				entry(NUM_PREC_RADIX, INTEGER),
+				entry(COLUMN_USAGE, TEXT),
+				entry(REMARKS, TEXT),
+				entry(CHAR_OCTET_LENGTH, INTEGER),
+				entry(IS_NULLABLE, TEXT)
+		));
 	}
 
 	@Override
-	public boolean generatedKeyAlwaysReturned() throws SQLException {
+	public boolean generatedKeyAlwaysReturned() {
 		return false;
+	}
+
+	private ResultSet createEmptyResultSet(Stream<Map.Entry<String, FireboltDataType>> columns) throws SQLException {
+		return createResultSet(columns, List.of());
+	}
+
+	private ResultSet createResultSet(Stream<Map.Entry<String, FireboltDataType>> columns, List<List<?>> rows) throws SQLException {
+		return FireboltResultSet.of(QueryResult.builder()
+				.columns(columns.map(e -> QueryResult.Column.builder().name(e.getKey()).type(e.getValue()).build()).collect(toList()))
+				.rows(rows)
+				.build());
 	}
 }

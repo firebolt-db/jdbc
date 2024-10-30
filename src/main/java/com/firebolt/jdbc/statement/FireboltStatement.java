@@ -1,7 +1,6 @@
 package com.firebolt.jdbc.statement;
 
 import com.firebolt.jdbc.JdbcBase;
-import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
@@ -85,9 +84,9 @@ public class FireboltStatement extends JdbcBase implements Statement {
 			}
 			for (int i = 0; i < statements.size(); i++) {
 				if (i == 0) {
-					resultSet = execute(statements.get(i), true, true);
+					resultSet = execute(statements.get(i));
 				} else {
-					execute(statements.get(i), true, true);
+					execute(statements.get(i));
 				}
 			}
 		} finally {
@@ -98,23 +97,24 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		return resultSet;
 	}
 
-	private Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper, boolean verifyNotCancelled, boolean isStandardSql) throws SQLException {
+	@SuppressWarnings("java:S2139") // TODO: Exceptions should be either logged or rethrown but not both
+	private Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper) throws SQLException {
 		createValidator(statementInfoWrapper.getInitialStatement(), connection).validate(statementInfoWrapper.getInitialStatement());
 		ResultSet resultSet = null;
-		if (!verifyNotCancelled || isStatementNotCancelled(statementInfoWrapper)) {
+		if (isStatementNotCancelled(statementInfoWrapper)) {
 			runningStatementLabel = statementInfoWrapper.getLabel();
 			synchronized (this) {
 				validateStatementIsNotClosed();
 			}
 			InputStream inputStream = null;
 			try {
-				log.info("Executing the statement with label {} : {}", statementInfoWrapper.getLabel(),
-						statementInfoWrapper.getSql());
+				log.debug("Executing the statement with label {} : {}", statementInfoWrapper.getLabel(),
+						sanitizeSql(statementInfoWrapper.getSql()));
 				if (statementInfoWrapper.getType() == StatementType.PARAM_SETTING) {
 					connection.addProperty(statementInfoWrapper.getParam());
 					log.debug("The property from the query {} was stored", runningStatementLabel);
 				} else {
-					Optional<ResultSet> currentRs = statementService.execute(statementInfoWrapper, sessionProperties, isStandardSql, this);
+					Optional<ResultSet> currentRs = statementService.execute(statementInfoWrapper, sessionProperties, this);
 					if (currentRs.isPresent()) {
 						resultSet = currentRs.get();
 						currentUpdateCount = -1; // Always -1 when returning a ResultSet
@@ -175,8 +175,6 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		try {
 			statementService.abortStatement(statementLabel, sessionProperties);
 			log.debug("Statement with label {} was aborted", statementLabel);
-		} catch (FireboltException e) {
-			throw e;
 		} catch (Exception e) {
 			throw new FireboltException("Could not abort statement", e);
 		} finally {
@@ -249,7 +247,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	public int getMaxRows() throws SQLException {
+	public int getMaxRows() {
 		return maxRows;
 	}
 
@@ -292,12 +290,12 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	public boolean isClosed() throws SQLException {
+	public boolean isClosed() {
 		return isClosed;
 	}
 
 	@Override
-	public synchronized ResultSet getResultSet() throws SQLException {
+	public synchronized ResultSet getResultSet() {
 		return firstUnclosedStatementResult != null ? firstUnclosedStatementResult.getResultSet() : null;
 	}
 
@@ -311,27 +309,27 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	public int getUpdateCount() throws SQLException {
+	public int getUpdateCount() {
 		return currentUpdateCount;
 	}
 
 	@Override
-	public void closeOnCompletion() throws SQLException {
+	public void closeOnCompletion() {
 		closeOnCompletion = true;
 	}
 
 	@Override
-	public boolean isCloseOnCompletion() throws SQLException {
+	public boolean isCloseOnCompletion() {
 		return closeOnCompletion;
 	}
 
 	@Override
-	public int getQueryTimeout() throws SQLException {
+	public int getQueryTimeout() {
 		return queryTimeout;
 	}
 
 	@Override
-	public void setQueryTimeout(int seconds) throws SQLException {
+	public void setQueryTimeout(int seconds) {
 		queryTimeout = seconds;
 	}
 
@@ -360,12 +358,12 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	public int getMaxFieldSize() throws SQLException {
+	public int getMaxFieldSize() {
 		return maxFieldSize;
 	}
 
 	@Override
-	public void setMaxFieldSize(int max) throws SQLException {
+	public void setMaxFieldSize(int max) {
 		maxFieldSize = max;
 	}
 
@@ -383,8 +381,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	@ExcludeFromJacocoGeneratedReport
-	public int getFetchDirection() throws SQLException {
+	public int getFetchDirection() {
 		return ResultSet.FETCH_FORWARD;
 	}
 
@@ -420,12 +417,12 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	public void addBatch(String sql) throws SQLException {
+	public void addBatch(String sql) {
 		batchStatements.add(sql);
 	}
 
 	@Override
-	public void clearBatch() throws SQLException {
+	public void clearBatch() {
 		batchStatements.clear();
 	}
 
@@ -457,15 +454,19 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	@NotImplemented
 	public int executeUpdate(String sql, int[] columnIndexes) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		if (columnIndexes == null || columnIndexes.length == 0) {
+			return executeUpdate(sql);
+		}
+		throw new FireboltSQLFeatureNotSupportedException("Returning autogenerated keys by column index is not supported.");
 	}
 
 	@Override
-	@NotImplemented
 	public int executeUpdate(String sql, String[] columnNames) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		if (columnNames == null || columnNames.length == 0) {
+			return executeUpdate(sql);
+		}
+		throw new FireboltSQLFeatureNotSupportedException("Returning autogenerated keys by column name is not supported.");
 	}
 
 	@Override
@@ -477,26 +478,29 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	@Override
-	@NotImplemented
 	public boolean execute(String sql, int[] columnIndexes) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		if (columnIndexes == null || columnIndexes.length == 0) {
+			return execute(sql);
+		}
+		throw new FireboltSQLFeatureNotSupportedException("Returning autogenerated keys by column index is not supported.");
 	}
 
 	@Override
-	@NotImplemented
 	public boolean execute(String sql, String[] columnNames) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		if (columnNames == null || columnNames.length == 0) {
+			return execute(sql);
+		}
+		throw new FireboltSQLFeatureNotSupportedException("Returning autogenerated keys by column name is not supported.");
 	}
 
 	@Override
-	@NotImplemented
-	public int getResultSetHoldability() throws SQLException {
+	public int getResultSetHoldability() {
 		// N/A applicable as we do not support transactions => commits do not affect anything => kind of hold cursors over commit
 		return ResultSet.HOLD_CURSORS_OVER_COMMIT;
 	}
 
 	@Override
-	public boolean isPoolable() throws SQLException {
+	public boolean isPoolable() {
 		return false;
 	}
 
@@ -513,5 +517,12 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	 */
 	public boolean hasMoreResults() {
 		return currentStatementResult.getNext() != null;
+	}
+
+	private String sanitizeSql(String sql) {
+		// Replace any occurrence of secrets with ***
+		 return sql.replaceAll("AWS_KEY_ID\\s*=\\s*[\\S]*", "AWS_KEY_ID=***")
+		 .replaceAll("AWS_SECRET_KEY\\s*=\\s*[\\S]*",
+		 "AWS_SECRET_KEY=***");
 	}
 }

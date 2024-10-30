@@ -8,6 +8,7 @@ import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.service.FireboltStatementService;
+import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,9 +34,15 @@ import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.sql.Wrapper;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 
 import static java.lang.String.format;
 import static java.sql.Statement.CLOSE_CURRENT_RESULT;
@@ -50,13 +57,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltStatementTest {
@@ -77,12 +84,12 @@ class FireboltStatementTest {
         return Stream.of(
                 Arguments.of("setCursorName", (Executable) () -> statement.setCursorName("my_cursor")),
                 Arguments.of("getGeneratedKeys", (Executable) () -> statement.getGeneratedKeys()),
-                Arguments.of("executeUpdate(auto generated keys)", (Executable) () -> statement.executeUpdate("insert", Statement.RETURN_GENERATED_KEYS)),
-                Arguments.of("executeUpdate(column indexes)", (Executable) () -> statement.executeUpdate("insert", new int[0])),
-                Arguments.of("executeUpdate(column names)", (Executable) () -> statement.executeUpdate("insert", new String[0])),
+                Arguments.of("executeUpdate(column indexes)", (Executable) () -> statement.executeUpdate("insert", new int[] {1})),
+                Arguments.of("executeUpdate(column names)", (Executable) () -> statement.executeUpdate("insert", new String[] {"foo"})),
                 Arguments.of("execute(auto generated keys)", (Executable) () -> statement.execute("insert", Statement.RETURN_GENERATED_KEYS)),
-                Arguments.of("execute(column indexes)", (Executable) () -> statement.execute("insert", new int[0])),
-                Arguments.of("execute(column names)", (Executable) () -> statement.execute("insert", new String[0])),
+                Arguments.of("execute(column indexes)", (Executable) () -> statement.execute("insert", new int[] {1})),
+                Arguments.of("execute(column names)", (Executable) () -> statement.execute("insert", new String[] {"foo"})),
+                Arguments.of("execute(auto generated keys)", (Executable) () -> statement.execute("insert", Statement.RETURN_GENERATED_KEYS)),
                 Arguments.of("setPoolable(true)", (Executable) () -> statement.setPoolable(true))
         );
     }
@@ -121,8 +128,8 @@ class FireboltStatementTest {
         FireboltConnection connection = mock(FireboltConnection.class);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 
-        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(Optional.empty());
-        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(Optional.of(rs));
+        when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
+        when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.of(rs));
         fireboltStatement.executeQuery("show database");
         fireboltStatement.close();
         verify(rs).close();
@@ -148,14 +155,24 @@ class FireboltStatementTest {
 
     @Test
     void shouldExecuteIfUpdateStatementWouldNotReturnAResultSetNoGeneratedKeys() throws SQLException {
-        shouldExecuteIfUpdateStatementWouldNotReturnAResultSet((statement, sql) -> statement.executeUpdate(sql, Statement.NO_GENERATED_KEYS));
+        shouldExecuteIfUpdateStatementWouldNotReturnAResultSet((fireboltStatement, sql) -> fireboltStatement.executeUpdate(sql, Statement.NO_GENERATED_KEYS));
+    }
+
+    @Test
+    void shouldExecuteIfUpdateStatementWithIndexesWouldNotReturnAResultSet() throws SQLException {
+        shouldExecuteIfUpdateStatementWouldNotReturnAResultSet((fireboltStatement, sql) -> fireboltStatement.executeUpdate(sql, new int[0]));
+    }
+
+    @Test
+    void shouldExecuteIfUpdateStatementWithNamesWouldNotReturnAResultSet() throws SQLException {
+        shouldExecuteIfUpdateStatementWouldNotReturnAResultSet((fireboltStatement, sql) -> fireboltStatement.executeUpdate(sql, new String[0]));
     }
 
     private void shouldExecuteIfUpdateStatementWouldNotReturnAResultSet(CheckedBiFunction<Statement, String, Integer> executor) throws SQLException {
         try (FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, fireboltConnection)) {
-            when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(Optional.empty());
+            when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
             assertEquals(0, executor.apply(fireboltStatement, "INSERT INTO cars(sales, name) VALUES (500, 'Ford')"));
-            verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(fireboltProperties),anyBoolean(), any());
+            verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(fireboltProperties), any());
             assertEquals("INSERT INTO cars(sales, name) VALUES (500, 'Ford')",
                     queryInfoWrapperArgumentCaptor.getValue().getSql());
             assertEquals(0, fireboltStatement.getUpdateCount());
@@ -169,14 +186,25 @@ class FireboltStatementTest {
 
     @Test
     void shouldExecuteStatementNoGeneratedKeysThatReturnsResultSet() throws SQLException {
-        shouldExecuteStatementThatReturnsResultSet((statement, sql) -> statement.execute(sql, Statement.NO_GENERATED_KEYS));
+        shouldExecuteStatementThatReturnsResultSet((fireboltStatement, sql) -> fireboltStatement.execute(sql, Statement.NO_GENERATED_KEYS));
     }
+
+    @Test
+    void shouldExecuteStatementWithIndexesWouldNotReturnAResultSet() throws SQLException {
+        shouldExecuteStatementThatReturnsResultSet((fireboltStatement, sql) -> fireboltStatement.execute(sql, new int[0]));
+    }
+
+    @Test
+    void shouldExecuteStatementWithNamesWouldNotReturnAResultSet() throws SQLException {
+        shouldExecuteStatementThatReturnsResultSet((fireboltStatement, sql) -> fireboltStatement.execute(sql, new String[0]));
+    }
+
 
     private void shouldExecuteStatementThatReturnsResultSet(CheckedBiFunction<Statement, String, Boolean> executor) throws SQLException {
         ResultSet rs = mock(FireboltResultSet.class);
         FireboltConnection connection = mock(FireboltConnection.class);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
-        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(Optional.of(rs));
+        when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.of(rs));
         assertTrue(executor.apply(fireboltStatement, "SELECT 1"));
         assertEquals(rs, fireboltStatement.getResultSet());
         assertEquals(-1, fireboltStatement.getUpdateCount());
@@ -192,7 +220,7 @@ class FireboltStatementTest {
         FireboltConnection connection = mock(FireboltConnection.class);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 
-        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(Optional.of(rs)).thenReturn(Optional.of(rs2));
+        when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.of(rs)).thenReturn(Optional.of(rs2));
         fireboltStatement.execute("SELECT 1; SELECT 2;");
         assertEquals(rs, fireboltStatement.getResultSet());
         assertEquals(-1, fireboltStatement.getUpdateCount());
@@ -206,11 +234,53 @@ class FireboltStatementTest {
         assertNull(fireboltStatement.getResultSet());
     }
 
+
+    @Test
+    void test() throws SQLException {
+        FireboltConnection connection = mock(FireboltConnection.class);
+        FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
+
+        Logger fooLogger = (Logger) LoggerFactory.getLogger(FireboltStatement.class);
+
+        fooLogger.setLevel(Level.ALL);
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+        listAppender.start();
+
+        fooLogger.addAppender(listAppender);
+
+        String query = "SELECT 1";
+        // This trick simulates cancelled statement. getLabel() called first time returns the initial label generated
+        // when StatementInfoWrapper is created. This value is stored in a collection of currently running queries.
+        // But next invocation of getLabel() will return other value, so the statement will not be found in list of running
+        // queries and will be considered as cancelled.
+        // It is ugly trick, but I do not know better way to simulate cancelled query.
+        StatementInfoWrapper statementInfoWrapper = new StatementInfoWrapper(query, StatementType.QUERY, null, new QueryRawStatement(query, query, List.of())) {
+            String label = null;
+            @Override
+            public String getLabel() {
+                if (label != null) {
+                    return label;
+                }
+                String currentLabel = super.getLabel();
+                label = "other label";
+                return currentLabel;
+            }
+        };
+        fireboltStatement.execute(List.of(statementInfoWrapper));
+        assertNull(fireboltStatement.getResultSet());
+        fireboltStatement.getMoreResults(CLOSE_CURRENT_RESULT);
+        verify(fireboltStatementService, times(0)).execute(any(), any(), any());
+
+        List<ILoggingEvent> logsList = listAppender.list;
+        assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("Aborted query with id other label")));
+    }
+
+
     @Test
     void shouldCloseCurrentAndGetMoreResultWhenCallingGetMoreResultsWithCloseCurrentFlag() throws SQLException {
         FireboltConnection connection = mock(FireboltConnection.class);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
-        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(Optional.of(mock(FireboltResultSet.class)));
+        when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.of(mock(FireboltResultSet.class)));
         fireboltStatement.execute("SELECT 1; SELECT 2;");
         ResultSet resultSet = fireboltStatement.getResultSet();
         fireboltStatement.getMoreResults(CLOSE_CURRENT_RESULT);
@@ -221,7 +291,7 @@ class FireboltStatementTest {
     void shouldKeepCurrentAndGetMoreResultWhenCallingGetMoreResultsWithKeepCurrentResultFlag() throws SQLException {
         FireboltConnection connection = mock(FireboltConnection.class);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
-        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(Optional.of(mock(ResultSet.class)));
+        when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.of(mock(ResultSet.class)));
         fireboltStatement.execute("SELECT 1; SELECT 2;");
         ResultSet resultSet = fireboltStatement.getResultSet();
         fireboltStatement.getMoreResults(Statement.KEEP_CURRENT_RESULT);
@@ -236,7 +306,7 @@ class FireboltStatementTest {
         FireboltConnection connection = mock(FireboltConnection.class);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 
-        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any()))
+        when(fireboltStatementService.execute(any(), any(), any()))
                 .thenReturn(Optional.of(rs)).thenReturn(Optional.of(rs2)).thenReturn(Optional.of(rs3));
 
         fireboltStatement.execute("SELECT 1; SELECT 2; SELECT 3;");
@@ -373,6 +443,23 @@ class FireboltStatementTest {
     }
 
     @Test
+    void fetchDirection() throws SQLException {
+        Statement statement = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class));
+        assertEquals(ResultSet.FETCH_FORWARD, statement.getFetchDirection()); // check initial value
+
+        // set the same value; should succeed
+        statement.setFetchDirection(ResultSet.FETCH_FORWARD);
+        assertEquals(ResultSet.FETCH_FORWARD, statement.getFetchDirection());
+
+        // set wrong values expecting exceptions
+        assertThrows(SQLException.class, () -> statement.setFetchDirection(ResultSet.FETCH_REVERSE));
+        assertThrows(SQLException.class, () -> statement.setFetchDirection(ResultSet.FETCH_UNKNOWN));
+        assertThrows(SQLException.class, () -> statement.setFetchDirection(999999));
+        // check that returned value is still FETCH_FORWARD
+        assertEquals(ResultSet.FETCH_FORWARD, statement.getFetchDirection());
+    }
+
+    @Test
     void maxFieldSize() throws SQLException {
         Statement statement = new FireboltStatement(fireboltStatementService, null, mock(FireboltConnection.class));
         assertEquals(0, statement.getMaxFieldSize());
@@ -418,7 +505,7 @@ class FireboltStatementTest {
         FireboltConnection connection = mock(FireboltConnection.class);
         StatementClient statementClient = mock(StatementClient.class);
         String content = format("1\t2\ntext\tbytea\n%s\t%s", inputText == null ? "\\N" : inputText, inputText == null ? "\\N" : SqlArrayUtil.byteArrayToHexString(inputText.getBytes(), false));
-        when(statementClient.executeSqlStatement(any(), any(), eq(false), anyInt(), eq(true))).thenReturn(new ByteArrayInputStream(content.getBytes()));
+        when(statementClient.executeSqlStatement(any(), any(), eq(false), anyInt())).thenReturn(new ByteArrayInputStream(content.getBytes()));
         FireboltStatementService statementService = new FireboltStatementService(statementClient);
         FireboltStatement fireboltStatement = new FireboltStatement(statementService, fireboltProperties, connection);
         when(connection.createStatement()).thenReturn(fireboltStatement);
@@ -452,7 +539,7 @@ class FireboltStatementTest {
     void shouldExecuteBatch() throws SQLException {
         FireboltConnection connection = mock(FireboltConnection.class);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
-        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(
+        when(fireboltStatementService.execute(any(), any(), any())).thenReturn(
                 Optional.of(mock(FireboltResultSet.class)), Optional.of(mock(FireboltResultSet.class)), Optional.empty(), Optional.empty(), Optional.of(mock(FireboltResultSet.class))
         );
 
@@ -469,7 +556,7 @@ class FireboltStatementTest {
     void shouldClearBatch() throws SQLException {
         FireboltConnection connection = mock(FireboltConnection.class);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
-        when(fireboltStatementService.execute(any(), any(), anyBoolean(), any())).thenReturn(
+        when(fireboltStatementService.execute(any(), any(), any())).thenReturn(
                 Optional.empty(), Optional.empty()
         );
 
@@ -481,5 +568,38 @@ class FireboltStatementTest {
         fireboltStatement.addBatch("INSERT INTO PEOPLE (id, name) VALUES (1, 'Eve')");
 
         assertArrayEquals(new int[] {SUCCESS_NO_INFO, SUCCESS_NO_INFO}, fireboltStatement.executeBatch());
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "CREATE EXTERNAL TABLE x WITH CREDENTIALS = (AWS_KEY_ID='123', AWS_SECRET_KEY='4%5-6');",
+            "CREATE EXTERNAL TABLE x WITH CREDENTIALS = (AWS_KEY_ID ='123', AWS_SECRET_KEY= '4%5-6');",
+            "CREATE EXTERNAL TABLE x WITH CREDENTIALS = (AWS_KEY_ID = '123', AWS_SECRET_KEY = '4%5-6');",
+            "COPY INTO x FROM s3 WITH CREDENTIALS = (AWS_KEY_ID = '123' AWS_SECRET_KEY = '4%5-6');",
+            "COPY INTO x FROM s3 WITH CREDENTIALS = (AWS_KEY_ID = '123', AWS_SECRET_KEY = '4%5-6') ERROR_FILE_CREDENTIALS = AWS_KEY_ID = '123' AWS_SECRET_KEY = '4%5-6';",
+            "COPY INTO x FROM s3 WITH ERROR_FILE_CREDENTIALS = AWS_KEY_ID = '123' AWS_SECRET_KEY = '4%5-6';"
+    }, delimiter = ';')
+    void shouldNotOutputAWSKeyIdInDebugLogs(String query) throws SQLException {
+
+        Logger fooLogger = (Logger) LoggerFactory.getLogger(FireboltStatement.class);
+
+        fooLogger.setLevel(Level.ALL);
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+        listAppender.start();
+
+        fooLogger.addAppender(listAppender);
+
+        FireboltConnection connection = mock(FireboltConnection.class);
+        FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties,
+                connection);
+        fireboltStatement.execute(query);
+
+        List<ILoggingEvent> logsList = listAppender.list;
+        assertTrue(logsList.stream().noneMatch(event -> event.getFormattedMessage().contains("123")));
+        assertTrue(logsList.stream().noneMatch(event -> event.getFormattedMessage().contains("4%5-6")));
+        // Make sure the query is not lost
+        assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("WITH")));
+        assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("AWS_KEY_ID")));
+        assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("AWS_SECRET_KEY")));
     }
 }

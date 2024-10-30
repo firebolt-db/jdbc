@@ -131,13 +131,11 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	 * @param connectionProperties the connection properties
 	 * @param systemEngine         indicates if system engine is used
 	 * @param queryTimeout         query timeout
-	 * @param standardSql          indicates if standard sql should be used
 	 * @return the server response
 	 */
 	@Override
 	public InputStream executeSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
-										   @NonNull FireboltProperties connectionProperties, boolean systemEngine, int queryTimeout,
-										   boolean standardSql) throws FireboltException {
+										   @NonNull FireboltProperties connectionProperties, boolean systemEngine, int queryTimeout) throws SQLException {
 		QueryIdFetcher.getQueryFetcher(connection.getInfraVersion()).formatStatement(statementInfoWrapper);
 		String formattedStatement = QueryIdFetcher.getQueryFetcher(connection.getInfraVersion()).formatStatement(statementInfoWrapper);
 		Map<String, String> params = getAllParameters(connectionProperties, statementInfoWrapper, systemEngine, queryTimeout);
@@ -156,7 +154,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	private InputStream executeSqlStatementWithRetryOnUnauthorized(String label, @NonNull FireboltProperties connectionProperties, String formattedStatement, String uri)
-			throws IOException, FireboltException {
+			throws SQLException, IOException {
 		try {
 			log.debug("Posting statement with label {} to URI: {}", label, uri);
 			return postSqlStatement(connectionProperties, formattedStatement, uri, label);
@@ -171,7 +169,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	private InputStream postSqlStatement(@NonNull FireboltProperties connectionProperties, String formattedStatement, String uri, String label)
-			throws FireboltException, IOException {
+			throws SQLException, IOException {
 		Request post = createPostRequest(uri, label, formattedStatement, getConnection().getAccessToken().orElse(null));
 		Response response = execute(post, connectionProperties.getHost(), connectionProperties.isCompress());
 		InputStream is = ofNullable(response.body()).map(ResponseBody::byteStream).orElse(null);
@@ -181,7 +179,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		return is;
 	}
 
-	public void abortStatement(@NonNull String statementLabel, @NonNull FireboltProperties properties) throws FireboltException {
+	public void abortStatement(@NonNull String statementLabel, @NonNull FireboltProperties properties) throws SQLException {
 		boolean aborted = abortRunningHttpRequest(statementLabel);
 		if (properties.isSystemEngine()) {
 			throw new FireboltException("Cannot cancel a statement using a system engine", INVALID_REQUEST);
@@ -196,7 +194,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	 * @param label				 label of the statement
 	 * @param fireboltProperties the properties
 	 */
-	private void abortRunningDbStatement(String label, FireboltProperties fireboltProperties, int getIdTimeout) throws FireboltException {
+	private void abortRunningDbStatement(String label, FireboltProperties fireboltProperties, int getIdTimeout) throws SQLException {
 		try {
 			String id;
 			int attempt = 0;
@@ -316,9 +314,12 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			}
 		} else {
 			if (connection.getInfraVersion() >= 2) {
+				String engine = fireboltProperties.getEngine();
 				if (accountId != null) {
 					params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), accountId);
-					params.put(FireboltQueryParameterKey.ENGINE.getKey(), fireboltProperties.getEngine());
+				}
+				if (engine != null) {
+					params.put(FireboltQueryParameterKey.ENGINE.getKey(), engine);
 				}
 				params.put(FireboltQueryParameterKey.QUERY_LABEL.getKey(), statementInfoWrapper.getLabel()); //QUERY_LABEL
 			}
@@ -343,7 +344,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	@Override
-	protected void validateResponse(String host, Response response, Boolean isCompress) throws FireboltException {
+	protected void validateResponse(String host, Response response, Boolean isCompress) throws SQLException {
 		super.validateResponse(host, response, isCompress);
 		FireboltConnection connection = getConnection();
 		if (isCallSuccessful(response.code())) {
@@ -362,7 +363,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	@Override
-	protected void validateResponse(String host, int statusCode, String errorMessageFromServer) throws FireboltException {
+	protected void validateResponse(String host, int statusCode, String errorMessageFromServer) throws SQLException {
 		if (statusCode == HTTP_INTERNAL_ERROR) {
 			FireboltException ex = missConfigurationErrorMessages.entrySet().stream()
 					.filter(msg -> msg.getKey().matcher(errorMessageFromServer).find()).findFirst()

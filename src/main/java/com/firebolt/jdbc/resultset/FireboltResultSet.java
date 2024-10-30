@@ -15,12 +15,12 @@ import com.firebolt.jdbc.type.BaseType;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.array.FireboltArray;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
+import com.firebolt.jdbc.type.lob.FireboltBlob;
+import com.firebolt.jdbc.type.lob.FireboltClob;
 import com.firebolt.jdbc.util.LoggerUtil;
 import lombok.CustomLog;
 import org.apache.commons.text.StringEscapeUtils;
 
-import javax.sql.rowset.serial.SerialBlob;
-import javax.sql.rowset.serial.SerialClob;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -37,6 +37,7 @@ import java.sql.Array;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Date;
+import java.sql.JDBCType;
 import java.sql.NClob;
 import java.sql.Ref;
 import java.sql.ResultSet;
@@ -51,10 +52,13 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static com.firebolt.jdbc.type.BaseType.isNull;
 import static com.firebolt.jdbc.util.StringUtil.splitAll;
@@ -178,8 +182,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public int getInt(int columnIndex) throws SQLException {
-		Integer value = BaseType.INTEGER.transform(getValueAtColumn(columnIndex));
-		return value == null ? 0 : value;
+		return getValue(columnIndex, BaseType.INTEGER, 0);
 	}
 
 	@Override
@@ -188,15 +191,13 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public long getLong(int colNum) throws SQLException {
-		Long value = BaseType.LONG.transform(getValueAtColumn(colNum));
-		return value == null ? 0 : value;
+	public long getLong(int columnIndex) throws SQLException {
+		return getValue(columnIndex, BaseType.LONG, 0L);
 	}
 
 	@Override
 	public float getFloat(int columnIndex) throws SQLException {
-		Float value = BaseType.REAL.transform(getValueAtColumn(columnIndex));
-		return value == null ? 0 : value;
+		return getValue(columnIndex, BaseType.REAL, 0.0F);
 	}
 
 	@Override
@@ -206,8 +207,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public double getDouble(int columnIndex) throws SQLException {
-		Double value = BaseType.DOUBLE.transform(getValueAtColumn(columnIndex));
-		return value == null ? 0 : value;
+		return getValue(columnIndex, BaseType.DOUBLE, 0.0);
 	}
 
 	@Override
@@ -222,14 +222,12 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public byte getByte(int columnIndex) throws SQLException {
-		return ofNullable(getValueAtColumn(columnIndex)).map(v -> isNull(v) ? null : v)
-				.map(Byte::parseByte).orElse((byte) 0);
+		return getValue(columnIndex, BaseType.BYTE, (byte)0);
 	}
 
 	@Override
 	public short getShort(int columnIndex) throws SQLException {
-		Short value = BaseType.SHORT.transform(getValueAtColumn(columnIndex));
-		return value == null ? 0 : value;
+		return getValue(columnIndex, BaseType.SHORT, (short)0);
 	}
 
 	@Override
@@ -240,6 +238,11 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	@Override
 	public short getShort(String columnLabel) throws SQLException {
 		return getShort(findColumn(columnLabel));
+	}
+
+	private <T> T getValue(int columnIndex, BaseType type, T defaultValue) throws SQLException {
+		T value = type.transform(getValueAtColumn(columnIndex));
+		return value == null ? defaultValue : value;
 	}
 
 	@Override
@@ -278,8 +281,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex) throws SQLException {
-		String value = getValueAtColumn(columnIndex);
-		return value == null || value.isEmpty() ? null : BaseType.NUMERIC.transform(value);
+		return getValue(columnIndex, BaseType.NUMERIC, null);
 	}
 
 	@Override
@@ -289,8 +291,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
-		BigDecimal bigDecimal = getBigDecimal(columnIndex);
-		return bigDecimal == null ? null : bigDecimal.setScale(scale, RoundingMode.HALF_UP);
+		return Optional.ofNullable(getBigDecimal(columnIndex)).map(d -> d.setScale(scale, RoundingMode.HALF_UP)).orElse(null);
 	}
 
 	@Override
@@ -300,8 +301,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public Array getArray(int columnIndex) throws SQLException {
-		String value = getValueAtColumn(columnIndex);
-		return BaseType.ARRAY.transform(value, resultSetMetaData.getColumn(columnIndex));
+		return BaseType.ARRAY.transform(getValueAtColumn(columnIndex), resultSetMetaData.getColumn(columnIndex));
 	}
 
 	@Override
@@ -332,9 +332,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public Date getDate(int columnIndex, Calendar calendar) throws SQLException {
-		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
-		String value = getValueAtColumn(columnIndex);
-		return BaseType.DATE.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone, 0);
+		return getDateTime(columnIndex, calendar, BaseType.DATE);
 	}
 
 	@Override
@@ -354,9 +352,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public Timestamp getTimestamp(int columnIndex, Calendar calendar) throws SQLException {
-		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
-		String value = getValueAtColumn(columnIndex);
-		return BaseType.TIMESTAMP.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone, 0);
+		return getDateTime(columnIndex, calendar, BaseType.TIMESTAMP);
 	}
 
 	@Override
@@ -366,9 +362,13 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public Time getTime(int columnIndex, Calendar calendar) throws SQLException {
+		return getDateTime(columnIndex, calendar, BaseType.TIME);
+	}
+
+	private <T extends java.util.Date> T getDateTime(int columnIndex, Calendar calendar, BaseType type) throws SQLException {
 		TimeZone timeZone = calendar != null ? calendar.getTimeZone() : null;
 		String value = getValueAtColumn(columnIndex);
-		return BaseType.TIME.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone, 0);
+		return type.transform(value, resultSetMetaData.getColumn(columnIndex), timeZone, 0);
 	}
 
 	@Override
@@ -445,10 +445,11 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public boolean isAfterLast() throws SQLException {
+	public boolean isAfterLast() {
 		return !hasNext() && currentLine == null;
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	private boolean hasNext() {
 		return reader.lines().iterator().hasNext();
 	}
@@ -460,7 +461,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public boolean isLast() throws SQLException {
+	public boolean isLast() {
 		return !hasNext() && currentLine != null;
 	}
 
@@ -544,19 +545,6 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public boolean isWrapperFor(Class<?> iface) {
-		return iface.isAssignableFrom(getClass());
-	}
-
-	@Override
-	public <T> T unwrap(Class<T> iface) throws SQLException {
-		if (iface.isAssignableFrom(getClass())) {
-			return iface.cast(this);
-		}
-		throw new SQLException("Cannot unwrap to " + iface.getName());
-	}
-
-	@Override
 	public InputStream getAsciiStream(int columnIndex) throws SQLException {
 		return getTextStream(columnIndex, StandardCharsets.US_ASCII);
 	}
@@ -633,7 +621,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public int getFetchDirection() throws SQLException {
+	public int getFetchDirection() {
 		return ResultSet.FETCH_FORWARD;
 	}
 
@@ -645,7 +633,8 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public int getFetchSize() throws SQLException {
+	@SuppressWarnings("SpellCheckingInspection")
+	public int getFetchSize() {
 		return 0; // fetch size is not supported; 0 means unlimited like in PostgreSQL and MySQL
 	}
 
@@ -659,7 +648,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public int getConcurrency() throws SQLException {
+	public int getConcurrency() {
 		return ResultSet.CONCUR_READ_ONLY;
 	}
 
@@ -958,15 +947,26 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public Statement getStatement() throws SQLException {
+	public Statement getStatement() {
 		return statement;
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Object getObject(int columnIndex, Map<String, Class<?>> map) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		FireboltDataType dataType = resultSetMetaData.getColumn(columnIndex).getType().getDataType();
+		Map<String, Class<?>> caseInsensitiveMap = new TreeMap<>(CASE_INSENSITIVE_ORDER);
+		caseInsensitiveMap.putAll(map);
+		Class<?> type = getAllNames(dataType).map(caseInsensitiveMap::get).filter(Objects::nonNull).findFirst()
+				.orElseThrow(() -> new FireboltException(format("Cannot find type %s in provided types map", dataType)));
+		return getObject(columnIndex, type);
+	}
+
+	private Stream<String> getAllNames(FireboltDataType dataType) {
+		return Stream.concat(Stream.of(dataType.getDisplayName(), getJdbcType(dataType)).filter(Objects::nonNull), Stream.of(dataType.getAliases()));
+	}
+
+	private String getJdbcType(FireboltDataType dataType) {
+		return JDBCType.valueOf(dataType.getSqlType()).getName();
 	}
 
 	@Override
@@ -978,21 +978,17 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public Blob getBlob(int columnIndex) throws SQLException {
-		byte[] bytes = getBytes(columnIndex);
-		return bytes == null ? null : new SerialBlob(bytes);
+		return Optional.ofNullable(getBytes(columnIndex)).map(FireboltBlob::new).orElse(null);
 	}
 
 	@Override
 	public Clob getClob(int columnIndex) throws SQLException {
-		String str = getString(columnIndex);
-		return str == null ? null : new SerialClob(str.toCharArray());
+		return Optional.ofNullable(getString(columnIndex)).map(String::toCharArray).map(FireboltClob::new).orElse(null);
 	}
 
 	@Override
-	@NotImplemented
-	@ExcludeFromJacocoGeneratedReport
 	public Object getObject(String columnLabel, Map<String, Class<?>> map) throws SQLException {
-		throw new FireboltSQLFeatureNotSupportedException();
+		return getObject(findColumn(columnLabel), map);
 	}
 
 	@Override
@@ -1105,7 +1101,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
-	public int getHoldability() throws SQLException {
+	public int getHoldability() {
 		return ResultSet.HOLD_CURSORS_OVER_COMMIT;
 	}
 
@@ -1136,12 +1132,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	@Override
 	public NClob getNClob(int columnIndex) throws SQLException {
 		String str = getString(columnIndex);
-		class FireboltNClob extends SerialClob implements NClob {
-			public FireboltNClob(char[] ch) throws SQLException {
-				super(ch);
-			}
-		}
-		return str == null ? null : new FireboltNClob(str.toCharArray());
+		return str == null ? null : new FireboltClob(str.toCharArray());
 	}
 
 	@Override

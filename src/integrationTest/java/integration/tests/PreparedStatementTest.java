@@ -19,14 +19,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.sql.rowset.serial.SerialBlob;
-import javax.sql.rowset.serial.SerialClob;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -121,7 +121,19 @@ class PreparedStatementTest extends IntegrationTest {
 						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
 							s.setLong(i, v.longValue());
 							return null;
-						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getLong(i))
+						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getLong(i)),
+
+				Arguments.of("getObject(Long.class)",
+						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+							s.setLong(i, v.longValue());
+							return null;
+						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> rs.getObject(i, Long.class).intValue()),
+
+				Arguments.of("getObject(i, java.util.Map.of(\"long\", Integer.class)",
+						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+							s.setLong(i, v.longValue());
+							return null;
+						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getObject(i, java.util.Map.of("long", Integer.class)))
 		);
 	}
 
@@ -282,12 +294,12 @@ class PreparedStatementTest extends IntegrationTest {
 			try (PreparedStatement statement = connection
 					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, signature) VALUES (?,?,?)")) {
 				statement.setLong(1, car1.getSales());
-				statement.setClob(2, new SerialClob(car1.getMake().toCharArray()));
-				statement.setBlob(3, new SerialBlob(car1.getSignature()));
+				statement.setClob(2, clob(connection, car1.getMake()));
+				statement.setBlob(3, blob(connection, car1.getSignature()));
 				statement.addBatch();
 				statement.setLong(1, car2.getSales());
-				statement.setClob(2, new SerialClob(car2.getMake().toCharArray()));
-				statement.setBlob(3, new SerialBlob(car2.getSignature()));
+				statement.setClob(2, clob(connection, car2.getMake()));
+				statement.setBlob(3, blob(connection, car2.getSignature()));
 				statement.addBatch();
 				int[] result = statement.executeBatch();
 				assertArrayEquals(new int[] { SUCCESS_NO_INFO, SUCCESS_NO_INFO }, result);
@@ -306,6 +318,18 @@ class PreparedStatementTest extends IntegrationTest {
 			}
 			assertEquals(Set.of(car1, car2), actual);
 		}
+	}
+
+	private Blob blob(Connection connection, byte[] bytes) throws SQLException {
+		Blob blob = connection.createBlob();
+		blob.setBytes(1, bytes);
+		return blob;
+	}
+
+	private Clob clob(Connection connection, String text) throws SQLException {
+		Clob clob = connection.createClob();
+		clob.setString(1, text);
+		return clob;
 	}
 
 	@Test
@@ -407,6 +431,26 @@ class PreparedStatementTest extends IntegrationTest {
 				assertEquals("https://www.tesla.com/", rs.getString(1));
 				assertEquals(new URL("https://www.tesla.com/"), rs.getURL(1));
 				assertFalse(rs.next());
+			}
+		}
+	}
+
+	@Test
+	void shouldFetchSpecialCharacters() throws SQLException, MalformedURLException {
+		try (Connection connection = createConnection()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("SELECT ? as a, ? as b, ? as c, ? as d")) {
+				statement.setString(1, "ї");
+				statement.setString(2, "\n");
+				statement.setString(3, "\\");
+				statement.setString(4, "don't");
+				statement.execute();
+				ResultSet rs = statement.getResultSet();
+				assertTrue(rs.next());
+				assertEquals("ї", rs.getString(1));
+				assertEquals("\n", rs.getString(2));
+				assertEquals("\\", rs.getString(3));
+				assertEquals("don't", rs.getString(4));
 			}
 		}
 	}

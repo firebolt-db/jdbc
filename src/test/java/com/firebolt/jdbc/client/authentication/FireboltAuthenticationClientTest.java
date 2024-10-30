@@ -3,6 +3,8 @@ package com.firebolt.jdbc.client.authentication;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.exception.SQLState;
+
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -18,11 +20,13 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import static com.firebolt.jdbc.client.UserAgentFormatter.userAgent;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
+import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -61,7 +65,7 @@ class FireboltAuthenticationClientTest {
 	}
 
 	@Test
-	void shouldPostConnectionTokens() throws IOException, FireboltException {
+	void shouldPostConnectionTokens() throws SQLException, IOException {
 		Response response = mock(Response.class);
 		Call call = mock(Call.class);
 		ResponseBody body = mock(ResponseBody.class);
@@ -117,7 +121,21 @@ class FireboltAuthenticationClientTest {
 		when(response.code()).thenReturn(HTTP_FORBIDDEN);
 		when(httpClient.newCall(any())).thenReturn(call);
 
-		assertThrows(FireboltException.class,
+		FireboltException ex = assertThrows(FireboltException.class,
 				() -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD, ENV));
+		assertEquals(SQLState.INVALID_AUTHORIZATION_SPECIFICATION.getCode(), ex.getSQLState());
+	}
+
+	@Test
+	void shouldThrowExceptionWhenStatusCodeIsUnavailable() throws Exception {
+		Response response = mock(Response.class);
+		Call call = mock(Call.class);
+		when(call.execute()).thenReturn(response);
+		when(response.code()).thenReturn(HTTP_UNAVAILABLE);
+		when(httpClient.newCall(any())).thenReturn(call);
+
+		FireboltException ex = assertThrows(FireboltException.class,
+				() -> fireboltAuthenticationClient.postConnectionTokens(HOST, USER, PASSWORD, ENV));
+		assertEquals(SQLState.CONNECTION_FAILURE.getCode(), ex.getSQLState());
 	}
 }

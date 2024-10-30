@@ -68,8 +68,8 @@ public class VersionUtil {
 		if (retrieveVersionInfoFromManifest(VersionUtil.class.getResourceAsStream("/META-INF/MANIFEST.MF"))) {
 			return;
 		}
-		for(Enumeration<URL> eurl = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF"); eurl.hasMoreElements();) {
-			try (InputStream in = eurl.nextElement().openStream()) {
+		for(Enumeration<URL> eUrl = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF"); eUrl.hasMoreElements();) {
+			try (InputStream in = eUrl.nextElement().openStream()) {
 				if (retrieveVersionInfoFromManifest(in)) {
 					return;
 				}
