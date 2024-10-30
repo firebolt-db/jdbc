@@ -51,6 +51,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.ACCESS_TOKEN;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.CLIENT_ID;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.CLIENT_SECRET;
@@ -86,6 +87,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 abstract class FireboltConnectionTest {
 	private static final String LOCAL_URL = "jdbc:firebolt:local_dev_db?account=dev&ssl=false&max_query_size=10000000&mask_internal_errors=0&host=localhost";
+	private static final String SYSTEM_ENGINE_URL = "jdbc:firebolt:db?env=dev&account=dev";
 	private final FireboltConnectionTokens fireboltConnectionTokens = new FireboltConnectionTokens(null, 0);
 	@Captor
 	private ArgumentCaptor<FireboltProperties> propertiesArgumentCaptor;
@@ -337,6 +339,37 @@ abstract class FireboltConnectionTest {
 					propertiesArgumentCaptor.capture(), any());
 			assertEquals(List.of("SELECT 1"), queryInfoWrapperArgumentCaptor.getAllValues().stream().map(StatementInfoWrapper::getSql).collect(toList()));
 			assertEquals(Map.of("auto_start_stop_control", "ignore"), propertiesArgumentCaptor.getValue().getAdditionalProperties());
+		}
+	}
+
+	@Test
+	void shouldValidateConnectionWhenCallingIsValidSystemEngine() throws SQLException {
+		when(fireboltStatementService.execute(any(), any(), any()))
+				.thenReturn(Optional.empty());
+		Properties propertiesWithSystemEngine = new Properties(connectionProperties);
+		try (FireboltConnection fireboltConnection = createConnection(SYSTEM_ENGINE_URL, propertiesWithSystemEngine)) {
+			fireboltConnection.isValid(500);
+			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
+					propertiesArgumentCaptor.capture(), any());
+			assertEquals(List.of("SELECT 1"), queryInfoWrapperArgumentCaptor.getAllValues().stream().map(StatementInfoWrapper::getSql).collect(toList()));
+			assertEquals(Map.of("auto_start_stop_control", "ignore"), propertiesArgumentCaptor.getValue().getAdditionalProperties());
+		}
+	}
+
+	@Test
+	void shouldForceSystemEngineWhenValidateOnSystemEngineIsSet() throws SQLException {
+		when(fireboltStatementService.execute(any(), any(), any()))
+				.thenReturn(Optional.empty());
+		Properties propertiesCopy = new Properties(connectionProperties);
+		propertiesCopy.put("validate_on_system_engine", "true");
+		try (FireboltConnection fireboltConnection = createConnection(URL, propertiesCopy)) {
+			fireboltConnection.isValid(500);
+			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
+					propertiesArgumentCaptor.capture(), any());
+			assertEquals(List.of("SELECT 1"), queryInfoWrapperArgumentCaptor.getAllValues().stream().map(StatementInfoWrapper::getSql).collect(toList()));
+			assertEquals(Map.of("auto_start_stop_control", "ignore"), propertiesArgumentCaptor.getValue().getAdditionalProperties());
+			assertEquals(null, propertiesArgumentCaptor.getValue().getEngine());
+			assertTrue(propertiesArgumentCaptor.getValue().isSystemEngine());
 		}
 	}
 
@@ -691,6 +724,17 @@ abstract class FireboltConnectionTest {
 			// deprecated - should not appear
 			assertFalse(info.containsKey("time_to_live_millis"));
 			assertNull(fireboltConnection.getClientInfo("time_to_live_millis"));
+		}
+	}
+
+	@Test
+	void shouldValidateOnUserEngineByDefault() throws SQLException {
+		try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
+			assertEquals("false", fireboltConnection.getClientInfo().get("validate_on_system_engine"));
+		}
+		connectionProperties.put("validate_on_system_engine", "true");
+		try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
+			assertEquals("true", fireboltConnection.getClientInfo().get("validate_on_system_engine"));
 		}
 	}
 

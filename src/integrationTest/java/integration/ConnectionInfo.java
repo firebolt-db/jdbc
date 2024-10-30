@@ -1,5 +1,7 @@
 package integration;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -20,6 +22,7 @@ public class ConnectionInfo {
 	private final String account;
 	private final String engine;
 	private final String api;
+	private final Map<String, String> extra;
 	private final Supplier<String> jdbcUrlSupplier;
 
 	private ConnectionInfo() {
@@ -35,6 +38,10 @@ public class ConnectionInfo {
 	}
 
 	public ConnectionInfo(String principal, String secret, String env, String database, String account, String engine, String api) {
+		this(principal, secret, env, database, account, engine, api, new HashMap<>());
+	}
+
+	public ConnectionInfo(String principal, String secret, String env, String database, String account, String engine, String api, Map<String, String> extra) {
 		this.principal = principal;
 		this.secret = secret;
 		this.env = env;
@@ -42,6 +49,7 @@ public class ConnectionInfo {
 		this.account = account;
 		this.engine = engine;
 		this.api = api;
+		this.extra = extra;
 		jdbcUrlSupplier = api == null ? this::toJdbcUrl2 : this::toJdbcUrl1;
 	}
 
@@ -97,7 +105,10 @@ public class ConnectionInfo {
 	}
 
 	private String toJdbcUrl2() {
-		String params = Stream.of(param("env", env), param("engine", engine), param("account", account)).filter(Objects::nonNull).collect(joining("&"));
+		String params = Stream.concat(
+				Stream.of(param("env", env), param("engine", engine), param("account", account)),
+				extra.entrySet().stream().map(e -> param(e.getKey(), e.getValue()))
+		).filter(Objects::nonNull).collect(joining("&"));
 		if (!params.isEmpty()) {
 			params = "?" + params;
 		}

@@ -19,6 +19,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Map;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -137,6 +138,38 @@ class ConnectionTest extends IntegrationTest {
             assertTrue(rs.next());
             assertNotNull(rs.getObject(1));
         }
+    }
+
+    @Test
+    @Tag("v2")
+    void validatesOnSystemEngineIfParameterProvided() throws SQLException {
+        try (Connection systemConnection = createConnection(null)) {
+            String engineName = integration.ConnectionInfo.getInstance().getEngine() + "_validate_test";
+            try (Statement systemStatement = systemConnection.createStatement()) {
+                systemStatement.executeUpdate(format("CREATE ENGINE %s WITH INITIALLY_STOPPED=true", engineName));
+            }
+            try (Connection connection = createConnection(engineName, Map.of("validate_on_system_engine", "true"))) {
+                try (Statement systemStatement = systemConnection.createStatement()) {
+                    ResultSet rs = systemStatement.executeQuery(
+                            format("SELECT status FROM information_schema.engines WHERE engine_name='%s'", engineName));
+                    assertTrue(rs.next());
+                    assertEquals("STOPPED", rs.getString(1));
+                }
+                assertTrue(connection.isValid(500));
+                // After validation the engine should still be stopped
+                try (Statement systemStatement = systemConnection.createStatement()) {
+                    ResultSet rs = systemStatement.executeQuery(
+                            format("SELECT status FROM information_schema.engines WHERE engine_name='%s'", engineName));
+                    assertTrue(rs.next());
+                    assertEquals("STOPPED", rs.getString(1));
+                }
+            } finally {
+                try (Statement systemStatement = systemConnection.createStatement()) {
+                    systemStatement.executeUpdate(format("DROP ENGINE %s", engineName));
+                }
+            }
+        }
+
     }
 
     void unsuccessfulConnect(boolean useDatabase, boolean useEngine) throws SQLException {
