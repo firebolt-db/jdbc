@@ -68,7 +68,8 @@ public enum FireboltSessionProperty {
 	ACCESS_TOKEN("access_token", null, String.class, "access token", p -> "***"),
 	ENVIRONMENT("environment", "app", String.class, "Firebolt environment", FireboltProperties::getEnvironment, "env"),
 	VALIDATE_ON_SYSTEM_ENGINE("validate_on_system_engine", false, Boolean.class,
-			"Whether to validate the connection on the system engine or not. Not validated by default", FireboltProperties::isValidateOnSystemEngine),
+			"Whether to validate the connection on the system engine or not. By default validates on an engine currently connected.",
+			FireboltProperties::isValidateOnSystemEngine),
 	// We keep all the deprecated properties to ensure backward compatibility - but
 	// they do not have any effect.
 	@Deprecated
