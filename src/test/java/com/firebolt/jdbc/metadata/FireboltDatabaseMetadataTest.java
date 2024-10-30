@@ -197,7 +197,9 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void shouldGetColumns() throws SQLException {
-		String expectedQuery = "SELECT table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns WHERE table_name LIKE 'c' AND column_name LIKE 'd' AND table_schema LIKE 'b'";
+		String expectedQuery = "SELECT table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position " +
+				"FROM information_schema.columns WHERE table_name LIKE 'c' AND column_name LIKE 'd' " +
+				"AND table_schema LIKE 'b' AND table_catalog LIKE 'a'";
 
 		ResultSet expectedResultSet = FireboltResultSet.of(QueryResult.builder()
 				.columns(Arrays.asList(Column.builder().name(TABLE_CAT).type(TEXT).build(),
@@ -256,7 +258,9 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void shouldGetColumnPrivileges() throws SQLException {
-		String expectedQuery = "SELECT table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns WHERE table_name LIKE 'c' AND column_name LIKE 'd' AND table_schema LIKE 'b'";
+		String expectedQuery = "SELECT table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position " +
+				"FROM information_schema.columns WHERE table_name LIKE 'c' AND column_name LIKE 'd' " +
+				"AND table_schema LIKE 'b' AND table_catalog LIKE 'a'";
 
 		ResultSet expectedResultSet = FireboltResultSet.of(QueryResult.builder()
 				.columns(Arrays.asList(Column.builder().name(TABLE_CAT).type(TEXT).build(),
@@ -292,7 +296,9 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void shouldGetTables() throws SQLException {
-		String expectedSql = "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('BASE TABLE', 'DIMENSION', 'FACT', 'VIEW') AND table_schema LIKE 'def%' AND table_name LIKE 'tab%' order by table_schema, table_name";
+		String expectedSql = "SELECT table_schema, table_name, table_type FROM information_schema.tables " +
+				"WHERE table_type IN ('BASE TABLE', 'DIMENSION', 'FACT', 'VIEW') AND table_catalog LIKE 'catalog' " +
+				"AND table_schema LIKE 'def%' AND table_name LIKE 'tab%' order by table_schema, table_name";
 		when(statement.executeQuery(expectedSql)).thenReturn(createResultSet(getInputStreamForGetTables()));
 		ResultSet resultSet = fireboltDatabaseMetadata.getTables("catalog", "def%", "tab%", null);
 		verify(statement).executeQuery(expectedSql);
@@ -319,7 +325,9 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void shouldGetTablePrivileges() throws SQLException {
-		String expectedSql = "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('BASE TABLE', 'DIMENSION', 'FACT') AND table_schema LIKE 'def%' AND table_name LIKE 'tab%' order by table_schema, table_name";
+		String expectedSql = "SELECT table_schema, table_name, table_type FROM information_schema.tables " +
+				"WHERE table_type IN ('BASE TABLE', 'DIMENSION', 'FACT') AND table_catalog LIKE 'catalog' " +
+				"AND table_schema LIKE 'def%' AND table_name LIKE 'tab%' order by table_schema, table_name";
 		when(statement.executeQuery(expectedSql)).thenReturn(createResultSet(getInputStreamForGetTables()));
 		ResultSet resultSet = fireboltDatabaseMetadata.getTablePrivileges("catalog", "def%", "tab%");
 		verify(statement).executeQuery(expectedSql);

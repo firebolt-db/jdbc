@@ -233,7 +233,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData, GenericWrappe
 	public ResultSet getColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern)
 			throws SQLException {
 		List<List<?>> rows = new ArrayList<>();
-		String query = MetadataUtil.getColumnsQuery(schemaPattern, tableNamePattern, columnNamePattern);
+		String query = MetadataUtil.getColumnsQuery(catalog, schemaPattern, tableNamePattern, columnNamePattern);
 		try (Statement statement = connection.createStatement();
 				ResultSet columnDescription = statement.executeQuery(query)) {
 			while (columnDescription.next()) {
@@ -1258,7 +1258,7 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData, GenericWrappe
 	@Override
 	public ResultSet getColumnPrivileges(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern) throws SQLException {
 		List<List<?>> rows = new ArrayList<>();
-		String query = MetadataUtil.getColumnsQuery(schemaPattern, tableNamePattern, columnNamePattern);
+		String query = MetadataUtil.getColumnsQuery(catalog, schemaPattern, tableNamePattern, columnNamePattern);
 		try (Statement statement = connection.createStatement();
 			 ResultSet columnDescription = statement.executeQuery(query)) {
 			while (columnDescription.next()) {

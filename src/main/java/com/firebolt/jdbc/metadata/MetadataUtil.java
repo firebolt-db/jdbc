@@ -35,7 +35,7 @@ public class MetadataUtil {
 //		return queryBuilder.conditions(conditions).build().toSql();
 //	}
 
-	public String getColumnsQuery(String schemaPattern, String tableNamePattern, String columnNamePattern) {
+	public String getColumnsQuery(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern) {
 		Query.QueryBuilder queryBuilder = Query.builder().select(
 				"table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position")
 				.from("information_schema.columns");
@@ -44,15 +44,15 @@ public class MetadataUtil {
 		ofNullable(tableNamePattern).ifPresent(pattern -> conditions.add(format("table_name LIKE '%s'", pattern)));
 		ofNullable(columnNamePattern).ifPresent(pattern -> conditions.add(format("column_name LIKE '%s'", pattern)));
 		ofNullable(schemaPattern).ifPresent(pattern -> conditions.add(format("table_schema LIKE '%s'", pattern)));
+		ofNullable(catalog).ifPresent(pattern -> conditions.add(String.format("table_catalog LIKE '%s'", pattern)));
 		return queryBuilder.conditions(conditions).build().toSql();
 	}
 
-	public String getTablesQuery(@SuppressWarnings("java:S1172") String catalog, String schema, String tableName, String[] types) {
+	public String getTablesQuery(String catalog, String schema, String tableName, String[] types) {
 		Query.QueryBuilder queryBuilder = Query.builder().select("table_schema, table_name, table_type").from("information_schema.tables");
 		List<String> conditions = new ArrayList<>();
 		conditions.add(format("table_type IN (%s)", Arrays.stream(types).map(t -> format("'%s'", t)).collect(joining(", "))));
-		// Uncomment once table catalogs are supported. Remove suppress warning ava:S1172 from the first parameter also.
-		//ofNullable(catalog).ifPresent(pattern -> conditions.add(String.format("table_catalog LIKE '%s'",pattern)));
+		ofNullable(catalog).ifPresent(pattern -> conditions.add(String.format("table_catalog LIKE '%s'", pattern)));
 		ofNullable(schema).ifPresent(pattern -> conditions.add(format("table_schema LIKE '%s'", pattern)));
 		ofNullable(tableName).ifPresent(pattern -> conditions.add(format("table_name LIKE '%s'", pattern)));
 		return queryBuilder.conditions(conditions).orderBy("table_schema, table_name").build().toSql();

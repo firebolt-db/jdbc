@@ -22,13 +22,13 @@ class MetadataUtilTest {
 	@Test
 	void shouldGetTablesQueryWhenGettingQueryWithArguments() {
 		assertEquals(
-				"SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('FACT', 'DIMENSION') AND table_schema LIKE 'db' AND table_name LIKE 'tableName' order by table_schema, table_name",
+				"SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('FACT', 'DIMENSION') AND table_catalog LIKE 'catalog' AND table_schema LIKE 'db' AND table_name LIKE 'tableName' order by table_schema, table_name",
 				MetadataUtil.getTablesQuery("catalog", "db", "tableName", new String[] {"FACT", "DIMENSION"}));
 	}
 	@Test
 	void shouldGetViewQueryWhenGettingQueryWithArguments() {
 		assertEquals(
-				"SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('VIEW') AND table_schema LIKE 'db' AND table_name LIKE 'tableName' order by table_schema, table_name",
+				"SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_type IN ('VIEW') AND table_catalog LIKE 'catalog' AND table_schema LIKE 'db' AND table_name LIKE 'tableName' order by table_schema, table_name",
 				MetadataUtil.getTablesQuery("catalog", "db", "tableName", new String[] {"VIEW"}));
 	}
 
@@ -42,14 +42,14 @@ class MetadataUtilTest {
 	@Test
 	void shouldGetColumnsQueryWhenGettingQueryWithArguments() {
 		assertEquals(
-				"SELECT table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns WHERE table_name LIKE 'tableName' AND column_name LIKE 'col%' AND table_schema LIKE 'schema'",
-				MetadataUtil.getColumnsQuery("schema", "tableName", "col%"));
+				"SELECT table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns WHERE table_name LIKE 'tableName' AND column_name LIKE 'col%' AND table_schema LIKE 'schema' AND table_catalog LIKE 'db'",
+				MetadataUtil.getColumnsQuery("db", "schema", "tableName", "col%"));
 	}
 
 	@Test
 	void shouldGetColumnsQueryWhenGettingQueryWithoutArguments() {
 		assertEquals(
 				"SELECT table_schema, table_name, column_name, data_type, column_default, is_nullable, ordinal_position FROM information_schema.columns",
-				MetadataUtil.getColumnsQuery(null, null, null));
+				MetadataUtil.getColumnsQuery(null, null, null, null));
 	}
 }
