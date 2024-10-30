@@ -1,39 +1,38 @@
 package com.firebolt.jdbc.util;
 
-import com.firebolt.FireboltDriver;
-import lombok.experimental.UtilityClass;
-import org.slf4j.bridge.SLF4JBridgeHandler;
-
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import com.firebolt.jdbc.log.FireboltLogger;
+import com.firebolt.jdbc.log.JDKLogger;
+import com.firebolt.jdbc.log.SLF4JLogger;
+
+import lombok.CustomLog;
+import lombok.experimental.UtilityClass;
+
 @UtilityClass
+@CustomLog
 public class LoggerUtil {
 
-	private static final boolean SLF4J_AVAILABLE = isSlf4jJAvailable();
-	private static final Logger root = initRootLogger();
-	private static final Logger log = Logger.getLogger(LoggerUtil.class.getName());
+	private static Boolean slf4jAvailable;
 
-	private Logger initRootLogger() {
-		Logger parent = Logger.getLogger(FireboltDriver.class.getPackageName());
-		if (SLF4J_AVAILABLE) {
-			synchronized (LoggerUtil.class) {
-				parent.addHandler(new SLF4JBridgeHandler());
-				parent.setLevel(Level.ALL);
-			}
+	/**
+	 * Provides a {@link FireboltLogger} based on whether SLF4J is available or not.
+	 *
+	 * @param name logger name
+	 * @return a {@link FireboltLogger}
+	 */
+	public static FireboltLogger getLogger(String name) {
+		if (slf4jAvailable == null) {
+			slf4jAvailable = isSlf4jJAvailable();
 		}
-		return parent;
-	}
 
-	public static Logger getRootLogger() {
-		return root;
+		if (slf4jAvailable) {
+			return new SLF4JLogger(name);
+		} else {
+			return new JDKLogger(name);
+		}
 	}
 
 	/**
@@ -60,7 +59,7 @@ public class LoggerUtil {
 			log.info("======================================");
 			return new ByteArrayInputStream(baos.toByteArray());
 		} catch (Exception ex) {
-			log.log(Level.WARNING, "Could not log the stream", ex);
+			log.warn("Could not log the stream", ex);
 		}
 		return new ByteArrayInputStream(baos.toByteArray());
 	}

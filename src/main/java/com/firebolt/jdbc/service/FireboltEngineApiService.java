@@ -8,6 +8,7 @@ import com.firebolt.jdbc.client.account.response.FireboltEngineResponse;
 import com.firebolt.jdbc.connection.Engine;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
@@ -19,6 +20,7 @@ import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
 
 @RequiredArgsConstructor
+@CustomLog
 public class FireboltEngineApiService implements FireboltEngineService {
     private static final Set<String> ENGINE_NOT_READY_STATUSES = Set.of(
             "ENGINE_STATUS_PROVISIONING_STARTED", "ENGINE_STATUS_PROVISIONING_PENDING",

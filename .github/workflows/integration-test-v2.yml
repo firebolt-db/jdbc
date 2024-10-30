@@ -1,20 +1,33 @@
 name: Run integration tests v2
 
 on:
+  workflow_dispatch:
+    inputs:
+      database:
+        description: 'Database override'
+        required: false
+        default: ''
+      engine:
+        description: 'Engine override'
+        required: false
+      account:
+        description: 'Account override'
+        required: false
+        type: string
   workflow_call:
     inputs:
       database:
-        description: 'Database - a new one will be created if not provided'
+        description: 'Database override'
         required: false
         default: ''
         type: string
       engine:
-        description: 'Engine - a new one will be created if not provided'
+        description: 'Engine override'
         required: false
         type: string
       account:
-        description: 'Account'
-        required: true
+        description: 'Account override'
+        required: false
         type: string
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN:
@@ -34,6 +47,17 @@ jobs:
           script: |
             core.setFailed("Database and Engine parameters should be provided simultaneously")
 
+      - name: Resolve account
+        id: set-account
+        run: |
+          if ! [[ -z "${{ inputs.account }}" ]]; then
+            echo "account=${{ inputs.account }}" >> $GITHUB_OUTPUT
+            echo "account=${{ inputs.account }}"
+          else
+            echo "account=${{ vars.FIREBOLT_ACCOUNT }}" >> $GITHUB_OUTPUT
+            echo "account=${{ vars.FIREBOLT_ACCOUNT }}"
+          fi
+
       - name: Check out code
         uses: actions/checkout@v3
 
@@ -50,7 +74,7 @@ jobs:
         with:
           firebolt-client-id: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           firebolt-client-secret: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
-          account: ${{ inputs.account }}
+          account: ${{ steps.set-account.outputs.account }}
           api-endpoint: "api.staging.firebolt.io"
 
       - name: Determine database name
@@ -72,4 +96,4 @@ jobs:
           fi
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=staging -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ inputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags=v1
+        run: ./gradlew integrationTest -Ddb=${{ steps.find-database-name.outputs.database_name }} -Denv=staging -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ steps.set-account.outputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags=v1

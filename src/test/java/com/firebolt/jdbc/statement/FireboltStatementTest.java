@@ -33,17 +33,16 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.sql.Wrapper;
-import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
+import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 
 import static java.lang.String.format;
 import static java.sql.Statement.CLOSE_CURRENT_RESULT;
@@ -241,23 +240,13 @@ class FireboltStatementTest {
         FireboltConnection connection = mock(FireboltConnection.class);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 
-        List<String> logMessages = new ArrayList<>();
-        Logger log = Logger.getLogger(FireboltStatement.class.getName());
-        log.setLevel(Level.ALL);
-        log.addHandler(new Handler() {
-            @Override
-            public void publish(LogRecord record) {
-                logMessages.add(new MessageFormat(record.getMessage()).format(record.getParameters()));
-            }
+        Logger fooLogger = (Logger) LoggerFactory.getLogger(FireboltStatement.class);
 
-            @Override
-            public void flush() {
-            }
+        fooLogger.setLevel(Level.ALL);
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+        listAppender.start();
 
-            @Override
-            public void close() throws SecurityException {
-            }
-        });
+        fooLogger.addAppender(listAppender);
 
         String query = "SELECT 1";
         // This trick simulates cancelled statement. getLabel() called first time returns the initial label generated
@@ -281,7 +270,9 @@ class FireboltStatementTest {
         assertNull(fireboltStatement.getResultSet());
         fireboltStatement.getMoreResults(CLOSE_CURRENT_RESULT);
         verify(fireboltStatementService, times(0)).execute(any(), any(), any());
-        assertTrue(logMessages.contains("Aborted query with id other label"), "Expected log message is not found");
+
+        List<ILoggingEvent> logsList = listAppender.list;
+        assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("Aborted query with id other label")));
     }
 
 
@@ -577,5 +568,38 @@ class FireboltStatementTest {
         fireboltStatement.addBatch("INSERT INTO PEOPLE (id, name) VALUES (1, 'Eve')");
 
         assertArrayEquals(new int[] {SUCCESS_NO_INFO, SUCCESS_NO_INFO}, fireboltStatement.executeBatch());
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "CREATE EXTERNAL TABLE x WITH CREDENTIALS = (AWS_KEY_ID='123', AWS_SECRET_KEY='4%5-6');",
+            "CREATE EXTERNAL TABLE x WITH CREDENTIALS = (AWS_KEY_ID ='123', AWS_SECRET_KEY= '4%5-6');",
+            "CREATE EXTERNAL TABLE x WITH CREDENTIALS = (AWS_KEY_ID = '123', AWS_SECRET_KEY = '4%5-6');",
+            "COPY INTO x FROM s3 WITH CREDENTIALS = (AWS_KEY_ID = '123' AWS_SECRET_KEY = '4%5-6');",
+            "COPY INTO x FROM s3 WITH CREDENTIALS = (AWS_KEY_ID = '123', AWS_SECRET_KEY = '4%5-6') ERROR_FILE_CREDENTIALS = AWS_KEY_ID = '123' AWS_SECRET_KEY = '4%5-6';",
+            "COPY INTO x FROM s3 WITH ERROR_FILE_CREDENTIALS = AWS_KEY_ID = '123' AWS_SECRET_KEY = '4%5-6';"
+    }, delimiter = ';')
+    void shouldNotOutputAWSKeyIdInDebugLogs(String query) throws SQLException {
+
+        Logger fooLogger = (Logger) LoggerFactory.getLogger(FireboltStatement.class);
+
+        fooLogger.setLevel(Level.ALL);
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+        listAppender.start();
+
+        fooLogger.addAppender(listAppender);
+
+        FireboltConnection connection = mock(FireboltConnection.class);
+        FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties,
+                connection);
+        fireboltStatement.execute(query);
+
+        List<ILoggingEvent> logsList = listAppender.list;
+        assertTrue(logsList.stream().noneMatch(event -> event.getFormattedMessage().contains("123")));
+        assertTrue(logsList.stream().noneMatch(event -> event.getFormattedMessage().contains("4%5-6")));
+        // Make sure the query is not lost
+        assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("WITH")));
+        assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("AWS_KEY_ID")));
+        assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("AWS_SECRET_KEY")));
     }
 }

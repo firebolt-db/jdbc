@@ -7,6 +7,7 @@ import com.firebolt.jdbc.exception.FireboltException;
 import integration.ConnectionInfo;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
+import lombok.CustomLog;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -33,8 +34,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
@@ -49,6 +48,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@CustomLog
+@Tag("v2")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SystemEngineTest extends IntegrationTest {
 
@@ -62,14 +63,12 @@ public class SystemEngineTest extends IntegrationTest {
 	private static final String TABLE1 = TABLE + "_1";
 	private static final String TABLE2 = TABLE + "_2";
 
-	private static final Logger log = Logger.getLogger(SystemEngineTest.class.getName());
-
 	@BeforeAll
 	void beforeAll() {
 		try {
 			executeStatementFromFile("/statements/system/ddl.sql", getSystemEngineName());
 		} catch (Exception e) {
-			log.log(Level.WARNING, "Could not execute statement", e);
+			log.warn("Could not execute statement", e);
 		}
 	}
 
@@ -78,7 +77,7 @@ public class SystemEngineTest extends IntegrationTest {
 		try {
 			executeStatementFromFile("/statements/system/cleanup.sql", getSystemEngineName());
 		} catch (Exception e) {
-			log.log(Level.WARNING, "Could not execute statement", e);
+			log.warn("Could not execute statement", e);
 		}
 	}
 
@@ -112,6 +111,7 @@ public class SystemEngineTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag("v2")
 	void shouldFailToSelectFromCustomDbUsingSystemEngine() throws SQLException {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
 		String systemEngineJdbcUrl = new ConnectionInfo(current.getPrincipal(), current.getSecret(),
@@ -137,7 +137,8 @@ public class SystemEngineTest extends IntegrationTest {
 				}
 				FireboltException e = assertThrows(FireboltException.class, () -> systemConnection.createStatement().executeQuery("select count(*) from dummy"));
 				String actualErrorMessage = e.getErrorMessageFromServer().replaceAll("\r?\n", "");
-				assertTrue(expectedErrorMessages.contains(actualErrorMessage), "Unexpected error message: " + actualErrorMessage);
+				// Check that at least  one error message from expectedErrorMessages is contained in the actual error message
+				assertTrue(expectedErrorMessages.stream().anyMatch(actualErrorMessage::contains), "Unexpected error message: " + actualErrorMessage);
 			} finally {
 				try {
 					customConnection.createStatement().executeUpdate("DROP TABLE dummy");
@@ -178,7 +179,7 @@ public class SystemEngineTest extends IntegrationTest {
 					try (Statement statement = connection.createStatement()) {
 						statement.executeUpdate(query);
 					} catch (SQLException e) { // catch just in case to do our best to clean everything even if test has failed
-						log.log(Level.WARNING, "Cannot perform query " + query, e);
+						log.warn("Cannot perform query {}",  query, e);
 					}
 				}
 			}
@@ -293,7 +294,7 @@ public class SystemEngineTest extends IntegrationTest {
 		FireboltConnection fbConn = (FireboltConnection)connection;
 		String accessToken = fbConn.getAccessToken().orElseThrow(() -> new IllegalStateException("access token is not found"));
 		FireboltProperties fbProps = fbConn.getSessionProperties();
-		URL url = new URL(format("%s/query?output_format=TabSeparatedWithNamesAndTypes&database=%s&account_id=%s", fbProps.getHttpConnectionUrl(), database, fbProps.getAccountId()));
+		URL url = new URL(format("%s/query?output_format=TabSeparatedWithNamesAndTypes&database=%s", fbProps.getHttpConnectionUrl(), database));
 		HttpURLConnection con = (HttpURLConnection)url.openConnection();
 		con.setRequestMethod("POST");
 		con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
@@ -342,8 +343,9 @@ public class SystemEngineTest extends IntegrationTest {
 						format("DROP DATABASE \"%s\"", SECOND_DATABASE_NAME)}) {
 					try (Statement statement = connection.createStatement()) {
 						statement.executeUpdate(query);
-					} catch (SQLException e) { // catch just in case to do our best to clean everything even if test has failed
-						log.log(Level.WARNING, "Cannot perform query " + query, e);
+					} catch (
+							SQLException e) { // catch just in case to do our best to clean everything even if test has failed
+						log.warn("Cannot perform query {}", query, e);
 					}
 				}
 			}

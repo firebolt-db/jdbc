@@ -6,6 +6,7 @@ import com.firebolt.jdbc.resultset.column.Column;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import com.firebolt.jdbc.type.date.SqlDateUtil;
 import lombok.Builder;
+import lombok.CustomLog;
 import lombok.Value;
 import org.apache.commons.text.StringEscapeUtils;
 
@@ -27,6 +28,7 @@ import static com.firebolt.jdbc.type.array.SqlArrayUtil.BYTE_ARRAY_PREFIX;
 import static com.firebolt.jdbc.type.array.SqlArrayUtil.hexStringToByteArray;
 
 /** This class contains the java types the Firebolt data types are mapped to */
+@CustomLog
 public enum BaseType {
 	LONG(TypePredicate.mayBeFloatingNumber, Long.class, conversion -> Long.parseLong(checkInfinity(conversion.getValue())), conversion -> Double.valueOf(conversion.getValue()).longValue()),
 	INTEGER(TypePredicate.mayBeFloatingNumber, Integer.class, conversion -> Integer.parseInt(checkInfinity(conversion.getValue())), conversion -> Integer.parseInt(Long.toString(Double.valueOf(conversion.getValue()).longValue()))),
@@ -133,7 +135,7 @@ public enum BaseType {
 	}
 
 	public static boolean isNull(String value) {
-		return NULL_VALUE.equalsIgnoreCase(value);
+		return NULL_VALUE.equals(value);
 	}
 
 	private static boolean isNan(String value) {

@@ -6,7 +6,6 @@ plugins {
     id "org.sonarqube" version "5.0.0.4638"
     id 'maven-publish'
     id 'com.github.johnrengelman.shadow' version '8.0.0'
-    id 'org.quiltmc.gradle.licenser' version '2.0.2'
     id 'signing'
 }
 
@@ -66,7 +65,6 @@ dependencies {
     implementation 'net.jodah:expiringmap:0.5.11'
     implementation 'org.apache.commons:commons-text:1.12.0'
     implementation 'org.lz4:lz4-java:1.8.0'
-    implementation 'org.slf4j:jul-to-slf4j:2.0.13'
 
     implementation fileTree(dir: 'libs', includes: ['*.jar'])
 
@@ -336,8 +334,11 @@ task generateJavadoc(type: Javadoc) {
     options.addStringOption('Xdoclint:none', '-quiet')
 }
 
-
 signing {
+    def signingKey = System.getenv("GRADLE_SIGNING_KEY")
+    def signingPassword = System.getenv("GRADLE_SIGNING_PASSWORD")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+
     sign publishing.publications
 }
 

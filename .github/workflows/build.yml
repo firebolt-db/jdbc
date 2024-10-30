@@ -45,12 +45,12 @@ jobs:
         run: |
           echo "PROJECT_VERSION=$(./gradlew printVersion |grep 'PROJECT_VERSION=' | cut -d= -f2)" >> $GITHUB_OUTPUT
       - name: Upload uber-jar
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
           path: build/libs/firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
       - name: Upload sources-jar
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}-sources.jar
           path: build/libs/firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}-sources.jar
