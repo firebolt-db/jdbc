@@ -16,6 +16,7 @@ import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltEngineVersion2Service;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
+import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.util.PropertyUtil;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
@@ -34,7 +35,6 @@ import static java.lang.String.format;
 public class FireboltConnectionServiceSecret extends FireboltConnection {
     private static final String PROTOCOL_VERSION = "2.1";
     private final FireboltGatewayUrlService fireboltGatewayUrlService;
-    private final FireboltAccountIdService fireboltAccountIdService;
     private FireboltEngineService fireboltEngineService; // depends on infra version and is discovered during authentication
 
     FireboltConnectionServiceSecret(@NonNull String url,
@@ -43,26 +43,26 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
                                     FireboltGatewayUrlService fireboltGatewayUrlService,
                                     FireboltStatementService fireboltStatementService,
                                     FireboltEngineInformationSchemaService fireboltEngineService,
-                                    FireboltAccountIdService fireboltAccountIdService) throws SQLException {
-        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION);
+            FireboltAccountIdService fireboltAccountIdService,
+            ParserVersion parserVersion) throws SQLException {
+        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION,
+                parserVersion);
         this.fireboltGatewayUrlService = fireboltGatewayUrlService;
-        this.fireboltAccountIdService = fireboltAccountIdService;
         this.fireboltEngineService = fireboltEngineService;
         connect();
     }
 
     @ExcludeFromJacocoGeneratedReport
-    FireboltConnectionServiceSecret(@NonNull String url, Properties connectionSettings) throws SQLException {
-        super(url, connectionSettings, PROTOCOL_VERSION);
+    FireboltConnectionServiceSecret(@NonNull String url, Properties connectionSettings, ParserVersion parserVersion)
+            throws SQLException {
+        super(url, connectionSettings, PROTOCOL_VERSION, parserVersion);
         OkHttpClient httpClient = getHttpClient(loginProperties);
-        this.fireboltGatewayUrlService = new FireboltGatewayUrlService(createFireboltAccountRetriever(httpClient,"engineUrl", GatewayUrlResponse.class));
-        this.fireboltAccountIdService = new FireboltAccountIdService(createFireboltAccountRetriever(httpClient,"resolve", FireboltAccount.class));
-        // initialization of fireboltEngineService depends on the infraVersion (the version of engine)
+        this.fireboltGatewayUrlService = new FireboltGatewayUrlService(createFireboltAccountRetriever(httpClient, GatewayUrlResponse.class));
         connect();
     }
 
-    private <T> FireboltAccountRetriever<T> createFireboltAccountRetriever(OkHttpClient httpClient, String path, Class<T> type) {
-        return new FireboltAccountRetriever<>(httpClient, this, loginProperties.getUserDrivers(), loginProperties.getUserClients(), loginProperties.getHost(), path, type);
+    private <T> FireboltAccountRetriever<T> createFireboltAccountRetriever(OkHttpClient httpClient, Class<T> type) {
+        return new FireboltAccountRetriever<>(httpClient, this, loginProperties.getUserDrivers(), loginProperties.getUserClients(), loginProperties.getHost(), type);
     }
 
     @Override
@@ -102,11 +102,9 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
 
     private FireboltProperties getSessionPropertiesForSystemEngine(String accessToken, String accountName) throws SQLException {
         String systemEngineEndpoint = fireboltGatewayUrlService.getUrl(accessToken, accountName);
-        FireboltAccount account = fireboltAccountIdService.getValue(accessToken, accountName);
-        infraVersion = account.getInfraVersion();
+        infraVersion = 2;
         URL systemEngienUrl = UrlUtil.createUrl(systemEngineEndpoint);
         Map<String, String> systemEngineUrlUrlParams = UrlUtil.getQueryParameters(systemEngienUrl);
-        String accountId = systemEngineUrlUrlParams.getOrDefault(ACCOUNT_ID.getKey(), account.getId());
         for (Entry<String, String> e : systemEngineUrlUrlParams.entrySet()) {
             loginProperties.addProperty(e);
         }
@@ -114,7 +112,6 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
                 .toBuilder()
                 .systemEngine(true)
                 .compress(false)
-                .accountId(accountId)
                 .host(systemEngienUrl.getHost())
                 .build();
     }

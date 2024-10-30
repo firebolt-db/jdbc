@@ -9,6 +9,7 @@ import com.firebolt.jdbc.type.FireboltDataType;
 import integration.ConnectionInfo;
 import integration.IntegrationTest;
 import lombok.Builder;
+import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.junit.jupiter.api.AfterEach;
@@ -32,6 +33,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@CustomLog
 class PreparedStatementTest extends IntegrationTest {
 
 	@BeforeEach
@@ -428,6 +431,26 @@ class PreparedStatementTest extends IntegrationTest {
 				assertEquals("https://www.tesla.com/", rs.getString(1));
 				assertEquals(new URL("https://www.tesla.com/"), rs.getURL(1));
 				assertFalse(rs.next());
+			}
+		}
+	}
+
+	@Test
+	void shouldFetchSpecialCharacters() throws SQLException, MalformedURLException {
+		try (Connection connection = createConnection()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("SELECT ? as a, ? as b, ? as c, ? as d")) {
+				statement.setString(1, "ї");
+				statement.setString(2, "\n");
+				statement.setString(3, "\\");
+				statement.setString(4, "don't");
+				statement.execute();
+				ResultSet rs = statement.getResultSet();
+				assertTrue(rs.next());
+				assertEquals("ї", rs.getString(1));
+				assertEquals("\n", rs.getString(2));
+				assertEquals("\\", rs.getString(3));
+				assertEquals("don't", rs.getString(4));
 			}
 		}
 	}

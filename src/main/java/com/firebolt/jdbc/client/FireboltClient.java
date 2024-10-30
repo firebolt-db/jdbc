@@ -8,6 +8,7 @@ import com.firebolt.jdbc.exception.ServerError;
 import com.firebolt.jdbc.exception.ServerError.Error.Location;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import com.firebolt.jdbc.util.CloseableUtil;
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NonNull;
 import okhttp3.Call;
@@ -48,13 +49,12 @@ import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 import static java.util.Optional.ofNullable;
 
 @Getter
+@CustomLog
 public abstract class FireboltClient implements CacheListener {
-
 	private static final String HEADER_AUTHORIZATION = "Authorization";
 	private static final String HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE = "Bearer ";
 	private static final String HEADER_USER_AGENT = "User-Agent";
 	private static final String HEADER_PROTOCOL_VERSION = "Firebolt-Protocol-Version";
-	private static final Logger log = Logger.getLogger(FireboltClient.class.getName());
 	private static final Pattern plainErrorPattern = Pattern.compile("Line (\\d+), Column (\\d+): (.*)$", Pattern.MULTILINE);
 	private final OkHttpClient httpClient;
 	private final String headerUserAgentValue;
@@ -181,13 +181,12 @@ public abstract class FireboltClient implements CacheListener {
 		return response.body().string();
 	}
 
-	@SuppressWarnings("java:S2139") // TODO: Exceptions should be either logged or rethrown but not both
 	private String extractErrorMessage(Response response, boolean isCompress) throws SQLException {
 		byte[] entityBytes;
 		try {
 			entityBytes = response.body() !=  null ? response.body().bytes() : null;
 		} catch (IOException e) {
-			log.log(Level.WARNING, "Could not parse response containing the error message from Firebolt", e);
+			log.warn("Could not parse response containing the error message from Firebolt", e);
 			String errorResponseMessage = format("Server failed to execute query%ninternal error:%n%s",
 					getInternalErrorWithHeadersText(response));
 			throw new FireboltException(errorResponseMessage, response.code(), e);
@@ -202,7 +201,7 @@ public abstract class FireboltClient implements CacheListener {
 				return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8)).lines()
 						.collect(Collectors.joining("\n")) + "\n";
 			} catch (Exception e) {
-				log.log(Level.WARNING, "Could not decompress error from server");
+				log.warn("Could not decompress error from server");
 			}
 		}
 		return new String(entityBytes, StandardCharsets.UTF_8);

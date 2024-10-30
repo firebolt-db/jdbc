@@ -10,6 +10,7 @@ import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementUtil;
+import com.firebolt.jdbc.type.ParserVersion;
 import lombok.NonNull;
 import okhttp3.Call;
 import okhttp3.Dispatcher;
@@ -349,7 +350,7 @@ class StatementClientImplTest {
 		Call useCall = getMockedCallWithResponse(200, "", responseHeaders);
 		Call select1Call = getMockedCallWithResponse(200, "");
 		when(okHttpClient.newCall(any())).thenReturn(useCall, select1Call);
-		FireboltConnection connection = new FireboltConnection("url", props, "0") {
+		FireboltConnection connection = new FireboltConnection("url", props, "0", ParserVersion.CURRENT) {
 			{
 				this.infraVersion = mockedInfraVersion;
 				try {

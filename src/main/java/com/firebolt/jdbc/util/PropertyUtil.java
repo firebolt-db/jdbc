@@ -2,6 +2,7 @@ package com.firebolt.jdbc.util;
 
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
+import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
 
 import java.sql.DriverPropertyInfo;
@@ -17,6 +18,7 @@ import java.util.stream.Stream;
 import static com.firebolt.jdbc.connection.UrlUtil.extractProperties;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.getNonDeprecatedProperties;
 
+@CustomLog
 @UtilityClass
 public class PropertyUtil {
 

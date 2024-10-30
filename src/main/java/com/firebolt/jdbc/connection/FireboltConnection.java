@@ -18,10 +18,13 @@ import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
 import com.firebolt.jdbc.type.FireboltDataType;
+import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.type.array.FireboltArray;
 import com.firebolt.jdbc.type.lob.FireboltBlob;
 import com.firebolt.jdbc.type.lob.FireboltClob;
 import com.firebolt.jdbc.util.PropertyUtil;
+import lombok.CustomLog;
+import lombok.Getter;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
 
@@ -56,8 +59,6 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.getNonDeprecatedProperties;
@@ -66,9 +67,9 @@ import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.util.stream.Collectors.toMap;
 
+@CustomLog
 public abstract class FireboltConnection extends JdbcBase implements Connection, CacheListener {
 
-	private static final Logger log = Logger.getLogger(FireboltConnection.class.getName());
 	private final FireboltAuthenticationService fireboltAuthenticationService;
 	private final FireboltStatementService fireboltStatementService;
 	protected String httpConnectionUrl;
@@ -84,12 +85,16 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	//Properties that are used at the beginning of the connection for authentication
 	protected final FireboltProperties loginProperties;
 	private final Collection<CacheListener> cacheListeners = Collections.newSetFromMap(new IdentityHashMap<>());
+	// Parameter parser is determined by the version we're running on
+	@Getter
+	public final ParserVersion parserVersion;
 
 	protected FireboltConnection(@NonNull String url,
 								 Properties connectionSettings,
 								 FireboltAuthenticationService fireboltAuthenticationService,
 							  	 FireboltStatementService fireboltStatementService,
-								 String protocolVersion) {
+			String protocolVersion,
+			ParserVersion parserVersion) {
 		this.loginProperties = extractFireboltProperties(url, connectionSettings);
 
 		this.fireboltAuthenticationService = fireboltAuthenticationService;
@@ -100,11 +105,13 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
 		this.protocolVersion = protocolVersion;
+		this.parserVersion = parserVersion;
 	}
 
 	// This code duplication between constructors is done because of back reference: dependent services require reference to current instance of FireboltConnection that prevents using constructor chaining or factory method.
 	@ExcludeFromJacocoGeneratedReport
-	protected FireboltConnection(@NonNull String url, Properties connectionSettings, String protocolVersion) throws SQLException {
+	protected FireboltConnection(@NonNull String url, Properties connectionSettings, String protocolVersion,
+			ParserVersion parserVersion) throws SQLException {
 		this.loginProperties = extractFireboltProperties(url, connectionSettings);
 		OkHttpClient httpClient = getHttpClient(loginProperties);
 
@@ -116,6 +123,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		this.connectionTimeout = loginProperties.getConnectionTimeoutMillis();
 		this.networkTimeout = loginProperties.getSocketTimeoutMillis();
 		this.protocolVersion = protocolVersion;
+		this.parserVersion = parserVersion;
 	}
 
 	protected abstract FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient);
@@ -126,8 +134,10 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	private static FireboltConnection createConnectionInstance(@NonNull String url, Properties connectionSettings) throws SQLException {
 		switch(getUrlVersion(url, connectionSettings)) {
-			case 1: return new FireboltConnectionUserPassword(url, connectionSettings);
-			case 2: return new FireboltConnectionServiceSecret(url, connectionSettings);
+			case 1:
+				return new FireboltConnectionUserPassword(url, connectionSettings, ParserVersion.LEGACY);
+			case 2:
+				return new FireboltConnectionServiceSecret(url, connectionSettings, ParserVersion.CURRENT);
 			default: throw new IllegalArgumentException(format("Cannot distinguish version from url %s", url));
 		}
 	}
@@ -171,7 +181,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		}
 		databaseMetaData = retrieveMetaData();
 
-		log.fine("Connection opened");
+		log.debug("Connection opened");
 	}
 
 	protected abstract void authenticate() throws SQLException;
@@ -319,7 +329,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	@Override
 	public void close() {
-		log.fine("Closing connection");
+		log.debug("Closing connection");
 		synchronized (this) {
 			if (isClosed()) {
 				return;
@@ -332,13 +342,13 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 				try {
 					statement.close(false);
 				} catch (Exception e) {
-					log.log(Level.WARNING, "Could not close statement", e);
+					log.warn("Could not close statement", e);
 				}
 			}
 			statements.clear();
 		}
 		databaseMetaData = null;
-		log.warning("Connection closed");
+		log.debug("Connection closed");
 	}
 
 	protected FireboltProperties extractFireboltProperties(String jdbcUri, Properties connectionProperties) {
@@ -418,7 +428,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		}
 		try {
 			if (!loginProperties.isSystemEngine()) {
-				validateConnection(getSessionProperties(), true);
+				validateConnection(getSessionProperties(), true, true);
 			}
 			return true;
 		} catch (Exception e) {
@@ -426,18 +436,22 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		}
 	}
 
-	private void validateConnection(FireboltProperties fireboltProperties, boolean ignoreToManyRequestsError)
+	private void validateConnection(FireboltProperties fireboltProperties, boolean ignoreToManyRequestsError, boolean isInternalRequest)
 			throws SQLException {
-		try (Statement s = createStatement(fireboltProperties)) {
+		FireboltProperties propertiesCopy = FireboltProperties.copy(fireboltProperties);
+		if (isInternalRequest) {
+			propertiesCopy.addProperty("auto_start_stop_control", "ignore");
+		}
+		try (Statement s = createStatement(propertiesCopy)) {
 			s.execute("SELECT 1");
 		} catch (Exception e) {
 			// A connection is not invalid when too many requests are being sent.
 			// This error cannot be ignored when testing the connection to validate a param.
 			if (ignoreToManyRequestsError && e instanceof FireboltException
 					&& ((FireboltException) e).getType() == ExceptionType.TOO_MANY_REQUESTS) {
-				log.log(Level.WARNING, "Too many requests are being sent to the server", e);
+				log.warn("Too many requests are being sent to the server", e);
 			} else {
-				log.log(Level.WARNING, "Connection is not valid", e);
+				log.warn("Connection is not valid", e);
 				throw e;
 			}
 		}
@@ -471,7 +485,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		try {
 			FireboltProperties tmpProperties = FireboltProperties.copy(sessionProperties);
 			propertiesEditor.accept(tmpProperties);
-			validateConnection(tmpProperties, false);
+			validateConnection(tmpProperties, false, false);
 			propertiesEditor.accept(sessionProperties);
 		} catch (FireboltException e) {
 			throw e;

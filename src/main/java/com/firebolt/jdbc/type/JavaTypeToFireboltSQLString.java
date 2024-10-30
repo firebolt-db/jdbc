@@ -35,7 +35,7 @@ public enum JavaTypeToFireboltSQLString {
 	UUID(java.util.UUID.class, Object::toString),
 	BYTE(Byte.class, value -> Byte.toString(((Number) value).byteValue())),
 	SHORT(Short.class, value -> Short.toString(((Number) value).shortValue())),
-	STRING(String.class, getSQLStringValueOfString()),
+	STRING(String.class, getSQLStringValueOfString(ParserVersion.CURRENT), getSQLStringValueOfStringVersioned()),
 	LONG(Long.class, value -> Long.toString(((Number)value).longValue())),
 	INTEGER(Integer.class, value -> Integer.toString(((Number)value).intValue())),
 	BIG_INTEGER(BigInteger.class, value -> value instanceof BigInteger ? value.toString() : Long.toString(((Number)value).longValue())),
@@ -47,8 +47,11 @@ public enum JavaTypeToFireboltSQLString {
 	ARRAY(Array.class, SqlArrayUtil::arrayToString),
 	BYTE_ARRAY(byte[].class, value -> ofNullable(byteArrayToHexString((byte[])value, true)).map(x  -> format("E'%s'::BYTEA", x)).orElse(null)),
 	;
-	private static final List<Entry<String, String>> characterToEscapedCharacterPairs = List.of(
+
+	private static final List<Entry<String, String>> legacyCharacterToEscapedCharacterPairs = List.of(
 			Map.entry("\0", "\\0"), Map.entry("\\", "\\\\"), Map.entry("'", "''"));
+	private static final List<Entry<String, String>> characterToEscapedCharacterPairs = List.of(
+			Map.entry("'", "''"));
 	//https://docs.oracle.com/javase/1.5.0/docs/guide/jdbc/getstart/mapping.html
 	private static final Map<JDBCType, Class<?>> jdbcTypeToClass = Map.ofEntries(
 			Map.entry(JDBCType.CHAR, String.class),
@@ -100,22 +103,33 @@ public enum JavaTypeToFireboltSQLString {
 	}
 
 	public static String transformAny(Object object) throws SQLException {
-		return transformAny(object, () -> getType(object));
+		return transformAny(object, ParserVersion.CURRENT);
+	}
+
+	public static String transformAny(Object object, ParserVersion version) throws SQLException {
+		return transformAny(object, () -> getType(object), version);
 	}
 
 	public static String transformAny(Object object, int sqlType) throws SQLException {
-		return transformAny(object, () -> getType(sqlType));
+		return transformAny(object, sqlType, ParserVersion.CURRENT);
 	}
 
-	private static String transformAny(Object object, CheckedSupplier<Class<?>> classSupplier) throws SQLException {
-		return object == null ? NULL_VALUE : transformAny(object, classSupplier.get());
+	public static String transformAny(Object object, int sqlType, ParserVersion version) throws SQLException {
+		return transformAny(object, () -> getType(sqlType), version);
 	}
 
-	private static String transformAny(Object object, Class<?> objectType) throws SQLException {
+	private static String transformAny(Object object, CheckedSupplier<Class<?>> classSupplier, ParserVersion version) throws SQLException {
+		return object == null ? NULL_VALUE : transformAny(object, classSupplier.get(), version);
+	}
+
+	private static String transformAny(Object object, Class<?> objectType, ParserVersion version) throws SQLException {
 		JavaTypeToFireboltSQLString converter = Optional.ofNullable(classToType.get(objectType))
 				.orElseThrow(() -> new FireboltException(
 						format("Cannot convert type %s. The type is not supported.", objectType),
 						TYPE_NOT_SUPPORTED));
+		if (version == ParserVersion.LEGACY && object instanceof String) {
+			return converter.transform(object, version);
+		}
 		return converter.transform(object);
 	}
 
@@ -133,10 +147,15 @@ public enum JavaTypeToFireboltSQLString {
 		}
 	}
 
-	private static CheckedFunction<Object, String> getSQLStringValueOfString() {
+	private static CheckedBiFunction<Object, Object, String> getSQLStringValueOfStringVersioned() {
+		return (value, version) -> getSQLStringValueOfString((ParserVersion) version).apply(value);
+	}
+
+	private static CheckedFunction<Object, String> getSQLStringValueOfString(ParserVersion version) {
 		return value -> {
 			String escaped = (String) value;
-			for (Entry<String, String> specialCharacter : characterToEscapedCharacterPairs) {
+			List<Entry<String, String>> charactersToEscape = version == ParserVersion.LEGACY ? legacyCharacterToEscapedCharacterPairs : characterToEscapedCharacterPairs;
+			for (Entry<String, String> specialCharacter : charactersToEscape) {
 				escaped = escaped.replace(specialCharacter.getKey(), specialCharacter.getValue());
 			}
 			return format("'%s'", escaped);

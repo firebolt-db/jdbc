@@ -4,6 +4,7 @@ import com.firebolt.jdbc.statement.rawstatement.RawStatement;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
 import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
 import com.firebolt.jdbc.util.StringUtil;
+import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
@@ -14,19 +15,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @UtilityClass
+@CustomLog
 public class StatementUtil {
 
 	private static final String SET_PREFIX = "set";
 	private static final Pattern SET_WITH_SPACE_REGEX = Pattern.compile(SET_PREFIX + " ", Pattern.CASE_INSENSITIVE);
 	private static final String[] SELECT_KEYWORDS = new String[] { "show", "select", "describe", "exists", "explain",
 			"with", "call" };
-	private static final Logger log = Logger.getLogger(StatementUtil.class.getName());
 
 	/**
 	 * Returns true if the statement is a query (eg: SELECT, SHOW).
@@ -181,7 +180,7 @@ public class StatementUtil {
 	public Entry<Optional<String>, Optional<String>> extractDbNameAndTableNamePairFromCleanQuery(String cleanSql) {
 		Optional<String> from = Optional.empty();
 		if (isQuery(cleanSql)) {
-			log.log(Level.FINE, "Extracting DB and Table name for SELECT: {0}", cleanSql);
+			log.debug("Extracting DB and Table name for SELECT: {}", cleanSql);
 			String withoutQuotes = cleanSql.replace("'", "").trim();
 			String withoutQuotesUpperCase = withoutQuotes.toUpperCase();
 			if (withoutQuotesUpperCase.startsWith("SELECT")) {
@@ -194,7 +193,7 @@ public class StatementUtil {
 			} else if (withoutQuotesUpperCase.startsWith("SHOW")) {
 				from = Optional.empty(); // Depends on the information requested
 			} else {
-				log.log(Level.FINE, "Could not find table name for query {0}. This may happen when there is no table.", cleanSql);
+				log.debug("Could not find table name for query {}. This may happen when there is no table.", cleanSql);
 			}
 		}
 		return Map.entry(extractDbNameFromFromPartOfTheQuery(from.orElse(null)),

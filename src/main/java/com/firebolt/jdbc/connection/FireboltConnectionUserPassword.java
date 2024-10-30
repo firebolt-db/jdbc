@@ -11,6 +11,7 @@ import com.firebolt.jdbc.service.FireboltEngineApiService;
 import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
 import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltStatementService;
+import com.firebolt.jdbc.type.ParserVersion;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
 
@@ -27,15 +28,18 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
                                    Properties connectionSettings,
                                    FireboltAuthenticationService fireboltAuthenticationService,
                                    FireboltStatementService fireboltStatementService,
-                                   FireboltEngineInformationSchemaService fireboltEngineService) throws SQLException {
-        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION);
+            FireboltEngineInformationSchemaService fireboltEngineService,
+            ParserVersion parserVersion) throws SQLException {
+        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION,
+                parserVersion);
         this.fireboltEngineService = fireboltEngineService;
         connect();
     }
 
     @ExcludeFromJacocoGeneratedReport
-    FireboltConnectionUserPassword(@NonNull String url, Properties connectionSettings) throws SQLException {
-        super(url, connectionSettings, PROTOCOL_VERSION);
+    FireboltConnectionUserPassword(@NonNull String url, Properties connectionSettings, ParserVersion parserVersion)
+            throws SQLException {
+        super(url, connectionSettings, PROTOCOL_VERSION, parserVersion);
         OkHttpClient httpClient = getHttpClient(loginProperties);
         this.fireboltEngineService = new FireboltEngineApiService(new FireboltAccountClient(httpClient, this, loginProperties.getUserDrivers(), loginProperties.getUserClients()));
         connect();
