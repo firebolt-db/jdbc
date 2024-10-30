@@ -141,6 +141,7 @@ class ConnectionTest extends IntegrationTest {
     }
 
     @Test
+    @Tag("v2")
     void validatesOnSystemEngineIfParameterProvided() throws SQLException {
         try (Connection systemConnection = createConnection(null)) {
             String engineName = integration.ConnectionInfo.getInstance().getEngine() + "_validate_test";
