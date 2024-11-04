@@ -13,12 +13,12 @@ class VersionUtilTest {
 
 	@Test
 	void shouldGetDriverMinorVersion() {
-		assertEquals(2, VersionUtil.getDriverMinorVersion());
+		assertEquals(3, VersionUtil.getDriverMinorVersion());
 	}
 
 	@Test
 	void shouldGetProjectVersion() {
-		assertEquals("3.2.1", VersionUtil.getDriverVersion());
+		assertEquals("3.3.0", VersionUtil.getDriverVersion());
 	}
 
 	@Test
