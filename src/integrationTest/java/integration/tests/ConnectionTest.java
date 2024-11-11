@@ -172,6 +172,16 @@ class ConnectionTest extends IntegrationTest {
 
     }
 
+
+    @Test
+    void validateConnection() throws SQLException {
+        ConnectionInfo params = integration.ConnectionInfo.getInstance();
+        String url = getJdbcUrl(params, true, true);
+        try (Connection connection = DriverManager.getConnection(url, params.getPrincipal(), params.getSecret())) {
+            assertTrue(connection.isValid(500));
+        }
+    }
+
     void unsuccessfulConnect(boolean useDatabase, boolean useEngine) throws SQLException {
         ConnectionInfo params = integration.ConnectionInfo.getInstance();
         String url = getJdbcUrl(params, useDatabase, useEngine);
