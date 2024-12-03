@@ -21,4 +21,5 @@ public class FireboltDataTypeDisplayNames {
 	static final String ARRAY = "array";
 	static final String TUPLE = "tuple";
 	static final String BYTEA = "bytea";
+	static final String GEOGRAPHY = "geography";
 }

@@ -14,6 +14,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -394,6 +395,33 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
+
+	@Test
+	@Tag("v2")
+	void shouldInsertAndSelectGeography() throws SQLException {
+
+		executeStatementFromFile("/statements/prepared-statement/ddl_2_0.sql");
+		try (Connection connection = createConnection()) {
+
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO prepared_statement_2_0_test (make, location) VALUES (?,?)")) {
+				statement.setString(1, "Ford");
+				statement.setString(2, "POINT(1 1)");
+				statement.executeUpdate();
+			}
+
+			try (Statement statement = connection.createStatement();
+					ResultSet rs = statement
+							.executeQuery("SELECT location FROM prepared_statement_2_0_test")) {
+				rs.next();
+				assertEquals(FireboltDataType.GEOGRAPHY.name().toLowerCase(),
+						rs.getMetaData().getColumnTypeName(1).toLowerCase());
+				assertEquals("0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F", rs.getString(1));
+			}
+		} finally {
+			executeStatementFromFile("/statements/prepared-statement/cleanup_2_0.sql");
+		}
+	}
 
 	private QueryResult createExpectedResult(List<List<?>> expectedRows) {
 		return QueryResult.builder().databaseName(ConnectionInfo.getInstance().getDatabase())

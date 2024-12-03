@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS prepared_statement_2_0_test;
