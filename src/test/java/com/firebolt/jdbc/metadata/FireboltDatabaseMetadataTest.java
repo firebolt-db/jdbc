@@ -361,7 +361,7 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void shouldGetDriverVersion() throws SQLException {
-		assertEquals("3.3.0", fireboltDatabaseMetadata.getDriverVersion());
+		assertEquals("3.4.0", fireboltDatabaseMetadata.getDriverVersion());
 	}
 
 	@Test
