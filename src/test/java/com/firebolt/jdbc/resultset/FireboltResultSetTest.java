@@ -1474,6 +1474,7 @@ class FireboltResultSetTest {
 		assertEquals(expectedValue, resultSet.getObject("location"));
 		assertEquals(expectedValue, resultSet.getString(9));
 		assertEquals(expectedValue, resultSet.getString("location"));
+		// Returns native JDBC type
 		assertEquals(Types.VARCHAR, resultSet.getMetaData().getColumnType(9));
 	}
 
