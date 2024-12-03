@@ -1465,6 +1465,19 @@ class FireboltResultSetTest {
 	}
 
 	@Test
+	void shouldReturnGeography() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = createResultSet(inputStream);
+		resultSet.next();
+		String expectedValue = "0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F";
+		assertEquals(expectedValue, resultSet.getObject(9));
+		assertEquals(expectedValue, resultSet.getObject("location"));
+		assertEquals(expectedValue, resultSet.getString(9));
+		assertEquals(expectedValue, resultSet.getString("location"));
+		assertEquals(Types.VARCHAR, resultSet.getMetaData().getColumnType(9));
+	}
+
+	@Test
 	void shouldBeCaseInsensitive() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
