@@ -356,7 +356,7 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void shouldGetDriverMinorVersion() {
-		assertEquals(3, fireboltDatabaseMetadata.getDriverMinorVersion());
+		assertEquals(4, fireboltDatabaseMetadata.getDriverMinorVersion());
 	}
 
 	@Test
