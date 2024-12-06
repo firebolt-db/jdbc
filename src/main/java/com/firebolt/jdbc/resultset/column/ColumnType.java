@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.firebolt.jdbc.type.FireboltDataType.ARRAY;
+import static com.firebolt.jdbc.type.FireboltDataType.STRUCT;
 import static com.firebolt.jdbc.type.FireboltDataType.TUPLE;
 import static com.firebolt.jdbc.type.FireboltDataType.ofType;
 
@@ -62,6 +63,8 @@ public class ColumnType {
 			innerDataTypes = getCollectionSubType(FireboltDataType.ARRAY, typeWithoutNullKeyword);
 		} else if (isType(FireboltDataType.TUPLE, typeWithoutNullKeyword)) {
 			innerDataTypes = getCollectionSubType(FireboltDataType.TUPLE, typeWithoutNullKeyword);
+		} else if (isType(FireboltDataType.STRUCT, typeWithoutNullKeyword)) {
+			innerDataTypes = getCollectionSubType(FireboltDataType.STRUCT, typeWithoutNullKeyword);
 		}
 
 		int typeEndIndex = getTypeEndPosition(typeWithoutNullKeyword);
@@ -108,6 +111,8 @@ public class ColumnType {
 		if (fireboltDataType.equals(TUPLE)) {
 			types = typeWithoutNullKeyword.split(",(?![^()]*\\))"); // Regex to split on comma and ignoring comma that are between
 			// parenthesis
+		} else if (fireboltDataType.equals(STRUCT)) {
+			types = typeWithoutNullKeyword.split(",");
 		} else {
 			types = new String[] {typeWithoutNullKeyword};
 		}
@@ -177,6 +182,8 @@ public class ColumnType {
 			return getArrayCompactTypeName();
 		} else if (isTuple()) {
 			return getTupleCompactTypeName(innerTypes);
+		} else if (isStruct()) {
+			return name;
 		} else {
 			return dataType.getDisplayName();
 		}
@@ -207,6 +214,10 @@ public class ColumnType {
 
 	private boolean isTuple() {
 		return dataType.equals(TUPLE);
+	}
+
+	private boolean isStruct() {
+		return dataType.equals(STRUCT);
 	}
 
 	public ColumnType getArrayBaseColumnType() {

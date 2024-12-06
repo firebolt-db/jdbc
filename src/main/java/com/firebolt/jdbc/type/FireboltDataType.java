@@ -42,7 +42,8 @@ public enum FireboltDataType {
 	TUPLE(Types.OTHER, FireboltDataTypeDisplayNames.TUPLE, BaseType.OBJECT, false, true, 0, 0, 0, false,"Tuple"),
 	BYTEA(Types.BINARY, FireboltDataTypeDisplayNames.BYTEA, BaseType.BYTEA, false, true, 0, 0, 0, false, "ByteA"),
 	GEOGRAPHY(Types.VARCHAR, FireboltDataTypeDisplayNames.GEOGRAPHY, BaseType.TEXT, false, false, 0, 0, 0, false,
-			"Geography");
+			"Geography"),
+	STRUCT(Types.VARCHAR, FireboltDataTypeDisplayNames.STRUCT, BaseType.TEXT, false, false, 0, 0, 0, false, "Struct");
 
 	private static final Map<String, FireboltDataType> typeNameOrAliasToType;
 

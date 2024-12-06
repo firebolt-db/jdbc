@@ -423,6 +423,40 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
+	@Test
+	@Tag("v2")
+	void shouldInsertAndSelectStruct() throws SQLException {
+		Car car1 = Car.builder().make("Ford").sales(12345).ts(new Timestamp(2)).d(new Date(3)).build();
+
+		// TODO: use prepared statement ddl for more complex type
+		executeStatementFromFile("/statements/statement/ddl.sql");
+		try (Connection connection = createConnection()) {
+
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO statement_test (id) VALUES (?)")) {
+				statement.setLong(1, car1.getSales());
+				// statement.setString(2, car1.getMake());
+				// statement.setTimestamp(3, car1.getTs());
+				// statement.setDate(4, car1.getD());
+				statement.executeUpdate();
+			}
+			setParam(connection, "advanced_mode", "true");
+			setParam(connection, "enable_row_selection", "true");
+			try (Statement statement = connection.createStatement();
+					ResultSet rs = statement
+							.executeQuery("SELECT statement_test FROM statement_test")) {
+				rs.next();
+				assertEquals(FireboltDataType.STRUCT.name().toLowerCase() + "(id long null)",
+						rs.getMetaData().getColumnTypeName(1).toLowerCase());
+				String expectedJson = String.format("{\"id\":\"%d\"}",
+						car1.getSales());
+				assertEquals(expectedJson, rs.getString(1));
+			}
+		} finally {
+			executeStatementFromFile("/statements/statement/cleanup.sql");
+		}
+	}
+
 	private QueryResult createExpectedResult(List<List<?>> expectedRows) {
 		return QueryResult.builder().databaseName(ConnectionInfo.getInstance().getDatabase())
 				.tableName("prepared_statement_test")
