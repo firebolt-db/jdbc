@@ -1479,6 +1479,26 @@ class FireboltResultSetTest {
 	}
 
 	@Test
+	void shouldReturnStruct() throws SQLException {
+		inputStream = getInputStreamWithStruct();
+		resultSet = createResultSet(inputStream);
+		resultSet.next();
+		// TODO: is this correct null handling?
+		assertEquals("{\"a\": N}", resultSet.getObject(3));
+		assertEquals("{\"a\": N}", resultSet.getObject("an_empty_struct"));
+		assertEquals("{\"a\": 1}", resultSet.getObject(4));
+		assertEquals("{\"a\": 1}", resultSet.getObject("a_struct"));
+		// Returns native JDBC type
+		for (int i = 3; i <= 5; i++) {
+			assertEquals(Types.VARCHAR, resultSet.getMetaData().getColumnType(i));
+		}
+
+		assertEquals("STRUCT(A INT NULL)", resultSet.getMetaData().getColumnTypeName(3));
+		assertEquals("STRUCT(A INT)", resultSet.getMetaData().getColumnTypeName(4));
+		assertEquals("STRUCT(A INT)", resultSet.getMetaData().getColumnTypeName(5));
+	}
+
+	@Test
 	void shouldBeCaseInsensitive() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -1550,6 +1570,10 @@ class FireboltResultSetTest {
 
 	private InputStream getInputStreamWithArray() {
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-array");
+	}
+
+	private InputStream getInputStreamWithStruct() {
+		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-struct-nofalse");
 	}
 
 	private ResultSet createResultSet(InputStream is) throws SQLException {
