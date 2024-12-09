@@ -1483,9 +1483,8 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithStruct();
 		resultSet = createResultSet(inputStream);
 		resultSet.next();
-		// TODO: is this correct null handling?
-		assertEquals("{\"a\":N}", resultSet.getObject(2));
-		assertEquals("{\"a\":N}", resultSet.getObject("null_struct"));
+		assertEquals("{\"a\":null}", resultSet.getObject(2));
+		assertEquals("{\"a\":null}", resultSet.getObject("null_struct"));
 		assertEquals("{\"a\":\"1\"}", resultSet.getObject(4));
 		assertEquals("{\"a\":\"1\"}", resultSet.getObject("a_struct"));
 		// Returns native JDBC type

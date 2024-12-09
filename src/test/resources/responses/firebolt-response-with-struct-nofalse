@@ -1,4 +1,4 @@
 id	null_struct	an_empty_struct	a_struct
 Int64	struct(a int null)	struct(a int)	struct(a int)
-1	{"a":\N}		{"a":"1"}
-2	{"a":\N}		{"a":"2"}
+1	{"a":null}		{"a":"1"}
+2	{"a":null}		{"a":"2"}
