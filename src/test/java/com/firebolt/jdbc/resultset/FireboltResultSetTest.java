@@ -1484,18 +1484,18 @@ class FireboltResultSetTest {
 		resultSet = createResultSet(inputStream);
 		resultSet.next();
 		// TODO: is this correct null handling?
-		assertEquals("{\"a\": N}", resultSet.getObject(3));
-		assertEquals("{\"a\": N}", resultSet.getObject("an_empty_struct"));
-		assertEquals("{\"a\": 1}", resultSet.getObject(4));
-		assertEquals("{\"a\": 1}", resultSet.getObject("a_struct"));
+		assertEquals("{\"a\":N}", resultSet.getObject(2));
+		assertEquals("{\"a\":N}", resultSet.getObject("null_struct"));
+		assertEquals("{\"a\":\"1\"}", resultSet.getObject(4));
+		assertEquals("{\"a\":\"1\"}", resultSet.getObject("a_struct"));
 		// Returns native JDBC type
-		for (int i = 3; i <= 5; i++) {
+		for (int i = 2; i <= 4; i++) {
 			assertEquals(Types.VARCHAR, resultSet.getMetaData().getColumnType(i));
 		}
 
-		assertEquals("STRUCT(A INT NULL)", resultSet.getMetaData().getColumnTypeName(3));
+		assertEquals("STRUCT(A INT NULL)", resultSet.getMetaData().getColumnTypeName(2));
+		assertEquals("STRUCT(A INT)", resultSet.getMetaData().getColumnTypeName(3));
 		assertEquals("STRUCT(A INT)", resultSet.getMetaData().getColumnTypeName(4));
-		assertEquals("STRUCT(A INT)", resultSet.getMetaData().getColumnTypeName(5));
 	}
 
 	@Test
