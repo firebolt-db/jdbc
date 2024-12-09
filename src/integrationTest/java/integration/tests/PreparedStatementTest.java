@@ -428,38 +428,32 @@ class PreparedStatementTest extends IntegrationTest {
 	void shouldInsertAndSelectStruct() throws SQLException {
 		Car car1 = Car.builder().make("Ford").sales(12345).ts(new Timestamp(2)).d(new Date(3)).build();
 
-		// TODO: use prepared statement ddl for more complex type
-		executeStatementFromFile("/statements/statement/ddl.sql");
+		executeStatementFromFile("/statements/prepared-statement/ddl.sql");
 		try (Connection connection = createConnection()) {
 
 			try (PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO statement_test (id) VALUES (?),(null)")) {
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, ts, d) VALUES (?,?,?,?)")) {
 				statement.setLong(1, car1.getSales());
-				// statement.setString(2, car1.getMake());
-				// statement.setTimestamp(3, car1.getTs());
-				// statement.setDate(4, car1.getD());
+				statement.setString(2, car1.getMake());
+				statement.setTimestamp(3, car1.getTs());
+				statement.setDate(4, car1.getD());
 				statement.executeUpdate();
 			}
 			setParam(connection, "advanced_mode", "true");
 			setParam(connection, "enable_row_selection", "true");
 			try (Statement statement = connection.createStatement();
 					ResultSet rs = statement
-							.executeQuery("SELECT statement_test FROM statement_test")) {
+							.executeQuery("SELECT prepared_statement_test FROM prepared_statement_test")) {
 				rs.next();
-				assertEquals(FireboltDataType.STRUCT.name().toLowerCase() + "(id long null)",
+				assertEquals(FireboltDataType.STRUCT.name().toLowerCase()
+								+ "(make text, sales long, ts timestamp null, d date null, signature bytea null, url text null)",
 						rs.getMetaData().getColumnTypeName(1).toLowerCase());
-				String expectedJson = String.format("{\"id\":\"%d\"}",
-						car1.getSales());
-				assertEquals(expectedJson, rs.getString(1));
-				// Verify null value
-				rs.next();
-				assertEquals(FireboltDataType.STRUCT.name().toLowerCase() + "(id long null)",
-						rs.getMetaData().getColumnTypeName(1).toLowerCase());
-				expectedJson = "{\"id\":null}";
+				String expectedJson = String.format("{\"make\":\"%s\",\"sales\":\"%d\",\"ts\":\"%s\",\"d\":\"%s\",\"signature\":null,\"url\":null}",
+						car1.getMake(), car1.getSales(), car1.getTs().toString(), car1.getD().toString());
 				assertEquals(expectedJson, rs.getString(1));
 			}
 		} finally {
-			executeStatementFromFile("/statements/statement/cleanup.sql");
+			executeStatementFromFile("/statements/prepared-statement/cleanup.sql");
 		}
 	}
 
