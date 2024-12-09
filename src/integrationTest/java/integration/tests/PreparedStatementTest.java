@@ -433,7 +433,7 @@ class PreparedStatementTest extends IntegrationTest {
 		try (Connection connection = createConnection()) {
 
 			try (PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO statement_test (id) VALUES (?)")) {
+					.prepareStatement("INSERT INTO statement_test (id) VALUES (?),(null)")) {
 				statement.setLong(1, car1.getSales());
 				// statement.setString(2, car1.getMake());
 				// statement.setTimestamp(3, car1.getTs());
@@ -450,6 +450,12 @@ class PreparedStatementTest extends IntegrationTest {
 						rs.getMetaData().getColumnTypeName(1).toLowerCase());
 				String expectedJson = String.format("{\"id\":\"%d\"}",
 						car1.getSales());
+				assertEquals(expectedJson, rs.getString(1));
+				// Verify null value
+				rs.next();
+				assertEquals(FireboltDataType.STRUCT.name().toLowerCase() + "(id long null)",
+						rs.getMetaData().getColumnTypeName(1).toLowerCase());
+				expectedJson = "{\"id\":null}";
 				assertEquals(expectedJson, rs.getString(1));
 			}
 		} finally {
