@@ -457,6 +457,44 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
+	@Test
+	@Tag("v2")
+	void shouldInsertAndSelectComplexStruct() throws SQLException {
+		Car car1 = Car.builder().ts(new Timestamp(2)).d(new Date(3)).tags(new String[] { "fast", "sleek" }).build();
+
+		executeStatementFromFile("/statements/prepared-statement-struct/ddl.sql");
+		try (Connection connection = createConnection()) {
+
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO test_struct_helper(a, b) VALUES (?,?)")) {
+				statement.setArray(1, connection.createArrayOf("VARCHAR", car1.getTags()));
+				statement.setTimestamp(2, car1.getTs());
+				statement.executeUpdate();
+			}
+
+			setParam(connection, "advanced_mode", "true");
+			setParam(connection, "enable_row_selection", "true");
+			try (Statement statement = connection.createStatement()) {
+				statement.execute(
+						"INSERT INTO test_struct(id, s) SELECT 1, test_struct_helper FROM test_struct_helper");
+			}
+			try (Statement statement = connection.createStatement();
+					ResultSet rs = statement
+							.executeQuery("SELECT test_struct FROM test_struct")) {
+				rs.next();
+				assertEquals(FireboltDataType.STRUCT.name().toLowerCase()
+						+ "(id int, s struct(a array(text null), b timestamp null))",
+						rs.getMetaData().getColumnTypeName(1).toLowerCase());
+				String expectedJson = String.format(
+						"{\"id\":%d,\"s\":{\"a\":[\"%s\",\"%s\"],\"b\":\"%s\"}}", 1, car1.getTags()[0],
+						car1.getTags()[1], car1.getTs().toString());
+				assertEquals(expectedJson, rs.getString(1));
+			}
+		} finally {
+			executeStatementFromFile("/statements/prepared-statement-struct/cleanup.sql");
+		}
+	}
+
 	private QueryResult createExpectedResult(List<List<?>> expectedRows) {
 		return QueryResult.builder().databaseName(ConnectionInfo.getInstance().getDatabase())
 				.tableName("prepared_statement_test")
@@ -527,6 +565,7 @@ class PreparedStatementTest extends IntegrationTest {
 		Timestamp ts;
 		Date d;
 		URL url;
+		String[] tags;
 	}
 
 }
