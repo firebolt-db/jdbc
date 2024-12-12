@@ -1,18 +1,22 @@
 package com.firebolt.jdbc.resultset;
 
-import com.firebolt.jdbc.CheckedFunction;
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.statement.FireboltStatement;
-import com.firebolt.jdbc.util.LoggerUtil;
-import org.apache.commons.io.IOUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.function.Executable;
-import org.junitpioneer.jupiter.DefaultTimeZone;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
+import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
+import static java.lang.String.format;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -48,23 +52,20 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.Callable;
 
-import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
-import static java.lang.String.format;
-import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import org.apache.commons.io.IOUtils;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
+import org.junitpioneer.jupiter.DefaultTimeZone;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.firebolt.jdbc.CheckedFunction;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.statement.FireboltStatement;
+import com.firebolt.jdbc.util.LoggerUtil;
 
 @ExtendWith(MockitoExtension.class)
 @DefaultTimeZone("UTC")
@@ -1487,14 +1488,20 @@ class FireboltResultSetTest {
 		assertEquals("{\"a\":null}", resultSet.getObject("null_struct"));
 		assertEquals("{\"a\":\"1\"}", resultSet.getObject(4));
 		assertEquals("{\"a\":\"1\"}", resultSet.getObject("a_struct"));
+		assertEquals("{\"a\":[1,2,3]}", resultSet.getObject(5));
+		assertEquals("{\"a\":[1,2,3]}", resultSet.getObject("array_struct"));
+		assertEquals("{\"x\":\"2\",\"a\":{\"b\":\"1\"}}", resultSet.getObject(6));
+		assertEquals("{\"x\":\"2\",\"a\":{\"b\":\"1\"}}", resultSet.getObject("nested_struct"));
 		// Returns native JDBC type
-		for (int i = 2; i <= 4; i++) {
+		for (int i = 2; i <= 6; i++) {
 			assertEquals(Types.VARCHAR, resultSet.getMetaData().getColumnType(i));
 		}
 
 		assertEquals("STRUCT(A INT NULL)", resultSet.getMetaData().getColumnTypeName(2));
 		assertEquals("STRUCT(A INT)", resultSet.getMetaData().getColumnTypeName(3));
 		assertEquals("STRUCT(A INT)", resultSet.getMetaData().getColumnTypeName(4));
+		assertEquals("STRUCT(A ARRAY(INT))", resultSet.getMetaData().getColumnTypeName(5));
+		assertEquals("STRUCT(X INT, A STRUCT(B INT))", resultSet.getMetaData().getColumnTypeName(6));
 	}
 
 	@Test
