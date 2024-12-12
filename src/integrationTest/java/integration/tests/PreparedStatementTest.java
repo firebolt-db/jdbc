@@ -423,6 +423,78 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
+	@Test
+	@Tag("v2")
+	void shouldInsertAndSelectStruct() throws SQLException {
+		Car car1 = Car.builder().make("Ford").sales(12345).ts(new Timestamp(2)).d(new Date(3)).build();
+
+		executeStatementFromFile("/statements/prepared-statement/ddl.sql");
+		try (Connection connection = createConnection()) {
+
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, ts, d) VALUES (?,?,?,?)")) {
+				statement.setLong(1, car1.getSales());
+				statement.setString(2, car1.getMake());
+				statement.setTimestamp(3, car1.getTs());
+				statement.setDate(4, car1.getD());
+				statement.executeUpdate();
+			}
+			setParam(connection, "advanced_mode", "true");
+			setParam(connection, "enable_row_selection", "true");
+			try (Statement statement = connection.createStatement();
+					ResultSet rs = statement
+							.executeQuery("SELECT prepared_statement_test FROM prepared_statement_test")) {
+				rs.next();
+				assertEquals(FireboltDataType.STRUCT.name().toLowerCase()
+								+ "(make text, sales long, ts timestamp null, d date null, signature bytea null, url text null)",
+						rs.getMetaData().getColumnTypeName(1).toLowerCase());
+				String expectedJson = String.format("{\"make\":\"%s\",\"sales\":\"%d\",\"ts\":\"%s\",\"d\":\"%s\",\"signature\":null,\"url\":null}",
+						car1.getMake(), car1.getSales(), car1.getTs().toString(), car1.getD().toString());
+				assertEquals(expectedJson, rs.getString(1));
+			}
+		} finally {
+			executeStatementFromFile("/statements/prepared-statement/cleanup.sql");
+		}
+	}
+
+	@Test
+	@Tag("v2")
+	void shouldInsertAndSelectComplexStruct() throws SQLException {
+		Car car1 = Car.builder().ts(new Timestamp(2)).d(new Date(3)).tags(new String[] { "fast", "sleek" }).build();
+
+		executeStatementFromFile("/statements/prepared-statement-struct/ddl.sql");
+		try (Connection connection = createConnection()) {
+
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO test_struct_helper(a, b) VALUES (?,?)")) {
+				statement.setArray(1, connection.createArrayOf("VARCHAR", car1.getTags()));
+				statement.setTimestamp(2, car1.getTs());
+				statement.executeUpdate();
+			}
+
+			setParam(connection, "advanced_mode", "true");
+			setParam(connection, "enable_row_selection", "true");
+			try (Statement statement = connection.createStatement()) {
+				statement.execute(
+						"INSERT INTO test_struct(id, s) SELECT 1, test_struct_helper FROM test_struct_helper");
+			}
+			try (Statement statement = connection.createStatement();
+					ResultSet rs = statement
+							.executeQuery("SELECT test_struct FROM test_struct")) {
+				rs.next();
+				assertEquals(FireboltDataType.STRUCT.name().toLowerCase()
+						+ "(id int, s struct(a array(text null), b timestamp null))",
+						rs.getMetaData().getColumnTypeName(1).toLowerCase());
+				String expectedJson = String.format(
+						"{\"id\":%d,\"s\":{\"a\":[\"%s\",\"%s\"],\"b\":\"%s\"}}", 1, car1.getTags()[0],
+						car1.getTags()[1], car1.getTs().toString());
+				assertEquals(expectedJson, rs.getString(1));
+			}
+		} finally {
+			executeStatementFromFile("/statements/prepared-statement-struct/cleanup.sql");
+		}
+	}
+
 	private QueryResult createExpectedResult(List<List<?>> expectedRows) {
 		return QueryResult.builder().databaseName(ConnectionInfo.getInstance().getDatabase())
 				.tableName("prepared_statement_test")
@@ -493,6 +565,7 @@ class PreparedStatementTest extends IntegrationTest {
 		Timestamp ts;
 		Date d;
 		URL url;
+		String[] tags;
 	}
 
 }
