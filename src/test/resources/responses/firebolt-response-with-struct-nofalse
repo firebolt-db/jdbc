@@ -1,4 +1,4 @@
 id	null_struct	an_empty_struct	a_struct	array_struct	nested_struct
-Int64	struct(a int null)	struct(a int)	struct(a int)	struct(a array(int))	struct(x int, a struct(b int))
-1	{"a":null}		{"a":"1"}	{"a":[1,2,3]}	{"x":"2","a":{"b":"1"}}
-2	{"a":null}		{"a":"2"}	{"a":[1,2,3]}	{"x":"2","a":{"b":"1"}}
+Int64	struct(a int null)	struct(a int)	struct(a int)	struct(a array(int))	struct(x int, a struct(b int, c int))
+1	{"a":null}		{"a":"1"}	{"a":[1,2,3]}	{"x":"2","a":{"b":"1","c":"3"}}
+2	{"a":null}		{"a":"2"}	{"a":[1,2,3]}	{"x":"2","a":{"b":"1","c":"3"}}

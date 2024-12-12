@@ -41,6 +41,8 @@ public class ColumnType {
 	private static final Set<String> TIMEZONES = Arrays.stream(TimeZone.getAvailableIDs())
 			.collect(Collectors.toCollection(HashSet::new));
 	private static final Pattern COMMA_WITH_SPACES = Pattern.compile("\\s*,\\s*");
+	// Regex to split on comma and ignoring commas that are between parenthesis
+	private static final String COMPLEX_TYPE_PATTERN = ",(?![^()]*\\))";
 	@EqualsAndHashCode.Exclude
 	String name;
 	FireboltDataType dataType;
@@ -109,10 +111,9 @@ public class ColumnType {
 		}
 
 		if (fireboltDataType.equals(TUPLE)) {
-			types = typeWithoutNullKeyword.split(",(?![^()]*\\))"); // Regex to split on comma and ignoring comma that are between
-			// parenthesis
+			types = typeWithoutNullKeyword.split(COMPLEX_TYPE_PATTERN);
 		} else if (fireboltDataType.equals(STRUCT)) {
-			types = typeWithoutNullKeyword.split(",");
+			types = typeWithoutNullKeyword.split(COMPLEX_TYPE_PATTERN);
 		} else {
 			types = new String[] {typeWithoutNullKeyword};
 		}
