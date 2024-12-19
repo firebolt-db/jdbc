@@ -466,7 +466,7 @@ class PreparedStatementTest extends IntegrationTest {
 		try (Connection connection = createConnection()) {
 
 			try (PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO test_struct_helper(a, b) VALUES (?,?)")) {
+					.prepareStatement("INSERT INTO test_struct_helper(a, \"b column\") VALUES (?,?)")) {
 				statement.setArray(1, connection.createArrayOf("VARCHAR", car1.getTags()));
 				statement.setTimestamp(2, car1.getTs());
 				statement.executeUpdate();
@@ -483,11 +483,11 @@ class PreparedStatementTest extends IntegrationTest {
 							.executeQuery("SELECT test_struct FROM test_struct")) {
 				rs.next();
 				assertEquals(FireboltDataType.STRUCT.name().toLowerCase()
-						+ "(id int, s struct(a array(text null), b timestamp null))",
+						+ "(id int, s struct(a array(text null), `b column` timestamp null))",
 						rs.getMetaData().getColumnTypeName(1).toLowerCase());
 				String expectedJson = String.format(
-						"{\"id\":%d,\"s\":{\"a\":[\"%s\",\"%s\"],\"b\":\"%s\"}}", 1, car1.getTags()[0],
-						car1.getTags()[1], car1.getTs().toString());
+						"{\"id\":%d,\"s\":{\"a\":[\"%s\",\"%s\"],\"b column\":\"%s\"}}", 1, car1.getTags()[0],
+								car1.getTags()[1], car1.getTs().toString());
 				assertEquals(expectedJson, rs.getString(1));
 			}
 		} finally {

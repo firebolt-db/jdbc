@@ -1490,8 +1490,8 @@ class FireboltResultSetTest {
 		assertEquals("{\"a\":\"1\"}", resultSet.getObject("a_struct"));
 		assertEquals("{\"a\":[1,2,3]}", resultSet.getObject(5));
 		assertEquals("{\"a\":[1,2,3]}", resultSet.getObject("array_struct"));
-		assertEquals("{\"x\":\"2\",\"a\":{\"b\":\"1\",\"c\":\"3\"}}", resultSet.getObject(6));
-		assertEquals("{\"x\":\"2\",\"a\":{\"b\":\"1\",\"c\":\"3\"}}", resultSet.getObject("nested_struct"));
+		assertEquals("{\"x\":\"2\",\"a\":{\"b col\":\"1\",\"c\":\"3\"}}", resultSet.getObject(6));
+		assertEquals("{\"x\":\"2\",\"a\":{\"b col\":\"1\",\"c\":\"3\"}}", resultSet.getObject("nested_struct"));
 		// Returns native JDBC type
 		for (int i = 2; i <= 6; i++) {
 			assertEquals(Types.VARCHAR, resultSet.getMetaData().getColumnType(i));
@@ -1501,7 +1501,7 @@ class FireboltResultSetTest {
 		assertEquals("STRUCT(A INT)", resultSet.getMetaData().getColumnTypeName(3));
 		assertEquals("STRUCT(A INT)", resultSet.getMetaData().getColumnTypeName(4));
 		assertEquals("STRUCT(A ARRAY(INT))", resultSet.getMetaData().getColumnTypeName(5));
-		assertEquals("STRUCT(X INT, A STRUCT(B INT, C INT))", resultSet.getMetaData().getColumnTypeName(6));
+		assertEquals("STRUCT(X INT, A STRUCT(`B COL` INT, C INT))", resultSet.getMetaData().getColumnTypeName(6));
 	}
 
 	@Test
