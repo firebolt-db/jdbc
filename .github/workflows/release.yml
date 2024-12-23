@@ -1,8 +1,6 @@
 name: Release new version
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag_name:
@@ -12,6 +10,8 @@ on:
 jobs:
   bump-version:
     runs-on: ubuntu-latest
+    env:
+      newVersion: ${{ github.event.inputs.tag_name }}
     steps:
     - name: Check out code
       uses: actions/checkout@v4
@@ -21,8 +21,6 @@ jobs:
         newVersion=$(echo $newVersion | sed 's/^v//')
         sed -i.bak "s/^version=.*/version=$newVersion/" gradle.properties
         rm gradle.properties.bak
-      env:
-        newVersion: ${{ github.event.release.tag_name || github.event.inputs.tag_name }}
 
     - name: Setup git config
       run: |
@@ -32,12 +30,17 @@ jobs:
     - name: Commit version bump
       run: |
         git add gradle.properties
-        git commit -m "Bump version to $newVersion"
-      env:
-        newVersion: ${{ github.event.release.tag_name || github.event.inputs.tag_name }}
+        git commit -m "chore: Bump version to $newVersion"
+
+    - name: Tag version
+      run: |
+        git tag $newVersion
 
     - name: Push changes
-      run: git push
+      run: |
+        git push origin master
+        # Push tag
+        git push origin $newVersion
 
 
   build:
@@ -51,7 +54,7 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v3
       with:
-        ref: ${{ github.event.release.tag_name || github.event.inputs.tag_name}}
+        ref: ${{ github.event.inputs.tag_name}}
     - name: Download uber-jar
       uses: actions/download-artifact@v4.1.7
       with:
@@ -67,6 +70,7 @@ jobs:
         file: ${{ needs.build.outputs.uber-jar }}
         tags: true
         draft: false
+        tag_name: ${{ github.event.inputs.tag_name }}
     - name: Deploy to Maven Central repository
       run: ./gradlew publish
       env:
