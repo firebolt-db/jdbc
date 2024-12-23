@@ -10,7 +10,38 @@ on:
         required: true
 
 jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Bump version
+      run: |
+        newVersion=$(echo $newVersion | sed 's/^v//')
+        sed -i.bak "s/^version=.*/version=$newVersion/" gradle.properties
+        rm gradle.properties.bak
+      env:
+        newVersion: ${{ github.event.release.tag_name || github.event.inputs.tag_name }}
+
+    - name: Setup git config
+      run: |
+        git config user.name "GitHub Actions Bot"
+        git config user.email "<>"
+
+    - name: Commit version bump
+      run: |
+        git add gradle.properties
+        git commit -m "Bump version to $newVersion"
+      env:
+        newVersion: ${{ github.event.release.tag_name || github.event.inputs.tag_name }}
+
+    - name: Push changes
+      run: git push
+
+
   build:
+    needs: bump-version
     uses: ./.github/workflows/build.yml
 
   publish:
