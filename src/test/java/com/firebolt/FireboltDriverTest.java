@@ -93,7 +93,7 @@ class FireboltDriverTest {
 	void version() {
 		FireboltDriver fireboltDriver = new FireboltDriver();
 		assertEquals(3, fireboltDriver.getMajorVersion());
-		assertEquals(4, fireboltDriver.getMinorVersion());
+		assertEquals(5, fireboltDriver.getMinorVersion());
 	}
 
 	@ParameterizedTest
