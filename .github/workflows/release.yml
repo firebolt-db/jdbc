@@ -48,6 +48,8 @@ jobs:
   build:
     needs: bump-version
     uses: ./.github/workflows/build.yml
+    with:
+      branch: ${{ github.event.inputs.tag_name }}
 
   publish:
     runs-on: ubuntu-latest
@@ -71,7 +73,7 @@ jobs:
       with:
         file: ${{ needs.build.outputs.uber-jar }}
         tags: true
-        draft: false
+        draft: true
         tag_name: ${{ github.event.inputs.tag_name }}
     # - name: Deploy to Maven Central repository
     #   run: ./gradlew publish
