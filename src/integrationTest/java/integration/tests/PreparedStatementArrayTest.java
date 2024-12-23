@@ -156,6 +156,19 @@ class PreparedStatementArrayTest extends IntegrationTest {
 		}
 	}
 
+	@Test
+	void byteaArray() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			try (ResultSet rs = statement.executeQuery("select [E'\\x61\\x62\\x63']::array(bytea), [[E'\\x61\\x62\\x63']]::array(array(bytea))")) {
+				rs.next();
+				validateArrayUsingGetObject(rs, 1, new byte[][] {new byte[] {0x61, 0x62, 0x63}});
+				validateArrayUsingGetArray(rs, 1, Types.BINARY, "bytea", new byte[][] {new byte[] {0x61, 0x62, 0x63}});
+				validateArrayUsingGetObject(rs, 2, new byte[][][] {new byte[][] {new byte[] {0x61, 0x62, 0x63}}});
+				validateArrayUsingGetArray(rs, 2, Types.BINARY, "bytea", new byte[][][] {new byte[][] {new byte[] {0x61, 0x62, 0x63}}});
+			}
+		}
+	}
+
 	private <T> void validateArrayUsingGetObject(ResultSet rs, int index, T[] expected) throws SQLException {
 		assertSqlArray(rs.getObject(index), expected);
 	}
