@@ -34,6 +34,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         file: ${{ needs.build.outputs.uber-jar }}
+        tags: true
         draft: false
     - name: Deploy to Maven Central repository
       run: ./gradlew publish
