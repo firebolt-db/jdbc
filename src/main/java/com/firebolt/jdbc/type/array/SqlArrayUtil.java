@@ -31,7 +31,8 @@ public class SqlArrayUtil {
 	);
 	private final ColumnType columnType;
 	private final Markers markers;
-	public static final String BYTE_ARRAY_PREFIX = "\\x";
+	public static final String BYTEA_PREFIX = "\\x";
+	public static final String BYTEA_IN_ARRAY_PREFIX = "\\\\x"; // In CSV arrays bytea prefix has two backslashes
 
 	private static final class Markers {
 		private final char leftArrayBracket;
@@ -269,8 +270,8 @@ public class SqlArrayUtil {
 			return null;
 		}
 		ByteBuffer buffer = ByteBuffer.wrap(bytes);
-		String separator = separateEachByte ? BYTE_ARRAY_PREFIX : "";
-		return Stream.generate(buffer::get).limit(buffer.capacity()).map(i -> format("%02x", i)).collect(joining(separator, BYTE_ARRAY_PREFIX, ""));
+		String separator = separateEachByte ? BYTEA_PREFIX : "";
+		return Stream.generate(buffer::get).limit(buffer.capacity()).map(i -> format("%02x", i)).collect(joining(separator, BYTEA_PREFIX, ""));
 	}
 
 	@SuppressWarnings("java:S1168") // we have to return null here
@@ -278,10 +279,11 @@ public class SqlArrayUtil {
 		if (str == null) {
 			return null;
 		}
-		if (!str.startsWith(BYTE_ARRAY_PREFIX)) {
+		if (!str.startsWith(BYTEA_PREFIX) && !str.startsWith(BYTEA_IN_ARRAY_PREFIX)) {
 			return str.getBytes(UTF_8);
 		}
-		char[] chars = str.substring(2).toCharArray();
+		int prefixLength = str.startsWith(BYTEA_PREFIX) ? BYTEA_PREFIX.length() : BYTEA_IN_ARRAY_PREFIX.length();
+		char[] chars = str.substring(prefixLength).toCharArray();
 		byte[] bytes = new byte[chars.length / 2];
 		for (int i = 0; i < chars.length; i += 2) {
 			bytes[i / 2] = (byte) ((hexDigit(chars[i]) << 4) + hexDigit(chars[i + 1]));

@@ -24,7 +24,6 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
-import static com.firebolt.jdbc.type.array.SqlArrayUtil.BYTE_ARRAY_PREFIX;
 import static com.firebolt.jdbc.type.array.SqlArrayUtil.hexStringToByteArray;
 
 /** This class contains the java types the Firebolt data types are mapped to */
@@ -89,13 +88,9 @@ public enum BaseType {
 		if (s == null || s.isEmpty()) {
 			return new byte[] {};
 		}
-		if (s.startsWith(BYTE_ARRAY_PREFIX)) {
-			byte[] bytes = hexStringToByteArray(s);
-			int limit = conversion.getMaxFieldSize();
-			return limit > 0 && limit <= bytes.length ? Arrays.copyOf(bytes, limit) : bytes;
-		}
-		// Cannot convert from other formats (such as 'Escape') for the moment
-		throw new FireboltException("Cannot convert binary string in non-hex format to byte array");
+		byte[] bytes = hexStringToByteArray(s);
+		int limit = conversion.getMaxFieldSize();
+		return limit > 0 && limit <= bytes.length ? Arrays.copyOf(bytes, limit) : bytes;
 	});
 
 	// this class is needed to prevent back reference because the constant is used from the enum constructor
