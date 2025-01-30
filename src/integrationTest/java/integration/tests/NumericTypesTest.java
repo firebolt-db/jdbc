@@ -3,6 +3,7 @@ package integration.tests;
 import integration.IntegrationTest;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -19,6 +20,17 @@ class NumericTypesTest extends IntegrationTest {
             resultSet.next();
             assertEquals(9, resultSet.getMetaData().getScale(1));
             assertEquals(38, resultSet.getMetaData().getPrecision(1));
+        }
+    }
+
+    @Test
+    void shouldHandleLargeDecimals() throws SQLException {
+        String sql = "SELECT 12345678901234567890123456789.123456789::decimal(38, 9);";
+        try (Connection connection = createConnection(null);
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)) {
+            resultSet.next();
+            assertEquals(new BigDecimal("12345678901234567890123456789.123456789"), resultSet.getBigDecimal(1));
         }
     }
 }
