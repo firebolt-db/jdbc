@@ -34,7 +34,7 @@ import static java.util.stream.Collectors.toCollection;
 public class FireboltStatement extends JdbcBase implements Statement {
 
 	private final FireboltStatementService statementService;
-	private final FireboltProperties sessionProperties;
+	protected final FireboltProperties sessionProperties;
 	private final FireboltConnection connection;
 	private final Collection<String> statementsToExecuteLabels = new HashSet<>();
 	private boolean closeOnCompletion = false;

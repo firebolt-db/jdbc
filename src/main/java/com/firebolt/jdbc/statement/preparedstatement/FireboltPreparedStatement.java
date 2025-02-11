@@ -271,11 +271,27 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		for (Map<Integer, String> row : rows) {
 			inserts.addAll(prepareSQL(row));
 		}
-		execute(inserts);
+		if (sessionProperties.isMergeBatches()) {
+			if (inserts.size() > 0) {
+				execute(List.of(asSingleStatement(inserts)));
+			}
+		} else {
+			execute(inserts);
+		}
 		for (int i = 0; i < inserts.size(); i++) {
 			result[i] = SUCCESS_NO_INFO;
 		}
 		return result;
+	}
+
+	private StatementInfoWrapper asSingleStatement(List<StatementInfoWrapper> queries) {
+		// merge all queries into a single query, separated by semicolons
+		StringBuilder sb = new StringBuilder();
+		var first = queries.get(0);
+		for (StatementInfoWrapper query : queries) {
+			sb.append(query.getSql()).append(";");
+		}
+		return new StatementInfoWrapper(sb.toString(), first.getInitialStatement().getStatementType(), first.getParam(), first.getInitialStatement());
 	}
 
 	@Override
