@@ -377,7 +377,7 @@ abstract class FireboltConnectionTest {
 		propertiesCopy.put("merge_prepared_statement_batches", "true");
 		try (FireboltConnection fireboltConnection = createConnection(URL, propertiesCopy)) {
 			fireboltConnection.createStatement().execute("SET param=value");
-			PreparedStatement statement = fireboltConnection.prepareStatement("SELECT ?");
+			PreparedStatement statement = fireboltConnection.prepareStatement("INSERT INTO t VALUES (?)");
 			statement.setInt(1, 1);
 			statement.addBatch();
 			statement.setInt(1, 2);
@@ -385,7 +385,7 @@ abstract class FireboltConnectionTest {
 			statement.executeBatch();
 			verify(fireboltStatementService, atLeast(2)).execute(queryInfoWrapperArgumentCaptor.capture(),
 					propertiesArgumentCaptor.capture(), any());
-			assertEquals("SELECT 1;SELECT 2;", queryInfoWrapperArgumentCaptor.getValue().getSql());
+			assertEquals("INSERT INTO t VALUES (1);INSERT INTO t VALUES (2);", queryInfoWrapperArgumentCaptor.getValue().getSql());
 			// Validate that parameters are preserved
 			assertEquals(Map.of("param", "value"), propertiesArgumentCaptor.getValue().getAdditionalProperties());
 		}
