@@ -76,6 +76,7 @@ public class FireboltProperties {
 	private final String userClients;
 	private final String accessToken;
 	private final boolean validateOnSystemEngine;
+	private final boolean mergeBatches;
 	@Builder.Default
 	private Map<String, String> initialAdditionalProperties = new HashMap<>();
 	@Builder.Default
@@ -112,6 +113,7 @@ public class FireboltProperties {
 		userDrivers = getSetting(properties, FireboltSessionProperty.USER_DRIVERS);
 		userClients = getSetting(properties, FireboltSessionProperty.USER_CLIENTS);
 		validateOnSystemEngine = getSetting(properties, FireboltSessionProperty.VALIDATE_ON_SYSTEM_ENGINE);
+		mergeBatches = getSetting(properties, FireboltSessionProperty.MERGE_BATCHES);
 
 		environment = getEnvironment(configuredEnvironment, properties);
 		host = getHost(configuredEnvironment, properties);

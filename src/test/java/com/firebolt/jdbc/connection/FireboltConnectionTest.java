@@ -738,5 +738,16 @@ abstract class FireboltConnectionTest {
 		}
 	}
 
+	@Test
+	void shouldSendBatchesSeparatelyByDefault() throws SQLException {
+		try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
+			assertEquals("false", fireboltConnection.getClientInfo().get("merge_batches"));
+		}
+		connectionProperties.put("merge_batches", "true");
+		try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
+			assertEquals("true", fireboltConnection.getClientInfo().get("merge_batches"));
+		}
+	}
+
 	protected abstract FireboltConnection createConnection(String url, Properties props) throws SQLException;
 }
