@@ -436,7 +436,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 				result.add(rs.map(x -> 0).orElse(SUCCESS_NO_INFO));
 			}
 		}
-		return  result.stream().mapToInt(Integer::intValue).toArray();
+		return result.stream().mapToInt(Integer::intValue).toArray();
 	}
 
 	@Override

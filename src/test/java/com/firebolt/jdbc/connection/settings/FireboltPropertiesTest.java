@@ -49,7 +49,7 @@ class FireboltPropertiesTest {
 		properties.put("someCustomProperties", "custom_value");
 		properties.put("compress", "1");
 		properties.put("validate_on_system_engine", "true");
-		properties.put("merge_batches", "true");
+		properties.put("merge_prepared_statement_batches", "true");
 
 		Map<String, String> customProperties = new HashMap<>();
 		customProperties.put("someCustomProperties", "custom_value");
@@ -60,7 +60,7 @@ class FireboltPropertiesTest {
 				.initialAdditionalProperties(customProperties).keepAliveTimeoutMillis(300000)
 				.maxConnectionsTotal(300).maxRetries(3).socketTimeoutMillis(20).connectionTimeoutMillis(60000)
 				.tcpKeepInterval(30).tcpKeepIdle(60).tcpKeepCount(10).environment("app").validateOnSystemEngine(true)
-				.mergeBatches(true).build();
+				.mergePreparedStatementBatches(true).build();
 		assertEquals(expectedDefaultProperties, new FireboltProperties(properties));
 	}
 

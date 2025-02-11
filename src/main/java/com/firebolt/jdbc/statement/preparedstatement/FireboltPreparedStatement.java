@@ -271,8 +271,8 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		for (Map<Integer, String> row : rows) {
 			inserts.addAll(prepareSQL(row));
 		}
-		if (sessionProperties.isMergeBatches()) {
-			if (inserts.size() > 0) {
+		if (sessionProperties.isMergePreparedStatementBatches()) {
+			if (!inserts.isEmpty()) {
 				execute(List.of(asSingleStatement(inserts)));
 			}
 		} else {
