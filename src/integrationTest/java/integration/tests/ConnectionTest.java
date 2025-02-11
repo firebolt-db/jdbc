@@ -172,6 +172,32 @@ class ConnectionTest extends IntegrationTest {
 
     }
 
+    @Test
+    @Tag("v2")
+    void preparedStatementBatchesWorkIfMergeParameterProvided() throws SQLException {
+        String engineName = integration.ConnectionInfo.getInstance().getEngine();
+        try (Connection connection = createConnection(engineName, Map.of("merge_prepared_statement_batches", "true"))) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate("CREATE TABLE test_table (id INT)");
+                try (java.sql.PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO test_table VALUES (?)")) {
+                    for (int i = 0; i < 10; i++) {
+                        preparedStatement.setInt(1, i);
+                        preparedStatement.addBatch();
+                    }
+                    preparedStatement.executeBatch();
+                }
+                try (ResultSet rs = statement.executeQuery("SELECT COUNT(*) FROM test_table")) {
+                    assertTrue(rs.next());
+                    assertEquals(10, rs.getInt(1));
+                }
+            } finally {
+                try (Statement statement = connection.createStatement()) {
+                    statement.executeUpdate("DROP TABLE IF EXISTS test_table");
+                }
+            }
+        }
+    }
+
     void unsuccessfulConnect(boolean useDatabase, boolean useEngine) throws SQLException {
         ConnectionInfo params = integration.ConnectionInfo.getInstance();
         String url = getJdbcUrl(params, useDatabase, useEngine);
