@@ -483,7 +483,7 @@ class PreparedStatementTest extends IntegrationTest {
 							.executeQuery("SELECT test_struct FROM test_struct")) {
 				rs.next();
 				assertEquals(FireboltDataType.STRUCT.name().toLowerCase()
-						+ "(id int, s struct(a array(text null), `b column` timestamp null))",
+						+ "(id int, s struct(a array(text null) null, `b column` timestamp null))",
 						rs.getMetaData().getColumnTypeName(1).toLowerCase());
 				String expectedJson = String.format(
 						"{\"id\":%d,\"s\":{\"a\":[\"%s\",\"%s\"],\"b column\":\"%s\"}}", 1, car1.getTags()[0],
