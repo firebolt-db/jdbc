@@ -440,7 +440,7 @@ class PreparedStatementTest extends IntegrationTest {
 				statement.executeUpdate();
 			}
 			setParam(connection, "advanced_mode", "true");
-			setParam(connection, "enable_row_selection", "true");
+			setParam(connection, "enable_struct_syntax", "true");
 			try (Statement statement = connection.createStatement();
 					ResultSet rs = statement
 							.executeQuery("SELECT prepared_statement_test FROM prepared_statement_test")) {
@@ -473,7 +473,7 @@ class PreparedStatementTest extends IntegrationTest {
 			}
 
 			setParam(connection, "advanced_mode", "true");
-			setParam(connection, "enable_row_selection", "true");
+			setParam(connection, "enable_struct_syntax", "true");
 			try (Statement statement = connection.createStatement()) {
 				statement.execute(
 						"INSERT INTO test_struct(id, s) SELECT 1, test_struct_helper FROM test_struct_helper");
