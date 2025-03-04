@@ -53,7 +53,14 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
     @Tag("v2")
     void getSchemas() throws SQLException {
         String database = integration.ConnectionInfo.getInstance().getDatabase();
-        assertEquals(List.of(List.of("information_schema", database)), getSchemas(DatabaseMetaData::getSchemas));
+        assertEquals(List.of(List.of("information_schema", database)), getRows(DatabaseMetaData::getSchemas));
+    }
+
+    @Test
+    @Tag("v2")
+    void getCatalogs() throws SQLException {
+        String database = integration.ConnectionInfo.getInstance().getDatabase();
+        assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
     }
 
     @ParameterizedTest
@@ -80,7 +87,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
                 List.of()
                 :
                 Arrays.stream(expectedSchemasStr.split(";")).map(schema -> List.of(schema, database)).collect(toList());
-        assertEquals(expectedSchemas, getSchemas(dbmd -> dbmd.getSchemas(cat, schemaPattern)));
+        assertEquals(expectedSchemas, getRows(dbmd -> dbmd.getSchemas(cat, schemaPattern)));
     }
 
     @ParameterizedTest
@@ -211,7 +218,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
         }
     }
 
-    private List<List<Object>> getSchemas(CheckedFunction<DatabaseMetaData, ResultSet> schemasGetter) throws SQLException {
+    private List<List<Object>> getRows(CheckedFunction<DatabaseMetaData, ResultSet> schemasGetter) throws SQLException {
         return readResultSet(schemasGetter.apply(dbmd));
     }
 
