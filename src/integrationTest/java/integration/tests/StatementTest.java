@@ -1,12 +1,18 @@
 package integration.tests;
 
-import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.exception.FireboltException;
-import integration.ConnectionInfo;
-import integration.EnvironmentCondition;
-import integration.IntegrationTest;
-import kotlin.collections.ArrayDeque;
-import lombok.CustomLog;
+import static java.lang.String.format;
+import static java.sql.Statement.SUCCESS_NO_INFO;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.sql.*;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
+
+import org.apache.commons.lang3.RandomStringUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,34 +23,19 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.IntStream;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.exception.FireboltException;
 
-import static java.lang.String.format;
-import static java.sql.Statement.SUCCESS_NO_INFO;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import integration.ConnectionInfo;
+import integration.EnvironmentCondition;
+import integration.IntegrationTest;
+import kotlin.collections.ArrayDeque;
+import lombok.CustomLog;
 
 @CustomLog
 class StatementTest extends IntegrationTest {
+
+	private static final long TEN_SECONDS_IN_MILLIS = TimeUnit.SECONDS.toMillis(10);
 
 	@BeforeEach
 	void beforeEach() {
@@ -265,6 +256,96 @@ class StatementTest extends IntegrationTest {
 	@Test
 	void setCorrectThenWrongParameter() throws SQLException {
 		setWrongParameter("SET time_zone = 'EST';SET bar=tar", Map.of("time_zone", "EST"), "bar");
+	}
+
+	@Test
+	@Tag("v2")
+	void canSetQueryLabelMultipleTimes() throws SQLException {
+		try (Connection connection = createConnection()) {
+			try (Statement statement = connection.createStatement()) {
+				String currentTime = getCurrentTime(statement);
+
+				String firstQueryLabel = "first query label " + RandomStringUtils.randomNumeric(4);
+				assertFalse(statement.execute(String.format("SET query_label = '%s'", firstQueryLabel)));
+
+				String nextQueryAfterFirstLabelSet = "SELECT " + RandomStringUtils.randomNumeric(4)  + ";";
+				statement.executeQuery(nextQueryAfterFirstLabelSet);
+
+				// set a new query label
+				String secondQueryLabel = "second query label " + RandomStringUtils.randomNumeric(4);
+				assertFalse(statement.execute(String.format("SET query_label = '%s'", secondQueryLabel)));
+
+				String nextQueryAfterSecondLabelSet = "SELECT " + RandomStringUtils.randomNumeric(4) + ";";
+				statement.executeQuery(nextQueryAfterSecondLabelSet);
+
+				// sleep for some time to allow query history to execute
+				sleepForMillis(TEN_SECONDS_IN_MILLIS);
+
+				// check query history for both queries
+				assertQueryFound(statement, firstQueryLabel, currentTime, nextQueryAfterFirstLabelSet);
+				assertQueryFound(statement, secondQueryLabel, currentTime, nextQueryAfterSecondLabelSet);
+			}
+		}
+	}
+
+	@Test
+	@Tag("v2")
+	void willUseRandomQueryLabelIfNoneExplicitlySet() throws SQLException {
+		try (Connection connection = createConnection()) {
+			try (Statement statement = connection.createStatement()) {
+				String currentTime = getCurrentTime(statement);
+
+				String statementWithoutExplicitQueryLabel = "SELECT " + RandomStringUtils.randomNumeric(3)  + ";";
+				statement.executeQuery(statementWithoutExplicitQueryLabel);
+
+				// sleep for some time to allow query history to execute 
+				sleepForMillis(TEN_SECONDS_IN_MILLIS);
+
+				String implicitQueryLabel = getQueryLabel(statement, currentTime, statementWithoutExplicitQueryLabel);
+				assertNotNull(implicitQueryLabel, "Expected the default query label to be non null");
+			}
+		}
+	}
+
+	private void sleepForMillis(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            // do nothing
+        }
+    }
+	/**
+	 * looks up a query in the query history. Returns the query text
+	 * @param statement
+	 * @return
+	 */
+	private void assertQueryFound(Statement statement, String queryLabelValue, String afterTimestamp, String queryText) throws SQLException {
+		String queryHistoryQuery = """
+			SELECT query_text
+			FROM information_schema.engine_query_history
+			WHERE query_label = '%s' and submitted_time > '%s' and query_text = '%s';
+			""";
+		ResultSet resultSet = statement.executeQuery(String.format(queryHistoryQuery, queryLabelValue, afterTimestamp, queryText));
+		assertTrue(resultSet.next(), () -> "Did not find query with the specified query label");
+	}
+
+	private String getQueryLabel(Statement statement, String afterTimestamp, String queryText) throws SQLException {
+		String queryHistoryQuery = """
+				SELECT query_label
+				FROM information_schema.engine_query_history WHERE submitted_time > '%s' and query_text = '%s';
+			""";
+		ResultSet resultSet = statement.executeQuery(String.format(queryHistoryQuery, afterTimestamp, queryText));
+		assertTrue(resultSet.next(), "Did not find any query in history");
+		return resultSet.getString(1);
+	}
+
+	/**
+	 * Runs the query: select now() and retuns the result
+	 */
+	private String getCurrentTime(Statement statement) throws SQLException {
+		ResultSet resultSet = statement.executeQuery("SELECT now()");
+		resultSet.next();
+		return resultSet.getString(1);
 	}
 
 	/**
