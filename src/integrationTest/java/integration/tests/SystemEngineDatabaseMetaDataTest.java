@@ -9,11 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -59,8 +55,13 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
     @Test
     @Tag("v2")
     void getCatalogs() throws SQLException {
-        String database = integration.ConnectionInfo.getInstance().getDatabase();
-        assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
+        try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+            statement.executeUpdate("CREATE DATABASE test_get_catalogs");
+            String database = integration.ConnectionInfo.getInstance().getDatabase();
+            assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
+            assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of("test_get_catalogs")));
+            statement.executeUpdate("DROP DATABASE test_get_catalogs");
+        }
     }
 
     @ParameterizedTest
