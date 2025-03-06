@@ -1,4 +1,4 @@
-id	arr	name	a_date	is_online	a_double	an_integer	url
-int32	Array(Array(Array(String)))	Nullable(String)	Date	Boolean	Float32	Int64	Nullable(String)
-1	[[['1','2'],['3','4']]]	Taylor\'s Prime Steak House	2022-05-10	1	14.6	5	http://firebolt.io
-2	[[['1','2'],['3','4']],[['5','6'],['7','8',NULL]]]	\N	2022-05-10	0	\N	\N	\N
+id	arr	name	a_date	is_online	a_double	an_integer	url	location
+int32	Array(Array(Array(String)))	Nullable(String)	Date	Boolean	Float32	Int64	Nullable(String)	Geography
+1	[[['1','2'],['3','4']]]	Taylor\'s Prime Steak House	2022-05-10	1	14.6	5	http://firebolt.io	0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F
+2	[[['1','2'],['3','4']],[['5','6'],['7','8',NULL]]]	\N	2022-05-10	0	\N	\N	\N	\N
