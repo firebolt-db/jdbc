@@ -34,7 +34,7 @@ import static java.util.stream.Collectors.toCollection;
 public class FireboltStatement extends JdbcBase implements Statement {
 
 	private final FireboltStatementService statementService;
-	private final FireboltProperties sessionProperties;
+	protected final FireboltProperties sessionProperties;
 	private final FireboltConnection connection;
 	private final Collection<String> statementsToExecuteLabels = new HashSet<>();
 	private boolean closeOnCompletion = false;
@@ -436,7 +436,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 				result.add(rs.map(x -> 0).orElse(SUCCESS_NO_INFO));
 			}
 		}
-		return  result.stream().mapToInt(Integer::intValue).toArray();
+		return result.stream().mapToInt(Integer::intValue).toArray();
 	}
 
 	@Override

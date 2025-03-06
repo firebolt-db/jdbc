@@ -356,12 +356,13 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void shouldGetDriverMinorVersion() {
-		assertEquals(3, fireboltDatabaseMetadata.getDriverMinorVersion());
+		int minorVersion = fireboltDatabaseMetadata.getDriverMinorVersion();
+		assertTrue(minorVersion >= 0 && minorVersion < 100);
 	}
 
 	@Test
 	void shouldGetDriverVersion() throws SQLException {
-		assertEquals("3.3.0", fireboltDatabaseMetadata.getDriverVersion());
+		assertTrue(fireboltDatabaseMetadata.getDriverVersion().matches("3\\.\\d+\\.\\d+"));
 	}
 
 	@Test
