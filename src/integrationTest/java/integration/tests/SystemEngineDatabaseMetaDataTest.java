@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
     private static final long ID = ProcessHandle.current().pid() + System.currentTimeMillis();
-    private static final String DATABASE_NAME = "jdbc_system_engine_integration_test_" + ID;
     private Connection connection;
     private DatabaseMetaData dbmd;
 
@@ -58,13 +57,13 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
 	@Tag("v2")
 	void getCatalogs() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
-			try {
-				statement.executeUpdate(format("CREATE DATABASE %s", DATABASE_NAME));
-				String database = integration.ConnectionInfo.getInstance().getDatabase();
+            String database = integration.ConnectionInfo.getInstance().getDatabase();
+            try {
+				statement.executeUpdate(format("CREATE DATABASE %s_get_catalogs", database));
 				assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
-				assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(DATABASE_NAME)));
+				assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
 			} finally {
-				statement.executeUpdate(format("DROP DATABASE IF EXISTS %s", DATABASE_NAME));
+				statement.executeUpdate(format("DROP DATABASE IF EXISTS %s_get_catalogs", database));
 			}
 		}
     }
