@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
+    private static final long ID = ProcessHandle.current().pid() + System.currentTimeMillis();
+    private static final String DATABASE_NAME = "jdbc_system_engine_integration_test_" + ID;
     private Connection connection;
     private DatabaseMetaData dbmd;
 
@@ -52,16 +54,19 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
         assertEquals(List.of(List.of("information_schema", database)), getRows(DatabaseMetaData::getSchemas));
     }
 
-    @Test
-    @Tag("v2")
-    void getCatalogs() throws SQLException {
-        try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
-            statement.executeUpdate("CREATE DATABASE test_get_catalogs");
-            String database = integration.ConnectionInfo.getInstance().getDatabase();
-            assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
-            assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of("test_get_catalogs")));
-            statement.executeUpdate("DROP DATABASE test_get_catalogs");
-        }
+	@Test
+	@Tag("v2")
+	void getCatalogs() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			try {
+				statement.executeUpdate(format("CREATE DATABASE %s", DATABASE_NAME));
+				String database = integration.ConnectionInfo.getInstance().getDatabase();
+				assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
+				assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(DATABASE_NAME)));
+			} finally {
+				statement.executeUpdate(format("DROP DATABASE IF EXISTS %s", DATABASE_NAME));
+			}
+		}
     }
 
     @ParameterizedTest
