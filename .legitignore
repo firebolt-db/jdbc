@@ -1,3 +1,3 @@
 instance_51B6E36F85D19C9CA81AECD8DE760121 # type: secret, commit: 0c27c6d, file: src/test/java/com/firebolt/jdbc/client/query/StatementClientImplTest.java, line: 161
 instance_2A43FC8CB9D52E7BBCFBE224988CE371 # type: secret, commit: 0c27c6d, file: src/test/java/com/firebolt/jdbc/client/query/StatementClientImplTest.java, line: 162
-instance_A173B2B02DD54721D6A35057AEFEC782 # type: secret, commit: 99c74b6, file: src/test/java/com/firebolt/jdbc/client/query/StatementClientImplTest.java, line: 118
+instance_23F8477EACB7CF5B401296EED8E9CB98 # type: secret, severity: Critical, commit: 99c74b6, file: src/test/java/com/firebolt/jdbc/client/query/StatementClientImplTest.java, line: 118
