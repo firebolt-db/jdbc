@@ -126,7 +126,9 @@ class FireboltDatabaseMetadataTest {
 	void shouldReturnCatalogs() throws SQLException {
 		ResultSet expectedResultSet = FireboltResultSet.of(QueryResult.builder()
 				.columns(Collections.singletonList(Column.builder().name(TABLE_CAT).type(TEXT).build()))
-				.rows(Collections.singletonList(Collections.singletonList("db_name"))).build());
+				.rows(Arrays.asList(Collections.singletonList("db_name1"), Collections.singletonList("db_name2"))).build());
+
+		when(statement.executeQuery(anyString())).thenReturn(createResultSet(getInputStreamForGetCatalogs()));
 
 		ResultSet actualResultSet = fireboltDatabaseMetadata.getCatalogs();
 
@@ -893,6 +895,10 @@ class FireboltDatabaseMetadataTest {
 
 	private InputStream getInputStreamForGetVersion() {
 		return FireboltDatabaseMetadata.class.getResourceAsStream("/responses/metadata/firebolt-response-get-version-example");
+	}
+
+	private InputStream getInputStreamForGetCatalogs() {
+		return FireboltDatabaseMetadata.class.getResourceAsStream("/responses/metadata/firebolt-response-get-catalogs-example");
 	}
 
 	private InputStream getExpectedTypeInfo() {

@@ -201,7 +201,15 @@ public class FireboltDatabaseMetadata implements DatabaseMetaData, GenericWrappe
 
 	@Override
 	public ResultSet getCatalogs() throws SQLException {
-		return createResultSet(Stream.of(entry(TABLE_CAT, TEXT)), List.of(List.of(connection.getCatalog())));
+		List<List<?>> rows = new ArrayList<>();
+		String query = "SELECT CATALOG_NAME AS TABLE_CAT FROM information_schema.catalogs ORDER BY TABLE_CAT";
+		try (Statement statement = connection.createStatement();
+			 ResultSet catalogNames = statement.executeQuery(query)) {
+			while (catalogNames.next()) {
+				rows.add(List.of(catalogNames.getString(TABLE_CAT)));
+			}
+		}
+		return createResultSet(Stream.of(entry(TABLE_CAT, TEXT)), rows);
 	}
 
 	@Override

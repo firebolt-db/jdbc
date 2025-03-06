@@ -9,11 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
+    private static final long ID = ProcessHandle.current().pid() + System.currentTimeMillis();
     private Connection connection;
     private DatabaseMetaData dbmd;
 
@@ -53,7 +50,22 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
     @Tag("v2")
     void getSchemas() throws SQLException {
         String database = integration.ConnectionInfo.getInstance().getDatabase();
-        assertEquals(List.of(List.of("information_schema", database)), getSchemas(DatabaseMetaData::getSchemas));
+        assertEquals(List.of(List.of("information_schema", database)), getRows(DatabaseMetaData::getSchemas));
+    }
+
+	@Test
+	@Tag("v2")
+	void getCatalogs() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+            String database = integration.ConnectionInfo.getInstance().getDatabase();
+            try {
+				statement.executeUpdate(format("CREATE DATABASE %s_get_catalogs", database));
+				assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
+				assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
+			} finally {
+				statement.executeUpdate(format("DROP DATABASE IF EXISTS %s_get_catalogs", database));
+			}
+		}
     }
 
     @ParameterizedTest
@@ -80,7 +92,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
                 List.of()
                 :
                 Arrays.stream(expectedSchemasStr.split(";")).map(schema -> List.of(schema, database)).collect(toList());
-        assertEquals(expectedSchemas, getSchemas(dbmd -> dbmd.getSchemas(cat, schemaPattern)));
+        assertEquals(expectedSchemas, getRows(dbmd -> dbmd.getSchemas(cat, schemaPattern)));
     }
 
     @ParameterizedTest
@@ -211,7 +223,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
         }
     }
 
-    private List<List<Object>> getSchemas(CheckedFunction<DatabaseMetaData, ResultSet> schemasGetter) throws SQLException {
+    private List<List<Object>> getRows(CheckedFunction<DatabaseMetaData, ResultSet> schemasGetter) throws SQLException {
         return readResultSet(schemasGetter.apply(dbmd));
     }
 
