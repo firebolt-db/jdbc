@@ -78,11 +78,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 abstract class FireboltConnectionTest {
@@ -370,6 +366,28 @@ abstract class FireboltConnectionTest {
 			assertEquals(Map.of("auto_start_stop_control", "ignore"), propertiesArgumentCaptor.getValue().getAdditionalProperties());
 			assertEquals(null, propertiesArgumentCaptor.getValue().getEngine());
 			assertTrue(propertiesArgumentCaptor.getValue().isSystemEngine());
+		}
+	}
+
+	@Test
+	void shouldSendBatchesInSingleQueryWhenMergeBatchesIsSet() throws SQLException {
+		when(fireboltStatementService.execute(any(), any(), any()))
+				.thenReturn(Optional.empty());
+		Properties propertiesCopy = new Properties(connectionProperties);
+		propertiesCopy.put("merge_prepared_statement_batches", "true");
+		try (FireboltConnection fireboltConnection = createConnection(URL, propertiesCopy)) {
+			fireboltConnection.createStatement().execute("SET param=value");
+			PreparedStatement statement = fireboltConnection.prepareStatement("INSERT INTO t VALUES (?)");
+			statement.setInt(1, 1);
+			statement.addBatch();
+			statement.setInt(1, 2);
+			statement.addBatch();
+			statement.executeBatch();
+			verify(fireboltStatementService, atLeast(2)).execute(queryInfoWrapperArgumentCaptor.capture(),
+					propertiesArgumentCaptor.capture(), any());
+			assertEquals("INSERT INTO t VALUES (1);INSERT INTO t VALUES (2);", queryInfoWrapperArgumentCaptor.getValue().getSql());
+			// Validate that parameters are preserved
+			assertEquals(Map.of("param", "value"), propertiesArgumentCaptor.getValue().getAdditionalProperties());
 		}
 	}
 
@@ -735,6 +753,17 @@ abstract class FireboltConnectionTest {
 		connectionProperties.put("validate_on_system_engine", "true");
 		try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
 			assertEquals("true", fireboltConnection.getClientInfo().get("validate_on_system_engine"));
+		}
+	}
+
+	@Test
+	void shouldSendBatchesSeparatelyByDefault() throws SQLException {
+		try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
+			assertEquals("false", fireboltConnection.getClientInfo().get("merge_prepared_statement_batches"));
+		}
+		connectionProperties.put("merge_prepared_statement_batches", "true");
+		try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
+			assertEquals("true", fireboltConnection.getClientInfo().get("merge_prepared_statement_batches"));
 		}
 	}
 

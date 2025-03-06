@@ -70,6 +70,8 @@ public enum FireboltSessionProperty {
 	VALIDATE_ON_SYSTEM_ENGINE("validate_on_system_engine", false, Boolean.class,
 			"Whether to validate the connection on the system engine or not. By default validates on an engine currently connected.",
 			FireboltProperties::isValidateOnSystemEngine),
+	MERGE_PREPARED_STATEMENT_BATCHES("merge_prepared_statement_batches", false, Boolean.class,
+			"Whether to send prepared statement batches as a single statement. By default, they are sent one by one.", FireboltProperties::isMergePreparedStatementBatches),
 	// We keep all the deprecated properties to ensure backward compatibility - but
 	// they do not have any effect.
 	@Deprecated
