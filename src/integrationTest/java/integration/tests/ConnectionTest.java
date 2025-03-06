@@ -172,6 +172,54 @@ class ConnectionTest extends IntegrationTest {
 
     }
 
+    @Test
+    @Tag("v2")
+    void preparedStatementBatchesWorkIfMergeParameterProvided() throws SQLException {
+        String engineName = integration.ConnectionInfo.getInstance().getEngine();
+        String queryLabel = "test_merge_batches_" + System.currentTimeMillis();
+        try (Connection connection = createConnection(engineName, Map.of("merge_prepared_statement_batches", "true"))) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate("CREATE TABLE test_table (id INT)");
+                try (java.sql.PreparedStatement preparedStatement = connection.prepareStatement(
+                        String.format("/*%s*/INSERT INTO test_table VALUES (?)", queryLabel))) {
+                    for (int i = 0; i < 10; i++) {
+                        preparedStatement.setInt(1, i);
+                        preparedStatement.addBatch();
+                    }
+                    preparedStatement.executeBatch();
+
+                }
+                try (ResultSet rs = statement.executeQuery("SELECT COUNT(*) FROM test_table")) {
+                    assertTrue(rs.next());
+                    assertEquals(10, rs.getInt(1));
+                }
+                // sleep for 10s to give QH time to get populated and avoid flakiness
+                // it sometime takes that long
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    // ignore
+                }
+
+                // Validate we've only executed one insert
+                String qhQuery = "SELECT count(*) from information_schema.engine_query_history WHERE status='ENDED_SUCCESSFULLY' " +
+                        String.format("AND lower(query_text) like '/*%s*/insert into %%'", queryLabel);
+                System.out.println(qhQuery);
+                try (java.sql.PreparedStatement preparedStatement = connection.prepareStatement(qhQuery)) {
+                    try (ResultSet rs = preparedStatement.executeQuery()) {
+                        assertTrue(rs.next());
+                        assertEquals(1, rs.getInt(1));
+                    }
+                }
+
+            } finally {
+                try (Statement statement = connection.createStatement()) {
+                    statement.executeUpdate("DROP TABLE IF EXISTS test_table");
+                }
+            }
+        }
+    }
+
     void unsuccessfulConnect(boolean useDatabase, boolean useEngine) throws SQLException {
         ConnectionInfo params = integration.ConnectionInfo.getInstance();
         String url = getJdbcUrl(params, useDatabase, useEngine);

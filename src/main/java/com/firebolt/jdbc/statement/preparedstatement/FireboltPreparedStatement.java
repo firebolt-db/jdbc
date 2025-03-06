@@ -266,16 +266,32 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public int[] executeBatch() throws SQLException {
 		validateStatementIsNotClosed();
 		log.debug("Executing batch for statement: {}", rawStatement);
-		List<StatementInfoWrapper> inserts = new ArrayList<>();
+		List<StatementInfoWrapper> statements = new ArrayList<>();
 		int[] result = new int[rows.size()];
 		for (Map<Integer, String> row : rows) {
-			inserts.addAll(prepareSQL(row));
+			statements.addAll(prepareSQL(row));
 		}
-		execute(inserts);
-		for (int i = 0; i < inserts.size(); i++) {
+		if (sessionProperties.isMergePreparedStatementBatches()) {
+			if (!statements.isEmpty()) {
+				execute(List.of(asSingleStatement(statements)));
+			}
+		} else {
+			execute(statements);
+		}
+		for (int i = 0; i < statements.size(); i++) {
 			result[i] = SUCCESS_NO_INFO;
 		}
 		return result;
+	}
+
+	private StatementInfoWrapper asSingleStatement(List<StatementInfoWrapper> queries) {
+		// merge all queries into a single query, separated by semicolons
+		StringBuilder sb = new StringBuilder();
+		var first = queries.get(0);
+		for (StatementInfoWrapper query : queries) {
+			sb.append(query.getSql()).append(";");
+		}
+		return new StatementInfoWrapper(sb.toString(), first.getInitialStatement().getStatementType(), first.getParam(), first.getInitialStatement());
 	}
 
 	@Override
