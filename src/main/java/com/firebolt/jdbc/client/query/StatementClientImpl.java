@@ -136,7 +136,6 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	@Override
 	public InputStream executeSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
 										   @NonNull FireboltProperties connectionProperties, boolean systemEngine, int queryTimeout) throws SQLException {
-		QueryIdFetcher.getQueryFetcher(connection.getInfraVersion()).formatStatement(statementInfoWrapper);
 		String formattedStatement = QueryIdFetcher.getQueryFetcher(connection.getInfraVersion()).formatStatement(statementInfoWrapper);
 		Map<String, String> params = getAllParameters(connectionProperties, statementInfoWrapper, systemEngine, queryTimeout);
 		String label = statementInfoWrapper.getLabel();
