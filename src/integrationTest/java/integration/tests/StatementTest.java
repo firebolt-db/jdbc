@@ -8,6 +8,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.sql.*;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -36,6 +39,13 @@ import lombok.CustomLog;
 class StatementTest extends IntegrationTest {
 
 	private static final long TEN_SECONDS_IN_MILLIS = TimeUnit.SECONDS.toMillis(10);
+
+	// timestamp format on the backend
+	private static ZoneId UTC_ZONE_ID = ZoneId.of("UTC"); // Change this to your desired timezone
+
+	// Get the current time in the specified timezone
+	private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss";
+	private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(TIMESTAMP_FORMAT);
 
 	@BeforeEach
 	void beforeEach() {
@@ -263,7 +273,7 @@ class StatementTest extends IntegrationTest {
 	void canSetQueryLabelMultipleTimes() throws SQLException {
 		try (Connection connection = createConnection()) {
 			try (Statement statement = connection.createStatement()) {
-				String currentTime = getCurrentTime(statement);
+				String currentTime = getCurrentUTCTime();
 
 				String firstQueryLabel = "first query label " + RandomStringUtils.randomNumeric(4);
 				assertFalse(statement.execute(String.format("SET query_label = '%s'", firstQueryLabel)));
@@ -293,7 +303,7 @@ class StatementTest extends IntegrationTest {
 	void willUseRandomQueryLabelIfNoneExplicitlySet() throws SQLException {
 		try (Connection connection = createConnection()) {
 			try (Statement statement = connection.createStatement()) {
-				String currentTime = getCurrentTime(statement);
+				String currentTime = getCurrentUTCTime();
 
 				String statementWithoutExplicitQueryLabel = "SELECT " + RandomStringUtils.randomNumeric(3)  + ";";
 				statement.executeQuery(statementWithoutExplicitQueryLabel);
@@ -340,12 +350,10 @@ class StatementTest extends IntegrationTest {
 	}
 
 	/**
-	 * Runs the query: select now() and retuns the result
+	 * Assume the back end and the client have the same timestamp
 	 */
-	private String getCurrentTime(Statement statement) throws SQLException {
-		ResultSet resultSet = statement.executeQuery("SELECT now()");
-		resultSet.next();
-		return resultSet.getString(1);
+	private String getCurrentUTCTime() {
+		return ZonedDateTime.now(UTC_ZONE_ID).format(DATE_TIME_FORMATTER);
 	}
 
 	/**

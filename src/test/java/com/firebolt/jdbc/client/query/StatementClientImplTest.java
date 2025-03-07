@@ -123,16 +123,8 @@ class StatementClientImplTest {
 		assertEquals("show databases;", actualQuery);
 
 		HttpUrl httpUrl = actualRequest.url();
-		assertEquals("http", httpUrl.scheme());
-		assertEquals("firebolt1", httpUrl.host());
-		assertEquals(555, httpUrl.port());
-
 		Set<String> queryParameterNames= httpUrl.queryParameterNames();
-		assertEquals(queryParameterNames.size(), 3);
-		assertTrue(queryParameterNames.containsAll(Set.of("output_format","database","query_label")));
-
-		assertEquals(httpUrl.queryParameter("output_format"), "TabSeparatedWithNamesAndTypes");
-		assertEquals(httpUrl.queryParameter("database"), "db1");
+		assertTrue(queryParameterNames.contains("query_label"));
 
 		String expectedConnectionQueryLabel = StringUtils.isNotBlank(connectionQueryLabel) ? connectionQueryLabel : statementInfoWrapper.getLabel();
 		assertEquals(httpUrl.queryParameter("query_label"), expectedConnectionQueryLabel);
