@@ -7,13 +7,11 @@ import java.io.InputStream;
 import java.sql.*;
 import java.util.*;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.firebolt.jdbc.JdbcBase;
 import com.firebolt.jdbc.annotation.NotImplemented;
+import com.firebolt.jdbc.client.query.QueryLabelResolver;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
@@ -138,8 +136,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	}
 
 	private String determineQueryLabel(StatementInfoWrapper statementInfoWrapper) {
-		String existingQueryLabel = connection.getSessionProperties().getRuntimeAdditionalProperties().get(FireboltQueryParameterKey.QUERY_LABEL.getKey());
-		return StringUtils.isNotBlank(existingQueryLabel) ? existingQueryLabel : statementInfoWrapper.getLabel();
+		return QueryLabelResolver.getQueryLabel(connection.getSessionProperties(), statementInfoWrapper);
 	}
 
 	private boolean isStatementNotCancelled(StatementInfoWrapper statementInfoWrapper) {

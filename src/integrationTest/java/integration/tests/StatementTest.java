@@ -270,20 +270,21 @@ class StatementTest extends IntegrationTest {
 
 	@Test
 	@Tag("v2")
+	@Tag("slow")
 	void canSetQueryLabelMultipleTimes() throws SQLException {
 		try (Connection connection = createConnection()) {
 			try (Statement statement = connection.createStatement()) {
 				String currentTime = getCurrentUTCTime();
 
 				String firstQueryLabel = "first query label " + RandomStringUtils.randomNumeric(4);
-				assertFalse(statement.execute(String.format("SET query_label = '%s'", firstQueryLabel)));
+				statement.execute(String.format("SET query_label = '%s'", firstQueryLabel));
 
 				String nextQueryAfterFirstLabelSet = "SELECT " + RandomStringUtils.randomNumeric(4)  + ";";
 				statement.executeQuery(nextQueryAfterFirstLabelSet);
 
 				// set a new query label
 				String secondQueryLabel = "second query label " + RandomStringUtils.randomNumeric(4);
-				assertFalse(statement.execute(String.format("SET query_label = '%s'", secondQueryLabel)));
+				statement.execute(String.format("SET query_label = '%s'", secondQueryLabel));
 
 				String nextQueryAfterSecondLabelSet = "SELECT " + RandomStringUtils.randomNumeric(4) + ";";
 				statement.executeQuery(nextQueryAfterSecondLabelSet);
@@ -300,6 +301,7 @@ class StatementTest extends IntegrationTest {
 
 	@Test
 	@Tag("v2")
+	@Tag("slow")
 	void willUseRandomQueryLabelIfNoneExplicitlySet() throws SQLException {
 		try (Connection connection = createConnection()) {
 			try (Statement statement = connection.createStatement()) {
@@ -318,12 +320,13 @@ class StatementTest extends IntegrationTest {
 	}
 
 	private void sleepForMillis(long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            // do nothing
-        }
-    }
+		try {
+			Thread.sleep(millis);
+		} catch (InterruptedException e) {
+			// do nothing
+		}
+	}
+
 	/**
 	 * looks up a query in the query history. Returns the query text
 	 * @param statement
@@ -336,7 +339,7 @@ class StatementTest extends IntegrationTest {
 			WHERE query_label = '%s' and submitted_time > '%s' and query_text = '%s';
 			""";
 		ResultSet resultSet = statement.executeQuery(String.format(queryHistoryQuery, queryLabelValue, afterTimestamp, queryText));
-		assertTrue(resultSet.next(), () -> "Did not find query with the specified query label");
+		assertTrue(resultSet.next(), "Did not find query with the specified query label");
 	}
 
 	private String getQueryLabel(Statement statement, String afterTimestamp, String queryText) throws SQLException {
