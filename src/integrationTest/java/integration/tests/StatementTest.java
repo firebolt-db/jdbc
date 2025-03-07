@@ -29,6 +29,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
 
+import static integration.EnvironmentCondition.Attribute.fireboltVersion;
 import integration.ConnectionInfo;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
@@ -125,7 +126,7 @@ class StatementTest extends IntegrationTest {
 
 	@Test
 	@Tag("v2")
-	@EnvironmentCondition(value = "4.2.0", comparison = EnvironmentCondition.Comparison.GE)
+	@EnvironmentCondition(value = "4.2.0", attribute = fireboltVersion, comparison = EnvironmentCondition.Comparison.GE)
 	void shouldThrowExceptionWhenExecutingWrongQueryWithJsonError() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			statement.execute("set advanced_mode=1");
@@ -314,7 +315,7 @@ class StatementTest extends IntegrationTest {
 				String statementWithoutExplicitQueryLabel = "SELECT " + RandomStringUtils.randomNumeric(3)  + ";";
 				statement.executeQuery(statementWithoutExplicitQueryLabel);
 
-				// sleep for some time to allow query history to execute 
+				// sleep for some time to allow query history to execute
 				sleepForMillis(TEN_SECONDS_IN_MILLIS);
 
 				String implicitQueryLabel = getQueryLabel(statement, currentTime, statementWithoutExplicitQueryLabel);
