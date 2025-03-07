@@ -16,7 +16,7 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 
 @ExtendWith(MockitoExtension.class)
-public class QueryLabelResolverTest {
+class QueryLabelResolverTest {
 
     @Mock
     private FireboltProperties mockFireboltProperties;
@@ -25,19 +25,19 @@ public class QueryLabelResolverTest {
     private StatementInfoWrapper mockStatementInfoWrapper;
 
     @BeforeEach
-    public void setupMethod() {
+    void setupMethod() {
         lenient().when(mockStatementInfoWrapper.getLabel()).thenReturn("label from statement");
     }
 
     @Test
-    public void willResolveQueryFromSessionWhenPresent() {
+    void willResolveQueryFromSessionWhenPresent() {
         when(mockFireboltProperties.getRuntimeAdditionalProperties()).thenReturn(Map.of("query_label", "label from connection"));
         assertEquals("label from connection", QueryLabelResolver.getQueryLabel(mockFireboltProperties, mockStatementInfoWrapper));
         verify(mockStatementInfoWrapper, never()).getLabel();
     }
 
     @Test
-    public void willResolveQueryFromStatementWhenNotPresentOnSessionProperties() {
+    void willResolveQueryFromStatementWhenNotPresentOnSessionProperties() {
         when(mockFireboltProperties.getRuntimeAdditionalProperties()).thenReturn(Collections.emptyMap());
         assertEquals("label from statement", QueryLabelResolver.getQueryLabel(mockFireboltProperties, mockStatementInfoWrapper));
     }

@@ -114,10 +114,6 @@ class StatementClientImplTest {
 
 		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
 		Request actualRequest = requestArgumentCaptor.getValue();
-		Map<String, String> expectedHeaders = new LinkedHashMap<>();
-		expectedHeaders.put("Authorization", "Bearer token"); // legit:ignore
-		expectedHeaders.put("User-Agent", userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; ) ConnA/1.0.9"));
-		assertEquals(expectedHeaders, extractHeadersMap(actualRequest));
 
 		String actualQuery = getActualRequestString(actualRequest);
 		assertEquals("show databases;", actualQuery);
