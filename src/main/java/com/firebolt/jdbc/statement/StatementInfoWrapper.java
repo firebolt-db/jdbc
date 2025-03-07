@@ -1,15 +1,17 @@
 package com.firebolt.jdbc.statement;
 
-import com.firebolt.jdbc.statement.rawstatement.RawStatement;
-import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NonNull;
+import static com.firebolt.jdbc.statement.StatementType.PARAM_SETTING;
 
 import java.util.Map.Entry;
 import java.util.UUID;
 
-import static com.firebolt.jdbc.statement.StatementType.PARAM_SETTING;
+import com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey;
+import com.firebolt.jdbc.statement.rawstatement.RawStatement;
+import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NonNull;
 
 /**
  * This represents a statement that is ready to be sent to Firebolt or executed
@@ -30,7 +32,9 @@ public class StatementInfoWrapper {
 		this.type = type;
 		this.param = param;
 		this.initialStatement = initialStatement;
-		this.label = UUID.randomUUID().toString();
+
+		// if the param is the query_label then use that value as a label. If not create a random one.
+		this.label =  param != null && param.getKey().equals(FireboltQueryParameterKey.QUERY_LABEL.getKey()) ? param.getValue() : UUID.randomUUID().toString();
 	}
 
 	/**

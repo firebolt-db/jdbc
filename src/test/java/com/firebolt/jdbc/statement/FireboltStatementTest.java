@@ -1,15 +1,23 @@
 package com.firebolt.jdbc.statement;
 
-import com.firebolt.jdbc.CheckedBiFunction;
-import com.firebolt.jdbc.client.query.StatementClient;
-import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.resultset.FireboltResultSet;
-import com.firebolt.jdbc.service.FireboltStatementService;
-import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
-import com.firebolt.jdbc.type.array.SqlArrayUtil;
+import static java.lang.String.format;
+import static java.sql.Statement.CLOSE_CURRENT_RESULT;
+import static java.sql.Statement.SUCCESS_NO_INFO;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
+
+import java.io.ByteArrayInputStream;
+import java.io.Closeable;
+import java.lang.reflect.Field;
+import java.sql.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
@@ -22,51 +30,27 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.io.ByteArrayInputStream;
-import java.io.Closeable;
-import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLWarning;
-import java.sql.Statement;
-import java.sql.Wrapper;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Stream;
 import org.slf4j.LoggerFactory;
+
+import com.firebolt.jdbc.CheckedBiFunction;
+import com.firebolt.jdbc.client.query.StatementClient;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.resultset.FireboltResultSet;
+import com.firebolt.jdbc.service.FireboltStatementService;
+import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
+import com.firebolt.jdbc.type.array.SqlArrayUtil;
+
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 
-import static java.lang.String.format;
-import static java.sql.Statement.CLOSE_CURRENT_RESULT;
-import static java.sql.Statement.SUCCESS_NO_INFO;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
-
 @ExtendWith(MockitoExtension.class)
 class FireboltStatementTest {
+
     @Captor
     ArgumentCaptor<StatementInfoWrapper> queryInfoWrapperArgumentCaptor;
     @Mock
@@ -104,6 +88,7 @@ class FireboltStatementTest {
     @Test
     void shouldExtractAdditionalPropertiesAndNotExecuteQueryWhenSetParamIsUsed() throws SQLException {
         FireboltConnection connection = mock(FireboltConnection.class);
+        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
         try (FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection)) {
             fireboltStatement.execute("set custom_1 = 1");
             verifyNoMoreInteractions(fireboltStatementService);
@@ -126,6 +111,7 @@ class FireboltStatementTest {
     void shouldCloseInputStreamOnClose() throws SQLException {
         ResultSet rs = mock(ResultSet.class);
         FireboltConnection connection = mock(FireboltConnection.class);
+        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 
         when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
@@ -169,6 +155,7 @@ class FireboltStatementTest {
     }
 
     private void shouldExecuteIfUpdateStatementWouldNotReturnAResultSet(CheckedBiFunction<Statement, String, Integer> executor) throws SQLException {
+        when(fireboltConnection.getSessionProperties()).thenReturn(fireboltProperties);
         try (FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, fireboltConnection)) {
             when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
             assertEquals(0, executor.apply(fireboltStatement, "INSERT INTO cars(sales, name) VALUES (500, 'Ford')"));
@@ -203,6 +190,7 @@ class FireboltStatementTest {
     private void shouldExecuteStatementThatReturnsResultSet(CheckedBiFunction<Statement, String, Boolean> executor) throws SQLException {
         ResultSet rs = mock(FireboltResultSet.class);
         FireboltConnection connection = mock(FireboltConnection.class);
+        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
         when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.of(rs));
         assertTrue(executor.apply(fireboltStatement, "SELECT 1"));
@@ -218,6 +206,7 @@ class FireboltStatementTest {
         ResultSet rs = mock(FireboltResultSet.class);
         ResultSet rs2 = mock(FireboltResultSet.class);
         FireboltConnection connection = mock(FireboltConnection.class);
+        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 
         when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.of(rs)).thenReturn(Optional.of(rs2));
@@ -238,6 +227,7 @@ class FireboltStatementTest {
     @Test
     void test() throws SQLException {
         FireboltConnection connection = mock(FireboltConnection.class);
+        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 
         Logger fooLogger = (Logger) LoggerFactory.getLogger(FireboltStatement.class);
@@ -279,6 +269,7 @@ class FireboltStatementTest {
     @Test
     void shouldCloseCurrentAndGetMoreResultWhenCallingGetMoreResultsWithCloseCurrentFlag() throws SQLException {
         FireboltConnection connection = mock(FireboltConnection.class);
+        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
         when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.of(mock(FireboltResultSet.class)));
         fireboltStatement.execute("SELECT 1; SELECT 2;");
@@ -290,6 +281,7 @@ class FireboltStatementTest {
     @Test
     void shouldKeepCurrentAndGetMoreResultWhenCallingGetMoreResultsWithKeepCurrentResultFlag() throws SQLException {
         FireboltConnection connection = mock(FireboltConnection.class);
+        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
         when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.of(mock(ResultSet.class)));
         fireboltStatement.execute("SELECT 1; SELECT 2;");
@@ -304,6 +296,7 @@ class FireboltStatementTest {
         ResultSet rs2 = mock(FireboltResultSet.class);
         ResultSet rs3 = mock(FireboltResultSet.class);
         FireboltConnection connection = mock(FireboltConnection.class);
+        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 
         when(fireboltStatementService.execute(any(), any(), any()))
@@ -503,6 +496,7 @@ class FireboltStatementTest {
     })
     void shouldLimitStringByMaxFieldSize(String inputText, int maxFieldSize, String expectedText) throws SQLException {
         FireboltConnection connection = mock(FireboltConnection.class);
+        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
         StatementClient statementClient = mock(StatementClient.class);
         String content = format("1\t2\ntext\tbytea\n%s\t%s", inputText == null ? "\\N" : inputText, inputText == null ? "\\N" : SqlArrayUtil.byteArrayToHexString(inputText.getBytes(), false));
         when(statementClient.executeSqlStatement(any(), any(), eq(false), anyInt())).thenReturn(new ByteArrayInputStream(content.getBytes()));
@@ -538,6 +532,7 @@ class FireboltStatementTest {
     @Test
     void shouldExecuteBatch() throws SQLException {
         FireboltConnection connection = mock(FireboltConnection.class);
+        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
         when(fireboltStatementService.execute(any(), any(), any())).thenReturn(
                 Optional.of(mock(FireboltResultSet.class)), Optional.of(mock(FireboltResultSet.class)), Optional.empty(), Optional.empty(), Optional.of(mock(FireboltResultSet.class))
@@ -555,6 +550,7 @@ class FireboltStatementTest {
     @Test
     void shouldClearBatch() throws SQLException {
         FireboltConnection connection = mock(FireboltConnection.class);
+        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
         when(fireboltStatementService.execute(any(), any(), any())).thenReturn(
                 Optional.empty(), Optional.empty()
@@ -590,6 +586,7 @@ class FireboltStatementTest {
         fooLogger.addAppender(listAppender);
 
         FireboltConnection connection = mock(FireboltConnection.class);
+        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties,
                 connection);
         fireboltStatement.execute(query);

@@ -1,24 +1,23 @@
 package com.firebolt.jdbc.client.query;
 
-import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
-import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.connection.FireboltConnectionTokens;
-import com.firebolt.jdbc.connection.UrlUtil;
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
-import com.firebolt.jdbc.exception.ExceptionType;
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.statement.StatementInfoWrapper;
-import com.firebolt.jdbc.statement.StatementUtil;
-import com.firebolt.jdbc.type.ParserVersion;
-import lombok.NonNull;
-import okhttp3.Call;
-import okhttp3.Dispatcher;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
-import okio.Buffer;
+import static com.firebolt.jdbc.client.UserAgentFormatter.userAgent;
+import static com.firebolt.jdbc.client.query.StatementClientImpl.*;
+import static java.lang.String.format;
+import static java.util.Optional.ofNullable;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.net.URL;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.Map.Entry;
+
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -31,42 +30,29 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.net.URL;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Properties;
+import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.connection.FireboltConnectionTokens;
+import com.firebolt.jdbc.connection.UrlUtil;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
+import com.firebolt.jdbc.exception.ExceptionType;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.statement.StatementInfoWrapper;
+import com.firebolt.jdbc.statement.StatementUtil;
+import com.firebolt.jdbc.type.ParserVersion;
 
-import static com.firebolt.jdbc.client.UserAgentFormatter.userAgent;
-import static com.firebolt.jdbc.client.query.StatementClientImpl.HEADER_RESET_SESSION;
-import static com.firebolt.jdbc.client.query.StatementClientImpl.HEADER_UPDATE_ENDPOINT;
-import static com.firebolt.jdbc.client.query.StatementClientImpl.HEADER_UPDATE_PARAMETER;
-import static java.lang.String.format;
-import static java.util.Optional.ofNullable;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import lombok.NonNull;
+import okhttp3.*;
+import okio.Buffer;
 
 @ExtendWith(MockitoExtension.class)
 class StatementClientImplTest {
 	private static final String HOST = "firebolt1";
 	private static final FireboltProperties FIREBOLT_PROPERTIES = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).build();
+
+	private static final int QUERY_TIMEOUT = 15;
+
 	@Captor
 	private ArgumentCaptor<Request> requestArgumentCaptor;
 	@Mock
@@ -105,6 +91,39 @@ class StatementClientImplTest {
 		//assertEquals("show databases;", actualQuery);
 		assertSqlStatement("show databases;", actualQuery);
 		return Map.entry(statementInfoWrapper.getLabel(), actualRequest.url().toString());
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+			"true,2,queryLabelFromConnection",
+			"true,2,null"
+	})
+	void shouldPostSqlWithExpectedQueryLabel(boolean systemEngine, int infraVersion, String connectionQueryLabel) throws SQLException, IOException {
+		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).accountId("12345").systemEngine(systemEngine)
+						.runtimeAdditionalProperties(Map.of("query_label", connectionQueryLabel)).build();
+		when(connection.getAccessToken()).thenReturn(Optional.of("token"));
+		when(connection.getInfraVersion()).thenReturn(infraVersion);
+
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
+		injectMockedResponse(okHttpClient, 200, "");
+		Call call = getMockedCallWithResponse(200, "");
+		when(okHttpClient.newCall(any())).thenReturn(call);
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
+		assertNotNull(statementInfoWrapper.getLabel());
+		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, fireboltProperties.isSystemEngine(), QUERY_TIMEOUT);
+
+		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
+		Request actualRequest = requestArgumentCaptor.getValue();
+
+		String actualQuery = getActualRequestString(actualRequest);
+		assertEquals("show databases;", actualQuery);
+
+		HttpUrl httpUrl = actualRequest.url();
+		Set<String> queryParameterNames= httpUrl.queryParameterNames();
+		assertTrue(queryParameterNames.contains("query_label"));
+
+		String expectedConnectionQueryLabel = StringUtils.isNotBlank(connectionQueryLabel) ? connectionQueryLabel : statementInfoWrapper.getLabel();
+		assertEquals(httpUrl.queryParameter("query_label"), expectedConnectionQueryLabel);
 	}
 
 	@ParameterizedTest(name = "infra version:{0}")
