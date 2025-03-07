@@ -102,7 +102,6 @@ class StatementClientImplTest {
 		expectedHeaders.put("Authorization", "Bearer token");
 		expectedHeaders.put("User-Agent", userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; ) ConnA/1.0.9"));
 		assertEquals(expectedHeaders, extractHeadersMap(actualRequest));
-		//assertEquals("show databases;", actualQuery);
 		assertSqlStatement("show databases;", actualQuery);
 		return Map.entry(statementInfoWrapper.getLabel(), actualRequest.url().toString());
 	}
