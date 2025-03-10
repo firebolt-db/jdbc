@@ -23,6 +23,16 @@ public class FireboltDriver implements Driver {
 		try {
 			java.sql.DriverManager.registerDriver(new FireboltDriver());
 			log.info("Firebolt Driver registered");
+			
+			log.info("Firebolt Driver registered");
+			
+			log.info("Firebolt Driver registered");
+			
+			log.info("Firebolt Driver registered");
+			
+			log.info("Firebolt Driver registered");
+			
+			log.info("Firebolt Driver registered");
 		} catch (SQLException ex) {
 			throw new RuntimeException("Cannot register the driver");
 		}
@@ -50,38 +60,6 @@ public class FireboltDriver implements Driver {
 
 	@Override
 	public int getMinorVersion() {
-		return VersionUtil.getDriverMinorVersion();
-	}
-
-	
-	public int getMinorVersion3() {
-		VersionUtil.getDriverMinorVersion();
-		VersionUtil.getDriverMinorVersion();
-		VersionUtil.getDriverMinorVersion();
-		return VersionUtil.getDriverMinorVersion();
-	}
-	
-	
-	public int getMinorVersion1() {
-		VersionUtil.getDriverMinorVersion();
-		VersionUtil.getDriverMinorVersion();
-		VersionUtil.getDriverMinorVersion();
-		return VersionUtil.getDriverMinorVersion();
-	}
-	
-	
-	public int getMinorVersion2() {
-		VersionUtil.getDriverMinorVersion();
-		VersionUtil.getDriverMinorVersion();
-		VersionUtil.getDriverMinorVersion();
-		return VersionUtil.getDriverMinorVersion();
-	}
-
-	
-	public int getMinorVersion3() {
-		VersionUtil.getDriverMinorVersion();
-		VersionUtil.getDriverMinorVersion();
-		VersionUtil.getDriverMinorVersion();
 		return VersionUtil.getDriverMinorVersion();
 	}
 
