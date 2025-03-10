@@ -117,6 +117,8 @@ class StatementTest extends IntegrationTest {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			String errorMessage = assertThrows(FireboltException.class, () -> statement.executeQuery("select wrong query")).getMessage();
 			assertTrue(errorMessage.contains("wrong"));
+			assertTrue(errorMessage.contains("Line 1"));
+			assertTrue(errorMessage.contains("Column 8"));
 		}
 	}
 
@@ -129,6 +131,8 @@ class StatementTest extends IntegrationTest {
 			statement.execute("set enable_json_error_output_format=true");
 			String errorMessage = assertThrows(FireboltException.class, () -> statement.executeQuery("select wrong query")).getMessage();
 			assertTrue(errorMessage.contains("Column 'wrong' does not exist."));
+			assertTrue(errorMessage.contains("Line 1"));
+			assertTrue(errorMessage.contains("Column 8"));
 		}
 	}
 
