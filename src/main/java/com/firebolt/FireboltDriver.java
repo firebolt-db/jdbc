@@ -40,7 +40,7 @@ public class FireboltDriver implements Driver {
 
 	@Override
 	public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) {
-	return PropertyUtil.getPropertyInfo(url, info);
+		return PropertyUtil.getPropertyInfo(url, info);
 	}
 
 	@Override
@@ -52,19 +52,36 @@ public class FireboltDriver implements Driver {
 	public int getMinorVersion() {
 		return VersionUtil.getDriverMinorVersion();
 	}
+
 	
-	@Override
-	public int getMinorVersion() {
+	public int getMinorVersion3() {
+		return VersionUtil.getDriverMinorVersion();
+		return VersionUtil.getDriverMinorVersion();
+		return VersionUtil.getDriverMinorVersion();
 		return VersionUtil.getDriverMinorVersion();
 	}
 	
 	
 	public int getMinorVersion1() {
 		return VersionUtil.getDriverMinorVersion();
+		return VersionUtil.getDriverMinorVersion();
+		return VersionUtil.getDriverMinorVersion();
+		return VersionUtil.getDriverMinorVersion();
 	}
 	
 	
 	public int getMinorVersion2() {
+		return VersionUtil.getDriverMinorVersion();
+		return VersionUtil.getDriverMinorVersion();
+		return VersionUtil.getDriverMinorVersion();
+		return VersionUtil.getDriverMinorVersion();
+	}
+
+	
+	public int getMinorVersion3() {
+		return VersionUtil.getDriverMinorVersion();
+		return VersionUtil.getDriverMinorVersion();
+		return VersionUtil.getDriverMinorVersion();
 		return VersionUtil.getDriverMinorVersion();
 	}
 
