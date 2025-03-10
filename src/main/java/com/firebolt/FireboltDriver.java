@@ -40,7 +40,7 @@ public class FireboltDriver implements Driver {
 
 	@Override
 	public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) {
-		return PropertyUtil.getPropertyInfo(url, info);
+	return PropertyUtil.getPropertyInfo(url, info);
 	}
 
 	@Override
