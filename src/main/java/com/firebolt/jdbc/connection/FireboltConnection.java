@@ -1,5 +1,21 @@
 package com.firebolt.jdbc.connection;
 
+import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.getNonDeprecatedProperties;
+import static java.lang.String.format;
+import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static java.util.stream.Collectors.toMap;
+
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.sql.*;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.regex.Pattern;
+
 import com.firebolt.jdbc.JdbcBase;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
@@ -23,54 +39,17 @@ import com.firebolt.jdbc.type.array.FireboltArray;
 import com.firebolt.jdbc.type.lob.FireboltBlob;
 import com.firebolt.jdbc.type.lob.FireboltClob;
 import com.firebolt.jdbc.util.PropertyUtil;
+
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
 
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.sql.Array;
-import java.sql.Blob;
-import java.sql.CallableStatement;
-import java.sql.Clob;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.NClob;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLClientInfoException;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLWarning;
-import java.sql.SQLXML;
-import java.sql.Savepoint;
-import java.sql.Statement;
-import java.sql.Struct;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-import java.util.regex.Pattern;
-
-import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.getNonDeprecatedProperties;
-import static java.lang.String.format;
-import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
-import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static java.util.stream.Collectors.toMap;
-
 @CustomLog
 public abstract class FireboltConnection extends JdbcBase implements Connection, CacheListener {
 
+	private static String notUsed;
+	
 	private final FireboltAuthenticationService fireboltAuthenticationService;
 	private final FireboltStatementService fireboltStatementService;
 	protected String httpConnectionUrl;
