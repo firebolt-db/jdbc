@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -137,7 +136,7 @@ public class ServerError {
             this.location = location;
         }
 
-        Error(JSONObject json, Boolean isError) {
+        Error(JSONObject json, boolean isError) {
             this(json.optString("code", null),
                     json.optString("name", null),
                     json.optEnum(Severity.class, "severity"),
