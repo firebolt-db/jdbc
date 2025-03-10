@@ -216,14 +216,8 @@ public abstract class FireboltClient implements CacheListener {
 			ServerError.Error[] errors = serverError.getErrors() == null ? null : Arrays.stream(serverError.getErrors()).map(this::updateError).toArray(ServerError.Error[]::new);
 			return new ServerError(serverError.getQuery(), errors);
 		} catch (JSONException e) {
-			String message = responseText;
-			Location location = null;
-			Entry<Location, String> locationAndText = getLocationFromMessage(responseText);
-			if (locationAndText != null) {
-				location = locationAndText.getKey();
-				message = locationAndText.getValue();
-			}
-			return new ServerError(null, new ServerError.Error[] {new ServerError.Error(null, message, null, null, null, null, null, location)});
+			Location location = getLocationFromMessage(responseText);
+			return new ServerError(null, new ServerError.Error[] {new ServerError.Error(null, responseText, null, null, null, null, null, location)});
 		}
 	}
 
@@ -231,22 +225,21 @@ public abstract class FireboltClient implements CacheListener {
 		if (error == null || error.getDescription() == null) {
 			return error;
 		}
-		Entry<Location, String> locationAndText = getLocationFromMessage(error.getDescription());
-		if (locationAndText == null) {
+		Location location = getLocationFromMessage(error.getDescription());
+		if (location == null) {
 			return error;
 		}
-		Location location = Objects.requireNonNullElse(error.getLocation(), locationAndText.getKey());
+		location = Objects.requireNonNullElse(error.getLocation(), location);
 		return new ServerError.Error(error.getCode(), error.getName(), error.getSeverity(), error.getSource(),
-				locationAndText.getValue(), error.getResolution(), error.getHelpLink(), location);
+				error.getDescription(), error.getResolution(), error.getHelpLink(), location);
 	}
 
-	private Entry<Location, String> getLocationFromMessage(String responseText) {
+	private Location getLocationFromMessage(String responseText) {
 		Matcher m = plainErrorPattern.matcher(responseText);
 		if (m.find()) {
 			int line = Integer.parseInt(m.group(1));
 			int column = Integer.parseInt(m.group(2));
-			String message = m.group(3);
-			return Map.entry(new Location(line, column, column), message);
+			return new Location(line, column, column);
 		}
 		return null;
 	}
