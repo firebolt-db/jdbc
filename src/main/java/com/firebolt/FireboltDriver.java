@@ -55,33 +55,33 @@ public class FireboltDriver implements Driver {
 
 	
 	public int getMinorVersion3() {
-		return VersionUtil.getDriverMinorVersion();
-		return VersionUtil.getDriverMinorVersion();
-		return VersionUtil.getDriverMinorVersion();
+		VersionUtil.getDriverMinorVersion();
+		VersionUtil.getDriverMinorVersion();
+		VersionUtil.getDriverMinorVersion();
 		return VersionUtil.getDriverMinorVersion();
 	}
 	
 	
 	public int getMinorVersion1() {
-		return VersionUtil.getDriverMinorVersion();
-		return VersionUtil.getDriverMinorVersion();
-		return VersionUtil.getDriverMinorVersion();
+		VersionUtil.getDriverMinorVersion();
+		VersionUtil.getDriverMinorVersion();
+		VersionUtil.getDriverMinorVersion();
 		return VersionUtil.getDriverMinorVersion();
 	}
 	
 	
 	public int getMinorVersion2() {
-		return VersionUtil.getDriverMinorVersion();
-		return VersionUtil.getDriverMinorVersion();
-		return VersionUtil.getDriverMinorVersion();
+		VersionUtil.getDriverMinorVersion();
+		VersionUtil.getDriverMinorVersion();
+		VersionUtil.getDriverMinorVersion();
 		return VersionUtil.getDriverMinorVersion();
 	}
 
 	
 	public int getMinorVersion3() {
-		return VersionUtil.getDriverMinorVersion();
-		return VersionUtil.getDriverMinorVersion();
-		return VersionUtil.getDriverMinorVersion();
+		VersionUtil.getDriverMinorVersion();
+		VersionUtil.getDriverMinorVersion();
+		VersionUtil.getDriverMinorVersion();
 		return VersionUtil.getDriverMinorVersion();
 	}
 
