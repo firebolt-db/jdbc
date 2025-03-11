@@ -221,30 +221,28 @@ class ConnectionTest extends IntegrationTest {
         }
     }
 
-	@Test
-	@Tag("v2")
-	@Tag("slow")
-	void networkPolicyBlockedServiceAccountThrowsError() throws SQLException {
-		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
-			try {
+    @Test
+    @Tag("v2")
+    @Tag("slow")
+    void networkPolicyBlockedServiceAccountThrowsError() throws SQLException {
+        try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+            try {
                 ConnectionInfo connectionInfo = getConnectionInfoForNetworkPolicyTest(statement);
                 String jdbcUrl = getJdbcUrl(connectionInfo, true, true);
-				try (Connection networkPolicyConnection = DriverManager.getConnection(jdbcUrl,
-						connectionInfo.getPrincipal(), connectionInfo.getSecret());
-						Statement netowrkPolicyStatement = networkPolicyConnection.createStatement()) {
-					FireboltException exception = assertThrows(FireboltException.class,
-							() -> netowrkPolicyStatement.executeUpdate("SELECT 1"));
+                try (Connection networkPolicyConnection = DriverManager.getConnection(jdbcUrl,
+                        connectionInfo.getPrincipal(), connectionInfo.getSecret());
+                     Statement netowrkPolicyStatement = networkPolicyConnection.createStatement()) {
+                    FireboltException exception = assertThrows(FireboltException.class,
+                            () -> netowrkPolicyStatement.executeUpdate("SELECT 1"));
                     assertTrue(exception.getMessage().contains("network policy blocked"));
                 }
-
-			} finally {
-				statement.executeUpdate("DROP USER IF EXISTS network_policy_test_user");
-				statement.executeUpdate("DROP SERVICE ACCOUNT IF EXISTS network_policy_test_sa");
-				statement.executeUpdate("DROP NETWORK POLICY IF EXISTS network_policy_test");
-			}
-
-		}
-	}
+            } finally {
+                statement.executeUpdate("DROP USER IF EXISTS network_policy_test_user");
+                statement.executeUpdate("DROP SERVICE ACCOUNT IF EXISTS network_policy_test_sa");
+                statement.executeUpdate("DROP NETWORK POLICY IF EXISTS network_policy_test");
+            }
+        }
+    }
 
     private ConnectionInfo getConnectionInfoForNetworkPolicyTest(Statement statement) throws SQLException {
         statement.executeUpdate(
