@@ -6,6 +6,7 @@ import com.firebolt.jdbc.exception.FireboltException;
 import integration.ConnectionInfo;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -218,6 +219,50 @@ class ConnectionTest extends IntegrationTest {
                 }
             }
         }
+    }
+
+    @Test
+    @Tag("v2")
+    @Tag("slow")
+    void networkPolicyBlockedServiceAccountThrowsError() throws SQLException {
+        try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+            try {
+                ConnectionInfo connectionInfo = getConnectionInfoForNetworkPolicyTest(statement);
+                String jdbcUrl = getJdbcUrl(connectionInfo, true, true);
+                try (Connection networkPolicyConnection = DriverManager.getConnection(jdbcUrl,
+                        connectionInfo.getPrincipal(), connectionInfo.getSecret());
+                     Statement netowrkPolicyStatement = networkPolicyConnection.createStatement()) {
+                    FireboltException exception = assertThrows(FireboltException.class,
+                            () -> netowrkPolicyStatement.executeUpdate("SELECT 1"));
+                    assertTrue(exception.getMessage().contains("network policy blocked"));
+                }
+            } finally {
+                statement.executeUpdate("DROP USER IF EXISTS network_policy_test_user");
+                statement.executeUpdate("DROP SERVICE ACCOUNT IF EXISTS network_policy_test_sa");
+                statement.executeUpdate("DROP NETWORK POLICY IF EXISTS network_policy_test");
+            }
+        }
+    }
+
+    private ConnectionInfo getConnectionInfoForNetworkPolicyTest(Statement statement) throws SQLException {
+        statement.executeUpdate(
+                "CREATE NETWORK POLICY IF NOT EXISTS network_policy_test WITH ALLOWED_IP_LIST = ('99.99.99.99')");
+        statement.executeUpdate(
+                "CREATE SERVICE ACCOUNT IF NOT EXISTS network_policy_test_sa WITH NETWORK_POLICY = network_policy_test");
+        statement.executeUpdate(
+                "CREATE USER IF NOT EXISTS network_policy_test_user WITH SERVICE_ACCOUNT = network_policy_test_sa");
+        ResultSet resultSet = statement
+                .executeQuery("CALL fb_GENERATESERVICEACCOUNTKEY('network_policy_test_sa')");
+        if (!resultSet.next()) {
+            throw new FireboltException("Network Policy Test could now generate service account secret and id");
+        }
+        ConnectionInfo connectionInfo = new ConnectionInfo(resultSet.getString("service_account_id"),
+                resultSet.getString("secret"), ConnectionInfo.getInstance().getEnv(),
+                ConnectionInfo.getInstance().getDatabase(),
+                ConnectionInfo.getInstance().getAccount(),
+                ConnectionInfo.getInstance().getEngine(),
+                ConnectionInfo.getInstance().getApi());
+        return connectionInfo;
     }
 
     void unsuccessfulConnect(boolean useDatabase, boolean useEngine) throws SQLException {
