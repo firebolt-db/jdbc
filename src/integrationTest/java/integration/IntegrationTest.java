@@ -1,11 +1,6 @@
 package integration;
 
 import com.firebolt.jdbc.client.HttpClientConfig;
-import lombok.CustomLog;
-import lombok.SneakyThrows;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestInstance;
-
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
@@ -13,8 +8,13 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.CustomLog;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestInstance;
 
 import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -40,6 +40,15 @@ public abstract class IntegrationTest {
 
 	protected Connection createConnection(String engine) throws SQLException {
 		return createConnection(engine, new HashMap<>());
+	}
+
+	protected Connection createConnection(String engine, String database) throws SQLException {
+		ConnectionInfo current = integration.ConnectionInfo.getInstance();
+		ConnectionInfo updated = new ConnectionInfo(current.getPrincipal(), current.getSecret(),
+				current.getEnv(), database, current.getAccount(), engine, current.getApi(), Collections.emptyMap());
+		return DriverManager.getConnection(updated.toJdbcUrl(),
+				integration.ConnectionInfo.getInstance().getPrincipal(),
+				integration.ConnectionInfo.getInstance().getSecret());
 	}
 
 	protected Connection createConnection(String engine, Map<String, String> extra) throws SQLException {

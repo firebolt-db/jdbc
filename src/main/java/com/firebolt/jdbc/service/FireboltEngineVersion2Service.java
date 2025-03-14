@@ -1,26 +1,29 @@
 package com.firebolt.jdbc.service;
 
-import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import java.sql.SQLException;
-import java.sql.Statement;
-
 import com.firebolt.jdbc.connection.Engine;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
-
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.expiringmap.ExpiringMap;
+import org.apache.commons.lang3.tuple.Pair;
+
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Slf4j
 public class FireboltEngineVersion2Service implements FireboltEngineService {
-    private static final long DEFAULT_CACHED_VERIFIED_DATABASES_IN_SECONDS = 15;
-    private static final long DEFAULT_CACHED_VERIFIED_ENGINES_IN_SECONDS = 15;
 
-    private static final ExpiringMap<String, String> CACHED_VERIFIED_DATABASES = ExpiringMap.builder()
+    // by default cache the values for 1hour
+    private static final long DEFAULT_CACHED_VERIFIED_DATABASES_IN_SECONDS = TimeUnit.HOURS.toSeconds(1);
+    private static final long DEFAULT_CACHED_VERIFIED_ENGINES_IN_SECONDS = TimeUnit.HOURS.toSeconds(1);
+
+    private static final ExpiringMap<String, List<Pair<String, String>>> CACHED_VERIFIED_DATABASES = ExpiringMap.builder()
             .variableExpiration().build();
-    private static final ExpiringMap<String, String> CACHED_VERIFIED_ENGINES = ExpiringMap.builder()
+    private static final ExpiringMap<String, List<Pair<String, String>>> CACHED_VERIFIED_ENGINES = ExpiringMap.builder()
             .variableExpiration().build();
 
     private final FireboltConnection fireboltConnection;
@@ -59,13 +62,25 @@ public class FireboltEngineVersion2Service implements FireboltEngineService {
      */
     private void verifyDatabaseExists(Statement statement, String host, String databaseName) throws SQLException {
         synchronized (CACHED_VERIFIED_DATABASES) {
+
             if (CACHED_VERIFIED_DATABASES.containsKey(asCacheKey(host, databaseName))) {
                 log.debug("Using cache verification of database");
+
+                // need to set the values on the connection that were cached on the original use database call
+                for (Pair<String, String> pair : CACHED_VERIFIED_DATABASES.get(asCacheKey(host, databaseName))) {
+                    fireboltConnection.addProperty(pair.getKey(), pair.getValue());
+                }
+
                 return;
             }
 
             statement.executeUpdate(use("DATABASE", databaseName));
-            CACHED_VERIFIED_DATABASES.put(asCacheKey(host, databaseName), "verified", cacheDatabaseDurationInSeconds, SECONDS);
+
+            // as of Mar 2025 we know that as a side effect of calling "use database <xxx>" we are updating the database parameter on the connection.
+            // so if we want to use the value from cache we need to save this value on the connection when we use the cached connection
+            List<Pair<String, String>> cachedValuesForDatabase = List.of(
+                    Pair.of("database", fireboltConnection.getSessionProperties().getDatabase()));
+            CACHED_VERIFIED_DATABASES.put(asCacheKey(host, databaseName), cachedValuesForDatabase, cacheDatabaseDurationInSeconds, SECONDS);
         }
     }
 
@@ -78,11 +93,28 @@ public class FireboltEngineVersion2Service implements FireboltEngineService {
         synchronized (CACHED_VERIFIED_ENGINES) {
             if (CACHED_VERIFIED_ENGINES.containsKey(asCacheKey(host, engineName))) {
                 log.debug("Using cache verification of engine");
+
+                // need to set the values on the connection that were cached on the original use database call
+                for (Pair<String, String> pair : CACHED_VERIFIED_ENGINES.get(asCacheKey(host, engineName))) {
+                    if ("endpoint".equals(pair.getKey())) {
+                        fireboltConnection.setEndpoint(pair.getValue());
+                    } else {
+                        fireboltConnection.addProperty(pair.getKey(), pair.getValue());
+                    }
+                }
+
                 return;
             }
 
             statement.executeUpdate(use("ENGINE", engineName));
-            CACHED_VERIFIED_ENGINES.put(asCacheKey(host, engineName), "verified", cacheEngineDurationInSeconds, SECONDS);
+
+            // as of Mar 2025 we know that the side effect of calling "use engine <xxx>" we are updating the endpoint and the engine parameter.
+            // so if we want to use the value from cache we need to save this value on the connection when we use the cached connection
+            List<Pair<String, String>> cachedValuesForEngine = List.of(
+                    Pair.of("engine", fireboltConnection.getSessionProperties().getEngine()),
+                    Pair.of("endpoint", fireboltConnection.getEndpoint()));
+
+            CACHED_VERIFIED_ENGINES.put(asCacheKey(host, engineName), cachedValuesForEngine, cacheEngineDurationInSeconds, SECONDS);
         }
 
     }
