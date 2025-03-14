@@ -6,6 +6,13 @@ import com.firebolt.jdbc.exception.FireboltException;
 import integration.ConnectionInfo;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -14,15 +21,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Map;
-
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -137,6 +138,47 @@ class ConnectionTest extends IntegrationTest {
             ResultSet rs = statement.executeQuery("SELECT 1");
             assertTrue(rs.next());
             assertNotNull(rs.getObject(1));
+        }
+    }
+
+    @Test
+    @Tag("v2")
+    @Tag("slow")
+    void successfulConnectWithoutStartingTheEngine() throws SQLException {
+        String currentUTCTime = getCurrentUTCTime();
+
+        ConnectionInfo params = integration.ConnectionInfo.getInstance();
+        String url = getJdbcUrl(params, true, true);
+        try (Connection connection = DriverManager.getConnection(url, params.getPrincipal(), params.getSecret());
+             Statement statement = connection.createStatement()) {
+            ResultSet rs = statement.executeQuery("SELECT 222");
+            assertTrue(rs.next());
+            assertNotNull(rs.getObject(1));
+
+            // wait for the query_history to propagate
+            sleepForMillis(TimeUnit.SECONDS.toMillis(10));
+
+            // there should be no select 1 statement executed
+            String selectOneQueryHistoryQueryFormat = """
+				SELECT query_text
+				FROM information_schema.engine_query_history WHERE submitted_time > '%s' and (query_text like '%%SELECT 1%%' OR query_text like '%%select 1%%');
+			""";
+            ResultSet selectQueriesRS = statement.executeQuery(String.format(selectOneQueryHistoryQueryFormat, currentUTCTime));
+            assertFalse(selectQueriesRS.next());
+
+            // there should be one select 222 statement executed
+            String queryHistoryQueryFormat = """
+				SELECT query_text
+				FROM information_schema.engine_query_history WHERE submitted_time > '%s' and query_text like 'SELECT 222%%' and status = 'STARTED_EXECUTION';
+			""";
+
+            selectQueriesRS = statement.executeQuery(String.format(queryHistoryQueryFormat, currentUTCTime));
+            assertTrue(selectQueriesRS.next());
+
+            assertEquals("SELECT 222;", selectQueriesRS.getObject(1));
+
+            // no more select statements
+            assertFalse(selectQueriesRS.next());
         }
     }
 

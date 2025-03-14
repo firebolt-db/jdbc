@@ -1,11 +1,6 @@
 package integration;
 
 import com.firebolt.jdbc.client.HttpClientConfig;
-import lombok.CustomLog;
-import lombok.SneakyThrows;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestInstance;
-
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
@@ -13,8 +8,15 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.CustomLog;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestInstance;
 
 import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -25,6 +27,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public abstract class IntegrationTest {
 
 	private static final String JDBC_URL_PREFIX = "jdbc:firebolt:";
+
+	// timestamp format on the backend
+	private static ZoneId UTC_ZONE_ID = ZoneId.of("UTC"); // Change this to your desired timezone
+
+	// Get the current time in the specified timezone
+	private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss";
+	private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(TIMESTAMP_FORMAT);
 
 	protected Connection createLocalConnection(String queryParams) throws SQLException {
 		return DriverManager.getConnection(
@@ -84,4 +93,20 @@ public abstract class IntegrationTest {
 	protected String getSystemEngineName() {
 		return System.getProperty("api") == null ? null : SYSTEM_ENGINE_NAME;
 	}
+
+	/**
+	 * Assume the back end and the client have the same timestamp
+	 */
+	protected String getCurrentUTCTime() {
+		return ZonedDateTime.now(UTC_ZONE_ID).format(DATE_TIME_FORMATTER);
+	}
+
+	protected void sleepForMillis(long millis) {
+		try {
+			Thread.sleep(millis);
+		} catch (InterruptedException e) {
+			// do nothing
+		}
+	}
+
 }

@@ -23,11 +23,6 @@ import com.firebolt.jdbc.type.array.FireboltArray;
 import com.firebolt.jdbc.type.lob.FireboltBlob;
 import com.firebolt.jdbc.type.lob.FireboltClob;
 import com.firebolt.jdbc.util.PropertyUtil;
-import lombok.CustomLog;
-import lombok.Getter;
-import lombok.NonNull;
-import okhttp3.OkHttpClient;
-
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.sql.Array;
@@ -50,8 +45,8 @@ import java.sql.Struct;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -61,6 +56,10 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import lombok.CustomLog;
+import lombok.Getter;
+import lombok.NonNull;
+import okhttp3.OkHttpClient;
 
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.getNonDeprecatedProperties;
 import static java.lang.String.format;
@@ -68,8 +67,12 @@ import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.util.stream.Collectors.toMap;
 
+
 @CustomLog
 public abstract class FireboltConnection extends JdbcBase implements Connection, CacheListener {
+
+	private static final boolean VALIDATE_CONNECTION = true;
+	private static final boolean DO_NOT_VALIDATE_CONNECTION = false;
 
 	private final FireboltAuthenticationService fireboltAuthenticationService;
 	private final FireboltStatementService fireboltStatementService;
@@ -362,7 +365,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	@Override
 	public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency,
-			int resultSetHoldability) throws SQLException {
+											  int resultSetHoldability) throws SQLException {
 		return prepareStatement(sql, resultSetType, resultSetConcurrency);
 	}
 
@@ -472,23 +475,46 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		}
 	}
 
+	/**
+	 * By default, when adding a property it is validating the connection
+	 */
 	public void addProperty(@NonNull String key, String value) throws SQLException {
-		changeProperty(p -> p.addProperty(key, value), () -> format("Could not set property %s=%s", key, value));
+		addProperty(key, value, VALIDATE_CONNECTION);
+	}
+
+	public void addProperty(@NonNull String key, String value, boolean validateConnection) throws SQLException {
+		changeProperty(p -> p.addProperty(key, value), () -> format("Could not set property %s=%s", key, value), validateConnection);
 	}
 
 	public void addProperty(Entry<String, String> property) throws SQLException {
-		changeProperty(p -> p.addProperty(property), () -> format("Could not set property %s=%s", property.getKey(), property.getValue()));
+		addProperty(property, VALIDATE_CONNECTION);
 	}
 
+	public void addProperty(Entry<String, String> property, boolean validateConnection) throws SQLException {
+		changeProperty(p -> p.addProperty(property), () -> format("Could not set property %s=%s", property.getKey(), property.getValue()), validateConnection);
+	}
+
+	/**
+	 * Server side lets us know when the connection needs to be reset. so no need to validate the connection.
+	 */
 	public void reset() throws SQLException {
-		changeProperty(FireboltProperties::clearAdditionalProperties, () -> "Could not reset connection");
+		changeProperty(FireboltProperties::clearAdditionalProperties, () -> "Could not reset connection", DO_NOT_VALIDATE_CONNECTION);
 	}
-
-	private synchronized void changeProperty(Consumer<FireboltProperties> propertiesEditor, Supplier<String> errorMessageFactory) throws SQLException {
+	
+	/**
+	 * Certain values we set on the session properties that come from the server (in the header responses). In these cases we don't need to validate the connection
+	 * @param propertiesEditor
+	 * @param errorMessageFactory
+	 * @param validateConnection
+	 * @throws SQLException
+	 */
+	private synchronized void changeProperty(Consumer<FireboltProperties> propertiesEditor, Supplier<String> errorMessageFactory, boolean validateConnection) throws SQLException {
 		try {
 			FireboltProperties tmpProperties = FireboltProperties.copy(sessionProperties);
 			propertiesEditor.accept(tmpProperties);
-			validateConnection(tmpProperties, false, false);
+			if (validateConnection) {
+				validateConnection(tmpProperties, false, false);
+			}
 			propertiesEditor.accept(sessionProperties);
 		} catch (FireboltException e) {
 			throw e;
