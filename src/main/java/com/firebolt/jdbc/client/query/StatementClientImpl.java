@@ -40,6 +40,8 @@ import okhttp3.internal.http2.StreamResetException;
 @CustomLog
 public class StatementClientImpl extends FireboltClient implements StatementClient {
 
+	private static final boolean DO_NOT_VALIDATE_CONNECTION = false;
+
 	private static final String TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT = "TabSeparatedWithNamesAndTypes";
 	private static final Map<Pattern, String> missConfigurationErrorMessages = Map.of(
 			Pattern.compile("HTTP status code: 401"), "Please associate user with your service account.",
@@ -348,7 +350,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			}
 			for (String header : response.headers(HEADER_UPDATE_PARAMETER)) {
 				String[] keyValue = header.split("=");
-				connection.addProperty(keyValue[0].trim(), keyValue[1].trim());
+				connection.addProperty(keyValue[0].trim(), keyValue[1].trim(), DO_NOT_VALIDATE_CONNECTION);
 			}
 		}
 	}

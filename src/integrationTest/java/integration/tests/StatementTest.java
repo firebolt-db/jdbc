@@ -1,20 +1,25 @@
 package integration.tests;
 
-import static java.lang.String.format;
-import static java.sql.Statement.SUCCESS_NO_INFO;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.sql.*;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.exception.FireboltException;
+import integration.ConnectionInfo;
+import integration.EnvironmentCondition;
+import integration.IntegrationTest;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
-
+import kotlin.collections.ArrayDeque;
+import lombok.CustomLog;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -26,26 +31,23 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.exception.FireboltException;
-
-import integration.ConnectionInfo;
-import integration.EnvironmentCondition;
-import integration.IntegrationTest;
-import kotlin.collections.ArrayDeque;
-import lombok.CustomLog;
+import static java.lang.String.format;
+import static java.sql.Statement.SUCCESS_NO_INFO;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
 class StatementTest extends IntegrationTest {
 
 	private static final long TEN_SECONDS_IN_MILLIS = TimeUnit.SECONDS.toMillis(10);
-
-	// timestamp format on the backend
-	private static ZoneId UTC_ZONE_ID = ZoneId.of("UTC"); // Change this to your desired timezone
-
-	// Get the current time in the specified timezone
-	private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss";
-	private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(TIMESTAMP_FORMAT);
 
 	@BeforeEach
 	void beforeEach() {
@@ -323,14 +325,6 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
-	private void sleepForMillis(long millis) {
-		try {
-			Thread.sleep(millis);
-		} catch (InterruptedException e) {
-			// do nothing
-		}
-	}
-
 	/**
 	 * looks up a query in the query history. Returns the query text
 	 * @param statement
@@ -354,13 +348,6 @@ class StatementTest extends IntegrationTest {
 		ResultSet resultSet = statement.executeQuery(String.format(queryHistoryQuery, afterTimestamp, queryText));
 		assertTrue(resultSet.next(), "Did not find any query in history");
 		return resultSet.getString(1);
-	}
-
-	/**
-	 * Assume the back end and the client have the same timestamp
-	 */
-	private String getCurrentUTCTime() {
-		return ZonedDateTime.now(UTC_ZONE_ID).format(DATE_TIME_FORMATTER);
 	}
 
 	/**
