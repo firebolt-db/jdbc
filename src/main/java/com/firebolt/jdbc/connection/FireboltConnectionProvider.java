@@ -1,6 +1,8 @@
 package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
+import com.firebolt.jdbc.cache.CacheServiceProvider;
+import com.firebolt.jdbc.cache.CacheType;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.util.PropertyUtil;
@@ -78,11 +80,15 @@ public class FireboltConnectionProvider {
         }
 
         public FireboltConnectionServiceSecret createFireboltConnectionServiceSecret(String url, Properties connectionSettings, ParserVersion parserVersion) throws SQLException {
-            return new FireboltConnectionServiceSecret(url, connectionSettings, parserVersion);
+            CacheServiceProvider cacheServiceProvider = CacheServiceProvider.getInstance();
+            // the ON_DISK memory caching will be implemented after
+            return new FireboltConnectionServiceSecret(url, connectionSettings, parserVersion, cacheServiceProvider.getCacheService(CacheType.IN_MEMORY));
         }
 
         public LocalhostFireboltConnection createLocalhostFireboltConnectionServiceSecret(String url, Properties connectionSettings, ParserVersion parserVersion) throws SQLException {
-            return new LocalhostFireboltConnection(url, connectionSettings, parserVersion);
+            CacheServiceProvider cacheServiceProvider = CacheServiceProvider.getInstance();
+            // only in memory caching for localhost connections
+            return new LocalhostFireboltConnection(url, connectionSettings, parserVersion, cacheServiceProvider.getCacheService(CacheType.IN_MEMORY));
         }
     }
 
