@@ -1,7 +1,6 @@
 package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
-import com.firebolt.jdbc.client.account.FireboltAccount;
 import com.firebolt.jdbc.client.account.FireboltAccountRetriever;
 import com.firebolt.jdbc.client.authentication.AuthenticationRequest;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
@@ -18,17 +17,15 @@ import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.util.PropertyUtil;
-import lombok.NonNull;
-import okhttp3.OkHttpClient;
-
 import java.net.URL;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
+import lombok.NonNull;
+import okhttp3.OkHttpClient;
 
-import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.ACCOUNT_ID;
 import static com.firebolt.jdbc.exception.ExceptionType.RESOURCE_NOT_FOUND;
 import static java.lang.String.format;
 
