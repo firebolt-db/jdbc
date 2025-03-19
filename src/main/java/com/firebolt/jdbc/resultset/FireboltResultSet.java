@@ -19,49 +19,24 @@ import com.firebolt.jdbc.type.lob.FireboltBlob;
 import com.firebolt.jdbc.type.lob.FireboltClob;
 import com.firebolt.jdbc.util.LoggerUtil;
 import lombok.CustomLog;
-import org.apache.commons.text.StringEscapeUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.sql.Array;
-import java.sql.Blob;
-import java.sql.Clob;
 import java.sql.Date;
-import java.sql.JDBCType;
-import java.sql.NClob;
-import java.sql.Ref;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.RowId;
-import java.sql.SQLException;
-import java.sql.SQLXML;
-import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.TimeZone;
-import java.util.TreeMap;
+import java.sql.*;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.firebolt.jdbc.type.BaseType.isNull;
-import static com.firebolt.jdbc.util.StringUtil.splitAll;
 import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -81,8 +56,11 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	private final List<Column> columns;
 	private final int maxRows;
 	private final int maxFieldSize;
-	private String currentLine;
-	private int currentRow = 0;
+	private JSONArray currentResult;
+	private JSONArray currentJSON;
+	private int currentJSONLength = 0;
+	private int currentIndexFromJSON;
+	private int currentRow = 1;
 	private int lastSplitRow = -1;
 	private boolean isClosed = false;
 	private String[] arr = new String[0];
@@ -107,10 +85,13 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 		}
 
 		try {
-			next();
-			String[] fields = toStringArray(currentLine);
-			this.columnNameToColumnNumber = getColumnNamesToIndexes(fields);
-			columns = next() ? getColumns(fields, currentLine) : new ArrayList<>();
+			String metadataJson = this.reader.readLine();
+			columns = !(metadataJson == null || metadataJson.isEmpty())
+					? getColumns(new JSONObject(metadataJson))
+					: new ArrayList<>();
+			this.columnNameToColumnNumber = new TreeMap<>(CASE_INSENSITIVE_ORDER);
+			IntStream.range(0, columns.size()).boxed()
+				.forEach(i -> columnNameToColumnNumber.put(columns.get(i).getColumnName(), i + 1));
 			resultSetMetaData = new FireboltResultSetMetaData(dbName, tableName, columns);
 		} catch (Exception e) {
 			log.error("Could not create ResultSet: {}", e.getMessage(), e);
@@ -139,20 +120,33 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	public boolean next() throws SQLException {
 		checkStreamNotClosed();
 
-		if (maxRows > 0 && currentRow - 2 >= maxRows) {
+		if (maxRows > 0 && currentRow > maxRows) {
 			// if maxRows is configured (>0) and currentRow (minus 2 that is header lines) arrived >= maxRows
 			// we are going to read the next line after maxRows, so return false to prevent it.
 			return false;
 		}
 
 		try {
-			currentLine = reader.readLine();
+			//checking index against length may work from the beginning so no need to check length == 0?
+			if (currentJSON == null || currentJSONLength == currentIndexFromJSON) {
+				JSONObject currentRowObject = new JSONObject(reader.readLine());
+				String messageType = currentRowObject.getString("message_type");
+				if (messageType.equalsIgnoreCase("data")) {
+					currentJSON = currentRowObject.getJSONArray("data");
+					currentJSONLength = currentJSON.length();
+					currentIndexFromJSON = 0;
+				} else {
+					return false;
+				}
+			}
+			currentResult = currentJSON.getJSONArray(currentIndexFromJSON);
+			currentIndexFromJSON++;
 			currentRow++;
 		} catch (IOException e) {
 			throw new SQLException("Error reading result from stream", e);
 		}
 
-		return currentLine != null;
+		return true;
 	}
 
 	@Override
@@ -404,7 +398,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public int getRow() {
-		return currentRow - 2;
+		return currentRow;
 	}
 
 	@Override
@@ -439,30 +433,27 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
+	@NotImplemented
 	public boolean isBeforeFirst() throws SQLException {
-		checkStreamNotClosed();
-		return currentRow < 3 || !hasNext();
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "isBeforeFirst"));
 	}
 
 	@Override
-	public boolean isAfterLast() {
-		return !hasNext() && currentLine == null;
-	}
-
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	private boolean hasNext() {
-		return reader.lines().iterator().hasNext();
+	@NotImplemented
+	public boolean isAfterLast() throws SQLException {
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "isAfterLast"));
 	}
 
 	@Override
+	@NotImplemented
 	public boolean isFirst() throws SQLException {
-		checkStreamNotClosed();
-		return currentRow == 3;
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "isFirst"));
 	}
 
 	@Override
-	public boolean isLast() {
-		return !hasNext() && currentLine != null;
+	@NotImplemented
+	public boolean isLast() throws SQLException {
+		throw new FireboltException(format(FORWARD_ONLY_ERROR, "isLast"));
 	}
 
 	@Override
@@ -475,33 +466,28 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	@Override
+	@NotImplemented
 	public boolean first() throws SQLException {
 		throw new FireboltException(format(FORWARD_ONLY_ERROR, "first"));
 	}
 
 	@Override
+	@NotImplemented
 	public boolean last() throws SQLException {
 		throw new FireboltException(format(FORWARD_ONLY_ERROR, "last"));
 	}
 
-	private String[] toStringArray(String stringToSplit) {
-		if (currentRow != lastSplitRow) {
-			arr = splitAll(stringToSplit, '\t');
-			lastSplitRow = currentRow;
-		}
-		return arr;
-	}
-
-	private List<Column> getColumns(String[] columnNames, String columnTypes) {
-		String[] types = toStringArray(columnTypes);
-		return IntStream.range(0, types.length)
-				.mapToObj(i -> Column.of(types[i], StringEscapeUtils.unescapeJava(columnNames[i])))
+	private List<Column> getColumns(JSONObject metadataObject) {
+		JSONArray jsonArray = metadataObject.getJSONArray("result_columns");
+		return IntStream.range(0, jsonArray.length())
+				.mapToObj(jsonArray::getJSONObject)
+				.map(jsonObject -> Column.of(jsonObject.getString("type"), jsonObject.getString("name")))
 				.collect(Collectors.toList());
 	}
 
 	private String getValueAtColumn(int columnIndex) throws SQLException {
 		checkStreamNotClosed();
-		String value = toStringArray(currentLine)[getColumnIndex(columnIndex)];
+		String value = currentResult.optString(getColumnIndex(columnIndex), null);
 		lastReadValue = value;
 		return value;
 	}
@@ -509,16 +495,6 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	private int getColumnIndex(int colNum) throws SQLException {
 		validateColumnNumber(colNum);
 		return colNum - 1;
-	}
-
-	private Map<String, Integer> getColumnNamesToIndexes(String[] fields) {
-		Map<String, Integer> columnNameToFieldIndex = new TreeMap<>(CASE_INSENSITIVE_ORDER);
-		if (fields != null) {
-			for (int i = 0; i < fields.length; i++) {
-				columnNameToFieldIndex.put(fields[i], i + 1);
-			}
-		}
-		return columnNameToFieldIndex;
 	}
 
 	private void checkStreamNotClosed() throws SQLException {

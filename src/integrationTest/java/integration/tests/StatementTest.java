@@ -323,6 +323,27 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Test
+	@Tag("v2")
+	void tryStreaming() throws SQLException {
+		try (Connection connection = createConnection()) {
+			try (Statement statement = connection.createStatement()) {
+				long startTime = System.nanoTime();
+				String statementWithoutExplicitQueryLabel =
+						"SELECT NOW(), 123, 'true', 'abdcsagsagas' from generate_series(0, 100000000)";
+				ResultSet resultSet = statement.executeQuery(statementWithoutExplicitQueryLabel);
+				long intermidiateTime = System.nanoTime();
+				while (resultSet.next()) {
+					assertEquals(123, resultSet.getInt(2));
+				}
+				long endTime = System.nanoTime();
+				log.info("Time to execute query: " + TimeUnit.NANOSECONDS.toMillis(intermidiateTime - startTime) + "ms");
+				log.info("Time to parse result: " + TimeUnit.NANOSECONDS.toMillis(endTime - intermidiateTime) + "ms");
+				log.info("Total execution time: " + TimeUnit.NANOSECONDS.toMillis(endTime - startTime) + "ms");
+			}
+		}
+	}
+
 	private void sleepForMillis(long millis) {
 		try {
 			Thread.sleep(millis);

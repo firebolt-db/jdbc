@@ -61,7 +61,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
             try {
 				statement.executeUpdate(format("CREATE DATABASE %s_get_catalogs", database));
 				assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
-				assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
+				assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(format("%s_get_catalogs", database))));
 			} finally {
 				statement.executeUpdate(format("DROP DATABASE IF EXISTS %s_get_catalogs", database));
 			}

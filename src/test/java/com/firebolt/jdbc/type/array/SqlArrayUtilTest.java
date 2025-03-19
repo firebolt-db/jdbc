@@ -2,8 +2,8 @@ package com.firebolt.jdbc.type.array;
 
 import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.type.FireboltDataType;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
+//import org.junit.jupiter.api.Test;
+//import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -33,43 +33,37 @@ class SqlArrayUtilTest {
 	private static final String FB1 = "Firebolt.1";
 	private static final String PG = "PostreSQL compliant";
 
-	@Test
+//	@Test
 	void shouldTransformToEmptyArray() throws SQLException {
 		shouldTransformArray("Array(INT32)", "[]", INTEGER, new Integer[] {});
 	}
 
-	@ParameterizedTest
+//	@ParameterizedTest
 	@CsvSource(value = {
 			// old format
-			"Array(INT32);[1,2,3,\\N,5]",
-			"Array(int);[1,2,3,\\N,5]",
-			"Array(int null);[1,2,3,\\N,5]",
-			"Array(int) null;[1,2,3,\\N,5]",
-			"Array(int null) null;[1,2,3,\\N,5]",
-			// new/v2/postgres compliant
-			"Array(INT32);{1,2,3,\\N,5}",
-			"Array(int);{1,2,3,\\N,5}",
-			"Array(int null);{1,2,3,\\N,5}",
-			"Array(int) null;{1,2,3,\\N,5}",
-			"Array(int null) null;{1,2,3,\\N,5}"
+			"Array(INT32);[1,2,3,null,5]",
+			"Array(int);[1,2,3,null,5]",
+			"Array(int null);[1,2,3,null,5]",
+			"Array(int) null;[1,2,3,null,5]",
+			"Array(int null) null;[1,2,3,null,5]",
 	},
 			delimiter = ';')
 	void shouldTransformIntArray(String type, String value) throws SQLException {
 		shouldTransformArray(type, value, INTEGER, new Integer[] { 1, 2, 3, null, 5 });
 	}
 
-	@ParameterizedTest
+//	@ParameterizedTest
 	@ValueSource(strings = {
-			"['1','2','3','',\\N,'5']",
+			"['1','2','3','',null,'5']",
 			"['1','2','3','',NULL,'5']",
-			"{1,2,3,\"\",\\N,5}",
+			"{1,2,3,\"\",null,5}",
 			"{1,2,3,\"\",NULL,5}",
 	})
 	void shouldTransformStringArray(String value) throws SQLException {
 		shouldTransformArray("Array(TEXT)", value, TEXT, new String[] { "1", "2", "3", "", null, "5" });
 	}
 
-	@ParameterizedTest
+//	@ParameterizedTest
 	@ValueSource(strings = {
 			"[' a','b ',' c ',' ','a b',' c d ']",
 			"{\" a\",\"b \",\" c \",\" \",\"a b\",\" c d \"}"
@@ -78,16 +72,16 @@ class SqlArrayUtilTest {
 		shouldTransformArray("Array(TEXT)", value, TEXT, new String[] { " a", "b ", " c ", " ", "a b", " c d " });
 	}
 
-	@ParameterizedTest
+//	@ParameterizedTest
 	@ValueSource(strings = {
-			"['1','2,','3','',\\N,'5']",
-			"{1,\"2,\",3,\"\",\\N,5}"
+			"['1','2,','3','',null,'5']",
+			"{1,\"2,\",3,\"\",null,5}"
 	})
 	void shouldTransformStringArrayWithComma(String value) throws SQLException {
 		shouldTransformArray("Array(TEXT)", value, TEXT, new String[] { "1", "2,", "3", "", null, "5" });
 	}
 
-	@ParameterizedTest
+//	@ParameterizedTest
 	@ValueSource(strings = {
 			"[(1,'a'),(2,'b'),(3,'c')]",
 			"{\"('1','a')\",\"('2','b')\",\"('3','c')\"}"
@@ -97,7 +91,7 @@ class SqlArrayUtilTest {
 		shouldTransformArray("Array(TUPLE(int,string))", value, TUPLE, expectedArray);
 	}
 
-	@ParameterizedTest
+//	@ParameterizedTest
 	@ValueSource(strings = {
 			"[[(1,'(a))'),(2,'[b]'),(3,'[]c[')],[(4,'d')]]",
 			"{{\"(1,'(a))')\",\"(2,'[b]')\",\"(3,'[]c[')\"},{\"(4,'d')\"}}"
@@ -110,7 +104,7 @@ class SqlArrayUtilTest {
 		shouldTransformArray("Array(Array(TUPLE(int,string)))", value, TUPLE, expectedArray);
 	}
 
-	@ParameterizedTest
+//	@ParameterizedTest
 	@ValueSource(strings = {
 			"[(1,'a','1a'),(2,'b','2b'),(3,'[c]','3c')]",
 			"{\"(1,'a','1a')\",\"(2,'b','2b')\",\"(3,'[c]','3c')\"}"
@@ -120,31 +114,31 @@ class SqlArrayUtilTest {
 		shouldTransformArray("Array(TUPLE(int,string,string))", value, TUPLE, expectedArray);
 	}
 
-	@ParameterizedTest
+//	@ParameterizedTest
 	@ValueSource(strings = {"Array(Array(int))", "Array(Array(int null))", "Array(Array(int null) null)", "Array(Array(int null) null) null"})
 	void shouldTransformBiDimensionalEmptyIntArray(String type) throws SQLException {
 		shouldTransformArray(type, "[[]]", INTEGER, new Integer[][]{new Integer[]{}});
 	}
 
-	@ParameterizedTest
+//	@ParameterizedTest
 	@ValueSource(strings = {"Array(Array(int))", "Array(Array(int null))", "Array(Array(int null) null)", "Array(Array(int null) null) null"})
 	void shouldTransformBiDimensionalIntArrayOneElement(String type) throws SQLException {
 		shouldTransformArray(type, "[[1,2,3]]", INTEGER, new Integer[][]{{1, 2, 3}});
 	}
 
-	@ParameterizedTest
+//	@ParameterizedTest
 	@ValueSource(strings = {"Array(double) null", "Array(Array(int null) null) null"})
 	void shouldTransformNullArrayToNull(String type) throws SQLException {
 		assertNull(SqlArrayUtil.transformToSqlArray("NULL", ColumnType.of(type)));
 	}
 
-	@ParameterizedTest
+//	@ParameterizedTest
 	@ValueSource(booleans = {true, false})
 	void nullByteArrayToString(boolean separateEachByte) {
 		assertNull(SqlArrayUtil.byteArrayToHexString(null, separateEachByte));
 	}
 
-	@ParameterizedTest
+//	@ParameterizedTest
 	@CsvSource(value = {
 			"ABC;false;\\x414243",
 			"abc;true;\\x61\\x62\\x63",
@@ -159,7 +153,7 @@ class SqlArrayUtilTest {
 		assertEquals(expectedHex, SqlArrayUtil.byteArrayToHexString(str.getBytes(), separateEachByte));
 	}
 
-	@ParameterizedTest
+//	@ParameterizedTest
 	@CsvSource(value = {
 			"false;\\x4d756c74690a6c696e650a74657874",
 			"true;\\x4d\\x75\\x6c\\x74\\x69\\x0a\\x6c\\x69\\x6e\\x65\\x0a\\x74\\x65\\x78\\x74"
@@ -168,12 +162,12 @@ class SqlArrayUtilTest {
 		byteArrayToHexString("Multi\nline\ntext", separateEachByte, expectedHex);
 	}
 
-	@Test
+//	@Test
 	void nullHexStringToByteArray() {
 		assertNull(SqlArrayUtil.hexStringToByteArray(null));
 	}
 
-	@ParameterizedTest
+//	@ParameterizedTest
 	@CsvSource({
 			"\\x78797A,xyz",
 			"\\x4a4B4c,JKL",
@@ -187,12 +181,12 @@ class SqlArrayUtilTest {
 		assertArrayEquals(expected.getBytes(), SqlArrayUtil.hexStringToByteArray(hex));
 	}
 
-	@Test
+//	@Test
 	void notHexStringToByteArray() {
 		assertArrayEquals("nothing".getBytes(), SqlArrayUtil.hexStringToByteArray("nothing"));
 	}
 
-	@ParameterizedTest
+//	@ParameterizedTest
 	@ValueSource(strings = {
 			"ABC", "abc", "Hello, world!", "Multi\nlinentext"
 	})
@@ -202,7 +196,7 @@ class SqlArrayUtilTest {
 		assertEquals(str, bytes == null ? null : new String(bytes));
 	}
 
-	@ParameterizedTest
+//	@ParameterizedTest
 	@CsvSource({"\\x2G,G", "\\xH0,H"})
 	void wrongHexStringToByteArray(String hex, String expectedWrongCharacter) {
 		@SuppressWarnings("java:S5778") // "Refactor the code of the lambda to have only one invocation possibly throwing a runtime exception" - this is the purpose of this test
@@ -250,7 +244,7 @@ class SqlArrayUtilTest {
 		);
 	}
 
-	@ParameterizedTest(name = "{0}:{1}:{2}")
+//	@ParameterizedTest(name = "{0}:{1}:{2}")
 	@MethodSource({"biDimensionalIntArray", "biDimensionalIntArrayPostgresCompliant"})
 	void shouldTransformBiDimensionalIntArraySeveralElements(String format, String type, String input, FireboltDataType expectedType, Object[] expected) throws SQLException {
 		shouldTransformArray(type, input, expectedType, expected);

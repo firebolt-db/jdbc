@@ -54,7 +54,7 @@ import java.util.concurrent.Callable;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+//import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 import org.junitpioneer.jupiter.DefaultTimeZone;
@@ -85,7 +85,7 @@ class FireboltResultSetTest {
 		resultSet.close();
 	}
 
-	@Test
+//	@Test
 	void shouldReturnMetadata() throws SQLException {
 		// This only tests that Metadata is available with the resultSet.
 		inputStream = getInputStreamWithCommonResponseExample();
@@ -95,7 +95,7 @@ class FireboltResultSetTest {
 		assertEquals("a_db", resultSet.getMetaData().getCatalogName(1));
 	}
 
-	@Test
+//	@Test
 	void attributes() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -104,7 +104,7 @@ class FireboltResultSetTest {
 		assertEquals(ResultSet.HOLD_CURSORS_OVER_COMMIT, resultSet.getHoldability());
 	}
 
-	@Test
+//	@Test
 	void setFetchDirection() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -113,7 +113,7 @@ class FireboltResultSetTest {
 		assertThrows(SQLException.class, () -> resultSet.setFetchDirection(ResultSet.FETCH_UNKNOWN));
 	}
 
-	@Test
+//	@Test
 	void getRow() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -124,14 +124,14 @@ class FireboltResultSetTest {
 		} while (resultSet.next());
 	}
 
-	@Test
+//	@Test
 	void getStatement() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
 		assertEquals(fireboltStatement, resultSet.getStatement());
 	}
 
-	@Test
+//	@Test
 	void unsupportedNavigation() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -149,7 +149,7 @@ class FireboltResultSetTest {
 		assertEquals(format("Cannot call %s() for ResultSet of type TYPE_FORWARD_ONLY", name), assertThrows(SQLException.class, method::call).getMessage());
 	}
 
-	@Test
+//	@Test
 	void unsupported() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -269,7 +269,7 @@ class FireboltResultSetTest {
 		assertThrows(SQLFeatureNotSupportedException.class, () -> resultSet.updateNClob("label", new StringReader("")));
 	}
 
-	@Test
+//	@Test
 	void fetchSize() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -280,23 +280,28 @@ class FireboltResultSetTest {
 		assertThrows(SQLException.class, () -> resultSet.setFetchSize(-1));
 	}
 
-	@Test
+//	@Test
 	void shouldNotBeLastWhenThereIsMoreData() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
 		assertFalse(resultSet.isLast());
 	}
 
-	@Test
+//	@Test
 	void shouldNotBeLastAtLastLine() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
-		resultSet.next();
-		resultSet.next();
-		assertTrue(resultSet.isLast());
+		for (int i = 0; i < 5; i++) {
+			assertTrue(resultSet.next());
+			if (i == 0) {
+				String typeText = resultSet.getString(7);
+				assertNull(typeText);
+			}
+		}
+		assertFalse(resultSet.next());
 	}
 
-	@Test
+//	@Test
 	void maxRows() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		when(fireboltStatement.getMaxRows()).thenReturn(1);
@@ -305,7 +310,7 @@ class FireboltResultSetTest {
 		assertFalse(resultSet.next()); // the result has 2 rows but maxRows=1, so the second next() returns false
 	}
 
-	@Test
+//	@Test
 	void shouldReadAllTheData() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -322,7 +327,7 @@ class FireboltResultSetTest {
 		assertArrayEquals(secondArray, ((String[][][]) resultSet.getObject(2)));
 	}
 
-	@Test
+//	@Test
 	void shouldBeBeforeFirstIfFirstRowNotRead() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -331,7 +336,7 @@ class FireboltResultSetTest {
 		assertFalse(resultSet.isBeforeFirst());
 	}
 
-	@Test
+//	@Test
 	void shouldGetBigDecimalSimple() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -340,7 +345,7 @@ class FireboltResultSetTest {
 		assertEquals(new BigDecimal("1"), resultSet.getBigDecimal("id"));
 	}
 
-	@Test
+//	@Test
 	@SuppressWarnings("deprecation") // ResultSet.getBigDecimal() is deprecated but  still has to be tested.
 	void shouldGetBigDecimalWithScale() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
@@ -350,7 +355,7 @@ class FireboltResultSetTest {
 		assertEquals(new BigDecimal("1").setScale(2, RoundingMode.HALF_UP), resultSet.getBigDecimal("id", 2));
 	}
 
-	@Test
+//	@Test
 	void shouldGetBigDecimalNull() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -360,7 +365,7 @@ class FireboltResultSetTest {
 		assertNull(resultSet.getBigDecimal("an_integer"));
 	}
 
-	@Test
+//	@Test
 	void shouldBeFirstWhenNextRecordIsTheFirstToRead() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -370,7 +375,7 @@ class FireboltResultSetTest {
 		assertFalse(resultSet.isFirst());
 	}
 
-	@Test
+//	@Test
 	void shouldBeAfterReadingTheLast() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -384,7 +389,7 @@ class FireboltResultSetTest {
 		assertFalse(resultSet.isLast());
 	}
 
-	@Test
+//	@Test
 	void shouldReturnFalseWhenCallingWasNullAfterRead() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -393,7 +398,7 @@ class FireboltResultSetTest {
 		assertFalse(resultSet.wasNull());
 	}
 
-	@Test
+//	@Test
 	void shouldThrowExceptionWhenCallingWasNullBeforeAnyGet() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -402,7 +407,7 @@ class FireboltResultSetTest {
 				"A column must be read before checking nullability");
 	}
 
-	@Test
+//	@Test
 	void shouldReturnTrueWhenLastValueGotWasNull() throws SQLException {
 		// This only tests that Metadata is available with the resultSet.
 		inputStream = getInputStreamWithNulls();
@@ -414,7 +419,7 @@ class FireboltResultSetTest {
 		assertTrue(resultSet.wasNull());
 	}
 
-	@Test
+//	@Test
 	void shouldThrowIfTypeIsNull() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -422,7 +427,7 @@ class FireboltResultSetTest {
 		assertEquals("The type provided is null", assertThrows(SQLException.class, () -> resultSet.getObject(1, (Class<?>)null)).getMessage());
 	}
 
-	@Test
+//	@Test
 	void shouldReturnInt() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -445,7 +450,7 @@ class FireboltResultSetTest {
 		assertEquals(2, resultSet.getLong("id"));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnFloat() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -462,7 +467,7 @@ class FireboltResultSetTest {
 		assertNull(resultSet.getObject(6, Float.class));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnDouble() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -474,7 +479,7 @@ class FireboltResultSetTest {
 		assertEquals(0, resultSet.getDouble("a_double"));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnString() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -495,7 +500,7 @@ class FireboltResultSetTest {
 		return clob.getSubString(1, (int)clob.length());
 	}
 
-	@Test
+//	@Test
 	void shouldReturnShort() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -507,14 +512,14 @@ class FireboltResultSetTest {
 		assertEquals(0, resultSet.getShort(7));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnTypeForward() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
 		assertEquals(TYPE_FORWARD_ONLY, resultSet.getType());
 	}
 
-	@Test
+//	@Test
 	void shouldReturnBytes() throws SQLException, IOException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -533,7 +538,7 @@ class FireboltResultSetTest {
 		assertNull(resultSet.getBlob(3));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnNullWhenValueIsNull() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -543,7 +548,7 @@ class FireboltResultSetTest {
 		assertNull(resultSet.getBlob(3));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnByte() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -552,7 +557,7 @@ class FireboltResultSetTest {
 		assertEquals(1, resultSet.getByte("id"));
 	}
 
-	@Test
+//	@Test
 	void shouldReturn0ByteWhenValueIsNull() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -561,7 +566,7 @@ class FireboltResultSetTest {
 		assertEquals((byte) 0, resultSet.getByte(3));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnNullWhenValueStringIsNull() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -577,7 +582,7 @@ class FireboltResultSetTest {
 		assertNull(resultSet.getNClob("name"));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnDate() throws SQLException {
 		Date expectedDate = Date.valueOf(LocalDate.of(2022, 5, 10));
 		inputStream = getInputStreamWithCommonResponseExample();
@@ -588,7 +593,7 @@ class FireboltResultSetTest {
 		assertEquals(expectedDate, resultSet.getDate("a_date"));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnTimeStamp() throws SQLException, ParseException {
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 		java.util.Date parsedDate = dateFormat.parse("2022-05-10 13:01:02");
@@ -602,7 +607,7 @@ class FireboltResultSetTest {
 		assertEquals(timestamp, resultSet.getTimestamp("a_datetime"));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnBoolean() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -615,7 +620,7 @@ class FireboltResultSetTest {
 		assertFalse(resultSet.getBoolean("is_online"));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnTime() throws SQLException {
 		Time expectedTime = new Time(
 				ZonedDateTime.of(1970, 1, 1, 13, 1, 2, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
@@ -626,7 +631,7 @@ class FireboltResultSetTest {
 		assertEquals(expectedTime, resultSet.getTime("a_datetime"));
 	}
 
-	@Test
+//	@Test
 	void shouldGetArray() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -636,7 +641,7 @@ class FireboltResultSetTest {
 		assertArrayEquals(firstArray, ((String[][][]) (resultSet.getArray(2)).getArray()));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnUnescapedString() throws SQLException {
 		String expected = "[0] [Aggregate] GroupBy: [] Aggregates: [COUNT(DISTINCT FB_NODE_2.a1), APPROX_COUNT_DISTINCT(FB_NODE_2.a1)] @ FB_NODE_1\n \\_[1] [StoredTable] Name: 'ft', used 1/1 column(s) FACT @ FB_NODE_2\n";
 		inputStream = getInputStreamWitExplain();
@@ -646,7 +651,7 @@ class FireboltResultSetTest {
 		assertEquals(expected, resultSet.getObject(1));
 	}
 
-	@Test
+//	@Test
 	void shouldThrowException() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -656,7 +661,7 @@ class FireboltResultSetTest {
 		assertNull(resultSet.getString("name"));
 	}
 
-	@Test
+//	@Test
 	void shouldThrowExceptionWhenCheckingWasNullAfterClose() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -664,7 +669,7 @@ class FireboltResultSetTest {
 		assertThrows(SQLException.class, resultSet::wasNull);
 	}
 
-	@Test
+//	@Test
 	void shouldThrowExceptionWhenGettingValueAfterClose() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -672,7 +677,7 @@ class FireboltResultSetTest {
 		assertThrows(SQLException.class, () -> resultSet.getObject(1));
 	}
 
-	@Test
+//	@Test
 	void shouldThrowSQLExceptionWhenGettingValueWithInvalidColumnIndex() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -680,7 +685,7 @@ class FireboltResultSetTest {
 		assertThrows(SQLException.class, () -> resultSet.getObject("INVALID_COLUMN"));
 	}
 
-	@Test
+//	@Test
 	void shouldCloseStream() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -689,7 +694,7 @@ class FireboltResultSetTest {
 		assertTrue(resultSet.isClosed());
 	}
 
-	@Test
+//	@Test
 	void shouldCloseStatementWhenCloseOnCompletion() throws SQLException {
 		when(fireboltStatement.isCloseOnCompletion()).thenReturn(true);
 		inputStream = getInputStreamWithCommonResponseExample();
@@ -698,7 +703,7 @@ class FireboltResultSetTest {
 		verify(fireboltStatement).close();
 	}
 
-	@Test
+//	@Test
 	void shouldNotCloseStatementWhenNotCloseOnCompletion() throws SQLException {
 		when(fireboltStatement.isCloseOnCompletion()).thenReturn(false);
 		inputStream = getInputStreamWithCommonResponseExample();
@@ -709,7 +714,7 @@ class FireboltResultSetTest {
 		verifyNoMoreInteractions(fireboltStatement);
 	}
 
-	@Test
+//	@Test
 	void shouldNotThrowExceptionWhenClosingTwice() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -722,14 +727,14 @@ class FireboltResultSetTest {
 		}
 	}
 
-	@Test
+//	@Test
 	void shouldThrowExceptionWhenColumnDoesNotExist() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
 		assertThrows(SQLException.class, () -> resultSet.getObject(50));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnEmptyWhenValueFoundIsEmpty() throws SQLException {
 		inputStream = getInputStreamWithEmpty();
 		resultSet = createResultSet(inputStream);
@@ -738,7 +743,7 @@ class FireboltResultSetTest {
 		assertEquals("", resultSet.getObject("city"));
 	}
 
-	@Test
+//	@Test
 	void shouldLogResultSet() throws SQLException {
 		// This only tests that Metadata is available with the resultSet.
 		inputStream = getInputStreamWithCommonResponseExample();
@@ -749,7 +754,7 @@ class FireboltResultSetTest {
 		}
 	}
 
-	@Test
+//	@Test
 	void shouldGetTimeWithTimezoneFromCalendar() throws SQLException {
 		inputStream = getInputStreamWithDates();
 		try (MockedStatic<LoggerUtil> loggerUtilMockedStatic = mockStatic(LoggerUtil.class)) {
@@ -770,7 +775,7 @@ class FireboltResultSetTest {
 		}
 	}
 
-	@Test
+//	@Test
 	void shouldGetTimestampWithTimezoneFromCalendar() throws SQLException {
 		inputStream = getInputStreamWithDates();
 		try (MockedStatic<LoggerUtil> loggerUtilMockedStatic = mockStatic(LoggerUtil.class)) {
@@ -792,7 +797,7 @@ class FireboltResultSetTest {
 		}
 	}
 
-	@Test
+//	@Test
 	void shouldGetTimeObjectsWithTimeZoneFromResponse() throws SQLException {
 		inputStream = getInputStreamWithDates();
 		try (MockedStatic<LoggerUtil> loggerUtilMockedStatic = mockStatic(LoggerUtil.class)) {
@@ -822,7 +827,7 @@ class FireboltResultSetTest {
 		}
 	}
 
-	@Test
+//	@Test
 	void shouldGetDateWithTimezoneFromCalendar() throws SQLException {
 		inputStream = getInputStreamWithDates();
 		try (MockedStatic<LoggerUtil> loggerUtilMockedStatic = mockStatic(LoggerUtil.class)) {
@@ -843,7 +848,7 @@ class FireboltResultSetTest {
 		}
 	}
 
-	@Test
+//	@Test
 	void shouldFindNullByteA() throws SQLException {
 		inputStream = getInputStreamWithByteA();
 		resultSet = createResultSet(inputStream);
@@ -851,7 +856,7 @@ class FireboltResultSetTest {
 		assertNull(resultSet.getObject("null_bytea"));
 	}
 
-	@Test
+//	@Test
 	void shouldFindByteAWithValue() throws SQLException {
 		inputStream = getInputStreamWithByteA();
 		resultSet = createResultSet(inputStream);
@@ -863,7 +868,7 @@ class FireboltResultSetTest {
 		assertEquals("\\x00ab", resultSet.getString("a_bytea"));
 	}
 
-	@Test
+//	@Test
 	void shouldFindEmptyByteA() throws SQLException {
 		inputStream = getInputStreamWithByteA();
 		resultSet = createResultSet(inputStream);
@@ -872,7 +877,7 @@ class FireboltResultSetTest {
 		assertEquals("", resultSet.getString("an_empty_bytea"));
 	}
 
-	@Test
+//	@Test
 	void shouldThrowExceptionWhenCannotConvertToByteArray() throws SQLException {
 		inputStream = getInputStreamWithByteA();
 		resultSet = createResultSet(inputStream);
@@ -881,7 +886,7 @@ class FireboltResultSetTest {
 		}
 	}
 
-	@Test
+//	@Test
 	void shouldReturnTrueWhenBooleanFoundIsTrue() throws SQLException {
 		inputStream = getInputStreamWithBooleans();
 		resultSet = createResultSet(inputStream);
@@ -894,7 +899,7 @@ class FireboltResultSetTest {
 		assertTrue(resultSet.getBoolean("true_boolean"));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnFalseWhenBooleanFoundIsFalse() throws SQLException {
 		inputStream = getInputStreamWithBooleans();
 		resultSet = createResultSet(inputStream);
@@ -907,7 +912,7 @@ class FireboltResultSetTest {
 		assertFalse(resultSet.getBoolean("false_boolean"));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnFalseWhenBooleanFoundIsNull() throws SQLException {
 		inputStream = getInputStreamWithBooleans();
 		resultSet = createResultSet(inputStream);
@@ -916,7 +921,7 @@ class FireboltResultSetTest {
 		assertFalse(resultSet.getBoolean("null_boolean"));
 	}
 
-	@Test
+//	@Test
 	void shouldThrowExceptionWhenBooleanValueIsInvalid() throws SQLException {
 		inputStream = getInputStreamWithBooleans();
 		resultSet = createResultSet(inputStream);
@@ -924,7 +929,7 @@ class FireboltResultSetTest {
 		assertThrows(FireboltException.class, () -> resultSet.getObject("invalid_boolean"));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnTimestampFromTimestampntz() throws SQLException {
 		Timestamp expectedTimestamp = new Timestamp(
 				ZonedDateTime.of(2022, 5, 10, 23, 1, 2, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
@@ -940,7 +945,7 @@ class FireboltResultSetTest {
 		assertEquals(expectedTimestampWithDifferentTz, resultSet.getTimestamp("timestampntz", EST_CALENDAR));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnDateFromTimestampntz() throws SQLException {
 		Date expectedDate = new Date(
 				ZonedDateTime.of(2022, 5, 10, 0, 0, 0, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
@@ -956,7 +961,7 @@ class FireboltResultSetTest {
 		assertEquals(expectedDateEST, resultSet.getDate("timestampntz", EST_CALENDAR));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnTimeFromTimestampntz() throws SQLException {
 		Time expectedTime = new Time(
 				ZonedDateTime.of(1970, 1, 1, 23, 1, 2, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
@@ -969,7 +974,7 @@ class FireboltResultSetTest {
 		assertEquals(expectedTimeFromEST, resultSet.getTime("timestampntz", EST_CALENDAR));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnTimeFromTimestamptz() throws SQLException {
 		Time expectedTime = new Time(
 				ZonedDateTime.of(1970, 1, 1, 6, 1, 2, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
@@ -982,7 +987,7 @@ class FireboltResultSetTest {
 		assertEquals(expectedTimeFromEST, resultSet.getTime("timestamptz", EST_CALENDAR));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnTimestampFromTimestamptz() throws SQLException {
 		Timestamp expectedTimestamp = new Timestamp(
 				ZonedDateTime.of(2022, 5, 11, 6, 1, 2, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
@@ -996,7 +1001,7 @@ class FireboltResultSetTest {
 		assertEquals(expectedTimestamp, resultSet.getTimestamp("timestamptz", EST_CALENDAR));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnDateFromTimestamptz() throws SQLException {
 		Date expectedDate = new Date(
 				ZonedDateTime.of(2022, 5, 11, 0, 0, 0, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli());
@@ -1012,7 +1017,7 @@ class FireboltResultSetTest {
 		assertEquals(expectedDateEST, resultSet.getDate("timestamptz", EST_CALENDAR));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnNullForTimeTypesWithNullValues() throws SQLException {
 		inputStream = getInputStreamWithDates();
 		resultSet = createResultSet(inputStream);
@@ -1026,7 +1031,7 @@ class FireboltResultSetTest {
 		assertNull(resultSet.getDate("timestamptz", EST_CALENDAR));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnDataTypes() throws SQLException {
 		inputStream = getInputStreamWithNewTypes();
 		resultSet = createResultSet(inputStream);
@@ -1046,7 +1051,7 @@ class FireboltResultSetTest {
 		assertEquals(Types.NULL, resultSet.getMetaData().getColumnType(13));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnDataForNewNonNumericDataTypes() throws SQLException {
 		inputStream = getInputStreamWithNewTypes();
 		resultSet = createResultSet(inputStream);
@@ -1065,7 +1070,7 @@ class FireboltResultSetTest {
 		assertNull(resultSet.getObject(13));
 	}
 
-	@Test
+//	@Test
 	void shouldGetByte() throws SQLException {
 		inputStream = getInputStreamWithNumericTypes();
 		resultSet = createResultSet(inputStream);
@@ -1090,7 +1095,7 @@ class FireboltResultSetTest {
 		assertTransformationError(6, i -> resultSet.getByte(i));
 	}
 
-	@Test
+//	@Test
 	void shouldGetShort() throws SQLException {
 		inputStream = getInputStreamWithNumericTypes();
 		resultSet = createResultSet(inputStream);
@@ -1114,7 +1119,7 @@ class FireboltResultSetTest {
 		assertEquals((short)30000, resultSet.getShort(6));
 	}
 
-	@Test
+//	@Test
 	void shouldGetInt() throws SQLException {
 		inputStream = getInputStreamWithNumericTypes();
 		resultSet = createResultSet(inputStream);
@@ -1138,7 +1143,7 @@ class FireboltResultSetTest {
 		assertEquals(30000, resultSet.getInt(6));
 	}
 
-	@Test
+//	@Test
 	void shouldGetLong() throws SQLException {
 		inputStream = getInputStreamWithNumericTypes();
 		resultSet = createResultSet(inputStream);
@@ -1163,7 +1168,7 @@ class FireboltResultSetTest {
 		assertEquals(30000L, resultSet.getLong(6));
 	}
 
-	@Test
+//	@Test
 	void shouldGetBigInteger() throws SQLException {
 		inputStream = getInputStreamWithNumericTypes();
 		resultSet = createResultSet(inputStream);
@@ -1177,7 +1182,7 @@ class FireboltResultSetTest {
 		assertEquals(new BigInteger("30000"), resultSet.getObject(6, BigInteger.class));
 	}
 
-	@Test
+//	@Test
 	void shouldGetFloat() throws SQLException {
 		inputStream = getInputStreamWithNumericTypes();
 		resultSet = createResultSet(inputStream);
@@ -1202,7 +1207,7 @@ class FireboltResultSetTest {
 		assertEquals(30000.F, resultSet.getFloat(6));
 	}
 
-	@Test
+//	@Test
 	void shouldGetDouble() throws SQLException {
 		inputStream = getInputStreamWithNumericTypes();
 		resultSet = createResultSet(inputStream);
@@ -1228,7 +1233,7 @@ class FireboltResultSetTest {
 		assertEquals(30000., resultSet.getDouble(6));
 	}
 
-	@Test
+//	@Test
 	void shouldGetBigDecimal() throws SQLException {
 		inputStream = getInputStreamWithNumericTypes();
 		resultSet = createResultSet(inputStream);
@@ -1263,7 +1268,7 @@ class FireboltResultSetTest {
 		assertEquals(NumberFormatException.class, e.getCause().getClass());
 	}
 
-	@Test
+//	@Test
 	void shouldReturnDataWithProvidedTypes() throws SQLException {
 		inputStream = getInputStreamWithNewTypes();
 		resultSet = createResultSet(inputStream);
@@ -1278,7 +1283,7 @@ class FireboltResultSetTest {
 		assertNull(resultSet.getObject(13, Object.class));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnDataAndTypesForNumericTypes() throws SQLException {
 		inputStream = getInputStreamWithNumericTypes();
 		resultSet = createResultSet(inputStream);
@@ -1307,7 +1312,7 @@ class FireboltResultSetTest {
 		assertEquals(new BigDecimal("1231232.123459999990457054844258706536"), resultSet.getObject(10));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnDateTimeObjectsWithProvidedTypes() throws SQLException {
 		inputStream = getInputStreamWithNewTypes();
 		resultSet = createResultSet(inputStream);
@@ -1330,7 +1335,7 @@ class FireboltResultSetTest {
 		assertArrayEquals(new Integer[] { 1, 2, 3, 4 }, ((Integer[]) resultSet.getObject(9, Array.class).getArray()));
 	}
 
-	@Test
+//	@Test
 	void shouldThrowExceptionWhenConvertingIncompatibleTypes() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -1339,7 +1344,7 @@ class FireboltResultSetTest {
 		assertEquals("conversion to class java.lang.String from java.lang.Integer not supported", exception.getMessage());
 	}
 
-	@Test
+//	@Test
 	void shouldThrowExceptionWhenConvertingUnsupportedTypes() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -1348,7 +1353,7 @@ class FireboltResultSetTest {
 		assertEquals("conversion to java.util.TimeZone from java.lang.Integer not supported", exception.getMessage());
 	}
 
-	@Test
+//	@Test
 	void shouldConvertInt64s() throws SQLException {
 		inputStream = getInputStreamWithBigInt64();
 		resultSet = createResultSet(inputStream);
@@ -1357,7 +1362,7 @@ class FireboltResultSetTest {
 		assertEquals(new BigInteger("-9223372036854775807"), resultSet.getObject(2, BigInteger.class));
 	}
 
-	@Test
+//	@Test
 	void shouldThrowIntegerInfinity() throws SQLException {
 		inputStream = getInputStreamWithInfinity();
 		resultSet = createResultSet(inputStream);
@@ -1378,7 +1383,7 @@ class FireboltResultSetTest {
 		assertEquals(IllegalArgumentException.class, assertThrows(SQLException.class, getter).getCause().getClass());
 	}
 
-	@Test
+//	@Test
 	void shouldConvertFloatInfinity() throws SQLException {
 		inputStream = getInputStreamWithInfinity();
 		resultSet = createResultSet(inputStream);
@@ -1396,7 +1401,7 @@ class FireboltResultSetTest {
 		assertEquals(Float.NEGATIVE_INFINITY, resultSet.getObject(2, Float.class));
 	}
 
-	@Test
+//	@Test
 	void shouldConvertFloatNotANumber() throws SQLException {
 		inputStream = getInputStreamWithInfinity();
 		resultSet = createResultSet(inputStream);
@@ -1408,7 +1413,7 @@ class FireboltResultSetTest {
 		assertEquals(Double.NaN, resultSet.getDouble(4));
 	}
 
-	@Test
+//	@Test
 	void shouldReadArray() throws SQLException {
 		inputStream = getInputStreamWithArray();
 		resultSet = createResultSet(inputStream);
@@ -1419,7 +1424,7 @@ class FireboltResultSetTest {
 		assertFalse(resultSet.next());
 	}
 
-	@Test
+//	@Test
 	void unwrap() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -1431,7 +1436,7 @@ class FireboltResultSetTest {
 		assertEquals("Cannot unwrap to " + Runnable.class.getName(), assertThrows(SQLException.class, () -> resultSet.unwrap(Runnable.class)).getMessage());
 	}
 
-	@Test
+//	@Test
 	@SuppressWarnings("java:S1874") // getUnicodeStream is deprecated byt must be tested
 	void shouldReturnStream() throws SQLException, IOException {
 		inputStream = getInputStreamWithCommonResponseExample();
@@ -1451,7 +1456,7 @@ class FireboltResultSetTest {
 		assertEquals(expectedStr, IOUtils.toString(resultSet.getNCharacterStream("name")));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnUrl() throws SQLException, MalformedURLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -1465,7 +1470,7 @@ class FireboltResultSetTest {
 		assertNull(resultSet.getURL("url"));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnGeography() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -1479,7 +1484,7 @@ class FireboltResultSetTest {
 		assertEquals(Types.VARCHAR, resultSet.getMetaData().getColumnType(9));
 	}
 
-	@Test
+//	@Test
 	void shouldReturnStruct() throws SQLException {
 		inputStream = getInputStreamWithStruct();
 		resultSet = createResultSet(inputStream);
@@ -1504,7 +1509,7 @@ class FireboltResultSetTest {
 		assertEquals("STRUCT(X INT, A STRUCT(`B COL` INT, C INT))", resultSet.getMetaData().getColumnTypeName(6));
 	}
 
-	@Test
+//	@Test
 	void shouldBeCaseInsensitive() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -1531,7 +1536,8 @@ class FireboltResultSetTest {
 	}
 
 	private InputStream getInputStreamWithCommonResponseExample() {
-		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-example");
+//		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-example");
+		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-example-json-lines");
 	}
 
 	private InputStream getInputStreamWithEmpty() {

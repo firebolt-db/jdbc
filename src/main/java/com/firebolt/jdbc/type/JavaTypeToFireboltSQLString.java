@@ -43,7 +43,7 @@ public enum JavaTypeToFireboltSQLString {
 	DOUBLE(Double.class, value -> Double.toString(((Number)value).doubleValue())),
 	DATE(Date.class, date -> SqlDateUtil.transformFromDateToSQLStringFunction.apply((Date) date), (date, tz) -> SqlDateUtil.transformFromDateWithTimezoneToSQLStringFunction.apply((Date) date, toTimeZone(tz))),
 	TIMESTAMP(Timestamp.class, time -> SqlDateUtil.transformFromTimestampToSQLStringFunction.apply((Timestamp) time), (ts, tz) -> SqlDateUtil.transformFromTimestampWithTimezoneToSQLStringFunction.apply((Timestamp) ts, toTimeZone(tz))),
-	BIG_DECIMAL(BigDecimal.class, value -> value == null ? BaseType.NULL_VALUE : ((BigDecimal) value).toPlainString()),
+	BIG_DECIMAL(BigDecimal.class, value -> value == null ? null : ((BigDecimal) value).toPlainString()),
 	ARRAY(Array.class, SqlArrayUtil::arrayToString),
 	BYTE_ARRAY(byte[].class, value -> ofNullable(byteArrayToHexString((byte[])value, true)).map(x  -> format("E'%s'::BYTEA", x)).orElse(null)),
 	;
