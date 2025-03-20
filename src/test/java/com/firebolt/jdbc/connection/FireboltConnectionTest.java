@@ -2,31 +2,14 @@ package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.CheckedBiFunction;
 import com.firebolt.jdbc.CheckedFunction;
-import com.firebolt.jdbc.client.account.FireboltAccount;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.service.FireboltAccountIdService;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.function.Executable;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
-import org.mockito.MockedConstruction;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import java.io.IOException;
 import java.sql.Array;
 import java.sql.Blob;
@@ -50,8 +33,21 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.MockedConstruction;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.ACCESS_TOKEN;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.CLIENT_ID;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.CLIENT_SECRET;
@@ -78,7 +74,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 abstract class FireboltConnectionTest {
@@ -98,8 +99,6 @@ abstract class FireboltConnectionTest {
 	protected FireboltEngineInformationSchemaService fireboltEngineService;
 	@Mock
 	protected FireboltStatementService fireboltStatementService;
-	@Mock
-	protected FireboltAccountIdService fireboltAccountIdService;
 	protected Properties connectionProperties = new Properties();
 	private static Connection connection;
 
@@ -154,7 +153,6 @@ abstract class FireboltConnectionTest {
 		engine = new Engine("endpoint", "id123", "OK", "noname", null);
 		lenient().when(fireboltEngineService.getEngine(any())).thenReturn(engine);
 		lenient().when(fireboltEngineService.doesDatabaseExist(any())).thenReturn(true);
-		lenient().when(fireboltAccountIdService.getValue(any(), any())).thenReturn(new FireboltAccount("id", "earth", 1));
 	}
 
 	@Test

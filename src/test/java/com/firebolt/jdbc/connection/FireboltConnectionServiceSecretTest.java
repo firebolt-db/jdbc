@@ -6,15 +6,14 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.type.ParserVersion;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toMap;
@@ -94,7 +93,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         FireboltGatewayUrlService gatewayUrlService = new FireboltGatewayUrlService(fireboltGatewayUrlClient);
         FireboltConnection connection = new FireboltConnectionServiceSecret(SYSTEM_ENGINE_URL, connectionProperties,
                 fireboltAuthenticationService, gatewayUrlService, fireboltStatementService, fireboltEngineService,
-                fireboltAccountIdService, ParserVersion.CURRENT);
+                ParserVersion.CURRENT);
         FireboltProperties sessionProperties  = connection.getSessionProperties();
         assertEquals(expectedHost, sessionProperties.getHost());
         assertEquals(expectedProps == null ? Map.of() : Arrays.stream(expectedProps.split(";")).map(kv -> kv.split("=")).collect(toMap(kv -> kv[0], kv -> kv[1])), sessionProperties.getAdditionalProperties());
@@ -108,6 +107,6 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
 
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
         return new FireboltConnectionServiceSecret(url, props, fireboltAuthenticationService, fireboltGatewayUrlService,
-                fireboltStatementService, fireboltEngineService, fireboltAccountIdService, ParserVersion.CURRENT);
+                fireboltStatementService, fireboltEngineService, ParserVersion.CURRENT);
     }
 }

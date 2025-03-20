@@ -1,7 +1,6 @@
 package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
-import com.firebolt.jdbc.client.account.FireboltAccount;
 import com.firebolt.jdbc.client.account.FireboltAccountRetriever;
 import com.firebolt.jdbc.client.authentication.AuthenticationRequest;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
@@ -9,7 +8,6 @@ import com.firebolt.jdbc.client.authentication.ServiceAccountAuthenticationReque
 import com.firebolt.jdbc.client.gateway.GatewayUrlResponse;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.service.FireboltAccountIdService;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
 import com.firebolt.jdbc.service.FireboltEngineService;
@@ -18,17 +16,15 @@ import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.util.PropertyUtil;
-import lombok.NonNull;
-import okhttp3.OkHttpClient;
-
 import java.net.URL;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
+import lombok.NonNull;
+import okhttp3.OkHttpClient;
 
-import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.ACCOUNT_ID;
 import static com.firebolt.jdbc.exception.ExceptionType.RESOURCE_NOT_FOUND;
 import static java.lang.String.format;
 
@@ -43,8 +39,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
                                     FireboltGatewayUrlService fireboltGatewayUrlService,
                                     FireboltStatementService fireboltStatementService,
                                     FireboltEngineInformationSchemaService fireboltEngineService,
-            FireboltAccountIdService fireboltAccountIdService,
-            ParserVersion parserVersion) throws SQLException {
+                                    ParserVersion parserVersion) throws SQLException {
         super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION,
                 parserVersion);
         this.fireboltGatewayUrlService = fireboltGatewayUrlService;
