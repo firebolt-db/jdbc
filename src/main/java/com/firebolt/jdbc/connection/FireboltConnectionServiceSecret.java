@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Properties;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
+import org.apache.commons.lang3.StringUtils;
 
 import static com.firebolt.jdbc.exception.ExceptionType.RESOURCE_NOT_FOUND;
 import static java.lang.String.format;
@@ -62,16 +63,37 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
 
     @Override
     protected void authenticate() throws SQLException {
-        String account = loginProperties.getAccount();
-        if (account == null) {
-            throw new FireboltException("Cannot connect: account is missing");
-        }
+        // validate required parameters
+        validateMandatoryConnectionParameters();
+
         String accessToken = getAccessToken(loginProperties).orElse("");
-        sessionProperties = getSessionPropertiesForSystemEngine(accessToken, account);
+        sessionProperties = getSessionPropertiesForSystemEngine(accessToken, loginProperties.getAccount());
         assertDatabaseExisting(loginProperties.getDatabase());
         if (!loginProperties.isSystemEngine()) {
             sessionProperties = getSessionPropertiesForNonSystemEngine();
         }
+    }
+
+    /**
+     * clientId (principal), clientSecret and accountName are required parameters.
+     * Only syntactic validation is performed here.
+     */
+    protected void validateMandatoryConnectionParameters() throws FireboltException {
+        String account = loginProperties.getAccount();
+        if (StringUtils.isBlank(account)) {
+            throw new FireboltException("Cannot connect: account is missing");
+        }
+
+        String clientId = loginProperties.getPrincipal();
+        if (StringUtils.isBlank(clientId)) {
+            throw new FireboltException("Cannot connect: clientId is missing");
+        }
+
+        String clientSecret = loginProperties.getSecret();
+        if (StringUtils.isBlank(clientSecret)) {
+            throw new FireboltException("Cannot connect: clientSecret is missing");
+        }
+
     }
 
     private FireboltProperties getSessionPropertiesForNonSystemEngine() throws SQLException {
