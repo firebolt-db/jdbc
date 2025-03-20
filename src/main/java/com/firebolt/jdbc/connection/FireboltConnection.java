@@ -55,7 +55,6 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NonNull;
@@ -131,39 +130,6 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	}
 
 	protected abstract FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient);
-
-	public static FireboltConnection create(@NonNull String url, Properties connectionSettings) throws SQLException {
-		return createConnectionInstance(url, connectionSettings);
-	}
-
-	private static FireboltConnection createConnectionInstance(@NonNull String url, Properties connectionSettings) throws SQLException {
-		switch(getUrlVersion(url, connectionSettings)) {
-			case 1:
-				return new FireboltConnectionUserPassword(url, connectionSettings, ParserVersion.LEGACY);
-			case 2:
-				return new FireboltConnectionServiceSecret(url, connectionSettings, ParserVersion.CURRENT);
-			default: throw new IllegalArgumentException(format("Cannot distinguish version from url %s", url));
-		}
-	}
-
-	private static int getUrlVersion(String url, Properties connectionSettings) {
-		Pattern urlWithHost = Pattern.compile("jdbc:firebolt://api\\.\\w+\\.firebolt\\.io");
-		if (!urlWithHost.matcher(url).find()) {
-			return 2; // new URL format
-		}
-		// old URL format
-		Properties propertiesFromUrl = UrlUtil.extractProperties(url);
-		Properties allSettings = PropertyUtil.mergeProperties(propertiesFromUrl, connectionSettings);
-		if (allSettings.containsKey("client_id") && allSettings.containsKey("client_secret") && !allSettings.containsKey("user") && !allSettings.containsKey("password")) {
-			return 2;
-		}
-		FireboltProperties props = new FireboltProperties(new Properties[] {propertiesFromUrl, connectionSettings});
-		String principal = props.getPrincipal();
-		if (props.getAccessToken() != null || (principal != null && principal.contains("@"))) {
-			return 1;
-		}
-		return 2;
-	}
 
 	protected OkHttpClient getHttpClient(FireboltProperties fireboltProperties) throws SQLException {
 		try {

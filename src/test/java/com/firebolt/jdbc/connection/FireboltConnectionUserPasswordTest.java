@@ -1,15 +1,17 @@
 package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.type.ParserVersion;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Properties;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mockito;
 
 import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
+import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.ACCESS_TOKEN;
+import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.HOST;
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -21,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
     private static final String SYSTEM_ENGINE_URL = "jdbc:firebolt:db?env=dev&account=dev&engine=system";
@@ -61,6 +62,25 @@ class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
             assertSame(dbmd, connection.getMetaData());
             connection.close();
             assertThat(assertThrows(SQLException.class, connection::getMetaData).getMessage(), containsString("closed"));
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "localhost,access-token,access-token",
+            "localhost,,", // access token cannot be retrieved from service for localhost
+            "my-host,access-token,access-token"})
+    void shouldGetConnectionTokenFromProperties(String host, String configuredAccessToken, String expectedAccessToken) throws SQLException {
+        Properties propsWithToken = new Properties();
+        if (host != null) {
+            propsWithToken.setProperty(HOST.getKey(), host);
+        }
+        if (configuredAccessToken != null) {
+            propsWithToken.setProperty(ACCESS_TOKEN.getKey(), configuredAccessToken);
+        }
+        try (FireboltConnection fireboltConnection = createConnection(URL, propsWithToken)) {
+            assertEquals(expectedAccessToken, fireboltConnection.getAccessToken().orElse(null));
+            Mockito.verifyNoMoreInteractions(fireboltAuthenticationService);
         }
     }
 

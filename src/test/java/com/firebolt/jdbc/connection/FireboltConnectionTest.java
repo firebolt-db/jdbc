@@ -39,7 +39,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -51,7 +50,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.ACCESS_TOKEN;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.CLIENT_ID;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.CLIENT_SECRET;
-import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.HOST;
 import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
 import static java.sql.Connection.TRANSACTION_READ_UNCOMMITTED;
 import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
@@ -102,7 +100,7 @@ abstract class FireboltConnectionTest {
 	protected Properties connectionProperties = new Properties();
 	private static Connection connection;
 
-	private final String URL;
+	protected final String URL;
 
 	protected FireboltConnectionTest(String url) {
 		this.URL = url;
@@ -340,7 +338,7 @@ abstract class FireboltConnectionTest {
 	void shouldValidateConnectionWhenCallingIsValidSystemEngine() throws SQLException {
 		when(fireboltStatementService.execute(any(), any(), any()))
 				.thenReturn(Optional.empty());
-		Properties propertiesWithSystemEngine = new Properties(connectionProperties);
+		Properties propertiesWithSystemEngine = (Properties) connectionProperties.clone();
 		try (FireboltConnection fireboltConnection = createConnection(SYSTEM_ENGINE_URL, propertiesWithSystemEngine)) {
 			fireboltConnection.isValid(500);
 			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(),
@@ -354,7 +352,7 @@ abstract class FireboltConnectionTest {
 	void shouldForceSystemEngineWhenValidateOnSystemEngineIsSet() throws SQLException {
 		when(fireboltStatementService.execute(any(), any(), any()))
 				.thenReturn(Optional.empty());
-		Properties propertiesCopy = new Properties(connectionProperties);
+		Properties propertiesCopy = (Properties) connectionProperties.clone();
 		propertiesCopy.put("validate_on_system_engine", "true");
 		try (FireboltConnection fireboltConnection = createConnection(URL, propertiesCopy)) {
 			fireboltConnection.isValid(500);
@@ -371,7 +369,7 @@ abstract class FireboltConnectionTest {
 	void shouldSendBatchesInSingleQueryWhenMergeBatchesIsSet() throws SQLException {
 		when(fireboltStatementService.execute(any(), any(), any()))
 				.thenReturn(Optional.empty());
-		Properties propertiesCopy = new Properties(connectionProperties);
+		Properties propertiesCopy = (Properties) connectionProperties.clone();
 		propertiesCopy.put("merge_prepared_statement_batches", "true");
 		try (FireboltConnection fireboltConnection = createConnection(URL, propertiesCopy)) {
 			fireboltConnection.createStatement().execute("SET param=value");
@@ -488,6 +486,8 @@ abstract class FireboltConnectionTest {
 		String url = fireboltProperties.getHttpConnectionUrl();
 		try (MockedConstruction<FireboltProperties> mockedFireboltPropertiesConstruction = Mockito.mockConstruction(FireboltProperties.class, (fireboltPropertiesMock, context) -> {
 			when(fireboltPropertiesMock.getAccount()).thenReturn(fireboltProperties.getAccount());
+			when(fireboltPropertiesMock.getPrincipal()).thenReturn(connectionProperties.getProperty("client_id"));
+			when(fireboltPropertiesMock.getSecret()).thenReturn(connectionProperties.getProperty("client_secret"));
 			when(fireboltPropertiesMock.getDatabase()).thenReturn(fireboltProperties.getDatabase());
 			when(fireboltPropertiesMock.getHttpConnectionUrl()).thenReturn(fireboltProperties.getHttpConnectionUrl());
 			when(fireboltPropertiesMock.toBuilder()).thenReturn(fireboltProperties.toBuilder());
@@ -504,11 +504,13 @@ abstract class FireboltConnectionTest {
 	@Test
 	void shouldReturnConnectionTokenWhenAvailable() throws SQLException {
 		String accessToken = "hello";
-		FireboltProperties fireboltProperties = FireboltProperties.builder().host("host").database("db").port(8080).account("dev").build();
+ 		FireboltProperties fireboltProperties = FireboltProperties.builder().host("host").database("db").port(8080).account("dev").build();
 		String url = fireboltProperties.getHttpConnectionUrl();
 
         try (MockedConstruction<FireboltProperties> mockedFireboltPropertiesConstruction = Mockito.mockConstruction(FireboltProperties.class, (fireboltPropertiesMock, context) -> {
 			when(fireboltPropertiesMock.getAccount()).thenReturn(fireboltProperties.getAccount());
+			when(fireboltPropertiesMock.getPrincipal()).thenReturn(connectionProperties.getProperty("client_id"));
+			when(fireboltPropertiesMock.getSecret()).thenReturn(connectionProperties.getProperty("client_secret"));
 			when(fireboltPropertiesMock.getHttpConnectionUrl()).thenReturn(url);
 			when(fireboltPropertiesMock.getDatabase()).thenReturn(fireboltProperties.getDatabase());
 			when(fireboltPropertiesMock.toBuilder()).thenReturn(fireboltProperties.toBuilder());
@@ -534,25 +536,6 @@ abstract class FireboltConnectionTest {
 				assertEquals(Optional.empty(), fireboltConnection.getAccessToken());
 				verifyNoInteractions(fireboltAuthenticationService);
 			}
-		}
-	}
-
-	@ParameterizedTest
-	@CsvSource(value = {
-			"localhost,access-token,access-token",
-			"localhost,,", // access token cannot be retrieved from service for localhost
-			"my-host,access-token,access-token"})
-	void shouldGetConnectionTokenFromProperties(String host, String configuredAccessToken, String expectedAccessToken) throws SQLException {
-		Properties propsWithToken = new Properties();
-		if (host != null) {
-			propsWithToken.setProperty(HOST.getKey(), host);
-		}
-		if (configuredAccessToken != null) {
-			propsWithToken.setProperty(ACCESS_TOKEN.getKey(), configuredAccessToken);
-		}
-		try (FireboltConnection fireboltConnection = createConnection(URL, propsWithToken)) {
-			assertEquals(expectedAccessToken, fireboltConnection.getAccessToken().orElse(null));
-			Mockito.verifyNoMoreInteractions(fireboltAuthenticationService);
 		}
 	}
 
