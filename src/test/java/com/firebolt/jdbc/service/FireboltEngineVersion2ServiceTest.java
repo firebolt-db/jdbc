@@ -31,8 +31,8 @@ class FireboltEngineVersion2ServiceTest {
     private static final String MY_DATABASE = "my_database";
     private static final String YOUR_DATABASE = "your_database";
 
-    private static final String MY_ENGINE_ENDPOINT = "api.region.firebolt.io";;
-    private static final String YOUR_ENGINE_ENDPOINT = "api2.region.firebolt.io";;
+    private static final String MY_ENGINE_ENDPOINT = "api.region.firebolt.io";
+    private static final String YOUR_ENGINE_ENDPOINT = "api2.region.firebolt.io";
 
     private static final String SYSTEM_ENGINE_URL = "system.engine.url";
 
@@ -70,7 +70,7 @@ class FireboltEngineVersion2ServiceTest {
         props.setProperty("engine", MY_ENGINE);
 
         // we cache based on system engine url and the database/engine
-        String host = SYSTEM_ENGINE_URL + RandomStringUtils.randomNumeric(5);
+        String host = SYSTEM_ENGINE_URL + RandomStringUtils.secure().nextNumeric(5);
         props.setProperty("host", host);
 
         FireboltProperties properties = new FireboltProperties(props);
@@ -87,7 +87,7 @@ class FireboltEngineVersion2ServiceTest {
         Engine actualEngine = service.getEngine(properties);
         assertEquals(new Engine(MY_ENGINE_ENDPOINT, null, MY_ENGINE, MY_DATABASE, null), actualEngine);
 
-        // should not execute any caching
+        // should make calls to the system engine url to check the database and engine
         verify(statementFromFirstConnection).executeUpdate("USE DATABASE \"" + MY_DATABASE + "\"");
         verify(statementFromFirstConnection).executeUpdate("USE ENGINE \"" + MY_ENGINE + "\"");
 
@@ -109,6 +109,7 @@ class FireboltEngineVersion2ServiceTest {
         doNothing().when(secondConnection).addProperty(anyString(), anyString());
         doNothing().when(secondConnection).setEndpoint(anyString());
 
+        // on the second connection, it should use a cached engine
         service = new FireboltEngineVersion2Service(secondConnection);
         Engine actualEngineFromCache = service.getEngine(secondConnectionProperties);
         assertEquals(new Engine(MY_ENGINE_ENDPOINT, null, MY_ENGINE, MY_DATABASE, null), actualEngineFromCache);
@@ -129,7 +130,7 @@ class FireboltEngineVersion2ServiceTest {
         props.setProperty("engine", MY_ENGINE);
 
         // we cache based on system engine url and the database/engine
-        String host = SYSTEM_ENGINE_URL + RandomStringUtils.randomNumeric(5);
+        String host = SYSTEM_ENGINE_URL + RandomStringUtils.secure().nextNumeric(5);
         props.setProperty("host", host);
 
         FireboltProperties properties = new FireboltProperties(props);
@@ -173,11 +174,12 @@ class FireboltEngineVersion2ServiceTest {
         doNothing().when(secondConnection).addProperty(anyString(), anyString());
         doNothing().when(secondConnection).setEndpoint(anyString());
 
+        // there should be no engine in cache so should call the backend to verify
         service = new FireboltEngineVersion2Service(secondConnection);
-        Engine actualEngineFromCache = service.getEngine(secondConnectionProperties);
-        assertEquals(new Engine(MY_ENGINE_ENDPOINT, null, MY_ENGINE, MY_DATABASE, null), actualEngineFromCache);
+        Engine secondEngine = service.getEngine(secondConnectionProperties);
+        assertEquals(new Engine(MY_ENGINE_ENDPOINT, null, MY_ENGINE, MY_DATABASE, null), secondEngine);
 
-        // should not execute any caching
+        // should execute the calls to verify the engine and database
         verify(statementFromSecondConnection).executeUpdate("USE DATABASE \"" + MY_DATABASE + "\"");
         verify(statementFromSecondConnection).executeUpdate("USE ENGINE \"" + MY_ENGINE + "\"");
 
@@ -193,7 +195,7 @@ class FireboltEngineVersion2ServiceTest {
         props.setProperty("engine", MY_ENGINE);
 
         // we cache based on system engine url and the database/engine
-        String host = SYSTEM_ENGINE_URL + RandomStringUtils.randomNumeric(5);
+        String host = SYSTEM_ENGINE_URL + RandomStringUtils.secure().nextNumeric(5);
         props.setProperty("host", host);
 
         FireboltProperties properties = new FireboltProperties(props);
@@ -213,8 +215,7 @@ class FireboltEngineVersion2ServiceTest {
         verify(statementFromFirstConnection).executeUpdate("USE DATABASE \"" + MY_DATABASE + "\"");
         verify(statementFromFirstConnection).executeUpdate("USE ENGINE \"" + MY_ENGINE + "\"");
 
-        // use a diffent database and engine. Values should be obtained from the source
-
+        // use a different database and engine. Values should be obtained from the source
         Properties secondProps = new Properties();
         secondProps.setProperty("database", YOUR_DATABASE);
         secondProps.setProperty("engine", YOUR_ENGINE);
@@ -240,6 +241,7 @@ class FireboltEngineVersion2ServiceTest {
         verify(statementFromSecondConnection).executeUpdate("USE ENGINE \"" + YOUR_ENGINE + "\"");
     }
 
+    @SuppressWarnings("java:S2925")
     private void sleepForMillis(long millis) {
         try {
             Thread.sleep(millis);
