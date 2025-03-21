@@ -5,16 +5,17 @@ import com.firebolt.jdbc.client.gateway.GatewayUrlResponse;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
+import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.type.ParserVersion;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mockito;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toMap;
@@ -22,11 +23,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -104,6 +107,66 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
     void shouldNotFetchTokenNorEngineHostForLocalFirebolt() throws SQLException {
         super.shouldNotFetchTokenNorEngineHostForLocalFirebolt();
         verifyNoInteractions(fireboltEngineService);
+    }
+
+    @Test
+    void resettingTheConnectionWouldNotValidateTheConnection() throws SQLException {
+        connectionProperties.put("initialRuntimeParam1", "initialParam1Value");
+
+        try (FireboltConnection connection = createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
+            assertEquals("initialParam1Value", connection.getSessionProperties().getAdditionalProperties().get("initialRuntimeParam1"));
+
+            connection.addProperty("additionalRuntimeParam1", "runtimeParam1");
+            assertEquals("runtimeParam1", connection.getSessionProperties().getAdditionalProperties().get("additionalRuntimeParam1") );
+
+            // part of the connection there are some calls to the firebolt statements, so reset the mocks before calling reset
+            Mockito.reset(fireboltStatementService);
+
+            connection.reset();
+
+            // verify no calls are made on the connection
+            verify(fireboltStatementService, never()).execute(any(), any(FireboltProperties.class), any(FireboltStatement.class));
+
+            // runtime properties should be cleared
+            assertNull(connection.getSessionProperties().getAdditionalProperties().get("additionalRuntimeParam1"));
+
+            // initial additional property should still be there
+            assertEquals("initialParam1Value", connection.getSessionProperties().getAdditionalProperties().get("initialRuntimeParam1"));
+        }
+    }
+
+    @Test
+    void canAddPropertyThatWillValidateConnection() throws SQLException {
+        try (FireboltConnection connection = createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
+            // part of the connection there are some calls to the firebolt statements, so reset the mocks before calling reset
+            Mockito.reset(fireboltStatementService);
+
+            // by default, it will validate the connection
+            connection.addProperty("newProperty", "new value");
+
+            // verify calls are made on the connection
+            verify(fireboltStatementService).execute(any(), any(FireboltProperties.class), any(FireboltStatement.class));
+
+            // initial additional property should be there
+            assertEquals("new value", connection.getSessionProperties().getAdditionalProperties().get("newProperty"));
+        }
+    }
+
+    @Test
+    void canAddPropertyThatWillNotValidateConnection() throws SQLException {
+        try (FireboltConnection connection = createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
+            // part of the connection there are some calls to the firebolt statements, so reset the mocks before calling reset
+            Mockito.reset(fireboltStatementService);
+
+            // do not validate the connection
+            connection.addProperty("newProperty", "new value", false);
+
+            // verify no calls are made on the connection
+            verify(fireboltStatementService, never()).execute(any(), any(FireboltProperties.class), any(FireboltStatement.class));
+
+            // initial additional property should be there
+            assertEquals("new value", connection.getSessionProperties().getAdditionalProperties().get("newProperty"));
+        }
     }
 
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {

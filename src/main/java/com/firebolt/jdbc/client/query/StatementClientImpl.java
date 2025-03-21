@@ -1,25 +1,5 @@
 package com.firebolt.jdbc.client.query;
 
-import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.*;
-import static com.firebolt.jdbc.exception.ExceptionType.INVALID_REQUEST;
-import static com.firebolt.jdbc.exception.ExceptionType.UNAUTHORIZED;
-import static java.lang.String.format;
-import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
-import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
-import static java.util.Optional.ofNullable;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.function.BiPredicate;
-import java.util.function.Function;
-import java.util.regex.Pattern;
-
 import com.firebolt.jdbc.client.FireboltClient;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
@@ -31,14 +11,48 @@ import com.firebolt.jdbc.statement.StatementType;
 import com.firebolt.jdbc.statement.rawstatement.RawStatement;
 import com.firebolt.jdbc.util.CloseableUtil;
 import com.firebolt.jdbc.util.PropertyUtil;
-
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
+import java.util.regex.Pattern;
 import lombok.CustomLog;
 import lombok.NonNull;
-import okhttp3.*;
+import okhttp3.Call;
+import okhttp3.Dispatcher;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 import okhttp3.internal.http2.StreamResetException;
+
+import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.DEFAULT_FORMAT;
+import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.OUTPUT_FORMAT;
+import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.QUERY_LABEL;
+import static com.firebolt.jdbc.exception.ExceptionType.INVALID_REQUEST;
+import static com.firebolt.jdbc.exception.ExceptionType.UNAUTHORIZED;
+import static java.lang.String.format;
+import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
+import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
+import static java.util.Optional.ofNullable;
 
 @CustomLog
 public class StatementClientImpl extends FireboltClient implements StatementClient {
+
+	private static final boolean DO_NOT_VALIDATE_CONNECTION_FLAG = false;
 
 	private static final String TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT = "TabSeparatedWithNamesAndTypes";
 	private static final Map<Pattern, String> missConfigurationErrorMessages = Map.of(
@@ -348,7 +362,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			}
 			for (String header : response.headers(HEADER_UPDATE_PARAMETER)) {
 				String[] keyValue = header.split("=");
-				connection.addProperty(keyValue[0].trim(), keyValue[1].trim());
+				connection.addProperty(keyValue[0].trim(), keyValue[1].trim(), DO_NOT_VALIDATE_CONNECTION_FLAG);
 			}
 		}
 	}
