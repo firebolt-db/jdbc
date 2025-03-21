@@ -26,6 +26,8 @@ public class FireboltEngineVersion2Service implements FireboltEngineService {
     private static final ExpiringMap<String, List<Pair<String, String>>> CACHED_VERIFIED_ENGINES = ExpiringMap.builder()
             .variableExpiration().build();
 
+    private static final boolean DO_NOT_VALIDATE_CONNECTION_FLAG = false;
+
     private final FireboltConnection fireboltConnection;
     private final long cacheDatabaseDurationInSeconds;
     private final long cacheEngineDurationInSeconds;
@@ -56,9 +58,13 @@ public class FireboltEngineVersion2Service implements FireboltEngineService {
     }
 
     /**
-     * We are caching the database names for some time and if we had checked it before assumed that it is still valid.
+     * Once we verify a database with the backend we will cache its result and would consider the database valid in between connection establishing.
+     * If the database was deleted between the time a connection cached the database and the second connection using the cached value, then this would only
+     * be caught while executing the statement, not during connection time.
      *
-     * @param databaseName
+     * @param statement - statement that will execute the verification of the database
+     * @param host - the system engine url
+     * @param databaseName - the name of the database to check
      */
     private void verifyDatabaseExists(Statement statement, String host, String databaseName) throws SQLException {
         synchronized (CACHED_VERIFIED_DATABASES) {
@@ -68,7 +74,7 @@ public class FireboltEngineVersion2Service implements FireboltEngineService {
 
                 // need to set the values on the connection that were cached on the original use database call
                 for (Pair<String, String> pair : CACHED_VERIFIED_DATABASES.get(asCacheKey(host, databaseName))) {
-                    fireboltConnection.addProperty(pair.getKey(), pair.getValue());
+                    fireboltConnection.addProperty(pair.getKey(), pair.getValue(), DO_NOT_VALIDATE_CONNECTION_FLAG);
                 }
 
                 return;
@@ -85,9 +91,14 @@ public class FireboltEngineVersion2Service implements FireboltEngineService {
     }
 
     /**
-     * We are caching the database names for 15 mins and if we had checked it before assumed that it is still valid.
+     * Once we verify an engine with the backend we will cache its result and would consider the engine valid in between connection establishing.
+     * If the engine was deleted between the time a connection cached the engine and the second connection using the cached value, then this would only
+     * be caught while executing the statement, not during connection time.
      *
-     * @param engineName
+     * @param statement - statement that will execute the verification of the database
+     * @param host - the system engine url
+     * @param engineName - the name of the engine to check
+
      */
     private void verifyEngineExists(Statement statement, String host, String engineName) throws SQLException {
         synchronized (CACHED_VERIFIED_ENGINES) {
@@ -99,7 +110,7 @@ public class FireboltEngineVersion2Service implements FireboltEngineService {
                     if ("endpoint".equals(pair.getKey())) {
                         fireboltConnection.setEndpoint(pair.getValue());
                     } else {
-                        fireboltConnection.addProperty(pair.getKey(), pair.getValue());
+                        fireboltConnection.addProperty(pair.getKey(), pair.getValue(), DO_NOT_VALIDATE_CONNECTION_FLAG);
                     }
                 }
 
