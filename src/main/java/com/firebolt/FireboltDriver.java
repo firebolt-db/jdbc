@@ -1,11 +1,9 @@
 package com.firebolt;
 
-import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.connection.FireboltConnectionProvider;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.util.PropertyUtil;
 import com.firebolt.jdbc.util.VersionUtil;
-import lombok.CustomLog;
-
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverPropertyInfo;
@@ -13,6 +11,7 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
 import java.util.logging.Logger;
+import lombok.CustomLog;
 
 @CustomLog
 public class FireboltDriver implements Driver {
@@ -28,9 +27,20 @@ public class FireboltDriver implements Driver {
 		}
 	}
 
+	private FireboltConnectionProvider fireboltConnectionProvider;
+
+	public FireboltDriver() {
+		this(new FireboltConnectionProvider());
+	}
+
+	// visilble for testing
+	FireboltDriver(FireboltConnectionProvider fireboltConnectionProvider) {
+		this.fireboltConnectionProvider = fireboltConnectionProvider;
+	}
+
 	@Override
 	public Connection connect(String url, Properties connectionSettings) throws SQLException {
-		return acceptsURL(url) ? FireboltConnection.create(url, connectionSettings) : null;
+		return acceptsURL(url) ? fireboltConnectionProvider.create(url, connectionSettings) : null;
 	}
 
 	@Override

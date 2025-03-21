@@ -2,11 +2,6 @@ package integration.tests.client;
 
 import com.firebolt.jdbc.connection.FireboltConnection;
 import integration.MockWebServerAwareIntegrationTest;
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.tls.HandshakeCertificates;
-import okhttp3.tls.HeldCertificate;
-import org.junit.jupiter.api.Test;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -15,6 +10,10 @@ import java.net.InetAddress;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.UUID;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.tls.HandshakeCertificates;
+import okhttp3.tls.HeldCertificate;
+import org.junit.jupiter.api.Test;
 
 public class TLSTest extends MockWebServerAwareIntegrationTest {
 	@Test
@@ -47,7 +46,7 @@ public class TLSTest extends MockWebServerAwareIntegrationTest {
 		}
 		removeExistingClient();
 		try (FireboltConnection fireboltConnection = (FireboltConnection) createLocalConnection(
-				String.format("?ssl_certificate_path=%s&port=%s", path, mockBackEnd.getPort()));
+				String.format("?ssl_certificate_path=%s&port=%s&access_token=my_token", path, mockBackEnd.getPort()));
 				Statement statement = fireboltConnection.createStatement()) {
 			statement.execute("SELECT 1;");
 			assertMockBackendRequestsCount(1);

@@ -14,7 +14,9 @@ import java.util.Properties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mockito;
 
+import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.HOST;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -28,7 +30,6 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
@@ -100,9 +101,15 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
     }
 
     @Test
-    void shouldNotFetchTokenNorEngineHostForLocalFirebolt() throws SQLException {
-        super.shouldNotFetchTokenNorEngineHostForLocalFirebolt();
-        verifyNoInteractions(fireboltEngineService);
+    void cannotConnectWhenBothClientIdAndSecretAndAccessTokenArePartOfTheConnectionString() {
+        Properties propsWithToken = new Properties();
+        propsWithToken.setProperty("client_id", "some clientid");
+        propsWithToken.setProperty("client_secret", "do_not_tell_anyone");
+        propsWithToken.setProperty(HOST.getKey(), "firebolt_stating_url");
+        propsWithToken.setProperty("access_token", "some token");
+        FireboltException exception = assertThrows(FireboltException.class, () -> createConnection(url, propsWithToken));
+        assertEquals("Ambiguity: Both access token and client ID/secret are supplied", exception.getMessage());
+        Mockito.verifyNoMoreInteractions(fireboltAuthenticationService);
     }
 
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
