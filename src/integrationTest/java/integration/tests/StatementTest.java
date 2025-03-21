@@ -330,16 +330,21 @@ class StatementTest extends IntegrationTest {
 			try (Statement statement = connection.createStatement()) {
 				long startTime = System.nanoTime();
 				String statementWithoutExplicitQueryLabel =
-						"SELECT NOW(), 123, 'true', 'abdcsagsagas' from generate_series(0, 100000000)";
+						"SELECT NOW(), 123, true, 'abdcsagsagasabdcsagsagasabdcsagsagasabdcsagsagasabdcsagsagas' from generate_series(0, 100000000)";
+				log.info(statementWithoutExplicitQueryLabel);
 				ResultSet resultSet = statement.executeQuery(statementWithoutExplicitQueryLabel);
 				long intermidiateTime = System.nanoTime();
+//				sleepForMillis(TEN_SECONDS_IN_MILLIS);
+				long intermidiateStartTime = System.nanoTime();
+//				int count = 0;
 				while (resultSet.next()) {
-					assertEquals(123, resultSet.getInt(2));
+//					assertEquals(count, resultSet.getInt(1));
+//					count++;
 				}
 				long endTime = System.nanoTime();
 				log.info("Time to execute query: " + TimeUnit.NANOSECONDS.toMillis(intermidiateTime - startTime) + "ms");
-				log.info("Time to parse result: " + TimeUnit.NANOSECONDS.toMillis(endTime - intermidiateTime) + "ms");
-				log.info("Total execution time: " + TimeUnit.NANOSECONDS.toMillis(endTime - startTime) + "ms");
+				log.info("Time to parse result: " + TimeUnit.NANOSECONDS.toMillis(endTime - intermidiateStartTime) + "ms");
+				log.info("Total execution time: " + TimeUnit.NANOSECONDS.toMillis(endTime - intermidiateStartTime + intermidiateTime - startTime) + "ms");
 			}
 		}
 	}

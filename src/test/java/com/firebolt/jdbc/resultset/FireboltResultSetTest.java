@@ -51,10 +51,13 @@ import java.util.Calendar;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
+import lombok.CustomLog;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterEach;
-//import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 import org.junitpioneer.jupiter.DefaultTimeZone;
@@ -67,6 +70,7 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.util.LoggerUtil;
 
+@CustomLog
 @ExtendWith(MockitoExtension.class)
 @DefaultTimeZone("UTC")
 class FireboltResultSetTest {
@@ -285,6 +289,21 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
 		assertFalse(resultSet.isLast());
+	}
+
+	@Test
+	void shouldSeeHowFastItsParsed() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = createResultSet(inputStream);
+		long startTime = System.nanoTime();
+//				int count = 0;
+		while (resultSet.next()) {
+//					assertEquals(count, resultSet.getInt(1));
+//					count++;
+		}
+		long endTime = System.nanoTime();
+		log.info("Time to parse result: " + TimeUnit.NANOSECONDS.toMillis(endTime - startTime) + "ms");
+		System.out.println("Time to parse result: " + TimeUnit.NANOSECONDS.toMillis(endTime - startTime) + "ms");
 	}
 
 //	@Test
@@ -1537,7 +1556,9 @@ class FireboltResultSetTest {
 
 	private InputStream getInputStreamWithCommonResponseExample() {
 //		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-example");
-		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-example-json-lines");
+//		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-example-json-lines");
+		return FireboltResultSetTest.class.getResourceAsStream("/responses/result10gb_4112.txt");
+//		return FireboltResultSetTest.class.getResourceAsStream("/responses/result100mb.txt");
 	}
 
 	private InputStream getInputStreamWithEmpty() {
@@ -1589,6 +1610,7 @@ class FireboltResultSetTest {
 	}
 
 	private ResultSet createResultSet(InputStream is) throws SQLException {
-		return new FireboltResultSet(is, "a_table", "a_db", 65535, false, fireboltStatement, true);
+//		return new FireboltResultSet(is, "a_table", "a_db", 65535, false, fireboltStatement, true);
+		return new FireboltResultSet(is, "a_table", "a_db", 20000000, false, fireboltStatement, true);
 	}
 }

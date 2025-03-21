@@ -18,6 +18,9 @@ import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import com.firebolt.jdbc.type.lob.FireboltBlob;
 import com.firebolt.jdbc.type.lob.FireboltClob;
 import com.firebolt.jdbc.util.LoggerUtil;
+import io.nats.jparse.Json;
+import io.nats.jparse.node.Node;
+import io.nats.jparse.node.RootNode;
 import lombok.CustomLog;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -32,6 +35,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -56,13 +60,22 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	private final List<Column> columns;
 	private final int maxRows;
 	private final int maxFieldSize;
+//	private Node currentResult;
 	private JSONArray currentResult;
+//	private Node currentJSON;
+//	private List<Node> currentJSON;
 	private JSONArray currentJSON;
 	private int currentJSONLength = 0;
+//	private FileWriter fileWriter;
 	private int currentIndexFromJSON;
 	private int currentRow = 1;
+	private long totalBytesRead = 0;
 	private int lastSplitRow = -1;
 	private boolean isClosed = false;
+	private long totalJSONParseTime = 0;
+	private long totalReaderTime = 0;
+	private long totalJsonObjectParseTime = 0;
+	private long totalJsons = 0;
 	private String[] arr = new String[0];
 
 	private String lastReadValue = null;
@@ -72,7 +85,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 		log.debug("Creating resultSet...");
 		this.statement = statement;
 		if (logResultSet) {
-			is = LoggerUtil.logInputStream(is);
+//			is = LoggerUtil.logInputStream(is);
 		}
 
 		this.reader = createStreamReader(is, bufferSize, isCompressed);
@@ -92,6 +105,11 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 			this.columnNameToColumnNumber = new TreeMap<>(CASE_INSENSITIVE_ORDER);
 			IntStream.range(0, columns.size()).boxed()
 				.forEach(i -> columnNameToColumnNumber.put(columns.get(i).getColumnName(), i + 1));
+//			if (columns.size() > 1) {
+//				fileWriter = new FileWriter("result10gb.txt");
+//				fileWriter.write(metadataJson);
+//				fileWriter.append("\n");
+//			}
 			resultSetMetaData = new FireboltResultSetMetaData(dbName, tableName, columns);
 		} catch (Exception e) {
 			log.error("Could not create ResultSet: {}", e.getMessage(), e);
@@ -127,19 +145,52 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 		}
 
 		try {
+//			String currString = reader.readLine();
+//			if (currString == null) {
+//				return false;
+//			}
+
 			//checking index against length may work from the beginning so no need to check length == 0?
 			if (currentJSON == null || currentJSONLength == currentIndexFromJSON) {
-				JSONObject currentRowObject = new JSONObject(reader.readLine());
+				long startTime = System.nanoTime();
+				String json = reader.readLine();
+//				fileWriter.append(json);
+//				fileWriter.append("\n");
+				totalBytesRead += json.length();
+				long intermidiateTime = System.nanoTime();
+				JSONObject currentRowObject = new JSONObject(json);
+//				RootNode currentRowObject = Json.toRootNode(json);
+//				RootNode currentRowObject = Json.toRootNode(reader.readLine());
+				long endTime = System.nanoTime();
+				totalJSONParseTime += (endTime - startTime);
+				totalReaderTime += (intermidiateTime - startTime);
+//				String messageType = currentRowObject.getNode("message_type").originalString();
 				String messageType = currentRowObject.getString("message_type");
 				if (messageType.equalsIgnoreCase("data")) {
+//					currentJSON = currentRowObject.getNode("data");
+//					currentJSON = new ArrayList<>(currentRowObject.getNode("data").asCollection().asArray());
 					currentJSON = currentRowObject.getJSONArray("data");
 					currentJSONLength = currentJSON.length();
+//					currentJSONLength = currentJSON.size();
 					currentIndexFromJSON = 0;
+					totalJsons++;
 				} else {
+					log.info("Total time to read JSON: {}", TimeUnit.NANOSECONDS.toMillis(totalReaderTime));
+					log.info("Total time to parse JSON: {}", TimeUnit.NANOSECONDS.toMillis(totalJSONParseTime));
+					log.info("Total time to parse JSON object: {}", TimeUnit.NANOSECONDS.toMillis(totalJsonObjectParseTime));
+					log.info("Total JSONs to parse: {}", totalJsons);
+					log.info("Mean time to parse JSON: {}", TimeUnit.NANOSECONDS.toMillis(totalJSONParseTime / totalJsons));
+					log.info("Total bytes read: {}", totalBytesRead);
+//					fileWriter.close();
 					return false;
 				}
 			}
+			long startTime = System.nanoTime();
+//			currentResult = currentJSON.get(currentIndexFromJSON);
+//			currentResult = currentJSON.atPath(format("[%d]", currentIndexFromJSON));
 			currentResult = currentJSON.getJSONArray(currentIndexFromJSON);
+			long endTime = System.nanoTime();
+			totalJsonObjectParseTime += (endTime - startTime);
 			currentIndexFromJSON++;
 			currentRow++;
 		} catch (IOException e) {
@@ -257,6 +308,9 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 		if (!isClosed) {
 			try {
 				reader.close();
+//				if (fileWriter != null) {
+//					fileWriter.close();
+//				}
 				isClosed = true;
 			} catch (IOException e) {
 				throw new SQLException("Could not close data stream when closing ResultSet", e);
@@ -488,6 +542,8 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	private String getValueAtColumn(int columnIndex) throws SQLException {
 		checkStreamNotClosed();
 		String value = currentResult.optString(getColumnIndex(columnIndex), null);
+//		String value = currentResult.atPath(format("[%d]", getColumnIndex(columnIndex))).originalString();
+//		String value = currentJSON.atPath(format("[%d][%d]", currentIndexFromJSON - 1, getColumnIndex(columnIndex))).originalString();
 		lastReadValue = value;
 		return value;
 	}

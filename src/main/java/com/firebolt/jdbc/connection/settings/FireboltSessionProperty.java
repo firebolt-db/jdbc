@@ -19,7 +19,7 @@ import static java.util.stream.Collectors.toMap;
 @Getter
 public enum FireboltSessionProperty {
 	PATH("path", "", String.class, "Path component of the URI", FireboltProperties::getPath),
-	BUFFER_SIZE("buffer_size", 65536, Integer.class, "The buffer used to create the ResultSet in bytes", FireboltProperties::getBufferSize),
+	BUFFER_SIZE("buffer_size", 20000000, Integer.class, "The buffer used to create the ResultSet in bytes", FireboltProperties::getBufferSize),
 	SSL("ssl", true, Boolean.class, "Enable SSL/TLS for the connection", FireboltProperties::isSsl),
 	SSL_CERTIFICATE_PATH("ssl_certificate_path", "", String.class, "SSL/TLS root certificate", FireboltProperties::getSslCertificatePath, "sslrootcert"),
 	SSL_MODE("ssl_mode", "strict", String.class,
