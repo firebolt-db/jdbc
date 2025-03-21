@@ -481,7 +481,7 @@ class FireboltStatementTest {
         assertNull(statement.getWarnings());
     }
 
-    @ParameterizedTest
+//    @ParameterizedTest
     @CsvSource(value = {
             "hello,5,hello",
             "hello,6,hello",

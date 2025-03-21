@@ -41,6 +41,7 @@ import okhttp3.internal.http2.StreamResetException;
 public class StatementClientImpl extends FireboltClient implements StatementClient {
 
 	private static final String TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT = "TabSeparatedWithNamesAndTypes";
+	private static final String JSON_LINES_COMPACT_FORMAT = "JSONLines_Compact";
 	private static final Map<Pattern, String> missConfigurationErrorMessages = Map.of(
 			Pattern.compile("HTTP status code: 401"), "Please associate user with your service account.",
 			Pattern.compile("Engine .+? does not exist or not authorized"), "Please grant at least one role to user associated your service account."
@@ -327,7 +328,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 	private Optional<Entry<String, String>> getResponseFormatParameter(boolean isQuery, boolean isLocalDb) {
 		FireboltQueryParameterKey format = isLocalDb ? DEFAULT_FORMAT : OUTPUT_FORMAT;
-		return isQuery ? Optional.of(Map.entry(format.getKey(), TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT)) : Optional.empty();
+		return isQuery ? Optional.of(Map.entry(format.getKey(), JSON_LINES_COMPACT_FORMAT)) : Optional.empty();
 	}
 
 	private Map<String, String> getCancelParameters(String statementId) {

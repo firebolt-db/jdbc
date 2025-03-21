@@ -3,10 +3,12 @@ package com.firebolt.jdbc;
 import com.firebolt.jdbc.type.FireboltDataType;
 import lombok.Builder;
 import lombok.Value;
+import org.json.JSONArray;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
@@ -22,6 +24,9 @@ public class QueryResult {
 
 	private static final String TAB = "\t";
 	private static final String NEXT_LINE = "\n";
+	private static final String START_JSON = "{\"message_type\":\"START\",\"result_columns\":%s}\n";
+	private static final String DATA_JSON = "{\"message_type\":\"DATA\",\"data\":[%s]}\n";
+	private static final String FINISH_JSON = "{\"message_type\":\"FINISH_SUCCESSFULLY\"}";
 	String databaseName;
 	String tableName;
 	@Builder.Default
@@ -37,18 +42,17 @@ public class QueryResult {
 	@SuppressWarnings("java:S6204") // JDK 11 compatible
 	public String toString() {
 		StringBuilder stringBuilder = new StringBuilder();
-		appendWithListValues(stringBuilder, columns.stream().map(Column::getName).collect(toList()));
-		stringBuilder.append(NEXT_LINE);
-		Function<Column, String> columnToString = c -> c.getType().getAliases()[0] + (c.isNullable() ? " null" : "");
-		appendWithListValues(stringBuilder, columns.stream().map(columnToString).collect(toList()));
-		stringBuilder.append(NEXT_LINE);
+		JSONArray columnsArray = new JSONArray();
+		columns.forEach(column -> columnsArray.put(Map.of(
+				"name", column.getName(),
+				"type", column.getType().getAliases()[0] + (column.isNullable() ? " null" : "")
+		)));
+		stringBuilder.append(String.format(START_JSON, columnsArray));
 
 		for (int i = 0; i < rows.size(); i++) {
-			appendWithListValues(stringBuilder, rows.get(i));
-			if (i != rows.size() - 1) {
-				stringBuilder.append(NEXT_LINE);
-			}
+			stringBuilder.append(String.format(DATA_JSON, rows.get(i)));
 		}
+		stringBuilder.append(FINISH_JSON);
 		return stringBuilder.toString();
 	}
 

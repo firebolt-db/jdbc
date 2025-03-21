@@ -1,12 +1,11 @@
 package com.firebolt.jdbc.type.array;
 
-import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
-import com.firebolt.jdbc.util.StringUtil;
 import lombok.CustomLog;
 import lombok.NonNull;
+import org.json.JSONArray;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Array;
@@ -21,12 +20,11 @@ import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 @CustomLog
 public class SqlArrayUtil {
 	private static final Map<Character, Markers> formatMarkers = Map.of(
-			'[', new Markers('[', ']', '\'', '\''),
+			'[', new Markers('[', ']', '"', '"'),
 			'{', new Markers('{', '}', '"', '\'')
 	);
 	private final ColumnType columnType;
@@ -74,27 +72,21 @@ public class SqlArrayUtil {
 	}
 
 	private Object createArray(String arrayContent, int dimension) throws SQLException {
-		int from = arrayContent.charAt(0) == markers.leftArrayBracket ? 1 : 0;
-		int to = arrayContent.charAt(arrayContent.length() - 1) == markers.rightArrayBracket ? arrayContent.length() - 1 : arrayContent.length();
-		arrayContent = arrayContent.substring(from, to);
-		return extractArray(arrayContent, dimension);
-	}
-
-	private Object extractArray(String arrayContent, int dimension) throws SQLException {
-		if (isNullValue(arrayContent))  {
-			return null;
-		}
+		if (arrayContent == null) return null;
 		return dimension < 2 ? extractArrayFromOneDimensionalArray(arrayContent) : extractArrayFromMultiDimensionalArray(arrayContent, dimension);
 	}
 
 	@NonNull
 	private Object extractArrayFromMultiDimensionalArray(String str, int dimension) throws SQLException {
-		String[] s = splitToElements(str);
+		FireboltDataType arrayBaseType = columnType.getArrayBaseColumnType().getDataType();
+		@SuppressWarnings("java:S6204") // JDK 11 compatible
+		JSONArray objects = new JSONArray(str);
 		int[] lengths = new int[dimension];
-		lengths[0] = s.length;
-		Object currentArray = Array.newInstance(columnType.getArrayBaseColumnType().getDataType().getBaseType().getType(), lengths);
-		for (int i = 0; i < s.length; i++) {
-			Array.set(currentArray, i, createArray(s[i], dimension - 1));
+		lengths[0] = objects.length();
+
+		Object currentArray = Array.newInstance(arrayBaseType.getBaseType().getType(), lengths);
+		for (int i = 0; i < objects.length(); i++) {
+			Array.set(currentArray, i, createArray(objects.optString(i, null), dimension - 1));
 		}
 		return currentArray;
 	}
@@ -102,117 +94,17 @@ public class SqlArrayUtil {
 	private Object extractArrayFromOneDimensionalArray(String arrayContent) throws SQLException {
 		FireboltDataType arrayBaseType = columnType.getArrayBaseColumnType().getDataType();
 		@SuppressWarnings("java:S6204") // JDK 11 compatible
-		List<String> elements = splitArrayContent(arrayContent, arrayBaseType, markers.literalQuote)
-				.stream().filter(s -> s != null && !s.isEmpty()).map(x -> removeQuotesAndTransformNull(x, markers.literalQuote))
-				.collect(toList());
-		if (arrayBaseType == FireboltDataType.TUPLE) {
-			return getArrayOfTuples(columnType, elements);
-		}
-		Object currentArray = Array.newInstance(arrayBaseType.getBaseType().getType(), elements.size());
-		for (int i = 0; i < elements.size(); i++) {
-			Array.set(currentArray, i, arrayBaseType.getBaseType().transform(elements.get(i), null));
+		JSONArray objects = new JSONArray(arrayContent);
+
+		Object currentArray = Array.newInstance(arrayBaseType.getBaseType().getType(), objects.length());
+		for (int i = 0; i < objects.length(); i++) {
+			Array.set(currentArray, i, arrayBaseType.getBaseType().transform(objects.optString(i, null), null));
 		}
 		return currentArray;
 	}
 
-	private Object[] getArrayOfTuples(ColumnType columnType, List<String> tuples) throws SQLException {
-		@SuppressWarnings("java:S6204") // JDK 11 compatible
-		List<FireboltDataType> types = columnType.getArrayBaseColumnType().getInnerTypes().stream()
-				.map(ColumnType::getDataType).collect(toList());
-
-		List<Object[]> list = new ArrayList<>();
-		for (String tupleContent : tuples) {
-			List<Object> subList = new ArrayList<>();
-			List<String> tupleValues = splitArrayContent(removeParenthesis(tupleContent), FireboltDataType.TEXT, markers.tupleLiteralQuote);
-			for (int j = 0; j < types.size(); j++) {
-				subList.add(types.get(j).getBaseType().transform(removeQuotesAndTransformNull(tupleValues.get(j), markers.tupleLiteralQuote)));
-			}
-			list.add(subList.toArray());
-		}
-		Object[] array = new Object[list.size()];
-		list.toArray(array);
-		return array;
-	}
-
-	private String[] splitToElements(String value) {
-		char[] chars = value.toCharArray();
-		int nesting = 0;
-		boolean intoString = false;
-		boolean escaped = false;
-		int from = 0;
-		List<String> elements = new ArrayList<>();
-
-		for (int i = 0; i < chars.length; i++) {
-			char c = chars[i];
-			if (c == '\\') {
-				escaped = true;
-				continue;
-			}
-			if (c == '\'' && !escaped) {
-				intoString = !intoString;
-			}
-			if (!intoString) {
-				if (c == markers.leftArrayBracket) {
-					nesting++;
-				} else if (c == markers.rightArrayBracket) {
-					nesting--;
-				} else if (c == ',') {
-					if (nesting <= 0) {
-						elements.add(value.substring(from, i));
-						from = i + 1;
-					}
-				}
-			}
-			escaped = false;
-		}
-		elements.add(value.substring(from));
-		return elements.toArray(new String[0]);
-	}
-
-	private String removeQuotesAndTransformNull(String s, char quote) {
-		return isNullValue(s) ? "\\N" : StringUtil.strip(s, quote);
-	}
-
 	private static boolean isNullValue(String s) {
 		return "NULL".equals(s);
-	}
-
-	private static String removeParenthesis(String s) {
-		return s.substring(1, s.length() - 1);
-	}
-
-	private static List<String> splitArrayContent(String arrayContent, FireboltDataType baseType, char quote) {
-		int index = -1;
-		int subStringStart = 0;
-		int parenthesisDepth = 0; // Needed for tuples
-		boolean isCurrentSubstringBetweenQuotes = false;
-		List<String> elements = new ArrayList<>();
-		boolean escaped = false;
-		while (index < arrayContent.length() - 1) {
-			index++;
-			char currentChar = arrayContent.charAt(index);
-			if (currentChar == '\\') {
-				escaped = true;
-				continue;
-			}
-			if (currentChar == quote && !escaped) {
-				isCurrentSubstringBetweenQuotes = !isCurrentSubstringBetweenQuotes;
-			}
-			if (!isCurrentSubstringBetweenQuotes && baseType == FireboltDataType.TUPLE) {
-				if (currentChar == '(') {
-					parenthesisDepth++;
-				} else if (currentChar == ')') {
-					parenthesisDepth--;
-				}
-			}
-			if ((parenthesisDepth == 0 && currentChar == ',' && !isCurrentSubstringBetweenQuotes)) {
-				elements.add(arrayContent.substring(subStringStart, index));
-				subStringStart = index + 1;
-			}
-			escaped = false;
-		}
-		elements.add(arrayContent.substring(subStringStart));
-		return elements;
 	}
 
 	public static String arrayToString(Object o) throws SQLException {

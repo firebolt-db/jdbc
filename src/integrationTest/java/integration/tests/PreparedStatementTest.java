@@ -12,6 +12,7 @@ import lombok.Builder;
 import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -446,15 +447,19 @@ class PreparedStatementTest extends IntegrationTest {
 							.executeQuery("SELECT prepared_statement_test FROM prepared_statement_test")) {
 				rs.next();
 				assertEquals(FireboltDataType.STRUCT.name().toLowerCase()
-								+ "(make text, sales long, ts timestamp null, d date null, signature bytea null, url text null)",
+								+ "(make text, sales bigint, ts timestamp null, d date null, signature bytea null, url text null)",
 						rs.getMetaData().getColumnTypeName(1).toLowerCase());
 				String expectedJson = String.format("{\"make\":\"%s\",\"sales\":\"%d\",\"ts\":\"%s\",\"d\":\"%s\",\"signature\":null,\"url\":null}",
 						car1.getMake(), car1.getSales(), car1.getTs().toString(), car1.getD().toString());
-				assertEquals(expectedJson, rs.getString(1));
+				assertEquals(getJsonStringSameOrder(expectedJson), getJsonStringSameOrder(rs.getString(1)));
 			}
 		} finally {
 			executeStatementFromFile("/statements/prepared-statement/cleanup.sql");
 		}
+	}
+
+	private String getJsonStringSameOrder(String json) {
+		return new JSONObject(json).toString();
 	}
 
 	@Test
@@ -483,12 +488,12 @@ class PreparedStatementTest extends IntegrationTest {
 							.executeQuery("SELECT test_struct FROM test_struct")) {
 				rs.next();
 				assertEquals(FireboltDataType.STRUCT.name().toLowerCase()
-						+ "(id int, s struct(a array(text null) null, `b column` timestamp null))",
+						+ "(id integer, s struct(a array(text null) null, `b column` timestamp null))",
 						rs.getMetaData().getColumnTypeName(1).toLowerCase());
 				String expectedJson = String.format(
 						"{\"id\":%d,\"s\":{\"a\":[\"%s\",\"%s\"],\"b column\":\"%s\"}}", 1, car1.getTags()[0],
 								car1.getTags()[1], car1.getTs().toString());
-				assertEquals(expectedJson, rs.getString(1));
+				assertEquals(getJsonStringSameOrder(expectedJson), getJsonStringSameOrder(rs.getString(1)));
 			}
 		} finally {
 			executeStatementFromFile("/statements/prepared-statement-struct/cleanup.sql");

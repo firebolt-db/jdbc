@@ -36,9 +36,8 @@ public enum BaseType {
 	BYTE(TypePredicate.mayBeFloatingNumber, Byte.class, conversion -> Byte.parseByte(checkInfinity(conversion.getValue())), conversion -> Byte.parseByte(Long.toString(Double.valueOf(conversion.getValue()).longValue()))),
 	BIGINT(TypePredicate.mayBeFloatingNumber, BigInteger.class, conversion -> new BigInteger(checkInfinity(conversion.getValue())), conversion -> BigInteger.valueOf(Double.valueOf(conversion.getValue()).longValue())),
 	TEXT(String.class, conversion -> {
-		String escaped = StringEscapeUtils.unescapeJava(conversion.getValue());
 		int limit = conversion.getMaxFieldSize();
-		return limit > 0 && limit <= escaped.length() ? escaped.substring(0, limit) : escaped;
+		return limit > 0 && limit <= conversion.getValue().length() ? conversion.getValue().substring(0, limit) : conversion.getValue();
 	}),
 	REAL(Float.class, conversion -> {
 		if (isNan(conversion.getValue())) {
@@ -50,7 +49,8 @@ public enum BaseType {
 		} else {
 			return Float.parseFloat(conversion.getValue());
 		}
-	}), DOUBLE(Double.class, conversion -> {
+	}),
+	DOUBLE(Double.class, conversion -> {
 		if (isNan(conversion.getValue())) {
 			return Double.NaN;
 		} else if (isPositiveInf(conversion.getValue())) {
@@ -71,18 +71,20 @@ public enum BaseType {
 					conversion.getTimeZone())),
 	TIME(Time.class,
 			conversion -> SqlDateUtil.transformToTimeFunction.apply(conversion.getValue(), conversion.getTimeZone())),
-	NULL(Object.class, conversion -> null), OTHER(String.class, conversion -> "Unknown"),
+	NULL(Object.class, conversion -> null),
+	OTHER(String.class, conversion -> "Unknown"),
 	OBJECT(Object.class, StringToColumnTypeConversion::getValue),
 	NUMERIC(BigDecimal.class, conversion -> new BigDecimal(conversion.getValue())),
 	BOOLEAN(Boolean.class, conversion -> {
 		String value = conversion.getValue();
-		if ("0".equals(value) || "f".equalsIgnoreCase(value)) {
+		if ("0".equals(value) || "false".equalsIgnoreCase(value)) {
 			return false;
-		} else if ("1".equals(value) || "t".equalsIgnoreCase(value)) {
+		} else if ("1".equals(value) || "true".equalsIgnoreCase(value)) {
 			return true;
 		}
 		throw new FireboltException(String.format("Cannot cast %s to type boolean", conversion.getValue()));
-	}), ARRAY(Array.class,
+	}),
+	ARRAY(Array.class,
 			conversion -> SqlArrayUtil.transformToSqlArray(conversion.getValue(), conversion.getColumn().getType())),
 	BYTEA(byte[].class, conversion -> {
 		String s = conversion.getValue();
@@ -102,7 +104,6 @@ public enum BaseType {
 	private static final class TypePredicate {
 		private static final Predicate<String> mayBeFloatingNumber = Pattern.compile("[.eE]").asPredicate();
 	}
-	public static final String NULL_VALUE = "\\N";
 	private final Class<?> type;
 	private final Predicate<String> shouldTryFallback;
 	private final CheckedFunction<StringToColumnTypeConversion, Object>[] transformFunctions;
@@ -135,7 +136,7 @@ public enum BaseType {
 	}
 
 	public static boolean isNull(String value) {
-		return NULL_VALUE.equals(value);
+		return value == null;
 	}
 
 	private static boolean isNan(String value) {
@@ -173,7 +174,7 @@ public enum BaseType {
 	}
 
 	private <T> T transform(StringToColumnTypeConversion conversion) throws SQLException {
-		validateObjectNotNull(conversion.getValue());
+//		validateObjectNotNull(conversion.getValue());
 		if (isNull(conversion.getValue())) {
 			return null;
 		}
