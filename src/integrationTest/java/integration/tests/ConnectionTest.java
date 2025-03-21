@@ -175,7 +175,7 @@ class ConnectionTest extends IntegrationTest {
             selectQueriesRS = statement.executeQuery(String.format(queryHistoryQueryFormat, currentUTCTime));
             assertTrue(selectQueriesRS.next());
 
-            assertEquals("SELECT 222;", selectQueriesRS.getObject(1));
+            assertEquals("SELECT 222;", selectQueriesRS.getString(1));
 
             // no more select statements
             assertFalse(selectQueriesRS.next());

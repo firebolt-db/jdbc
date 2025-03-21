@@ -144,10 +144,10 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
             // by default, it will validate the connection
             connection.addProperty("newProperty", "new value");
 
-            // verify no calls are made on the connection
+            // verify calls are made on the connection
             verify(fireboltStatementService).execute(any(), any(FireboltProperties.class), any(FireboltStatement.class));
 
-            // initial additional property should still be there
+            // initial additional property should be there
             assertEquals("new value", connection.getSessionProperties().getAdditionalProperties().get("newProperty"));
         }
     }
@@ -164,7 +164,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
             // verify no calls are made on the connection
             verify(fireboltStatementService, never()).execute(any(), any(FireboltProperties.class), any(FireboltStatement.class));
 
-            // initial additional property should still be there
+            // initial additional property should be there
             assertEquals("new value", connection.getSessionProperties().getAdditionalProperties().get("newProperty"));
         }
     }
