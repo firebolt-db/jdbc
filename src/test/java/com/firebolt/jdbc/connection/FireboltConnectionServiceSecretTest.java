@@ -30,7 +30,6 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
@@ -102,19 +101,13 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
     }
 
     @Test
-    void shouldNotFetchTokenNorEngineHostForLocalFirebolt() throws SQLException {
-        super.shouldNotFetchTokenNorEngineHostForLocalFirebolt();
-        verifyNoInteractions(fireboltEngineService);
-    }
-
-    @Test
     void cannotConnectWhenBothClientIdAndSecretAndAccessTokenArePartOfTheConnectionString() {
         Properties propsWithToken = new Properties();
         propsWithToken.setProperty("client_id", "some clientid");
         propsWithToken.setProperty("client_secret", "do_not_tell_anyone");
         propsWithToken.setProperty(HOST.getKey(), "firebolt_stating_url");
         propsWithToken.setProperty("access_token", "some token");
-        FireboltException exception = assertThrows(FireboltException.class, () -> createConnection(URL, propsWithToken));
+        FireboltException exception = assertThrows(FireboltException.class, () -> createConnection(url, propsWithToken));
         assertEquals("Ambiguity: Both access token and client ID/secret are supplied", exception.getMessage());
         Mockito.verifyNoMoreInteractions(fireboltAuthenticationService);
     }
