@@ -15,7 +15,6 @@ import com.firebolt.jdbc.service.FireboltEngineVersion2Service;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.type.ParserVersion;
-import com.firebolt.jdbc.util.PropertyUtil;
 import java.net.URL;
 import java.sql.SQLException;
 import java.util.Map;
@@ -63,9 +62,6 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
 
     @Override
     protected void authenticate() throws SQLException {
-        // validate required parameters
-        validateMandatoryConnectionParameters();
-
         String accessToken = getAccessToken(loginProperties).orElse("");
         sessionProperties = getSessionPropertiesForSystemEngine(accessToken, loginProperties.getAccount());
         assertDatabaseExisting(loginProperties.getDatabase());
@@ -75,10 +71,14 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
     }
 
     /**
-     * clientId (principal), clientSecret and accountName are required parameters.
-     * Only syntactic validation is performed here.
+     * Perform syntactic validation for the mandatory connection params which are:
+     * - clientId
+     * - clientSecret
+     * - account
+     *
+     * Also make sure the access token is not passed in
      */
-    protected void validateMandatoryConnectionParameters() throws FireboltException {
+    protected void validateConnectionParameters() throws FireboltException {
         String account = loginProperties.getAccount();
         if (StringUtils.isBlank(account)) {
             throw new FireboltException("Cannot connect: account is missing");
@@ -92,6 +92,12 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
         String clientSecret = loginProperties.getSecret();
         if (StringUtils.isBlank(clientSecret)) {
             throw new FireboltException("Cannot connect: clientSecret is missing");
+        }
+
+        // make sure the access token is not passed in
+        String accessToken = loginProperties.getAccessToken();
+        if (StringUtils.isNotBlank(accessToken)) {
+            throw new FireboltException("Ambiguity: Both access token and client ID/secret are supplied");
         }
 
     }
@@ -110,9 +116,8 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
                 .build();
     }
 
-    @Override
-    protected void assertDatabaseExisting(String database) throws SQLException {
-        if (database != null && !PropertyUtil.isLocalDb(loginProperties) && !getFireboltEngineService().doesDatabaseExist(database)) {
+    private void assertDatabaseExisting(String database) throws SQLException {
+        if (database != null && !getFireboltEngineService().doesDatabaseExist(database)) {
             throw new FireboltException(format("Database %s does not exist", database), RESOURCE_NOT_FOUND);
         }
     }

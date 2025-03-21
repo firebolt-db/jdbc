@@ -22,7 +22,6 @@ import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.type.array.FireboltArray;
 import com.firebolt.jdbc.type.lob.FireboltBlob;
 import com.firebolt.jdbc.type.lob.FireboltClob;
-import com.firebolt.jdbc.util.PropertyUtil;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.sql.Array;
@@ -141,14 +140,12 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	protected void connect() throws SQLException {
 		closed = false;
-		if (!PropertyUtil.isLocalDb(loginProperties)) {
-			authenticate();
-		} else {
-			// When running packdb locally, the login properties are the session properties
-			sessionProperties = loginProperties;
-			// The validation of not local DB is implemented into authenticate() method itself.
-			assertDatabaseExisting(loginProperties.getDatabase());
-		}
+
+		validateConnectionParameters();
+
+		// try to authenticate
+		authenticate();
+
 		databaseMetaData = retrieveMetaData();
 
 		log.debug("Connection opened");
@@ -156,7 +153,11 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	protected abstract void authenticate() throws SQLException;
 
-	protected abstract void assertDatabaseExisting(String database) throws SQLException;
+	/**
+	 * Validates that the required parameters are present for the connection
+	 * @throws SQLException
+	 */
+	protected abstract void validateConnectionParameters() throws SQLException;
 
 	public void removeExpiredTokens() throws SQLException {
 		fireboltAuthenticationService.removeConnectionTokens(httpConnectionUrl, loginProperties);
@@ -167,18 +168,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	}
 
 	protected Optional<String> getAccessToken(FireboltProperties fireboltProperties) throws SQLException {
-		String accessToken = fireboltProperties.getAccessToken();
-		if (accessToken != null) {
-			if (fireboltProperties.getPrincipal() != null || fireboltProperties.getSecret() != null) {
-				throw new FireboltException("Ambiguity: Both access token and client ID/secret are supplied");
-			}
-			return Optional.of(accessToken);
-		}
-
-		if (!PropertyUtil.isLocalDb(fireboltProperties)) {
-			return Optional.of(fireboltAuthenticationService.getConnectionTokens(httpConnectionUrl, fireboltProperties)).map(FireboltConnectionTokens::getAccessToken);
-		}
-		return Optional.empty();
+		return Optional.of(fireboltAuthenticationService.getConnectionTokens(httpConnectionUrl, fireboltProperties)).map(FireboltConnectionTokens::getAccessToken);
 	}
 
 	public FireboltProperties getSessionProperties() {

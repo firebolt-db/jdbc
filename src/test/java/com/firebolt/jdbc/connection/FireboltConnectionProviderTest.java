@@ -23,7 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class FireboltConnectionProviderTest {
+class FireboltConnectionProviderTest {
 
     @Mock
     private FireboltConnectionProvider.FireboltConnectionProviderWrapper mockFireboltConnectionProviderWrapper;
@@ -40,7 +40,7 @@ public class FireboltConnectionProviderTest {
     private FireboltConnectionProvider fireboltConnectionProvider;
 
     @BeforeEach
-    public void setupMethod() {
+    void setupMethod() {
         fireboltConnectionProvider = new FireboltConnectionProvider(mockFireboltConnectionProviderWrapper);
     }
 

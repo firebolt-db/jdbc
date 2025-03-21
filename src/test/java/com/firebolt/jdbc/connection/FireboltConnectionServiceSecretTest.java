@@ -33,7 +33,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
@@ -103,13 +102,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         assertEquals(expectedHost, sessionProperties.getHost());
         assertEquals(expectedProps == null ? Map.of() : Arrays.stream(expectedProps.split(";")).map(kv -> kv.split("=")).collect(toMap(kv -> kv[0], kv -> kv[1])), sessionProperties.getAdditionalProperties());
     }
-
-    @Test
-    void shouldNotFetchTokenNorEngineHostForLocalFirebolt() throws SQLException {
-        super.shouldNotFetchTokenNorEngineHostForLocalFirebolt();
-        verifyNoInteractions(fireboltEngineService);
-    }
-
+    
     @Test
     void resettingTheConnectionWouldNotValidateTheConnection() throws SQLException {
         connectionProperties.put("initialRuntimeParam1", "initialParam1Value");
@@ -177,7 +170,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         propsWithToken.setProperty("client_secret", "do_not_tell_anyone");
         propsWithToken.setProperty(HOST.getKey(), "firebolt_stating_url");
         propsWithToken.setProperty("access_token", "some token");
-        FireboltException exception = assertThrows(FireboltException.class, () -> createConnection(URL, propsWithToken));
+        FireboltException exception = assertThrows(FireboltException.class, () -> createConnection(url, propsWithToken));
         assertEquals("Ambiguity: Both access token and client ID/secret are supplied", exception.getMessage());
         Mockito.verifyNoMoreInteractions(fireboltAuthenticationService);
     }
