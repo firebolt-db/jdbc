@@ -62,6 +62,25 @@ class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
         }
     }
 
+    @Test
+    void willDefaultToConnectionToNotBeCachedWhenNoConnectionParamIsPassedInUrl() throws SQLException {
+        try (FireboltConnection connection = createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
+            assertFalse(connection.isConnectionCachingEnabled());
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "true",
+            "false" })
+    void willNotRespectTheCacheConnectionParameterAndDefaultToAlwaysNotCacheTheConnection(String actualValue) throws SQLException {
+        // append to the system engine url the cache parameter
+        String urlWithCacheConnection = SYSTEM_ENGINE_URL + "&cache_connection=" + actualValue;
+        try (FireboltConnection connection = createConnection(urlWithCacheConnection, connectionProperties)) {
+            assertFalse(connection.isConnectionCachingEnabled());
+        }
+    }
+
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
         return new FireboltConnectionUserPassword(url, props, fireboltAuthenticationService, fireboltStatementService,
                 fireboltEngineService, ParserVersion.LEGACY);

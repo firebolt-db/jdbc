@@ -102,6 +102,11 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
 
     }
 
+    @Override
+    protected boolean isConnectionCachingEnabled() {
+        return Boolean.valueOf(loginProperties.isConnectionCachingEnabled());
+    }
+
     private FireboltProperties getSessionPropertiesForNonSystemEngine() throws SQLException {
         sessionProperties = sessionProperties.toBuilder().engine(loginProperties.getEngine()).build();
         Engine engine = getFireboltEngineService().getEngine(loginProperties);

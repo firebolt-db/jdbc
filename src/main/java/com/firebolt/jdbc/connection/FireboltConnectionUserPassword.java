@@ -15,10 +15,12 @@ import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.type.ParserVersion;
 import java.sql.SQLException;
 import java.util.Properties;
+import lombok.CustomLog;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
 
+@CustomLog
 public class FireboltConnectionUserPassword extends FireboltConnection {
     // Visible for testing
     public static final String SYSTEM_ENGINE_NAME = "system";
@@ -75,6 +77,12 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
         if (StringUtils.isNotBlank(accessToken)) {
             throw new FireboltException("Ambiguity: Both access token and client ID/secret are supplied");
         }
+
+        // check to see if the connection was set with a connection caching
+        if (loginProperties.isConnectionCachingEnabled()) {
+            log.warn("The cache_connection parameter is only supported with Firebolt 2.0. Your connections will not be cached");
+        }
+
     }
 
     @Override

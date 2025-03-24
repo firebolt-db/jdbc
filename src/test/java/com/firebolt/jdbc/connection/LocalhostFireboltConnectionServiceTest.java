@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.ACCESS_TOKEN;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.HOST;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -123,6 +124,25 @@ class LocalhostFireboltConnectionServiceTest  {
             verifyNoInteractions(fireboltAuthenticationService);
             verifyNoInteractions(fireboltGatewayUrlService);
             assertFalse(fireboltConnection.isClosed());
+        }
+    }
+
+    @Test
+    void localhostConnectionsAreCachedByDefault() throws SQLException {
+        try (FireboltConnection connection = createConnection(LOCAL_URL, connectionProperties)) {
+            assertTrue(connection.isConnectionCachingEnabled());
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "true,true",
+            "false,false" })
+    void canCacheConnectionsToLocalhost(String actualValue, boolean expectedValue) throws SQLException {
+        // append to the system engine url the cache parameter
+        String urlWithCacheConnection = LOCAL_URL + "&cache_connection=" + actualValue;
+        try (FireboltConnection connection = createConnection(urlWithCacheConnection, connectionProperties)) {
+            assertEquals(expectedValue, connection.isConnectionCachingEnabled());
         }
     }
 
