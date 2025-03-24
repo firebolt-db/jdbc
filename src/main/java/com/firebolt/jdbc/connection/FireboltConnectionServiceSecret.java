@@ -19,19 +19,16 @@ import java.net.URL;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Properties;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
 
-import static com.firebolt.jdbc.exception.ExceptionType.RESOURCE_NOT_FOUND;
-import static java.lang.String.format;
-
 public class FireboltConnectionServiceSecret extends FireboltConnection {
+
     private static final String PROTOCOL_VERSION = "2.1";
     private final FireboltGatewayUrlService fireboltGatewayUrlService;
-    private FireboltEngineService fireboltEngineService; // depends on infra version and is discovered during authentication
+    private FireboltEngineService fireboltEngineService;
 
     FireboltConnectionServiceSecret(@NonNull String url,
                                     Properties connectionSettings,
@@ -53,6 +50,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
         super(url, connectionSettings, PROTOCOL_VERSION, parserVersion);
         OkHttpClient httpClient = getHttpClient(loginProperties);
         this.fireboltGatewayUrlService = new FireboltGatewayUrlService(createFireboltAccountRetriever(httpClient, GatewayUrlResponse.class));
+        this.fireboltEngineService = new FireboltEngineVersion2Service(this);
         connect();
     }
 
@@ -64,7 +62,6 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
     protected void authenticate() throws SQLException {
         String accessToken = getAccessToken(loginProperties).orElse("");
         sessionProperties = getSessionPropertiesForSystemEngine(accessToken, loginProperties.getAccount());
-        assertDatabaseExisting(loginProperties.getDatabase());
         if (!loginProperties.isSystemEngine()) {
             sessionProperties = getSessionPropertiesForNonSystemEngine();
         }
@@ -109,7 +106,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
 
     private FireboltProperties getSessionPropertiesForNonSystemEngine() throws SQLException {
         sessionProperties = sessionProperties.toBuilder().engine(loginProperties.getEngine()).build();
-        Engine engine = getFireboltEngineService().getEngine(loginProperties);
+        Engine engine = fireboltEngineService.getEngine(loginProperties);
         // update Firebolt properties. If we are here there are no contradictions between discovered and supplied parameters (db or engine): all validations are done in getEngine()
         return loginProperties.toBuilder()
                 .host(engine.getEndpoint()) // was not know until this point
@@ -121,15 +118,8 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
                 .build();
     }
 
-    private void assertDatabaseExisting(String database) throws SQLException {
-        if (database != null && !getFireboltEngineService().doesDatabaseExist(database)) {
-            throw new FireboltException(format("Database %s does not exist", database), RESOURCE_NOT_FOUND);
-        }
-    }
-
     private FireboltProperties getSessionPropertiesForSystemEngine(String accessToken, String accountName) throws SQLException {
         String systemEngineEndpoint = fireboltGatewayUrlService.getUrl(accessToken, accountName);
-        infraVersion = 2;
         URL systemEngienUrl = UrlUtil.createUrl(systemEngineEndpoint);
         Map<String, String> systemEngineUrlUrlParams = UrlUtil.getQueryParameters(systemEngienUrl);
         for (Entry<String, String> e : systemEngineUrlUrlParams.entrySet()) {
@@ -141,17 +131,6 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
                 .compress(false)
                 .host(systemEngienUrl.getHost())
                 .build();
-    }
-
-
-
-
-    private FireboltEngineService getFireboltEngineService() throws SQLException {
-        if (fireboltEngineService == null) {
-            int currentInfraVersion = Optional.ofNullable(loginProperties.getAdditionalProperties().get("infraVersion")).map(Integer::parseInt).orElse(infraVersion);
-            fireboltEngineService = currentInfraVersion >= 2 ? new FireboltEngineVersion2Service(this) : new FireboltEngineInformationSchemaService(this);
-        }
-        return fireboltEngineService;
     }
 
     @Override
@@ -172,6 +151,11 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
                 return new ServiceAccountAuthenticationRequest(username, password, environment);
             }
         };
+    }
+
+    @Override
+    public int getInfraVersion() {
+        return 2;
     }
 
 }

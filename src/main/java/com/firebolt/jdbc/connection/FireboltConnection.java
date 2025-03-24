@@ -81,7 +81,6 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	protected FireboltProperties sessionProperties;
 	private int networkTimeout;
 	private final String protocolVersion;
-	protected int infraVersion = 1;
 	private DatabaseMetaData databaseMetaData;
 
 	//Properties that are used at the beginning of the connection for authentication
@@ -150,6 +149,11 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 		log.debug("Connection opened");
 	}
+
+	/**
+	 * Returns the version of the firebolt backend the connection is established to
+	 */
+	public abstract int getInfraVersion();
 
 	protected abstract void authenticate() throws SQLException;
 
@@ -672,10 +676,6 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	public String getProtocolVersion() {
 		return protocolVersion;
-	}
-
-	public int getInfraVersion() {
-		return infraVersion;
 	}
 
 	public void register(CacheListener listener) {

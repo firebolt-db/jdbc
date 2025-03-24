@@ -55,14 +55,6 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
     }
 
     @Test
-    void notExistingDb() throws SQLException {
-        connectionProperties.put("database", "my_db");
-        when(fireboltGatewayUrlService.getUrl(any(), any())).thenReturn("http://my_endpoint");
-        when(fireboltEngineService.doesDatabaseExist("my_db")).thenReturn(false);
-        assertEquals("Database my_db does not exist", assertThrows(FireboltException.class, () -> createConnection("jdbc:firebolt:?env=dev&account=dev", connectionProperties)).getMessage());
-    }
-
-    @Test
     void noAccount() {
         assertEquals("Cannot connect: account is missing", assertThrows(FireboltException.class, () -> createConnection("jdbc:firebolt:db", connectionProperties)).getMessage());
     }
