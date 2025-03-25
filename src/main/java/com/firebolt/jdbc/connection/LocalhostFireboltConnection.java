@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
@@ -16,20 +17,21 @@ import org.apache.commons.lang3.StringUtils;
 /**
  * A Connection to firebolt that is using localhost as the url of the firebolt server. It will talk to a firebolt 2.0 server.
  */
-public class LocalhostFireboltConnectionServiceSecret extends FireboltConnectionServiceSecret {
+public class LocalhostFireboltConnection extends FireboltConnectionServiceSecret {
 
-    LocalhostFireboltConnectionServiceSecret(@NonNull String url, Properties connectionSettings, ParserVersion parserVersion) throws SQLException {
+    @ExcludeFromJacocoGeneratedReport
+    LocalhostFireboltConnection(@NonNull String url, Properties connectionSettings, ParserVersion parserVersion) throws SQLException {
         super(url, connectionSettings, parserVersion);
     }
 
     // visible for testing
-    LocalhostFireboltConnectionServiceSecret(@NonNull String url,
-                                    Properties connectionSettings,
-                                    FireboltAuthenticationService fireboltAuthenticationService,
-                                    FireboltGatewayUrlService fireboltGatewayUrlService,
-                                    FireboltStatementService fireboltStatementService,
-                                    FireboltEngineInformationSchemaService fireboltEngineService,
-                                    ParserVersion parserVersion) throws SQLException {
+    LocalhostFireboltConnection(@NonNull String url,
+                                Properties connectionSettings,
+                                FireboltAuthenticationService fireboltAuthenticationService,
+                                FireboltGatewayUrlService fireboltGatewayUrlService,
+                                FireboltStatementService fireboltStatementService,
+                                FireboltEngineInformationSchemaService fireboltEngineService,
+                                ParserVersion parserVersion) throws SQLException {
         super(url, connectionSettings, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, parserVersion);
     }
 

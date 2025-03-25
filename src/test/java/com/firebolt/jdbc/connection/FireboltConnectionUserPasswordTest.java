@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.type.ParserVersion;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
@@ -26,6 +27,20 @@ class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
 
     public FireboltConnectionUserPasswordTest() {
         super("jdbc:firebolt://api.dev.firebolt.io/db");
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "'','validPassword','','Cannot connect: username is missing'",
+            "'validUser@email.com','','','Cannot connect: password is missing'",
+            "'validUser@email.com','validPassword','some access token','Ambiguity: Both access token and username/password are provided'"
+    })
+    void shouldNotConnectWhenRequiredParametersAreMissing(String username, String password, String accessToken, String expectedErrorMessage) {
+        connectionProperties.put("client_id", username);
+        connectionProperties.put("client_secret", password);
+        connectionProperties.put("access_token", accessToken);
+        FireboltException exception = assertThrows(FireboltException.class, () -> createConnection(SYSTEM_ENGINE_URL, connectionProperties));
+        assertEquals(expectedErrorMessage, exception.getMessage());
     }
 
     @Test
