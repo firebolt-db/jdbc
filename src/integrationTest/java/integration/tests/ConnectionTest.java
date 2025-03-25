@@ -237,11 +237,7 @@ class ConnectionTest extends IntegrationTest {
                 }
                 // sleep for 10s to give QH time to get populated and avoid flakiness
                 // it sometime takes that long
-                try {
-                    Thread.sleep(10000);
-                } catch (InterruptedException e) {
-                    // ignore
-                }
+                sleepForMillis(10000);
 
                 // Validate we've only executed one insert
                 String qhQuery = "SELECT count(*) from information_schema.engine_query_history WHERE status='ENDED_SUCCESSFULLY' " +
