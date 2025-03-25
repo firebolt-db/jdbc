@@ -160,17 +160,10 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	protected abstract void validateConnectionParameters() throws SQLException;
 
 	/**
-	 * By default, the connection caching is supported only on the clientId/clientSecret connections.
-	 * @return
+	 * If the connection information can be cached for subsequent reuse, then the specific connection should provide implementation
+	 * @return - true if the connection supports caching. False otherwise
 	 */
-	protected boolean isConnectionCachingEnabled() {
-		// check to see if the connection was set with a connection caching
-		if (loginProperties.isConnectionCachingEnabled()) {
-			log.warn("The cache_connection parameter is only supported with Firebolt 2.0. Your connections will not be cached");
-		}
-
-		return false;
-	}
+	protected abstract boolean isConnectionCachingEnabled();
 
 	public void removeExpiredTokens() throws SQLException {
 		fireboltAuthenticationService.removeConnectionTokens(httpConnectionUrl, loginProperties);

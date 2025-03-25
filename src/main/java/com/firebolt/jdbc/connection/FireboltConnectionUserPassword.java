@@ -86,6 +86,16 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
     }
 
     @Override
+    protected boolean isConnectionCachingEnabled() {
+        // check to see if the connection was set with a connection caching
+        if (loginProperties.isConnectionCachingEnabled()) {
+            log.warn("The cache_connection parameter is only supported with Firebolt 2.0. Your connections will not be cached");
+        }
+
+        return false;
+    }
+
+    @Override
     protected FireboltProperties extractFireboltProperties(String jdbcUri, Properties connectionProperties) {
         FireboltProperties properties = super.extractFireboltProperties(jdbcUri, connectionProperties);
         boolean systemEngine = SYSTEM_ENGINE_NAME.equals(properties.getEngine());

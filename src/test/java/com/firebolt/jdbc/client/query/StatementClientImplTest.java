@@ -424,6 +424,11 @@ class StatementClientImplTest {
 				// all params are valid
 			}
 
+			@Override
+			protected boolean isConnectionCachingEnabled() {
+				return false;
+			}
+
 		};
 		connection.createStatement().executeUpdate(useCommand);
 		return connection;
