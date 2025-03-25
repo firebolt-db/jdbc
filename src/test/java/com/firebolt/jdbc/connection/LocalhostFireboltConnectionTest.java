@@ -1,6 +1,7 @@
 package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
@@ -28,9 +29,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class LocalhostFireboltConnectionServiceTest  {
+class LocalhostFireboltConnectionTest {
 
     private static final String URL = "jdbc:firebolt:db?env=dev&engine=eng&account=dev";
+    private static final String URL_WITHOUT_ACCOUNT = "jdbc:firebolt:db?env=dev&engine=eng";
     private static final String LOCAL_URL = "jdbc:firebolt:local_dev_db?account=dev&ssl=false&max_query_size=10000000&mask_internal_errors=0&host=localhost";
 
     @Mock
@@ -69,6 +71,17 @@ class LocalhostFireboltConnectionServiceTest  {
             assertEquals(expectedAccessToken, fireboltConnection.getAccessToken().orElse(null));
             Mockito.verifyNoMoreInteractions(fireboltAuthenticationService);
         }
+    }
+
+    @Test
+    void cannotConnectToLocalHostIfAccountIsMissing() {
+        Properties propsWithToken = new Properties();
+        propsWithToken.setProperty(ACCESS_TOKEN.getKey(), "the_access_token");
+
+        FireboltException exception = assertThrows(FireboltException.class, () -> createConnection(URL_WITHOUT_ACCOUNT, propsWithToken));
+        assertEquals("Cannot connect: account is missing", exception.getMessage());
+
+        Mockito.verifyNoMoreInteractions(fireboltAuthenticationService);
     }
 
     @Test
@@ -147,7 +160,7 @@ class LocalhostFireboltConnectionServiceTest  {
     }
 
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
-        return new LocalhostFireboltConnectionServiceSecret(url, props, fireboltAuthenticationService, fireboltGatewayUrlService,
+        return new LocalhostFireboltConnection(url, props, fireboltAuthenticationService, fireboltGatewayUrlService,
                 fireboltStatementService, fireboltEngineService, ParserVersion.CURRENT);
 
     }

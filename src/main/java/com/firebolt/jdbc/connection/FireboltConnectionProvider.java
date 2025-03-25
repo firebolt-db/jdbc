@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.util.PropertyUtil;
@@ -35,14 +36,14 @@ public class FireboltConnectionProvider {
             case 1:
                 return fireboltConnectionProviderWrapper.createFireboltConnectionUsernamePassword(url, connectionSettings, ParserVersion.LEGACY);
             case 2:
-                return connectToLocalHost(url, connectionSettings) ?
+                return isLocalhostConnection(url, connectionSettings) ?
                         fireboltConnectionProviderWrapper.createLocalhostFireboltConnectionServiceSecret(url, connectionSettings, ParserVersion.CURRENT) :
                         fireboltConnectionProviderWrapper.createFireboltConnectionServiceSecret(url, connectionSettings, ParserVersion.CURRENT);
             default: throw new IllegalArgumentException(format("Cannot distinguish version from url %s", url));
         }
     }
 
-    private boolean connectToLocalHost(String jdbcUri, Properties connectionProperties) {
+    private boolean isLocalhostConnection(String jdbcUri, Properties connectionProperties) {
         FireboltProperties fireboltProperties = new FireboltProperties(new Properties[] {UrlUtil.extractProperties(jdbcUri), connectionProperties});
         return PropertyUtil.isLocalDb(fireboltProperties);
     }
@@ -69,6 +70,7 @@ public class FireboltConnectionProvider {
     /**
      * This is just a wrapper classes for the connection instance creation so we can test them without requiring an actual firebolt 1.0 or firebolt 2.0 backend.
      */
+    @ExcludeFromJacocoGeneratedReport
     static class FireboltConnectionProviderWrapper {
 
         public FireboltConnectionUserPassword createFireboltConnectionUsernamePassword(String url, Properties connectionSettings, ParserVersion parserVersion) throws SQLException {
@@ -79,8 +81,8 @@ public class FireboltConnectionProvider {
             return new FireboltConnectionServiceSecret(url, connectionSettings, parserVersion);
         }
 
-        public LocalhostFireboltConnectionServiceSecret createLocalhostFireboltConnectionServiceSecret(String url, Properties connectionSettings, ParserVersion parserVersion) throws SQLException {
-            return new LocalhostFireboltConnectionServiceSecret(url, connectionSettings, parserVersion);
+        public LocalhostFireboltConnection createLocalhostFireboltConnectionServiceSecret(String url, Properties connectionSettings, ParserVersion parserVersion) throws SQLException {
+            return new LocalhostFireboltConnection(url, connectionSettings, parserVersion);
         }
     }
 

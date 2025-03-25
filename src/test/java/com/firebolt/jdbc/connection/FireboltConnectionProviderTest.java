@@ -35,7 +35,7 @@ class FireboltConnectionProviderTest {
     private FireboltConnectionServiceSecret mockFireboltConnectionServiceSecret;
 
     @Mock
-    private LocalhostFireboltConnectionServiceSecret mockLocalhostFireboltConnectionServiceSecret;
+    private LocalhostFireboltConnection mockLocalhostFireboltConnection;
 
     private FireboltConnectionProvider fireboltConnectionProvider;
 
@@ -110,10 +110,10 @@ class FireboltConnectionProviderTest {
     @ParameterizedTest
     @MethodSource("v2LocalhostJdbcConnection")
     void canDetectLocalhostV2Connection(String url, Properties connectionProperties) throws SQLException {
-        when(mockFireboltConnectionProviderWrapper.createLocalhostFireboltConnectionServiceSecret(url, connectionProperties, ParserVersion.CURRENT)).thenReturn(mockLocalhostFireboltConnectionServiceSecret);
+        when(mockFireboltConnectionProviderWrapper.createLocalhostFireboltConnectionServiceSecret(url, connectionProperties, ParserVersion.CURRENT)).thenReturn(mockLocalhostFireboltConnection);
         FireboltConnection fireboltConnection = fireboltConnectionProvider.create(url, connectionProperties);
 
-        assertSame(mockLocalhostFireboltConnectionServiceSecret, fireboltConnection);
+        assertSame(mockLocalhostFireboltConnection, fireboltConnection);
 
         verify(mockFireboltConnectionProviderWrapper, never()).createFireboltConnectionServiceSecret(anyString(), any(Properties.class), any(ParserVersion.class));
         verify(mockFireboltConnectionProviderWrapper, never()).createFireboltConnectionUsernamePassword(anyString(), any(Properties.class), any(ParserVersion.class));

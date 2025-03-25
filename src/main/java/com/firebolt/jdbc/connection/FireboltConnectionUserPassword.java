@@ -62,20 +62,20 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
 
     @Override
     protected void validateConnectionParameters() throws SQLException {
-        String clientId = loginProperties.getPrincipal();
-        if (StringUtils.isBlank(clientId)) {
-            throw new FireboltException("Cannot connect: clientId is missing");
+        String username = loginProperties.getPrincipal();
+        if (StringUtils.isBlank(username)) {
+            throw new FireboltException("Cannot connect: username is missing");
         }
 
-        String clientSecret = loginProperties.getSecret();
-        if (StringUtils.isBlank(clientSecret)) {
-            throw new FireboltException("Cannot connect: clientSecret is missing");
+        String password = loginProperties.getSecret();
+        if (StringUtils.isBlank(password)) {
+            throw new FireboltException("Cannot connect: password is missing");
         }
 
         // make sure the access token is not passed in
         String accessToken = loginProperties.getAccessToken();
         if (StringUtils.isNotBlank(accessToken)) {
-            throw new FireboltException("Ambiguity: Both access token and client ID/secret are supplied");
+            throw new FireboltException("Ambiguity: Both access token and username/password are provided");
         }
 
         // check to see if the connection was set with a connection caching
