@@ -48,9 +48,9 @@ public class FireboltEngineVersion2Service implements FireboltEngineService {
     public Engine getEngine(FireboltProperties properties) throws SQLException {
         try (Statement statement = fireboltConnection.createStatement()) {
             if (properties.getDatabase() != null) {
-                verifyDatabaseExists(statement, properties.getHost(), properties.getDatabase());
+                getAndSetDatabaseProperties(statement, properties.getHost(), properties.getDatabase());
             }
-            verifyEngineExists(statement, properties.getHost(), properties.getEngine());
+            getAndSetEngineProperties(statement, properties.getHost(), properties.getEngine());
         }
         // now session properties are updated with new database and engine
         FireboltProperties sessionProperties = fireboltConnection.getSessionProperties();
@@ -66,7 +66,7 @@ public class FireboltEngineVersion2Service implements FireboltEngineService {
      * @param host - the system engine url
      * @param databaseName - the name of the database to check
      */
-    private void verifyDatabaseExists(Statement statement, String host, String databaseName) throws SQLException {
+    private void getAndSetDatabaseProperties(Statement statement, String host, String databaseName) throws SQLException {
         synchronized (CACHED_VERIFIED_DATABASES) {
 
             if (CACHED_VERIFIED_DATABASES.containsKey(asCacheKey(host, databaseName))) {
@@ -100,7 +100,7 @@ public class FireboltEngineVersion2Service implements FireboltEngineService {
      * @param engineName - the name of the engine to check
 
      */
-    private void verifyEngineExists(Statement statement, String host, String engineName) throws SQLException {
+    private void getAndSetEngineProperties(Statement statement, String host, String engineName) throws SQLException {
         synchronized (CACHED_VERIFIED_ENGINES) {
             if (CACHED_VERIFIED_ENGINES.containsKey(asCacheKey(host, engineName))) {
                 log.debug("Using cache verification of engine");
