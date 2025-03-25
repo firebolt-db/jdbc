@@ -11,6 +11,7 @@ import java.sql.Statement;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.CustomLog;
@@ -49,6 +50,15 @@ public abstract class IntegrationTest {
 
 	protected Connection createConnection(String engine) throws SQLException {
 		return createConnection(engine, new HashMap<>());
+	}
+
+	protected Connection createConnection(String engine, String database) throws SQLException {
+		ConnectionInfo current = integration.ConnectionInfo.getInstance();
+		ConnectionInfo updated = new ConnectionInfo(current.getPrincipal(), current.getSecret(),
+				current.getEnv(), database, current.getAccount(), engine, current.getApi(), Collections.emptyMap());
+		return DriverManager.getConnection(updated.toJdbcUrl(),
+				integration.ConnectionInfo.getInstance().getPrincipal(),
+				integration.ConnectionInfo.getInstance().getSecret());
 	}
 
 	protected Connection createConnection(String engine, Map<String, String> extra) throws SQLException {

@@ -1,12 +1,12 @@
 package com.firebolt.jdbc.client.query;
 
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.statement.StatementInfoWrapper;
-
 import java.io.InputStream;
 import java.sql.SQLException;
 
-public interface StatementClient {
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.statement.StatementInfoWrapper;
+
+public interface  StatementClient {
 
 	/**
 	 * Post SQL statement
