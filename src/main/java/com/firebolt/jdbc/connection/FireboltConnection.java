@@ -159,6 +159,12 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	 */
 	protected abstract void validateConnectionParameters() throws SQLException;
 
+	/**
+	 * If the connection information can be cached for subsequent reuse, then the specific connection should provide implementation
+	 * @return - true if the connection supports caching. False otherwise
+	 */
+	protected abstract boolean isConnectionCachingEnabled();
+
 	public void removeExpiredTokens() throws SQLException {
 		fireboltAuthenticationService.removeConnectionTokens(httpConnectionUrl, loginProperties);
 	}

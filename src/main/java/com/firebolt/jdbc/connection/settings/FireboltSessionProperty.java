@@ -1,7 +1,5 @@
 package com.firebolt.jdbc.connection.settings;
 
-import lombok.Getter;
-
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
@@ -12,6 +10,7 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Getter;
 
 import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static java.util.stream.Collectors.toMap;
@@ -72,6 +71,11 @@ public enum FireboltSessionProperty {
 			FireboltProperties::isValidateOnSystemEngine),
 	MERGE_PREPARED_STATEMENT_BATCHES("merge_prepared_statement_batches", false, Boolean.class,
 			"Whether to send prepared statement batches as a single statement. By default, they are sent one by one.", FireboltProperties::isMergePreparedStatementBatches),
+	/**
+	 * When the connection is cached the subsequent request to same url will reuse the same jwt token, system engine url and will not validate if engine and database exist if these were
+	 * validate already by the connection that was cached.
+	 */
+	CACHE_CONNECTION("cache_connection", true, Boolean.class, "Available only for Firebolt 2.0 connections. If true, the connection will be cached for 1 hour.", FireboltProperties::isConnectionCachingEnabled),
 	// We keep all the deprecated properties to ensure backward compatibility - but
 	// they do not have any effect.
 	@Deprecated

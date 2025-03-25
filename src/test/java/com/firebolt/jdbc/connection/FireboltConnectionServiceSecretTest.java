@@ -22,6 +22,7 @@ import static java.lang.String.format;
 import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -173,6 +174,42 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         FireboltException exception = assertThrows(FireboltException.class, () -> createConnection(url, propsWithToken));
         assertEquals("Ambiguity: Both access token and client ID/secret are supplied", exception.getMessage());
         Mockito.verifyNoMoreInteractions(fireboltAuthenticationService);
+    }
+
+    @Test
+    void willDefaultToConnectionToBeCachedWhenNoConnectionParamIsPassedInUrl() throws SQLException {
+        try (FireboltConnection connection = createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
+            assertTrue(connection.isConnectionCachingEnabled());
+        }
+    }
+
+    @Test
+    void willUseConnectionCacheFromConnectionParametersIfPassedIn() throws SQLException {
+        // not present in the url, but have it on the connection properties
+        connectionProperties.put("cache_connection", "false");
+        try (FireboltConnection connection = createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
+            assertFalse(connection.isConnectionCachingEnabled());
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "true, true",
+            "false, false" })
+    void willUseTheConnectionParamToDetectIfCachingIsEnabledOrNot(String actualValue, String expectedValue) throws SQLException {
+        // append to the system engine url the cache parameter
+        String urlWithCacheConnection = SYSTEM_ENGINE_URL + "&cache_connection=" + actualValue;
+        try (FireboltConnection connection = createConnection(urlWithCacheConnection, connectionProperties)) {
+            assertEquals(Boolean.parseBoolean(expectedValue), connection.isConnectionCachingEnabled());
+        }
+    }
+
+    @Test
+    void willSetConnectionCacheAsFalseForAnyValueNotBooleanTrue() throws SQLException {
+        String urlWithWrongCacheConnectionValue = SYSTEM_ENGINE_URL + "&cache_connection=not_valid_boolean";
+        try (FireboltConnection connection = createConnection(urlWithWrongCacheConnectionValue, connectionProperties)) {
+            assertFalse(connection.isConnectionCachingEnabled());
+        }
     }
 
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
