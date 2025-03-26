@@ -90,7 +90,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	@Getter
 	public final ParserVersion parserVersion;
 
-	protected FireboltConnection(@NonNull String url,
+    protected FireboltConnection(@NonNull String url,
 								 Properties connectionSettings,
 								 FireboltAuthenticationService fireboltAuthenticationService,
 							  	 FireboltStatementService fireboltStatementService,
@@ -685,5 +685,39 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	@Override
 	public void cleanup() {
 		cacheListeners.forEach(CacheListener::cleanup);
+	}
+
+	public boolean isAsyncQueryRunning(String asyncQueryToken) throws SQLException {
+        return getAsyncQueryStatus(asyncQueryToken).equals("RUNNING");
+	}
+
+	public boolean isAsyncQuerySuccessful(String asyncQueryToken) throws SQLException {
+        return getAsyncQueryStatus(asyncQueryToken).equals("ENDED_SUCCESSFULLY");
+	}
+
+	public boolean cancelAsyncQuery(String asyncQueryToken) throws SQLException {
+		if (asyncQueryToken == null || asyncQueryToken.isEmpty()) {
+			throw new FireboltException("Async query token cannot be null or empty");
+		}
+		String asyncQueryId;
+		try (Statement statement = createStatement();
+			 ResultSet rs = statement.executeQuery("CALL fb_GetAsyncStatus('" + asyncQueryToken + "')")) {
+			rs.next();
+            asyncQueryId =  rs.getString("query_id");
+			statement.execute("CANCEL QUERY WHERE query_id = '" + asyncQueryId + "'");
+		} catch (SQLException ex) {
+			throw new FireboltException("Could not check the status of the async query", ex);
+		}
+		return true;
+	}
+
+	private String getAsyncQueryStatus(String asyncQueryToken) throws SQLException {
+		try (Statement statement = createStatement();
+			 ResultSet rs = statement.executeQuery("CALL fb_GetAsyncStatus('" + asyncQueryToken + "')")) {
+			rs.next();
+            return rs.getString("status");
+		} catch (SQLException ex) {
+			throw new FireboltException("Could not check the status of the async query", ex);
+		}
 	}
 }

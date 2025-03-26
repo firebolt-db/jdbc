@@ -26,7 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 
 public class FireboltConnectionServiceSecret extends FireboltConnection {
 
-    private static final String PROTOCOL_VERSION = "2.1";
+    private static final String PROTOCOL_VERSION = "2.3";
     private final FireboltGatewayUrlService fireboltGatewayUrlService;
     private FireboltEngineService fireboltEngineService;
 
