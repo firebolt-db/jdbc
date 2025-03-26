@@ -39,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -62,6 +63,7 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE;
 import static java.sql.ResultSet.TYPE_SCROLL_SENSITIVE;
 import static java.util.stream.Collectors.toList;
+import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -727,6 +729,83 @@ abstract class FireboltConnectionTest {
 		connectionProperties.put("merge_prepared_statement_batches", "true");
 		try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
 			assertEquals("true", fireboltConnection.getClientInfo().get("merge_prepared_statement_batches"));
+		}
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			"RUNNING,true",
+			"ENDED_SUCCESSFULLY,false",
+			"FAILED,false",
+			"CANCELLED,false"})
+	void isServerSideAsyncQueryRunning(String status, boolean result) throws SQLException {
+        try (ResultSet resultSet = mock(ResultSet.class)) {
+			when(fireboltStatementService.execute(any(),any(),any())).thenReturn(Optional.of(resultSet));
+			when(resultSet.getString("status")).thenReturn(status);
+			try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
+				assertEquals(result, fireboltConnection.isAsyncQueryRunning("token"));
+            } catch (SQLException e) {
+				throw new RuntimeException(e);
+			}
+        }
+    }
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			"RUNNING,false",
+			"ENDED_SUCCESSFULLY,true",
+			"FAILED,false",
+			"CANCELLED,false"})
+	void isServerSideAsyncQuerySuccessful(String status, boolean result) throws SQLException {
+        try (ResultSet resultSet = mock(ResultSet.class)) {
+			when(fireboltStatementService.execute(any(),any(),any())).thenReturn(Optional.of(resultSet));
+			when(resultSet.getString("status")).thenReturn(status);
+			try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
+				assertEquals(result, fireboltConnection.isAsyncQuerySuccessful("token"));
+            } catch (SQLException e) {
+				throw new RuntimeException(e);
+			}
+        }
+    }
+
+	@Test
+	void shouldCancelAsyncQuery() {
+		try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties);
+			 ResultSet resultSet = mock(ResultSet.class)) {
+			when(fireboltStatementService.execute(
+					argThat(statementInfoWrapper -> statementInfoWrapper != null && statementInfoWrapper.getSql().equals("CALL fb_GetAsyncStatus('token')")),
+					any(),
+					any())
+			).thenReturn(Optional.of(resultSet));
+			when(fireboltStatementService.execute(
+					argThat(statementInfoWrapper -> statementInfoWrapper != null && statementInfoWrapper.getSql().equals("CANCEL QUERY WHERE query_id = 'id'")),
+					any(),
+					any())
+			).thenReturn(Optional.empty());
+			when(resultSet.getString("query_id")).thenReturn("id");
+			fireboltConnection.cancelAsyncQuery("token");
+			verify(fireboltStatementService).execute(
+					argThat(statementInfoWrapper -> statementInfoWrapper != null && statementInfoWrapper.getSql().equals("CALL fb_GetAsyncStatus('token')")),
+					any(),
+					any()
+			);
+			verify(fireboltStatementService).execute(
+					argThat(statementInfoWrapper -> statementInfoWrapper != null && statementInfoWrapper.getSql().equals("CANCEL QUERY WHERE query_id = 'id'")),
+					any(),
+					any()
+			);
+		} catch (SQLException e) {
+			fail();
+		}
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {",", "''"})
+	void shouldFailCancelAsyncQueryWhenTokenIsNull(String token) {
+		try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
+			assertThrows(FireboltException.class, () -> fireboltConnection.cancelAsyncQuery(token), "Async query token cannot be null or empty");
+		} catch (SQLException e) {
+			fail();
 		}
 	}
 

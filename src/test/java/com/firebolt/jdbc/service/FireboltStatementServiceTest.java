@@ -19,15 +19,14 @@ import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.sql.SQLException;
 
 import static java.util.Optional.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltStatementServiceTest {
@@ -46,7 +45,7 @@ class FireboltStatementServiceTest {
 			FireboltStatement statement = mock(FireboltStatement.class);
 			when(statement.getQueryTimeout()).thenReturn(10);
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statement);
-			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10);
+			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, false);
 			assertEquals(1, mocked.constructed().size());
 		}
 	}
@@ -61,7 +60,7 @@ class FireboltStatementServiceTest {
 			when(statement.getQueryTimeout()).thenReturn(-1);
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statement);
 			assertEquals(1, mocked.constructed().size());
-			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, -1);
+			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, -1, false);
 		}
 	}
 
@@ -92,7 +91,7 @@ class FireboltStatementServiceTest {
 			when(statement.getQueryTimeout()).thenReturn(10);
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statement);
 			assertEquals(1, mocked.constructed().size());
-			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, true, 10);
+			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, true, 10, false);
 		}
 	}
 
@@ -106,7 +105,65 @@ class FireboltStatementServiceTest {
 		FireboltStatement statement = mock(FireboltStatement.class);
 		when(statement.getQueryTimeout()).thenReturn(-1);
 		assertEquals(empty(), fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statement));
-		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, -1);
+		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, -1, false);
+	}
+
+	@Test
+	void shouldExecuteQueryAsync() throws SQLException {
+		StatementInfoWrapper statementInfoWrapper = StatementUtil
+				.parseToStatementInfoWrappers("INSERT INTO ltv SELECT * FROM ltv_external").get(0);
+		FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
+
+		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
+		FireboltStatement statement = mock(FireboltStatement.class);
+		when(statement.getQueryTimeout()).thenReturn(10);
+		String jsonResult = "{\"token\":\"123\"}";
+		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true)).thenReturn(getMockInputStream(jsonResult));
+		String asyncToken = fireboltStatementService.executeAsyncStatement(statementInfoWrapper, fireboltProperties, statement);
+		assertEquals("123", asyncToken);
+		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true);
+	}
+
+	@Test
+	void shouldExecuteQueryAsyncWithEmptyResponse() throws SQLException {
+		StatementInfoWrapper statementInfoWrapper = StatementUtil
+				.parseToStatementInfoWrappers("INSERT INTO ltv SELECT * FROM ltv_external").get(0);
+		FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
+
+		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
+		FireboltStatement statement = mock(FireboltStatement.class);
+		when(statement.getQueryTimeout()).thenReturn(10);
+		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true)).thenReturn(getMockInputStream(""));
+		assertThrows(FireboltException.class, () -> fireboltStatementService.executeAsyncStatement(statementInfoWrapper, fireboltProperties, statement));
+		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true);
+	}
+
+	@Test
+	void shouldExecuteQueryAsyncWithNullResponse() throws SQLException {
+		StatementInfoWrapper statementInfoWrapper = StatementUtil
+				.parseToStatementInfoWrappers("INSERT INTO ltv SELECT * FROM ltv_external").get(0);
+		FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
+
+		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
+		FireboltStatement statement = mock(FireboltStatement.class);
+		when(statement.getQueryTimeout()).thenReturn(10);
+		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true)).thenReturn(null);
+		assertThrows(FireboltException.class, () -> fireboltStatementService.executeAsyncStatement(statementInfoWrapper, fireboltProperties, statement));
+		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true);
+	}
+
+	@Test
+	void shouldExecuteQueryAsyncWithIOExceptionFromInputStream() throws SQLException {
+		StatementInfoWrapper statementInfoWrapper = StatementUtil
+				.parseToStatementInfoWrappers("INSERT INTO ltv SELECT * FROM ltv_external").get(0);
+		FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
+
+		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
+		FireboltStatement statement = mock(FireboltStatement.class);
+		when(statement.getQueryTimeout()).thenReturn(10);
+		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true)).thenReturn(getMockInputStream(""));
+		assertThrows(FireboltException.class, () -> fireboltStatementService.executeAsyncStatement(statementInfoWrapper, fireboltProperties, statement));
+		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true);
 	}
 
 	@Test
@@ -125,6 +182,10 @@ class FireboltStatementServiceTest {
 	}
 
 	private FireboltProperties fireboltProperties(String host, boolean systemEngine) {
-		return FireboltProperties.builder().database("db").host(host).ssl(true).compress(false).systemEngine(systemEngine).build();
+		return FireboltProperties.builder().database("db").host(host).ssl(true).compress(false).bufferSize(65536).systemEngine(systemEngine).build();
+	}
+
+	private InputStream getMockInputStream(String jsonResult) {
+		return new ByteArrayInputStream(jsonResult.getBytes());
 	}
 }
