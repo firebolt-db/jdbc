@@ -169,6 +169,12 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	 */
 	protected abstract boolean isConnectionCachingEnabled();
 
+	/**
+	 * A connection should implement this method if it needs to set additional details on the user agent header for the calls sent to Firebolt backend
+	 * @return
+	 */
+	public abstract Optional<String> getConnectionUserAgentHeader();
+
 	public void removeExpiredTokens() throws SQLException {
 		fireboltAuthenticationService.removeConnectionTokens(httpConnectionUrl, loginProperties);
 	}

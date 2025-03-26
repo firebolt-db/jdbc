@@ -26,9 +26,9 @@ public class CacheServiceProvider {
     }
 
     public CacheService getCacheService(CacheType cacheType) throws IllegalArgumentException {
-        if (CacheType.IN_MEMORY == cacheType) {
+        if (CacheType.MEMORY == cacheType) {
             return inMemoryCacheService;
-        } else if (CacheType.ON_DISK == cacheType) {
+        } else if (CacheType.DISK == cacheType) {
             return onDiskCacheService;
         }
 

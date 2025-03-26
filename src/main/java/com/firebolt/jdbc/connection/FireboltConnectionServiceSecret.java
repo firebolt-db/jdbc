@@ -26,7 +26,6 @@ import java.util.Properties;
 import lombok.CustomLog;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 
 @CustomLog
@@ -56,33 +55,27 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
                                     FireboltStatementService fireboltStatementService,
                                     FireboltEngineVersion2Service fireboltEngineVersion2Service,
                                     ParserVersion parserVersion,
+                                    ConnectionIdGenerator connectionIdGenerator,
                                     CacheService cacheService) throws SQLException {
         super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION,
                 parserVersion);
         this.fireboltGatewayUrlService = fireboltGatewayUrlService;
         this.fireboltEngineVersion2Service = fireboltEngineVersion2Service;
-        this.connectionId = generateUniqueConnectionId();
+        this.connectionId = connectionIdGenerator.generateId();
         this.cacheService = cacheService;
         connect();
     }
 
     @ExcludeFromJacocoGeneratedReport
-    FireboltConnectionServiceSecret(@NonNull String url, Properties connectionSettings, ParserVersion parserVersion, CacheService cacheService)
+    FireboltConnectionServiceSecret(@NonNull String url, Properties connectionSettings, ParserVersion parserVersion, ConnectionIdGenerator connectionIdGenerator, CacheService cacheService)
             throws SQLException {
         super(url, connectionSettings, PROTOCOL_VERSION, parserVersion);
         OkHttpClient httpClient = getHttpClient(loginProperties);
         this.fireboltGatewayUrlService = new FireboltGatewayUrlService(createFireboltAccountRetriever(httpClient, GatewayUrlResponse.class));
         this.fireboltEngineVersion2Service = new FireboltEngineVersion2Service(this);
         this.cacheService = cacheService;
-        this.connectionId = generateUniqueConnectionId();
+        this.connectionId = connectionIdGenerator.generateId();
         connect();
-    }
-
-    /**
-     * Generate a random 12 characters id
-     */
-    private String generateUniqueConnectionId() {
-        return RandomStringUtils.secure().nextAlphanumeric(12);
     }
 
     private <T> FireboltAccountRetriever<T> createFireboltAccountRetriever(OkHttpClient httpClient, Class<T> type) {
@@ -191,6 +184,23 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
     @Override
     protected boolean isConnectionCachingEnabled() {
         return Boolean.valueOf(loginProperties.isConnectionCachingEnabled());
+    }
+
+    @Override
+    public Optional<String> getConnectionUserAgentHeader() {
+        if (!isConnectionCachingEnabled()) {
+            return Optional.empty();
+        }
+
+        // connection is cached so add the connection info
+        StringBuilder additionalUserAgentHeaderValue = new StringBuilder("connId:").append(connectionId);
+
+        // if the current connectionId is not the same with connection cache, it means that the connection was cached
+        if (!connectionId.equals(connectionCache.getConnectionId())) {
+            additionalUserAgentHeaderValue.append(";cachedConnId:").append(connectionCache.getConnectionId()).append("-").append(connectionCache.getCacheSource());
+        }
+
+        return Optional.of(additionalUserAgentHeaderValue.toString());
     }
 
     protected CacheKey getCacheKey() {
