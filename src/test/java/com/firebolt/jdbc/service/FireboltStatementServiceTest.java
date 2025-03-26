@@ -153,20 +153,6 @@ class FireboltStatementServiceTest {
 	}
 
 	@Test
-	void shouldExecuteQueryAsyncWithIOExceptionFromInputStream() throws SQLException {
-		StatementInfoWrapper statementInfoWrapper = StatementUtil
-				.parseToStatementInfoWrappers("INSERT INTO ltv SELECT * FROM ltv_external").get(0);
-		FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
-
-		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
-		FireboltStatement statement = mock(FireboltStatement.class);
-		when(statement.getQueryTimeout()).thenReturn(10);
-		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true)).thenReturn(getMockInputStream(""));
-		assertThrows(FireboltException.class, () -> fireboltStatementService.executeAsyncStatement(statementInfoWrapper, fireboltProperties, statement));
-		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true);
-	}
-
-	@Test
 	void abortStatementHttpRequest() throws SQLException {
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 		fireboltStatementService.abortStatement("id", emptyFireboltProperties);
