@@ -24,7 +24,7 @@ public class LocalhostFireboltConnection extends FireboltConnectionServiceSecret
 
     @ExcludeFromJacocoGeneratedReport
     LocalhostFireboltConnection(@NonNull String url, Properties connectionSettings, ParserVersion parserVersion, CacheService cacheService) throws SQLException {
-        super(url, connectionSettings, parserVersion, cacheService);
+        super(url, connectionSettings, parserVersion, ConnectionIdGenerator.getInstance(), cacheService);
     }
 
     // visible for testing
@@ -35,8 +35,9 @@ public class LocalhostFireboltConnection extends FireboltConnectionServiceSecret
                                 FireboltStatementService fireboltStatementService,
                                 FireboltEngineVersion2Service fireboltEngineVersion2Service,
                                 ParserVersion parserVersion,
+                                ConnectionIdGenerator connectionIdGenerator,
                                 CacheService cacheService) throws SQLException {
-        super(url, connectionSettings, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineVersion2Service, parserVersion, cacheService);
+        super(url, connectionSettings, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineVersion2Service, parserVersion, connectionIdGenerator, cacheService);
     }
 
     @Override

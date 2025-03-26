@@ -82,13 +82,13 @@ public class FireboltConnectionProvider {
         public FireboltConnectionServiceSecret createFireboltConnectionServiceSecret(String url, Properties connectionSettings, ParserVersion parserVersion) throws SQLException {
             CacheServiceProvider cacheServiceProvider = CacheServiceProvider.getInstance();
             // the ON_DISK memory caching will be implemented after
-            return new FireboltConnectionServiceSecret(url, connectionSettings, parserVersion, cacheServiceProvider.getCacheService(CacheType.IN_MEMORY));
+            return new FireboltConnectionServiceSecret(url, connectionSettings, parserVersion, ConnectionIdGenerator.getInstance(), cacheServiceProvider.getCacheService(CacheType.MEMORY));
         }
 
         public LocalhostFireboltConnection createLocalhostFireboltConnectionServiceSecret(String url, Properties connectionSettings, ParserVersion parserVersion) throws SQLException {
             CacheServiceProvider cacheServiceProvider = CacheServiceProvider.getInstance();
             // only in memory caching for localhost connections
-            return new LocalhostFireboltConnection(url, connectionSettings, parserVersion, cacheServiceProvider.getCacheService(CacheType.IN_MEMORY));
+            return new LocalhostFireboltConnection(url, connectionSettings, parserVersion, cacheServiceProvider.getCacheService(CacheType.MEMORY));
         }
     }
 

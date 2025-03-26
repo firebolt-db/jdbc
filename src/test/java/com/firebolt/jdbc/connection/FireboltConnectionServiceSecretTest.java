@@ -1,6 +1,7 @@
 package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.cache.CacheService;
+import com.firebolt.jdbc.cache.CacheType;
 import com.firebolt.jdbc.cache.ConnectionCache;
 import com.firebolt.jdbc.cache.DatabaseOptions;
 import com.firebolt.jdbc.cache.EngineOptions;
@@ -36,7 +37,6 @@ import static java.lang.String.format;
 import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -68,6 +68,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
 
     private static final String USER_ENGINE_ENDPOINT = "https://my_engine_endpoint.com";
     private static final String A_CONNECTION_ID = "a_connection_id";
+    private static final String ANOTHER_CONNECTION_ID = "another_connection_id";
 
     @Mock
     private FireboltEngineVersion2Service fireboltEngineVersion2Service;
@@ -76,7 +77,8 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
 
     @Mock
     private FireboltConnectionTokens mockFireboltConnectionTokens;
-
+    @Mock
+    private ConnectionIdGenerator mockConnectionIdGenerator;
     @Captor
     private ArgumentCaptor<ConnectionCache> connectionCacheArgumentCaptor;
     @Captor
@@ -102,6 +104,8 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         lenient().when(fireboltGatewayUrlService.getUrl(AN_ACCESS_TOKEN, ACCOUNT_NAME)).thenReturn(SYSTEM_ENGINE_URL_FOR_DEV_ACCOUNT);
 
         cacheKey = new ClientSecretCacheKey("somebody", "pa$$word", "dev");
+
+        when(mockConnectionIdGenerator.generateId()).thenReturn(A_CONNECTION_ID);
     }
 
     @Test
@@ -151,7 +155,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         FireboltGatewayUrlService gatewayUrlService = new FireboltGatewayUrlService(fireboltGatewayUrlClient);
         FireboltConnection connection = new FireboltConnectionServiceSecret(SYSTEM_ENGINE_URL, connectionProperties,
                 fireboltAuthenticationService, gatewayUrlService, fireboltStatementService, fireboltEngineVersion2Service,
-                ParserVersion.CURRENT, mockCacheService);
+                ParserVersion.CURRENT, mockConnectionIdGenerator, mockCacheService);
         FireboltProperties sessionProperties  = connection.getSessionProperties();
         assertEquals(expectedHost, sessionProperties.getHost());
         assertEquals(expectedProps == null ? Map.of() : Arrays.stream(expectedProps.split(";")).map(kv -> kv.split("=")).collect(toMap(kv -> kv[0], kv -> kv[1])), sessionProperties.getAdditionalProperties());
@@ -293,7 +297,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
              assertEquals(cacheKey.getValue(), clientSecretCacheKey.getValue());
 
              ConnectionCache connectionCache = connectionCacheArgumentCaptor.getValue();
-             assertNotNull(connectionCache.getConnectionId());
+             assertEquals(A_CONNECTION_ID, connectionCache.getConnectionId());
              assertEquals(AN_ACCESS_TOKEN, connectionCache.getAccessToken());
              assertEquals(SYSTEM_ENGINE_URL_FOR_DEV_ACCOUNT, connectionCache.getSystemEngineUrl());
 
@@ -353,7 +357,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
             assertEquals(cacheKey.getValue(), clientSecretCacheKey.getValue());
 
             ConnectionCache connectionCache = connectionCacheArgumentCaptor.getValue();
-            assertNotNull(connectionCache.getConnectionId());
+            assertEquals(A_CONNECTION_ID, connectionCache.getConnectionId());
             assertEquals(AN_ACCESS_TOKEN, connectionCache.getAccessToken());
             assertEquals(SYSTEM_ENGINE_URL_FOR_DEV_ACCOUNT, connectionCache.getSystemEngineUrl());
 
@@ -405,12 +409,50 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         }
     }
 
+    @Test
+    void willNotAddAdditionalUserAgentHeaderValuesIfConnectionIsNotCachable() throws SQLException{
+        disableCacheConnection();
+        try (FireboltConnection fireboltConnection = createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
+            assertTrue(fireboltConnection.getConnectionUserAgentHeader().isEmpty());
+        }
+    }
+
+    @Test
+    void willAddUserAgentHeaderWhenConnectionIsCachedByThisConnection() throws SQLException {
+        // no cache is present for the key
+        lenient().when(mockCacheService.get(cacheKey)).thenReturn(Optional.empty());
+
+        try (FireboltConnectionServiceSecret fireboltConnection = (FireboltConnectionServiceSecret) createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
+            String additionalUserAgentValue = fireboltConnection.getConnectionUserAgentHeader().get();
+            assertEquals("connId:" + A_CONNECTION_ID, additionalUserAgentValue);
+        }
+    }
+
+    @Test
+    void willAddUserAgentHeaderWhenConnectionIsCachedByAPreviousConnection() throws SQLException {
+        // connection is already cached
+        ConnectionCache connectionCache = new ConnectionCache(ANOTHER_CONNECTION_ID);
+        connectionCache.setCacheSource(CacheType.MEMORY.name().toLowerCase());
+
+        lenient().when(mockCacheService.get(cacheKey)).thenReturn(Optional.of(connectionCache));
+
+        try (FireboltConnectionServiceSecret fireboltConnection = (FireboltConnectionServiceSecret) createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
+            String additionalUserAgentValue = fireboltConnection.getConnectionUserAgentHeader().get();
+            String expectedUserAgent = "connId:" + A_CONNECTION_ID + ";cachedConnId:" + ANOTHER_CONNECTION_ID + "-memory";
+            assertEquals(expectedUserAgent, additionalUserAgentValue);
+        }
+    }
+
     private void enableCacheConnection() {
         connectionProperties.put("cache_connection", "true");
     }
 
+    private void disableCacheConnection() {
+        connectionProperties.put("cache_connection", "none");
+    }
+
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
         return new FireboltConnectionServiceSecret(url, props, fireboltAuthenticationService, fireboltGatewayUrlService,
-                fireboltStatementService, fireboltEngineVersion2Service, ParserVersion.CURRENT, mockCacheService);
+                fireboltStatementService, fireboltEngineVersion2Service, ParserVersion.CURRENT, mockConnectionIdGenerator, mockCacheService);
     }
 }

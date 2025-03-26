@@ -23,6 +23,13 @@ public class ConnectionCache {
     private String systemEngineUrl;
 
     /**
+     * Will have as source either Memory or Disk, if the cache was retrieved from memory or disk
+     */
+    @Getter
+    @Setter
+    String cacheSource;
+
+    /**
      * On one connection cache we might store information about multiple databases
      */
     private Map<String, DatabaseOptions> databaseOptionsMap;

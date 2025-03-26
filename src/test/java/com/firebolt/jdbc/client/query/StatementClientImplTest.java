@@ -112,6 +112,30 @@ class StatementClientImplTest {
 		return Map.entry(statementInfoWrapper.getLabel(), actualRequest.url().toString());
 	}
 
+	@Test
+	void willIncludeUserAgentWithConnectionInfo() throws SQLException, IOException {
+		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).accountId("12345").systemEngine(false).build();
+		when(connection.getAccessToken()).thenReturn(Optional.of("token"));
+		when(connection.getConnectionUserAgentHeader()).thenReturn(Optional.of("connectionInfo"));
+
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
+		injectMockedResponse(okHttpClient, 200, "");
+		Call call = getMockedCallWithResponse(200, "");
+		when(okHttpClient.newCall(any())).thenReturn(call);
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
+		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, fireboltProperties.isSystemEngine(), 15);
+
+		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
+		Request actualRequest = requestArgumentCaptor.getValue();
+		String actualQuery = getActualRequestString(actualRequest);
+		Map<String, String> expectedHeaders = new LinkedHashMap<>();
+		expectedHeaders.put("Authorization", "Bearer token");
+		expectedHeaders.put("User-Agent", userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; ) ConnA/1.0.9", Optional.of(";connectionInfo"))); // there is an additianal ; in front of the actual text from connection
+		assertEquals(expectedHeaders, extractHeadersMap(actualRequest));
+		assertSqlStatement("show databases;", actualQuery);
+	}
+
+
 	@ParameterizedTest
 	@CsvSource({
 			"true,2,queryLabelFromConnection",
@@ -431,6 +455,11 @@ class StatementClientImplTest {
 			@Override
 			protected boolean isConnectionCachingEnabled() {
 				return false;
+			}
+
+			@Override
+			public Optional<String> getConnectionUserAgentHeader() {
+				return Optional.empty();
 			}
 
 		};
