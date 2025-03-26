@@ -624,7 +624,7 @@ class FireboltStatementTest {
     }
 
     @Test
-    void shouldExecuteAsyncStatementAndThrowFireboltExceptionDueToQueryTypeBeingSelect() throws SQLException {
+    void shouldExecuteAsyncStatementAndThrowFireboltExceptionDueToQueryTypeBeingSelect() {
         FireboltConnection connection = mock(FireboltConnection.class);
         when(connection.getSessionProperties()).thenReturn(fireboltProperties);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
@@ -632,7 +632,7 @@ class FireboltStatementTest {
     }
 
     @Test
-    void shouldExecuteAsyncStatementAndThrowFireboltExceptionDueToQueryTypeBeingSet() throws SQLException {
+    void shouldExecuteAsyncStatementAndThrowFireboltExceptionDueToQueryTypeBeingSet() {
         FireboltConnection connection = mock(FireboltConnection.class);
         when(connection.getSessionProperties()).thenReturn(fireboltProperties);
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
