@@ -221,7 +221,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 				log.debug("Executing the statement with label {} : {}", query.getLabel(),
 						sanitizeSql(query.getSql()));
 				if (query.getType() != StatementType.NON_QUERY) {
-					throw new FireboltException("Only non-queries are supported for async statements");
+					throw new FireboltException("SELECT and SET queries are not supported for async statements");
 				}
 				asyncToken = statementService.executeAsyncStatement(query, sessionProperties, this);
 				currentUpdateCount = 0;
