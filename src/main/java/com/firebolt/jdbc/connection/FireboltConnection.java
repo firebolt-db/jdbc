@@ -58,6 +58,7 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
+import org.apache.commons.lang3.StringUtils;
 
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.getNonDeprecatedProperties;
 import static java.lang.String.format;
@@ -687,46 +688,53 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		cacheListeners.forEach(CacheListener::cleanup);
 	}
 
-	public boolean isAsyncQueryRunning(String asyncQueryToken) throws SQLException {
+    public boolean isAsyncQueryRunning(String asyncQueryToken) throws SQLException {
         return getAsyncQueryStatus(asyncQueryToken).equals("RUNNING");
-	}
+    }
 
-	public boolean isAsyncQuerySuccessful(String asyncQueryToken) throws SQLException {
+    public boolean isAsyncQuerySuccessful(String asyncQueryToken) throws SQLException {
         return getAsyncQueryStatus(asyncQueryToken).equals("ENDED_SUCCESSFULLY");
-	}
+    }
 
-	public boolean cancelAsyncQuery(String asyncQueryToken) throws SQLException {
-		if (asyncQueryToken == null || asyncQueryToken.isEmpty()) {
-			throw new FireboltException("Async query token cannot be null or empty");
-		}
-		String asyncQueryId;
-		try (PreparedStatement statement = createPreparedStatement("CALL fb_GetAsyncStatus(?)")) {
-			statement.setString(1, asyncQueryToken);
-			try (ResultSet rs = statement.executeQuery()) {
-				rs.next();
-				asyncQueryId = rs.getString("query_id");
-			}
-		} catch (SQLException ex) {
-			throw new FireboltException("Could not check the status of the async query", ex);
-		}
-		if (asyncQueryId != null && !asyncQueryId.isEmpty()) {
-			try (PreparedStatement statement = createPreparedStatement("CANCEL QUERY WHERE query_id = ?")) {
-				statement.setString(1, asyncQueryId);
-				statement.executeUpdate();
-			}
-		}
-		return true;
-	}
+    public boolean cancelAsyncQuery(String asyncQueryToken) throws SQLException {
+        if (StringUtils.isBlank(asyncQueryToken)) {
+            throw new FireboltException("Async query token cannot be null or empty");
+        }
+        String asyncQueryId;
+        try (PreparedStatement statement = createPreparedStatement("CALL fb_GetAsyncStatus(?)")) {
+            statement.setString(1, asyncQueryToken);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (!rs.next()) {
+                    throw new FireboltException("Could not get query_id for the async query with token: " + asyncQueryToken);
+                }
+                asyncQueryId = rs.getString("query_id");
+            }
+        }
+        if (StringUtils.isNotBlank(asyncQueryId)) {
+            try (PreparedStatement statement = createPreparedStatement("CANCEL QUERY WHERE query_id = ?")) {
+                statement.setString(1, asyncQueryId);
+                statement.executeUpdate();
+            }
+        } else {
+            throw new FireboltException("Could not cancel the async query: query_id is null or empty");
+        }
+        return true;
+    }
 
-	private String getAsyncQueryStatus(String asyncQueryToken) throws SQLException {
-		try (PreparedStatement statement = prepareStatement("CALL fb_GetAsyncStatus(?)")) {
-			statement.setString(1, asyncQueryToken);
-			try (ResultSet rs = statement.executeQuery()) {
-				rs.next();
-				return rs.getString("status");
-			}
-		} catch (SQLException ex) {
-			throw new FireboltException("Could not check the status of the async query", ex);
-		}
-	}
+    private String getAsyncQueryStatus(String asyncQueryToken) throws SQLException {
+        if (StringUtils.isBlank(asyncQueryToken)) {
+            throw new FireboltException("Async query token cannot be null or empty");
+        }
+        try (PreparedStatement statement = prepareStatement("CALL fb_GetAsyncStatus(?)")) {
+            statement.setString(1, asyncQueryToken);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    throw new FireboltException("Could not get status for the async query with token: " + asyncQueryToken);
+                }
+                return rs.getString("status");
+            }
+        } catch (SQLException ex) {
+            throw new FireboltException("Could not check the status of the async query", ex);
+        }
+    }
 }

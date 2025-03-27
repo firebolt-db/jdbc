@@ -26,6 +26,7 @@ import java.sql.SQLException;
 import static java.util.Optional.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -125,7 +126,7 @@ class FireboltStatementServiceTest {
 	}
 
 	@Test
-	void shouldExecuteQueryAsyncWithEmptyResponse() throws SQLException {
+	void shouldThrowExceptionWhenResponseIsEmpty() throws SQLException {
 		StatementInfoWrapper statementInfoWrapper = StatementUtil
 				.parseToStatementInfoWrappers("INSERT INTO ltv SELECT * FROM ltv_external").get(0);
 		FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
@@ -134,12 +135,13 @@ class FireboltStatementServiceTest {
 		FireboltStatement statement = mock(FireboltStatement.class);
 		when(statement.getQueryTimeout()).thenReturn(10);
 		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true)).thenReturn(getMockInputStream(""));
-		assertThrows(FireboltException.class, () -> fireboltStatementService.executeAsyncStatement(statementInfoWrapper, fireboltProperties, statement));
+		FireboltException exception = assertThrows(FireboltException.class, () -> fireboltStatementService.executeAsyncStatement(statementInfoWrapper, fireboltProperties, statement));
+		assertTrue(exception.getMessage().contains("Cannot read response from DB"));
 		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true);
 	}
 
 	@Test
-	void shouldExecuteQueryAsyncWithNullResponse() throws SQLException {
+	void shouldThrowExceptionWhenResponseIsNull() throws SQLException {
 		StatementInfoWrapper statementInfoWrapper = StatementUtil
 				.parseToStatementInfoWrappers("INSERT INTO ltv SELECT * FROM ltv_external").get(0);
 		FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
@@ -147,8 +149,13 @@ class FireboltStatementServiceTest {
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 		FireboltStatement statement = mock(FireboltStatement.class);
 		when(statement.getQueryTimeout()).thenReturn(10);
+
+		//InputStream should never be null
 		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true)).thenReturn(null);
-		assertThrows(FireboltException.class, () -> fireboltStatementService.executeAsyncStatement(statementInfoWrapper, fireboltProperties, statement));
+		FireboltException exception = assertThrows(FireboltException.class, () -> fireboltStatementService.executeAsyncStatement(statementInfoWrapper, fireboltProperties, statement));
+
+		//Exception message when unexpected exception happens: InputStream is null
+		assertTrue(exception.getMessage().contains("Error while reading query response"));
 		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true);
 	}
 
