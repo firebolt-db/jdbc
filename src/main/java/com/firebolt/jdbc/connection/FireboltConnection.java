@@ -728,7 +728,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		try (PreparedStatement statement = prepareStatement("CALL fb_GetAsyncStatus(?)")) {
 			statement.setString(1, asyncQueryToken);
 			try (ResultSet rs = statement.executeQuery()) {
-				if (rs.next()) {
+				if (!rs.next()) {
 					throw new FireboltException("Could not get status for the async query with token: " + asyncQueryToken);
 				}
 				return rs.getString("status");

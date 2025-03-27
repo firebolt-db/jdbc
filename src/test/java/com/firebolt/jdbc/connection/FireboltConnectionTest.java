@@ -742,6 +742,7 @@ abstract class FireboltConnectionTest {
 	void isServerSideAsyncQueryRunning(String status, boolean result) throws SQLException {
 		try (ResultSet resultSet = mock(ResultSet.class)) {
 			when(fireboltStatementService.execute(any(),any(),any())).thenReturn(Optional.of(resultSet));
+			when(resultSet.next()).thenReturn(true);
 			when(resultSet.getString("status")).thenReturn(status);
 			try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
 				assertEquals(result, fireboltConnection.isAsyncQueryRunning("token"));
@@ -760,6 +761,7 @@ abstract class FireboltConnectionTest {
 	void isServerSideAsyncQuerySuccessful(String status, boolean result) throws SQLException {
 		try (ResultSet resultSet = mock(ResultSet.class)) {
 			when(fireboltStatementService.execute(any(),any(),any())).thenReturn(Optional.of(resultSet));
+			when(resultSet.next()).thenReturn(true);
 			when(resultSet.getString("status")).thenReturn(status);
 			try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
 				assertEquals(result, fireboltConnection.isAsyncQuerySuccessful("token"));
@@ -783,6 +785,7 @@ abstract class FireboltConnectionTest {
 					any(),
 					any())
 			).thenReturn(Optional.empty());
+			when(resultSet.next()).thenReturn(true);
 			when(resultSet.getString("query_id")).thenReturn("id");
 			fireboltConnection.cancelAsyncQuery("token");
 			verify(fireboltStatementService).execute(
@@ -797,6 +800,8 @@ abstract class FireboltConnectionTest {
 			);
 		} catch (SQLException e) {
 			fail();
+		} catch (Exception e) {
+			throw e;
 		}
 	}
 
