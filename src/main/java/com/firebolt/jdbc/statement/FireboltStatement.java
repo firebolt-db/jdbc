@@ -3,7 +3,6 @@ package com.firebolt.jdbc.statement;
 import static com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory.createValidator;
 import static java.util.stream.Collectors.toCollection;
 
-import java.io.InputStream;
 import java.sql.*;
 import java.util.*;
 
@@ -17,9 +16,9 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.service.FireboltStatementService;
-import com.firebolt.jdbc.util.CloseableUtil;
 
 import lombok.CustomLog;
+import lombok.Getter;
 
 @CustomLog
 public class FireboltStatement extends JdbcBase implements Statement {
@@ -38,6 +37,8 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	private int queryTimeout = 0; // zero means that there is no limit
 	private String runningStatementLabel;
 	private final List<String> batchStatements = new LinkedList<>();
+	@Getter
+	private String asyncToken;
 
 	public FireboltStatement(FireboltStatementService statementService, FireboltProperties sessionProperties,
 			FireboltConnection connection) {
@@ -97,7 +98,6 @@ public class FireboltStatement extends JdbcBase implements Statement {
 			synchronized (this) {
 				validateStatementIsNotClosed();
 			}
-			InputStream inputStream = null;
 			try {
 				log.debug("Executing the statement with label {} : {}", statementInfoWrapper.getLabel(),
 						sanitizeSql(statementInfoWrapper.getSql()));
@@ -115,7 +115,6 @@ public class FireboltStatement extends JdbcBase implements Statement {
 					log.info("The query with the label {} was executed with success", runningStatementLabel);
 				}
 			} catch (Exception ex) {
-				CloseableUtil.close(inputStream);
 				log.error(String.format("An error happened while executing the statement with the id %s",
 						runningStatementLabel), ex);
 				throw ex;
@@ -123,16 +122,20 @@ public class FireboltStatement extends JdbcBase implements Statement {
 				runningStatementLabel = null;
 			}
 			synchronized (this) {
-				if (firstUnclosedStatementResult == null) {
-					firstUnclosedStatementResult = currentStatementResult = new StatementResultWrapper(resultSet, statementInfoWrapper);
-				} else {
-					firstUnclosedStatementResult.append(new StatementResultWrapper(resultSet, statementInfoWrapper));
-				}
+				setOrAppendFirstUnclosedStatementResult(statementInfoWrapper, resultSet);
 			}
 		} else {
 			log.warn("Aborted query with id {}", determineQueryLabel(statementInfoWrapper));
 		}
 		return Optional.ofNullable(resultSet);
+	}
+
+	private void setOrAppendFirstUnclosedStatementResult(StatementInfoWrapper statementInfoWrapper, ResultSet resultSet) {
+		if (firstUnclosedStatementResult == null) {
+			firstUnclosedStatementResult = currentStatementResult = new StatementResultWrapper(resultSet, statementInfoWrapper);
+		} else {
+			firstUnclosedStatementResult.append(new StatementResultWrapper(resultSet, statementInfoWrapper));
+		}
 	}
 
 	private String determineQueryLabel(StatementInfoWrapper statementInfoWrapper) {
@@ -201,6 +204,44 @@ public class FireboltStatement extends JdbcBase implements Statement {
 			closeAllResults();
 		}
 		return 0;
+	}
+
+	public void executeAsync(String sql) throws SQLException {
+		StatementInfoWrapper query = StatementUtil.parseToStatementInfoWrappers(sql).get(0);
+		createValidator(query.getInitialStatement(), connection).validate(query.getInitialStatement());
+		synchronized (statementsToExecuteLabels) {
+			statementsToExecuteLabels.add(query.getLabel());
+		}
+		if (isStatementNotCancelled(query)) {
+			runningStatementLabel = determineQueryLabel(query);
+			synchronized (this) {
+				validateStatementIsNotClosed();
+			}
+			try {
+				log.debug("Executing the statement with label {} : {}", query.getLabel(),
+						sanitizeSql(query.getSql()));
+				if (query.getType() != StatementType.NON_QUERY) {
+					throw new FireboltException("SELECT and SET queries are not supported for async statements");
+				}
+				asyncToken = statementService.executeAsyncStatement(query, sessionProperties, this);
+				currentUpdateCount = 0;
+				log.info("The query with the label {} was executed with success", runningStatementLabel);
+			} catch (Exception ex) {
+				log.error(String.format("An error happened while executing the statement with the id %s",
+						runningStatementLabel), ex);
+				throw ex;
+			} finally {
+				runningStatementLabel = null;
+				synchronized (statementsToExecuteLabels) {
+					statementsToExecuteLabels.remove(query.getLabel());
+				}
+			}
+			synchronized (this) {
+				setOrAppendFirstUnclosedStatementResult(query, null);
+			}
+		} else {
+			log.warn("Aborted query with id {}", determineQueryLabel(query));
+		}
 	}
 
 	@Override

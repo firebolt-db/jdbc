@@ -29,7 +29,7 @@ import static com.firebolt.jdbc.exception.ExceptionType.RESOURCE_NOT_FOUND;
 import static java.lang.String.format;
 
 public class FireboltConnectionServiceSecret extends FireboltConnection {
-    private static final String PROTOCOL_VERSION = "2.1";
+    private static final String PROTOCOL_VERSION = "2.3";
     private final FireboltGatewayUrlService fireboltGatewayUrlService;
     private FireboltEngineService fireboltEngineService; // depends on infra version and is discovered during authentication
 

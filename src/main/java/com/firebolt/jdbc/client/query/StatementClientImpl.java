@@ -137,9 +137,9 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	 */
 	@Override
 	public InputStream executeSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
-										   @NonNull FireboltProperties connectionProperties, boolean systemEngine, int queryTimeout) throws SQLException {
+										   @NonNull FireboltProperties connectionProperties, boolean systemEngine, int queryTimeout, boolean isServerAsync) throws SQLException {
 		String formattedStatement = QueryIdFetcher.getQueryFetcher(connection.getInfraVersion()).formatStatement(statementInfoWrapper);
-		Map<String, String> params = getAllParameters(connectionProperties, statementInfoWrapper, systemEngine, queryTimeout);
+		Map<String, String> params = getAllParameters(connectionProperties, statementInfoWrapper, systemEngine, queryTimeout, isServerAsync);
 
 		// if available in the params, then use the query label from there. Default to the one from the statementInfoWrapper if not available in params
 		String label = params.getOrDefault(QUERY_LABEL.getKey(), statementInfoWrapper.getLabel());
@@ -301,7 +301,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	}
 
 	private Map<String, String> getAllParameters(FireboltProperties fireboltProperties,
-			StatementInfoWrapper statementInfoWrapper, boolean systemEngine, int queryTimeout) {
+			StatementInfoWrapper statementInfoWrapper, boolean systemEngine, int queryTimeout, boolean isServerAsync) {
 		boolean isLocalDb = PropertyUtil.isLocalDb(fireboltProperties);
 
 		Map<String, String> params = new HashMap<>(fireboltProperties.getAdditionalProperties());
@@ -335,6 +335,9 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			}
 		}
 		params.put(FireboltQueryParameterKey.DATABASE.getKey(), fireboltProperties.getDatabase());
+		if (isServerAsync) {
+			params.put(FireboltQueryParameterKey.ASYNC.getKey(), "true");
+		}
 
 		return params;
 	}

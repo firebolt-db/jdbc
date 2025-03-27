@@ -2,7 +2,9 @@ package com.firebolt.jdbc.service;
 
 import com.firebolt.jdbc.client.query.StatementClient;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
+import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementType;
@@ -12,12 +14,18 @@ import com.firebolt.jdbc.util.InputStreamUtil;
 import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Optional.ofNullable;
 
 @RequiredArgsConstructor
@@ -40,7 +48,7 @@ public class FireboltStatementService {
 			throws SQLException {
 		int queryTimeout = statement.getQueryTimeout();
 		boolean systemEngine = properties.isSystemEngine();
-		InputStream is = statementClient.executeSqlStatement(statementInfoWrapper, properties, systemEngine, queryTimeout);
+		InputStream is = statementClient.executeSqlStatement(statementInfoWrapper, properties, systemEngine, queryTimeout, false);
 		if (statementInfoWrapper.getType() == StatementType.QUERY) {
 			return Optional.of(createResultSet(is, (QueryRawStatement) statementInfoWrapper.getInitialStatement(), properties, statement));
 		} else {
@@ -51,6 +59,32 @@ public class FireboltStatementService {
 		}
 		return Optional.empty();
 	}
+
+	public String executeAsyncStatement(StatementInfoWrapper statementInfoWrapper,
+									   FireboltProperties properties, FireboltStatement statement)
+			throws SQLException {
+		int queryTimeout = statement.getQueryTimeout();
+		boolean systemEngine = properties.isSystemEngine();
+		if (systemEngine) {
+			throw new FireboltException("Cannot execute async statement on system engine");
+		}
+        try (InputStream is = statementClient.executeSqlStatement(statementInfoWrapper, properties, false, queryTimeout, true)) {
+			InputStreamReader inputStreamReader;
+			if (properties.isCompress()) {
+				inputStreamReader = new InputStreamReader(new LZ4InputStream(is), UTF_8);
+			} else {
+				inputStreamReader = new InputStreamReader(is, UTF_8);
+			}
+			BufferedReader bufferedReader = new BufferedReader(inputStreamReader, properties.getBufferSize());
+			return new JSONObject(bufferedReader.lines().reduce(String::concat).orElseThrow(IOException::new)).optString("token");
+        } catch (IOException e) {
+			throw new FireboltException("Cannot read response from DB: error while reading asyncToken ", e);
+        } catch (JSONException e) {
+			throw new FireboltException("Cannot read token from response: error while reading asyncToken ", e);
+		} catch (Exception e) {
+			throw new FireboltException("Error while reading query response", e);
+		}
+    }
 
 	public void abortStatement(@NonNull String statementLabel, @NonNull FireboltProperties properties) throws SQLException {
 		statementClient.abortStatement(statementLabel, properties);

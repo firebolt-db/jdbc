@@ -499,7 +499,7 @@ class FireboltStatementTest {
         when(connection.getSessionProperties()).thenReturn(fireboltProperties);
         StatementClient statementClient = mock(StatementClient.class);
         String content = format("1\t2\ntext\tbytea\n%s\t%s", inputText == null ? "\\N" : inputText, inputText == null ? "\\N" : SqlArrayUtil.byteArrayToHexString(inputText.getBytes(), false));
-        when(statementClient.executeSqlStatement(any(), any(), eq(false), anyInt())).thenReturn(new ByteArrayInputStream(content.getBytes()));
+        when(statementClient.executeSqlStatement(any(), any(), eq(false), anyInt(), eq(false))).thenReturn(new ByteArrayInputStream(content.getBytes()));
         FireboltStatementService statementService = new FireboltStatementService(statementClient);
         FireboltStatement fireboltStatement = new FireboltStatement(statementService, fireboltProperties, connection);
         when(connection.createStatement()).thenReturn(fireboltStatement);
@@ -598,5 +598,44 @@ class FireboltStatementTest {
         assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("WITH")));
         assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("AWS_KEY_ID")));
         assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("AWS_SECRET_KEY")));
+    }
+
+    @Test
+    void shouldExecuteAsyncStatementSuccessfullyAndSetAsyncToken() throws SQLException {
+        FireboltConnection connection = mock(FireboltConnection.class);
+        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
+        FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
+        String asyncToken = "token";
+        when(fireboltStatementService.executeAsyncStatement(any(), any(), any())).thenReturn(asyncToken);
+        fireboltStatement.executeAsync("INSERT INTO x values (1)");
+        assertEquals(asyncToken, fireboltStatement.getAsyncToken());
+        assertEquals(0, fireboltStatement.getUpdateCount());
+        assertFalse(fireboltStatement.getMoreResults());
+        assertNull(fireboltStatement.getResultSet());
+    }
+
+    @Test
+    void shouldThrowFireboltExceptionWhenStatementServiceThrowsException() throws SQLException {
+        FireboltConnection connection = mock(FireboltConnection.class);
+        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
+        FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
+        when(fireboltStatementService.executeAsyncStatement(any(), any(), any())).thenThrow(new FireboltException("Cannot read response from DB"));
+        assertThrows(FireboltException.class, () -> fireboltStatement.executeAsync("INSERT 1"));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenQueryTypeIsSelect() {
+        FireboltConnection connection = mock(FireboltConnection.class);
+        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
+        FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
+        assertThrows(FireboltException.class, () -> fireboltStatement.executeAsync("SELECT 1"));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenQueryTypeIsSet() {
+        FireboltConnection connection = mock(FireboltConnection.class);
+        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
+        FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
+        assertThrows(FireboltException.class, () -> fireboltStatement.executeAsync("SET param=1"));
     }
 }
