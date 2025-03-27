@@ -38,7 +38,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	private String runningStatementLabel;
 	private final List<String> batchStatements = new LinkedList<>();
 	@Getter
-    private String asyncToken;
+	private String asyncToken;
 
 	public FireboltStatement(FireboltStatementService statementService, FireboltProperties sessionProperties,
 			FireboltConnection connection) {
@@ -123,7 +123,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 			}
 			synchronized (this) {
 				setOrAppendFirstUnclosedStatementResult(statementInfoWrapper, resultSet);
-            }
+			}
 		} else {
 			log.warn("Aborted query with id {}", determineQueryLabel(statementInfoWrapper));
 		}
@@ -138,7 +138,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		}
 	}
 
-    private String determineQueryLabel(StatementInfoWrapper statementInfoWrapper) {
+	private String determineQueryLabel(StatementInfoWrapper statementInfoWrapper) {
 		return QueryLabelResolver.getQueryLabel(connection.getSessionProperties(), statementInfoWrapper);
 	}
 
@@ -208,43 +208,43 @@ public class FireboltStatement extends JdbcBase implements Statement {
 
 	public void executeAsync(String sql) throws SQLException {
 		StatementInfoWrapper query = StatementUtil.parseToStatementInfoWrappers(sql).get(0);
-        createValidator(query.getInitialStatement(), connection).validate(query.getInitialStatement());
-        synchronized (statementsToExecuteLabels) {
-            statementsToExecuteLabels.add(query.getLabel());
-        }
-        if (isStatementNotCancelled(query)) {
-            runningStatementLabel = determineQueryLabel(query);
-            synchronized (this) {
-                validateStatementIsNotClosed();
-            }
-            try {
-                log.debug("Executing the statement with label {} : {}", query.getLabel(),
-                        sanitizeSql(query.getSql()));
-                if (query.getType() != StatementType.NON_QUERY) {
-                    throw new FireboltException("Only non-queries are supported for async statements");
-                }
-                asyncToken = statementService.executeAsyncStatement(query, sessionProperties, this);
-                currentUpdateCount = 0;
-                log.info("The query with the label {} was executed with success", runningStatementLabel);
-            } catch (Exception ex) {
-                log.error(String.format("An error happened while executing the statement with the id %s",
-                        runningStatementLabel), ex);
-                throw ex;
-            } finally {
-                runningStatementLabel = null;
-                synchronized (statementsToExecuteLabels) {
-                    statementsToExecuteLabels.remove(query.getLabel());
-                }
-            }
-            synchronized (this) {
-                setOrAppendFirstUnclosedStatementResult(query, null);
-            }
-        } else {
-            log.warn("Aborted query with id {}", determineQueryLabel(query));
-        }
+		createValidator(query.getInitialStatement(), connection).validate(query.getInitialStatement());
+		synchronized (statementsToExecuteLabels) {
+			statementsToExecuteLabels.add(query.getLabel());
+		}
+		if (isStatementNotCancelled(query)) {
+			runningStatementLabel = determineQueryLabel(query);
+			synchronized (this) {
+				validateStatementIsNotClosed();
+			}
+			try {
+				log.debug("Executing the statement with label {} : {}", query.getLabel(),
+						sanitizeSql(query.getSql()));
+				if (query.getType() != StatementType.NON_QUERY) {
+					throw new FireboltException("Only non-queries are supported for async statements");
+				}
+				asyncToken = statementService.executeAsyncStatement(query, sessionProperties, this);
+				currentUpdateCount = 0;
+				log.info("The query with the label {} was executed with success", runningStatementLabel);
+			} catch (Exception ex) {
+				log.error(String.format("An error happened while executing the statement with the id %s",
+						runningStatementLabel), ex);
+				throw ex;
+			} finally {
+				runningStatementLabel = null;
+				synchronized (statementsToExecuteLabels) {
+					statementsToExecuteLabels.remove(query.getLabel());
+				}
+			}
+			synchronized (this) {
+				setOrAppendFirstUnclosedStatementResult(query, null);
+			}
+		} else {
+			log.warn("Aborted query with id {}", determineQueryLabel(query));
+		}
 	}
 
-    @Override
+	@Override
 	public Connection getConnection() {
 		return connection;
 	}
