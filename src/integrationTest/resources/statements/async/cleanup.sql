@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS "async_table_test";
+DROP TABLE IF EXISTS "async_table_test" CASCADE;

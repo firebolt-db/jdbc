@@ -122,7 +122,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 				runningStatementLabel = null;
 			}
 			synchronized (this) {
-                setOrAppendFirstUnclosedStatementResult(statementInfoWrapper, resultSet);
+				setOrAppendFirstUnclosedStatementResult(statementInfoWrapper, resultSet);
             }
 		} else {
 			log.warn("Aborted query with id {}", determineQueryLabel(statementInfoWrapper));
@@ -130,13 +130,13 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		return Optional.ofNullable(resultSet);
 	}
 
-    private void setOrAppendFirstUnclosedStatementResult(StatementInfoWrapper statementInfoWrapper, ResultSet resultSet) {
-        if (firstUnclosedStatementResult == null) {
-            firstUnclosedStatementResult = currentStatementResult = new StatementResultWrapper(resultSet, statementInfoWrapper);
-        } else {
-            firstUnclosedStatementResult.append(new StatementResultWrapper(resultSet, statementInfoWrapper));
-        }
-    }
+	private void setOrAppendFirstUnclosedStatementResult(StatementInfoWrapper statementInfoWrapper, ResultSet resultSet) {
+		if (firstUnclosedStatementResult == null) {
+			firstUnclosedStatementResult = currentStatementResult = new StatementResultWrapper(resultSet, statementInfoWrapper);
+		} else {
+			firstUnclosedStatementResult.append(new StatementResultWrapper(resultSet, statementInfoWrapper));
+		}
+	}
 
     private String determineQueryLabel(StatementInfoWrapper statementInfoWrapper) {
 		return QueryLabelResolver.getQueryLabel(connection.getSessionProperties(), statementInfoWrapper);
