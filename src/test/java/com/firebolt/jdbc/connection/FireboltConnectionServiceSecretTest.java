@@ -419,7 +419,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
     @Test
     void willAddUserAgentHeaderWhenConnectionIsCachedByThisConnection() throws SQLException {
         // no cache is present for the key
-        lenient().when(mockCacheService.get(cacheKey)).thenReturn(Optional.empty());
+        when(mockCacheService.get(cacheKey)).thenReturn(Optional.empty());
 
         try (FireboltConnectionServiceSecret fireboltConnection = (FireboltConnectionServiceSecret) createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
             String additionalUserAgentValue = fireboltConnection.getConnectionUserAgentHeader().get();
@@ -433,7 +433,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         ConnectionCache connectionCache = new ConnectionCache(ANOTHER_CONNECTION_ID);
         connectionCache.setCacheSource(CacheType.MEMORY.name().toLowerCase());
 
-        lenient().when(mockCacheService.get(cacheKey)).thenReturn(Optional.of(connectionCache));
+        when(mockCacheService.get(cacheKey)).thenReturn(Optional.of(connectionCache));
 
         try (FireboltConnectionServiceSecret fireboltConnection = (FireboltConnectionServiceSecret) createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
             String additionalUserAgentValue = fireboltConnection.getConnectionUserAgentHeader().get();

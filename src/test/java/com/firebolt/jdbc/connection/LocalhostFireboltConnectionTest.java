@@ -30,7 +30,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -186,7 +185,7 @@ class LocalhostFireboltConnectionTest {
     @Test
     void willAddUserAgentHeaderWhenConnectionIsCachedByThisConnection() throws SQLException {
         // no cache is present for the key
-        lenient().when(cacheService.get(cacheKey)).thenReturn(Optional.empty());
+        when(cacheService.get(cacheKey)).thenReturn(Optional.empty());
 
         try (FireboltConnectionServiceSecret fireboltConnection = (FireboltConnectionServiceSecret) createConnection(LOCAL_URL, connectionProperties)) {
             String additionalUserAgentValue = fireboltConnection.getConnectionUserAgentHeader().get();
@@ -200,7 +199,7 @@ class LocalhostFireboltConnectionTest {
         ConnectionCache connectionCache = new ConnectionCache(CONNECTION_ID_2);
         connectionCache.setCacheSource(CacheType.MEMORY.name().toLowerCase());
 
-        lenient().when(cacheService.get(cacheKey)).thenReturn(Optional.of(connectionCache));
+        when(cacheService.get(cacheKey)).thenReturn(Optional.of(connectionCache));
 
         try (FireboltConnectionServiceSecret fireboltConnection = (FireboltConnectionServiceSecret) createConnection(LOCAL_URL, connectionProperties)) {
             String additionalUserAgentValue = fireboltConnection.getConnectionUserAgentHeader().get();
