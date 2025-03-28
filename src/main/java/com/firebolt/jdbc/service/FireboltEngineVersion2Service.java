@@ -1,56 +1,39 @@
 package com.firebolt.jdbc.service;
 
+import com.firebolt.jdbc.cache.ConnectionCache;
+import com.firebolt.jdbc.cache.DatabaseOptions;
+import com.firebolt.jdbc.cache.EngineOptions;
 import com.firebolt.jdbc.connection.Engine;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import net.jodah.expiringmap.ExpiringMap;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Slf4j
-public class FireboltEngineVersion2Service implements FireboltEngineService {
-
-    // by default cache the values for 1hour
-    private static final long DEFAULT_CACHED_VERIFIED_DATABASES_IN_SECONDS = TimeUnit.HOURS.toSeconds(1);
-    private static final long DEFAULT_CACHED_VERIFIED_ENGINES_IN_SECONDS = TimeUnit.HOURS.toSeconds(1);
-
-    private static final ExpiringMap<String, List<Pair<String, String>>> CACHED_VERIFIED_DATABASES = ExpiringMap.builder()
-            .variableExpiration().build();
-    private static final ExpiringMap<String, List<Pair<String, String>>> CACHED_VERIFIED_ENGINES = ExpiringMap.builder()
-            .variableExpiration().build();
+public class FireboltEngineVersion2Service {
 
     private static final boolean DO_NOT_VALIDATE_CONNECTION_FLAG = false;
 
     private final FireboltConnection fireboltConnection;
-    private final long cacheDatabaseDurationInSeconds;
-    private final long cacheEngineDurationInSeconds;
 
     public FireboltEngineVersion2Service(FireboltConnection fireboltConnection) {
-        this(fireboltConnection, DEFAULT_CACHED_VERIFIED_DATABASES_IN_SECONDS, DEFAULT_CACHED_VERIFIED_ENGINES_IN_SECONDS);
-    }
-
-    // visible for testing
-    FireboltEngineVersion2Service(FireboltConnection fireboltConnection, long cachedDatabaseDuration, long cachedEngineDuration) {
         this.fireboltConnection = fireboltConnection;
-        this.cacheDatabaseDurationInSeconds = cachedDatabaseDuration;
-        this.cacheEngineDurationInSeconds = cachedEngineDuration;
     }
 
-    @Override
     @SuppressWarnings("java:S2077") // Formatting SQL queries is security-sensitive - looks safe in this case
-    public Engine getEngine(FireboltProperties properties) throws SQLException {
+    public Engine getEngine(FireboltProperties properties, Optional<ConnectionCache> connectionCacheOptional) throws SQLException {
         try (Statement statement = fireboltConnection.createStatement()) {
-            if (properties.getDatabase() != null) {
-                getAndSetDatabaseProperties(statement, properties.getHost(), properties.getDatabase());
+            if (StringUtils.isNotBlank(properties.getDatabase())) {
+                getAndSetDatabaseProperties(statement, properties.getDatabase(), connectionCacheOptional);
             }
-            getAndSetEngineProperties(statement, properties.getHost(), properties.getEngine());
+            getAndSetEngineProperties(statement, properties.getEngine(), connectionCacheOptional);
         }
         // now session properties are updated with new database and engine
         FireboltProperties sessionProperties = fireboltConnection.getSessionProperties();
@@ -63,30 +46,48 @@ public class FireboltEngineVersion2Service implements FireboltEngineService {
      * be caught while executing the statement, not during connection time.
      *
      * @param statement - statement that will execute the verification of the database
-     * @param host - the system engine url
      * @param databaseName - the name of the database to check
      */
-    private void getAndSetDatabaseProperties(Statement statement, String host, String databaseName) throws SQLException {
-        synchronized (CACHED_VERIFIED_DATABASES) {
+    private void getAndSetDatabaseProperties(Statement statement, String databaseName, final Optional<ConnectionCache> connectionCacheOptional) throws SQLException {
+        // if the connection cache is empty it means it is not cachable
+        if (connectionCacheOptional.isEmpty()) {
+            // if no caching of the result then just make the call
+            statement.executeUpdate(use("DATABASE", databaseName));
+        } else {
+            // check the cache first
+            ConnectionCache connectionCache = connectionCacheOptional.get();
+            Optional<DatabaseOptions> databaseOptions = connectionCache.getDatabaseOptions(databaseName);
 
-            if (CACHED_VERIFIED_DATABASES.containsKey(asCacheKey(host, databaseName))) {
-                log.debug("Using cache verification of database");
-
-                // need to set the values on the connection that were cached on the original use database call
-                for (Pair<String, String> pair : CACHED_VERIFIED_DATABASES.get(asCacheKey(host, databaseName))) {
-                    fireboltConnection.addProperty(pair.getKey(), pair.getValue(), DO_NOT_VALIDATE_CONNECTION_FLAG);
-                }
-
+            if (databaseOptions.isPresent()) {
+                updateDatabasePropertiesOnConnection(databaseOptions.get());
                 return;
             }
 
-            statement.executeUpdate(use("DATABASE", databaseName));
+            synchronized (connectionCache) {
+                // make sure another thread did not already populate it
+                databaseOptions = connectionCache.getDatabaseOptions(databaseName);
+                if (databaseOptions.isPresent()) {
+                    updateDatabasePropertiesOnConnection(databaseOptions.get());
+                    return;
+                }
 
-            // as of Mar 2025 we know that as a side effect of calling "use database <xxx>" we are updating the database parameter on the connection.
-            // so if we want to use the value from cache we need to save this value on the connection when we use the cached connection
-            List<Pair<String, String>> cachedValuesForDatabase = List.of(
-                    Pair.of("database", fireboltConnection.getSessionProperties().getDatabase()));
-            CACHED_VERIFIED_DATABASES.put(asCacheKey(host, databaseName), cachedValuesForDatabase, cacheDatabaseDurationInSeconds, SECONDS);
+                // we know for sure it is not present, so execute the statement
+                statement.executeUpdate(use("DATABASE", databaseName));
+
+                // as of Mar 2025 we know that as a side effect of calling "use database <xxx>" we are updating the database parameter on the connection.
+                // so if we want to use the value from cache we need to save this value on the connection when we use the cached connection
+                List<Pair<String, String>> cachedValuesForDatabase = List.of(
+                        Pair.of("database", fireboltConnection.getSessionProperties().getDatabase()));
+                connectionCache.setDatabaseOptions(databaseName, new DatabaseOptions(cachedValuesForDatabase));
+            }
+        }
+    }
+
+    private void updateDatabasePropertiesOnConnection(DatabaseOptions databaseOptions) throws SQLException {
+        log.debug("Using cache verification of database");
+        // need to set the values on the connection that were cached on the original use database call
+        for (Pair<String, String> pair : databaseOptions.getParameters()) {
+            fireboltConnection.addProperty(pair.getKey(), pair.getValue(), DO_NOT_VALIDATE_CONNECTION_FLAG);
         }
     }
 
@@ -96,45 +97,59 @@ public class FireboltEngineVersion2Service implements FireboltEngineService {
      * be caught while executing the statement, not during connection time.
      *
      * @param statement - statement that will execute the verification of the database
-     * @param host - the system engine url
      * @param engineName - the name of the engine to check
 
      */
-    private void getAndSetEngineProperties(Statement statement, String host, String engineName) throws SQLException {
-        synchronized (CACHED_VERIFIED_ENGINES) {
-            if (CACHED_VERIFIED_ENGINES.containsKey(asCacheKey(host, engineName))) {
-                log.debug("Using cache verification of engine");
+    private void getAndSetEngineProperties(Statement statement, String engineName, final Optional<ConnectionCache> connectionCacheOptional) throws SQLException {
+        // if the connection cache is empty it means it is not cachable
+        if (connectionCacheOptional.isEmpty()) {
+            // if no caching of the result then just make the call
+            statement.executeUpdate(use("ENGINE", engineName));
+        } else {
+            // check the cache first
+            ConnectionCache connectionCache = connectionCacheOptional.get();
+            Optional<EngineOptions> engineOptions = connectionCache.getEngineOptions(engineName);
 
-                // need to set the values on the connection that were cached on the original use database call
-                for (Pair<String, String> pair : CACHED_VERIFIED_ENGINES.get(asCacheKey(host, engineName))) {
-                    if ("endpoint".equals(pair.getKey())) {
-                        fireboltConnection.setEndpoint(pair.getValue());
-                    } else {
-                        fireboltConnection.addProperty(pair.getKey(), pair.getValue(), DO_NOT_VALIDATE_CONNECTION_FLAG);
-                    }
-                }
-
+            if (engineOptions.isPresent()) {
+                updateEngineOptionsOnConnection(engineOptions.get());
                 return;
             }
 
-            statement.executeUpdate(use("ENGINE", engineName));
+            synchronized (connectionCache) {
+                // double check another thread did not already update the engine
+                engineOptions = connectionCache.getEngineOptions(engineName);
 
-            // as of Mar 2025 we know that the side effect of calling "use engine <xxx>" we are updating the endpoint and the engine parameter.
-            // so if we want to use the value from cache we need to save this value on the connection when we use the cached connection
-            List<Pair<String, String>> cachedValuesForEngine = List.of(
-                    Pair.of("engine", fireboltConnection.getSessionProperties().getEngine()),
-                    Pair.of("endpoint", fireboltConnection.getEndpoint()));
+                if (engineOptions.isPresent()) {
+                    updateEngineOptionsOnConnection(engineOptions.get());
+                    return;
+                }
 
-            CACHED_VERIFIED_ENGINES.put(asCacheKey(host, engineName), cachedValuesForEngine, cacheEngineDurationInSeconds, SECONDS);
+                // we know for sure it is not present, so execute the statement
+                statement.executeUpdate(use("ENGINE", engineName));
+
+                // as of Mar 2025 we know that the side effect of calling "use engine <xxx>" we are updating the endpoint and the engine parameter.
+                // so if we want to use the value from cache we need to save this value on the connection when we use the cached connection
+                List<Pair<String, String>> engineProperties = List.of(Pair.of("engine", fireboltConnection.getSessionProperties().getEngine()));
+                connectionCache.setEngineOptions(engineName, new EngineOptions(fireboltConnection.getEndpoint(), engineProperties));
+            }
         }
 
+    }
+
+    private void updateEngineOptionsOnConnection(EngineOptions engineOptions) throws SQLException {
+        log.debug("Using cache verification of engine");
+
+        // set the engine url
+        fireboltConnection.setEndpoint(engineOptions.getEngineUrl());
+
+        // need to set the values on the connection that were cached on the original use database call
+        for (Pair<String, String> pair : engineOptions.getParameters()) {
+            fireboltConnection.addProperty(pair.getKey(), pair.getValue(), DO_NOT_VALIDATE_CONNECTION_FLAG);
+        }
     }
 
     private String use(String entity, String name) {
         return format("USE %s \"%s\"", entity, name);
     }
 
-    private String asCacheKey(String host, String databaseName) {
-        return new StringBuilder(host).append(":").append(databaseName).toString();
-    }
 }
