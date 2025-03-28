@@ -116,7 +116,6 @@ class FireboltEngineVersion2ServiceTest {
     @Test
     void canGetDatabaseAndEngineFromSourceWhenCachingIsEnabledButDatabaseNotInCache() throws SQLException {
         when(mockConnectionCache.getDatabaseOptions(MY_DATABASE)).thenReturn(Optional.empty());
-        when(mockConnectionCache.getDatabaseOptions(MY_DATABASE)).thenReturn(Optional.empty());
         when(mockConnectionCache.getEngineOptions(MY_ENGINE)).thenReturn(Optional.empty());
 
         doNothing().when(mockConnectionCache).setDatabaseOptions(eq(MY_DATABASE), any());

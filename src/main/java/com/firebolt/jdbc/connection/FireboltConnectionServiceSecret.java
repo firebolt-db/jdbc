@@ -36,7 +36,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
     private final FireboltGatewayUrlService fireboltGatewayUrlService;
     private FireboltEngineVersion2Service fireboltEngineVersion2Service;
 
-    private CacheService cacheService;
+    private final CacheService cacheService;
 
     /**
      * If caching is enabled, then this value will contain the cached values

@@ -3,9 +3,9 @@ package com.firebolt.jdbc.cache;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CacheServiceProviderTest {
 
@@ -13,7 +13,7 @@ class CacheServiceProviderTest {
     void willReturnTheSameInstanceOfCacheProvider() {
         CacheServiceProvider cacheServiceProvider1 = CacheServiceProvider.getInstance();
         CacheServiceProvider cacheServiceProvider2 = CacheServiceProvider.getInstance();
-        assertSame(cacheServiceProvider1,cacheServiceProvider2);
+        assertSame(cacheServiceProvider1, cacheServiceProvider2);
     }
 
     @Test
@@ -22,7 +22,7 @@ class CacheServiceProviderTest {
         CacheService cacheService1 = cacheServiceProvider.getCacheService(CacheType.IN_MEMORY);
         CacheService cacheService2 = cacheServiceProvider.getCacheService(CacheType.IN_MEMORY);
         assertSame(cacheService1, cacheService2);
-        assertTrue(cacheService1 instanceof InMemoryCacheService);
+        assertInstanceOf(InMemoryCacheService.class, cacheService1);
     }
 
     @Test

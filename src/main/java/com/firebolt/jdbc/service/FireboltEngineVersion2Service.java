@@ -48,7 +48,7 @@ public class FireboltEngineVersion2Service {
      * @param statement - statement that will execute the verification of the database
      * @param databaseName - the name of the database to check
      */
-    private void getAndSetDatabaseProperties(Statement statement, String databaseName, Optional<ConnectionCache> connectionCacheOptional) throws SQLException {
+    private void getAndSetDatabaseProperties(Statement statement, String databaseName, final Optional<ConnectionCache> connectionCacheOptional) throws SQLException {
         // if the connection cache is empty it means it is not cachable
         if (connectionCacheOptional.isEmpty()) {
             // if no caching of the result then just make the call
@@ -100,13 +100,12 @@ public class FireboltEngineVersion2Service {
      * @param engineName - the name of the engine to check
 
      */
-    private void getAndSetEngineProperties(Statement statement, String engineName, Optional<ConnectionCache> connectionCacheOptional) throws SQLException {
+    private void getAndSetEngineProperties(Statement statement, String engineName, final Optional<ConnectionCache> connectionCacheOptional) throws SQLException {
         // if the connection cache is empty it means it is not cachable
         if (connectionCacheOptional.isEmpty()) {
             // if no caching of the result then just make the call
             statement.executeUpdate(use("ENGINE", engineName));
         } else {
-            // check the cache first
             // check the cache first
             ConnectionCache connectionCache = connectionCacheOptional.get();
             Optional<EngineOptions> engineOptions = connectionCache.getEngineOptions(engineName);
