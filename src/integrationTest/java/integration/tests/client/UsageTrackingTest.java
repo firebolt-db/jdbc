@@ -10,6 +10,8 @@ import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -20,6 +22,7 @@ public class UsageTrackingTest extends MockWebServerAwareIntegrationTest {
 		mockBackEnd.enqueue(new MockResponse().setResponseCode(200));
 		mockBackEnd.enqueue(new MockResponse().setResponseCode(200));
 
+		String firstConnectionId;
 		try (FireboltConnection fireboltConnection = (FireboltConnection) createLocalConnection(String.format(
 				"?ssl=0&port=%d&max_retries=%d&user_drivers=AwesomeDriver:1.0.1&user_clients=GreatClient:0.1.4&access_token=token1",
 				mockBackEnd.getPort(), 3)); Statement statement = fireboltConnection.createStatement()) {
@@ -33,6 +36,9 @@ public class UsageTrackingTest extends MockWebServerAwareIntegrationTest {
 			// connection is not cached so there should be only connId set
 			assertTrue(userAgentHeader.contains("connId"));
 			assertFalse(userAgentHeader.contains("cachedConnId"));
+
+			firstConnectionId = userAgentHeader.split("connId:")[1];
+			assertEquals(12, firstConnectionId.length());
 		}
 
 		// create a second connection
@@ -48,7 +54,18 @@ public class UsageTrackingTest extends MockWebServerAwareIntegrationTest {
 
 			// connection should be cached
 			assertTrue(userAgentHeader.contains("connId"));
-			assertTrue(userAgentHeader.contains("cachedConnId"));
+			assertTrue(userAgentHeader.contains("cachedConnId:" + firstConnectionId));
+
+			// get the second connection id
+			// split the string based on cacheConnId and get the first part
+			String userAgentHeaderWithoutCachedConnectionId = userAgentHeader.split(";cachedConnId")[0];
+
+			// the split it based on connId: and get the second part
+			String secondConnectionId = userAgentHeaderWithoutCachedConnectionId.split("connId:")[1];
+			assertEquals(12, secondConnectionId.length());
+
+			// each connection should get their own ids
+			assertNotEquals(firstConnectionId, secondConnectionId);
 		}
 
 	}
