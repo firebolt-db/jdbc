@@ -8,18 +8,6 @@ import com.firebolt.jdbc.exception.ServerError;
 import com.firebolt.jdbc.exception.ServerError.Error.Location;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import com.firebolt.jdbc.util.CloseableUtil;
-import lombok.CustomLog;
-import lombok.Getter;
-import lombok.NonNull;
-import okhttp3.Call;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -36,11 +24,20 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import lombok.CustomLog;
+import lombok.Getter;
+import lombok.NonNull;
+import okhttp3.Call;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
@@ -250,10 +247,16 @@ public abstract class FireboltClient implements CacheListener {
 
 	private List<Entry<String, String>> createHeaders(String accessToken) {
 		List<Entry<String, String>> headers = new ArrayList<>();
-		headers.add(Map.entry(HEADER_USER_AGENT, getHeaderUserAgentValue()));
+		headers.add(Map.entry(HEADER_USER_AGENT, createUserAgentHeader()));
 		ofNullable(connection.getProtocolVersion()).ifPresent(version -> headers.add(Map.entry(HEADER_PROTOCOL_VERSION, version)));
 		ofNullable(accessToken).ifPresent(token -> headers.add(Map.entry(HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken)));
 		return headers;
+	}
+
+	private String createUserAgentHeader() {
+		// add the user agent information from the connection
+		Optional<String> connectionUserAgentInfo = connection.getConnectionUserAgentHeader();
+		return connectionUserAgentInfo.isEmpty() ? headerUserAgentValue : new StringBuilder(headerUserAgentValue).append(";").append(connectionUserAgentInfo.get()).toString();
 	}
 
 	private String getInternalErrorWithHeadersText(Response response) {

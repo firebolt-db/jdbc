@@ -1,5 +1,10 @@
 package com.firebolt.jdbc.client;
 
+import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -7,16 +12,15 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import static com.firebolt.jdbc.client.DriverVersionRetriever.getDriverVersion;
 import static com.firebolt.jdbc.client.UsageTrackerUtil.CLIENT_MAP;
 import static com.firebolt.jdbc.client.UsageTrackerUtil.DRIVER_MAP;
-import static com.firebolt.jdbc.client.UserAgentFormatter.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.firebolt.jdbc.client.UserAgentFormatter.javaVersion;
+import static com.firebolt.jdbc.client.UserAgentFormatter.osVersion;
+import static com.firebolt.jdbc.client.UserAgentFormatter.userAgent;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -54,7 +58,7 @@ class UsageTrackerUtilTest {
 	void shouldGetUserAgentNoOverride(String osName, String expectedOsInUserAgent) {
 		System.setProperty("os.name", osName);
 		String result = UsageTrackerUtil.getUserAgentString("", "");
-		assertEquals(userAgent("JDBC/%s (Java %s; %s %s; )", getDriverVersion(), javaVersion(), expectedOsInUserAgent, osVersion()), result);
+		assertEquals(userAgent("JDBC/%s (Java %s; %s %s; )", getDriverVersion(), javaVersion(), expectedOsInUserAgent, osVersion(), Optional.empty()), result);
 	}
 
 	@ParameterizedTest(name = "userClients: {0}")
@@ -65,7 +69,7 @@ class UsageTrackerUtilTest {
 	void shouldGetUserAgentCustomConnectors(String userClients, String expectedPrefix) {
 		System.setProperty("os.name", "MacosX");
 		String result = UsageTrackerUtil.getUserAgentString("AwesomeDriver:1.0.1,BadConnector:0.1.4", userClients);
-		assertEquals(expectedPrefix + userAgent("JDBC/%s (Java %s; %s %s; ) AwesomeDriver/1.0.1 BadConnector/0.1.4", getDriverVersion(), javaVersion(), "Darwin", osVersion()), result);
+		assertEquals(expectedPrefix + userAgent("JDBC/%s (Java %s; %s %s; ) AwesomeDriver/1.0.1 BadConnector/0.1.4", getDriverVersion(), javaVersion(), "Darwin", osVersion(), Optional.empty()), result);
 	}
 
 	@ParameterizedTest(name = "{0} -> {1}")
@@ -79,7 +83,7 @@ class UsageTrackerUtilTest {
 	void shouldIgnoreIncorrectCustomConnectors(String userDrivers, String userClients) {
 		System.setProperty("os.name", "MacosX");
 		String result = UsageTrackerUtil.getUserAgentString(userDrivers, userClients);
-		assertEquals(userAgent("JDBC/%s (Java %s; %s %s; )", getDriverVersion(), javaVersion(), "Darwin", osVersion()), result);
+		assertEquals(userAgent("JDBC/%s (Java %s; %s %s; )", getDriverVersion(), javaVersion(), "Darwin", osVersion(), Optional.empty()), result);
 	}
 
 	@Test

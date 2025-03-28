@@ -13,6 +13,7 @@ import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -105,6 +106,13 @@ class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
         try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
             verify(fireboltEngineService).getEngine(argThat(props -> "engine".equals(props.getEngine()) && "db".equals(props.getDatabase())));
             assertEquals("http://my_endpoint", fireboltConnection.getSessionProperties().getHost());
+        }
+    }
+
+    @Test
+    void willNotAddAnyAdditionalUserAgentHeaderValue() throws SQLException {
+        try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
+            assertTrue(fireboltConnection.getConnectionUserAgentHeader().isEmpty());
         }
     }
 

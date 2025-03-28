@@ -14,6 +14,7 @@ import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.type.ParserVersion;
 import java.sql.SQLException;
+import java.util.Optional;
 import java.util.Properties;
 import lombok.CustomLog;
 import lombok.NonNull;
@@ -93,6 +94,11 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
         }
 
         return false;
+    }
+
+    @Override
+    public Optional<String> getConnectionUserAgentHeader() {
+        return Optional.empty();
     }
 
     @Override
