@@ -390,7 +390,6 @@ class StatementClientImplTest {
 		when(okHttpClient.newCall(any())).thenReturn(useCall, select1Call);
 		FireboltConnection connection = new FireboltConnection("url", props, "0", ParserVersion.CURRENT) {
 			{
-				this.infraVersion = mockedInfraVersion;
 				try {
 					connect();
 				} catch (SQLException e) {
@@ -401,6 +400,11 @@ class StatementClientImplTest {
 			@Override
 			protected OkHttpClient getHttpClient(FireboltProperties fireboltProperties) {
 				return okHttpClient;
+			}
+
+			@Override
+			public int getInfraVersion() {
+				return mockedInfraVersion;
 			}
 
 			@Override

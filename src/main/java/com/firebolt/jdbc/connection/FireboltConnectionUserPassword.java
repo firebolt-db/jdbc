@@ -112,4 +112,9 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
             }
         };
     }
+
+    @Override
+    public int getInfraVersion() {
+        return 1;
+    }
 }
