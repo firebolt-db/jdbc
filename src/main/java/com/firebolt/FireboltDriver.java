@@ -22,6 +22,16 @@ public class FireboltDriver implements Driver {
 		try {
 			java.sql.DriverManager.registerDriver(new FireboltDriver());
 			log.info("Firebolt Driver registered");
+			
+			log.info("Firebolt Driver registered");
+			
+			log.info("Firebolt Driver registered");
+			
+			log.info("Firebolt Driver registered");
+			
+			log.info("Firebolt Driver registered");
+			
+			log.info("Firebolt Driver registered");
 		} catch (SQLException ex) {
 			throw new RuntimeException("Cannot register the driver");
 		}
