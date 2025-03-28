@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * This class encapsulates what information we cache for each connection
@@ -59,6 +60,36 @@ public class ConnectionCache {
 
     public void setEngineOptions(String engineName, EngineOptions engineOptions) {
         engineOptionsMap.put(engineName, engineOptions);
+    }
+
+    /**
+     * Will use this string to generate the checksum
+     * @return
+     */
+    public String asChecksumString() {
+        StringBuilder builder = new StringBuilder();
+
+        if (StringUtils.isNotBlank(connectionId)) {
+            builder.append("connId:").append(connectionId);
+        }
+
+        if (StringUtils.isNotBlank(accessToken)) {
+            builder.append("token:").append(accessToken);
+        }
+
+        if (StringUtils.isNotBlank(systemEngineUrl)) {
+            builder.append("systemEngineUrl:").append(systemEngineUrl);
+        }
+
+        if (databaseOptionsMap != null && !databaseOptionsMap.isEmpty()) {
+            databaseOptionsMap.entrySet().stream().forEach(entry -> builder.append("database[").append(entry.getKey()).append("]").append(entry.getValue().hashCode()));
+        }
+
+        if (engineOptionsMap != null && !engineOptionsMap.isEmpty()) {
+            engineOptionsMap.entrySet().stream().forEach(entry -> builder.append("engine[").append(entry.getKey()).append("]").append(entry.getValue().hashCode()));
+        }
+
+        return builder.toString();
     }
 
 }

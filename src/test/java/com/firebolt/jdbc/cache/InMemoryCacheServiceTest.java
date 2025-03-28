@@ -55,5 +55,10 @@ class InMemoryCacheServiceTest {
         public String getValue() {
             return keyValue;
         }
+
+        @Override
+        public String getEncryptionKey() {
+            return "some encryption key";
+        }
     }
 }

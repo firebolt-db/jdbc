@@ -1,6 +1,7 @@
 package com.firebolt.jdbc.cache;
 
 import java.util.List;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -8,6 +9,7 @@ import org.apache.commons.lang3.tuple.Pair;
  * Class that encapsulates all the parameters/options that we can cache for a particular database
  */
 @Getter
+@EqualsAndHashCode
 public class DatabaseOptions {
 
     /**
