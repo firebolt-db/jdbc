@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,13 +37,13 @@ import static java.lang.String.format;
 import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -281,7 +282,6 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
 
         // no cache is present for the key
         lenient().when(mockCacheService.get(cacheKey)).thenReturn(Optional.empty());
-        lenient().when(mockCacheService.get(cacheKey)).thenReturn(Optional.empty());
 
         lenient().doNothing().when(mockCacheService).put(eq(cacheKey), any(ConnectionCache.class));
 
@@ -293,7 +293,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
              assertEquals(cacheKey.getValue(), clientSecretCacheKey.getValue());
 
              ConnectionCache connectionCache = connectionCacheArgumentCaptor.getValue();
-             assertNotNull(connectionCache.getConnectionId());
+             Assertions.assertNotNull(connectionCache.getConnectionId());
              assertEquals(AN_ACCESS_TOKEN, connectionCache.getAccessToken());
              assertEquals(SYSTEM_ENGINE_URL_FOR_DEV_ACCOUNT, connectionCache.getSystemEngineUrl());
 
@@ -382,7 +382,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         EngineOptions engineOptions = new EngineOptions(USER_ENGINE_ENDPOINT, List.of(Pair.of("engine", ENGINE_NAME)));
         connectionCache.setEngineOptions(ENGINE_NAME, engineOptions);
 
-        lenient().when(mockCacheService.get(cacheKey)).thenReturn(Optional.of(connectionCache));
+        when(mockCacheService.get(cacheKey)).thenReturn(Optional.of(connectionCache));
 
         // connection url with engine name
         try (FireboltConnection fireboltConnection = createConnection(CONNECTION_URL_WITH_ENGINE_AND_DB, connectionProperties)) {
