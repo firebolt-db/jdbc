@@ -69,7 +69,7 @@ class BooleanTypeUtil {
     }
 
     private static boolean fromNumber(final Number numval) throws FireboltException {
-        // Handles BigDecimal, Byte, Short, Integer, Long Float, Double
+        // Handles BigDecimal, Byte, Short, Integer, Long, Float, Double
         // based on the widening primitive conversions.
         final double value = numval.doubleValue();
         if (value == 1.0d) {
