@@ -5,9 +5,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.json.JSONObject;
 
@@ -37,11 +37,13 @@ public class ConnectionCache {
     /**
      * On one connection cache we might store information about multiple databases
      */
+    @Getter(value = AccessLevel.PUBLIC) // needed for json serialization (need to check if it needs to be public)
     private Map<String, DatabaseOptions> databaseOptionsMap;
 
     /**
      * On one connection cache we might store information about multiple engines
      */
+    @Getter(value = AccessLevel.PUBLIC) // needed for json serialization (need to check if it needs to be public)
     private Map<String, EngineOptions> engineOptionsMap;
 
     public ConnectionCache(String connectionId) {
@@ -105,36 +107,6 @@ public class ConnectionCache {
 
     public void setEngineOptions(String engineName, EngineOptions engineOptions) {
         engineOptionsMap.put(engineName, engineOptions);
-    }
-
-    /**
-     * Will use this string to generate the checksum
-     * @return
-     */
-    public String asChecksumString() {
-        StringBuilder builder = new StringBuilder();
-
-        if (StringUtils.isNotBlank(connectionId)) {
-            builder.append("connId:").append(connectionId);
-        }
-
-        if (StringUtils.isNotBlank(accessToken)) {
-            builder.append("token:").append(accessToken);
-        }
-
-        if (StringUtils.isNotBlank(systemEngineUrl)) {
-            builder.append("systemEngineUrl:").append(systemEngineUrl);
-        }
-
-        if (databaseOptionsMap != null && !databaseOptionsMap.isEmpty()) {
-            databaseOptionsMap.entrySet().stream().forEach(entry -> builder.append("database[").append(entry.getKey()).append("]").append(entry.getValue().hashCode()));
-        }
-
-        if (engineOptionsMap != null && !engineOptionsMap.isEmpty()) {
-            engineOptionsMap.entrySet().stream().forEach(entry -> builder.append("engine[").append(entry.getKey()).append("]").append(entry.getValue().hashCode()));
-        }
-
-        return builder.toString();
     }
 
 }

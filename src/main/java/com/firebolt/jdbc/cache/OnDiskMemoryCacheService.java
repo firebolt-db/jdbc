@@ -26,17 +26,15 @@ class OnDiskMemoryCacheService implements CacheService {
     // this would be the in memory cache
     private CacheService cacheService;
     private FileService fileService;
-    private EncryptionService encryptionService;
 
     public OnDiskMemoryCacheService(CacheService cacheService) {
-        this(cacheService, FileService.getInstance(), new EncryptionService());
+        this(cacheService, FileService.getInstance());
     }
 
     // visible for testing
-    OnDiskMemoryCacheService(CacheService cacheService, FileService fileService, EncryptionService encryptionService) {
+    OnDiskMemoryCacheService(CacheService cacheService, FileService fileService) {
         this.cacheService = cacheService;
         this.fileService = fileService;
-        this.encryptionService = encryptionService;
     }
 
     @Override
@@ -87,22 +85,6 @@ class OnDiskMemoryCacheService implements CacheService {
         cacheService.put(cacheKey, connectionCache);
 
         return Optional.of(connectionCache);
-    }
-
-    private ConnectionCache asConnectionCache(OnDiskConnectionCache onDiskConnectionCache, String decryptedJwtToken) {
-        ConnectionCache connectionCache = new ConnectionCache(onDiskConnectionCache.getConnectionId());
-        connectionCache.setAccessToken(decryptedJwtToken);
-        connectionCache.setSystemEngineUrl(onDiskConnectionCache.getSystemEngineUrl());
-
-        if (onDiskConnectionCache.getDatabaseOptionsMap() != null) {
-            onDiskConnectionCache.getDatabaseOptionsMap().entrySet().forEach(databaseEntry -> connectionCache.setDatabaseOptions(databaseEntry.getKey(), databaseEntry.getValue()));
-        }
-
-        if (onDiskConnectionCache.getEngineOptionsMap() != null) {
-            onDiskConnectionCache.getEngineOptionsMap().entrySet().forEach(engineEntry -> connectionCache.setEngineOptions(engineEntry.getKey(), engineEntry.getValue()));
-        }
-
-        return connectionCache;
     }
 
     // we should only use the file if it was created within the last 2hours
