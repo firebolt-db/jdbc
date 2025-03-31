@@ -10,13 +10,18 @@ public class DirectoryPathResolver {
 
     private static final String FIREBOLT_JDBC_APP_NAME = "fireboltDriverJdbc";
 
+    public static final String USER_HOME_PROPERTY = "user.home";
+    public static final String OS_NAME_PROPERTY = "os.name";
+
     public Path resolveFireboltJdbcDirectory() {
-        String userHome = System.getProperty("user.home");
+        String userHome = System.getProperty(USER_HOME_PROPERTY);
         Path appDataPath;
 
-        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+        String osName = System.getProperty(OS_NAME_PROPERTY).toLowerCase();
+
+        if (osName.contains("win")) {
             appDataPath = Paths.get(System.getenv("APPDATA"), FIREBOLT_JDBC_APP_NAME);
-        } else if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+        } else if (osName.contains("mac")) {
             appDataPath = Paths.get(userHome, "Library", "Application Support", FIREBOLT_JDBC_APP_NAME);
         } else {
             appDataPath = Paths.get(userHome, ".config", FIREBOLT_JDBC_APP_NAME);
