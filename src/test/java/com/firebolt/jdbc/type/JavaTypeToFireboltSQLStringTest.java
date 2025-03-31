@@ -39,9 +39,9 @@ class JavaTypeToFireboltSQLStringTest {
 
 	@Test
 	void shouldTransformBooleanToString() throws SQLException {
-		assertEquals("1", JavaTypeToFireboltSQLString.BOOLEAN.transform(true));
+		assertEquals("true", JavaTypeToFireboltSQLString.BOOLEAN.transform(true));
 
-		assertEquals("0", JavaTypeToFireboltSQLString.BOOLEAN.transform(false));
+		assertEquals("false", JavaTypeToFireboltSQLString.BOOLEAN.transform(false));
 
 		assertEquals("NULL", JavaTypeToFireboltSQLString.BOOLEAN.transform(null));
 	}
