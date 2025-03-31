@@ -5,10 +5,14 @@ import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.type.array.FireboltArray;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junitpioneer.jupiter.DefaultTimeZone;
 
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -17,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_NOT_SUPPORTED;
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
@@ -24,6 +29,7 @@ import static com.firebolt.jdbc.type.JavaTypeToFireboltSQLString.NULL_VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JavaTypeToFireboltSQLStringTest {
 
 	@Test
@@ -231,5 +237,33 @@ class JavaTypeToFireboltSQLStringTest {
 	@EnumSource(JavaTypeToFireboltSQLString.class)
 	void shouldTransformNullValue(JavaTypeToFireboltSQLString type) throws SQLException {
 		assertEquals(NULL_VALUE, type.transform(null));
+	}
+
+	@ParameterizedTest
+	@MethodSource("booleanTypes")
+	void shouldTransformBooleanTypes(Object trueValue, Object falseValue) throws SQLException {
+		assertEquals("true", JavaTypeToFireboltSQLString.BOOLEAN.transform(trueValue));
+		assertEquals("false", JavaTypeToFireboltSQLString.BOOLEAN.transform(falseValue));
+	}
+
+	Stream<Arguments> booleanTypes() {
+		return Stream.of(
+				Arguments.of("1", "0"),
+				Arguments.of("true", "false"),
+				Arguments.of("t", "f"),
+				Arguments.of("yes", "no"),
+				Arguments.of("y", "n"),
+				Arguments.of("on", "off"),
+				Arguments.of('1', '0'),
+				Arguments.of('t', 'f'),
+				Arguments.of('T', 'F'),
+				Arguments.of('y', 'n'),
+				Arguments.of('Y', 'N'),
+				Arguments.of(1, 0),
+				Arguments.of(1.0, 0.0),
+				Arguments.of(1F, 0F),
+				Arguments.of(1L, 0L),
+				Arguments.of(BigDecimal.valueOf(1), BigDecimal.valueOf(0))
+		);
 	}
 }
