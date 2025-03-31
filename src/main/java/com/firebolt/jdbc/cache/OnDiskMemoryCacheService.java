@@ -1,18 +1,16 @@
 package com.firebolt.jdbc.cache;
 
 import com.firebolt.jdbc.cache.exception.CacheException;
+import com.firebolt.jdbc.cache.exception.FilenameGenerationException;
 import com.firebolt.jdbc.cache.key.CacheKey;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.nio.file.Files;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import lombok.CustomLog;
-import org.apache.commons.lang3.StringUtils;
-import org.json.JSONObject;
 
 /**
  * A wrapper on another cache service, that will check the disk if the cached object is not present in the wrapped cached service
@@ -29,17 +27,16 @@ class OnDiskMemoryCacheService implements CacheService {
     private CacheService cacheService;
     private FileService fileService;
     private EncryptionService encryptionService;
-    private ChecksumGenerator checksumGenerator;
+
     public OnDiskMemoryCacheService(CacheService cacheService) {
-        this(cacheService, new FileService(), new EncryptionService(), new ChecksumGenerator());
+        this(cacheService, FileService.getInstance(), new EncryptionService());
     }
 
     // visible for testing
-    OnDiskMemoryCacheService(CacheService cacheService, FileService fileService, EncryptionService encryptionService, ChecksumGenerator checksumGenerator) {
+    OnDiskMemoryCacheService(CacheService cacheService, FileService fileService, EncryptionService encryptionService) {
         this.cacheService = cacheService;
         this.fileService = fileService;
         this.encryptionService = encryptionService;
-        this.checksumGenerator = checksumGenerator;
     }
 
     @Override
@@ -61,40 +58,27 @@ class OnDiskMemoryCacheService implements CacheService {
         }
 
         // try to get it from disk
-        Optional<File> cacheFileOptional = fileService.findFileForKey(cacheKey);
-        if (cacheFileOptional.isEmpty()) {
+        File cacheFile;
+        try {
+            cacheFile = fileService.findFileForKey(cacheKey);
+        } catch (FilenameGenerationException e) {
+            log.error("Failed to generate the file name");
             return Optional.empty();
         }
 
         // found the file, make sure we can still use it
-        File cacheFile = cacheFileOptional.get();
         if (isFileTooOld(cacheFile)) {
             // an improvement here is to delete the file since it is already too old
             return Optional.empty();
         }
 
         // read the value from the file
-        Optional<OnDiskConnectionCache> onDiskConnectionCacheOptional = readFileContent(cacheFile);
-        if (onDiskConnectionCacheOptional.isEmpty()) {
+        connectionCacheOptional = fileService.readContent(cacheKey, cacheFile);
+        if (connectionCacheOptional.isEmpty()) {
             return Optional.empty();
         }
 
-        OnDiskConnectionCache onDiskConnectionCache = onDiskConnectionCacheOptional.get();
-
-        // verify the jwt token is correctly encrypted
-        Optional<String> jwtToken = encryptionService.decrypt(onDiskConnectionCache.getEncryptedJwtToken(), cacheKey.getEncryptionKey());
-        if (jwtToken.isEmpty()) {
-            return Optional.empty();
-        }
-
-        // can decrypt the token, then check if the checksum is correct
-        ConnectionCache connectionCache = asConnectionCache(onDiskConnectionCache, jwtToken.get());
-        String fromFileChecksum = onDiskConnectionCache.getChecksum();
-
-        if (StringUtils.isBlank(fromFileChecksum) || !fromFileChecksum.equals(checksumGenerator.generateChecksum(connectionCache))) {
-            log.error("Checksum does not match, so cannot use the value from disk");
-            return Optional.empty();
-        }
+        ConnectionCache connectionCache = connectionCacheOptional.get();
 
         // all good we can use the connection cache from disk
         connectionCache.setCacheSource(CacheType.DISK.name());
@@ -121,26 +105,6 @@ class OnDiskMemoryCacheService implements CacheService {
         return connectionCache;
     }
 
-    private Optional<OnDiskConnectionCache> readFileContent(File cacheFile) {
-        String content;
-        try {
-            content = Files.readString(cacheFile.toPath());
-        } catch (IOException e) {
-            log.error("Failed to read the contents of the file", e);
-            return Optional.empty();
-        }
-
-        // convert it into java object
-        try {
-            Constructor<OnDiskConnectionCache> constructor = OnDiskConnectionCache.class.getDeclaredConstructor(JSONObject.class);
-            constructor.setAccessible(true);
-            return content == null ? Optional.empty() : Optional.ofNullable(constructor.newInstance(new JSONObject(content)));
-        } catch (ReflectiveOperationException | RuntimeException e) {
-            log.error("Failed to read the json as connection cache", e);
-            return Optional.empty();
-        }
-    }
-
     // we should only use the file if it was created within the last 2hours
     private boolean isFileTooOld(File cacheFile) {
         try {
@@ -155,6 +119,6 @@ class OnDiskMemoryCacheService implements CacheService {
     }
 
     private void safelySaveToDiskAsync(CacheKey key, ConnectionCache connectionCache) {
-        fileService.save(key, connectionCache);
+        fileService.safeSaveToDiskAsync(key, connectionCache);
     }
 }

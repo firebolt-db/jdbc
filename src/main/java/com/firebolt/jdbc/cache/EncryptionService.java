@@ -1,11 +1,17 @@
 package com.firebolt.jdbc.cache;
 
+import com.firebolt.jdbc.cache.exception.EncryptionException;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Optional;
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import lombok.CustomLog;
@@ -19,6 +25,7 @@ public class EncryptionService {
 
     private static final int GCM_TAG_LENGTH = 128; // GCM tag length in bits (16 bytes)
     private static final int AES_KEY_SIZE = 32; // use 32 bytes so we will use AES-256 algorithm
+    private static final String SHA_256_ALGO = "SHA-256";
 
     /**
      * Encrypts a plaintext using the encryption key. If there are any exceptions during encryption an empty optional will be returned
@@ -27,16 +34,16 @@ public class EncryptionService {
      * @param encryptionKey - the key to be used for encryption
      * @return - if encryption is successful then a base64 encoded encrypted string will be returned
      */
-    public Optional<String> encrypt(String plainText, String encryptionKey) {
+    public String encrypt(String plainText, String encryptionKey) throws EncryptionException, IllegalArgumentException {
         if (StringUtils.isBlank(plainText) || StringUtils.isBlank(encryptionKey)) {
-            return Optional.empty();
+            throw new IllegalArgumentException("Text to encrypt or encryption key is null. Cannot encrypt.");
         }
 
         try {
-            return Optional.of(encryptAESGCM(plainText, encryptionKey));
+            return encryptAESGCM(plainText, encryptionKey);
         } catch (Exception e) {
             log.error("Failed to encrypt the text", e);
-            return Optional.empty();
+            throw EncryptionException.encryptionFailed();
         }
     }
 
@@ -47,16 +54,16 @@ public class EncryptionService {
      * @return the original plain text
      * @throws Exception - in case the encrypted text cannot be decrypted
      */
-    public Optional<String> decrypt(String base64EncryptedText, String encryptionKey) {
+    public String decrypt(String base64EncryptedText, String encryptionKey) throws EncryptionException, IllegalArgumentException {
         if (StringUtils.isBlank(base64EncryptedText) || StringUtils.isBlank(encryptionKey)) {
-            return Optional.empty();
+            throw new IllegalArgumentException("Text to decrypt or encryption key is null. Cannot encrypt.");
         }
 
         try {
-            return Optional.of(decryptAESGCM(base64EncryptedText, encryptionKey));
+            return decryptAESGCM(base64EncryptedText, encryptionKey);
         } catch (Exception e) {
             log.error("Failed to decrypt encrypted text", e);
-            return Optional.empty();
+            throw EncryptionException.decryptionFailed();
         }
     }
 
@@ -66,8 +73,8 @@ public class EncryptionService {
      * @return
      * @throws Exception
      */
-    private SecretKeySpec deriveAESKey(String input) throws Exception {
-        MessageDigest sha = MessageDigest.getInstance("SHA-256");
+    private SecretKeySpec deriveAESKey(String input) throws NoSuchAlgorithmException {
+        MessageDigest sha = MessageDigest.getInstance(SHA_256_ALGO);
         byte[] hash = sha.digest(input.getBytes(StandardCharsets.UTF_8));
         return new SecretKeySpec(Arrays.copyOf(hash, AES_KEY_SIZE), "AES"); // Trim to required length
     }
@@ -79,14 +86,14 @@ public class EncryptionService {
      * @return
      * @throws Exception - exception when cannot encrypt the plaintext
      */
-    private String encryptAESGCM(String plaintext, String key) throws Exception {
+    private String encryptAESGCM(String plaintext, String key) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
         SecretKeySpec secretKey = deriveAESKey(key);
 
         // Generate a deterministic nonce from the key
         byte[] nonce = deriveNonce(key, key);
         GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, nonce);
 
-        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        Cipher cipher = getAesGcmCipherInstance();
         cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmSpec);
         byte[] encrypted = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
 
@@ -100,14 +107,14 @@ public class EncryptionService {
      * @return the original plain text
      * @throws Exception - in case the encrypted text cannot be decrypted
      */
-    private String decryptAESGCM(String encryptedBase64, String key) throws Exception {
+    private String decryptAESGCM(String encryptedBase64, String key) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
         SecretKeySpec secretKey = deriveAESKey(key);
 
         // Regenerate the same deterministic nonce from key
         byte[] nonce = deriveNonce(key, key);
         GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, nonce);
 
-        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        Cipher cipher = getAesGcmCipherInstance();
         cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec);
 
         byte[] encrypted = Base64.getDecoder().decode(encryptedBase64);
@@ -116,9 +123,13 @@ public class EncryptionService {
         return new String(decrypted, StandardCharsets.UTF_8);
     }
 
+    private Cipher getAesGcmCipherInstance() throws NoSuchPaddingException, NoSuchAlgorithmException {
+        return Cipher.getInstance("AES/GCM/NoPadding");
+    }
+
     // Deterministic nonce generation using SHA-256 hash
-    private static byte[] deriveNonce(String plaintext, String key) throws Exception {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+    private static byte[] deriveNonce(String plaintext, String key) throws NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance(SHA_256_ALGO);
         byte[] hash = digest.digest((plaintext + key).getBytes(StandardCharsets.UTF_8));
         byte[] nonce = new byte[12]; // AES-GCM nonce should be 12 bytes
         System.arraycopy(hash, 0, nonce, 0, nonce.length);
