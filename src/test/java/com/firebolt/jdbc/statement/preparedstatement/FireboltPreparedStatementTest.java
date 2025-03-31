@@ -407,7 +407,7 @@ class FireboltPreparedStatementTest {
 		statement.execute();
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("INSERT INTO cars(available) VALUES (1)", queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("INSERT INTO cars(available) VALUES (true)", queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
 	@ParameterizedTest
@@ -547,7 +547,7 @@ class FireboltPreparedStatementTest {
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals(
-				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,1,5)",
+				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,true,5)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
@@ -573,7 +573,7 @@ class FireboltPreparedStatementTest {
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 
 		assertEquals(
-				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,1,5)",
+				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,true,5)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
