@@ -8,6 +8,8 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -27,16 +29,21 @@ public class SqlDateUtil {
 			.appendPattern("[XXX]")
 			.appendPattern("[X]").toFormatter();
 
-	public static final Function<Timestamp, String> transformFromTimestampToSQLStringFunction = value -> String
-			.format("'%s'", dateTimeFormatter.format(value.toLocalDateTime()));
+	public static final Function<LocalDateTime, String> transformFromLocalDateTimeToSQLStringFunction = value -> String
+			.format("'%s'", dateTimeFormatter.format(value));
+	public static final Function<OffsetDateTime, String> transformFromOffsetDateTimeToSQLStringFunction = value -> String
+			.format("'%s'", dateTimeFormatter.format(value));
+	public static final Function<Timestamp, String> transformFromTimestampToSQLStringFunction = value ->
+			transformFromLocalDateTimeToSQLStringFunction.apply(value.toLocalDateTime());
 	public static final BiFunction<Timestamp, TimeZone, String> transformFromTimestampWithTimezoneToSQLStringFunction = (ts, tz) -> String
 			.format("'%s'", dateTimeFormatter.format(ts.toInstant().atZone(tz.toZoneId()).toLocalDateTime()));
 	private static final TimeZone DEFAULT_SERVER_TZ = TimeZone.getTimeZone("UTC");
 	private static final DateTimeFormatter dateFormatter = new DateTimeFormatterBuilder()
 			.appendValue(ChronoField.YEAR, 4).parseDefaulting(ChronoField.YEAR, 0).appendPattern("[-]MM-dd")
 			.toFormatter();
-	public static final Function<Date, String> transformFromDateToSQLStringFunction = value -> String.format("'%s'",
-			dateFormatter.format(value.toLocalDate()));
+	public static final Function<LocalDate, String> transformFromLocalDateToSQLStringFunction = value -> String.format("'%s'",
+			dateFormatter.format(value));
+	public static final Function<Date, String> transformFromDateToSQLStringFunction = value -> transformFromLocalDateToSQLStringFunction.apply(value.toLocalDate());
 	public static final BiFunction<Date, TimeZone, String> transformFromDateWithTimezoneToSQLStringFunction = (date, tz) -> String.format("'%s'",
 			dateFormatter.format(Instant.ofEpochMilli(date.getTime()).atZone(tz.toZoneId()).toLocalDateTime()));
 	public static final CheckedBiFunction<String, TimeZone, Timestamp> transformToTimestampFunction = TimestampUtil::toTimestamp;

@@ -13,6 +13,7 @@ import com.firebolt.jdbc.type.lob.FireboltClob;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,6 +50,8 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Optional;
 import java.util.TimeZone;
@@ -69,6 +72,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(MockitoExtension.class)
 class FireboltPreparedStatementTest {
 
@@ -522,15 +526,16 @@ class FireboltPreparedStatementTest {
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
-	@Test
+	@ParameterizedTest
 	@DefaultTimeZone("Europe/London")
-	void shouldSetAllObjects() throws SQLException {
+	@MethodSource("dateTypes")
+	void shouldSetAllObjects(Object timestampOrLocalDateTime, Object dateOrLocalDate) throws SQLException {
 		statement = createStatementWithSql(
 				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) "
 						+ "VALUES (?,?,?,?,?,?,?,?)");
 
-		statement.setObject(1, new Timestamp(1564571713000L));
-		statement.setObject(2, new Date(1564527600000L));
+		statement.setObject(1, timestampOrLocalDateTime);
+		statement.setObject(2, dateOrLocalDate);
 		statement.setObject(3, 5.5F);
 		statement.setObject(4, 5L);
 		statement.setObject(5, new BigDecimal("555555555555.55555555"));
@@ -546,15 +551,16 @@ class FireboltPreparedStatementTest {
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
-	@Test
+	@ParameterizedTest
 	@DefaultTimeZone("Europe/London")
-	void shouldSetAllObjectsWithCorrectSqlType() throws SQLException {
+	@MethodSource("dateTypes")
+	void shouldSetAllObjectsWithCorrectSqlType(Object timestampOrLocalDateTime, Object dateOrLocalDate) throws SQLException {
 		statement = createStatementWithSql(
 				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) "
 						+ "VALUES (?,?,?,?,?,?,?,?)");
 
-		statement.setObject(1, new Timestamp(1564571713000L), Types.TIMESTAMP);
-		statement.setObject(2, new Date(1564527600000L), Types.DATE);
+		statement.setObject(1, timestampOrLocalDateTime, Types.TIMESTAMP);
+		statement.setObject(2, dateOrLocalDate, Types.DATE);
 		statement.setObject(3, 5.5F, Types.FLOAT);
 		statement.setObject(4, 5L, Types.BIGINT);
 		statement.setObject(5, new BigDecimal("555555555555.55555555"), Types.NUMERIC);
@@ -666,5 +672,14 @@ class FireboltPreparedStatementTest {
 
 	private FireboltPreparedStatement createStatementWithSql(String sql) {
 		return new FireboltPreparedStatement(fireboltStatementService, connection, sql);
+	}
+
+	Stream<Arguments> dateTypes() {
+		return Stream.of(
+				Arguments.of(LocalDateTime.of(2019, 7, 31, 12, 15, 13),
+						LocalDate.of(2019, 7, 31)),
+				Arguments.of(new Timestamp(1564571713000L),
+						new Date(1564527600000L))
+		);
 	}
 }
