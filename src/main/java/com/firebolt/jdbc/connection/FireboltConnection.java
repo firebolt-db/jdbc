@@ -22,12 +22,6 @@ import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.type.array.FireboltArray;
 import com.firebolt.jdbc.type.lob.FireboltBlob;
 import com.firebolt.jdbc.type.lob.FireboltClob;
-import com.firebolt.jdbc.util.PropertyUtil;
-import lombok.CustomLog;
-import lombok.Getter;
-import lombok.NonNull;
-import okhttp3.OkHttpClient;
-
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.sql.Array;
@@ -50,8 +44,8 @@ import java.sql.Struct;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -60,7 +54,10 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
+import lombok.CustomLog;
+import lombok.Getter;
+import lombok.NonNull;
+import okhttp3.OkHttpClient;
 
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.getNonDeprecatedProperties;
 import static java.lang.String.format;
@@ -68,8 +65,12 @@ import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.util.stream.Collectors.toMap;
 
+
 @CustomLog
 public abstract class FireboltConnection extends JdbcBase implements Connection, CacheListener {
+
+	private static final boolean VALIDATE_CONNECTION = true;
+	private static final boolean DO_NOT_VALIDATE_CONNECTION = false;
 
 	private final FireboltAuthenticationService fireboltAuthenticationService;
 	private final FireboltStatementService fireboltStatementService;
@@ -80,7 +81,6 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	protected FireboltProperties sessionProperties;
 	private int networkTimeout;
 	private final String protocolVersion;
-	protected int infraVersion = 1;
 	private DatabaseMetaData databaseMetaData;
 
 	//Properties that are used at the beginning of the connection for authentication
@@ -129,39 +129,6 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	protected abstract FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient);
 
-	public static FireboltConnection create(@NonNull String url, Properties connectionSettings) throws SQLException {
-		return createConnectionInstance(url, connectionSettings);
-	}
-
-	private static FireboltConnection createConnectionInstance(@NonNull String url, Properties connectionSettings) throws SQLException {
-		switch(getUrlVersion(url, connectionSettings)) {
-			case 1:
-				return new FireboltConnectionUserPassword(url, connectionSettings, ParserVersion.LEGACY);
-			case 2:
-				return new FireboltConnectionServiceSecret(url, connectionSettings, ParserVersion.CURRENT);
-			default: throw new IllegalArgumentException(format("Cannot distinguish version from url %s", url));
-		}
-	}
-
-	private static int getUrlVersion(String url, Properties connectionSettings) {
-		Pattern urlWithHost = Pattern.compile("jdbc:firebolt://api\\.\\w+\\.firebolt\\.io");
-		if (!urlWithHost.matcher(url).find()) {
-			return 2; // new URL format
-		}
-		// old URL format
-		Properties propertiesFromUrl = UrlUtil.extractProperties(url);
-		Properties allSettings = PropertyUtil.mergeProperties(propertiesFromUrl, connectionSettings);
-		if (allSettings.containsKey("client_id") && allSettings.containsKey("client_secret") && !allSettings.containsKey("user") && !allSettings.containsKey("password")) {
-			return 2;
-		}
-		FireboltProperties props = new FireboltProperties(new Properties[] {propertiesFromUrl, connectionSettings});
-		String principal = props.getPrincipal();
-		if (props.getAccessToken() != null || (principal != null && principal.contains("@"))) {
-			return 1;
-		}
-		return 2;
-	}
-
 	protected OkHttpClient getHttpClient(FireboltProperties fireboltProperties) throws SQLException {
 		try {
 			return HttpClientConfig.getInstance() == null ? HttpClientConfig.init(fireboltProperties) : HttpClientConfig.getInstance();
@@ -172,22 +139,35 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	protected void connect() throws SQLException {
 		closed = false;
-		if (!PropertyUtil.isLocalDb(loginProperties)) {
-			authenticate();
-		} else {
-			// When running packdb locally, the login properties are the session properties
-			sessionProperties = loginProperties;
-			// The validation of not local DB is implemented into authenticate() method itself.
-			assertDatabaseExisting(loginProperties.getDatabase());
-		}
+
+		validateConnectionParameters();
+
+		// try to authenticate
+		authenticate();
+
 		databaseMetaData = retrieveMetaData();
 
 		log.debug("Connection opened");
 	}
 
+	/**
+	 * Returns the version of the firebolt backend the connection is established to
+	 */
+	public abstract int getInfraVersion();
+
 	protected abstract void authenticate() throws SQLException;
 
-	protected abstract void assertDatabaseExisting(String database) throws SQLException;
+	/**
+	 * Validates that the required parameters are present for the connection
+	 * @throws SQLException
+	 */
+	protected abstract void validateConnectionParameters() throws SQLException;
+
+	/**
+	 * If the connection information can be cached for subsequent reuse, then the specific connection should provide implementation
+	 * @return - true if the connection supports caching. False otherwise
+	 */
+	protected abstract boolean isConnectionCachingEnabled();
 
 	public void removeExpiredTokens() throws SQLException {
 		fireboltAuthenticationService.removeConnectionTokens(httpConnectionUrl, loginProperties);
@@ -198,18 +178,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	}
 
 	protected Optional<String> getAccessToken(FireboltProperties fireboltProperties) throws SQLException {
-		String accessToken = fireboltProperties.getAccessToken();
-		if (accessToken != null) {
-			if (fireboltProperties.getPrincipal() != null || fireboltProperties.getSecret() != null) {
-				throw new FireboltException("Ambiguity: Both access token and client ID/secret are supplied");
-			}
-			return Optional.of(accessToken);
-		}
-
-		if (!PropertyUtil.isLocalDb(fireboltProperties)) {
-			return Optional.of(fireboltAuthenticationService.getConnectionTokens(httpConnectionUrl, fireboltProperties)).map(FireboltConnectionTokens::getAccessToken);
-		}
-		return Optional.empty();
+		return Optional.of(fireboltAuthenticationService.getConnectionTokens(httpConnectionUrl, fireboltProperties)).map(FireboltConnectionTokens::getAccessToken);
 	}
 
 	public FireboltProperties getSessionProperties() {
@@ -362,7 +331,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	@Override
 	public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency,
-			int resultSetHoldability) throws SQLException {
+											  int resultSetHoldability) throws SQLException {
 		return prepareStatement(sql, resultSetType, resultSetConcurrency);
 	}
 
@@ -472,23 +441,46 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		}
 	}
 
+	/**
+	 * By default, when adding a property it is validating the connection
+	 */
 	public void addProperty(@NonNull String key, String value) throws SQLException {
-		changeProperty(p -> p.addProperty(key, value), () -> format("Could not set property %s=%s", key, value));
+		addProperty(key, value, VALIDATE_CONNECTION);
+	}
+
+	public void addProperty(@NonNull String key, String value, boolean validateConnection) throws SQLException {
+		changeProperty(p -> p.addProperty(key, value), () -> format("Could not set property %s=%s", key, value), validateConnection);
 	}
 
 	public void addProperty(Entry<String, String> property) throws SQLException {
-		changeProperty(p -> p.addProperty(property), () -> format("Could not set property %s=%s", property.getKey(), property.getValue()));
+		addProperty(property, VALIDATE_CONNECTION);
 	}
 
+	public void addProperty(Entry<String, String> property, boolean validateConnection) throws SQLException {
+		changeProperty(p -> p.addProperty(property), () -> format("Could not set property %s=%s", property.getKey(), property.getValue()), validateConnection);
+	}
+
+	/**
+	 * Server side lets us know when the connection needs to be reset. so no need to validate the connection.
+	 */
 	public void reset() throws SQLException {
-		changeProperty(FireboltProperties::clearAdditionalProperties, () -> "Could not reset connection");
+		changeProperty(FireboltProperties::clearAdditionalProperties, () -> "Could not reset connection", DO_NOT_VALIDATE_CONNECTION);
 	}
-
-	private synchronized void changeProperty(Consumer<FireboltProperties> propertiesEditor, Supplier<String> errorMessageFactory) throws SQLException {
+	
+	/**
+	 * Certain values we set on the session properties that come from the server (in the header responses). In these cases we don't need to validate the connection
+	 * @param propertiesEditor
+	 * @param errorMessageFactory
+	 * @param validateConnection
+	 * @throws SQLException
+	 */
+	private synchronized void changeProperty(Consumer<FireboltProperties> propertiesEditor, Supplier<String> errorMessageFactory, boolean validateConnection) throws SQLException {
 		try {
 			FireboltProperties tmpProperties = FireboltProperties.copy(sessionProperties);
 			propertiesEditor.accept(tmpProperties);
-			validateConnection(tmpProperties, false, false);
+			if (validateConnection) {
+				validateConnection(tmpProperties, false, false);
+			}
 			propertiesEditor.accept(sessionProperties);
 		} catch (FireboltException e) {
 			throw e;
@@ -684,10 +676,6 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	public String getProtocolVersion() {
 		return protocolVersion;
-	}
-
-	public int getInfraVersion() {
-		return infraVersion;
 	}
 
 	public void register(CacheListener listener) {

@@ -21,7 +21,7 @@ class ServerErrorTest {
                 Arguments.of("{\"query\": {}, \"errors\": []}", new ServerError(new Query(null, null, null), new Error[0])),
                 Arguments.of("{\"query\": {\"query_id\": \"qid\", \"request_id\": \"rid\", \"query_label\": \"ql\"}, \"errors\": []}", new ServerError(new Query("qid", "rid", "ql"), new Error[0])),
                 Arguments.of("{\"errors\": [{}]}", new ServerError(null, new Error[] {new Error(null, null, null, Source.UNKNOWN, null, null, null, null)})),
-                Arguments.of("{\"errors\": [{\"code\": \"c1\", \"name\": \"name1\", \"severity\": \"ERROR\", \"source\": \"System Error\", \"description\": \"description1\", \"resolution\": \"resolution1\", \"helpLink\": \"http://help1.com\", \"location\": {\"failingLine\": 1, \"startOffset\": 10, \"endOffset\": 100}}]}",
+                Arguments.of("{\"errors\": [{\"code\": \"c1\", \"name\": \"name1\", \"severity\": \"ERROR\", \"source\": \"System Error\", \"description\": \"description1\", \"resolution\": \"resolution1\", \"helpLink\": \"http://help1.com\", \"location\": {\"failing_line\": 1, \"start_offset\": 10, \"end_offset\": 100}}]}",
                         new ServerError(null, new Error[] {new Error("c1", "name1", Severity.ERROR, Source.SYSTEM_ERROR, "description1", "resolution1", "http://help1.com", new Location(1, 10, 100))}))
         );
     }

@@ -1,14 +1,5 @@
 package com.firebolt.jdbc.connection.settings;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.CustomLog;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.ToString;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -22,6 +13,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.CustomLog;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.ToString;
+import org.jetbrains.annotations.NotNull;
 
 import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static com.firebolt.jdbc.util.PropertyUtil.mergeProperties;
@@ -76,6 +75,9 @@ public class FireboltProperties {
 	private final String userClients;
 	private final String accessToken;
 	private final boolean validateOnSystemEngine;
+	private final boolean mergePreparedStatementBatches;
+	private final boolean connectionCachingEnabled;
+
 	@Builder.Default
 	private Map<String, String> initialAdditionalProperties = new HashMap<>();
 	@Builder.Default
@@ -112,6 +114,8 @@ public class FireboltProperties {
 		userDrivers = getSetting(properties, FireboltSessionProperty.USER_DRIVERS);
 		userClients = getSetting(properties, FireboltSessionProperty.USER_CLIENTS);
 		validateOnSystemEngine = getSetting(properties, FireboltSessionProperty.VALIDATE_ON_SYSTEM_ENGINE);
+		mergePreparedStatementBatches = getSetting(properties, FireboltSessionProperty.MERGE_PREPARED_STATEMENT_BATCHES);
+		connectionCachingEnabled = getSetting(properties, FireboltSessionProperty.CACHE_CONNECTION);
 
 		environment = getEnvironment(configuredEnvironment, properties);
 		host = getHost(configuredEnvironment, properties);

@@ -127,10 +127,13 @@ public class ServerError {
         }
 
         Error(JSONObject json) {
-            this(json.optString("code", null), json.optString("name", null),
+            this(json.optString("code", null),
+                    json.optString("name", null),
                     json.optEnum(Severity.class, "severity"),
                     ofNullable(json.optString("source", null)).map(Source::fromText).orElse(Source.UNKNOWN),
-                    json.optString("description", null), json.optString("resolution", null), json.optString("helpLink", null),
+                    json.optString("description", null),
+                    json.optString("resolution", null),
+                    json.optString("helpLink", null),
                     ofNullable(json.optJSONObject("location", null)).map(Location::new).orElse(null));
         }
 
@@ -190,7 +193,7 @@ public class ServerError {
             }
 
             Location(JSONObject json) {
-                this(json.optInt("failingLine"), json.optInt("startOffset"), json.optInt("endOffset"));
+                this(json.optInt("failing_line"), json.optInt("start_offset"), json.optInt("end_offset"));
             }
 
             @Override

@@ -2,9 +2,6 @@ package com.firebolt.jdbc.util;
 
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
-import lombok.CustomLog;
-import lombok.experimental.UtilityClass;
-
 import java.sql.DriverPropertyInfo;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
@@ -14,6 +11,8 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.CustomLog;
+import lombok.experimental.UtilityClass;
 
 import static com.firebolt.jdbc.connection.UrlUtil.extractProperties;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.getNonDeprecatedProperties;

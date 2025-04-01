@@ -1,22 +1,12 @@
 package integration.tests;
 
-import com.firebolt.jdbc.connection.CacheListener;
-import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.exception.FireboltException;
-import integration.ConnectionInfo;
-import integration.EnvironmentCondition;
-import integration.IntegrationTest;
-import lombok.CustomLog;
-import org.junit.Assert;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
+import static integration.EnvironmentCondition.Attribute.fireboltVersion;
+import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Map.entry;
+import static java.util.stream.Collectors.toList;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,29 +14,27 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
-import static integration.EnvironmentCondition.Attribute.fireboltVersion;
-import static java.lang.String.format;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Map.entry;
-import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.Assert;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import com.firebolt.jdbc.connection.CacheListener;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.exception.FireboltException;
+
+import integration.ConnectionInfo;
+import integration.EnvironmentCondition;
+import integration.IntegrationTest;
+import lombok.CustomLog;
 
 @CustomLog
 @Tag("v2")
@@ -258,7 +246,7 @@ public class SystemEngineTest extends IntegrationTest {
 
 	@Test
 	@Tag("v2")
-	void connectToAccountWithoutUser() throws SQLException, IOException {
+	void connectToAccountWithoutUser() throws SQLException {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
 		String database = current.getDatabase();
 		String serviceAccountName = format("%s_%d_sa_no_user", database, System.currentTimeMillis());
@@ -266,18 +254,11 @@ public class SystemEngineTest extends IntegrationTest {
 			try {
 				connection.createStatement().executeUpdate(format("CREATE SERVICE ACCOUNT \"%s\" WITH DESCRIPTION = 'Ecosytem test with no user'", serviceAccountName));
 				// This what I want to do here
-//				ResultSet genKeyRs = connection.createStatement().executeQuery(format("CALL fb_GENERATESERVICEACCOUNTKEY('%s')", serviceAccountName));
-//				assertTrue(genKeyRs.next());
-//				String clientId = genKeyRs.getString(2);
-//				String clientSecret = genKeyRs.getString(3);
-				// But response of this command is incorrect (FIR-28997), so we have to retrieve clientId and clientSecret using SELECT
-				String clientSecret = getClientSecret(connection, serviceAccountName, current.getDatabase());
-				// end of patch against FIR-28997
-//				if (clientId == null || clientId.isEmpty()) { // Currently this is bugged so retrieve id via a query. FIR-28719
-					ResultSet serviceAccountRs = connection.createStatement().executeQuery(format("SELECT service_account_id FROM information_schema.service_accounts WHERE service_account_name='%s'", serviceAccountName));
-					assertTrue(serviceAccountRs.next());
-					String clientId = serviceAccountRs.getString(1);
-//				}
+				ResultSet genKeyRs = connection.createStatement().executeQuery(format("CALL fb_GENERATESERVICEACCOUNTKEY('%s')", serviceAccountName));
+				assertTrue(genKeyRs.next());
+				String clientId = genKeyRs.getString(2);
+				String clientSecret = genKeyRs.getString(3);
+
 				String jdbcUrl = format("jdbc:firebolt:%s?env=%s&account=%s&engine=%s", database, current.getEnv(), current.getAccount(), current.getEngine());
 
 				((CacheListener)connection).cleanup();

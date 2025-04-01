@@ -11,18 +11,6 @@ import com.firebolt.jdbc.statement.StatementType;
 import com.firebolt.jdbc.statement.rawstatement.RawStatement;
 import com.firebolt.jdbc.util.CloseableUtil;
 import com.firebolt.jdbc.util.PropertyUtil;
-import lombok.CustomLog;
-import lombok.NonNull;
-import okhttp3.Call;
-import okhttp3.Dispatcher;
-import okhttp3.HttpUrl;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
-import okhttp3.internal.http2.StreamResetException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -39,9 +27,21 @@ import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import lombok.CustomLog;
+import lombok.NonNull;
+import okhttp3.Call;
+import okhttp3.Dispatcher;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okhttp3.internal.http2.StreamResetException;
 
 import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.DEFAULT_FORMAT;
 import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.OUTPUT_FORMAT;
+import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.QUERY_LABEL;
 import static com.firebolt.jdbc.exception.ExceptionType.INVALID_REQUEST;
 import static com.firebolt.jdbc.exception.ExceptionType.UNAUTHORIZED;
 import static java.lang.String.format;
@@ -51,6 +51,8 @@ import static java.util.Optional.ofNullable;
 
 @CustomLog
 public class StatementClientImpl extends FireboltClient implements StatementClient {
+
+	private static final boolean DO_NOT_VALIDATE_CONNECTION_FLAG = false;
 
 	private static final String TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT = "TabSeparatedWithNamesAndTypes";
 	private static final Map<Pattern, String> missConfigurationErrorMessages = Map.of(
@@ -136,10 +138,11 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	@Override
 	public InputStream executeSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
 										   @NonNull FireboltProperties connectionProperties, boolean systemEngine, int queryTimeout) throws SQLException {
-		QueryIdFetcher.getQueryFetcher(connection.getInfraVersion()).formatStatement(statementInfoWrapper);
 		String formattedStatement = QueryIdFetcher.getQueryFetcher(connection.getInfraVersion()).formatStatement(statementInfoWrapper);
 		Map<String, String> params = getAllParameters(connectionProperties, statementInfoWrapper, systemEngine, queryTimeout);
-		String label = statementInfoWrapper.getLabel();
+
+		// if available in the params, then use the query label from there. Default to the one from the statementInfoWrapper if not available in params
+		String label = params.getOrDefault(QUERY_LABEL.getKey(), statementInfoWrapper.getLabel());
 		String errorMessage = format("Error executing statement with label %s: %s", label, formattedStatement);
 		try {
 			String uri = buildQueryUri(connectionProperties, params).toString();
@@ -152,6 +155,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			throw new FireboltException(errorMessage, e);
 		}
 	}
+
 
 	private InputStream executeSqlStatementWithRetryOnUnauthorized(String label, @NonNull FireboltProperties connectionProperties, String formattedStatement, String uri)
 			throws SQLException, IOException {
@@ -321,7 +325,8 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 				if (engine != null) {
 					params.put(FireboltQueryParameterKey.ENGINE.getKey(), engine);
 				}
-				params.put(FireboltQueryParameterKey.QUERY_LABEL.getKey(), statementInfoWrapper.getLabel()); //QUERY_LABEL
+
+				params.put(FireboltQueryParameterKey.QUERY_LABEL.getKey(), QueryLabelResolver.getQueryLabel(fireboltProperties, statementInfoWrapper)); //QUERY_LABEL
 			}
 			params.put(FireboltQueryParameterKey.COMPRESS.getKey(), fireboltProperties.isCompress() ? "1" : "0");
 
@@ -357,7 +362,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			}
 			for (String header : response.headers(HEADER_UPDATE_PARAMETER)) {
 				String[] keyValue = header.split("=");
-				connection.addProperty(keyValue[0].trim(), keyValue[1].trim());
+				connection.addProperty(keyValue[0].trim(), keyValue[1].trim(), DO_NOT_VALIDATE_CONNECTION_FLAG);
 			}
 		}
 	}

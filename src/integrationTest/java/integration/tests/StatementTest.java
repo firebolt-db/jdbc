@@ -5,18 +5,6 @@ import com.firebolt.jdbc.exception.FireboltException;
 import integration.ConnectionInfo;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
-import kotlin.collections.ArrayDeque;
-import lombok.CustomLog;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -28,7 +16,20 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+import kotlin.collections.ArrayDeque;
+import lombok.CustomLog;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.lang.String.format;
 import static java.sql.Statement.SUCCESS_NO_INFO;
@@ -45,6 +46,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
 class StatementTest extends IntegrationTest {
+
+	private static final long TEN_SECONDS_IN_MILLIS = TimeUnit.SECONDS.toMillis(10);
 
 	@BeforeEach
 	void beforeEach() {
@@ -117,6 +120,8 @@ class StatementTest extends IntegrationTest {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			String errorMessage = assertThrows(FireboltException.class, () -> statement.executeQuery("select wrong query")).getMessage();
 			assertTrue(errorMessage.contains("wrong"));
+			assertTrue(errorMessage.contains("Line 1"));
+			assertTrue(errorMessage.contains("Column 8"));
 		}
 	}
 
@@ -129,6 +134,8 @@ class StatementTest extends IntegrationTest {
 			statement.execute("set enable_json_error_output_format=true");
 			String errorMessage = assertThrows(FireboltException.class, () -> statement.executeQuery("select wrong query")).getMessage();
 			assertTrue(errorMessage.contains("Column 'wrong' does not exist."));
+			assertTrue(errorMessage.contains("Line 1"));
+			assertTrue(errorMessage.contains("Column 8"));
 		}
 	}
 
@@ -265,6 +272,82 @@ class StatementTest extends IntegrationTest {
 	@Test
 	void setCorrectThenWrongParameter() throws SQLException {
 		setWrongParameter("SET time_zone = 'EST';SET bar=tar", Map.of("time_zone", "EST"), "bar");
+	}
+
+	@Test
+	@Tag("v2")
+	@Tag("slow")
+	void canSetQueryLabelMultipleTimes() throws SQLException {
+		try (Connection connection = createConnection()) {
+			try (Statement statement = connection.createStatement()) {
+				String currentTime = getCurrentUTCTime();
+
+				String firstQueryLabel = "first query label " + RandomStringUtils.randomNumeric(4);
+				statement.execute(String.format("SET query_label = '%s'", firstQueryLabel));
+
+				String nextQueryAfterFirstLabelSet = "SELECT " + RandomStringUtils.randomNumeric(4)  + ";";
+				statement.executeQuery(nextQueryAfterFirstLabelSet);
+
+				// set a new query label
+				String secondQueryLabel = "second query label " + RandomStringUtils.randomNumeric(4);
+				statement.execute(String.format("SET query_label = '%s'", secondQueryLabel));
+
+				String nextQueryAfterSecondLabelSet = "SELECT " + RandomStringUtils.randomNumeric(4) + ";";
+				statement.executeQuery(nextQueryAfterSecondLabelSet);
+
+				// sleep for some time to allow query history to execute
+				sleepForMillis(TEN_SECONDS_IN_MILLIS);
+
+				// check query history for both queries
+				assertQueryFound(statement, firstQueryLabel, currentTime, nextQueryAfterFirstLabelSet);
+				assertQueryFound(statement, secondQueryLabel, currentTime, nextQueryAfterSecondLabelSet);
+			}
+		}
+	}
+
+	@Test
+	@Tag("v2")
+	@Tag("slow")
+	void willUseRandomQueryLabelIfNoneExplicitlySet() throws SQLException {
+		try (Connection connection = createConnection()) {
+			try (Statement statement = connection.createStatement()) {
+				String currentTime = getCurrentUTCTime();
+
+				String statementWithoutExplicitQueryLabel = "SELECT " + RandomStringUtils.randomNumeric(3)  + ";";
+				statement.executeQuery(statementWithoutExplicitQueryLabel);
+
+				// sleep for some time to allow query history to execute 
+				sleepForMillis(TEN_SECONDS_IN_MILLIS);
+
+				String implicitQueryLabel = getQueryLabel(statement, currentTime, statementWithoutExplicitQueryLabel);
+				assertNotNull(implicitQueryLabel, "Expected the default query label to be non null");
+			}
+		}
+	}
+
+	/**
+	 * looks up a query in the query history. Returns the query text
+	 * @param statement
+	 * @return
+	 */
+	private void assertQueryFound(Statement statement, String queryLabelValue, String afterTimestamp, String queryText) throws SQLException {
+		String queryHistoryQuery = """
+			SELECT query_text
+			FROM information_schema.engine_query_history
+			WHERE query_label = '%s' and submitted_time > '%s' and query_text = '%s';
+			""";
+		ResultSet resultSet = statement.executeQuery(String.format(queryHistoryQuery, queryLabelValue, afterTimestamp, queryText));
+		assertTrue(resultSet.next(), "Did not find query with the specified query label");
+	}
+
+	private String getQueryLabel(Statement statement, String afterTimestamp, String queryText) throws SQLException {
+		String queryHistoryQuery = """
+				SELECT query_label
+				FROM information_schema.engine_query_history WHERE submitted_time > '%s' and query_text = '%s';
+			""";
+		ResultSet resultSet = statement.executeQuery(String.format(queryHistoryQuery, afterTimestamp, queryText));
+		assertTrue(resultSet.next(), "Did not find any query in history");
+		return resultSet.getString(1);
 	}
 
 	/**

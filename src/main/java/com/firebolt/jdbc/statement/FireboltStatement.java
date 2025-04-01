@@ -1,7 +1,15 @@
 package com.firebolt.jdbc.statement;
 
+import static com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory.createValidator;
+import static java.util.stream.Collectors.toCollection;
+
+import java.io.InputStream;
+import java.sql.*;
+import java.util.*;
+
 import com.firebolt.jdbc.JdbcBase;
 import com.firebolt.jdbc.annotation.NotImplemented;
+import com.firebolt.jdbc.client.query.QueryLabelResolver;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.ExceptionType;
@@ -10,31 +18,14 @@ import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.util.CloseableUtil;
+
 import lombok.CustomLog;
-
-import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.SQLWarning;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
-import static com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory.createValidator;
-import static java.util.stream.Collectors.toCollection;
 
 @CustomLog
 public class FireboltStatement extends JdbcBase implements Statement {
 
 	private final FireboltStatementService statementService;
-	private final FireboltProperties sessionProperties;
+	protected final FireboltProperties sessionProperties;
 	private final FireboltConnection connection;
 	private final Collection<String> statementsToExecuteLabels = new HashSet<>();
 	private boolean closeOnCompletion = false;
@@ -102,7 +93,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		createValidator(statementInfoWrapper.getInitialStatement(), connection).validate(statementInfoWrapper.getInitialStatement());
 		ResultSet resultSet = null;
 		if (isStatementNotCancelled(statementInfoWrapper)) {
-			runningStatementLabel = statementInfoWrapper.getLabel();
+			runningStatementLabel = determineQueryLabel(statementInfoWrapper);
 			synchronized (this) {
 				validateStatementIsNotClosed();
 			}
@@ -139,9 +130,13 @@ public class FireboltStatement extends JdbcBase implements Statement {
 				}
 			}
 		} else {
-			log.warn("Aborted query with id {}", statementInfoWrapper.getLabel());
+			log.warn("Aborted query with id {}", determineQueryLabel(statementInfoWrapper));
 		}
 		return Optional.ofNullable(resultSet);
+	}
+
+	private String determineQueryLabel(StatementInfoWrapper statementInfoWrapper) {
+		return QueryLabelResolver.getQueryLabel(connection.getSessionProperties(), statementInfoWrapper);
 	}
 
 	private boolean isStatementNotCancelled(StatementInfoWrapper statementInfoWrapper) {
@@ -436,7 +431,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 				result.add(rs.map(x -> 0).orElse(SUCCESS_NO_INFO));
 			}
 		}
-		return  result.stream().mapToInt(Integer::intValue).toArray();
+		return result.stream().mapToInt(Integer::intValue).toArray();
 	}
 
 	@Override

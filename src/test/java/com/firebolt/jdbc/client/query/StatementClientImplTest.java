@@ -11,26 +11,6 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementUtil;
 import com.firebolt.jdbc.type.ParserVersion;
-import lombok.NonNull;
-import okhttp3.Call;
-import okhttp3.Dispatcher;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
-import okio.Buffer;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatcher;
-import org.mockito.Captor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.Answer;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
@@ -44,6 +24,28 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
+import lombok.NonNull;
+import okhttp3.Call;
+import okhttp3.Dispatcher;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okio.Buffer;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatcher;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 
 import static com.firebolt.jdbc.client.UserAgentFormatter.userAgent;
 import static com.firebolt.jdbc.client.query.StatementClientImpl.HEADER_RESET_SESSION;
@@ -52,6 +54,7 @@ import static com.firebolt.jdbc.client.query.StatementClientImpl.HEADER_UPDATE_P
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -67,6 +70,9 @@ import static org.mockito.Mockito.when;
 class StatementClientImplTest {
 	private static final String HOST = "firebolt1";
 	private static final FireboltProperties FIREBOLT_PROPERTIES = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).build();
+
+	private static final int QUERY_TIMEOUT = 15;
+
 	@Captor
 	private ArgumentCaptor<Request> requestArgumentCaptor;
 	@Mock
@@ -102,9 +108,41 @@ class StatementClientImplTest {
 		expectedHeaders.put("Authorization", "Bearer token");
 		expectedHeaders.put("User-Agent", userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; ) ConnA/1.0.9"));
 		assertEquals(expectedHeaders, extractHeadersMap(actualRequest));
-		//assertEquals("show databases;", actualQuery);
 		assertSqlStatement("show databases;", actualQuery);
 		return Map.entry(statementInfoWrapper.getLabel(), actualRequest.url().toString());
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+			"true,2,queryLabelFromConnection",
+			"true,2,null"
+	})
+	void shouldPostSqlWithExpectedQueryLabel(boolean systemEngine, int infraVersion, String connectionQueryLabel) throws SQLException, IOException {
+		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).accountId("12345").systemEngine(systemEngine)
+						.runtimeAdditionalProperties(Map.of("query_label", connectionQueryLabel)).build();
+		when(connection.getAccessToken()).thenReturn(Optional.of("token"));
+		when(connection.getInfraVersion()).thenReturn(infraVersion);
+
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
+		injectMockedResponse(okHttpClient, 200, "");
+		Call call = getMockedCallWithResponse(200, "");
+		when(okHttpClient.newCall(any())).thenReturn(call);
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
+		assertNotNull(statementInfoWrapper.getLabel());
+		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, fireboltProperties.isSystemEngine(), QUERY_TIMEOUT);
+
+		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
+		Request actualRequest = requestArgumentCaptor.getValue();
+
+		String actualQuery = getActualRequestString(actualRequest);
+		assertEquals("show databases;", actualQuery);
+
+		HttpUrl httpUrl = actualRequest.url();
+		Set<String> queryParameterNames= httpUrl.queryParameterNames();
+		assertTrue(queryParameterNames.contains("query_label"));
+
+		String expectedConnectionQueryLabel = StringUtils.isNotBlank(connectionQueryLabel) ? connectionQueryLabel : statementInfoWrapper.getLabel();
+		assertEquals(httpUrl.queryParameter("query_label"), expectedConnectionQueryLabel);
 	}
 
 	@ParameterizedTest(name = "infra version:{0}")
@@ -352,7 +390,6 @@ class StatementClientImplTest {
 		when(okHttpClient.newCall(any())).thenReturn(useCall, select1Call);
 		FireboltConnection connection = new FireboltConnection("url", props, "0", ParserVersion.CURRENT) {
 			{
-				this.infraVersion = mockedInfraVersion;
 				try {
 					connect();
 				} catch (SQLException e) {
@@ -363,6 +400,11 @@ class StatementClientImplTest {
 			@Override
 			protected OkHttpClient getHttpClient(FireboltProperties fireboltProperties) {
 				return okHttpClient;
+			}
+
+			@Override
+			public int getInfraVersion() {
+				return mockedInfraVersion;
 			}
 
 			@Override
@@ -382,9 +424,15 @@ class StatementClientImplTest {
 			}
 
 			@Override
-			protected void assertDatabaseExisting(String database) {
-
+			protected void validateConnectionParameters() throws SQLException {
+				// all params are valid
 			}
+
+			@Override
+			protected boolean isConnectionCachingEnabled() {
+				return false;
+			}
+
 		};
 		connection.createStatement().executeUpdate(useCommand);
 		return connection;
