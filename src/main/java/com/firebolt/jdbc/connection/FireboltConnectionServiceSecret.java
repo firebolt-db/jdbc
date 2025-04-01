@@ -145,7 +145,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
             }
 
             // no connection in cache so set a fresh connection
-            this.connectionCache = new ConnectionCache(connectionId);
+            this.connectionCache = cacheService.newCacheObject(key, connectionId);
             cacheService.put(key, connectionCache);
         }
     }

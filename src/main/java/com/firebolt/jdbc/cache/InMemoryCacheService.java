@@ -39,4 +39,9 @@ class InMemoryCacheService implements CacheService {
     public Optional<ConnectionCache> get(CacheKey key) throws CacheException {
         return Optional.ofNullable(map.get(key.getValue()));
     }
+
+    @Override
+    public ConnectionCache newCacheObject(CacheKey cacheKey, String connectionId) {
+        return new ConnectionCache(connectionId);
+    }
 }

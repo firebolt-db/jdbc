@@ -36,6 +36,8 @@ public class OnDiskMemoryCacheServiceTest {
     @Mock
     private ConnectionCache mockConnectionCache;
     @Mock
+    private OnDiskConnectionCache mockOnDiskConnectionCache;
+    @Mock
     private File mockDiskFile;
     @Mock
     private Path mockFilePath;
@@ -123,12 +125,14 @@ public class OnDiskMemoryCacheServiceTest {
         try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
             filesMockedStatic.when(() -> Files.getAttribute(mockFilePath, "basic:creationTime")).thenReturn(mockFileTime);
             when(mockFileTime.toInstant()).thenReturn(Instant.now());
-            when(mockFileService.readContent(mockCacheKey, mockDiskFile)).thenReturn(Optional.of(mockConnectionCache));
-            assertSame(mockConnectionCache, onDiskMemoryCacheService.get(mockCacheKey).get());
+            when(mockFileService.readContent(mockCacheKey, mockDiskFile)).thenReturn(Optional.of(mockOnDiskConnectionCache));
+            assertSame(mockOnDiskConnectionCache, onDiskMemoryCacheService.get(mockCacheKey).get());
 
-            verify(mockConnectionCache).setCacheSource(CacheType.DISK.name());
+            verify(mockOnDiskConnectionCache).setCacheSource(CacheType.DISK.name());
+            verify(mockOnDiskConnectionCache).setCacheKey(mockCacheKey);
+            verify(mockOnDiskConnectionCache).setOnDiskMemoryCacheService(onDiskMemoryCacheService);
 
-            verify(mockCacheService).put(mockCacheKey, mockConnectionCache);
+            verify(mockCacheService).put(mockCacheKey, mockOnDiskConnectionCache);
         }
     }
 

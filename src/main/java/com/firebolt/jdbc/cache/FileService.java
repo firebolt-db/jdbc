@@ -5,10 +5,12 @@ import com.firebolt.jdbc.cache.exception.FilenameGenerationException;
 import com.firebolt.jdbc.cache.key.CacheKey;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -95,7 +97,15 @@ public class FileService {
             }
 
             try {
-                Files.write(file.toPath(), encryptedConnectionCache.getBytes(StandardCharsets.UTF_8));
+                // get the original create time so we don't override it
+                BasicFileAttributes attrs = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+                FileTime originalCreationTime = attrs.creationTime();
+
+                // overwrite the existing file
+                Files.writeString(file.toPath(), encryptedConnectionCache, StandardOpenOption.TRUNCATE_EXISTING);
+
+                // Restore the original creation time
+                Files.setAttribute(file.toPath(), "basic:creationTime", originalCreationTime);
             } catch (IOException e) {
                 log.error("Failed to write to cache");
             }
@@ -103,7 +113,7 @@ public class FileService {
         });
     }
 
-    public Optional<ConnectionCache> readContent(CacheKey cacheKey, File cacheFile) {
+    public Optional<OnDiskConnectionCache> readContent(CacheKey cacheKey, File cacheFile) {
         String content;
         try {
             content = Files.readString(cacheFile.toPath());
@@ -122,7 +132,7 @@ public class FileService {
         }
 
         // convert to ConnectionCache
-        return Optional.of(new ConnectionCache(new JSONObject(decryptedCacheObject)));
+        return Optional.of(new OnDiskConnectionCache(new JSONObject(decryptedCacheObject)));
     }
 
 }

@@ -94,7 +94,6 @@ public class ConnectionCache {
         return new DatabaseOptions(parameters);
     }
 
-
     private EngineOptions asEngineOptions(Map.Entry<String, Object> entry) {
         Map map = (Map) entry.getValue();
         List<Pair<String, String>> parameters = ((List<Map>) map.get("parameters"))
