@@ -28,24 +28,32 @@ public class DirectoryPathResolverTest {
     }
 
     @Test
-    @SetEnvironmentVariable(key="LOCALAPPDATA", value="/temp")
     public void canCreateFireboltDirectoryForWindows() {
         System.setProperty(DirectoryPathResolver.OS_NAME_PROPERTY,"windows 11");
-        assertEquals("/temp/fireboltDriverJdbc/cache", directoryPathResolver.resolveFireboltJdbcDirectory().toString());
+        System.setProperty(DirectoryPathResolver.TEMP_DIRECTORY_PROPERTY, "/temp");
+        assertEquals("/temp/fireboltDriverJdbc", directoryPathResolver.resolveFireboltJdbcDirectory().toString());
     }
 
     @Test
+    @SetEnvironmentVariable(key="TMPDIR", value="/temp/xx/1234")
     public void canCreateFireboltDirectoryForMac() {
-       System.setProperty(DirectoryPathResolver.USER_HOME_PROPERTY, "/Users/testuser");
        System.setProperty(DirectoryPathResolver.OS_NAME_PROPERTY,"mac osx 18");
-       assertEquals("/Users/testuser/Library/Caches/fireboltDriverJdbc", directoryPathResolver.resolveFireboltJdbcDirectory().toString());
+       assertEquals("/temp/xx/1234/fireboltDriverJdbc", directoryPathResolver.resolveFireboltJdbcDirectory().toString());
     }
 
     @Test
     public void canCreateFireboltDirectoryForLinux() {
         System.setProperty(DirectoryPathResolver.USER_HOME_PROPERTY, "/Users/testuser");
         System.setProperty(DirectoryPathResolver.OS_NAME_PROPERTY,"linux");
-        assertEquals("/Users/testuser/Library/Caches/fireboltDriverJdbc", directoryPathResolver.resolveFireboltJdbcDirectory().toString());
+        assertEquals("/tmp/Users/testuser/fireboltDriverJdbc", directoryPathResolver.resolveFireboltJdbcDirectory().toString());
+    }
+
+    @Test
+    @SetEnvironmentVariable(key="XDG_RUNTIME_DIR", value="/temp/xx/5678")
+    public void canCreateFireboltDirectoryForLinuxWhenUserTempDirectoryIsSet() {
+        System.setProperty(DirectoryPathResolver.USER_HOME_PROPERTY, "/Users/testuser");
+        System.setProperty(DirectoryPathResolver.OS_NAME_PROPERTY,"linux");
+        assertEquals("/temp/xx/5678/fireboltDriverJdbc", directoryPathResolver.resolveFireboltJdbcDirectory().toString());
     }
 
 }
