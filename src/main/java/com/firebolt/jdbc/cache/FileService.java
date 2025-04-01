@@ -27,6 +27,7 @@ public class FileService {
 
     private static FileService instance;
 
+    private Path fireboltJdbcDirectory;
 
     public static FileService getInstance() {
         if (instance == null) {
@@ -54,9 +55,11 @@ public class FileService {
         String filenameForCache = filenameGenerator.generate(cacheKey);
 
         // will write the filename in the firebolt jdbc driver
-        Path fireboltJdbcDriverFolder = directoryPathResolver.resolveFireboltJdbcDirectory();
+        if (fireboltJdbcDirectory == null) {
+            fireboltJdbcDirectory = directoryPathResolver.resolveFireboltJdbcDirectory();
+        }
 
-        return new File(Paths.get(fireboltJdbcDriverFolder.toString(), filenameForCache).toString());
+        return new File(Paths.get(fireboltJdbcDirectory.toString(), filenameForCache).toString());
     }
 
     public void safeSaveToDiskAsync(CacheKey cacheKey, ConnectionCache connectionCache) {

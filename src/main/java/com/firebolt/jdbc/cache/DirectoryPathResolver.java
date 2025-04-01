@@ -19,30 +19,20 @@ public class DirectoryPathResolver {
     public static final String OS_NAME_PROPERTY = "os.name";
     public static final String TEMP_DIRECTORY_PROPERTY = "java.io.tmpdir";
 
-    private static Path fireboltJdbcDirectory;
-
     /**
      * We will default to writing the connection cache data in the default temp directory for each operating system
+     * It will make sure that the directory is crated.
      * @return
      */
     public Path resolveFireboltJdbcDirectory() {
-        if (fireboltJdbcDirectory == null) {
+        String osName = System.getProperty(OS_NAME_PROPERTY).toLowerCase();
+        Path fireboltJdbcDirectory = getDefaultDirectoryPath(osName);
 
-            synchronized (DirectoryPathResolver.class) {
-                // make sure another thread did not already create it
-                if (fireboltJdbcDirectory == null) {
-                    String osName = System.getProperty(OS_NAME_PROPERTY).toLowerCase();
-                    fireboltJdbcDirectory = getDefaultDirectoryPath(osName);
-                }
-
-                // Ensure cache directory exists
-                try {
-                    Files.createDirectories(fireboltJdbcDirectory);
-                } catch (IOException e) {
-                    log.error("Failed to create the cached directory.");
-                }
-            }
-
+        // Ensure cache directory exists
+        try {
+            Files.createDirectories(fireboltJdbcDirectory);
+        } catch (IOException e) {
+            log.error("Failed to create the cached directory.");
         }
 
         return fireboltJdbcDirectory;
