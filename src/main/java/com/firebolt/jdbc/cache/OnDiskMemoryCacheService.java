@@ -64,6 +64,11 @@ class OnDiskMemoryCacheService implements CacheService {
             return Optional.empty();
         }
 
+        if (!cacheFile.exists()) {
+            log.debug("Cache file does not exist");
+            return Optional.empty();
+        }
+
         // found the file, make sure we can still use it
         if (isFileTooOld(cacheFile)) {
             // an improvement here is to delete the file since it is already too old
@@ -93,10 +98,10 @@ class OnDiskMemoryCacheService implements CacheService {
             FileTime creationTime = (FileTime) Files.getAttribute(cacheFile.toPath(), "basic:creationTime");
             return creationTime.toInstant().isBefore(Instant.now().minus(CACHE_TIME_IN_MINUTES, ChronoUnit.MINUTES));
         } catch (IOException e) {
-            log.error("Failed to check the creation time of the file");
+            log.error("Failed to check the creation time of the file", e);
 
             // will assume we cannot use the file
-            return false;
+            return true;
         }
     }
 

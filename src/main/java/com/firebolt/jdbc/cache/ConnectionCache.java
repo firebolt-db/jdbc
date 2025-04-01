@@ -53,24 +53,35 @@ public class ConnectionCache {
     }
 
     public ConnectionCache(JSONObject jsonObject) {
+        // all the cache objects should have at least the connection id
         this.connectionId = jsonObject.getString("connectionId");
-        this.accessToken = jsonObject.getString("accessToken");
-        this.systemEngineUrl = jsonObject.getString("systemEngineUrl");
 
-        JSONObject databaseOptions = jsonObject.getJSONObject("databaseOptionsMap");
-        if (databaseOptions != null) {
-            Map<String, Object> deserializedMap = databaseOptions.toMap();
-
-            databaseOptionsMap = deserializedMap.entrySet().stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, this::asDatabaseOptions));
+        if (jsonObject.has("accessToken")) {
+            this.accessToken = jsonObject.getString("accessToken");
         }
 
-        JSONObject engineOptions = jsonObject.getJSONObject("engineOptionsMap");
-        if (engineOptions != null) {
-            Map<String, Object> deserializedMap = engineOptions.toMap();
+        if (jsonObject.has("systemEngineUrl")) {
+            this.systemEngineUrl = jsonObject.getString("systemEngineUrl");
+        }
 
-            engineOptionsMap = deserializedMap.entrySet().stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, this::asEngineOptions));
+        if (jsonObject.has("databaseOptionsMap")) {
+            JSONObject databaseOptions = jsonObject.getJSONObject("databaseOptionsMap");
+            if (databaseOptions != null) {
+                Map<String, Object> deserializedMap = databaseOptions.toMap();
+
+                databaseOptionsMap = deserializedMap.entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, this::asDatabaseOptions));
+            }
+        }
+
+        if (jsonObject.has("engineOptionsMap")) {
+            JSONObject engineOptions = jsonObject.getJSONObject("engineOptionsMap");
+            if (engineOptions != null) {
+                Map<String, Object> deserializedMap = engineOptions.toMap();
+
+                engineOptionsMap = deserializedMap.entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, this::asEngineOptions));
+            }
         }
     }
 

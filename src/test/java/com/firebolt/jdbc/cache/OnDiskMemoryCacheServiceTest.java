@@ -64,10 +64,19 @@ public class OnDiskMemoryCacheServiceTest {
     }
 
     @Test
+    void willNotReturnAnyCacheObjectIfNotInCacheAndFileOnDiskDoesNotExist() {
+        when(mockCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
+        when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
+        when(mockDiskFile.exists()).thenReturn(false);
+        assertTrue(onDiskMemoryCacheService.get(mockCacheKey).isEmpty());
+    }
+
+    @Test
     void willNotReturnAnyCacheObjectIfFoundTheFileOnDiskButCannotDetectItsCreationTime() {
         when(mockCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
         when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
         when(mockDiskFile.toPath()).thenReturn(mockFilePath);
+        when(mockDiskFile.exists()).thenReturn(true);
 
         try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
             filesMockedStatic.when(() -> Files.getAttribute(mockFilePath, "basic:creationTime")).thenThrow(IOException.class);
@@ -80,6 +89,7 @@ public class OnDiskMemoryCacheServiceTest {
         when(mockCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
         when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
         when(mockDiskFile.toPath()).thenReturn(mockFilePath);
+        when(mockDiskFile.exists()).thenReturn(true);
 
         try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
             filesMockedStatic.when(() -> Files.getAttribute(mockFilePath, "basic:creationTime")).thenReturn(mockFileTime);
@@ -93,6 +103,7 @@ public class OnDiskMemoryCacheServiceTest {
         when(mockCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
         when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
         when(mockDiskFile.toPath()).thenReturn(mockFilePath);
+        when(mockDiskFile.exists()).thenReturn(true);
 
         try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
             filesMockedStatic.when(() -> Files.getAttribute(mockFilePath, "basic:creationTime")).thenReturn(mockFileTime);
@@ -107,6 +118,7 @@ public class OnDiskMemoryCacheServiceTest {
         when(mockCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
         when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
         when(mockDiskFile.toPath()).thenReturn(mockFilePath);
+        when(mockDiskFile.exists()).thenReturn(true);
 
         try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
             filesMockedStatic.when(() -> Files.getAttribute(mockFilePath, "basic:creationTime")).thenReturn(mockFileTime);

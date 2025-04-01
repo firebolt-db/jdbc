@@ -3,6 +3,7 @@ package com.firebolt.jdbc.cache;
 import com.firebolt.jdbc.cache.exception.EncryptionException;
 import com.firebolt.jdbc.cache.exception.FilenameGenerationException;
 import com.firebolt.jdbc.cache.key.CacheKey;
+import java.util.Base64;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,7 +42,8 @@ public class FilenameGeneratorTest {
 
     @Test
     void canGenerateFilename() {
-        assertEquals(FILENAME + ".txt", filenameGenerator.generate(mockCacheKey));
+        String expectedFileName = Base64.getUrlEncoder().withoutPadding().encodeToString(FILENAME.getBytes());
+        assertEquals(expectedFileName + ".txt", filenameGenerator.generate(mockCacheKey));
     }
 
     @Test

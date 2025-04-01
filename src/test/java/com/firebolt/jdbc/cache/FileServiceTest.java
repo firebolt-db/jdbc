@@ -15,6 +15,8 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -62,6 +64,9 @@ public class FileServiceTest {
 
     private ExecutorService executorService = Executors.newFixedThreadPool(1);
     private FileService fileService;
+
+    @Captor
+    private ArgumentCaptor<String> connectionCacheJsonArgumentCaptor;
 
     @BeforeEach
     void initTests() {
@@ -126,7 +131,7 @@ public class FileServiceTest {
         fileService.safeSaveToDiskAsync(mockCacheKey, connectionCache);
 
         // sleep so it can execute the task
-        sleepForMillis(1000);
+        sleepForMillis(500);
 
         verify(mockEncryptionService, never()).encrypt(any(), any());
     }
@@ -143,7 +148,7 @@ public class FileServiceTest {
         fileService.safeSaveToDiskAsync(mockCacheKey, connectionCache);
 
         // sleep so it can execute the task
-        sleepForMillis(1000);
+        sleepForMillis(500);
 
         verify(mockEncryptionService, never()).encrypt(any(), any());
     }
@@ -152,17 +157,36 @@ public class FileServiceTest {
     void willNotWriteFileToDiskWhenEncryptionFails() {
         ConnectionCache connectionCache = actualConnectionCache();
 
-        try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
-            fileService = spy(fileService);
-            doReturn(mockFile).when(fileService).findFileForKey(mockCacheKey);
-            when(mockFile.exists()).thenReturn(true);
-            when(mockEncryptionService.encrypt(anyString(), eq(ENCRYPTION_KEY))).thenThrow(EncryptionException.class);
+        when(mockCacheKey.getEncryptionKey()).thenReturn(ENCRYPTION_KEY);
+        fileService = spy(fileService);
+        doReturn(mockFile).when(fileService).findFileForKey(mockCacheKey);
+        when(mockFile.exists()).thenReturn(true);
+        when(mockEncryptionService.encrypt(anyString(), eq(ENCRYPTION_KEY))).thenThrow(EncryptionException.class);
 
-            fileService.safeSaveToDiskAsync(mockCacheKey, connectionCache);
+        fileService.safeSaveToDiskAsync(mockCacheKey, connectionCache);
 
-            // sleep so it can execute the task
-            sleepForMillis(1000);
-        }
+        // sleep so it can execute the task
+        sleepForMillis(500);
+
+        verify(mockEncryptionService).encrypt(connectionCacheJsonArgumentCaptor.capture(), eq(ENCRYPTION_KEY));
+
+        String jsonConnectionCache = connectionCacheJsonArgumentCaptor.getValue();
+        ConnectionCache connectionCache1 = new ConnectionCache(new JSONObject(jsonConnectionCache));
+
+        assertEquals(CONNECTION_ID, connectionCache1.getConnectionId());
+        assertEquals(ACCESS_TOKEN, connectionCache1.getAccessToken());
+        assertEquals(SYSTEM_ENGINE_URL, connectionCache1.getSystemEngineUrl());
+
+        DatabaseOptions databaseOptions = connectionCache1.getDatabaseOptions(DATABASE_NAME).get();
+        assertEquals(1, databaseOptions.getParameters().size());
+        assertEquals("database", databaseOptions.getParameters().get(0).getKey());
+        assertEquals(DATABASE_NAME, databaseOptions.getParameters().get(0).getValue());
+
+        EngineOptions engineOptions = connectionCache1.getEngineOptions(ENGINE_NAME).get();
+        assertEquals(ENGINE1_URL, engineOptions.getEngineUrl());
+        assertEquals(1, engineOptions.getParameters().size());
+        assertEquals("engine", engineOptions.getParameters().get(0).getKey());
+        assertEquals(ENGINE_NAME, engineOptions.getParameters().get(0).getValue());
     }
 
     @Test
@@ -179,7 +203,7 @@ public class FileServiceTest {
             fileService.safeSaveToDiskAsync(mockCacheKey, connectionCache);
 
             // sleep so it can execute the task
-            sleepForMillis(1000);
+            sleepForMillis(500);
         }
     }
 
@@ -197,7 +221,7 @@ public class FileServiceTest {
             fileService.safeSaveToDiskAsync(mockCacheKey, connectionCache);
 
             // sleep so it can execute the task
-            sleepForMillis(1000);
+            sleepForMillis(500);
         }
     }
 

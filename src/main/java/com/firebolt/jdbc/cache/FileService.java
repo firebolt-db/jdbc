@@ -75,7 +75,7 @@ public class FileService {
                     file.createNewFile();
                 } catch (IOException e) {
                     // maybe do not have permission to write to that location
-                    log.error("Cannot create on-disk connection cache. Maybe do not have the write permission.");
+                    log.error("Cannot create on-disk connection cache. Maybe do not have the write permission. ", e);
                     return;
                 }
             }
