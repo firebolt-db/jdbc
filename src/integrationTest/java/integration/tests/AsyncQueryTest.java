@@ -5,42 +5,46 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import integration.IntegrationTest;
 import lombok.CustomLog;
-import org.junit.jupiter.api.*;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @CustomLog
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AsyncQueryTest extends IntegrationTest {
-    String engineName = format("%s_async_engine_test", integration.ConnectionInfo.getInstance().getEngine());
+    String engineName = "async_test_second_engine";
+
+    @AfterEach
+    void afterEach() {
+        try (Connection connection = createConnection();
+             Statement statement = connection.createStatement()) {
+            statement.executeUpdate("DELETE FROM async_table_test");
+        } catch (Exception e) {
+            fail("Could not execute statement", e);
+        }
+    }
 
     @BeforeAll
     void beforeAll() {
-        try (Connection connection = createConnection();
-             Statement statement = connection.createStatement()) {
-            statement.executeUpdate(format("CREATE ENGINE %s", engineName));
-        } catch (Exception e) {
-            fail("Could not execute statement", e);
-        }
-    }
-
-    @AfterAll
-    void afterAll() {
-        try (Connection connection = createConnection();
-             Statement statement = connection.createStatement()) {
-            statement.executeUpdate(format("STOP ENGINE %s WITH TERMINATE=true", engineName));
-            statement.execute(format("DROP ENGINE IF EXISTS %s", engineName));
-        } catch (Exception e) {
-            fail("Could not execute statement", e);
-        }
-    }
-
-    @BeforeEach
-    void beforeEach() {
         try {
             executeStatementFromFile("/statements/async/ddl.sql");
         } catch (Exception e) {
@@ -48,8 +52,8 @@ class AsyncQueryTest extends IntegrationTest {
         }
     }
 
-    @AfterEach
-    void afterEach() {
+    @AfterAll
+    void afterAll() {
         try {
             executeStatementFromFile("/statements/async/cleanup.sql");
         } catch (Exception e) {
@@ -155,7 +159,6 @@ class AsyncQueryTest extends IntegrationTest {
 
             assertTrue(connection.isAsyncQueryRunning(token));
 
-            assertTrue(connection.isAsyncQueryRunning(token));
             FireboltException exception = assertThrows(FireboltException.class, () -> connection.cancelAsyncQuery(token));
             assertTrue(exception.getMessage().contains("Attempt to cancel query with query_id"));
 
@@ -177,7 +180,7 @@ class AsyncQueryTest extends IntegrationTest {
             String token = statement.getAsyncToken();
 
             assertNotNull(token);
-            assertFalse(token.isEmpty());
+            assertTrue(StringUtils.isNotEmpty(token));
 
             sleepForMillis(TimeUnit.SECONDS.toMillis(1));
 
