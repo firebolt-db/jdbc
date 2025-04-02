@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.cache;
 
+import com.firebolt.jdbc.cache.exception.ConnectionCacheDeserializationException;
 import com.firebolt.jdbc.cache.exception.EncryptionException;
 import com.firebolt.jdbc.cache.exception.FilenameGenerationException;
 import com.firebolt.jdbc.cache.key.CacheKey;
@@ -116,7 +117,7 @@ public class FileService {
         });
     }
 
-    public Optional<OnDiskConnectionCache> readContent(CacheKey cacheKey, File cacheFile) {
+    public Optional<OnDiskConnectionCache> readContent(CacheKey cacheKey, File cacheFile) throws ConnectionCacheDeserializationException {
         String content;
         try {
             content = Files.readString(cacheFile.toPath());
@@ -131,11 +132,18 @@ public class FileService {
             decryptedCacheObject = encryptionService.decrypt(content, cacheKey.getEncryptionKey());
         } catch (EncryptionException e) {
             log.error("Cannot decrypt cache content file.");
-            return Optional.empty();
+            throw new ConnectionCacheDeserializationException();
         }
 
         // convert to ConnectionCache
         return Optional.of(new OnDiskConnectionCache(new JSONObject(decryptedCacheObject)));
     }
 
+    public void safelyDeleteFile(Path filePath) {
+        try {
+            Files.deleteIfExists(filePath);
+        } catch (IOException e) {
+            log.error("Failed to delete the cache file", e);
+        }
+    }
 }

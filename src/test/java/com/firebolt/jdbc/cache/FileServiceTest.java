@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.cache;
 
+import com.firebolt.jdbc.cache.exception.ConnectionCacheDeserializationException;
 import com.firebolt.jdbc.cache.exception.EncryptionException;
 import com.firebolt.jdbc.cache.exception.FilenameGenerationException;
 import com.firebolt.jdbc.cache.key.CacheKey;
@@ -106,7 +107,7 @@ public class FileServiceTest {
         try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
             filesMockedStatic.when(() -> Files.readString(mockPath)).thenReturn(ENCRYPTED_CONTENT);
             when(mockEncryptionService.decrypt(ENCRYPTED_CONTENT, ENCRYPTION_KEY)).thenThrow(EncryptionException.class);
-            assertTrue(fileService.readContent(mockCacheKey, mockFile).isEmpty());
+            assertThrows(ConnectionCacheDeserializationException.class, () -> fileService.readContent(mockCacheKey, mockFile).isEmpty());
         }
     }
 
@@ -223,6 +224,12 @@ public class FileServiceTest {
             // sleep so it can execute the task
             sleepForMillis(500);
         }
+    }
+
+    @Test
+    void willNotThrowExceptionIfTryingToDeleteAFileThatDoesNotExist() {
+        Path filePathThatDoesNotExist = Path.of("does", "not", "exist");
+        fileService.safelyDeleteFile(filePathThatDoesNotExist);
     }
 
     private void sleepForMillis(long millis) {

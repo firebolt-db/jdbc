@@ -1,6 +1,7 @@
 package com.firebolt.jdbc.cache;
 
 import com.firebolt.jdbc.cache.exception.CacheException;
+import com.firebolt.jdbc.cache.exception.ConnectionCacheDeserializationException;
 import com.firebolt.jdbc.cache.exception.FilenameGenerationException;
 import com.firebolt.jdbc.cache.key.CacheKey;
 import java.io.File;
@@ -71,12 +72,38 @@ class OnDiskMemoryCacheService implements CacheService {
 
         // found the file, make sure we can still use it
         if (isFileTooOld(cacheFile)) {
-            // an improvement here is to delete the file since it is already too old
+            fileService.safelyDeleteFile(cacheFile.toPath());
             return Optional.empty();
         }
 
         // read the value from the file
-        Optional<OnDiskConnectionCache> onDiskConnectionCacheOptional = fileService.readContent(cacheKey, cacheFile);
+        Optional<OnDiskConnectionCache> onDiskConnectionCacheOptional = readConnectionCacheObjectFromDisk(cacheKey, cacheFile);
+        if (onDiskConnectionCacheOptional.isEmpty()) {
+            return Optional.empty();
+        }
+
+        OnDiskConnectionCache onDiskConnectionCache = onDiskConnectionCacheOptional.get();
+
+        // add it in the memory cache
+        cacheService.put(cacheKey, onDiskConnectionCache);
+
+        return Optional.of(onDiskConnectionCache);
+    }
+
+    /**
+     * Reads the connection cache object from disk. If cannot deserialize the object from file content, it means that the file was corrupted and we can delete it.
+     */
+    private Optional<OnDiskConnectionCache> readConnectionCacheObjectFromDisk(CacheKey cacheKey, File cacheFile) {
+        Optional<OnDiskConnectionCache> onDiskConnectionCacheOptional;
+        try {
+            onDiskConnectionCacheOptional = fileService.readContent(cacheKey, cacheFile);
+        } catch (ConnectionCacheDeserializationException e) {
+            // when cannot read from file, we can delete the file since the file seems to be corrupted anyhow
+            fileService.safelyDeleteFile(cacheFile.toPath());
+
+            return Optional.empty();
+        }
+
         if (onDiskConnectionCacheOptional.isEmpty()) {
             return Optional.empty();
         }
@@ -87,9 +114,6 @@ class OnDiskMemoryCacheService implements CacheService {
         onDiskConnectionCache.setCacheSource(CacheType.DISK.name());
         onDiskConnectionCache.setCacheKey(cacheKey);
         onDiskConnectionCache.setOnDiskMemoryCacheService(this);
-
-        // add it in the memory cache
-        cacheService.put(cacheKey, onDiskConnectionCache);
 
         return Optional.of(onDiskConnectionCache);
     }

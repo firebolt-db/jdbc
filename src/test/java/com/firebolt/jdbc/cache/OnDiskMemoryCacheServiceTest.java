@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.cache;
 
+import com.firebolt.jdbc.cache.exception.ConnectionCacheDeserializationException;
 import com.firebolt.jdbc.cache.exception.FilenameGenerationException;
 import com.firebolt.jdbc.cache.key.CacheKey;
 import java.io.File;
@@ -97,6 +98,7 @@ public class OnDiskMemoryCacheServiceTest {
             filesMockedStatic.when(() -> Files.getAttribute(mockFilePath, "basic:creationTime")).thenReturn(mockFileTime);
             when(mockFileTime.toInstant()).thenReturn(Instant.now().minus(3, ChronoUnit.HOURS));
             assertTrue(onDiskMemoryCacheService.get(mockCacheKey).isEmpty());
+            verify(mockFileService).safelyDeleteFile(mockFilePath);
         }
     }
 
@@ -112,6 +114,22 @@ public class OnDiskMemoryCacheServiceTest {
             when(mockFileTime.toInstant()).thenReturn(Instant.now());
             when(mockFileService.readContent(mockCacheKey, mockDiskFile)).thenReturn(Optional.empty());
             assertTrue(onDiskMemoryCacheService.get(mockCacheKey).isEmpty());
+        }
+    }
+
+    @Test
+    void willNotReturnAnyCacheObjectIfFoundTheFileOnDiskDueToTamperingWithTheFile() {
+        when(mockCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
+        when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
+        when(mockDiskFile.toPath()).thenReturn(mockFilePath);
+        when(mockDiskFile.exists()).thenReturn(true);
+
+        try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+            filesMockedStatic.when(() -> Files.getAttribute(mockFilePath, "basic:creationTime")).thenReturn(mockFileTime);
+            when(mockFileTime.toInstant()).thenReturn(Instant.now());
+            when(mockFileService.readContent(mockCacheKey, mockDiskFile)).thenThrow(ConnectionCacheDeserializationException.class);
+            assertTrue(onDiskMemoryCacheService.get(mockCacheKey).isEmpty());
+            verify(mockFileService).safelyDeleteFile(mockFilePath);
         }
     }
 
