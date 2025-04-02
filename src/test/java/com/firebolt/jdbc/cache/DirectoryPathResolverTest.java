@@ -2,11 +2,15 @@ package com.firebolt.jdbc.cache;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+// The tests are disabled since they interfere with the other test classes (tests are run in parallel and mockito creates file in the temp location,
+// which we modify in these tests, so the other tests would randomly fail)
+@Disabled
 public class DirectoryPathResolverTest {
 
     private static String originalUserHome;

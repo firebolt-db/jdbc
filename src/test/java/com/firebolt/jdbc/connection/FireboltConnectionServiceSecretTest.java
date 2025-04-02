@@ -75,6 +75,8 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
     @Mock
     private CacheService mockCacheService;
 
+    private ConnectionCache connectionCache;
+
     @Mock
     private FireboltConnectionTokens mockFireboltConnectionTokens;
     @Mock
@@ -106,6 +108,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         cacheKey = new ClientSecretCacheKey("somebody", "pa$$word", "dev");
 
         when(mockConnectionIdGenerator.generateId()).thenReturn(A_CONNECTION_ID);
+        lenient().when(mockCacheService.newCacheObject(cacheKey, A_CONNECTION_ID)).thenReturn(new ConnectionCache(A_CONNECTION_ID));
     }
 
     @Test
