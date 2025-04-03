@@ -70,7 +70,7 @@ class AsyncQueryTest extends IntegrationTest {
             String token = statement.getAsyncToken();
 
             assertNotNull(token);
-            assertFalse(token.isEmpty());
+            assertTrue(StringUtils.isNotEmpty(token));
             assertTrue(connection.isAsyncQueryRunning(token));
 
             sleepForMillis(TimeUnit.SECONDS.toMillis(5));
@@ -98,7 +98,7 @@ class AsyncQueryTest extends IntegrationTest {
             String token = statement.getAsyncToken();
 
             assertNotNull(token);
-            assertFalse(token.isEmpty());
+            assertTrue(StringUtils.isNotEmpty(token));
             assertTrue(connection.isAsyncQueryRunning(token));
 
             statement.execute(format("USE ENGINE %s", engineName));
@@ -127,7 +127,7 @@ class AsyncQueryTest extends IntegrationTest {
             String token = statement.getAsyncToken();
 
             assertNotNull(token);
-            assertFalse(token.isEmpty());
+            assertTrue(StringUtils.isNotEmpty(token));
 
             sleepForMillis(TimeUnit.SECONDS.toMillis(1));
 
@@ -151,7 +151,7 @@ class AsyncQueryTest extends IntegrationTest {
             String token = statement.getAsyncToken();
 
             assertNotNull(token);
-            assertFalse(token.isEmpty());
+            assertTrue(StringUtils.isNotEmpty(token));
             assertTrue(connection.isAsyncQueryRunning(token));
 
             statement.execute(format("USE ENGINE %s", engineName));
