@@ -223,8 +223,12 @@ class FileServiceTest {
 
     @Test
     void willNotThrowExceptionIfTryingToDeleteAFileThatDoesNotExist() {
-        Path filePathThatDoesNotExist = Path.of("does", "not", "exist");
-        fileService.safelyDeleteFile(filePathThatDoesNotExist);
+        try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+            Path filePathThatDoesNotExist = Path.of("does", "not", "exist");
+            filesMockedStatic.when(() -> Files.deleteIfExists(filePathThatDoesNotExist)).thenReturn(false);
+            fileService.safelyDeleteFile(filePathThatDoesNotExist);
+            filesMockedStatic.verify(() -> Files.deleteIfExists(filePathThatDoesNotExist));
+        }
     }
 
     @SuppressWarnings("java:S2925")

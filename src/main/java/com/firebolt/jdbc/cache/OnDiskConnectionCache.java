@@ -3,6 +3,7 @@ package com.firebolt.jdbc.cache;
 import com.firebolt.jdbc.cache.key.CacheKey;
 import org.json.JSONObject;
 
+@SuppressWarnings("javaarchitecture:S7027") // need to refactor at some point so this sonar violation will not be present
 public class OnDiskConnectionCache extends ConnectionCache {
 
     /**

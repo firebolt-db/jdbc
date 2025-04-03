@@ -43,6 +43,7 @@ public class DirectoryPathResolver {
      * @param osName - the name of the operating system
      * @return
      */
+    @SuppressWarnings("java:S5443") // we are writing to temp directory but the file name is encrypted and so is the content
     private Path getDefaultDirectoryPath(String osName) {
         if (osName.contains("win")) {
             return Paths.get(System.getProperty(TEMP_DIRECTORY_PROPERTY), FIREBOLT_JDBC_APP_NAME);
