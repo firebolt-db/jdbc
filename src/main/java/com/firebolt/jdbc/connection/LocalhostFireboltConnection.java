@@ -10,7 +10,6 @@ import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineVersion2Service;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
-import com.firebolt.jdbc.type.ParserVersion;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.Properties;
@@ -23,8 +22,8 @@ import org.apache.commons.lang3.StringUtils;
 public class LocalhostFireboltConnection extends FireboltConnectionServiceSecret {
 
     @ExcludeFromJacocoGeneratedReport
-    LocalhostFireboltConnection(@NonNull String url, Properties connectionSettings, ParserVersion parserVersion, CacheService cacheService) throws SQLException {
-        super(url, connectionSettings, parserVersion, cacheService);
+    LocalhostFireboltConnection(@NonNull String url, Properties connectionSettings, CacheService cacheService) throws SQLException {
+        super(url, connectionSettings, cacheService);
     }
 
     // visible for testing
@@ -34,9 +33,8 @@ public class LocalhostFireboltConnection extends FireboltConnectionServiceSecret
                                 FireboltGatewayUrlService fireboltGatewayUrlService,
                                 FireboltStatementService fireboltStatementService,
                                 FireboltEngineVersion2Service fireboltEngineVersion2Service,
-                                ParserVersion parserVersion,
                                 CacheService cacheService) throws SQLException {
-        super(url, connectionSettings, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineVersion2Service, parserVersion, cacheService);
+        super(url, connectionSettings, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineVersion2Service, cacheService);
     }
 
     @Override

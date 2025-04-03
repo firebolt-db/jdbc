@@ -2,6 +2,9 @@ package com.firebolt.jdbc.cache;
 
 import com.firebolt.jdbc.cache.key.CacheKey;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import net.jodah.expiringmap.ExpirationPolicy;
+import net.jodah.expiringmap.ExpiringMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +44,29 @@ class InMemoryCacheServiceTest {
 
         connectionCacheOptional = inMemoryCacheService.get(cacheKey);
         assertSame(connectionCacheOptional.get(), mockConnectionCache);
+    }
+
+    @Test
+    @SuppressWarnings("java:S2925")
+    void willNotGetExpiredEntryFromCache() {
+        ExpiringMap<String, ConnectionCache> expiringMap = ExpiringMap.builder().variableExpiration().build();
+        CacheKey cacheKey = new TestCacheKey("key_to_expire");
+        expiringMap.put(cacheKey.getValue(), new ConnectionCache("someid"), ExpirationPolicy.CREATED, 500, TimeUnit.MILLISECONDS);
+
+        inMemoryCacheService = new InMemoryCacheService(expiringMap);
+
+        // should get the key
+        assertTrue(inMemoryCacheService.get(cacheKey).isPresent());
+
+        // wait for the cache to expire
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException e) {
+            // do nothing
+        }
+
+        // should not get the key
+        assertTrue(inMemoryCacheService.get(cacheKey).isEmpty());
     }
 
     private class TestCacheKey implements CacheKey {

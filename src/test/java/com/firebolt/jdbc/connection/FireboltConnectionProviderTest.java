@@ -59,8 +59,8 @@ class FireboltConnectionProviderTest {
 
         assertSame(mockFireboltConnectionUserPassword, fireboltConnection);
 
-        verify(mockFireboltConnectionProviderWrapper, never()).createLocalhostFireboltConnectionServiceSecret(anyString(), any(Properties.class), any(ParserVersion.class));
-        verify(mockFireboltConnectionProviderWrapper, never()).createFireboltConnectionServiceSecret(anyString(), any(Properties.class), any(ParserVersion.class));
+        verify(mockFireboltConnectionProviderWrapper, never()).createLocalhostFireboltConnectionServiceSecret(anyString(), any(Properties.class));
+        verify(mockFireboltConnectionProviderWrapper, never()).createFireboltConnectionServiceSecret(anyString(), any(Properties.class));
     }
 
     @Test
@@ -82,12 +82,12 @@ class FireboltConnectionProviderTest {
     @ParameterizedTest
     @MethodSource("v2JdbcConnection")
     void canDetectV2Connection(String url, Properties connectionProperties) throws SQLException {
-        when(mockFireboltConnectionProviderWrapper.createFireboltConnectionServiceSecret(url, connectionProperties, ParserVersion.CURRENT)).thenReturn(mockFireboltConnectionServiceSecret);
+        when(mockFireboltConnectionProviderWrapper.createFireboltConnectionServiceSecret(url, connectionProperties)).thenReturn(mockFireboltConnectionServiceSecret);
 
         FireboltConnection fireboltConnection = fireboltConnectionProvider.create(url, connectionProperties);
         assertSame(mockFireboltConnectionServiceSecret, fireboltConnection);
 
-        verify(mockFireboltConnectionProviderWrapper, never()).createLocalhostFireboltConnectionServiceSecret(anyString(), any(Properties.class), any(ParserVersion.class));
+        verify(mockFireboltConnectionProviderWrapper, never()).createLocalhostFireboltConnectionServiceSecret(anyString(), any(Properties.class));
         verify(mockFireboltConnectionProviderWrapper, never()).createFireboltConnectionUsernamePassword(anyString(), any(Properties.class), any(ParserVersion.class));
     }
 
@@ -96,7 +96,7 @@ class FireboltConnectionProviderTest {
         String validJdbc2Url = "jdbc:firebolt:my_db";
         Properties validV2Properties = asProperties(Map.of("client_id", "my client", "client_secret", "my_secret"));
 
-        when(mockFireboltConnectionProviderWrapper.createFireboltConnectionServiceSecret(validJdbc2Url, validV2Properties, ParserVersion.CURRENT)).thenThrow(SQLException.class);
+        when(mockFireboltConnectionProviderWrapper.createFireboltConnectionServiceSecret(validJdbc2Url, validV2Properties)).thenThrow(SQLException.class);
         assertThrows(SQLException.class, () -> fireboltConnectionProvider.create(validJdbc2Url, validV2Properties));
     }
 
@@ -110,12 +110,12 @@ class FireboltConnectionProviderTest {
     @ParameterizedTest
     @MethodSource("v2LocalhostJdbcConnection")
     void canDetectLocalhostV2Connection(String url, Properties connectionProperties) throws SQLException {
-        when(mockFireboltConnectionProviderWrapper.createLocalhostFireboltConnectionServiceSecret(url, connectionProperties, ParserVersion.CURRENT)).thenReturn(mockLocalhostFireboltConnection);
+        when(mockFireboltConnectionProviderWrapper.createLocalhostFireboltConnectionServiceSecret(url, connectionProperties)).thenReturn(mockLocalhostFireboltConnection);
         FireboltConnection fireboltConnection = fireboltConnectionProvider.create(url, connectionProperties);
 
         assertSame(mockLocalhostFireboltConnection, fireboltConnection);
 
-        verify(mockFireboltConnectionProviderWrapper, never()).createFireboltConnectionServiceSecret(anyString(), any(Properties.class), any(ParserVersion.class));
+        verify(mockFireboltConnectionProviderWrapper, never()).createFireboltConnectionServiceSecret(anyString(), any(Properties.class));
         verify(mockFireboltConnectionProviderWrapper, never()).createFireboltConnectionUsernamePassword(anyString(), any(Properties.class), any(ParserVersion.class));
     }
 
@@ -124,7 +124,7 @@ class FireboltConnectionProviderTest {
         String validJdbc2LocalhostUrl = "jdbc:firebolt:my_db";
         Properties validV2LocalhostProperties = asProperties(Map.of("client_id", "my client", "client_secret", "my_secret","host","localhost"));
 
-        when(mockFireboltConnectionProviderWrapper.createLocalhostFireboltConnectionServiceSecret(validJdbc2LocalhostUrl, validV2LocalhostProperties, ParserVersion.CURRENT)).thenThrow(SQLException.class);
+        when(mockFireboltConnectionProviderWrapper.createLocalhostFireboltConnectionServiceSecret(validJdbc2LocalhostUrl, validV2LocalhostProperties)).thenThrow(SQLException.class);
         assertThrows(SQLException.class, () -> fireboltConnectionProvider.create(validJdbc2LocalhostUrl, validV2LocalhostProperties));
     }
 

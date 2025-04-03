@@ -13,7 +13,6 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltEngineVersion2Service;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.statement.FireboltStatement;
-import com.firebolt.jdbc.type.ParserVersion;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -152,7 +151,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         FireboltGatewayUrlService gatewayUrlService = new FireboltGatewayUrlService(fireboltGatewayUrlClient);
         FireboltConnection connection = new FireboltConnectionServiceSecret(SYSTEM_ENGINE_URL, connectionProperties,
                 fireboltAuthenticationService, gatewayUrlService, fireboltStatementService, fireboltEngineVersion2Service,
-                ParserVersion.CURRENT, mockCacheService);
+                mockCacheService);
         FireboltProperties sessionProperties  = connection.getSessionProperties();
         assertEquals(expectedHost, sessionProperties.getHost());
         assertEquals(expectedProps == null ? Map.of() : Arrays.stream(expectedProps.split(";")).map(kv -> kv.split("=")).collect(toMap(kv -> kv[0], kv -> kv[1])), sessionProperties.getAdditionalProperties());
@@ -411,6 +410,6 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
 
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
         return new FireboltConnectionServiceSecret(url, props, fireboltAuthenticationService, fireboltGatewayUrlService,
-                fireboltStatementService, fireboltEngineVersion2Service, ParserVersion.CURRENT, mockCacheService);
+                fireboltStatementService, fireboltEngineVersion2Service, mockCacheService);
     }
 }

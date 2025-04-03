@@ -7,7 +7,6 @@ import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineVersion2Service;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
-import com.firebolt.jdbc.type.ParserVersion;
 import java.sql.SQLException;
 import java.util.Properties;
 import org.junit.jupiter.api.BeforeEach;
@@ -163,7 +162,7 @@ class LocalhostFireboltConnectionTest {
 
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
         return new LocalhostFireboltConnection(url, props, fireboltAuthenticationService, fireboltGatewayUrlService,
-                fireboltStatementService, fireboltEngineVersion2Service, ParserVersion.CURRENT, cacheService);
+                fireboltStatementService, fireboltEngineVersion2Service, cacheService);
 
     }
 }

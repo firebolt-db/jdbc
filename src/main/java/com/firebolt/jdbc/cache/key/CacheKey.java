@@ -2,7 +2,7 @@ package com.firebolt.jdbc.cache.key;
 
 
 /**
- * Implementations should make sure that the CacheKey has equals and hash methods implemented
+ * The interface of a caching key.
  */
 public interface CacheKey {
 

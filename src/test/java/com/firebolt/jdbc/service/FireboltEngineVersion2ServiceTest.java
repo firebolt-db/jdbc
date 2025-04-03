@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +23,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -106,7 +105,7 @@ class FireboltEngineVersion2ServiceTest {
 
         FireboltEngineVersion2Service service = new FireboltEngineVersion2Service(mockFireboltConnection);
         Engine actualEngine = service.getEngine(properties, Optional.empty());
-        Assertions.assertEquals(new Engine(MY_ENGINE_ENDPOINT, null, MY_ENGINE, MY_DATABASE, null), actualEngine);
+        assertEquals(new Engine(MY_ENGINE_ENDPOINT, null, MY_ENGINE, MY_DATABASE, null), actualEngine);
 
         // should make calls to the system engine url to check the database and engine
         verify(mockFireboltStatement).executeUpdate("USE DATABASE \"" + MY_DATABASE + "\"");
@@ -132,7 +131,7 @@ class FireboltEngineVersion2ServiceTest {
 
         FireboltEngineVersion2Service service = new FireboltEngineVersion2Service(mockFireboltConnection);
         Engine actualEngine = service.getEngine(properties, Optional.of(mockConnectionCache));
-        Assertions.assertEquals(new Engine(MY_ENGINE_ENDPOINT, null, MY_ENGINE, MY_DATABASE, null), actualEngine);
+        assertEquals(new Engine(MY_ENGINE_ENDPOINT, null, MY_ENGINE, MY_DATABASE, null), actualEngine);
 
         // should make calls to the system engine url to check the database and engine
         verify(mockFireboltStatement).executeUpdate("USE DATABASE \"" + MY_DATABASE + "\"");

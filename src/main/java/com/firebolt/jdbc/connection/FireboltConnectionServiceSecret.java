@@ -48,17 +48,15 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
      */
     private String connectionId;
 
-    @SuppressWarnings("java:S107") // ignore the too many params. Max is 7. Refactor this method at some point
     FireboltConnectionServiceSecret(@NonNull String url,
                                     Properties connectionSettings,
                                     FireboltAuthenticationService fireboltAuthenticationService,
                                     FireboltGatewayUrlService fireboltGatewayUrlService,
                                     FireboltStatementService fireboltStatementService,
                                     FireboltEngineVersion2Service fireboltEngineVersion2Service,
-                                    ParserVersion parserVersion,
                                     CacheService cacheService) throws SQLException {
         super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION,
-                parserVersion);
+                ParserVersion.CURRENT);
         this.fireboltGatewayUrlService = fireboltGatewayUrlService;
         this.fireboltEngineVersion2Service = fireboltEngineVersion2Service;
         this.connectionId = generateUniqueConnectionId();
@@ -67,9 +65,9 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
     }
 
     @ExcludeFromJacocoGeneratedReport
-    FireboltConnectionServiceSecret(@NonNull String url, Properties connectionSettings, ParserVersion parserVersion, CacheService cacheService)
+    FireboltConnectionServiceSecret(@NonNull String url, Properties connectionSettings, CacheService cacheService)
             throws SQLException {
-        super(url, connectionSettings, PROTOCOL_VERSION, parserVersion);
+        super(url, connectionSettings, PROTOCOL_VERSION, ParserVersion.CURRENT);
         OkHttpClient httpClient = getHttpClient(loginProperties);
         this.fireboltGatewayUrlService = new FireboltGatewayUrlService(createFireboltAccountRetriever(httpClient, GatewayUrlResponse.class));
         this.fireboltEngineVersion2Service = new FireboltEngineVersion2Service(this);
