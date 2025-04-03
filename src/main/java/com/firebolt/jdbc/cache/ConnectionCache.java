@@ -17,7 +17,7 @@ import org.json.JSONObject;
 public class ConnectionCache {
 
     @Getter
-    private String connectionId;
+    private final String connectionId;
 
     @Setter
     @Getter
@@ -86,8 +86,8 @@ public class ConnectionCache {
     }
 
     private DatabaseOptions asDatabaseOptions(Map.Entry<String, Object> entry) {
-        Map map = (Map) entry.getValue();
-        List<Pair<String, String>> parameters = ((List<Map>) map.get("parameters"))
+        Map<String, Object> map = (Map<String, Object>) entry.getValue();
+        List<Pair<String, String>> parameters = ((List<Map<String, Object>>) map.get("parameters"))
                 .stream()
                 .map(params -> Pair.of((String) params.get("key"), (String) params.get("value")))
                 .collect(Collectors.toList());
@@ -95,8 +95,8 @@ public class ConnectionCache {
     }
 
     private EngineOptions asEngineOptions(Map.Entry<String, Object> entry) {
-        Map map = (Map) entry.getValue();
-        List<Pair<String, String>> parameters = ((List<Map>) map.get("parameters"))
+        Map<String, Object> map = (Map<String, Object>) entry.getValue();
+        List<Pair<String, String>> parameters = ((List<Map<String, Object>>) map.get("parameters"))
                 .stream()
                 .map(params -> Pair.of((String) params.get("key"), (String) params.get("value")))
                 .collect(Collectors.toList());

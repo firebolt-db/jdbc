@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class EncryptionServiceTest {
+class EncryptionServiceTest {
 
     private static final String VALID_ENCRYPTION_KEY = "valid encryption key";
 
@@ -36,7 +36,7 @@ public class EncryptionServiceTest {
             "'plain text',''",
             "'','valid key'"
     })
-    public void cannotEncryptWithEmptyKeyOrPlainText(String text, String key) {
+    void cannotEncryptWithEmptyKeyOrPlainText(String text, String key) {
         assertThrows(IllegalArgumentException.class, () -> encryptionService.encrypt(text, key));
     }
 
@@ -62,7 +62,7 @@ public class EncryptionServiceTest {
             "'decrypted key',''",
             "'','valid key'"
     })
-    public void cannotDecryptWithEmptyDecryptedTextOrEmptyKey(String encryptedText, String key) {
+    void cannotDecryptWithEmptyDecryptedTextOrEmptyKey(String encryptedText, String key) {
         assertThrows(IllegalArgumentException.class, () -> encryptionService.decrypt(encryptedText, key));
     }
 

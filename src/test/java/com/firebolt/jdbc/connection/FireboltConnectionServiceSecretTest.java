@@ -75,8 +75,6 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
     @Mock
     private CacheService mockCacheService;
 
-    private ConnectionCache connectionCache;
-
     @Mock
     private FireboltConnectionTokens mockFireboltConnectionTokens;
     @Mock

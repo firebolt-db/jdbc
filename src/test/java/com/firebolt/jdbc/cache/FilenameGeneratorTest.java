@@ -16,10 +16,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class FilenameGeneratorTest {
+class FilenameGeneratorTest {
 
-    private static String CACHE_KEY_VALUE = "key_value";
-    private static String CACHE_KEY_ENCRYPTION_KEY = "key to encrypt";
+    private static final String CACHE_KEY_VALUE = "key_value";
+    private static final String CACHE_KEY_ENCRYPTION_KEY = "key to encrypt";
 
     private static final String FILENAME = "thefile";
 

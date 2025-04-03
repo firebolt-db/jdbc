@@ -10,7 +10,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -78,7 +77,11 @@ public class FileService {
             if (!file.exists()) {
                 log.debug("Creating a new file for on disk caching");
                 try {
-                    file.createNewFile();
+                    boolean fileCreated = file.createNewFile();
+                    if (!fileCreated) {
+                        log.error("Cannot create file to save the connection cache.");
+                        return;
+                    }
                 } catch (IOException e) {
                     // maybe do not have permission to write to that location
                     log.error("Cannot create on-disk connection cache. Maybe do not have the write permission. ", e);
@@ -100,21 +103,26 @@ public class FileService {
                 return;
             }
 
-            try {
-                // get the original create time so we don't override it
-                BasicFileAttributes attrs = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
-                FileTime originalCreationTime = attrs.creationTime();
-
-                // overwrite the existing file
-                Files.writeString(file.toPath(), encryptedConnectionCache, StandardOpenOption.TRUNCATE_EXISTING);
-
-                // Restore the original creation time
-                Files.setAttribute(file.toPath(), "basic:creationTime", originalCreationTime);
-            } catch (IOException e) {
-                log.error("Failed to write to cache");
-            }
+            // safely write the content
+            safelyWriteFile(file, encryptedConnectionCache);
 
         });
+    }
+
+    // keep it package protected. We had to take it outside as mockito static does not work in different executor contexts
+    void safelyWriteFile(File file, String encryptedConnectionCache) {
+        try {
+            // get the original create time so we don't override it
+            FileTime creationTime = (FileTime) Files.getAttribute(file.toPath(), "basic:creationTime");
+
+            // overwrite the existing file
+            Files.writeString(file.toPath(), encryptedConnectionCache, StandardOpenOption.TRUNCATE_EXISTING);
+
+            // Restore the original creation time
+            Files.setAttribute(file.toPath(), "basic:creationTime", creationTime);
+        } catch (IOException e) {
+            log.error("Failed to write to cache");
+        }
     }
 
     public Optional<OnDiskConnectionCache> readContent(CacheKey cacheKey, File cacheFile) throws ConnectionCacheDeserializationException {

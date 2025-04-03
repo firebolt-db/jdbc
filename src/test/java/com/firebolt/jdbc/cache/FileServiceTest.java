@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,7 +38,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class FileServiceTest {
+class FileServiceTest {
 
     private static final String ENCRYPTION_KEY = "some encryption key";
     private static final String FILENAME = "test_file.txt";
@@ -62,6 +64,8 @@ public class FileServiceTest {
     private Path mockPath;
     @Mock
     private File mockFile;
+    @Mock
+    private FileTime mockFileTime;
 
     private ExecutorService executorService = Executors.newFixedThreadPool(1);
     private FileService fileService;
@@ -71,7 +75,7 @@ public class FileServiceTest {
 
     @BeforeEach
     void initTests() {
-        fileService = new FileService(mockDirectoryPathResolver, mockFilenameGenerator, mockEncryptionService, executorService);
+        fileService = spy(new FileService(mockDirectoryPathResolver, mockFilenameGenerator, mockEncryptionService, executorService));
     }
 
     @Test
@@ -107,7 +111,7 @@ public class FileServiceTest {
         try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
             filesMockedStatic.when(() -> Files.readString(mockPath)).thenReturn(ENCRYPTED_CONTENT);
             when(mockEncryptionService.decrypt(ENCRYPTED_CONTENT, ENCRYPTION_KEY)).thenThrow(EncryptionException.class);
-            assertThrows(ConnectionCacheDeserializationException.class, () -> fileService.readContent(mockCacheKey, mockFile).isEmpty());
+            assertThrows(ConnectionCacheDeserializationException.class, () -> fileService.readContent(mockCacheKey, mockFile));
         }
     }
 
@@ -141,7 +145,6 @@ public class FileServiceTest {
     void willNotWriteFileToDiskWhenCreatingANewFileFails() throws IOException {
         ConnectionCache connectionCache = actualConnectionCache();
 
-        fileService = spy(fileService);
         doReturn(mockFile).when(fileService).findFileForKey(mockCacheKey);
         when(mockFile.exists()).thenReturn(false);
         when(mockFile.createNewFile()).thenThrow(IOException.class);
@@ -159,7 +162,6 @@ public class FileServiceTest {
         ConnectionCache connectionCache = actualConnectionCache();
 
         when(mockCacheKey.getEncryptionKey()).thenReturn(ENCRYPTION_KEY);
-        fileService = spy(fileService);
         doReturn(mockFile).when(fileService).findFileForKey(mockCacheKey);
         when(mockFile.exists()).thenReturn(true);
         when(mockEncryptionService.encrypt(anyString(), eq(ENCRYPTION_KEY))).thenThrow(EncryptionException.class);
@@ -192,37 +194,30 @@ public class FileServiceTest {
 
     @Test
     void willNotWriteFileToDiskWhenWritingToFileEncryptedContentFails() {
-        ConnectionCache connectionCache = actualConnectionCache();
+        when(mockFile.toPath()).thenReturn(mockPath);
 
         try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
-            fileService = spy(fileService);
-            doReturn(mockFile).when(fileService).findFileForKey(mockCacheKey);
-            when(mockFile.exists()).thenReturn(true);
-            when(mockEncryptionService.encrypt(anyString(), eq(ENCRYPTION_KEY))).thenReturn(ENCRYPTED_CONTENT);
+            filesMockedStatic.when(() -> Files.getAttribute(mockPath, "basic:creationTime")).thenReturn(mockFileTime);
+            filesMockedStatic.when(() -> Files.writeString(any(Path.class), anyString(), eq(StandardOpenOption.TRUNCATE_EXISTING))).thenThrow(IOException.class);
 
-            filesMockedStatic.when(() -> Files.write(any(Path.class), any(byte[].class))).thenThrow(IOException.class);
-            fileService.safeSaveToDiskAsync(mockCacheKey, connectionCache);
+            fileService.safelyWriteFile(mockFile, ENCRYPTED_CONTENT);
 
-            // sleep so it can execute the task
-            sleepForMillis(500);
+            filesMockedStatic.verify(() -> Files.getAttribute(mockPath, "basic:creationTime"));
         }
     }
 
     @Test
     void willWriteToDisk() {
-        ConnectionCache connectionCache = actualConnectionCache();
+        when(mockFile.toPath()).thenReturn(mockPath);
 
         try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
-            fileService = spy(fileService);
-            doReturn(mockFile).when(fileService).findFileForKey(mockCacheKey);
-            when(mockFile.exists()).thenReturn(true);
-            when(mockEncryptionService.encrypt(anyString(), eq(ENCRYPTION_KEY))).thenReturn(ENCRYPTED_CONTENT);
+            filesMockedStatic.when(() -> Files.getAttribute(mockPath, "basic:creationTime")).thenReturn(mockFileTime);
+            filesMockedStatic.when(() -> Files.writeString(any(Path.class), anyString(), eq(StandardOpenOption.TRUNCATE_EXISTING))).thenThrow(IOException.class);
 
-            filesMockedStatic.when(() -> Files.write(any(Path.class), any(byte[].class))).thenReturn(mockPath);
-            fileService.safeSaveToDiskAsync(mockCacheKey, connectionCache);
+            fileService.safelyWriteFile(mockFile, ENCRYPTED_CONTENT);
 
-            // sleep so it can execute the task
-            sleepForMillis(500);
+            filesMockedStatic.verify(() -> Files.getAttribute(mockPath, "basic:creationTime"));
+            filesMockedStatic.verify(() -> Files.writeString(mockPath, ENCRYPTED_CONTENT, StandardOpenOption.TRUNCATE_EXISTING));
         }
     }
 
@@ -232,6 +227,7 @@ public class FileServiceTest {
         fileService.safelyDeleteFile(filePathThatDoesNotExist);
     }
 
+    @SuppressWarnings("java:S2925")
     private void sleepForMillis(long millis) {
         try {
             Thread.sleep(millis);

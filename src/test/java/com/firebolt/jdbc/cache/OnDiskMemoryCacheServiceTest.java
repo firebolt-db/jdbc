@@ -26,7 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class OnDiskMemoryCacheServiceTest {
+class OnDiskMemoryCacheServiceTest {
 
     @Mock
     private CacheService mockCacheService;
@@ -98,6 +98,7 @@ public class OnDiskMemoryCacheServiceTest {
             filesMockedStatic.when(() -> Files.getAttribute(mockFilePath, "basic:creationTime")).thenReturn(mockFileTime);
             when(mockFileTime.toInstant()).thenReturn(Instant.now().minus(3, ChronoUnit.HOURS));
             assertTrue(onDiskMemoryCacheService.get(mockCacheKey).isEmpty());
+            filesMockedStatic.verify(() -> Files.getAttribute(mockFilePath, "basic:creationTime"));
             verify(mockFileService).safelyDeleteFile(mockFilePath);
         }
     }
@@ -155,7 +156,7 @@ public class OnDiskMemoryCacheServiceTest {
     }
 
     @Test
-    public void savingKeyToMemoryWillAlsoSaveToDisk() {
+    void savingKeyToMemoryWillAlsoSaveToDisk() {
         onDiskMemoryCacheService.put(mockCacheKey, mockConnectionCache);
         verify(mockCacheService).put(mockCacheKey, mockConnectionCache);
         verify(mockFileService).safeSaveToDiskAsync(mockCacheKey, mockConnectionCache);
