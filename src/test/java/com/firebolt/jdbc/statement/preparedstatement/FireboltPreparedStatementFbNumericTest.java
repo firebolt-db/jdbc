@@ -70,7 +70,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class FireboltPreparedStatementTest {
+class FireboltPreparedStatementFbNumericTest {
 
 	@Captor
 	ArgumentCaptor<StatementInfoWrapper> queryInfoWrapperArgumentCaptor;
@@ -200,7 +200,7 @@ class FireboltPreparedStatementTest {
 	@BeforeEach
 	void beforeEach() throws SQLException {
 		when(connection.getSessionProperties()).thenReturn(properties);
-		lenient().when(properties.getPreparedStatementParamStyle()).thenReturn("native");
+		lenient().when(properties.getPreparedStatementParamStyle()).thenReturn("fb_numeric");
 		lenient().when(properties.getBufferSize()).thenReturn(10);
 		lenient().when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
 	}
@@ -214,8 +214,8 @@ class FireboltPreparedStatementTest {
 
 	@ParameterizedTest
 	@CsvSource(value = {
-			"INSERT INTO data (field) VALUES (?),false",
-			"SELECT * FROM data WHERE field=?,true",
+			"INSERT INTO data (field) VALUES ($1),false",
+			"SELECT * FROM data WHERE field=$1,true",
 	})
 	void getMetadata(String query, boolean expectedResultSet) throws SQLException {
 		StatementClient statementClient = mock(StatementClient.class);
@@ -234,7 +234,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldExecute() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (?,?,?,?,?,?,?,?)");
+		statement = createStatementWithSql("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)");
 
 		statement.setInt(1, 500);
 		statement.setString(2, "Ford");
@@ -246,8 +246,9 @@ class FireboltPreparedStatementTest {
 		statement.setBytes(8, "HarryFord".getBytes());
 		statement.execute();
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (500,'Ford','FOCUS',NULL,NULL,'sedan',['sedan','hatchback','coupe'],E'\\x48\\x61\\x72\\x72\\x79\\x46\\x6f\\x72\\x64'::BYTEA)",
+		assertEquals("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":\"500\"},{\"name\":\"$2\",\"value\":\"'Ford'\"},{\"name\":\"$3\",\"value\":\"'FOCUS'\"},{\"name\":\"$4\",\"value\":\"NULL\"},{\"name\":\"$5\",\"value\":\"NULL\"},{\"name\":\"$6\",\"value\":\"'sedan'\"},{\"name\":\"$7\",\"value\":\"['sedan','hatchback','coupe']\"},{\"name\":\"$8\",\"value\":\"E'\\\\x48\\\\x61\\\\x72\\\\x72\\\\x79\\\\x46\\\\x6f\\\\x72\\\\x64'::BYTEA\"}]", queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
 	}
 
 	@Test
@@ -374,7 +375,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldThrowsExceptionWhenTryingToExecuteUpdateWithQuery() throws SQLException {
-		statement  = createStatementWithSql("update cars set sales = ? where make = ?");
+		statement  = createStatementWithSql("update cars set sales = $1 where make = $2");
 
 		statement.setObject(1, 150);
 		statement.setObject(2, "Ford");
@@ -385,7 +386,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldSetNull() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars (sales, make) VALUES (?,?)");
+		statement = createStatementWithSql("INSERT INTO cars (sales, make) VALUES ($1,$2)");
 
 		statement.setNull(1, 0);
 		statement.setNull(2, 0);
