@@ -101,6 +101,10 @@ dependencies {
 }
 
 test {
+    jvmArgs(
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "--add-opens=java.base/java.util=ALL-UNNAMED"
+    ) // so we can change the environment variables
     useJUnitPlatform()
     maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
     testLogging {
@@ -223,6 +227,7 @@ task printVersion {
 }
 sonarqube {
     properties {
+        property "sonar.java.source", "11"
         property "sonar.projectKey", "firebolt-db_jdbc"
         property "sonar.organization", "firebolt-db"
         property "sonar.host.url", "https://sonarcloud.io"
