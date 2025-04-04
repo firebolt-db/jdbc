@@ -14,6 +14,7 @@ public enum FireboltQueryParameterKey {
 	DEFAULT_FORMAT("default_format"),
 	OUTPUT_FORMAT("output_format"),
 	ACCOUNT_ID("account_id"),
+	QUERY_PARAMETERS("query_parameters"),
 	;
 
 	private final String key;
