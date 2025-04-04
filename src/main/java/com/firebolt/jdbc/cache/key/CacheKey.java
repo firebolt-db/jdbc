@@ -11,4 +11,10 @@ public interface CacheKey {
      * @return
      */
     String getValue();
+
+    /**
+     * This will be used when saving to disk to encrypt the jwt token and to obfuscate the file name where it is saved.
+     * @return
+     */
+    String getEncryptionKey();
 }
