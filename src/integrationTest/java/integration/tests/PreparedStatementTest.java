@@ -34,8 +34,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -428,7 +432,6 @@ class PreparedStatementTest extends IntegrationTest {
 	void shouldInsertAndSelectStruct() throws SQLException {
 		Car car1 = Car.builder().make("Ford").sales(12345).ts(new Timestamp(2)).d(new Date(3)).build();
 
-		executeStatementFromFile("/statements/prepared-statement/ddl.sql");
 		try (Connection connection = createConnection()) {
 
 			try (PreparedStatement statement = connection
@@ -456,6 +459,37 @@ class PreparedStatementTest extends IntegrationTest {
 			executeStatementFromFile("/statements/prepared-statement/cleanup.sql");
 		}
 	}
+
+	@ParameterizedTest
+	@MethodSource("dateTypes")
+	void shouldFetchTimestampAndDate(Object timestampOrLocalDateTime, Object dateOrLocalDate, boolean addTargetSqlType) throws SQLException {
+		String expectedTimestamp = "2019-07-31 14:15:13";
+		String expectedDate = "2019-07-31";
+		try (Connection connection = createConnection()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO prepared_statement_test (ts, d, make, sales) VALUES (?,?, '', 0)")) {
+				// we need to specify make and sales values since they are not null
+				if (addTargetSqlType) {
+					statement.setObject(1, timestampOrLocalDateTime, Types.TIMESTAMP);
+					statement.setObject(2, dateOrLocalDate, Types.DATE);
+				} else {
+					statement.setObject(1, timestampOrLocalDateTime);
+					statement.setObject(2, dateOrLocalDate);
+				}
+				statement.executeUpdate();
+			}
+			try (Statement statement = connection.createStatement();
+				 ResultSet rs = statement
+						 .executeQuery("SELECT ts, d FROM prepared_statement_test")) {
+				rs.next();
+				assertEquals(expectedTimestamp, rs.getString(1));
+				assertEquals(expectedDate, rs.getString(2));
+			}
+		} finally {
+			executeStatementFromFile("/statements/prepared-statement/cleanup.sql");
+		}
+	}
+
 
 	@Test
 	@Tag("v2")
@@ -553,6 +587,19 @@ class PreparedStatementTest extends IntegrationTest {
 				assertEquals("don't", rs.getString(4));
 			}
 		}
+	}
+
+	Stream<Arguments> dateTypes() {
+		return Stream.of(
+				Arguments.of(LocalDateTime.of(2019, 7, 31, 14, 15, 13),
+						LocalDate.of(2019, 7, 31), true),
+				Arguments.of(new Timestamp(1564571713000L),
+						new Date(1564527600000L), true),
+				Arguments.of(LocalDateTime.of(2019, 7, 31, 14, 15, 13),
+						LocalDate.of(2019, 7, 31), false),
+				Arguments.of(new Timestamp(1564571713000L),
+						new Date(1564527600000L), false)
+		);
 	}
 
 	@Builder

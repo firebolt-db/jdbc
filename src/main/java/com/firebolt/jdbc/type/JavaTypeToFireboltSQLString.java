@@ -15,7 +15,10 @@ import java.sql.Clob;
 import java.sql.Date;
 import java.sql.JDBCType;
 import java.sql.SQLException;
+import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -42,7 +45,9 @@ public enum JavaTypeToFireboltSQLString {
 	FLOAT(Float.class, value -> Float.toString(((Number)value).floatValue())),
 	DOUBLE(Double.class, value -> Double.toString(((Number)value).doubleValue())),
 	DATE(Date.class, date -> SqlDateUtil.transformFromDateToSQLStringFunction.apply((Date) date), (date, tz) -> SqlDateUtil.transformFromDateWithTimezoneToSQLStringFunction.apply((Date) date, toTimeZone(tz))),
+	LOCAL_DATE(LocalDate.class, date -> SqlDateUtil.transformFromLocalDateToSQLStringFunction.apply((LocalDate) date)),
 	TIMESTAMP(Timestamp.class, time -> SqlDateUtil.transformFromTimestampToSQLStringFunction.apply((Timestamp) time), (ts, tz) -> SqlDateUtil.transformFromTimestampWithTimezoneToSQLStringFunction.apply((Timestamp) ts, toTimeZone(tz))),
+	LOCAL_DATE_TIME(LocalDateTime.class, time -> SqlDateUtil.transformFromLocalDateTimeToSQLStringFunction.apply((LocalDateTime) time)),
 	BIG_DECIMAL(BigDecimal.class, value -> value == null ? BaseType.NULL_VALUE : ((BigDecimal) value).toPlainString()),
 	ARRAY(Array.class, SqlArrayUtil::arrayToString),
 	BYTE_ARRAY(byte[].class, value -> ofNullable(byteArrayToHexString((byte[])value, true)).map(x  -> format("E'%s'::BYTEA", x)).orElse(null)),
@@ -53,31 +58,32 @@ public enum JavaTypeToFireboltSQLString {
 	private static final List<Entry<String, String>> characterToEscapedCharacterPairs = List.of(
 			Map.entry("'", "''"));
 	//https://docs.oracle.com/javase/1.5.0/docs/guide/jdbc/getstart/mapping.html
-	private static final Map<JDBCType, Class<?>> jdbcTypeToClass = Map.ofEntries(
-			Map.entry(JDBCType.CHAR, String.class),
-			Map.entry(JDBCType.VARCHAR, String.class),
-			Map.entry(JDBCType.LONGVARCHAR,String.class),
-			Map.entry(JDBCType.NUMERIC, java.math.BigDecimal.class),
-			Map.entry(JDBCType.DECIMAL, java.math.BigDecimal.class),
-			Map.entry(JDBCType.BIT, Boolean.class),
-			Map.entry(JDBCType.BOOLEAN, Boolean.class),
-			Map.entry(JDBCType.TINYINT, Short.class),
-			Map.entry(JDBCType.SMALLINT, Short.class),
-			Map.entry(JDBCType.INTEGER, Integer.class),
-			Map.entry(JDBCType.BIGINT, Long.class),
-			Map.entry(JDBCType.REAL, Float.class),
-			Map.entry(JDBCType.FLOAT, Double.class),
-			Map.entry(JDBCType.DOUBLE, Double.class),
-			Map.entry(JDBCType.BINARY, byte[].class),
-			Map.entry(JDBCType.VARBINARY, byte[].class),
-			Map.entry(JDBCType.LONGVARBINARY, byte[].class),
-			Map.entry(JDBCType.DATE, java.sql.Date.class),
-			Map.entry(JDBCType.TIME, java.sql.Time.class),
-			Map.entry(JDBCType.TIMESTAMP, java.sql.Timestamp.class),
+	private static final Map<JDBCType, List<Class<?>>> jdbcTypeToClass = Map.ofEntries(
+			Map.entry(JDBCType.CHAR, List.of(String.class)),
+			Map.entry(JDBCType.VARCHAR, List.of(String.class)),
+			Map.entry(JDBCType.LONGVARCHAR, List.of(String.class)),
+			Map.entry(JDBCType.NUMERIC, List.of(java.math.BigDecimal.class)),
+			Map.entry(JDBCType.DECIMAL, List.of(java.math.BigDecimal.class)),
+			Map.entry(JDBCType.BIT, List.of(Boolean.class)),
+			Map.entry(JDBCType.BOOLEAN, List.of(Boolean.class)),
+			Map.entry(JDBCType.TINYINT, List.of(Short.class)),
+			Map.entry(JDBCType.SMALLINT, List.of(Short.class)),
+			Map.entry(JDBCType.INTEGER, List.of(Integer.class)),
+			Map.entry(JDBCType.BIGINT, List.of(Long.class)),
+			Map.entry(JDBCType.REAL, List.of(Float.class)),
+			Map.entry(JDBCType.FLOAT, List.of(Double.class)),
+			Map.entry(JDBCType.DOUBLE, List.of(Double.class)),
+			Map.entry(JDBCType.BINARY, List.of(byte[].class)),
+			Map.entry(JDBCType.VARBINARY, List.of(byte[].class)),
+			Map.entry(JDBCType.LONGVARBINARY, List.of(byte[].class)),
+			Map.entry(JDBCType.DATE, List.of(Date.class, LocalDate.class)),
+			Map.entry(JDBCType.TIME, List.of(Time.class)),
+			Map.entry(JDBCType.TIMESTAMP, List.of(Timestamp.class, LocalDateTime.class)),
+			Map.entry(JDBCType.TIMESTAMP_WITH_TIMEZONE, List.of(Timestamp.class)),
 			//DISTINCT        Object type of underlying type
-			Map.entry(JDBCType.CLOB, Clob.class),
-			Map.entry(JDBCType.BLOB, Blob.class),
-			Map.entry(JDBCType.ARRAY, Array.class)
+			Map.entry(JDBCType.CLOB, List.of(Clob.class)),
+			Map.entry(JDBCType.BLOB, List.of(Blob.class)),
+			Map.entry(JDBCType.ARRAY, List.of(Array.class))
 			//STRUCT,       Struct or SQLData
 			//Map.entry(JDBCType.REF, Ref.class)
 			//Map.entry(JDBCType.JAVA_OBJECT, Object.class)
@@ -115,7 +121,7 @@ public enum JavaTypeToFireboltSQLString {
 	}
 
 	public static String transformAny(Object object, int sqlType, ParserVersion version) throws SQLException {
-		return transformAny(object, () -> getType(sqlType), version);
+		return transformAny(object, () -> getType(sqlType, object), version);
 	}
 
 	private static String transformAny(Object object, CheckedSupplier<Class<?>> classSupplier, ParserVersion version) throws SQLException {
@@ -137,11 +143,18 @@ public enum JavaTypeToFireboltSQLString {
 		return object.getClass().isArray() && !byte[].class.equals(object.getClass()) ? Array.class : object.getClass();
 	}
 
-	private static Class<?> getType(int sqlType) throws SQLException {
+	private static Class<?> getType(int sqlType, Object o) throws SQLException {
 		try {
 			JDBCType jdbcType = JDBCType.valueOf(sqlType);
-			return Optional.ofNullable(jdbcTypeToClass.get(jdbcType))
+			List<Class<?>> classes = Optional.ofNullable(jdbcTypeToClass.get(jdbcType))
 					.orElseThrow(() -> new FireboltException(format("Unsupported JDBC type %s", jdbcType), TYPE_NOT_SUPPORTED));
+			if (classes.size() > 1 && classes.contains(o.getClass())) {
+				return o.getClass();
+			} else if (classes.size() == 1) {
+				return classes.get(0);
+			} else {
+				throw new FireboltException(format("Unsupported JDBC type %s", jdbcType), TYPE_NOT_SUPPORTED);
+			}
 		} catch(IllegalArgumentException e) {
 			throw new FireboltException(format("Unsupported SQL type %d", sqlType), TYPE_NOT_SUPPORTED);
 		}
