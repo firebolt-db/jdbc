@@ -47,7 +47,7 @@ class InMemoryCacheServiceTest {
     }
 
     @Test
-    @SuppressWarnings("java:S2925")
+    @SuppressWarnings("java:S2925") // need thread.sleep so we can wait for the cache entry to expire
     void willNotGetExpiredEntryFromCache() {
         ExpiringMap<String, ConnectionCache> expiringMap = ExpiringMap.builder().variableExpiration().build();
         CacheKey cacheKey = new TestCacheKey("key_to_expire");
