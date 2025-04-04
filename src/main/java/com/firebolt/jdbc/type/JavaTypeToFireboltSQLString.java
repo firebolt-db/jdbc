@@ -49,7 +49,6 @@ public enum JavaTypeToFireboltSQLString {
 	LOCAL_DATE(LocalDate.class, date -> SqlDateUtil.transformFromLocalDateToSQLStringFunction.apply((LocalDate) date)),
 	TIMESTAMP(Timestamp.class, time -> SqlDateUtil.transformFromTimestampToSQLStringFunction.apply((Timestamp) time), (ts, tz) -> SqlDateUtil.transformFromTimestampWithTimezoneToSQLStringFunction.apply((Timestamp) ts, toTimeZone(tz))),
 	LOCAL_DATE_TIME(LocalDateTime.class, time -> SqlDateUtil.transformFromLocalDateTimeToSQLStringFunction.apply((LocalDateTime) time)),
-	OFFSET_DATE_TIME(OffsetDateTime.class, time -> SqlDateUtil.transformFromOffsetDateTimeToSQLStringFunction.apply((OffsetDateTime) time)),
 	BIG_DECIMAL(BigDecimal.class, value -> value == null ? BaseType.NULL_VALUE : ((BigDecimal) value).toPlainString()),
 	ARRAY(Array.class, SqlArrayUtil::arrayToString),
 	BYTE_ARRAY(byte[].class, value -> ofNullable(byteArrayToHexString((byte[])value, true)).map(x  -> format("E'%s'::BYTEA", x)).orElse(null)),
@@ -81,6 +80,7 @@ public enum JavaTypeToFireboltSQLString {
 			Map.entry(JDBCType.DATE, List.of(Date.class, LocalDate.class)),
 			Map.entry(JDBCType.TIME, List.of(Time.class)),
 			Map.entry(JDBCType.TIMESTAMP, List.of(Timestamp.class, LocalDateTime.class)),
+			Map.entry(JDBCType.TIMESTAMP_WITH_TIMEZONE, List.of(Timestamp.class)),
 			//DISTINCT        Object type of underlying type
 			Map.entry(JDBCType.CLOB, List.of(Clob.class)),
 			Map.entry(JDBCType.BLOB, List.of(Blob.class)),

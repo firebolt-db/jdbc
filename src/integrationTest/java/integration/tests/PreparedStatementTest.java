@@ -38,6 +38,8 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -430,7 +432,6 @@ class PreparedStatementTest extends IntegrationTest {
 	void shouldInsertAndSelectStruct() throws SQLException {
 		Car car1 = Car.builder().make("Ford").sales(12345).ts(new Timestamp(2)).d(new Date(3)).build();
 
-		executeStatementFromFile("/statements/prepared-statement/ddl.sql");
 		try (Connection connection = createConnection()) {
 
 			try (PreparedStatement statement = connection
@@ -466,7 +467,8 @@ class PreparedStatementTest extends IntegrationTest {
 		String expectedDate = "2019-07-31";
 		try (Connection connection = createConnection()) {
 			try (PreparedStatement statement = connection
-					.prepareStatement("SELECT ? as a, ? as b")) {
+					.prepareStatement("INSERT INTO prepared_statement_test (ts, d, make, sales) VALUES (?,?, '', 0)")) {
+				// we need to specify make and sales values since they are not null
 				if (addTargetSqlType) {
 					statement.setObject(1, timestampOrLocalDateTime, Types.TIMESTAMP);
 					statement.setObject(2, dateOrLocalDate, Types.DATE);
@@ -474,12 +476,17 @@ class PreparedStatementTest extends IntegrationTest {
 					statement.setObject(1, timestampOrLocalDateTime);
 					statement.setObject(2, dateOrLocalDate);
 				}
-				statement.execute();
-				ResultSet rs = statement.getResultSet();
-				assertTrue(rs.next());
+				statement.executeUpdate();
+			}
+			try (Statement statement = connection.createStatement();
+				 ResultSet rs = statement
+						 .executeQuery("SELECT ts, d FROM prepared_statement_test")) {
+				rs.next();
 				assertEquals(expectedTimestamp, rs.getString(1));
 				assertEquals(expectedDate, rs.getString(2));
 			}
+		} finally {
+			executeStatementFromFile("/statements/prepared-statement/cleanup.sql");
 		}
 	}
 
