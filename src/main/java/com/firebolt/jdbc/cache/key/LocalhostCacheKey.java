@@ -23,4 +23,9 @@ public class LocalhostCacheKey implements CacheKey {
     public String getValue() {
         return value;
     }
+
+    @Override
+    public String getEncryptionKey() {
+        return "very_strong_encryption_key";
+    }
 }
