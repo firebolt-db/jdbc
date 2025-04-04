@@ -28,11 +28,12 @@ public class EncryptionService {
     private static final String SHA_256_ALGO = "SHA-256";
 
     /**
-     * Encrypts a plaintext using the encryption key. If there are any exceptions during encryption an empty optional will be returned
+     * Encrypts a plaintext using the encryption key.
      *
      * @param plainText - the text to be encrypted
      * @param encryptionKey - the key to be used for encryption
      * @return - if encryption is successful then a base64 encoded encrypted string will be returned
+     * @throws EncryptionException - when cannot encrypt the plain text
      */
     public String encrypt(String plainText, String encryptionKey) throws EncryptionException, IllegalArgumentException {
         if (StringUtils.isBlank(plainText) || StringUtils.isBlank(encryptionKey)) {
@@ -52,11 +53,11 @@ public class EncryptionService {
      * @param base64EncryptedText - the base64 encoded string
      * @param encryptionKey - the key to decrypt
      * @return the original plain text
-     * @throws Exception - in case the encrypted text cannot be decrypted
+     * @throws EncryptionException - in case the encrypted text cannot be decrypted
      */
     public String decrypt(String base64EncryptedText, String encryptionKey) throws EncryptionException, IllegalArgumentException {
         if (StringUtils.isBlank(base64EncryptedText) || StringUtils.isBlank(encryptionKey)) {
-            throw new IllegalArgumentException("Text to decrypt or encryption key is null. Cannot encrypt.");
+            throw new IllegalArgumentException("Text to decrypt or encryption key is null. Cannot decrypt.");
         }
 
         try {
@@ -90,7 +91,7 @@ public class EncryptionService {
         SecretKeySpec secretKey = deriveAESKey(key);
 
         // Generate a deterministic nonce from the key
-        byte[] nonce = deriveNonce(key, key);
+        byte[] nonce = deriveNonce(key);
         GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, nonce);
 
         Cipher cipher = getAesGcmCipherInstance();
@@ -111,7 +112,7 @@ public class EncryptionService {
         SecretKeySpec secretKey = deriveAESKey(key);
 
         // Regenerate the same deterministic nonce from key
-        byte[] nonce = deriveNonce(key, key);
+        byte[] nonce = deriveNonce(key);
         GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, nonce);
 
         Cipher cipher = getAesGcmCipherInstance();
@@ -128,9 +129,9 @@ public class EncryptionService {
     }
 
     // Deterministic nonce generation using SHA-256 hash
-    private static byte[] deriveNonce(String plaintext, String key) throws NoSuchAlgorithmException {
+    private static byte[] deriveNonce(String key) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance(SHA_256_ALGO);
-        byte[] hash = digest.digest((plaintext + key).getBytes(StandardCharsets.UTF_8));
+        byte[] hash = digest.digest((key + key).getBytes(StandardCharsets.UTF_8));
         byte[] nonce = new byte[12]; // AES-GCM nonce should be 12 bytes
         System.arraycopy(hash, 0, nonce, 0, nonce.length);
         return nonce;
