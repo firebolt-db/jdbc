@@ -7,12 +7,10 @@ import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junitpioneer.jupiter.DefaultTimeZone;
 
-import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -21,7 +19,6 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_NOT_SUPPORTED;
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
