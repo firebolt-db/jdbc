@@ -127,7 +127,7 @@ public class FileService {
         }
     }
 
-    public Optional<ConnectionCache> readContent(CacheKey cacheKey, File cacheFile) throws ConnectionCacheDeserializationException {
+    public Optional<OnDiskConnectionCache> readContent(CacheKey cacheKey, File cacheFile) throws ConnectionCacheDeserializationException {
         String content;
         try {
             content = Files.readString(cacheFile.toPath());
@@ -146,7 +146,7 @@ public class FileService {
         }
 
         // convert to ConnectionCache
-        return Optional.of(new ConnectionCache(new JSONObject(decryptedCacheObject)));
+        return Optional.of(new OnDiskConnectionCache(new JSONObject(decryptedCacheObject)));
     }
 
     public void safelyDeleteFile(Path filePath) {

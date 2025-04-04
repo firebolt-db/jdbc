@@ -48,6 +48,7 @@ public class FireboltEngineVersion2Service {
      * @param statement - statement that will execute the verification of the database
      * @param databaseName - the name of the database to check
      */
+
     private void getAndSetDatabaseProperties(Statement statement, String databaseName, final Optional<ConnectionCache> connectionCacheOptional) throws SQLException {
         // if the connection cache is empty it means it is not cachable
         if (connectionCacheOptional.isEmpty()) {
