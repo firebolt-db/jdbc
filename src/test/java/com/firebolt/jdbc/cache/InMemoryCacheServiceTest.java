@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -67,6 +68,14 @@ class InMemoryCacheServiceTest {
 
         // should not get the key
         assertTrue(inMemoryCacheService.get(cacheKey).isEmpty());
+    }
+
+    @Test
+    void willCreateTheInMemoryConnectionCache() {
+        CacheKey testCacheKey = new TestCacheKey("key");
+        ConnectionCache connectionCache = inMemoryCacheService.newCacheObject(testCacheKey, "a sample connection id");
+        assertEquals("a sample connection id", connectionCache.getConnectionId());
+        assertEquals(CacheType.MEMORY.name(), connectionCache.getCacheSource());
     }
 
     private class TestCacheKey implements CacheKey {
