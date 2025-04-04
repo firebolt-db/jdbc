@@ -12,9 +12,9 @@ import lombok.Builder;
 import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.junit.Ignore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -612,9 +612,9 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
-	@Ignore
+	@Disabled
 	@ParameterizedTest
-	@MethodSource("booleanTypes")
+	@MethodSource("com.firebolt.jdbc.testutils.TestFixtures#booleanTypes")
 	void shouldFetchBooleanFromVariousObjects(Object objectTrue, Object objectFalse) throws SQLException {
 		try (Connection connection = createConnection()) {
 			try (PreparedStatement statement = connection
@@ -632,26 +632,6 @@ class PreparedStatementTest extends IntegrationTest {
 				assertFalse(rs.getBoolean(2));
 			}
 		}
-	}
-
-	Stream<Arguments> booleanTypes() {
-		return Stream.of(
-				Arguments.of("1", "0"),
-				Arguments.of("true", "false"),
-				Arguments.of("t", "f"),
-				Arguments.of("yes", "no"),
-				Arguments.of("y", "n"),
-				Arguments.of("on", "off"),
-				Arguments.of('1', '0'),
-				Arguments.of('t', 'f'),
-				Arguments.of('T', 'F'),
-				Arguments.of('y', 'n'),
-				Arguments.of('Y', 'N'),
-				Arguments.of(1, 0),
-				Arguments.of(1.0, 0.0),
-				Arguments.of(1F, 0F),
-				Arguments.of(1L, 0L)
-		);
 	}
 
 	Stream<Arguments> dateTypes() {

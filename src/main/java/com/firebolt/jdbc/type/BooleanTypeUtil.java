@@ -22,7 +22,7 @@ class BooleanTypeUtil {
      * @return boolean value corresponding to the cast of the object
      * @throws FireboltException cannot
      */
-    @SuppressWarnings("java:S6201")
+    @SuppressWarnings("java:S6201") // Pattern Matching for "instanceof" was introduced in java 16 while we still try to be compliant with java 11
     static boolean castToBoolean(final Object in) throws FireboltException {
         log.debug("Cast to boolean: \"{0}\"", String.valueOf(in));
         if (in instanceof Boolean) {
