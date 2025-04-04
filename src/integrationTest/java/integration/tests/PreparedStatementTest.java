@@ -14,6 +14,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -34,8 +35,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -551,6 +552,52 @@ class PreparedStatementTest extends IntegrationTest {
 				assertEquals("\n", rs.getString(2));
 				assertEquals("\\", rs.getString(3));
 				assertEquals("don't", rs.getString(4));
+			}
+		}
+	}
+
+	@Test
+	void shouldFetchBoolean() throws SQLException {
+		try (Connection connection = createConnection()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("SELECT ? as a, ? as b, ? as c")) {
+				statement.setBoolean(1, true);
+				statement.setObject(2, false);
+				statement.setObject(3, true, Types.BOOLEAN);
+				statement.execute();
+				ResultSet rs = statement.getResultSet();
+				assertEquals(FireboltDataType.BOOLEAN.name().toLowerCase(),
+						rs.getMetaData().getColumnTypeName(1).toLowerCase());
+				assertEquals(FireboltDataType.BOOLEAN.name().toLowerCase(),
+						rs.getMetaData().getColumnTypeName(2).toLowerCase());
+				assertEquals(FireboltDataType.BOOLEAN.name().toLowerCase(),
+						rs.getMetaData().getColumnTypeName(3).toLowerCase());
+				assertTrue(rs.next());
+				assertTrue(rs.getBoolean(1));
+				assertFalse(rs.getBoolean(2));
+				assertTrue(rs.getBoolean(3));
+			}
+		}
+	}
+
+	@Disabled
+	@ParameterizedTest
+	@MethodSource("com.firebolt.jdbc.testutils.TestFixtures#booleanTypes")
+	void shouldFetchBooleanFromVariousObjects(Object objectTrue, Object objectFalse) throws SQLException {
+		try (Connection connection = createConnection()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("SELECT ? as a, ? as b")) {
+				statement.setObject(1, objectTrue, Types.BOOLEAN);
+				statement.setObject(2, objectFalse, Types.BOOLEAN);
+				statement.execute();
+				ResultSet rs = statement.getResultSet();
+				assertEquals(FireboltDataType.BOOLEAN.name().toLowerCase(),
+						rs.getMetaData().getColumnTypeName(1).toLowerCase());
+				assertEquals(FireboltDataType.BOOLEAN.name().toLowerCase(),
+						rs.getMetaData().getColumnTypeName(2).toLowerCase());
+				assertTrue(rs.next());
+				assertTrue(rs.getBoolean(1));
+				assertFalse(rs.getBoolean(2));
 			}
 		}
 	}
