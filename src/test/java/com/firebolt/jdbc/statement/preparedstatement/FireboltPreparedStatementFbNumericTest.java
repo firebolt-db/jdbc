@@ -13,7 +13,6 @@ import com.firebolt.jdbc.type.lob.FireboltClob;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,8 +49,6 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Optional;
 import java.util.TimeZone;
@@ -72,9 +69,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(MockitoExtension.class)
-class FireboltPreparedStatementTest {
+class FireboltPreparedStatementFbNumericTest {
 
 	@Captor
 	ArgumentCaptor<StatementInfoWrapper> queryInfoWrapperArgumentCaptor;
@@ -204,7 +200,7 @@ class FireboltPreparedStatementTest {
 	@BeforeEach
 	void beforeEach() throws SQLException {
 		when(connection.getSessionProperties()).thenReturn(properties);
-		lenient().when(properties.getPreparedStatementParamStyle()).thenReturn("native");
+		lenient().when(properties.getPreparedStatementParamStyle()).thenReturn("fb_numeric");
 		lenient().when(properties.getBufferSize()).thenReturn(10);
 		lenient().when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
 	}
@@ -218,12 +214,12 @@ class FireboltPreparedStatementTest {
 
 	@ParameterizedTest
 	@CsvSource(value = {
-			"INSERT INTO data (field) VALUES (?),false",
-			"SELECT * FROM data WHERE field=?,true",
+			"INSERT INTO data (field) VALUES ($1),false",
+			"SELECT * FROM data WHERE field=$1,true",
 	})
 	void getMetadata(String query, boolean expectedResultSet) throws SQLException {
 		StatementClient statementClient = mock(StatementClient.class);
-		when(statementClient.executeSqlStatement(any(), any(), anyBoolean(), anyInt(), eq(false))).thenReturn(new ByteArrayInputStream(new byte[0]));
+		when(statementClient.executeSqlStatement(any(), any(), anyBoolean(), anyInt())).thenReturn(new ByteArrayInputStream(new byte[0]));
 		statement = new FireboltPreparedStatement(new FireboltStatementService(statementClient), connection, query);
 		assertNull(statement.getMetaData());
 		statement.setObject(1, null);
@@ -238,7 +234,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldExecute() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (?,?,?,?,?,?,?,?)");
+		statement = createStatementWithSql("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)");
 
 		statement.setInt(1, 500);
 		statement.setString(2, "Ford");
@@ -250,8 +246,9 @@ class FireboltPreparedStatementTest {
 		statement.setBytes(8, "HarryFord".getBytes());
 		statement.execute();
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (500,'Ford','FOCUS',NULL,NULL,'sedan',['sedan','hatchback','coupe'],E'\\x48\\x61\\x72\\x72\\x79\\x46\\x6f\\x72\\x64'::BYTEA)",
+		assertEquals("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":\"500\"},{\"name\":\"$2\",\"value\":\"'Ford'\"},{\"name\":\"$3\",\"value\":\"'FOCUS'\"},{\"name\":\"$4\",\"value\":\"NULL\"},{\"name\":\"$5\",\"value\":\"NULL\"},{\"name\":\"$6\",\"value\":\"'sedan'\"},{\"name\":\"$7\",\"value\":\"['sedan','hatchback','coupe']\"},{\"name\":\"$8\",\"value\":\"E'\\\\x48\\\\x61\\\\x72\\\\x72\\\\x79\\\\x46\\\\x6f\\\\x72\\\\x64'::BYTEA\"}]", queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
 	}
 
 	@Test
@@ -378,7 +375,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldThrowsExceptionWhenTryingToExecuteUpdateWithQuery() throws SQLException {
-		statement  = createStatementWithSql("update cars set sales = ? where make = ?");
+		statement  = createStatementWithSql("update cars set sales = $1 where make = $2");
 
 		statement.setObject(1, 150);
 		statement.setObject(2, "Ford");
@@ -389,7 +386,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldSetNull() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars (sales, make) VALUES (?,?)");
+		statement = createStatementWithSql("INSERT INTO cars (sales, make) VALUES ($1,$2)");
 
 		statement.setNull(1, 0);
 		statement.setNull(2, 0);
@@ -408,7 +405,7 @@ class FireboltPreparedStatementTest {
 		statement.execute();
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("INSERT INTO cars(available) VALUES (true)", queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("INSERT INTO cars(available) VALUES (1)", queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
 	@ParameterizedTest
@@ -527,16 +524,15 @@ class FireboltPreparedStatementTest {
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
-	@ParameterizedTest
+	@Test
 	@DefaultTimeZone("Europe/London")
-	@MethodSource("dateTypes")
-	void shouldSetAllObjects(Object timestampOrLocalDateTime, Object dateOrLocalDate) throws SQLException {
+	void shouldSetAllObjects() throws SQLException {
 		statement = createStatementWithSql(
 				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) "
 						+ "VALUES (?,?,?,?,?,?,?,?)");
 
-		statement.setObject(1, timestampOrLocalDateTime);
-		statement.setObject(2, dateOrLocalDate);
+		statement.setObject(1, new Timestamp(1564571713000L));
+		statement.setObject(2, new Date(1564527600000L));
 		statement.setObject(3, 5.5F);
 		statement.setObject(4, 5L);
 		statement.setObject(5, new BigDecimal("555555555555.55555555"));
@@ -548,20 +544,19 @@ class FireboltPreparedStatementTest {
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals(
-				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,true,5)",
+				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,1,5)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
-	@ParameterizedTest
+	@Test
 	@DefaultTimeZone("Europe/London")
-	@MethodSource("dateTypes")
-	void shouldSetAllObjectsWithCorrectSqlType(Object timestampOrLocalDateTime, Object dateOrLocalDate) throws SQLException {
+	void shouldSetAllObjectsWithCorrectSqlType() throws SQLException {
 		statement = createStatementWithSql(
 				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) "
 						+ "VALUES (?,?,?,?,?,?,?,?)");
 
-		statement.setObject(1, timestampOrLocalDateTime, Types.TIMESTAMP);
-		statement.setObject(2, dateOrLocalDate, Types.DATE);
+		statement.setObject(1, new Timestamp(1564571713000L), Types.TIMESTAMP);
+		statement.setObject(2, new Date(1564527600000L), Types.DATE);
 		statement.setObject(3, 5.5F, Types.FLOAT);
 		statement.setObject(4, 5L, Types.BIGINT);
 		statement.setObject(5, new BigDecimal("555555555555.55555555"), Types.NUMERIC);
@@ -574,7 +569,7 @@ class FireboltPreparedStatementTest {
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 
 		assertEquals(
-				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,true,5)",
+				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,1,5)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
@@ -673,14 +668,5 @@ class FireboltPreparedStatementTest {
 
 	private FireboltPreparedStatement createStatementWithSql(String sql) {
 		return new FireboltPreparedStatement(fireboltStatementService, connection, sql);
-	}
-
-	Stream<Arguments> dateTypes() {
-		return Stream.of(
-				Arguments.of(LocalDateTime.of(2019, 7, 31, 12, 15, 13),
-						LocalDate.of(2019, 7, 31)),
-				Arguments.of(new Timestamp(1564571713000L),
-						new Date(1564527600000L))
-		);
 	}
 }

@@ -13,6 +13,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import com.firebolt.jdbc.statement.preparedstatement.PreparedStatementParamStyle;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.CustomLog;
@@ -77,6 +79,7 @@ public class FireboltProperties {
 	private final boolean validateOnSystemEngine;
 	private final boolean mergePreparedStatementBatches;
 	private final boolean connectionCachingEnabled;
+	private final String preparedStatementParamStyle;
 
 	// firebolt core url
 	private final String url;
@@ -119,6 +122,8 @@ public class FireboltProperties {
 		validateOnSystemEngine = getSetting(properties, FireboltSessionProperty.VALIDATE_ON_SYSTEM_ENGINE);
 		mergePreparedStatementBatches = getSetting(properties, FireboltSessionProperty.MERGE_PREPARED_STATEMENT_BATCHES);
 		connectionCachingEnabled = getSetting(properties, FireboltSessionProperty.CACHE_CONNECTION);
+        preparedStatementParamStyle = getSetting(properties, FireboltSessionProperty.PREPARED_STATEMENT_PARAM_STYLE);
+
 		environment = getEnvironment(configuredEnvironment, properties);
 		host = getHost(configuredEnvironment, properties);
 		port = getPort(properties, ssl);
@@ -126,7 +131,7 @@ public class FireboltProperties {
 		url = getSetting(properties, FireboltSessionProperty.URL);
 		initialAdditionalProperties = getFireboltCustomProperties(properties);
 		runtimeAdditionalProperties = new HashMap<>();
-	}
+    }
 
 	private static String getEngine(Properties mergedProperties) {
 		return getSetting(mergedProperties, FireboltSessionProperty.ENGINE);
