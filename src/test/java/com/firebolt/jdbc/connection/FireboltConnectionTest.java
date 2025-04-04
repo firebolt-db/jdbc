@@ -84,6 +84,10 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 abstract class FireboltConnectionTest {
 	private static final String SYSTEM_ENGINE_URL = "jdbc:firebolt:db?env=dev&account=dev";
+
+	private static final String ENGINE_NAME = "my_engine";
+	private static final String DB_NAME = "db";
+
 	private final FireboltConnectionTokens fireboltConnectionTokens = new FireboltConnectionTokens(null, 0);
 	@Captor
 	private ArgumentCaptor<FireboltProperties> propertiesArgumentCaptor;
@@ -149,7 +153,7 @@ abstract class FireboltConnectionTest {
 		lenient().when(fireboltAuthenticationService.getConnectionTokens(eq("https://api.dev.firebolt.io:443"), any()))
 				.thenReturn(fireboltConnectionTokens);
 		lenient().when(fireboltGatewayUrlService.getUrl(any(), any())).thenReturn("http://foo:8080/bar");
-		engine = new Engine("endpoint", "id123", "OK", "noname", null);
+		engine = new Engine("endpoint", "id123", ENGINE_NAME, DB_NAME, null);
 		lenient().when(fireboltEngineService.getEngine(any())).thenReturn(engine);
 		lenient().when(fireboltEngineService.doesDatabaseExist(any())).thenReturn(true);
 	}
@@ -591,7 +595,7 @@ abstract class FireboltConnectionTest {
 	void shouldGetDatabaseWhenGettingCatalog() throws SQLException {
 		connectionProperties.put("database", "db");
 		try (Connection fireboltConnection = createConnection(url, connectionProperties)) {
-			assertEquals("noname", fireboltConnection.getCatalog()); // retrieved engine's DB's name is "noname". Firebolt treats DB as catalog
+			assertEquals(DB_NAME, fireboltConnection.getCatalog()); // Firebolt treats DB as catalog
 		}
 	}
 
@@ -661,16 +665,6 @@ abstract class FireboltConnectionTest {
 	void shouldReturnEmptyResult(String name, Callable<?> function, Object expected) throws Exception {
 		connection = createConnection(url, connectionProperties);
 		assertEquals(expected, function.call());
-	}
-
-	@Test
-	void shouldGetEngineUrlWhenEngineIsProvided() throws SQLException {
-		connectionProperties.put("engine", "engine");
-		when(fireboltEngineService.getEngine(any())).thenReturn(new Engine("http://my_endpoint", null, null, null, null));
-		try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
-			verify(fireboltEngineService).getEngine(argThat(props -> "engine".equals(props.getEngine()) && "db".equals(props.getDatabase())));
-			assertEquals("http://my_endpoint", fireboltConnection.getSessionProperties().getHost());
-		}
 	}
 
 	@Test

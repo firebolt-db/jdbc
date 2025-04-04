@@ -1,12 +1,12 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.cache.CacheService;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
-import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
+import com.firebolt.jdbc.service.FireboltEngineVersion2Service;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
-import com.firebolt.jdbc.type.ParserVersion;
 import java.sql.SQLException;
 import java.util.Properties;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,14 +36,15 @@ class LocalhostFireboltConnectionTest {
     private static final String LOCAL_URL = "jdbc:firebolt:local_dev_db?account=dev&ssl=false&max_query_size=10000000&mask_internal_errors=0&host=localhost";
 
     @Mock
-    protected FireboltAuthenticationService fireboltAuthenticationService;
+    private FireboltAuthenticationService fireboltAuthenticationService;
     @Mock
-    protected FireboltGatewayUrlService fireboltGatewayUrlService;
-
+    private FireboltGatewayUrlService fireboltGatewayUrlService;
     @Mock
-    protected FireboltEngineInformationSchemaService fireboltEngineService;
+    private FireboltEngineVersion2Service fireboltEngineVersion2Service;
     @Mock
-    protected FireboltStatementService fireboltStatementService;
+    private FireboltStatementService fireboltStatementService;
+    @Mock
+    private CacheService cacheService;
 
     private Properties connectionProperties;
 
@@ -161,7 +162,7 @@ class LocalhostFireboltConnectionTest {
 
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
         return new LocalhostFireboltConnection(url, props, fireboltAuthenticationService, fireboltGatewayUrlService,
-                fireboltStatementService, fireboltEngineService, ParserVersion.CURRENT);
+                fireboltStatementService, fireboltEngineVersion2Service, cacheService);
 
     }
 }

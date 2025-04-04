@@ -1,6 +1,8 @@
 package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
+import com.firebolt.jdbc.cache.CacheServiceProvider;
+import com.firebolt.jdbc.cache.CacheType;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.util.PropertyUtil;
@@ -37,8 +39,8 @@ public class FireboltConnectionProvider {
                 return fireboltConnectionProviderWrapper.createFireboltConnectionUsernamePassword(url, connectionSettings, ParserVersion.LEGACY);
             case 2:
                 return isLocalhostConnection(url, connectionSettings) ?
-                        fireboltConnectionProviderWrapper.createLocalhostFireboltConnectionServiceSecret(url, connectionSettings, ParserVersion.CURRENT) :
-                        fireboltConnectionProviderWrapper.createFireboltConnectionServiceSecret(url, connectionSettings, ParserVersion.CURRENT);
+                        fireboltConnectionProviderWrapper.createLocalhostFireboltConnectionServiceSecret(url, connectionSettings) :
+                        fireboltConnectionProviderWrapper.createFireboltConnectionServiceSecret(url, connectionSettings);
             default: throw new IllegalArgumentException(format("Cannot distinguish version from url %s", url));
         }
     }
@@ -77,12 +79,16 @@ public class FireboltConnectionProvider {
             return new FireboltConnectionUserPassword(url, connectionSettings, parserVersion);
         }
 
-        public FireboltConnectionServiceSecret createFireboltConnectionServiceSecret(String url, Properties connectionSettings, ParserVersion parserVersion) throws SQLException {
-            return new FireboltConnectionServiceSecret(url, connectionSettings, parserVersion);
+        public FireboltConnectionServiceSecret createFireboltConnectionServiceSecret(String url, Properties connectionSettings) throws SQLException {
+            CacheServiceProvider cacheServiceProvider = CacheServiceProvider.getInstance();
+            // the ON_DISK memory caching will be implemented after
+            return new FireboltConnectionServiceSecret(url, connectionSettings, cacheServiceProvider.getCacheService(CacheType.IN_MEMORY));
         }
 
-        public LocalhostFireboltConnection createLocalhostFireboltConnectionServiceSecret(String url, Properties connectionSettings, ParserVersion parserVersion) throws SQLException {
-            return new LocalhostFireboltConnection(url, connectionSettings, parserVersion);
+        public LocalhostFireboltConnection createLocalhostFireboltConnectionServiceSecret(String url, Properties connectionSettings) throws SQLException {
+            CacheServiceProvider cacheServiceProvider = CacheServiceProvider.getInstance();
+            // only in memory caching for localhost connections
+            return new LocalhostFireboltConnection(url, connectionSettings, cacheServiceProvider.getCacheService(CacheType.IN_MEMORY));
         }
     }
 

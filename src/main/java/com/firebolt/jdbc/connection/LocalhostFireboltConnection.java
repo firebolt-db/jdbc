@@ -1,13 +1,15 @@
 package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
+import com.firebolt.jdbc.cache.CacheService;
+import com.firebolt.jdbc.cache.key.CacheKey;
+import com.firebolt.jdbc.cache.key.LocalhostCacheKey;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
-import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
+import com.firebolt.jdbc.service.FireboltEngineVersion2Service;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
-import com.firebolt.jdbc.type.ParserVersion;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.Properties;
@@ -20,8 +22,8 @@ import org.apache.commons.lang3.StringUtils;
 public class LocalhostFireboltConnection extends FireboltConnectionServiceSecret {
 
     @ExcludeFromJacocoGeneratedReport
-    LocalhostFireboltConnection(@NonNull String url, Properties connectionSettings, ParserVersion parserVersion) throws SQLException {
-        super(url, connectionSettings, parserVersion);
+    LocalhostFireboltConnection(@NonNull String url, Properties connectionSettings, CacheService cacheService) throws SQLException {
+        super(url, connectionSettings, cacheService);
     }
 
     // visible for testing
@@ -30,13 +32,15 @@ public class LocalhostFireboltConnection extends FireboltConnectionServiceSecret
                                 FireboltAuthenticationService fireboltAuthenticationService,
                                 FireboltGatewayUrlService fireboltGatewayUrlService,
                                 FireboltStatementService fireboltStatementService,
-                                FireboltEngineInformationSchemaService fireboltEngineService,
-                                ParserVersion parserVersion) throws SQLException {
-        super(url, connectionSettings, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineService, parserVersion);
+                                FireboltEngineVersion2Service fireboltEngineVersion2Service,
+                                CacheService cacheService) throws SQLException {
+        super(url, connectionSettings, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineVersion2Service, cacheService);
     }
 
     @Override
     protected void authenticate() throws SQLException {
+        super.prepareCacheIfNeeded();
+
         // When running packdb locally, the login properties are the session properties
         sessionProperties = loginProperties;
     }
@@ -69,6 +73,12 @@ public class LocalhostFireboltConnection extends FireboltConnectionServiceSecret
         if (StringUtils.isBlank(accessToken)) {
             throw new FireboltException("Cannot use localhost host connection without an access token");
         }
+    }
+
+    @Override
+    protected CacheKey getCacheKey() {
+        // when we get to this point we know that the access token is present in the login properties
+        return new LocalhostCacheKey(loginProperties.getAccessToken());
     }
 
 }
