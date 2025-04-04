@@ -152,7 +152,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         @SuppressWarnings("unchecked") FireboltAccountRetriever<GatewayUrlResponse> fireboltGatewayUrlClient = mock(FireboltAccountRetriever.class);
         when(fireboltGatewayUrlClient.retrieve(any(), any())).thenReturn(new GatewayUrlResponse(gatewayUrl));
         FireboltGatewayUrlService gatewayUrlService = new FireboltGatewayUrlService(fireboltGatewayUrlClient);
-        FireboltConnection connection = new FireboltConnectionServiceSecret(SYSTEM_ENGINE_URL, connectionProperties,
+        FireboltConnection connection = new FireboltConnectionServiceSecret(Pair.of(SYSTEM_ENGINE_URL, connectionProperties),
                 fireboltAuthenticationService, gatewayUrlService, fireboltStatementService, fireboltEngineVersion2Service,
                 mockConnectionIdGenerator, mockCacheService);
         FireboltProperties sessionProperties  = connection.getSessionProperties();
@@ -451,7 +451,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
     }
 
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
-        return new FireboltConnectionServiceSecret(url, props, fireboltAuthenticationService, fireboltGatewayUrlService,
+        return new FireboltConnectionServiceSecret(Pair.of(url, props), fireboltAuthenticationService, fireboltGatewayUrlService,
                 fireboltStatementService, fireboltEngineVersion2Service, mockConnectionIdGenerator, mockCacheService);
     }
 }

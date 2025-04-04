@@ -14,6 +14,7 @@ import com.firebolt.jdbc.service.FireboltStatementService;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.Properties;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -214,7 +215,7 @@ class LocalhostFireboltConnectionTest {
 
 
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
-        return new LocalhostFireboltConnection(url, props, fireboltAuthenticationService, fireboltGatewayUrlService,
+        return new LocalhostFireboltConnection(Pair.of(url, props), fireboltAuthenticationService, fireboltGatewayUrlService,
                 fireboltStatementService, fireboltEngineVersion2Service, mockConnectionIdGenerator, cacheService);
 
     }

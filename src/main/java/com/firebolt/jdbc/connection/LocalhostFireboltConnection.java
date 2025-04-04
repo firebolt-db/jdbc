@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.Properties;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * A Connection to firebolt that is using localhost as the url of the firebolt server. It will talk to a firebolt 2.0 server.
@@ -27,15 +28,14 @@ public class LocalhostFireboltConnection extends FireboltConnectionServiceSecret
     }
 
     // visible for testing
-    LocalhostFireboltConnection(@NonNull String url,
-                                Properties connectionSettings,
+    LocalhostFireboltConnection(@NonNull Pair<String, Properties> urlConnectionSettings,
                                 FireboltAuthenticationService fireboltAuthenticationService,
                                 FireboltGatewayUrlService fireboltGatewayUrlService,
                                 FireboltStatementService fireboltStatementService,
                                 FireboltEngineVersion2Service fireboltEngineVersion2Service,
                                 ConnectionIdGenerator connectionIdGenerator,
                                 CacheService cacheService) throws SQLException {
-        super(url, connectionSettings, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineVersion2Service, connectionIdGenerator, cacheService);
+        super(urlConnectionSettings, fireboltAuthenticationService, fireboltGatewayUrlService, fireboltStatementService, fireboltEngineVersion2Service, connectionIdGenerator, cacheService);
     }
 
     @Override

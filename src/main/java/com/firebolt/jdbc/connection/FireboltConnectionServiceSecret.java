@@ -27,6 +27,7 @@ import lombok.CustomLog;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 @CustomLog
 public class FireboltConnectionServiceSecret extends FireboltConnection {
@@ -47,15 +48,14 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
      */
     private String connectionId;
 
-    FireboltConnectionServiceSecret(@NonNull String url,
-                                    Properties connectionSettings,
+    FireboltConnectionServiceSecret(@NonNull Pair<String, Properties> urlConnectionParams,
                                     FireboltAuthenticationService fireboltAuthenticationService,
                                     FireboltGatewayUrlService fireboltGatewayUrlService,
                                     FireboltStatementService fireboltStatementService,
                                     FireboltEngineVersion2Service fireboltEngineVersion2Service,
                                     ConnectionIdGenerator connectionIdGenerator,
                                     CacheService cacheService) throws SQLException {
-        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION,
+        super(urlConnectionParams.getKey(), urlConnectionParams.getValue(), fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION,
                 ParserVersion.CURRENT);
         this.fireboltGatewayUrlService = fireboltGatewayUrlService;
         this.fireboltEngineVersion2Service = fireboltEngineVersion2Service;
