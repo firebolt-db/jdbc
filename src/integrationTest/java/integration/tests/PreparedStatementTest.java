@@ -636,11 +636,11 @@ class PreparedStatementTest extends IntegrationTest {
 
 	Stream<Arguments> dateTypes() {
 		return Stream.of(
-				Arguments.of(LocalDateTime.of(2019, 7, 31, 14, 15, 13),
+				Arguments.of(new Timestamp(1564571713000L).toLocalDateTime(),
 						LocalDate.of(2019, 7, 31), true),
 				Arguments.of(new Timestamp(1564571713000L),
 						new Date(1564527600000L), true),
-				Arguments.of(LocalDateTime.of(2019, 7, 31, 14, 15, 13),
+				Arguments.of(new Timestamp(1564571713000L).toLocalDateTime(),
 						LocalDate.of(2019, 7, 31), false),
 				Arguments.of(new Timestamp(1564571713000L),
 						new Date(1564527600000L), false)
