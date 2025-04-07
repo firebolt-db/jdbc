@@ -1,6 +1,6 @@
 SET advanced_mode=1;
 SET enable_create_table_v2=true;
-SET enable_struct_syntax=true;
+SET enable_struct=true;
 SET prevent_create_on_information_schema=true;
 SET enable_create_table_with_struct_type=true;
 DROP TABLE IF EXISTS test_struct;
