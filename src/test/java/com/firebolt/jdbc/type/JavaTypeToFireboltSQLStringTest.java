@@ -5,8 +5,10 @@ import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.type.array.FireboltArray;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junitpioneer.jupiter.DefaultTimeZone;
 
 import java.sql.Date;
@@ -24,6 +26,7 @@ import static com.firebolt.jdbc.type.JavaTypeToFireboltSQLString.NULL_VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JavaTypeToFireboltSQLStringTest {
 
 	@Test
@@ -39,9 +42,9 @@ class JavaTypeToFireboltSQLStringTest {
 
 	@Test
 	void shouldTransformBooleanToString() throws SQLException {
-		assertEquals("1", JavaTypeToFireboltSQLString.BOOLEAN.transform(true));
+		assertEquals("true", JavaTypeToFireboltSQLString.BOOLEAN.transform(true));
 
-		assertEquals("0", JavaTypeToFireboltSQLString.BOOLEAN.transform(false));
+		assertEquals("false", JavaTypeToFireboltSQLString.BOOLEAN.transform(false));
 
 		assertEquals("NULL", JavaTypeToFireboltSQLString.BOOLEAN.transform(null));
 	}
@@ -231,5 +234,12 @@ class JavaTypeToFireboltSQLStringTest {
 	@EnumSource(JavaTypeToFireboltSQLString.class)
 	void shouldTransformNullValue(JavaTypeToFireboltSQLString type) throws SQLException {
 		assertEquals(NULL_VALUE, type.transform(null));
+	}
+
+	@ParameterizedTest
+	@MethodSource("com.firebolt.jdbc.testutils.TestFixtures#booleanTypes")
+	void shouldTransformBooleanTypes(Object trueValue, Object falseValue) throws SQLException {
+		assertEquals("true", JavaTypeToFireboltSQLString.BOOLEAN.transform(trueValue));
+		assertEquals("false", JavaTypeToFireboltSQLString.BOOLEAN.transform(falseValue));
 	}
 }

@@ -34,7 +34,7 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 
 public enum JavaTypeToFireboltSQLString {
-	BOOLEAN(Boolean.class, value -> Boolean.TRUE.equals(value) ? "1" : "0"),
+	BOOLEAN(Boolean.class, BooleanTypeUtil::castToFireboltBoolean),
 	UUID(java.util.UUID.class, Object::toString),
 	BYTE(Byte.class, value -> Byte.toString(((Number) value).byteValue())),
 	SHORT(Short.class, value -> Short.toString(((Number) value).shortValue())),

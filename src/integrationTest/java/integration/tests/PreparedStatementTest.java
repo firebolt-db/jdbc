@@ -14,6 +14,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,8 +39,6 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -589,13 +588,59 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
+	@Test
+	void shouldFetchBoolean() throws SQLException {
+		try (Connection connection = createConnection()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("SELECT ? as a, ? as b, ? as c")) {
+				statement.setBoolean(1, true);
+				statement.setObject(2, false);
+				statement.setObject(3, true, Types.BOOLEAN);
+				statement.execute();
+				ResultSet rs = statement.getResultSet();
+				assertEquals(FireboltDataType.BOOLEAN.name().toLowerCase(),
+						rs.getMetaData().getColumnTypeName(1).toLowerCase());
+				assertEquals(FireboltDataType.BOOLEAN.name().toLowerCase(),
+						rs.getMetaData().getColumnTypeName(2).toLowerCase());
+				assertEquals(FireboltDataType.BOOLEAN.name().toLowerCase(),
+						rs.getMetaData().getColumnTypeName(3).toLowerCase());
+				assertTrue(rs.next());
+				assertTrue(rs.getBoolean(1));
+				assertFalse(rs.getBoolean(2));
+				assertTrue(rs.getBoolean(3));
+			}
+		}
+	}
+
+	@Disabled
+	@ParameterizedTest
+	@MethodSource("com.firebolt.jdbc.testutils.TestFixtures#booleanTypes")
+	void shouldFetchBooleanFromVariousObjects(Object objectTrue, Object objectFalse) throws SQLException {
+		try (Connection connection = createConnection()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("SELECT ? as a, ? as b")) {
+				statement.setObject(1, objectTrue, Types.BOOLEAN);
+				statement.setObject(2, objectFalse, Types.BOOLEAN);
+				statement.execute();
+				ResultSet rs = statement.getResultSet();
+				assertEquals(FireboltDataType.BOOLEAN.name().toLowerCase(),
+						rs.getMetaData().getColumnTypeName(1).toLowerCase());
+				assertEquals(FireboltDataType.BOOLEAN.name().toLowerCase(),
+						rs.getMetaData().getColumnTypeName(2).toLowerCase());
+				assertTrue(rs.next());
+				assertTrue(rs.getBoolean(1));
+				assertFalse(rs.getBoolean(2));
+			}
+		}
+	}
+
 	Stream<Arguments> dateTypes() {
 		return Stream.of(
-				Arguments.of(LocalDateTime.of(2019, 7, 31, 14, 15, 13),
+				Arguments.of(new Timestamp(1564571713000L).toLocalDateTime(),
 						LocalDate.of(2019, 7, 31), true),
 				Arguments.of(new Timestamp(1564571713000L),
 						new Date(1564527600000L), true),
-				Arguments.of(LocalDateTime.of(2019, 7, 31, 14, 15, 13),
+				Arguments.of(new Timestamp(1564571713000L).toLocalDateTime(),
 						LocalDate.of(2019, 7, 31), false),
 				Arguments.of(new Timestamp(1564571713000L),
 						new Date(1564527600000L), false)
