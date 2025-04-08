@@ -1,14 +1,20 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.cache.CacheService;
+import com.firebolt.jdbc.cache.CacheType;
+import com.firebolt.jdbc.cache.ConnectionCache;
+import com.firebolt.jdbc.cache.key.CacheKey;
+import com.firebolt.jdbc.cache.key.LocalhostCacheKey;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
-import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
+import com.firebolt.jdbc.service.FireboltEngineVersion2Service;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
-import com.firebolt.jdbc.type.ParserVersion;
 import java.sql.SQLException;
+import java.util.Optional;
 import java.util.Properties;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,16 +41,23 @@ class LocalhostFireboltConnectionTest {
     private static final String URL_WITHOUT_ACCOUNT = "jdbc:firebolt:db?env=dev&engine=eng";
     private static final String LOCAL_URL = "jdbc:firebolt:local_dev_db?account=dev&ssl=false&max_query_size=10000000&mask_internal_errors=0&host=localhost";
 
-    @Mock
-    protected FireboltAuthenticationService fireboltAuthenticationService;
-    @Mock
-    protected FireboltGatewayUrlService fireboltGatewayUrlService;
+    private static final String CONNECTION_ID = "abc";
+    private static final String CONNECTION_ID_2 = "def";
 
     @Mock
-    protected FireboltEngineInformationSchemaService fireboltEngineService;
+    private FireboltAuthenticationService fireboltAuthenticationService;
     @Mock
-    protected FireboltStatementService fireboltStatementService;
+    private FireboltGatewayUrlService fireboltGatewayUrlService;
+    @Mock
+    private FireboltEngineVersion2Service fireboltEngineVersion2Service;
+    @Mock
+    private FireboltStatementService fireboltStatementService;
+    @Mock
+    private CacheService cacheService;
+    @Mock
+    private ConnectionIdGenerator mockConnectionIdGenerator;
 
+    private CacheKey cacheKey;
     private Properties connectionProperties;
 
     @BeforeEach
@@ -54,6 +67,9 @@ class LocalhostFireboltConnectionTest {
         connectionProperties.setProperty("account", "account");
         connectionProperties.setProperty("user", "myuser@email.com");
         connectionProperties.setProperty("password", "password");
+
+        cacheKey = new LocalhostCacheKey("the token");
+        when(mockConnectionIdGenerator.generateId()).thenReturn(CONNECTION_ID);
     }
 
     @ParameterizedTest
@@ -159,9 +175,48 @@ class LocalhostFireboltConnectionTest {
         }
     }
 
+    @Test
+    void willNotAddAdditionalUserAgentHeaderValuesIfConnectionIsNotCachable() throws SQLException{
+        disableCacheConnection();
+        try (FireboltConnection fireboltConnection = createConnection(LOCAL_URL, connectionProperties)) {
+            assertTrue(fireboltConnection.getConnectionUserAgentHeader().isEmpty());
+        }
+    }
+
+    @Test
+    void willAddUserAgentHeaderWhenConnectionIsCachedByThisConnection() throws SQLException {
+        // no cache is present for the key
+        when(cacheService.get(cacheKey)).thenReturn(Optional.empty());
+
+        try (FireboltConnectionServiceSecret fireboltConnection = (FireboltConnectionServiceSecret) createConnection(LOCAL_URL, connectionProperties)) {
+            String additionalUserAgentValue = fireboltConnection.getConnectionUserAgentHeader().get();
+            assertEquals("connId:" + CONNECTION_ID, additionalUserAgentValue);
+        }
+    }
+
+    @Test
+    void willAddUserAgentHeaderWhenConnectionIsCachedByAPreviousConnection() throws SQLException {
+        // connection is already cached
+        ConnectionCache connectionCache = new ConnectionCache(CONNECTION_ID_2);
+        connectionCache.setCacheSource(CacheType.MEMORY.name().toLowerCase());
+
+        when(cacheService.get(cacheKey)).thenReturn(Optional.of(connectionCache));
+
+        try (FireboltConnectionServiceSecret fireboltConnection = (FireboltConnectionServiceSecret) createConnection(LOCAL_URL, connectionProperties)) {
+            String additionalUserAgentValue = fireboltConnection.getConnectionUserAgentHeader().get();
+            String expectedUserAgent = "connId:" + CONNECTION_ID + ";cachedConnId:" + CONNECTION_ID_2 +"-memory";
+            assertEquals(expectedUserAgent, additionalUserAgentValue);
+        }
+    }
+
+    private void disableCacheConnection() {
+        connectionProperties.put("cache_connection", "none");
+    }
+
+
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
-        return new LocalhostFireboltConnection(url, props, fireboltAuthenticationService, fireboltGatewayUrlService,
-                fireboltStatementService, fireboltEngineService, ParserVersion.CURRENT);
+        return new LocalhostFireboltConnection(Pair.of(url, props), fireboltAuthenticationService, fireboltGatewayUrlService,
+                fireboltStatementService, fireboltEngineVersion2Service, mockConnectionIdGenerator, cacheService);
 
     }
 }

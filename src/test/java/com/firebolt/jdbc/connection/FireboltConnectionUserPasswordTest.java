@@ -13,14 +13,17 @@ import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
     private static final String SYSTEM_ENGINE_URL = "jdbc:firebolt:db?env=dev&account=dev&engine=system";
@@ -93,6 +96,23 @@ class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
         String urlWithCacheConnection = SYSTEM_ENGINE_URL + "&cache_connection=" + actualValue;
         try (FireboltConnection connection = createConnection(urlWithCacheConnection, connectionProperties)) {
             assertFalse(connection.isConnectionCachingEnabled());
+        }
+    }
+
+    @Test
+    void shouldGetEngineUrlWhenEngineIsProvided() throws SQLException {
+        connectionProperties.put("engine", "engine");
+        when(fireboltEngineService.getEngine(any())).thenReturn(new Engine("http://my_endpoint", null, null, null, null));
+        try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
+            verify(fireboltEngineService).getEngine(argThat(props -> "engine".equals(props.getEngine()) && "db".equals(props.getDatabase())));
+            assertEquals("http://my_endpoint", fireboltConnection.getSessionProperties().getHost());
+        }
+    }
+
+    @Test
+    void willNotAddAnyAdditionalUserAgentHeaderValue() throws SQLException {
+        try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
+            assertTrue(fireboltConnection.getConnectionUserAgentHeader().isEmpty());
         }
     }
 

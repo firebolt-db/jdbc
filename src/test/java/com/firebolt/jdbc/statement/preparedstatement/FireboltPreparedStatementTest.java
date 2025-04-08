@@ -13,6 +13,7 @@ import com.firebolt.jdbc.type.lob.FireboltClob;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,6 +50,8 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Optional;
 import java.util.TimeZone;
@@ -69,6 +72,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(MockitoExtension.class)
 class FireboltPreparedStatementTest {
 
@@ -218,7 +222,7 @@ class FireboltPreparedStatementTest {
 	})
 	void getMetadata(String query, boolean expectedResultSet) throws SQLException {
 		StatementClient statementClient = mock(StatementClient.class);
-		when(statementClient.executeSqlStatement(any(), any(), anyBoolean(), anyInt())).thenReturn(new ByteArrayInputStream(new byte[0]));
+		when(statementClient.executeSqlStatement(any(), any(), anyBoolean(), anyInt(), eq(false))).thenReturn(new ByteArrayInputStream(new byte[0]));
 		statement = new FireboltPreparedStatement(new FireboltStatementService(statementClient), connection, query);
 		assertNull(statement.getMetaData());
 		statement.setObject(1, null);
@@ -403,7 +407,7 @@ class FireboltPreparedStatementTest {
 		statement.execute();
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("INSERT INTO cars(available) VALUES (1)", queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("INSERT INTO cars(available) VALUES (true)", queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
 	@ParameterizedTest
@@ -522,15 +526,16 @@ class FireboltPreparedStatementTest {
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
-	@Test
+	@ParameterizedTest
 	@DefaultTimeZone("Europe/London")
-	void shouldSetAllObjects() throws SQLException {
+	@MethodSource("dateTypes")
+	void shouldSetAllObjects(Object timestampOrLocalDateTime, Object dateOrLocalDate) throws SQLException {
 		statement = createStatementWithSql(
 				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) "
 						+ "VALUES (?,?,?,?,?,?,?,?)");
 
-		statement.setObject(1, new Timestamp(1564571713000L));
-		statement.setObject(2, new Date(1564527600000L));
+		statement.setObject(1, timestampOrLocalDateTime);
+		statement.setObject(2, dateOrLocalDate);
 		statement.setObject(3, 5.5F);
 		statement.setObject(4, 5L);
 		statement.setObject(5, new BigDecimal("555555555555.55555555"));
@@ -542,19 +547,20 @@ class FireboltPreparedStatementTest {
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals(
-				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,1,5)",
+				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,true,5)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
-	@Test
+	@ParameterizedTest
 	@DefaultTimeZone("Europe/London")
-	void shouldSetAllObjectsWithCorrectSqlType() throws SQLException {
+	@MethodSource("dateTypes")
+	void shouldSetAllObjectsWithCorrectSqlType(Object timestampOrLocalDateTime, Object dateOrLocalDate) throws SQLException {
 		statement = createStatementWithSql(
 				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) "
 						+ "VALUES (?,?,?,?,?,?,?,?)");
 
-		statement.setObject(1, new Timestamp(1564571713000L), Types.TIMESTAMP);
-		statement.setObject(2, new Date(1564527600000L), Types.DATE);
+		statement.setObject(1, timestampOrLocalDateTime, Types.TIMESTAMP);
+		statement.setObject(2, dateOrLocalDate, Types.DATE);
 		statement.setObject(3, 5.5F, Types.FLOAT);
 		statement.setObject(4, 5L, Types.BIGINT);
 		statement.setObject(5, new BigDecimal("555555555555.55555555"), Types.NUMERIC);
@@ -567,7 +573,7 @@ class FireboltPreparedStatementTest {
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 
 		assertEquals(
-				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,1,5)",
+				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,true,5)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
@@ -666,5 +672,14 @@ class FireboltPreparedStatementTest {
 
 	private FireboltPreparedStatement createStatementWithSql(String sql) {
 		return new FireboltPreparedStatement(fireboltStatementService, connection, sql);
+	}
+
+	Stream<Arguments> dateTypes() {
+		return Stream.of(
+				Arguments.of(LocalDateTime.of(2019, 7, 31, 12, 15, 13),
+						LocalDate.of(2019, 7, 31)),
+				Arguments.of(new Timestamp(1564571713000L),
+						new Date(1564527600000L))
+		);
 	}
 }
