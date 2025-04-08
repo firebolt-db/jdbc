@@ -19,8 +19,8 @@ class CacheServiceProviderTest {
     @Test
     void willReturnTheSameCacheServiceEveryTime() {
         CacheServiceProvider cacheServiceProvider = CacheServiceProvider.getInstance();
-        CacheService cacheService1 = cacheServiceProvider.getCacheService(CacheType.IN_MEMORY);
-        CacheService cacheService2 = cacheServiceProvider.getCacheService(CacheType.IN_MEMORY);
+        CacheService cacheService1 = cacheServiceProvider.getCacheService(CacheType.MEMORY);
+        CacheService cacheService2 = cacheServiceProvider.getCacheService(CacheType.MEMORY);
         assertSame(cacheService1, cacheService2);
         assertInstanceOf(InMemoryCacheService.class, cacheService1);
     }
