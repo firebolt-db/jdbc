@@ -4,6 +4,7 @@ import com.firebolt.jdbc.cache.exception.ConnectionCacheDeserializationException
 import com.firebolt.jdbc.cache.exception.EncryptionException;
 import com.firebolt.jdbc.cache.exception.FilenameGenerationException;
 import com.firebolt.jdbc.cache.key.CacheKey;
+import com.firebolt.jdbc.testutils.TestFixtures;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -136,7 +137,7 @@ class FileServiceTest {
         fileService.safeSaveToDiskAsync(mockCacheKey, connectionCache);
 
         // sleep so it can execute the task
-        sleepForMillis(500);
+        TestFixtures.sleepForMillis(500);
 
         verify(mockEncryptionService, never()).encrypt(any(), any());
     }
@@ -152,7 +153,7 @@ class FileServiceTest {
         fileService.safeSaveToDiskAsync(mockCacheKey, connectionCache);
 
         // sleep so it can execute the task
-        sleepForMillis(500);
+        TestFixtures.sleepForMillis(500);
 
         verify(mockEncryptionService, never()).encrypt(any(), any());
     }
@@ -169,7 +170,7 @@ class FileServiceTest {
         fileService.safeSaveToDiskAsync(mockCacheKey, connectionCache);
 
         // sleep so it can execute the task
-        sleepForMillis(500);
+        TestFixtures.sleepForMillis(500);
 
         verify(mockEncryptionService).encrypt(connectionCacheJsonArgumentCaptor.capture(), eq(ENCRYPTION_KEY));
 
@@ -203,6 +204,8 @@ class FileServiceTest {
             fileService.safelyWriteFile(mockFile, ENCRYPTED_CONTENT);
 
             filesMockedStatic.verify(() -> Files.getAttribute(mockPath, "basic:creationTime"));
+            filesMockedStatic.verify(() -> Files.writeString(mockPath, ENCRYPTED_CONTENT, StandardOpenOption.TRUNCATE_EXISTING));
+            filesMockedStatic.verify(() -> Files.setAttribute(mockPath, "basic:creationTime", mockFileTime), never());
         }
     }
 
@@ -212,12 +215,14 @@ class FileServiceTest {
 
         try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
             filesMockedStatic.when(() -> Files.getAttribute(mockPath, "basic:creationTime")).thenReturn(mockFileTime);
-            filesMockedStatic.when(() -> Files.writeString(any(Path.class), anyString(), eq(StandardOpenOption.TRUNCATE_EXISTING))).thenThrow(IOException.class);
+            filesMockedStatic.when(() -> Files.writeString(any(Path.class), anyString(), eq(StandardOpenOption.TRUNCATE_EXISTING))).thenReturn(mockPath);
+            filesMockedStatic.when(() -> Files.setAttribute(mockPath,"basic:creationTime", mockFileTime)).thenReturn(mockPath);
 
             fileService.safelyWriteFile(mockFile, ENCRYPTED_CONTENT);
 
             filesMockedStatic.verify(() -> Files.getAttribute(mockPath, "basic:creationTime"));
             filesMockedStatic.verify(() -> Files.writeString(mockPath, ENCRYPTED_CONTENT, StandardOpenOption.TRUNCATE_EXISTING));
+            filesMockedStatic.verify(() -> Files.setAttribute(mockPath, "basic:creationTime", mockFileTime));
         }
     }
 
@@ -228,15 +233,6 @@ class FileServiceTest {
             filesMockedStatic.when(() -> Files.deleteIfExists(filePathThatDoesNotExist)).thenReturn(false);
             fileService.safelyDeleteFile(filePathThatDoesNotExist);
             filesMockedStatic.verify(() -> Files.deleteIfExists(filePathThatDoesNotExist));
-        }
-    }
-
-    @SuppressWarnings("java:S2925")
-    private void sleepForMillis(long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            // do nothing
         }
     }
 
