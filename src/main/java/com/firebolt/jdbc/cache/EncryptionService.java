@@ -44,7 +44,7 @@ public class EncryptionService {
             return encryptAESGCM(plainText, encryptionKey);
         } catch (Exception e) {
             log.error("Failed to encrypt the text", e);
-            throw EncryptionException.encryptionFailed();
+            throw new EncryptionException("Encryption failed.");
         }
     }
 
@@ -64,7 +64,7 @@ public class EncryptionService {
             return decryptAESGCM(base64EncryptedText, encryptionKey);
         } catch (Exception e) {
             log.error("Failed to decrypt encrypted text", e);
-            throw EncryptionException.decryptionFailed();
+            throw new EncryptionException("Decryption failed.");
         }
     }
 

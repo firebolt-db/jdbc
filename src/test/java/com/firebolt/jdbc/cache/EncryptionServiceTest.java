@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -27,7 +28,10 @@ class EncryptionServiceTest {
     })
     void samePlainTextWithSameEncryptionKeyWouldEncryptToTheSameValue(String encryptionKey) {
         String firstEncryption = encryptionService.encrypt("text1", encryptionKey);
+        assertNotEquals("text1", firstEncryption);
+
         String secondEncryption = encryptionService.encrypt("text1", encryptionKey);
+        assertNotEquals("text1", secondEncryption);
         assertEquals(firstEncryption, secondEncryption);
     }
 
@@ -48,6 +52,7 @@ class EncryptionServiceTest {
     @Test
     void canDecryptTextEncryptedWithTheSameKey() {
         String encryptedText = encryptionService.encrypt("my text", "my key");
+        assertNotEquals("my text", encryptedText);
         assertEquals("my text", encryptionService.decrypt(encryptedText, "my key"));
     }
 
