@@ -21,8 +21,8 @@ import lombok.CustomLog;
 @CustomLog
 class OnDiskMemoryCacheService implements CacheService {
 
-    // the jwt token is only valid for 2hours. So keep the cache files for 10 mins less
-    private static final int CACHE_TIME_IN_MINUTES = 110;
+    // the jwt token is only valid for 2hours, but we will keep the on disk cache for only 1 hr.
+    private static final int CACHE_TIME_IN_MINUTES = 60;
 
     // this would be the in memory cache
     private CacheService cacheService;
