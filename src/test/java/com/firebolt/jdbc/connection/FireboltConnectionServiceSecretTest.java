@@ -285,7 +285,6 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
 
         // no cache is present for the key
         lenient().when(mockCacheService.get(cacheKey)).thenReturn(Optional.empty());
-        lenient().when(mockCacheService.get(cacheKey)).thenReturn(Optional.empty());
 
         lenient().doNothing().when(mockCacheService).put(eq(cacheKey), any(ConnectionCache.class));
 
