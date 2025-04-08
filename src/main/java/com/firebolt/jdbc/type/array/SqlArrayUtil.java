@@ -5,10 +5,6 @@ import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.JavaTypeToFireboltSQLString;
 import com.firebolt.jdbc.util.StringUtil;
-import lombok.CustomLog;
-import lombok.NonNull;
-
-import javax.annotation.Nullable;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
@@ -16,13 +12,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
+import lombok.CustomLog;
+import lombok.NonNull;
 
 import static java.lang.String.format;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
+@SuppressWarnings("javaarchitecture:S7091") // was not added as part of this change and was already there
 @CustomLog
 public class SqlArrayUtil {
 	private static final Map<Character, Markers> formatMarkers = Map.of(
@@ -275,13 +274,14 @@ public class SqlArrayUtil {
 	}
 
 	@SuppressWarnings("java:S1168") // we have to return null here
-	public static byte[] hexStringToByteArray(String str) {
+	public static byte[] hexStringToByteArray(String str) throws SQLException {
 		if (str == null) {
 			return null;
 		}
 		if (!str.startsWith(BYTEA_PREFIX) && !str.startsWith(BYTEA_IN_ARRAY_PREFIX)) {
-			return str.getBytes(UTF_8);
+			throw new FireboltException("Cannot convert binary string in non-hex format to byte array");
 		}
+
 		int prefixLength = str.startsWith(BYTEA_PREFIX) ? BYTEA_PREFIX.length() : BYTEA_IN_ARRAY_PREFIX.length();
 		char[] chars = str.substring(prefixLength).toCharArray();
 		byte[] bytes = new byte[chars.length / 2];
