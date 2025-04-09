@@ -1,0 +1,21 @@
+name: Nightly run
+
+on:
+  schedule:
+    - cron: '30 5 * * *'        # Daily at 05:30 UTC
+  workflow_dispatch:             # Allow manual trigger
+
+jobs:
+  call-reusable:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        java: [11, 17, 21]
+
+    uses: ./.github/workflows/george-integration-test-v2.yml
+    with:
+      os_name: ${{ matrix.os }}
+      java_version: ${{ matrix.java }}
+    secrets:
+      FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
+      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
