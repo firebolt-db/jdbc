@@ -331,20 +331,18 @@ class StatementTest extends IntegrationTest {
 	 * @return
 	 */
 	private void assertQueryFound(Statement statement, String queryLabelValue, String afterTimestamp, String queryText) throws SQLException {
-		String queryHistoryQuery = """
-			SELECT query_text
-			FROM information_schema.engine_query_history
-			WHERE query_label = '%s' and submitted_time > '%s' and query_text = '%s';
-			""";
+		String queryHistoryQuery =
+			"SELECT query_text " +
+			"FROM information_schema.engine_query_history " +
+			"WHERE query_label = '%s' and submitted_time > '%s' and query_text = '%s'; ";
 		ResultSet resultSet = statement.executeQuery(String.format(queryHistoryQuery, queryLabelValue, afterTimestamp, queryText));
 		assertTrue(resultSet.next(), "Did not find query with the specified query label");
 	}
 
 	private String getQueryLabel(Statement statement, String afterTimestamp, String queryText) throws SQLException {
-		String queryHistoryQuery = """
-				SELECT query_label
-				FROM information_schema.engine_query_history WHERE submitted_time > '%s' and query_text = '%s';
-			""";
+		String queryHistoryQuery =
+				"SELECT query_label " +
+				"FROM information_schema.engine_query_history WHERE submitted_time > '%s' and query_text = '%s'; ";
 		ResultSet resultSet = statement.executeQuery(String.format(queryHistoryQuery, afterTimestamp, queryText));
 		assertTrue(resultSet.next(), "Did not find any query in history");
 		return resultSet.getString(1);

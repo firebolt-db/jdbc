@@ -159,18 +159,16 @@ class ConnectionTest extends IntegrationTest {
             sleepForMillis(TimeUnit.SECONDS.toMillis(10));
 
             // there should be no select 1 statement executed
-            String selectOneQueryHistoryQueryFormat = """
-				SELECT query_text
-				FROM information_schema.engine_query_history WHERE submitted_time > '%s' and (query_text like '%%SELECT 1%%' OR query_text like '%%select 1%%');
-			""";
+            String selectOneQueryHistoryQueryFormat =
+				"SELECT query_text " +
+				"FROM information_schema.engine_query_history WHERE submitted_time > '%s' and (query_text like '%%SELECT 1%%' OR query_text like '%%select 1%%');";
             ResultSet selectQueriesRS = statement.executeQuery(String.format(selectOneQueryHistoryQueryFormat, currentUTCTime));
             assertFalse(selectQueriesRS.next());
 
             // there should be one select 222 statement executed
-            String queryHistoryQueryFormat = """
-				SELECT query_text
-				FROM information_schema.engine_query_history WHERE submitted_time > '%s' and query_text like 'SELECT 222%%' and status = 'STARTED_EXECUTION';
-			""";
+            String queryHistoryQueryFormat =
+				"SELECT query_text " +
+				"FROM information_schema.engine_query_history WHERE submitted_time > '%s' and query_text like 'SELECT 222%%' and status = 'STARTED_EXECUTION';";
 
             selectQueriesRS = statement.executeQuery(String.format(queryHistoryQueryFormat, currentUTCTime));
             assertTrue(selectQueriesRS.next());

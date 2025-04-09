@@ -55,12 +55,11 @@ public class CachedConnectionTest extends IntegrationTest {
             sleepForMillis(10000);
 
             // check that the connection cached was using the correct connection to the db and engine
-            String queryHistoryQueryFormat = """
-				SELECT query_text
-				FROM information_schema.engine_query_history
-				WHERE submitted_time > '%s' and status = 'STARTED_EXECUTION' and (query_text='SELECT 101;' or query_text='SELECT 103;')
-				order by submitted_time desc
-			""";
+            String queryHistoryQueryFormat =
+				"SELECT query_text " +
+				"FROM information_schema.engine_query_history " +
+				"WHERE submitted_time > '%s' and status = 'STARTED_EXECUTION' and (query_text='SELECT 101;' or query_text='SELECT 103;') " +
+				"order by submitted_time desc";
             ResultSet engineOneResultSet = connection.createStatement().executeQuery(String.format(queryHistoryQueryFormat, testStartTime));
             assertTrue(engineOneResultSet.next());
             assertEquals("SELECT 103;", engineOneResultSet.getString(1));
@@ -81,12 +80,11 @@ public class CachedConnectionTest extends IntegrationTest {
             sleepForMillis(10000);
 
             // check that the connection cached was using the correct connection to the db and engine
-            String queryHistoryQueryFormat = """
-				SELECT query_text
-				FROM information_schema.engine_query_history
-				WHERE submitted_time > '%s' and status = 'STARTED_EXECUTION' and (query_text='SELECT 102;' or query_text='SELECT 104;')
-				order by submitted_time desc
-			""";
+            String queryHistoryQueryFormat =
+				"SELECT query_text " +
+				"FROM information_schema.engine_query_history " +
+				"WHERE submitted_time > '%s' and status = 'STARTED_EXECUTION' and (query_text='SELECT 102;' or query_text='SELECT 104;') " +
+				"order by submitted_time desc";
 
             ResultSet engineTwoResultSet = connection.createStatement().executeQuery(String.format(queryHistoryQueryFormat, testStartTime));
             assertTrue(engineTwoResultSet.next());
