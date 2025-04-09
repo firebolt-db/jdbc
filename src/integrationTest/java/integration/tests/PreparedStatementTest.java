@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junitpioneer.jupiter.DefaultTimeZone;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -460,9 +461,10 @@ class PreparedStatementTest extends IntegrationTest {
 	}
 
 	@ParameterizedTest
+	@DefaultTimeZone("UTC")
 	@MethodSource("dateTypes")
 	void shouldFetchTimestampAndDate(Object timestampOrLocalDateTime, Object dateOrLocalDate, boolean addTargetSqlType) throws SQLException {
-		String expectedTimestamp = "2019-07-31 14:15:13";
+		String expectedTimestamp = "2019-07-31 11:15:13";
 		String expectedDate = "2019-07-31";
 		try (Connection connection = createConnection()) {
 			try (PreparedStatement statement = connection
@@ -636,14 +638,14 @@ class PreparedStatementTest extends IntegrationTest {
 
 	Stream<Arguments> dateTypes() {
 		return Stream.of(
-				Arguments.of(new Timestamp(1564571713000L).toLocalDateTime(),
+				Arguments.of(LocalDateTime.of(2019, 7, 31, 11, 15, 13),
 						LocalDate.of(2019, 7, 31), true),
 				Arguments.of(new Timestamp(1564571713000L),
-						new Date(1564527600000L), true),
-				Arguments.of(new Timestamp(1564571713000L).toLocalDateTime(),
+						new Date(1564571713000L), true),
+				Arguments.of(LocalDateTime.of(2019, 7, 31, 11, 15, 13),
 						LocalDate.of(2019, 7, 31), false),
 				Arguments.of(new Timestamp(1564571713000L),
-						new Date(1564527600000L), false)
+						new Date(1564571713000L), false)
 		);
 	}
 
