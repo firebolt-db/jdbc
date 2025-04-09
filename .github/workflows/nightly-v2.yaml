@@ -1,0 +1,23 @@
+name: Nightly run for integration tests against v2 firebolt
+
+on:
+  schedule:
+    - cron: '30 3 * * *'        # Daily at 03:30 UTC
+  workflow_dispatch:             # Allow manual trigger
+
+jobs:
+  nightly-integration-runs-v2:
+    strategy:
+      fail-fast: false # finish all jobs even if one fails
+      max-parallel: 2
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        java: [11, 17, 21]
+
+    uses: ./.github/workflows/integration-test-v2.yml
+    with:
+      os_name: ${{ matrix.os }}
+      java_version: ${{ matrix.java }}
+    secrets:
+      FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
+      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
