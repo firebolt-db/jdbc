@@ -81,12 +81,12 @@ public class FileService {
                 try {
                     boolean fileCreated = file.createNewFile();
                     if (!fileCreated) {
-                        log.error("Cannot create file to save the connection cache.");
+                        log.warn("Cannot create file to save the connection cache.");
                         return;
                     }
                 } catch (IOException e) {
                     // maybe do not have permission to write to that location
-                    log.error("Cannot create on-disk connection cache. Maybe do not have the write permission. ", e);
+                    log.warn("Cannot create on-disk connection cache. Maybe do not have the write permission. ", e);
                     return;
                 }
             }
@@ -101,7 +101,7 @@ public class FileService {
             try {
                 encryptedConnectionCache = encryptionService.encrypt(jsonObject.toString(), cacheKey.getEncryptionKey());
             } catch (EncryptionException e) {
-                log.error("Failed to encrypt the connection cache so will not save it do disk.");
+                log.warn("Failed to encrypt the connection cache so will not save it do disk.");
                 return;
             }
 
@@ -123,7 +123,7 @@ public class FileService {
             // Restore the original creation time
             Files.setAttribute(file.toPath(), "basic:creationTime", creationTime);
         } catch (IOException e) {
-            log.error("Failed to write to cache");
+            log.warn("Failed to write to cache");
         }
     }
 
@@ -132,7 +132,7 @@ public class FileService {
         try {
             content = Files.readString(cacheFile.toPath());
         } catch (IOException e) {
-            log.error("Failed to read the contents of the file", e);
+            log.warn("Failed to read the contents of the file", e);
             return Optional.empty();
         }
 
@@ -141,7 +141,7 @@ public class FileService {
         try {
             decryptedCacheObject = encryptionService.decrypt(content, cacheKey.getEncryptionKey());
         } catch (EncryptionException e) {
-            log.error("Cannot decrypt cache content file.");
+            log.warn("Cannot decrypt cache content file.");
             throw new ConnectionCacheDeserializationException();
         }
 
@@ -153,7 +153,7 @@ public class FileService {
         try {
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
-            log.error("Failed to delete the cache file", e);
+            log.warn("Failed to delete the cache file", e);
         }
     }
 }
