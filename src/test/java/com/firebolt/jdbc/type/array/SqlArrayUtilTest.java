@@ -2,6 +2,10 @@ package com.firebolt.jdbc.type.array;
 
 import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.type.FireboltDataType;
+import java.sql.Array;
+import java.sql.JDBCType;
+import java.sql.SQLException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -9,11 +13,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import java.sql.Array;
-import java.sql.JDBCType;
-import java.sql.SQLException;
-import java.util.stream.Stream;
 
 import static com.firebolt.jdbc.type.FireboltDataType.BIG_INT;
 import static com.firebolt.jdbc.type.FireboltDataType.INTEGER;
@@ -169,7 +168,7 @@ class SqlArrayUtilTest {
 	}
 
 	@Test
-	void nullHexStringToByteArray() {
+	void nullHexStringToByteArray() throws SQLException {
 		assertNull(SqlArrayUtil.hexStringToByteArray(null));
 	}
 
@@ -180,16 +179,15 @@ class SqlArrayUtilTest {
 			"\\x20,' '",
 			"\\x30,0",
 			"\\x2A,*",
-			"\\x2F,/",
-			"hello,hello" // not hex string
+			"\\x2F,/"
 	})
-	void hexStringToByteArray(String hex, String expected) {
+	void hexStringToByteArray(String hex, String expected) throws SQLException {
 		assertArrayEquals(expected.getBytes(), SqlArrayUtil.hexStringToByteArray(hex));
 	}
 
 	@Test
-	void notHexStringToByteArray() {
-		assertArrayEquals("nothing".getBytes(), SqlArrayUtil.hexStringToByteArray("nothing"));
+	void cannotConvertNotHexStringToByteArray() {
+		assertThrows(SQLException.class, () -> SqlArrayUtil.hexStringToByteArray("nothing"));
 	}
 
 	@ParameterizedTest
@@ -197,7 +195,7 @@ class SqlArrayUtilTest {
 			"ABC", "abc", "Hello, world!", "Multi\nlinentext"
 	})
 	@NullSource
-	void byteArrayToHexStringAndBack(String str) {
+	void byteArrayToHexStringAndBack(String str) throws SQLException {
 		byte[] bytes = SqlArrayUtil.hexStringToByteArray(SqlArrayUtil.byteArrayToHexString(str == null ? null : str.getBytes(), false));
 		assertEquals(str, bytes == null ? null : new String(bytes));
 	}

@@ -18,9 +18,6 @@ import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import com.firebolt.jdbc.type.lob.FireboltBlob;
 import com.firebolt.jdbc.type.lob.FireboltClob;
 import com.firebolt.jdbc.util.LoggerUtil;
-import lombok.CustomLog;
-import org.apache.commons.text.StringEscapeUtils;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -59,6 +56,9 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import lombok.CustomLog;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
 
 import static com.firebolt.jdbc.type.BaseType.isNull;
 import static com.firebolt.jdbc.util.StringUtil.splitAll;
@@ -245,12 +245,18 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 		return value == null ? defaultValue : value;
 	}
 
+	@SuppressWarnings("java:S1168") // we have to return null here
 	@Override
 	public byte[] getBytes(int colNum) throws SQLException {
-		return ofNullable(getValueAtColumn(colNum))
-				.map(v -> isNull(v) ? null : v)
-				.map(SqlArrayUtil::hexStringToByteArray)
-				.orElse(null);
+		Optional<String> columnValueAsString = ofNullable(getValueAtColumn(colNum))
+				.map(v -> isNull(v) ? null : v);
+		if (columnValueAsString.isEmpty()) {
+			return null;
+		} else if (StringUtils.isEmpty(columnValueAsString.get())) {
+			return new byte[] {};
+		} else {
+			return SqlArrayUtil.hexStringToByteArray(columnValueAsString.get());
+		}
 	}
 
 	@Override

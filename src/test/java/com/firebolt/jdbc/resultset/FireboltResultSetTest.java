@@ -1,26 +1,13 @@
 package com.firebolt.jdbc.resultset;
 
-import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
-import static java.lang.String.format;
-import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
+import com.firebolt.jdbc.CheckedFunction;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.statement.FireboltStatement;
+import com.firebolt.jdbc.util.LoggerUtil;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -51,7 +38,6 @@ import java.util.Calendar;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.Callable;
-
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -62,10 +48,23 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.firebolt.jdbc.CheckedFunction;
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.statement.FireboltStatement;
-import com.firebolt.jdbc.util.LoggerUtil;
+import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
+import static java.lang.String.format;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DefaultTimeZone("UTC")
@@ -475,7 +474,7 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldReturnString() throws SQLException {
+	void shouldReturnString() throws SQLException, IOException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
 		resultSet.next();
@@ -483,12 +482,18 @@ class FireboltResultSetTest {
 		assertEquals(expected, resultSet.getString(3));
 		assertEquals(expected, resultSet.getString("name"));
 		assertEquals(expected, resultSet.getObject(3, String.class));
+		assertEquals(expected, resultSet.getObject("name", String.class));
 		assertEquals(expected, resultSet.getNString(3));
 		assertEquals(expected, resultSet.getNString("name"));
+		assertEquals(expected, readAll(resultSet.getCharacterStream(3)));
+		assertEquals(expected, readAll(resultSet.getCharacterStream("name")));
 		assertEquals(expected, getStringFromClob(resultSet.getClob(3)));
 		assertEquals(expected, getStringFromClob(resultSet.getClob("name")));
 		assertEquals(expected, getStringFromClob(resultSet.getNClob(3)));
 		assertEquals(expected, getStringFromClob(resultSet.getNClob("name")));
+		resultSet.next();
+		assertNull(resultSet.getString(3));
+		assertNull(resultSet.getString(3));
 	}
 
 	private String getStringFromClob(Clob clob) throws SQLException {
@@ -514,23 +519,14 @@ class FireboltResultSetTest {
 		assertEquals(TYPE_FORWARD_ONLY, resultSet.getType());
 	}
 
-	@Test
-	void shouldReturnBytes() throws SQLException, IOException {
-		inputStream = getInputStreamWithCommonResponseExample();
-		resultSet = createResultSet(inputStream);
-		resultSet.next();
-		byte[] expected = "Taylor\\'s Prime Steak House".getBytes();
-		assertArrayEquals(expected, resultSet.getBytes(3));
-		assertArrayEquals(expected, resultSet.getBytes("name"));
-		assertArrayEquals(expected, resultSet.getBinaryStream(3).readAllBytes());
-		assertArrayEquals(expected, resultSet.getBinaryStream("name").readAllBytes());
-		assertArrayEquals(expected, resultSet.getObject(3, byte[].class));
-		assertArrayEquals(expected, resultSet.getObject("name", byte[].class));
-		assertArrayEquals(expected, resultSet.getBlob(3).getBinaryStream().readAllBytes());
-		assertArrayEquals(expected, resultSet.getBlob("name").getBinaryStream().readAllBytes());
-		resultSet.next();
-		assertNull(resultSet.getBytes(3));
-		assertNull(resultSet.getBlob(3));
+	private String readAll(Reader reader) throws IOException {
+		StringBuilder sb = new StringBuilder();
+		char[] buffer = new char[1024];
+		int numRead;
+		while ((numRead = reader.read(buffer)) != -1) {
+			sb.append(buffer, 0, numRead);
+		}
+		return sb.toString();
 	}
 
 	@Test
@@ -849,6 +845,7 @@ class FireboltResultSetTest {
 		resultSet = createResultSet(inputStream);
 		resultSet.next();
 		assertNull(resultSet.getObject("null_bytea"));
+		assertNull(resultSet.getBytes("null_bytea"));
 	}
 
 	@Test
@@ -860,6 +857,7 @@ class FireboltResultSetTest {
 		assertEquals("\\xdeadbeef", resultSet.getString("a_bytea"));
 		resultSet.next();
 		assertArrayEquals(new byte[] { 0, -85 }, resultSet.getObject("a_bytea", byte[].class));
+		assertArrayEquals(new byte[] { 0, -85 }, resultSet.getBytes("a_bytea"));
 		assertEquals("\\x00ab", resultSet.getString("a_bytea"));
 	}
 
@@ -869,6 +867,7 @@ class FireboltResultSetTest {
 		resultSet = createResultSet(inputStream);
 		resultSet.next();
 		assertArrayEquals(new byte[] {}, (byte[]) resultSet.getObject("an_empty_bytea"));
+		assertArrayEquals(new byte[] {}, resultSet.getBytes("an_empty_bytea"));
 		assertEquals("", resultSet.getString("an_empty_bytea"));
 	}
 
