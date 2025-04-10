@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.net.InetAddress;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.UUID;
@@ -25,11 +24,10 @@ public class TLSTest extends MockWebServerAwareIntegrationTest {
 		 * https://github.com/square/okhttp/blob/
 		 * 052a73d3abe536c0f04b5c7b04d35123cc2500a8/okhttp-tls/README.md
 		 */
-
-		String localhost = InetAddress.getByName("localhost").getCanonicalHostName();
-
 		// HeldCertificate represents a certificate and its private key
-		HeldCertificate localhostCertificate = new HeldCertificate.Builder().addSubjectAlternativeName(localhost)
+		HeldCertificate localhostCertificate = new HeldCertificate.Builder()
+				.addSubjectAlternativeName("127.0.0.1")
+				.addSubjectAlternativeName("localhost")
 				.build();
 
 		// HandshakeCertificates contains certificates for a TLS handshake
@@ -37,7 +35,7 @@ public class TLSTest extends MockWebServerAwareIntegrationTest {
 				.heldCertificate(localhostCertificate).addPlatformTrustedCertificates().build();
 
 		mockBackEnd.useHttps(serverCertificates.sslSocketFactory(), false);
-
+	
 		// Write the public certificate to a file that will be used by the driver for
 		// the TLS handshake
 		String path = getClass().getResource("/").getPath() + UUID.randomUUID() + ".pem";
