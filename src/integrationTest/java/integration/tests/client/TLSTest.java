@@ -35,7 +35,7 @@ public class TLSTest extends MockWebServerAwareIntegrationTest {
 				.heldCertificate(localhostCertificate).addPlatformTrustedCertificates().build();
 
 		mockBackEnd.useHttps(serverCertificates.sslSocketFactory(), false);
-	
+
 		// Write the public certificate to a file that will be used by the driver for
 		// the TLS handshake
 		String path = getClass().getResource("/").getPath() + UUID.randomUUID() + ".pem";

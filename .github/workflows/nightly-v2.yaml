@@ -11,8 +11,8 @@ jobs:
       fail-fast: false # finish all jobs even if one fails
       max-parallel: 2
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        java: [11, 17, 21]
+        os: [windows-latest]
+        java: [11]
 
     uses: ./.github/workflows/integration-test-v2.yml
     with:

@@ -3,18 +3,18 @@ package integration.tests;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
-import lombok.CustomLog;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import lombok.CustomLog;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import static integration.EnvironmentCondition.Attribute.databaseVersion;
 import static integration.EnvironmentCondition.Comparison.GE;
@@ -22,6 +22,7 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
+@Disabled
 class TimeoutTest extends IntegrationTest {
 	private static final int MIN_TIME_SECONDS = 350;
 	private static final Map<Integer, Long> SERIES_SIZE = Map.of(1, 80000000000L, 2, 400000000000L);

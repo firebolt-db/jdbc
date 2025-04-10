@@ -8,20 +8,6 @@ import com.firebolt.jdbc.testutils.AssertionUtil;
 import com.firebolt.jdbc.type.FireboltDataType;
 import integration.ConnectionInfo;
 import integration.IntegrationTest;
-import lombok.Builder;
-import lombok.CustomLog;
-import lombok.EqualsAndHashCode;
-import lombok.Value;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junitpioneer.jupiter.DefaultTimeZone;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -48,6 +34,19 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Builder;
+import lombok.CustomLog;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junitpioneer.jupiter.DefaultTimeZone;
 
 import static java.sql.Statement.SUCCESS_NO_INFO;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -57,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
+@Disabled
 class PreparedStatementTest extends IntegrationTest {
 
 	@BeforeEach

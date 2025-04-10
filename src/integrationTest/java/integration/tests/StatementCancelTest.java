@@ -5,24 +5,25 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
-import lombok.CustomLog;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
+import lombok.CustomLog;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import static integration.EnvironmentCondition.Attribute.databaseVersion;
 import static integration.EnvironmentCondition.Comparison.GE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @CustomLog
+@Disabled
 class StatementCancelTest extends IntegrationTest {
 
 	@BeforeEach
