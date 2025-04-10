@@ -10,13 +10,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Optional;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import static java.lang.String.format;
 
-@Slf4j
+@CustomLog
 public class FireboltEngineVersion2Service {
 
     private static final boolean DO_NOT_VALIDATE_CONNECTION_FLAG = false;
