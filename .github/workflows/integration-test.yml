@@ -29,18 +29,18 @@ on:
 jobs:
   run-integration-tests1:
     uses: ./.github/workflows/integration-test-v1.yml
+    with:
+      java_version: ${{ inputs.java_version }}
+      os_name: ${{ inputs.os_name }}
     secrets:
       FIREBOLT_STG_USERNAME: ${{ secrets.FIREBOLT_STG_USERNAME }}
       FIREBOLT_STG_PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
-    inputs:
-      java_version: ${{ inputs.java_version }}
-      os_name: ${{ inputs.os_name }}
 
   run-integration-tests-engine2:
     uses: ./.github/workflows/integration-test-v2.yml
+    with:
+      java_version: ${{ inputs.java_version }}
+      os_name: ${{ inputs.os_name }}
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
-    inputs:
-      java_version: ${{ inputs.java_version }}
-      os_name: ${{ inputs.os_name }}
