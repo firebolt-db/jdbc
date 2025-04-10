@@ -15,16 +15,35 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CachedConnectionTest extends IntegrationTest {
 
-    private static final String CACHED_TEST_ENGINE_NAME = "cached_test_second_engine";
-    private static final String CACHED_TEST_DATABASE_NAME = "cached_test_second_db";
+    private String secondEngineName;
+    private String secondDbName;
 
     @BeforeAll
-    void beforeAll() {
+    void beforeAll() throws SQLException {
         executeStatementFromFile("/statements/cached-connection/ddl.sql");
+
+        // create the engine and db here rather than the ddl so we can add the prefix to the engine and db names
+        String engine = System.getProperty("engine");
+        String db = System.getProperty("db");
+
+        secondEngineName = engine + "_second_engine";
+        secondDbName = db + "_second_db";
+
+        try (Connection connection = createConnection()) {
+            connection.createStatement().execute("CREATE ENGINE IF NOT EXISTS "  + secondEngineName +";");
+            connection.createStatement().execute("CREATE DATABASE IF NOT EXISTS " + secondDbName + ";");
+        }
+
     }
 
     @AfterAll
-    void afterEach() {
+    void afterEach() throws SQLException {
+        try (Connection connection = createConnection()) {
+            connection.createStatement().execute("STOP ENGINE " + secondEngineName + " WITH TERMINATE=true;");
+            connection.createStatement().execute("DROP ENGINE IF EXISTS " + secondEngineName+ ";");
+            connection.createStatement().execute("DROP DATABASE IF EXISTS " + secondDbName + ";");
+        }
+
         executeStatementFromFile("/statements/cached-connection/cleanup.sql");
     }
 
@@ -41,7 +60,7 @@ public class CachedConnectionTest extends IntegrationTest {
         }
 
         // create a connection on the second engine and database
-        try (Connection connection = createConnection(CACHED_TEST_ENGINE_NAME, CACHED_TEST_DATABASE_NAME)) {
+        try (Connection connection = createConnection(secondEngineName, secondDbName)) {
             ResultSet rs = connection.createStatement().executeQuery("SELECT 102");
             assertTrue(rs.next());
         }
@@ -72,7 +91,7 @@ public class CachedConnectionTest extends IntegrationTest {
         }
 
         // create a connection on the second engine and database
-        try (Connection connection = createConnection(CACHED_TEST_ENGINE_NAME, CACHED_TEST_DATABASE_NAME)) {
+        try (Connection connection = createConnection(secondEngineName, secondDbName)) {
             ResultSet rs = connection.createStatement().executeQuery("SELECT 104");
             assertTrue(rs.next());
 
