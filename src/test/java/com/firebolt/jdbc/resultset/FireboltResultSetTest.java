@@ -474,7 +474,7 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldReturnString() throws SQLException {
+	void shouldReturnString() throws SQLException, IOException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
 		resultSet.next();
@@ -482,12 +482,18 @@ class FireboltResultSetTest {
 		assertEquals(expected, resultSet.getString(3));
 		assertEquals(expected, resultSet.getString("name"));
 		assertEquals(expected, resultSet.getObject(3, String.class));
+		assertEquals(expected, resultSet.getObject("name", String.class));
 		assertEquals(expected, resultSet.getNString(3));
 		assertEquals(expected, resultSet.getNString("name"));
+		assertEquals(expected, readAll(resultSet.getCharacterStream(3)));
+		assertEquals(expected, readAll(resultSet.getCharacterStream("name")));
 		assertEquals(expected, getStringFromClob(resultSet.getClob(3)));
 		assertEquals(expected, getStringFromClob(resultSet.getClob("name")));
 		assertEquals(expected, getStringFromClob(resultSet.getNClob(3)));
 		assertEquals(expected, getStringFromClob(resultSet.getNClob("name")));
+		resultSet.next();
+		assertNull(resultSet.getString(3));
+		assertNull(resultSet.getString(3));
 	}
 
 	private String getStringFromClob(Clob clob) throws SQLException {
@@ -511,23 +517,6 @@ class FireboltResultSetTest {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
 		assertEquals(TYPE_FORWARD_ONLY, resultSet.getType());
-	}
-
-	@Test
-	void shouldReturnBytes() throws SQLException, IOException {
-		inputStream = getInputStreamWithCommonResponseExample();
-		resultSet = createResultSet(inputStream);
-		resultSet.next();
-		String expectedString = "Taylor\'s Prime Steak House";
-		assertEquals(expectedString, resultSet.getString(3));
-		assertEquals(expectedString, resultSet.getString("name"));
-		assertEquals(expectedString, readAll(resultSet.getCharacterStream(3)));
-		assertEquals(expectedString, readAll(resultSet.getCharacterStream("name")));
-		assertEquals(expectedString, resultSet.getObject(3, String.class));
-		assertEquals(expectedString, resultSet.getObject("name", String.class));
-		resultSet.next();
-		assertNull(resultSet.getString(3));
-		assertNull(resultSet.getString(3));
 	}
 
 	private String readAll(Reader reader) throws IOException {

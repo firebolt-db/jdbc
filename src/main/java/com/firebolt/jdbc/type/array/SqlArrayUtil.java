@@ -21,7 +21,6 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
-@SuppressWarnings("javaarchitecture:S7091") // was not added as part of this change and was already there
 @CustomLog
 public class SqlArrayUtil {
 	private static final Map<Character, Markers> formatMarkers = Map.of(
