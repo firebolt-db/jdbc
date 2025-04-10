@@ -105,6 +105,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         cacheKey = new ClientSecretCacheKey("somebody", "pa$$word", "dev");
 
         when(mockConnectionIdGenerator.generateId()).thenReturn(A_CONNECTION_ID);
+        lenient().when(mockCacheService.newCacheObject(cacheKey, A_CONNECTION_ID)).thenReturn(new ConnectionCache(A_CONNECTION_ID));
     }
 
     @Test
@@ -295,7 +296,6 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
              assertEquals(cacheKey.getValue(), clientSecretCacheKey.getValue());
 
              ConnectionCache connectionCache = connectionCacheArgumentCaptor.getValue();
-
              assertEquals(A_CONNECTION_ID, connectionCache.getConnectionId());
              assertEquals(AN_ACCESS_TOKEN, connectionCache.getAccessToken());
              assertEquals(SYSTEM_ENGINE_URL_FOR_DEV_ACCOUNT, connectionCache.getSystemEngineUrl());
@@ -384,6 +384,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         connectionCache.setDatabaseOptions(DB_NAME, new DatabaseOptions(List.of(Pair.of("database", DB_NAME))));
         EngineOptions engineOptions = new EngineOptions(USER_ENGINE_ENDPOINT, List.of(Pair.of("engine", ENGINE_NAME)));
         connectionCache.setEngineOptions(ENGINE_NAME, engineOptions);
+
 
         when(mockCacheService.get(cacheKey)).thenReturn(Optional.of(connectionCache));
 

@@ -13,6 +13,7 @@ class CacheServiceProviderTest {
     void willReturnTheSameInstanceOfCacheProvider() {
         CacheServiceProvider cacheServiceProvider1 = CacheServiceProvider.getInstance();
         CacheServiceProvider cacheServiceProvider2 = CacheServiceProvider.getInstance();
+
         assertSame(cacheServiceProvider1, cacheServiceProvider2);
     }
 
