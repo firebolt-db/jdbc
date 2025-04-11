@@ -57,9 +57,7 @@ import static java.sql.Types.VARBINARY;
 public class FireboltPreparedStatement extends FireboltStatement implements PreparedStatement {
 
 	private final RawStatementWrapper rawStatement;
-//	private final List<Map<Integer, String>> rows;
 	private final List<Map<Integer, Object>> rows;
-//	private Map<Integer, String> providedParameters;
 	private Map<Integer, Object> providedParameters;
 	private final ParserVersion parserVersion;
 	private final PreparedStatementParamStyle queryParamStyle;
