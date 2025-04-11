@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.statement;
 
+import com.firebolt.jdbc.statement.preparedstatement.PreparedStatementParamStyle;
 import com.firebolt.jdbc.statement.rawstatement.RawStatement;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
 import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
@@ -7,6 +8,8 @@ import com.firebolt.jdbc.util.StringUtil;
 import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,6 +17,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -59,7 +63,7 @@ public class StatementUtil {
 	 * @return a list of {@link StatementInfoWrapper}
 	 */
 	public List<StatementInfoWrapper> parseToStatementInfoWrappers(String sql) {
-		return parseToRawStatementWrapper(sql).getSubStatements().stream().map(StatementInfoWrapper::of)
+		return parseToRawStatementWrapperNative(sql).getSubStatements().stream().map(StatementInfoWrapper::of)
 				.collect(Collectors.toList());
 	}
 
@@ -71,12 +75,17 @@ public class StatementUtil {
 	 * @param sql the sql statement
 	 * @return a list of {@link StatementInfoWrapper}
 	 */
-	public RawStatementWrapper parseToRawStatementWrapper(String sql) {
+	public RawStatementWrapper parseToRawStatementWrapperNative(String sql) {
+		return parseToRawStatementWrapper(sql, PreparedStatementParamStyle.NATIVE);
+	}
+
+	public RawStatementWrapper parseToRawStatementWrapper(String sql, PreparedStatementParamStyle paramStyle) {
 		if (sql.isEmpty()) {
 			return new RawStatementWrapper(List.of());
 		}
 		List<RawStatement> subStatements = new ArrayList<>();
 		List<ParamMarker> subStatementParamMarkersPositions = new ArrayList<>();
+		char preparedStatementQueryParam = paramStyle.getQueryParam();
 		int subQueryStart = 0;
 		int currentIndex = 0;
 		char currentChar = sql.charAt(currentIndex);
@@ -114,14 +123,22 @@ public class StatementUtil {
 						foundSubQueryEndingSemicolon = false;
 						cleanedSubQuery = new StringBuilder();
 					}
-				} else if (currentChar == '?' && !isCurrentSubstringBetweenQuotes
-						&& !isCurrentSubstringBetweenDoubleQuotes) {
-					subStatementParamMarkersPositions
-							.add(new ParamMarker(++subQueryParamsCount, currentIndex - subQueryStart));
-				} else if (currentChar == '\'') {
-					isCurrentSubstringBetweenQuotes = !isCurrentSubstringBetweenQuotes;
-				} else if (currentChar == '"') {
-					isCurrentSubstringBetweenDoubleQuotes = !isCurrentSubstringBetweenDoubleQuotes;
+				} else {
+					if (currentChar == preparedStatementQueryParam && !isCurrentSubstringBetweenQuotes
+							&& !isCurrentSubstringBetweenDoubleQuotes) {
+						String queryParamIndex = String.valueOf(subQueryParamsCount + 1);
+						if (paramStyle.equals(PreparedStatementParamStyle.NATIVE)
+								|| (paramStyle.equals(PreparedStatementParamStyle.FB_NUMERIC)
+									&& sql.substring(currentIndex + 1, currentIndex + 1 + queryParamIndex.length()).equals(queryParamIndex))
+						) {
+							subStatementParamMarkersPositions
+									.add(new ParamMarker(++subQueryParamsCount, currentIndex - subQueryStart));
+						}
+					} else if (currentChar == '\'') {
+						isCurrentSubstringBetweenQuotes = !isCurrentSubstringBetweenQuotes;
+					} else if (currentChar == '"') {
+						isCurrentSubstringBetweenDoubleQuotes = !isCurrentSubstringBetweenDoubleQuotes;
+					}
 				}
 				if (!(isCommentStart(currentChar) && !isCurrentSubstringBetweenQuotes)) {
 					cleanedSubQuery.append(currentChar);
@@ -165,10 +182,14 @@ public class StatementUtil {
 	 * @param sql the sql statement
 	 * @return the positions of the params markers
 	 */
-	public Map<Integer, Integer> getParamMarketsPositions(String sql) {
-		RawStatementWrapper rawStatementWrapper = parseToRawStatementWrapper(sql);
+	public Map<Integer, Integer> getParamMarketsPositions(String sql, PreparedStatementParamStyle paramStyle) {
+		RawStatementWrapper rawStatementWrapper = parseToRawStatementWrapper(sql, paramStyle);
 		return rawStatementWrapper.getSubStatements().stream().map(RawStatement::getParamMarkers)
 				.flatMap(Collection::stream).collect(Collectors.toMap(ParamMarker::getId, ParamMarker::getPosition));
+	}
+
+	public Map<Integer, Integer> getParamMarketsPositionsNative(String sql) {
+		return getParamMarketsPositions(sql, PreparedStatementParamStyle.NATIVE);
 	}
 
 	/**
@@ -208,9 +229,9 @@ public class StatementUtil {
 	 * @param sql    the sql statement
 	 * @return a list of sql statements containing the provided parameters
 	 */
-	public static List<StatementInfoWrapper> replaceParameterMarksWithValues(@NonNull Map<Integer, String> params,
+	public static List<StatementInfoWrapper> replaceParameterMarksWithValues(@NonNull Map<Integer, Object> params,
 			@NonNull String sql) {
-		RawStatementWrapper rawStatementWrapper = parseToRawStatementWrapper(sql);
+		RawStatementWrapper rawStatementWrapper = parseToRawStatementWrapperNative(sql);
 		return replaceParameterMarksWithValues(params, rawStatementWrapper);
 	}
 
@@ -222,7 +243,7 @@ public class StatementUtil {
 	 * @param rawStatement the rawStatement
 	 * @return a list of sql statements containing the provided parameters
 	 */
-	public List<StatementInfoWrapper> replaceParameterMarksWithValues(@NonNull Map<Integer, String> params,
+	public List<StatementInfoWrapper> replaceParameterMarksWithValues(@NonNull Map<Integer, Object> params,
 			@NonNull RawStatementWrapper rawStatement) {
 		List<StatementInfoWrapper> subQueries = new ArrayList<>();
 		for (int subQueryIndex = 0; subQueryIndex < rawStatement.getSubStatements().size(); subQueryIndex++) {
@@ -241,7 +262,7 @@ public class StatementUtil {
 						params.size(), rawStatement.getTotalParams()));
 			}
 			for (ParamMarker param : subQuery.getParamMarkers()) {
-				String value = params.get(param.getId());
+				String value = (String) params.get(param.getId());
 				if (value == null) {
 					throw new IllegalArgumentException("No value for parameter marker at position: " + param.getId());
 				}
@@ -256,9 +277,39 @@ public class StatementUtil {
 			Entry<String, String> additionalParams = subQuery.getStatementType() == StatementType.PARAM_SETTING
 					? ((SetParamRawStatement) subQuery).getAdditionalProperty()
 					: null;
-			subQueries.add(new StatementInfoWrapper(subQueryWithParams, subQuery.getStatementType(), additionalParams, subQuery));
+			subQueries.add(new StatementInfoWrapper(subQueryWithParams, subQuery.getStatementType(), additionalParams, subQuery, null));
 		}
 		return subQueries;
+	}
+
+	/**
+	 * Returns a list of {@link StatementInfoWrapper} containing sql statements
+	 * from the {@link RawStatementWrapper} with the parameters provided in the {@link StatementInfoWrapper} queryParameters String
+	 *
+	 * @param params       the parameters
+	 * @param rawStatement the rawStatement
+	 * @return a list of sql statements containing the provided parameters inside the queryParameters String
+	 */
+	public static List<StatementInfoWrapper> prepareFbNumericStatement(@NonNull Map<Integer, Object> params,
+			@NonNull RawStatementWrapper rawStatement) {
+		List<StatementInfoWrapper> subQueries = new ArrayList<>();
+		String queryParameters = getPreparedStatementQueryParameters(params);
+		for (int subQueryIndex = 0; subQueryIndex < rawStatement.getSubStatements().size(); subQueryIndex++) {
+			RawStatement subQuery = rawStatement.getSubStatements().get(subQueryIndex);
+
+			Entry<String, String> additionalParams = subQuery.getStatementType() == StatementType.PARAM_SETTING
+					? ((SetParamRawStatement) subQuery).getAdditionalProperty()
+					: null;
+			subQueries.add(new StatementInfoWrapper(subQuery.getSql(), subQuery.getStatementType(), additionalParams, subQuery, queryParameters));
+		}
+		return subQueries;
+	}
+
+	private String getPreparedStatementQueryParameters(@NonNull Map<Integer, Object> params) {
+		JSONArray jsonArray = new JSONArray();
+		params.forEach((key, value) -> jsonArray.put(new JSONObject().put("name", "$" + key).put("value", value == null ? JSONObject.NULL : value)));
+
+		return jsonArray.toString();
 	}
 
 	private Optional<String> extractTableNameFromFromPartOfTheQuery(String from) {
