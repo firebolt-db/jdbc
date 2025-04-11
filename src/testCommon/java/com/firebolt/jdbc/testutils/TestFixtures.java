@@ -1,8 +1,7 @@
 package com.firebolt.jdbc.testutils;
 
-import org.junit.jupiter.params.provider.Arguments;
-
 import java.util.stream.Stream;
+import org.junit.jupiter.params.provider.Arguments;
 
 public class TestFixtures {
     public static Stream<Arguments> booleanTypes() {
@@ -23,5 +22,14 @@ public class TestFixtures {
                 Arguments.of(1F, 0F),
                 Arguments.of(1L, 0L)
         );
+    }
+
+    @SuppressWarnings("java:S2925")
+    public static void sleepForMillis(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            // do nothing
+        }
     }
 }
