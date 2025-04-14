@@ -104,4 +104,4 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Dapi="api.staging.firebolt.io" -Dpassword="${{ secrets.FIREBOLT_STG_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_STG_USERNAME }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags="v2"
+        run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Dapi="api.staging.firebolt.io" -Dpassword="${{ secrets.FIREBOLT_STG_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_STG_USERNAME }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DexcludeTags="v2" -Dv1GenerateSeriesMaxSize="${{ vars.V1_GENERATE_SERIES_MAX_SIZE }}"
