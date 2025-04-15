@@ -56,7 +56,6 @@ public class LocalhostFireboltConnection extends FireboltConnectionServiceSecret
 
     /**
      * For localhost connection validate:
-     *   - account is populated
      *   - accessToken is populated
      *
      *
@@ -64,11 +63,6 @@ public class LocalhostFireboltConnection extends FireboltConnectionServiceSecret
      */
     @Override
     protected void validateConnectionParameters() throws FireboltException {
-        String account = loginProperties.getAccount();
-        if (StringUtils.isBlank(account)) {
-            throw new FireboltException("Cannot connect: account is missing");
-        }
-
         // access token is needed for the localhost testing
         String accessToken = loginProperties.getAccessToken();
         if (StringUtils.isBlank(accessToken)) {

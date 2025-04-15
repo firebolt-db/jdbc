@@ -6,7 +6,6 @@ import com.firebolt.jdbc.cache.ConnectionCache;
 import com.firebolt.jdbc.cache.key.CacheKey;
 import com.firebolt.jdbc.cache.key.LocalhostCacheKey;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineVersion2Service;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
@@ -30,6 +29,7 @@ import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.HOST
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -90,14 +90,10 @@ class LocalhostFireboltConnectionTest {
     }
 
     @Test
-    void cannotConnectToLocalHostIfAccountIsMissing() {
+    void canConnectToLocalHostIfAccountIsMissing() throws SQLException {
         Properties propsWithToken = new Properties();
         propsWithToken.setProperty(ACCESS_TOKEN.getKey(), "the_access_token");
-
-        FireboltException exception = assertThrows(FireboltException.class, () -> createConnection(URL_WITHOUT_ACCOUNT, propsWithToken));
-        assertEquals("Cannot connect: account is missing", exception.getMessage());
-
-        Mockito.verifyNoMoreInteractions(fireboltAuthenticationService);
+        assertInstanceOf(LocalhostFireboltConnection.class, createConnection(URL_WITHOUT_ACCOUNT, propsWithToken));
     }
 
     @Test
