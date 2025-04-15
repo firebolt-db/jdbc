@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -29,12 +28,23 @@ public class ServerError {
     }
 
     public ServerError(JSONObject json) {
-        this(fromJson(json.optJSONObject("query"), Query::new), fromJson(json.optJSONArray("errors"), Error::new, Error[]::new));
+        JSONArray errorArray =  json.optJSONArray("errors");
+        this.query = fromJson(json.optJSONObject("query"), Query::new);
+        if(errorArray == null) {
+            this.errors = new Error[] {new Error(json)};
+        } else {
+            this.errors = fromJson(json.optJSONArray("errors"));
+        }
     }
 
-    private static <T> T[] fromJson(JSONArray jsonArray, Function<JSONObject, T> factory, IntFunction<T[]> arrayFactory) {
-        return jsonArray == null ? null : IntStream.range(0, jsonArray.length()).boxed().map(jsonArray::getJSONObject).map(factory).toArray(arrayFactory);
-    }
+	private static Error[] fromJson(JSONArray jsonArray) {
+		return jsonArray == null
+                ? null
+				: IntStream.range(0, jsonArray.length()).boxed()
+                        .map(jsonArray::getJSONObject)
+                        .map(Error::new)
+						.toArray(Error[]::new);
+	}
 
     private static <T> T fromJson(JSONObject json, Function<JSONObject, T> factory) {
         return ofNullable(json).map(factory).orElse(null);
@@ -131,7 +141,7 @@ public class ServerError {
                     json.optString("name", null),
                     json.optEnum(Severity.class, "severity"),
                     ofNullable(json.optString("source", null)).map(Source::fromText).orElse(Source.UNKNOWN),
-                    json.optString("description", null),
+                    json.optString("description", json.optString("detail", null)),
                     json.optString("resolution", null),
                     json.optString("helpLink", null),
                     ofNullable(json.optJSONObject("location", null)).map(Location::new).orElse(null));

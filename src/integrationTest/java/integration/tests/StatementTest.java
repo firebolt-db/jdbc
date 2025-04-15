@@ -5,19 +5,6 @@ import com.firebolt.jdbc.exception.FireboltException;
 import integration.ConnectionInfo;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 import kotlin.collections.ArrayDeque;
 import lombok.CustomLog;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -31,6 +18,21 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
+
+import static integration.EnvironmentCondition.Attribute.fireboltVersion;
 import static java.lang.String.format;
 import static java.sql.Statement.SUCCESS_NO_INFO;
 import static java.util.stream.Collectors.joining;
@@ -127,7 +129,7 @@ class StatementTest extends IntegrationTest {
 
 	@Test
 	@Tag("v2")
-	@EnvironmentCondition(value = "4.2.0", comparison = EnvironmentCondition.Comparison.GE)
+	@EnvironmentCondition(value = "4.2.0", attribute = fireboltVersion, comparison = EnvironmentCondition.Comparison.GE)
 	void shouldThrowExceptionWhenExecutingWrongQueryWithJsonError() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			statement.execute("set advanced_mode=1");
@@ -316,7 +318,7 @@ class StatementTest extends IntegrationTest {
 				String statementWithoutExplicitQueryLabel = "SELECT " + RandomStringUtils.randomNumeric(3)  + ";";
 				statement.executeQuery(statementWithoutExplicitQueryLabel);
 
-				// sleep for some time to allow query history to execute 
+				// sleep for some time to allow query history to execute
 				sleepForMillis(TEN_SECONDS_IN_MILLIS);
 
 				String implicitQueryLabel = getQueryLabel(statement, currentTime, statementWithoutExplicitQueryLabel);
