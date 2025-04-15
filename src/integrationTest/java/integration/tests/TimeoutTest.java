@@ -3,18 +3,19 @@ package integration.tests;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import lombok.CustomLog;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static integration.EnvironmentCondition.Attribute.databaseVersion;
 import static integration.EnvironmentCondition.Comparison.GE;
@@ -24,8 +25,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @CustomLog
 class TimeoutTest extends IntegrationTest {
 	private static final int MIN_TIME_SECONDS = 350;
-	private static final Map<Integer, Long> SERIES_SIZE = Map.of(1, 80000000000L, 2, 400000000000L);
+	private static final Map<Integer, Long> SERIES_SIZE = new HashMap<>();
+
 	private long startTime;
+
+	/**
+	 * From GitHub we might pass in different values rather than the default ones that we use in tests. Sometimes we see the tests finish
+	 * faster than we expect (350 seconds)
+	 */
+	@BeforeAll
+	void setupClass() {
+		long v1SeriesSize = Long.valueOf(System.getProperty("v1GenerateSeriesMaxSize", "80000000000"));
+		SERIES_SIZE.put(1, v1SeriesSize);
+		log.info("For v1 max generate series size we will use {}", v1SeriesSize);
+
+		long v2SeriesSize = Long.valueOf(System.getProperty("v2GenerateSeriesMaxSize", "500000000000"));
+		SERIES_SIZE.put(2, v2SeriesSize);
+		log.info("For v2 max generate series size we will use {}", v2SeriesSize);
+	}
 
 	@BeforeEach
 	void before() {
@@ -41,7 +58,7 @@ class TimeoutTest extends IntegrationTest {
 	}
 
 	@Test
-	@Timeout(value = 10, unit = TimeUnit.MINUTES)
+	@Timeout(value = 15, unit = TimeUnit.MINUTES)
 	@Tag("v1") // generate_series is supported on all available engine of v2
 	@Tag("slow")
 	void shouldExecuteRequestWithoutTimeoutV1() throws SQLException {
@@ -49,7 +66,7 @@ class TimeoutTest extends IntegrationTest {
 	}
 
 	@Test
-	@Timeout(value = 10, unit = TimeUnit.MINUTES)
+	@Timeout(value = 15, unit = TimeUnit.MINUTES)
 	@EnvironmentCondition(value = "3.33", attribute = databaseVersion, comparison = GE) // generate_series is supported starting from version 3.33 on v2
 	@Tag("v2")
 	@Tag("slow")
