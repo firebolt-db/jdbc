@@ -54,6 +54,8 @@ class TimeoutTest extends IntegrationTest {
 		long endTime = System.nanoTime();
 		long elapsedTimeSeconds = (endTime - startTime) / 1_000_000_000;
 		log.info("Time elapsed: {} seconds", elapsedTimeSeconds);
+
+		sleepForMillis(TimeUnit.MINUTES.toMillis(10));
 		assertTrue(elapsedTimeSeconds > MIN_TIME_SECONDS, format("Test is too short. It took %d but should take at least %d seconds", elapsedTimeSeconds, MIN_TIME_SECONDS));
 	}
 
