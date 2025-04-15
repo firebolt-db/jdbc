@@ -77,7 +77,9 @@ class TimeoutTest extends IntegrationTest {
 	}
 
 	private void shouldExecuteRequestWithoutTimeout() throws SQLException {
-		try (Connection con = createConnection(); Statement stmt = con.createStatement()) {
+		String engine = integration.ConnectionInfo.getInstance().getEngine();
+		Map<String, String> properties = Map.of("connection_keep_alive_timeout_millis", String.valueOf(10 * 60 * 1000));
+		try (Connection con = createConnection(engine, properties); Statement stmt = con.createStatement()) {
 			int infraVersion = ((FireboltConnection)con).getInfraVersion();
 			stmt.executeQuery(format("SELECT (max(x) - min(x))/count(x) + avg(x) FROM generate_series(1,%d) r(x)", SERIES_SIZE.get(infraVersion)));
 		}
