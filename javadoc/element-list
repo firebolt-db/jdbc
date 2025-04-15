@@ -1,6 +1,9 @@
 com.firebolt
 com.firebolt.jdbc
 com.firebolt.jdbc.annotation
+com.firebolt.jdbc.cache
+com.firebolt.jdbc.cache.exception
+com.firebolt.jdbc.cache.key
 com.firebolt.jdbc.client
 com.firebolt.jdbc.client.account
 com.firebolt.jdbc.client.account.response
