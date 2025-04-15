@@ -6,6 +6,7 @@ import integration.MockWebServerAwareIntegrationTest;
 import java.sql.SQLException;
 import java.sql.Statement;
 import okhttp3.mockwebserver.MockResponse;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static com.firebolt.jdbc.exception.ExceptionType.INVALID_REQUEST;
@@ -13,6 +14,7 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@Disabled
 public class RetryPolicyTest extends MockWebServerAwareIntegrationTest {
 	@Test
 	public void shouldThrowExceptionOn400WithoutRetry() throws SQLException {

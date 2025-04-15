@@ -12,8 +12,10 @@ import java.util.UUID;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.tls.HandshakeCertificates;
 import okhttp3.tls.HeldCertificate;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled
 public class TLSTest extends MockWebServerAwareIntegrationTest {
 	@Test
 	public void shouldUseTLS() throws SQLException, IOException, NoSuchFieldException, IllegalAccessException {

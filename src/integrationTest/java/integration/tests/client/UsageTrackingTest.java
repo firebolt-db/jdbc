@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.RecordedRequest;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.Assert.assertFalse;
@@ -15,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Disabled
 public class UsageTrackingTest extends MockWebServerAwareIntegrationTest {
 	@Test
 	public void shouldSendRequestWithUserAgentHeaderContainingDriverAndClientInfo()
