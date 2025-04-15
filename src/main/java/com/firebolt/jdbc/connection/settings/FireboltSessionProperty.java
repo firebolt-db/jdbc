@@ -33,7 +33,7 @@ public enum FireboltSessionProperty {
 	CONNECTION_TIMEOUT_MILLIS("connection_timeout_millis", 60 * 1000, Integer.class,
 			"Default connect timeout for new connections. A value of 0 means no timeout, otherwise values must be between 1 and Integer.MAX_VALUE when converted to milliseconds", FireboltProperties::getConnectionTimeoutMillis,
 			"connection_timeout"),
-	KEEP_ALIVE_TIMEOUT_MILLIS("connection_keep_alive_timeout_millis", 5 * 60 * 1000, Integer.class,
+	KEEP_ALIVE_TIMEOUT_MILLIS("connection_keep_alive_timeout_millis", 10 * 60 * 1000, Integer.class,
 			"How long to keep a connection with the server alive in the pool before closing it.", FireboltProperties::getKeepAliveTimeoutMillis, "keepAliveTimeout"),
 
 	MAX_CONNECTIONS_TOTAL("max_connections_total", 300, Integer.class,
