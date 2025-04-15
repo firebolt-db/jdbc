@@ -37,14 +37,14 @@ public class ServerError {
         }
     }
 
-	private static Error[] fromJson(JSONArray jsonArray) {
-		return jsonArray == null
+    private static Error[] fromJson(JSONArray jsonArray) {
+        return jsonArray == null
                 ? null
-				: IntStream.range(0, jsonArray.length()).boxed()
+                : IntStream.range(0, jsonArray.length()).boxed()
                         .map(jsonArray::getJSONObject)
                         .map(Error::new)
-						.toArray(Error[]::new);
-	}
+                        .toArray(Error[]::new);
+    }
 
     private static <T> T fromJson(JSONObject json, Function<JSONObject, T> factory) {
         return ofNullable(json).map(factory).orElse(null);
@@ -140,7 +140,7 @@ public class ServerError {
             this(json.optString("code", null),
                     json.optString("name", null),
                     json.optEnum(Severity.class, "severity"),
-                    ofNullable(json.optString("source", null)).map(Source::fromText).orElse(Source.UNKNOWN),
+                    ofNullable(json.optString("source", null)).map(Source::fromText).orElse(null),
                     json.optString("description", json.optString("detail", null)),
                     json.optString("resolution", null),
                     json.optString("helpLink", null),

@@ -243,7 +243,7 @@ class ConnectionTest extends IntegrationTest {
 
     @Test
     @Tag("v2")
-    void networkPolicyBlockedServiceAccountThrowsErrorWhenFetchingEngineUrl() throws SQLException {
+    void networkPolicyBlockedServiceAccountThrowsError() throws SQLException {
         try (Connection connection = createConnection();
              Statement statement = connection.createStatement()) {
             //this is done as to not clutter the environment variables for one test
