@@ -96,7 +96,7 @@ jobs:
           firebolt-client-secret: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
           account: ${{ steps.set-account.outputs.account }}
           api-endpoint: "api.staging.firebolt.io"
-          db_suffix: ${{ format('{0}_{1}', inputs.os_name, input.java_version) }}
+          db_suffix: ${{ format('{0}_{1}', inputs.os_name, inputs.java_version) }}
 
       - name: Determine database name
         id: find-database-name
