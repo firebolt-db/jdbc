@@ -6,13 +6,9 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
-import com.firebolt.jdbc.type.FireboltDataType;
-import com.firebolt.jdbc.type.array.FireboltArray;
-import com.firebolt.jdbc.type.lob.FireboltBlob;
 import com.firebolt.jdbc.type.lob.FireboltClob;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
@@ -483,7 +479,6 @@ class FireboltPreparedStatementFbNumericTest {
 	}
 
 	@Test
-	@Disabled
 	void shouldSetDateWithCalendar() throws SQLException, ParseException {
 		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES ($1)");
 		Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("JST"));
@@ -494,7 +489,7 @@ class FireboltPreparedStatementFbNumericTest {
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals("INSERT INTO cars(release_date) VALUES ($1)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
-		assertEquals("[{\"name\":\"$1\",\"value\":\"2024-04-18\"}]",
+		assertEquals("[{\"name\":\"$1\",\"value\":\"2024-04-19\"}]",
 				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
 	}
 
@@ -514,7 +509,6 @@ class FireboltPreparedStatementFbNumericTest {
 	}
 
 	@Test
-	@Disabled
 	void shouldSetTimeStampWithCalendar() throws SQLException, ParseException {
 		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES ($1)");
 		Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("JST"));
@@ -525,7 +519,7 @@ class FireboltPreparedStatementFbNumericTest {
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals("INSERT INTO cars(release_date) VALUES ($1)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
-		assertEquals("[{\"name\":\"$1\",\"value\":\"2024-04-18 20:11:01\"}]",
+		assertEquals("[{\"name\":\"$1\",\"value\":\"2024-04-19 05:11:01\"}]",
 				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
 	}
 
@@ -661,7 +655,6 @@ class FireboltPreparedStatementFbNumericTest {
 	}
 
 	@Test
-	@Disabled
 	void unsupportedType() {
 		statement = createStatementWithSql("INSERT INTO data (column) VALUES ($1)");
 		assertThrows(SQLException.class, () -> statement.setObject(1, this));
@@ -693,7 +686,6 @@ class FireboltPreparedStatementFbNumericTest {
 	}
 
 	@Test
-	@Disabled //should we fail fast if parameters are not set?
 	void clearParameters() throws SQLException {
 		statement = createStatementWithSql("INSERT INTO data (column) VALUES ($1)");
 		statement.setObject(1, ""); // set parameter
