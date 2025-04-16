@@ -23,74 +23,23 @@ jobs:
           distribution: 'zulu'
           java-version: '11'
 
-      # in order to use gh script we need the env variable GH_TOKEN
-      - name: Download jdbc jar from job run
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "🔍 Finding the jdbc jar for version: ${{ inputs.jdbcJar }} in run: ${{ inputs.runId }}"
+      # check out only the SmokeTests class
+      - name: Download smoke test file
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            src/integrationTest/resources/SmokeTest.java
+          sparse-checkout-cone-mode: false
 
-          # Get artifact ID
-          ARTIFACT_ID=$(gh api repos/firebolt-db/jdbc/actions/runs/${{ inputs.runId }}/artifacts \
-            -q ".artifacts[] | select(.name==\"${{ inputs.jdbcJar }}\") | .id")
-          echo "🎯 Artifact ID: $ARTIFACT_ID"
-
-          # Download the artifact
-          mkdir -p artifact
-          gh api --method GET \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: token $GH_TOKEN" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/firebolt-db/jdbc/actions/artifacts/$ARTIFACT_ID/zip \
-            > artifact/artifact.zip
-
-          echo "📂 Extracting..."
-          unzip artifact/artifact.zip -d artifact/
-          
-          echo "Current directory is: $(pwd)"
-          ls -la
-          ls -al artifact/
-
-      - name: Create java file
-        run: |
-          cat <<EOF > SmokeTest.java          
-          import com.firebolt.FireboltDriver;
-          import com.firebolt.jdbc.connection.LocalhostFireboltConnection;
-          import java.sql.Connection;
-          import java.sql.SQLException;
-          import java.util.Properties;
-          
-          public class SmokeTest {
-          
-            public static void main(String[] args) {
-              FireboltDriver fireboltDriver = new FireboltDriver();
-              String url = createUrlConnectionString("goprean", "goprean");
-              System.out.println("Connecting to localhost " + url);
-              try (Connection connection = fireboltDriver.connect(url, new Properties())) {
-                LocalhostFireboltConnection localhostFireboltConnection = connection.unwrap(LocalhostFireboltConnection.class);
-          
-                System.out.println("Successfully connected to localhost");
-              } catch (SQLException e) {
-                 e.printStackTrace();
-                 throw new RuntimeException(e);
-              }
-            }
-          
-            private static String createUrlConnectionString(String database, String engine) {
-              StringBuilder urlConnectionBuilder = new StringBuilder("jdbc:firebolt:")
-                  .append(database)
-                  .append("?engine=").append(engine)
-                  .append("&account=developer")
-                  .append("&host=localhost")
-                  .append("&access_token=some_token");
-              return urlConnectionBuilder.toString();
-            }
-          
-          }
-          EOF
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.jdbcJar }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.runId }}
 
       - name: Compile class
-        run: javac -cp artifact/${{ inputs.jdbcJar }} SmokeTest.java
+        run: javac -cp ${{ inputs.jdbcJar }} src/integrationTest/resources/SmokeTest.java
 
       - name: Run class
-        run: java -cp artifact/${{ inputs.jdbcJar }}:. SmokeTest
+        run: java -cp ${{ inputs.jdbcJar }}:src/integrationTest/resources/. SmokeTest
