@@ -85,7 +85,7 @@ jobs:
           api-endpoint: "api.staging.firebolt.io"
           region: "us-east-1"
           instance-type: "B2"
-          db_suffix: ${{ format('{0}', MY_ENV) }}
+          db_suffix: format('{0}', $MY_ENV)
 
       - name: Determine database name
         id: find-database-name
