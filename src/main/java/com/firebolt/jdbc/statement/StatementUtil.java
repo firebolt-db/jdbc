@@ -292,6 +292,13 @@ public class StatementUtil {
 	 */
 	public static List<StatementInfoWrapper> prepareFbNumericStatement(@NonNull Map<Integer, Object> params,
 			@NonNull RawStatementWrapper rawStatement) {
+
+		if (params.size() != rawStatement.getTotalParams()) {
+			throw new IllegalArgumentException(String.format(
+					"The number of parameters passed does not equal the number of parameter markers in the SQL query. Provided: %d, Parameter markers in the SQL query: %d",
+					params.size(), rawStatement.getTotalParams()));
+		}
+
 		List<StatementInfoWrapper> subQueries = new ArrayList<>();
 		String queryParameters = getPreparedStatementQueryParameters(params);
 		for (int subQueryIndex = 0; subQueryIndex < rawStatement.getSubStatements().size(); subQueryIndex++) {

@@ -336,9 +336,9 @@ class FireboltPreparedStatementFbNumericTest {
 
 	@ParameterizedTest
 	@ValueSource(strings = {
-			"SELECT * FROM cars WHERE make LIKE ?",
-			"SELECT * FROM cars WHERE make LIKE ,?",
-			"SELECT * FROM cars WHERE make LIKE (?"
+			"SELECT * FROM cars WHERE make LIKE $1",
+			"SELECT * FROM cars WHERE make LIKE ,$1",
+			"SELECT * FROM cars WHERE make LIKE ($1"
 	})
 	void shouldThrowExceptionWhenAllParametersAreNotDefined(String query) throws SQLException {
 		try (PreparedStatement ps = createStatementWithSql(query)) {
@@ -630,7 +630,7 @@ class FireboltPreparedStatementFbNumericTest {
 	@CsvSource(value = {
 			"3.14," + Types.DECIMAL + ",2,3.14",
 			"3.1415926," + Types.DECIMAL + ",2,3.14",
-			"2.7," + Types.NUMERIC + ",2,2.70",
+			"2.7," + Types.NUMERIC + ",2,2.7",
 			"2.718281828," + Types.NUMERIC + ",1,2.7",
 			"2.718281828," + Types.NUMERIC + ",5,2.71828",
 	})
@@ -642,7 +642,7 @@ class FireboltPreparedStatementFbNumericTest {
 	@CsvSource(value = {
 			"3.14," + Types.DECIMAL + ",2,3.14",
 			"3.1415926," + Types.DECIMAL + ",2,3.14",
-			"2.7," + Types.NUMERIC + ",2,2.70",
+			"2.7," + Types.NUMERIC + ",2,2.7",
 			"2.718281828," + Types.NUMERIC + ",1,2.7",
 			"2.718281828," + Types.NUMERIC + ",5,2.71828",
 	})
