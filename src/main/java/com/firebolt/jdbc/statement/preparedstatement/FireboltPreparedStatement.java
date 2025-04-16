@@ -421,7 +421,11 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 			// scaleOfLength should affect only DECIMAL and NUMERIC types
 			boolean isNumber = (DECIMAL == targetSqlType || NUMERIC == targetSqlType) && x instanceof Number;
 			String str = isNumber ? formatDecimalNumber(x, scaleOrLength) : JavaTypeToFireboltSQLString.transformAny(x, targetSqlType);
-			providedParameters.put(parameterIndex, str);
+			if (isFbNumeric()) {
+				providedParameters.put(parameterIndex, Double.valueOf(str));
+			} else {
+				providedParameters.put(parameterIndex, str);
+			}
 		} catch (FireboltException fbe) {
 			if (ExceptionType.TYPE_NOT_SUPPORTED.equals(fbe.getType())) {
 				throw new SQLFeatureNotSupportedException(fbe.getMessage(), fbe);
