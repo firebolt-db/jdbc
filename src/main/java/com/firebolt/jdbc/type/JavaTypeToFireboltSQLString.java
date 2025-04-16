@@ -143,7 +143,7 @@ public enum JavaTypeToFireboltSQLString {
 		return object.getClass().isArray() && !byte[].class.equals(object.getClass()) ? Array.class : object.getClass();
 	}
 
-	private static Class<?> getType(int sqlType, Object o) throws SQLException {
+	public static Class<?> getType(int sqlType, Object o) throws SQLException {
 		try {
 			JDBCType jdbcType = JDBCType.valueOf(sqlType);
 			List<Class<?>> classes = Optional.ofNullable(jdbcTypeToClass.get(jdbcType))
@@ -187,6 +187,34 @@ public enum JavaTypeToFireboltSQLString {
 			} catch (Exception e) {
 				throw new FireboltException("Could not convert object to a String ", e, TYPE_TRANSFORMATION_ERROR);
 			}
+		}
+	}
+
+	public String transformDateTimeForServerSide(Object datetime, String timeZoneId) throws SQLException {
+		if (datetime == null) {
+			return NULL_VALUE;
+		} else {
+			try {
+				TimeZone tz = toTimeZone(timeZoneId);
+				if (this.equals(JavaTypeToFireboltSQLString.TIMESTAMP)) {
+					return SqlDateUtil.transformFromTimestampWithTimezoneToStringFunction.apply((Timestamp) datetime, tz);
+				} else if (this.equals(JavaTypeToFireboltSQLString.DATE)) {
+					return SqlDateUtil.transformFromDateWithTimezoneToStringFunction.apply((Date) datetime, tz);
+				} else {
+					throw new FireboltException(format("Unsupported JDBC type %s", datetime), TYPE_NOT_SUPPORTED);
+				}
+			} catch (Exception e) {
+				throw new FireboltException("Could not convert object to a String ", e, TYPE_TRANSFORMATION_ERROR);
+			}
+		}
+	}
+
+	public static void validateObjectIsOfSupportedType(Object object) throws SQLException {
+		if (object == null) {
+			return;
+		}
+		if (!classToType.containsKey(object.getClass())) {
+			throw new FireboltException(format("Unsupported JDBC type %s", object), TYPE_NOT_SUPPORTED);
 		}
 	}
 

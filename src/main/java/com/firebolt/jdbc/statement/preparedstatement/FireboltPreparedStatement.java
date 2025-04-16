@@ -207,8 +207,16 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
 		try {
-			providedParameters.put(parameterIndex,
-					isFbNumeric() ? x : JavaTypeToFireboltSQLString.transformAny(x, targetSqlType, parserVersion));
+			if (isFbNumeric()) {
+				JavaTypeToFireboltSQLString.validateObjectIsOfSupportedType(x);
+				//this is used as a supported target type verification. null is not supported
+				if (x != null) {
+					JavaTypeToFireboltSQLString.getType(targetSqlType, x);
+				}
+				providedParameters.put(parameterIndex, x);
+			} else {
+				providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x, targetSqlType, parserVersion));
+			}
 		} catch (FireboltException fbe) {
 			if (ExceptionType.TYPE_NOT_SUPPORTED.equals(fbe.getType())) {
 				throw new SQLFeatureNotSupportedException(fbe.getMessage(), fbe);
@@ -221,7 +229,12 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public void setObject(int parameterIndex, Object x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, isFbNumeric() ? x : JavaTypeToFireboltSQLString.transformAny(x));
+		if (isFbNumeric()) {
+			JavaTypeToFireboltSQLString.validateObjectIsOfSupportedType(x);
+			providedParameters.put(parameterIndex, x);
+		} else {
+			providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x));
+		}
 	}
 
 	@Override
@@ -366,7 +379,8 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		if (datetime == null || calendar == null) {
 			providedParameters.put(parameterIndex, isFbNumeric() ? datetime : type.transform(datetime));
 		} else {
-			providedParameters.put(parameterIndex, isFbNumeric() ? datetime : type.transform(datetime, calendar.getTimeZone().getID()));
+			String timeZoneId = calendar.getTimeZone().getID();
+			providedParameters.put(parameterIndex, isFbNumeric() ? type.transformDateTimeForServerSide(datetime, timeZoneId) : type.transform(datetime, timeZoneId));
 		}
 	}
 
@@ -513,5 +527,9 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 
 	private boolean isFbNumeric() {
 		return queryParamStyle.equals(PreparedStatementParamStyle.FB_NUMERIC);
+	}
+
+	private void validateObjectIsOfSupportedTypes(Object x) {
+
 	}
 }
