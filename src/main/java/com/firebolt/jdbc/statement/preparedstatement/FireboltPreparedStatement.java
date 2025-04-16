@@ -529,7 +529,4 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		return queryParamStyle.equals(PreparedStatementParamStyle.FB_NUMERIC);
 	}
 
-	private void validateObjectIsOfSupportedTypes(Object x) {
-
-	}
 }
