@@ -70,10 +70,13 @@ jobs:
 
       # for ubuntu-latest , java 11 it will create u11. For windows-latest java 17 it will create w17
       - name: Reduce db suffix name
+        id: dbsuffix
         shell: bash
         run: |
-          OS_PREFIX=$(echo "${{ matrix.os }}" | cut -c1)
-          echo "MY_ENV=${OS_PREFIX}${{ matrix.java-version }}" >> $GITHUB_ENV
+          OS_PREFIX=$(echo "${{ inputs.os_name }}" | cut -c1)
+          DB_SUFFIX="${OS_PREFIX}${{ inputs.java_version }}"
+          echo "DB_SUFFIX=$DB_SUFFIX"
+          echo "db_suffix=$DB_SUFFIX" >> $GITHUB_OUTPUT
 
       - name: Setup database and engine
         id: setup
@@ -85,7 +88,7 @@ jobs:
           api-endpoint: "api.staging.firebolt.io"
           region: "us-east-1"
           instance-type: "B2"
-          db_suffix: format('{0}', $MY_ENV)
+          db_suffix: ${{ steps.dbsuffix.outputs.db_suffix }}
 
       - name: Determine database name
         id: find-database-name
