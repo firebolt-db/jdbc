@@ -94,8 +94,6 @@ class FireboltPreparedStatementFbNumericTest {
 					Arguments.of("setTime(calendar)", (Executable) () -> statement.setTime(1, new Time(System.currentTimeMillis()), Calendar.getInstance())),
 					Arguments.of("setRowId", (Executable) () -> statement.setRowId(1, mock(RowId.class))),
 					Arguments.of("setSQLXML", (Executable) () -> statement.setSQLXML(1, mock(SQLXML.class))),
-
-					// TODO: add support of these methods
 					Arguments.of("getParameterMetaData", (Executable) () -> statement.getParameterMetaData())
 		);
 	}
@@ -164,7 +162,7 @@ class FireboltPreparedStatementFbNumericTest {
 
 				Arguments.of("setBinaryStream(null)", (Setter) statement -> statement.setBinaryStream(1, null), "null"),
 				Arguments.of("setBinaryStream(null, int)", (Setter) statement -> statement.setBinaryStream(1, null, 1), "null"),
-				Arguments.of("setBinaryStream(null, long)", (Setter) statement -> statement.setBinaryStream(1, null, 1L), "null"),
+				Arguments.of("setBinaryStream(null, long)", (Setter) statement -> statement.setBinaryStream(1, null, 1L), "null"));
 //				Arguments.of("setBinaryStream(InputStream)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes())), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
 //				Arguments.of("setBinaryStream(InputStream, length=)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 5), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
 //				Arguments.of("setBinaryStream(InputStream, length-1)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 4), "E'\\x68\\x65\\x6c\\x6c'::BYTEA"),
@@ -172,16 +170,6 @@ class FireboltPreparedStatementFbNumericTest {
 //				Arguments.of("setBinaryStream(InputStream, 42)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 42), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
 //				Arguments.of("setBinaryStream(InputStream, 1)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 1), "E'\\x68'::BYTEA"),
 //				Arguments.of("setBinaryStream(InputStream, 0)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 0), "E'\\x'::BYTEA"),
-
-				Arguments.of("setUnicodeStream(null, int)", (Setter) statement -> statement.setUnicodeStream(1, null, 1), "null")
-//				,
-				);
-//				Arguments.of("setUnicodeStream(InputStream, length=)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 5), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-//				Arguments.of("setUnicodeStream(InputStream, length-1)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 4), "E'\\x68\\x65\\x6c\\x6c'::BYTEA"),
-//				Arguments.of("setUnicodeStream(InputStream, length+1)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 6), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-//				Arguments.of("setUnicodeStream(InputStream, 42)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 42), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-//				Arguments.of("setUnicodeStream(InputStream, 1)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 1), "E'\\x68'::BYTEA"),
-//				Arguments.of("setUnicodeStream(InputStream, 0)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 0), "E'\\x'::BYTEA"));
 	}
 
 	private static Stream<Arguments> setNumber() {
@@ -495,7 +483,7 @@ class FireboltPreparedStatementFbNumericTest {
 
 	@Test
 	@DefaultTimeZone("Europe/London")
-	void shouldSetDateWithNullCalendar() throws SQLException, ParseException {
+	void shouldSetDateWithNullCalendar() throws SQLException {
 		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES ($1)");
 
 		statement.setDate(1, new Date(1564527600000L), null);
