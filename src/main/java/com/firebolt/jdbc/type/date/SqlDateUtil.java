@@ -35,8 +35,10 @@ public class SqlDateUtil {
 			.format("'%s'", dateTimeFormatter.format(value));
 	public static final Function<Timestamp, String> transformFromTimestampToSQLStringFunction = value ->
 			transformFromLocalDateTimeToSQLStringFunction.apply(value.toLocalDateTime());
+	public static final BiFunction<Timestamp, TimeZone, String> transformFromTimestampWithTimezoneToStringFunction =
+			(ts, tz) -> dateTimeFormatter.format(ts.toInstant().atZone(tz.toZoneId()).toLocalDateTime());
 	public static final BiFunction<Timestamp, TimeZone, String> transformFromTimestampWithTimezoneToSQLStringFunction = (ts, tz) -> String
-			.format("'%s'", dateTimeFormatter.format(ts.toInstant().atZone(tz.toZoneId()).toLocalDateTime()));
+			.format("'%s'", transformFromTimestampWithTimezoneToStringFunction.apply(ts, tz));
 	private static final TimeZone DEFAULT_SERVER_TZ = TimeZone.getTimeZone("UTC");
 	private static final DateTimeFormatter dateFormatter = new DateTimeFormatterBuilder()
 			.appendValue(ChronoField.YEAR, 4).parseDefaulting(ChronoField.YEAR, 0).appendPattern("[-]MM-dd")
@@ -44,8 +46,10 @@ public class SqlDateUtil {
 	public static final Function<LocalDate, String> transformFromLocalDateToSQLStringFunction = value -> String.format("'%s'",
 			dateFormatter.format(value));
 	public static final Function<Date, String> transformFromDateToSQLStringFunction = value -> transformFromLocalDateToSQLStringFunction.apply(value.toLocalDate());
+	public static final BiFunction<Date, TimeZone, String> transformFromDateWithTimezoneToStringFunction =
+			(date, tz) -> dateFormatter.format(Instant.ofEpochMilli(date.getTime()).atZone(tz.toZoneId()).toLocalDateTime());
 	public static final BiFunction<Date, TimeZone, String> transformFromDateWithTimezoneToSQLStringFunction = (date, tz) -> String.format("'%s'",
-			dateFormatter.format(Instant.ofEpochMilli(date.getTime()).atZone(tz.toZoneId()).toLocalDateTime()));
+			transformFromDateWithTimezoneToStringFunction.apply(date, tz));
 	public static final CheckedBiFunction<String, TimeZone, Timestamp> transformToTimestampFunction = TimestampUtil::toTimestamp;
 
 	public static final Function<Timestamp, OffsetDateTime> transformFromTimestampToOffsetDateTime = timestamp -> {
