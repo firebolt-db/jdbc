@@ -87,6 +87,13 @@ jobs:
           distribution: 'zulu'
           java-version: ${{ inputs.java_version }}
 
+      - name: Change TCP keepalive timeout (Windows)
+        shell: pwsh
+        if: runner.os == 'Windows'
+        run: |
+          netsh int tcp set global keepaliveinterval=1000
+          netsh int tcp set global keepalivetime=600000
+
       - name: Setup database and engine
         id: setup
         if: ${{ inputs.database == '' }}
