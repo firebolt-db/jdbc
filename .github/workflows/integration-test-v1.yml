@@ -68,6 +68,13 @@ jobs:
           distribution: 'zulu'
           java-version: ${{ inputs.java_version }}
 
+      # for ubuntu-latest , java 11 it will create u11. For windows-latest java 17 it will create w17
+      - name: Reduce db suffix name
+        shell: bash
+        run: |
+          OS_PREFIX=$(echo "${{ matrix.os }}" | cut -c1)
+          echo "MY_ENV=${OS_PREFIX}${{ matrix.java-version }}" >> $GITHUB_ENV
+
       - name: Setup database and engine
         id: setup
         if: ${{ inputs.database == '' }}
@@ -78,7 +85,7 @@ jobs:
           api-endpoint: "api.staging.firebolt.io"
           region: "us-east-1"
           instance-type: "B2"
-          db_suffix: ${{ format('{0}_{1}', inputs.os_name, inputs.java_version) }}
+          db_suffix: ${{ format('{0}', MY_ENV) }}
 
       - name: Determine database name
         id: find-database-name
