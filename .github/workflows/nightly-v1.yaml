@@ -13,6 +13,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         java: [11, 17, 21]
+        # https://packboard.atlassian.net/browse/FIR-45378 - there is a test failing on windows and java 11 related to timeouts
         exclude:
           - os: windows-latest
             java: 11
