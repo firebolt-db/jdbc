@@ -25,6 +25,15 @@ on:
         required: false
         type: string
         default: 'ubuntu-latest'
+    secrets:
+      FIREBOLT_STG_USERNAME:
+        required: true
+      FIREBOLT_STG_PASSWORD:
+        required: true
+      FIREBOLT_CLIENT_ID_STG_NEW_IDN:
+        required: true
+      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
+        required: true
 
 jobs:
   run-integration-tests1:
