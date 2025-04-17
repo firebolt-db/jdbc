@@ -6,15 +6,15 @@ on:
 
 jobs:
   build:
-    uses: ./github/workflows/build.yml
+    uses: ./.github/workflows/build.yml
 
 #  run-integration-test:
 #    needs: build
 #    uses: ./.github/workflows/integration-test.yml
 
   run-smoke-test:
-    needs: run-integration-test
-    uses: ./github/workflows/sandbox-smoke-test.yaml
+    needs: build
+    uses: ./.github/workflows/sandbox-smoke-test.yml
     with:
       jdbcJar: ${{ needs.build.outputs.uber-jar }}
       runId: 1234

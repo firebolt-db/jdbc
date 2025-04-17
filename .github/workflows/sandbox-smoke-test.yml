@@ -12,6 +12,18 @@ on:
         description: 'The run id of the workflow that created the artifact'
         required: true
         type: string
+  workflow_call:
+    inputs:
+      jdbcJar:
+        description: 'JDBC jar version (e.g: firebolt-jdbc-3.5.1.jar)'
+        required: false
+        type: string
+        default: 'firebolt-jdbc-3.6.0.jar'
+      runId:
+        description: 'The run id of the workflow that created the artifact'
+        required: true
+        type: string
+
 jobs:
   run-jdbc-jar:
     runs-on: ubuntu-latest
