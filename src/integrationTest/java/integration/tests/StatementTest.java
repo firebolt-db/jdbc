@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
+import static integration.EnvironmentCondition.Attribute.databaseVersion;
 import static integration.EnvironmentCondition.Attribute.fireboltVersion;
 import static java.lang.String.format;
 import static java.sql.Statement.SUCCESS_NO_INFO;
@@ -129,7 +130,7 @@ class StatementTest extends IntegrationTest {
 
 	@Test
 	@Tag("v2")
-	@EnvironmentCondition(value = "4.2.0", attribute = fireboltVersion, comparison = EnvironmentCondition.Comparison.GE)
+	@EnvironmentCondition(value = "4.2.0", attribute = databaseVersion, comparison = EnvironmentCondition.Comparison.GE)
 	void shouldThrowExceptionWhenExecutingWrongQueryWithJsonError() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			statement.execute("set advanced_mode=1");

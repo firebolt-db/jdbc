@@ -27,28 +27,59 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 class ConnectionTest extends IntegrationTest {
 
     enum EngineType {
-        SYSTEM_ENGINE, CUSTOM_ENGINE
+        CUSTOM_ENGINE, SYSTEM_ENGINE
     }
 
     @ParameterizedTest(name = "{0}")
     @Tag("v2")
     @EnumSource(EngineType.class)
-    void connectToNotExistingDb(EngineType engineType) {
+    void connectToNotExistingDbV2(EngineType engineType) throws SQLException {
         String database = "wrong_db";
-        assumeTrue(EngineType.CUSTOM_ENGINE.equals(engineType));
-        ConnectionInfo params = integration.ConnectionInfo.getInstance();
-        String engineSuffix = EngineType.CUSTOM_ENGINE.equals(engineType) ? "&engine=" + params.getEngine() : "";
-        String url = format("jdbc:firebolt:%s?env=%s&account=%s%s", database, params.getEnv(), params.getAccount(), engineSuffix);
-        FireboltException e = assertThrows(FireboltException.class, () -> DriverManager.getConnection(url, params.getPrincipal(), params.getSecret()));
+        boolean useCustomEngine = EngineType.CUSTOM_ENGINE.equals(engineType);
+        ConnectionInfo params = ConnectionInfo.getInstance();
+        String url = getConnectionInfoWithEngineAndDatabase(useCustomEngine ? params.getEngine() : null, database).toJdbcUrl();
+        FireboltException e;
+        if (useCustomEngine) {
+            e = assertThrows(FireboltException.class, () -> DriverManager.getConnection(url, params.getPrincipal(), params.getSecret()));
+        } else {
+            // the connection will be successful because v2 does not set database or engine on system engine connection
+            try (Connection connection = DriverManager.getConnection(url, params.getPrincipal(), params.getSecret());
+                ResultSet resultSet = connection.createStatement().executeQuery("SELECT 1")) {
+                assertTrue(resultSet.next());
+                assertEquals(1, resultSet.getInt(1));
+                //even on system engine, the database should be set, but since database does not exist, it should throw an error
+                e = assertThrows(FireboltException.class, () -> connection.createStatement().executeUpdate("USE DATABASE " + database));
+            }
+        }
         assertEquals(ExceptionType.INVALID_REQUEST, e.getType());
         String expectedMessage = format("Database '%s' does not exist or not authorized", database);
         assertTrue(e.getMessage().contains(expectedMessage), format("Error message '%s' does not match '%s'", e.getMessage(), expectedMessage));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @Tag("v1")
+    @EnumSource(EngineType.class)
+    void connectToNotExistingDbV1(EngineType engineType) throws SQLException {
+        String database = "wrong_db";
+        boolean useCustomEngine = EngineType.CUSTOM_ENGINE.equals(engineType);
+        ConnectionInfo params = ConnectionInfo.getInstance();
+        String url = getConnectionInfoWithEngineAndDatabase(useCustomEngine ? params.getEngine() : null, database).toJdbcUrl();
+        if (useCustomEngine) {
+            // the connection will be successful because v1 does not check for the database existence on connection
+            try (Connection connection = DriverManager.getConnection(url, params.getPrincipal(), params.getSecret())) {
+                // if the engine is not attached to the database, it will throw an error
+                assertThrows(SQLException.class, () -> connection.createStatement().executeQuery("SELECT 1"));
+            }
+        } else {
+            FireboltException e = assertThrows(FireboltException.class, () -> DriverManager.getConnection(url, params.getPrincipal(), params.getSecret()));
+            assertEquals(ExceptionType.RESOURCE_NOT_FOUND, e.getType());
+            assertEquals(format("The database with the name %s could not be found", database), e.getMessage());
+        }
     }
 
     /**
@@ -271,7 +302,7 @@ class ConnectionTest extends IntegrationTest {
         ResultSet resultSet = statement
                 .executeQuery("CALL fb_GENERATESERVICEACCOUNTKEY('network_policy_test_sa')");
         if (!resultSet.next()) {
-            throw new FireboltException("Network Policy Test could now generate service account secret and id");
+            throw new FireboltException("Network Policy Test could not generate service account secret and id");
         }
         return new ConnectionInfo(resultSet.getString("service_account_id"),
                 resultSet.getString("secret"), ConnectionInfo.getInstance().getEnv(),
@@ -281,7 +312,7 @@ class ConnectionTest extends IntegrationTest {
                 ConnectionInfo.getInstance().getApi());
     }
 
-    void unsuccessfulConnect(boolean useDatabase, boolean useEngine) throws SQLException {
+    void unsuccessfulConnect(boolean useDatabase, boolean useEngine) {
         ConnectionInfo params = integration.ConnectionInfo.getInstance();
         String url = getJdbcUrl(params, useDatabase, useEngine);
         assertThrows(FireboltException.class, () -> DriverManager.getConnection(url, params.getPrincipal(), params.getSecret()));
