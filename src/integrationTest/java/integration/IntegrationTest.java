@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.CustomLog;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 
@@ -53,12 +54,16 @@ public abstract class IntegrationTest {
 	}
 
 	protected Connection createConnection(String engine, String database) throws SQLException {
-		ConnectionInfo current = integration.ConnectionInfo.getInstance();
-		ConnectionInfo updated = new ConnectionInfo(current.getPrincipal(), current.getSecret(),
-				current.getEnv(), database, current.getAccount(), engine, current.getApi(), Collections.emptyMap());
+		ConnectionInfo updated = getConnectionInfoWithEngineAndDatabase(engine, database);
 		return DriverManager.getConnection(updated.toJdbcUrl(),
 				integration.ConnectionInfo.getInstance().getPrincipal(),
 				integration.ConnectionInfo.getInstance().getSecret());
+	}
+
+	protected ConnectionInfo getConnectionInfoWithEngineAndDatabase(String engine, String database) {
+		ConnectionInfo current = ConnectionInfo.getInstance();
+        return new ConnectionInfo(current.getPrincipal(), current.getSecret(),
+                current.getEnv(), database, current.getAccount(), engine, current.getApi(), Collections.emptyMap());
 	}
 
 	protected Connection createConnection(String engine, Map<String, String> extra) throws SQLException {
