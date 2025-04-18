@@ -1,23 +1,34 @@
 package com.firebolt.jdbc.statement;
 
-import static java.lang.String.format;
-import static java.sql.Statement.CLOSE_CURRENT_RESULT;
-import static java.sql.Statement.SUCCESS_NO_INFO;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
-
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import com.firebolt.jdbc.CheckedBiFunction;
+import com.firebolt.jdbc.client.query.StatementClient;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.resultset.FireboltResultSet;
+import com.firebolt.jdbc.service.FireboltStatementService;
+import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
+import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.lang.reflect.Field;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLWarning;
+import java.sql.Statement;
+import java.sql.Wrapper;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
@@ -32,21 +43,26 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
 
-import com.firebolt.jdbc.CheckedBiFunction;
-import com.firebolt.jdbc.client.query.StatementClient;
-import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
-import com.firebolt.jdbc.exception.FireboltException;
-import com.firebolt.jdbc.resultset.FireboltResultSet;
-import com.firebolt.jdbc.service.FireboltStatementService;
-import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
-import com.firebolt.jdbc.type.array.SqlArrayUtil;
-
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
+import static java.lang.String.format;
+import static java.sql.Statement.CLOSE_CURRENT_RESULT;
+import static java.sql.Statement.SUCCESS_NO_INFO;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltStatementTest {
@@ -566,14 +582,18 @@ class FireboltStatementTest {
         assertArrayEquals(new int[] {SUCCESS_NO_INFO, SUCCESS_NO_INFO}, fireboltStatement.executeBatch());
     }
 
+    /**
+     * The log message would contain the query label that is sent to the server. Query label is an uuid, so for aws_key_id value use a string
+     * that cannot be part of a generated uuid.
+     */
     @ParameterizedTest
     @CsvSource(value = {
-            "CREATE EXTERNAL TABLE x WITH CREDENTIALS = (AWS_KEY_ID='123', AWS_SECRET_KEY='4%5-6');",
-            "CREATE EXTERNAL TABLE x WITH CREDENTIALS = (AWS_KEY_ID ='123', AWS_SECRET_KEY= '4%5-6');",
-            "CREATE EXTERNAL TABLE x WITH CREDENTIALS = (AWS_KEY_ID = '123', AWS_SECRET_KEY = '4%5-6');",
-            "COPY INTO x FROM s3 WITH CREDENTIALS = (AWS_KEY_ID = '123' AWS_SECRET_KEY = '4%5-6');",
-            "COPY INTO x FROM s3 WITH CREDENTIALS = (AWS_KEY_ID = '123', AWS_SECRET_KEY = '4%5-6') ERROR_FILE_CREDENTIALS = AWS_KEY_ID = '123' AWS_SECRET_KEY = '4%5-6';",
-            "COPY INTO x FROM s3 WITH ERROR_FILE_CREDENTIALS = AWS_KEY_ID = '123' AWS_SECRET_KEY = '4%5-6';"
+            "CREATE EXTERNAL TABLE x WITH CREDENTIALS = (AWS_KEY_ID='123##456', AWS_SECRET_KEY='4%5-6');",
+            "CREATE EXTERNAL TABLE x WITH CREDENTIALS = (AWS_KEY_ID ='123##456', AWS_SECRET_KEY= '4%5-6');",
+            "CREATE EXTERNAL TABLE x WITH CREDENTIALS = (AWS_KEY_ID = '123##456', AWS_SECRET_KEY = '4%5-6');",
+            "COPY INTO x FROM s3 WITH CREDENTIALS = (AWS_KEY_ID = '123##456' AWS_SECRET_KEY = '4%5-6');",
+            "COPY INTO x FROM s3 WITH CREDENTIALS = (AWS_KEY_ID = '123##456', AWS_SECRET_KEY = '4%5-6') ERROR_FILE_CREDENTIALS = AWS_KEY_ID = '123' AWS_SECRET_KEY = '4%5-6';",
+            "COPY INTO x FROM s3 WITH ERROR_FILE_CREDENTIALS = AWS_KEY_ID = '123##456' AWS_SECRET_KEY = '4%5-6';"
     }, delimiter = ';')
     void shouldNotOutputAWSKeyIdInDebugLogs(String query) throws SQLException {
 
@@ -585,19 +605,24 @@ class FireboltStatementTest {
 
         fooLogger.addAppender(listAppender);
 
-        FireboltConnection connection = mock(FireboltConnection.class);
-        when(connection.getSessionProperties()).thenReturn(fireboltProperties);
-        FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties,
-                connection);
-        fireboltStatement.execute(query);
+        try {
+            FireboltConnection connection = mock(FireboltConnection.class);
+            when(connection.getSessionProperties()).thenReturn(fireboltProperties);
+            try (FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection)) {
+                fireboltStatement.execute(query);
 
-        List<ILoggingEvent> logsList = listAppender.list;
-        assertTrue(logsList.stream().noneMatch(event -> event.getFormattedMessage().contains("123")));
-        assertTrue(logsList.stream().noneMatch(event -> event.getFormattedMessage().contains("4%5-6")));
-        // Make sure the query is not lost
-        assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("WITH")));
-        assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("AWS_KEY_ID")));
-        assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("AWS_SECRET_KEY")));
+                List<ILoggingEvent> logsList = listAppender.list;
+                assertTrue(logsList.stream().noneMatch(event -> event.getFormattedMessage().contains("123##456")));
+                assertTrue(logsList.stream().noneMatch(event -> event.getFormattedMessage().contains("4%5-6")));
+                // Make sure the query is not lost
+                assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("WITH")));
+                assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("AWS_KEY_ID")));
+                assertTrue(logsList.stream().anyMatch(event -> event.getFormattedMessage().contains("AWS_SECRET_KEY")));
+            }
+        } finally {
+            // stop the file appender
+            listAppender.stop();
+        }
     }
 
     @Test
