@@ -132,7 +132,7 @@ class OnDiskMemoryCacheService implements CacheService {
             FileTime creationTime = (FileTime) Files.getAttribute(cacheFile.toPath(), "basic:creationTime");
             return creationTime.toInstant().isBefore(Instant.now().minus(CACHE_TIME_IN_MINUTES, ChronoUnit.MINUTES));
         } catch (IOException e) {
-            log.error("Failed to check the creation time of the file", e);
+            log.warn("Failed to check the creation time of the file", e);
 
             // will assume we cannot use the file
             return true;
