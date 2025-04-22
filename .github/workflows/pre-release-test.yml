@@ -30,4 +30,4 @@ jobs:
     uses: ./.github/workflows/sandbox-smoke-test.yml
     with:
       jdbcJar: ${{ needs.build.outputs.uber-jar }}
-      runId: ${{ needs.build.outputs.run_id }}
+      runId: ${{ github.run_id }}

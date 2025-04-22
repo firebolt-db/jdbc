@@ -14,9 +14,6 @@ on:
       sources-jar:
         description: Jar that contains only the source code
         value: ${{ jobs.build.outputs.sources-jar }}
-      run_id:
-        description: the run id of the workflow
-        value: ${{ jobs.build.outputs.run_id }}
 
   push:
 jobs:
@@ -26,7 +23,6 @@ jobs:
       version: ${{ steps.project-version.outputs.PROJECT_VERSION }}
       uber-jar: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
       sources-jar: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}-sources.jar
-      run_id: ${{ steps.set_run_id.outputs.run_id }}
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -59,6 +55,3 @@ jobs:
         with:
           name: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}-sources.jar
           path: build/libs/firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}-sources.jar
-      - name: Set run_id
-        id: set_run_id
-        run: echo "run_id=${{ github.run_id }}" >> $GITHUB_OUTPUT
