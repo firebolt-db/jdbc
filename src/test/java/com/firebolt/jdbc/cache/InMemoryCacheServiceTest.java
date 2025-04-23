@@ -73,7 +73,8 @@ class InMemoryCacheServiceTest {
     @Test
     void willCreateTheInMemoryConnectionCache() {
         CacheKey testCacheKey = new TestCacheKey("key");
-        ConnectionCache connectionCache = inMemoryCacheService.newCacheObject(testCacheKey, "a sample connection id");
+        ConnectionCache connectionCache = new ConnectionCache("a sample connection id");
+        inMemoryCacheService.put(testCacheKey, connectionCache);
         assertEquals("a sample connection id", connectionCache.getConnectionId());
         assertEquals(CacheType.MEMORY.name(), connectionCache.getCacheSource());
     }

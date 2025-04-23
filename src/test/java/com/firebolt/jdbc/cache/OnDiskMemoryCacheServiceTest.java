@@ -29,15 +29,13 @@ import static org.mockito.Mockito.when;
 class OnDiskMemoryCacheServiceTest {
 
     @Mock
-    private CacheService mockCacheService;
+    private InMemoryCacheService mockInMemoryCacheService;
     @Mock
     private FileService mockFileService;
     @Mock
     private CacheKey mockCacheKey;
     @Mock
     private ConnectionCache mockConnectionCache;
-    @Mock
-    private OnDiskConnectionCache mockOnDiskConnectionCache;
     @Mock
     private File mockDiskFile;
     @Mock
@@ -49,26 +47,26 @@ class OnDiskMemoryCacheServiceTest {
 
     @BeforeEach
     void setupMethod() {
-        onDiskMemoryCacheService = new OnDiskMemoryCacheService(mockCacheService, mockFileService);
+        onDiskMemoryCacheService = new OnDiskMemoryCacheService(mockInMemoryCacheService, mockFileService);
     }
 
     @Test
     void willGetValueFromCacheWhenAvailable() {
-        when(mockCacheService.get(mockCacheKey)).thenReturn(Optional.of(mockConnectionCache));
+        when(mockInMemoryCacheService.get(mockCacheKey)).thenReturn(Optional.of(mockConnectionCache));
         assertSame(mockConnectionCache, onDiskMemoryCacheService.get(mockCacheKey).get());
         verify(mockFileService, never()).findFileForKey(mockCacheKey);
     }
 
     @Test
     void willNotReturnAnyCacheObjectIfNotInCacheAndFailToReadFromDisk() {
-        when(mockCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
+        when(mockInMemoryCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
         when(mockFileService.findFileForKey(mockCacheKey)).thenThrow(FilenameGenerationException.class);
         assertTrue(onDiskMemoryCacheService.get(mockCacheKey).isEmpty());
     }
 
     @Test
     void willNotReturnAnyCacheObjectIfNotInCacheAndFileOnDiskDoesNotExist() {
-        when(mockCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
+        when(mockInMemoryCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
         when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
         when(mockDiskFile.exists()).thenReturn(false);
         assertTrue(onDiskMemoryCacheService.get(mockCacheKey).isEmpty());
@@ -76,7 +74,7 @@ class OnDiskMemoryCacheServiceTest {
 
     @Test
     void willNotReturnAnyCacheObjectIfFoundTheFileOnDiskButCannotDetectItsCreationTime() {
-        when(mockCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
+        when(mockInMemoryCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
         when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
         when(mockDiskFile.toPath()).thenReturn(mockFilePath);
         when(mockDiskFile.exists()).thenReturn(true);
@@ -89,7 +87,7 @@ class OnDiskMemoryCacheServiceTest {
 
     @Test
     void willNotReturnAnyCacheObjectIfFoundTheFileOnDiskButWasCreatedTooLongBack() {
-        when(mockCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
+        when(mockInMemoryCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
         when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
         when(mockDiskFile.toPath()).thenReturn(mockFilePath);
         when(mockDiskFile.exists()).thenReturn(true);
@@ -105,7 +103,7 @@ class OnDiskMemoryCacheServiceTest {
 
     @Test
     void willNotReturnAnyCacheObjectIfFoundTheFileOnDiskButCannotReadContent() {
-        when(mockCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
+        when(mockInMemoryCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
         when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
         when(mockDiskFile.toPath()).thenReturn(mockFilePath);
         when(mockDiskFile.exists()).thenReturn(true);
@@ -120,7 +118,7 @@ class OnDiskMemoryCacheServiceTest {
 
     @Test
     void willNotReturnAnyCacheObjectIfFoundTheFileOnDiskDueToTamperingWithTheFile() {
-        when(mockCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
+        when(mockInMemoryCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
         when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
         when(mockDiskFile.toPath()).thenReturn(mockFilePath);
         when(mockDiskFile.exists()).thenReturn(true);
@@ -136,7 +134,7 @@ class OnDiskMemoryCacheServiceTest {
 
     @Test
     void willReturnCacheObjectFromDisk() {
-        when(mockCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
+        when(mockInMemoryCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
         when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
         when(mockDiskFile.toPath()).thenReturn(mockFilePath);
         when(mockDiskFile.exists()).thenReturn(true);
@@ -144,21 +142,19 @@ class OnDiskMemoryCacheServiceTest {
         try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
             filesMockedStatic.when(() -> Files.getAttribute(mockFilePath, "basic:creationTime")).thenReturn(mockFileTime);
             when(mockFileTime.toInstant()).thenReturn(Instant.now());
-            when(mockFileService.readContent(mockCacheKey, mockDiskFile)).thenReturn(Optional.of(mockOnDiskConnectionCache));
-            assertSame(mockOnDiskConnectionCache, onDiskMemoryCacheService.get(mockCacheKey).get());
+            when(mockFileService.readContent(mockCacheKey, mockDiskFile)).thenReturn(Optional.of(mockConnectionCache));
+            assertSame(mockConnectionCache, onDiskMemoryCacheService.get(mockCacheKey).get());
 
-            verify(mockOnDiskConnectionCache).setCacheSource(CacheType.DISK.name());
-            verify(mockOnDiskConnectionCache).setCacheKey(mockCacheKey);
-            verify(mockOnDiskConnectionCache).setOnDiskMemoryCacheService(onDiskMemoryCacheService);
+            verify(mockConnectionCache).setCacheSource(CacheType.DISK.name());
 
-            verify(mockCacheService).put(mockCacheKey, mockOnDiskConnectionCache);
+            verify(mockInMemoryCacheService).put(mockCacheKey, mockConnectionCache);
         }
     }
 
     @Test
     void savingKeyToMemoryWillAlsoSaveToDisk() {
         onDiskMemoryCacheService.put(mockCacheKey, mockConnectionCache);
-        verify(mockCacheService).put(mockCacheKey, mockConnectionCache);
+        verify(mockInMemoryCacheService).put(mockCacheKey, mockConnectionCache);
         verify(mockFileService).safeSaveToDiskAsync(mockCacheKey, mockConnectionCache);
     }
 
