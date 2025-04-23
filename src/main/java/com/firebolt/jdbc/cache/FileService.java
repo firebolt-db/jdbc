@@ -21,6 +21,8 @@ import org.json.JSONObject;
 @CustomLog
 public class FileService {
 
+    static final String CREATION_TIME_FILE_ATTRIBUTE = "basic:creationTime";
+
     private DirectoryPathResolver directoryPathResolver;
     private FilenameGenerator filenameGenerator;
     private ExecutorService executorService;
@@ -115,13 +117,13 @@ public class FileService {
     void safelyWriteFile(File file, String encryptedConnectionCache) {
         try {
             // get the original create time so we don't override it
-            FileTime creationTime = (FileTime) Files.getAttribute(file.toPath(), "basic:creationTime");
+            FileTime creationTime = (FileTime) Files.getAttribute(file.toPath(), CREATION_TIME_FILE_ATTRIBUTE);
 
             // overwrite the existing file
             Files.writeString(file.toPath(), encryptedConnectionCache, StandardOpenOption.TRUNCATE_EXISTING);
 
             // Restore the original creation time
-            Files.setAttribute(file.toPath(), "basic:creationTime", creationTime);
+            Files.setAttribute(file.toPath(), CREATION_TIME_FILE_ATTRIBUTE, creationTime);
         } catch (IOException e) {
             log.warn("Failed to write to cache");
         }
