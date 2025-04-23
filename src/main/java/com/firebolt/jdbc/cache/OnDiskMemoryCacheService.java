@@ -25,22 +25,22 @@ class OnDiskMemoryCacheService implements CacheService {
     private static final int CACHE_TIME_IN_MINUTES = 60;
 
     // this would be the in memory cache
-    private CacheService cacheService;
+    private InMemoryCacheService inMemoryCacheService;
     private FileService fileService;
 
-    public OnDiskMemoryCacheService(CacheService cacheService) {
-        this(cacheService, FileService.getInstance());
+    public OnDiskMemoryCacheService(InMemoryCacheService inMemoryCacheService) {
+        this(inMemoryCacheService, FileService.getInstance());
     }
 
     // visible for testing
-    OnDiskMemoryCacheService(CacheService cacheService, FileService fileService) {
-        this.cacheService = cacheService;
+    OnDiskMemoryCacheService(InMemoryCacheService inMemoryCacheService, FileService fileService) {
+        this.inMemoryCacheService = inMemoryCacheService;
         this.fileService = fileService;
     }
 
     @Override
     public void put(CacheKey key, ConnectionCache connectionCache) throws CacheException {
-        cacheService.put(key, connectionCache);
+        inMemoryCacheService.put(key, connectionCache);
 
         // also save to disk in async manner
         safelySaveToDiskAsync(key, connectionCache);
@@ -49,7 +49,7 @@ class OnDiskMemoryCacheService implements CacheService {
     @Override
     public Optional<ConnectionCache> get(CacheKey cacheKey) throws CacheException {
         // first check if it is in the memory cache
-        Optional<ConnectionCache> connectionCacheOptional = cacheService.get(cacheKey);
+        Optional<ConnectionCache> connectionCacheOptional = inMemoryCacheService.get(cacheKey);
         if (connectionCacheOptional.isPresent()) {
             // make sure when we read it we set the cache source as memory. When we save it from disk we set it to disk
             connectionCacheOptional.get().setCacheSource(CacheType.MEMORY.name());
@@ -77,24 +77,24 @@ class OnDiskMemoryCacheService implements CacheService {
         }
 
         // read the value from the file
-        Optional<OnDiskConnectionCache> onDiskConnectionCacheOptional = readConnectionCacheObjectFromDisk(cacheKey, cacheFile);
+        Optional<ConnectionCache> onDiskConnectionCacheOptional = readConnectionCacheObjectFromDisk(cacheKey, cacheFile);
         if (onDiskConnectionCacheOptional.isEmpty()) {
             return Optional.empty();
         }
 
-        OnDiskConnectionCache onDiskConnectionCache = onDiskConnectionCacheOptional.get();
+        ConnectionCache onDiskConnectionCache = onDiskConnectionCacheOptional.get();
 
         // add it in the memory cache
-        cacheService.put(cacheKey, onDiskConnectionCache);
+        inMemoryCacheService.put(cacheKey, onDiskConnectionCache);
 
         return Optional.of(onDiskConnectionCache);
     }
 
     /**
-     * Reads the connection cache object from disk. If cannot deserialize the object from file content, it means that the file was corrupted and we can delete it.
+     * Reads the connection cache object from disk. If we cannot deserialize the object from file content, it means that the file was corrupted and we can delete it.
      */
-    private Optional<OnDiskConnectionCache> readConnectionCacheObjectFromDisk(CacheKey cacheKey, File cacheFile) {
-        Optional<OnDiskConnectionCache> cacheConnectionFromDiskOptional;
+    private Optional<ConnectionCache> readConnectionCacheObjectFromDisk(CacheKey cacheKey, File cacheFile) {
+        Optional<ConnectionCache> cacheConnectionFromDiskOptional;
         try {
             cacheConnectionFromDiskOptional = fileService.readContent(cacheKey, cacheFile);
         } catch (ConnectionCacheDeserializationException e) {
@@ -108,22 +108,11 @@ class OnDiskMemoryCacheService implements CacheService {
             return Optional.empty();
         }
 
-        OnDiskConnectionCache onDiskConnectionCache = cacheConnectionFromDiskOptional.get();
+        ConnectionCache onDiskConnectionCache = cacheConnectionFromDiskOptional.get();
 
         // all good we can use the connection cache from disk
         onDiskConnectionCache.setCacheSource(CacheType.DISK.name());
-        onDiskConnectionCache.setCacheKey(cacheKey);
-        onDiskConnectionCache.setOnDiskMemoryCacheService(this);
-
         return Optional.of(onDiskConnectionCache);
-    }
-
-    @Override
-    public ConnectionCache newCacheObject(CacheKey cacheKey, String connectionId) {
-        OnDiskConnectionCache connectionCache = new OnDiskConnectionCache(connectionId);
-        connectionCache.setCacheKey(cacheKey);
-        connectionCache.setOnDiskMemoryCacheService(this);
-        return connectionCache;
     }
 
     // we should only use the file if it was created within the last 2hours

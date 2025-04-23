@@ -32,6 +32,17 @@ public class CachedConnectionTest extends IntegrationTest {
 
     @BeforeAll
     void beforeAll() throws SQLException {
+        DirectoryPathResolver directoryPathResolver = new DirectoryPathResolver();
+
+        // remove all the files from the directory path resolver
+        Path fireboltDriverDirectory = directoryPathResolver.resolveFireboltJdbcDirectory();
+        clearFireboltJdbcDriverFolder(fireboltDriverDirectory);
+
+        FilenameGenerator filenameGenerator = new FilenameGenerator();
+        String expectedCacheFile = filenameGenerator.generate(new ClientSecretCacheKey(ConnectionInfo.getInstance().getPrincipal(), ConnectionInfo.getInstance().getSecret(), ConnectionInfo.getInstance().getAccount()));
+        File file = Paths.get(fireboltDriverDirectory.toString(), expectedCacheFile).toFile();
+        assertFalse(file.exists());
+
         executeStatementFromFile("/statements/cached-connection/ddl.sql");
 
         // create the engine and db here rather than the ddl so we can add the prefix to the engine and db names
@@ -64,16 +75,6 @@ public class CachedConnectionTest extends IntegrationTest {
     @Tag("slow")
     void createTwoConnections() throws SQLException {
         String testStartTime = getCurrentUTCTime();
-        DirectoryPathResolver directoryPathResolver = new DirectoryPathResolver();
-
-        // remove all the files from the directory path resolver
-        Path fireboltDriverDirectory = directoryPathResolver.resolveFireboltJdbcDirectory();
-        clearFireboltJdbcDriverFolder(fireboltDriverDirectory);
-
-        FilenameGenerator filenameGenerator = new FilenameGenerator();
-        String expectedCacheFile = filenameGenerator.generate(new ClientSecretCacheKey(ConnectionInfo.getInstance().getPrincipal(), ConnectionInfo.getInstance().getSecret(), ConnectionInfo.getInstance().getAccount()));
-        File file = Paths.get(fireboltDriverDirectory.toString(), expectedCacheFile).toFile();
-        assertFalse(file.exists());
 
         // create a connection on the first engine and database
         try (Connection connection = createConnection()) {
@@ -137,8 +138,15 @@ public class CachedConnectionTest extends IntegrationTest {
             assertFalse(engineTwoResultSet.next());
         }
 
+        // verify cache file exists
+        DirectoryPathResolver directoryPathResolver = new DirectoryPathResolver();
+        Path fireboltDriverDirectory = directoryPathResolver.resolveFireboltJdbcDirectory();
+
+        FilenameGenerator filenameGenerator = new FilenameGenerator();
+        String expectedCacheFile = filenameGenerator.generate(new ClientSecretCacheKey(ConnectionInfo.getInstance().getPrincipal(), ConnectionInfo.getInstance().getSecret(), ConnectionInfo.getInstance().getAccount()));
+
         // the cache file exists
-        file = Paths.get(fireboltDriverDirectory.toString(), expectedCacheFile).toFile();
+        File file = Paths.get(fireboltDriverDirectory.toString(), expectedCacheFile).toFile();
         assertTrue(file.exists());
     }
 

@@ -29,12 +29,4 @@ public interface CacheService {
      */
     Optional<ConnectionCache> get(CacheKey key) throws CacheException;
 
-    /**
-     * Creates a new connection cache object for a cache key
-     * @param cacheKey - the cache key that corresponds to the connection id
-     * @param connectionId - the id of the connection
-     * @return
-     */
-    ConnectionCache newCacheObject(CacheKey cacheKey, String connectionId);
-
 }

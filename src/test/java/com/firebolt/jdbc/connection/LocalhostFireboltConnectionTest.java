@@ -183,7 +183,6 @@ class LocalhostFireboltConnectionTest {
     void willAddUserAgentHeaderWhenConnectionIsCachedByThisConnection() throws SQLException {
         // no cache is present for the key
         when(cacheService.get(cacheKey)).thenReturn(Optional.empty());
-        when(cacheService.newCacheObject(cacheKey, CONNECTION_ID)).thenReturn(new ConnectionCache(CONNECTION_ID));
 
         try (FireboltConnectionServiceSecret fireboltConnection = (FireboltConnectionServiceSecret) createConnection(LOCAL_URL, connectionProperties)) {
             String additionalUserAgentValue = fireboltConnection.getConnectionUserAgentHeader().get();

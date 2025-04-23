@@ -94,7 +94,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         super.init();
 
         Engine engine = new Engine(USER_ENGINE_ENDPOINT, "id123", ENGINE_NAME, DB_NAME, null);
-        lenient().when(fireboltEngineVersion2Service.getEngine(any(), any())).thenReturn(engine);
+        lenient().when(fireboltEngineVersion2Service.getEngine(any(), any(), any(), any())).thenReturn(engine);
 
         lenient().when(fireboltAuthenticationService.getConnectionTokens(eq("https://api.dev.firebolt.io:443"), any()))
                 .thenReturn(mockFireboltConnectionTokens);
@@ -105,7 +105,6 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         cacheKey = new ClientSecretCacheKey("somebody", "pa$$word", "dev");
 
         when(mockConnectionIdGenerator.generateId()).thenReturn(A_CONNECTION_ID);
-        lenient().when(mockCacheService.newCacheObject(cacheKey, A_CONNECTION_ID)).thenReturn(new ConnectionCache(A_CONNECTION_ID));
     }
 
     @Test
@@ -272,9 +271,9 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
     @Test
     void shouldGetEngineUrlWhenEngineIsProvided() throws SQLException {
         connectionProperties.put("engine", "engine");
-        when(fireboltEngineVersion2Service.getEngine(any(), any())).thenReturn(new Engine("http://my_endpoint", null, null, null, null));
+        when(fireboltEngineVersion2Service.getEngine(any(), any(), any(), any())).thenReturn(new Engine("http://my_endpoint", null, null, null, null));
         try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
-            verify(fireboltEngineVersion2Service).getEngine(argThat(props -> "engine".equals(props.getEngine()) && "db".equals(props.getDatabase())), any());
+            verify(fireboltEngineVersion2Service).getEngine(argThat(props -> "engine".equals(props.getEngine()) && "db".equals(props.getDatabase())), any(), eq(mockCacheService), any());
             assertEquals("http://my_endpoint", fireboltConnection.getSessionProperties().getHost());
         }
     }
@@ -290,7 +289,8 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
 
         // system engine url does not have the database or the engine set
         try (FireboltConnection fireboltConnection = createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
-             verify(mockCacheService).put(clientSecretCacheKeyArgumentCaptor.capture(), connectionCacheArgumentCaptor.capture());
+             // one for creating the cache object, then one for jwt and one for system engine url
+             verify(mockCacheService, times(3)).put(clientSecretCacheKeyArgumentCaptor.capture(), connectionCacheArgumentCaptor.capture());
 
              ClientSecretCacheKey clientSecretCacheKey = clientSecretCacheKeyArgumentCaptor.getValue();
              assertEquals(cacheKey.getValue(), clientSecretCacheKey.getValue());
@@ -301,7 +301,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
              assertEquals(SYSTEM_ENGINE_URL_FOR_DEV_ACCOUNT, connectionCache.getSystemEngineUrl());
 
              // should not try to get the user engine info
-             verify(fireboltEngineVersion2Service, never()).getEngine(any(), any());
+             verify(fireboltEngineVersion2Service, never()).getEngine(any(), any(), any(), any());
 
              FireboltProperties sessionProperties = fireboltConnection.getSessionProperties();
              assertTrue(sessionProperties.isSystemEngine());
@@ -331,7 +331,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
             verify(fireboltGatewayUrlService, never()).getUrl(any(), any());
 
             // should not try to get the user engine info
-            verify(fireboltEngineVersion2Service, never()).getEngine(any(), any());
+            verify(fireboltEngineVersion2Service, never()).getEngine(any(), any(), any(), any());
 
             FireboltProperties sessionProperties = fireboltConnection.getSessionProperties();
             assertTrue(sessionProperties.isSystemEngine());
@@ -350,7 +350,8 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
 
         // connection url with engine name
         try (FireboltConnection fireboltConnection = createConnection(CONNECTION_URL_WITH_ENGINE_AND_DB, connectionProperties)) {
-            verify(mockCacheService).put(clientSecretCacheKeyArgumentCaptor.capture(), connectionCacheArgumentCaptor.capture());
+            // one for initial cache creation, one for jwt token and one for engine url
+            verify(mockCacheService, times(3)).put(clientSecretCacheKeyArgumentCaptor.capture(), connectionCacheArgumentCaptor.capture());
 
             ClientSecretCacheKey clientSecretCacheKey = clientSecretCacheKeyArgumentCaptor.getValue();
             assertEquals(cacheKey.getValue(), clientSecretCacheKey.getValue());
@@ -360,8 +361,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
             assertEquals(AN_ACCESS_TOKEN, connectionCache.getAccessToken());
             assertEquals(SYSTEM_ENGINE_URL_FOR_DEV_ACCOUNT, connectionCache.getSystemEngineUrl());
 
-            // the engine options and db options are set as a side effect of this method so all we can check is make sure it is called
-            verify(fireboltEngineVersion2Service).getEngine(any(), any());
+            verify(fireboltEngineVersion2Service).getEngine(any(), any(), eq(mockCacheService), eq(cacheKey));
 
             FireboltProperties sessionProperties = fireboltConnection.getSessionProperties();
             assertFalse(sessionProperties.isSystemEngine());
@@ -385,7 +385,6 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         EngineOptions engineOptions = new EngineOptions(USER_ENGINE_ENDPOINT, List.of(Pair.of("engine", ENGINE_NAME)));
         connectionCache.setEngineOptions(ENGINE_NAME, engineOptions);
 
-
         when(mockCacheService.get(cacheKey)).thenReturn(Optional.of(connectionCache));
 
         // connection url with engine name
@@ -398,7 +397,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
             verify(fireboltGatewayUrlService, never()).getUrl(any(), any());
 
             // the engine options and db options are set as a side effect of this method so all we can check is make sure it is called
-            verify(fireboltEngineVersion2Service).getEngine(any(), any());
+            verify(fireboltEngineVersion2Service).getEngine(any(), any(), eq(mockCacheService), eq(cacheKey));
 
             FireboltProperties sessionProperties = fireboltConnection.getSessionProperties();
             assertFalse(sessionProperties.isSystemEngine());

@@ -1,8 +1,10 @@
 package com.firebolt.jdbc.service;
 
+import com.firebolt.jdbc.cache.CacheService;
 import com.firebolt.jdbc.cache.ConnectionCache;
 import com.firebolt.jdbc.cache.DatabaseOptions;
 import com.firebolt.jdbc.cache.EngineOptions;
+import com.firebolt.jdbc.cache.key.CacheKey;
 import com.firebolt.jdbc.connection.Engine;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
@@ -28,12 +30,12 @@ public class FireboltEngineVersion2Service {
     }
 
     @SuppressWarnings("java:S2077") // Formatting SQL queries is security-sensitive - looks safe in this case
-    public Engine getEngine(FireboltProperties properties, Optional<ConnectionCache> connectionCacheOptional) throws SQLException {
+    public Engine getEngine(FireboltProperties properties, Optional<ConnectionCache> connectionCacheOptional, CacheService cacheService, CacheKey cacheKey) throws SQLException {
         try (Statement statement = fireboltConnection.createStatement()) {
             if (StringUtils.isNotBlank(properties.getDatabase())) {
-                getAndSetDatabaseProperties(statement, properties.getDatabase(), connectionCacheOptional);
+                getAndSetDatabaseProperties(statement, properties.getDatabase(), connectionCacheOptional, cacheService, cacheKey);
             }
-            getAndSetEngineProperties(statement, properties.getEngine(), connectionCacheOptional);
+            getAndSetEngineProperties(statement, properties.getEngine(), connectionCacheOptional, cacheService, cacheKey);
         }
         // now session properties are updated with new database and engine
         FireboltProperties sessionProperties = fireboltConnection.getSessionProperties();
@@ -49,7 +51,7 @@ public class FireboltEngineVersion2Service {
      * @param databaseName - the name of the database to check
      */
 
-    private void getAndSetDatabaseProperties(Statement statement, String databaseName, final Optional<ConnectionCache> connectionCacheOptional) throws SQLException {
+    private void getAndSetDatabaseProperties(Statement statement, String databaseName, final Optional<ConnectionCache> connectionCacheOptional, CacheService cacheService, CacheKey cacheKey) throws SQLException {
         // if the connection cache is empty it means it is not cachable
         if (connectionCacheOptional.isEmpty()) {
             // if no caching of the result then just make the call
@@ -80,6 +82,7 @@ public class FireboltEngineVersion2Service {
                 List<Pair<String, String>> cachedValuesForDatabase = List.of(
                         Pair.of("database", fireboltConnection.getSessionProperties().getDatabase()));
                 connectionCache.setDatabaseOptions(databaseName, new DatabaseOptions(cachedValuesForDatabase));
+                cacheService.put(cacheKey, connectionCache);
             }
         }
     }
@@ -101,7 +104,7 @@ public class FireboltEngineVersion2Service {
      * @param engineName - the name of the engine to check
 
      */
-    private void getAndSetEngineProperties(Statement statement, String engineName, final Optional<ConnectionCache> connectionCacheOptional) throws SQLException {
+    private void getAndSetEngineProperties(Statement statement, String engineName, final Optional<ConnectionCache> connectionCacheOptional, final CacheService cacheService, final CacheKey cacheKey) throws SQLException {
         // if the connection cache is empty it means it is not cachable
         if (connectionCacheOptional.isEmpty()) {
             // if no caching of the result then just make the call
@@ -132,6 +135,7 @@ public class FireboltEngineVersion2Service {
                 // so if we want to use the value from cache we need to save this value on the connection when we use the cached connection
                 List<Pair<String, String>> engineProperties = List.of(Pair.of("engine", fireboltConnection.getSessionProperties().getEngine()));
                 connectionCache.setEngineOptions(engineName, new EngineOptions(fireboltConnection.getEndpoint(), engineProperties));
+                cacheService.put(cacheKey, connectionCache);
             }
         }
 
