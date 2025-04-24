@@ -14,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import lombok.CustomLog;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 
 import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
+import static java.lang.System.getProperty;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @CustomLog
@@ -81,14 +83,36 @@ public abstract class IntegrationTest {
 		}
 	}
 
+	protected Connection createFireboltCoreConnection(String host, Integer port) throws SQLException {
+		return createFireboltCoreConnection(getProperty("db"), host, port);
+	}
+
+	protected Connection createFireboltCoreConnection(String database, String host, Integer port) throws SQLException {
+		return createFireboltCoreConnection(database, host, port, new Properties());
+	}
+
+	protected Connection createFireboltCoreConnection(String database, String host, Integer port, Properties properties) throws SQLException {
+		return DriverManager.getConnection(FireboltCoreConnectionInfo.builder().database(database).host(host).port(port).build().toJdbcUrl(), properties);
+	}
+
 	@SneakyThrows
 	protected void executeStatementFromFile(String path) {
 		executeStatementFromFile(path, integration.ConnectionInfo.getInstance().getEngine());
 	}
 
+
 	@SneakyThrows
 	protected void executeStatementFromFile(String path, String engine) {
 		try (Connection connection = createConnection(engine); Statement statement = connection.createStatement(); InputStream is = IntegrationTest.class.getResourceAsStream(path)) {
+			assertNotNull(is);
+			String sql = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+			statement.execute(sql);
+		}
+	}
+
+	@SneakyThrows
+	protected void executeStatementFromFileOnFireboltCore(String path) {
+		try (Connection connection = createFireboltCoreConnection("localhost", 3473); Statement statement = connection.createStatement(); InputStream is = IntegrationTest.class.getResourceAsStream(path)) {
 			assertNotNull(is);
 			String sql = new String(is.readAllBytes(), StandardCharsets.UTF_8);
 			statement.execute(sql);
