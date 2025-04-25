@@ -1,6 +1,7 @@
 package integration.tests;
 
 import com.firebolt.jdbc.cache.DirectoryPathResolver;
+import com.firebolt.jdbc.cache.FileService;
 import com.firebolt.jdbc.cache.FilenameGenerator;
 import com.firebolt.jdbc.cache.key.ClientSecretCacheKey;
 import com.firebolt.jdbc.testutils.TestTag;
@@ -14,6 +15,7 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.temporal.ChronoUnit;
 import java.util.stream.Stream;
 import lombok.CustomLog;
 import org.junit.jupiter.api.AfterAll;
@@ -61,7 +63,7 @@ public class CachedConnectionTest extends IntegrationTest {
     }
 
     @AfterAll
-    void afterEach() throws SQLException {
+    void afterAll() throws SQLException {
         try (Connection connection = createConnection()) {
             connection.createStatement().execute("STOP ENGINE " + secondEngineName + " WITH TERMINATE=true;");
             connection.createStatement().execute("DROP ENGINE IF EXISTS " + secondEngineName+ ";");
@@ -149,6 +151,26 @@ public class CachedConnectionTest extends IntegrationTest {
         // the cache file exists
         File file = Paths.get(fireboltDriverDirectory.toString(), expectedCacheFile).toFile();
         assertTrue(file.exists());
+    }
+
+    @Test
+    void canDetectFileCacheCreationTime() throws SQLException {
+        // create a connection on the first engine and database
+        try (Connection connection = createConnection()) {
+            ResultSet rs = connection.createStatement().executeQuery("SELECT 808");
+            assertTrue(rs.next());
+        }
+
+        DirectoryPathResolver directoryPathResolver = new DirectoryPathResolver();
+        Path fireboltDriverDirectory = directoryPathResolver.resolveFireboltJdbcDirectory();
+
+        FilenameGenerator filenameGenerator = new FilenameGenerator();
+        String expectedCacheFile = filenameGenerator.generate(new ClientSecretCacheKey(ConnectionInfo.getInstance().getPrincipal(), ConnectionInfo.getInstance().getSecret(), ConnectionInfo.getInstance().getAccount()));
+
+        File file = Paths.get(fireboltDriverDirectory.toString(), expectedCacheFile).toFile();
+        FileService fileService = FileService.getInstance();
+        assertFalse(fileService.wasFileCreatedBeforeTimestamp(file, 3, ChronoUnit.MINUTES));
+        assertTrue(fileService.wasFileCreatedBeforeTimestamp(file, 1, ChronoUnit.MILLIS));
     }
 
     private void clearFireboltJdbcDriverFolder(Path fireboltDriverPath) {

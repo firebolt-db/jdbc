@@ -4,23 +4,18 @@ import com.firebolt.jdbc.cache.exception.ConnectionCacheDeserializationException
 import com.firebolt.jdbc.cache.exception.FilenameGenerationException;
 import com.firebolt.jdbc.cache.key.CacheKey;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -73,47 +68,25 @@ class OnDiskMemoryCacheServiceTest {
     }
 
     @Test
-    void willNotReturnAnyCacheObjectIfFoundTheFileOnDiskButCannotDetectItsCreationTime() {
-        when(mockInMemoryCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
-        when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
-        when(mockDiskFile.toPath()).thenReturn(mockFilePath);
-        when(mockDiskFile.exists()).thenReturn(true);
-
-        try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
-            filesMockedStatic.when(() -> Files.getAttribute(mockFilePath, "basic:creationTime")).thenThrow(IOException.class);
-            assertTrue(onDiskMemoryCacheService.get(mockCacheKey).isEmpty());
-        }
-    }
-
-    @Test
     void willNotReturnAnyCacheObjectIfFoundTheFileOnDiskButWasCreatedTooLongBack() {
         when(mockInMemoryCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
         when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
         when(mockDiskFile.toPath()).thenReturn(mockFilePath);
         when(mockDiskFile.exists()).thenReturn(true);
+        when(mockFileService.wasFileCreatedBeforeTimestamp(mockDiskFile, OnDiskMemoryCacheService.CACHE_TIME_IN_MINUTES, ChronoUnit.MINUTES)).thenReturn(true);
 
-        try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
-            filesMockedStatic.when(() -> Files.getAttribute(mockFilePath, "basic:creationTime")).thenReturn(mockFileTime);
-            when(mockFileTime.toInstant()).thenReturn(Instant.now().minus(3, ChronoUnit.HOURS));
-            assertTrue(onDiskMemoryCacheService.get(mockCacheKey).isEmpty());
-            filesMockedStatic.verify(() -> Files.getAttribute(mockFilePath, "basic:creationTime"));
-            verify(mockFileService).safelyDeleteFile(mockFilePath);
-        }
+        assertTrue(onDiskMemoryCacheService.get(mockCacheKey).isEmpty());
+        verify(mockFileService).safelyDeleteFile(mockFilePath);
     }
 
     @Test
     void willNotReturnAnyCacheObjectIfFoundTheFileOnDiskButCannotReadContent() {
         when(mockInMemoryCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
         when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
-        when(mockDiskFile.toPath()).thenReturn(mockFilePath);
         when(mockDiskFile.exists()).thenReturn(true);
-
-        try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
-            filesMockedStatic.when(() -> Files.getAttribute(mockFilePath, "basic:creationTime")).thenReturn(mockFileTime);
-            when(mockFileTime.toInstant()).thenReturn(Instant.now());
-            when(mockFileService.readContent(mockCacheKey, mockDiskFile)).thenReturn(Optional.empty());
-            assertTrue(onDiskMemoryCacheService.get(mockCacheKey).isEmpty());
-        }
+        when(mockFileService.wasFileCreatedBeforeTimestamp(mockDiskFile, OnDiskMemoryCacheService.CACHE_TIME_IN_MINUTES, ChronoUnit.MINUTES)).thenReturn(false);
+        when(mockFileService.readContent(mockCacheKey, mockDiskFile)).thenReturn(Optional.empty());
+        assertTrue(onDiskMemoryCacheService.get(mockCacheKey).isEmpty());
     }
 
     @Test
@@ -122,33 +95,26 @@ class OnDiskMemoryCacheServiceTest {
         when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
         when(mockDiskFile.toPath()).thenReturn(mockFilePath);
         when(mockDiskFile.exists()).thenReturn(true);
+        when(mockFileService.wasFileCreatedBeforeTimestamp(mockDiskFile, OnDiskMemoryCacheService.CACHE_TIME_IN_MINUTES, ChronoUnit.MINUTES)).thenReturn(false);
 
-        try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
-            filesMockedStatic.when(() -> Files.getAttribute(mockFilePath, "basic:creationTime")).thenReturn(mockFileTime);
-            when(mockFileTime.toInstant()).thenReturn(Instant.now());
-            when(mockFileService.readContent(mockCacheKey, mockDiskFile)).thenThrow(ConnectionCacheDeserializationException.class);
-            assertTrue(onDiskMemoryCacheService.get(mockCacheKey).isEmpty());
-            verify(mockFileService).safelyDeleteFile(mockFilePath);
-        }
+        when(mockFileService.readContent(mockCacheKey, mockDiskFile)).thenThrow(ConnectionCacheDeserializationException.class);
+        assertTrue(onDiskMemoryCacheService.get(mockCacheKey).isEmpty());
+        verify(mockFileService).safelyDeleteFile(mockFilePath);
     }
 
     @Test
     void willReturnCacheObjectFromDisk() {
         when(mockInMemoryCacheService.get(mockCacheKey)).thenReturn(Optional.empty());
         when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
-        when(mockDiskFile.toPath()).thenReturn(mockFilePath);
         when(mockDiskFile.exists()).thenReturn(true);
+        when(mockFileService.wasFileCreatedBeforeTimestamp(mockDiskFile, OnDiskMemoryCacheService.CACHE_TIME_IN_MINUTES, ChronoUnit.MINUTES)).thenReturn(false);
 
-        try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
-            filesMockedStatic.when(() -> Files.getAttribute(mockFilePath, "basic:creationTime")).thenReturn(mockFileTime);
-            when(mockFileTime.toInstant()).thenReturn(Instant.now());
-            when(mockFileService.readContent(mockCacheKey, mockDiskFile)).thenReturn(Optional.of(mockConnectionCache));
-            assertSame(mockConnectionCache, onDiskMemoryCacheService.get(mockCacheKey).get());
+        when(mockFileService.readContent(mockCacheKey, mockDiskFile)).thenReturn(Optional.of(mockConnectionCache));
+        assertSame(mockConnectionCache, onDiskMemoryCacheService.get(mockCacheKey).get());
 
-            verify(mockConnectionCache).setCacheSource(CacheType.DISK.name());
+        verify(mockConnectionCache).setCacheSource(CacheType.DISK.name());
 
-            verify(mockInMemoryCacheService).put(mockCacheKey, mockConnectionCache);
-        }
+        verify(mockInMemoryCacheService).put(mockCacheKey, mockConnectionCache);
     }
 
     @Test

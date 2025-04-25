@@ -5,10 +5,6 @@ import com.firebolt.jdbc.cache.exception.ConnectionCacheDeserializationException
 import com.firebolt.jdbc.cache.exception.FilenameGenerationException;
 import com.firebolt.jdbc.cache.key.CacheKey;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.attribute.FileTime;
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import lombok.CustomLog;
@@ -22,7 +18,7 @@ import lombok.CustomLog;
 class OnDiskMemoryCacheService implements CacheService {
 
     // the jwt token is only valid for 2hours, but we will keep the on disk cache for only 1 hr.
-    private static final int CACHE_TIME_IN_MINUTES = 60;
+    static final int CACHE_TIME_IN_MINUTES = 60;
 
     // this would be the in memory cache
     private InMemoryCacheService inMemoryCacheService;
@@ -115,17 +111,9 @@ class OnDiskMemoryCacheService implements CacheService {
         return Optional.of(onDiskConnectionCache);
     }
 
-    // we should only use the file if it was created within the last 2hours
+    // we should only use the file if it was created within the last hour
     private boolean isFileTooOld(File cacheFile) {
-        try {
-            FileTime creationTime = (FileTime) Files.getAttribute(cacheFile.toPath(), "basic:creationTime");
-            return creationTime.toInstant().isBefore(Instant.now().minus(CACHE_TIME_IN_MINUTES, ChronoUnit.MINUTES));
-        } catch (IOException e) {
-            log.warn("Failed to check the creation time of the file", e);
-
-            // will assume we cannot use the file
-            return true;
-        }
+        return fileService.wasFileCreatedBeforeTimestamp(cacheFile, CACHE_TIME_IN_MINUTES, ChronoUnit.MINUTES);
     }
 
     public void safelySaveToDiskAsync(CacheKey key, ConnectionCache connectionCache) {

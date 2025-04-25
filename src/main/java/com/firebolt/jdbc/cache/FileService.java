@@ -12,6 +12,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -156,6 +158,24 @@ public class FileService {
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
             log.warn("Failed to delete the cache file", e);
+        }
+    }
+
+    /**
+     * From the current time we subtract the value passed in as parameter and compare it against the file creation time from disk
+     * The assumption is that the file exists.
+     *
+     * @return - true if the file was created before the specified time
+     */
+    public boolean wasFileCreatedBeforeTimestamp(File file, long value, ChronoUnit timeUnit) {
+        try {
+            FileTime creationTime = (FileTime) Files.getAttribute(file.toPath(), FileService.CREATION_TIME_FILE_ATTRIBUTE);
+            return creationTime.toInstant().isBefore(Instant.now().minus(value, timeUnit));
+        } catch (IOException e) {
+            log.warn("Failed to check the creation time of the file", e);
+
+            // will assume we cannot use the file
+            return true;
         }
     }
 }
