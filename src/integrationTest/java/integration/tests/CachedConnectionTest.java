@@ -154,6 +154,7 @@ public class CachedConnectionTest extends IntegrationTest {
     }
 
     @Test
+    @Tag(TestTag.V2)
     void canDetectFileCacheCreationTime() throws SQLException {
         // create a connection on the first engine and database
         try (Connection connection = createConnection()) {
@@ -180,13 +181,7 @@ public class CachedConnectionTest extends IntegrationTest {
 
         try (Stream<Path> paths = Files.walk(fireboltDriverPath)) {
             paths.filter(path -> !path.equals(fireboltDriverPath)) // skip the root directory
-                .forEach(path -> {
-                    try {
-                        Files.delete(path);
-                    } catch (IOException e) {
-                        log.error("Failed to delete " + path ,  e.getMessage());
-                    }
-                 });
+                .forEach(path -> FileService.getInstance().safelyDeleteFile(path));
         } catch (IOException e) {
             log.error("Failed to list the files under directory + " + fireboltDriverPath, e);
         }

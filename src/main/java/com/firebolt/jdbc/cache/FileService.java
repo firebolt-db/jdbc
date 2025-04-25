@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
@@ -155,6 +156,13 @@ public class FileService {
 
     public void safelyDeleteFile(Path filePath) {
         try {
+
+            // On Windows, rename the file first to break any cached references
+            Path tempPath = filePath.resolveSibling(filePath.getFileName() + ".deleting");
+            Files.move(filePath, tempPath, StandardCopyOption.ATOMIC_MOVE);
+            filePath = tempPath;
+
+            // Now delete the file
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
             log.warn("Failed to delete the cache file", e);
@@ -170,6 +178,7 @@ public class FileService {
     public boolean wasFileCreatedBeforeTimestamp(File file, long value, ChronoUnit timeUnit) {
         try {
             FileTime creationTime = (FileTime) Files.getAttribute(file.toPath(), FileService.CREATION_TIME_FILE_ATTRIBUTE);
+            log.info("Creation time for {} is {}", file.toString(), creationTime.toString());
             return creationTime.toInstant().isBefore(Instant.now().minus(value, timeUnit));
         } catch (IOException e) {
             log.warn("Failed to check the creation time of the file", e);
