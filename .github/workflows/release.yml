@@ -8,6 +8,14 @@ on:
         required: true
 
 jobs:
+  pre-release-testing:
+    uses: ./.github/workflows/pre-release-test.yml
+    secrets:
+      FIREBOLT_STG_USERNAME: ${{ secrets.FIREBOLT_STG_USERNAME }}
+      FIREBOLT_STG_PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
+      FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
+      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+      
   bump-version:
     runs-on: ubuntu-latest
     env:

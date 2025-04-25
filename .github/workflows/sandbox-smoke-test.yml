@@ -1,0 +1,57 @@
+name: Sandbox smoke test
+
+on:
+  workflow_dispatch:
+    inputs:
+      jdbcJar:
+        description: 'JDBC jar version (e.g: firebolt-jdbc-3.5.1.jar)'
+        required: false
+        type: string
+        default: 'firebolt-jdbc-3.6.0.jar'
+      runId:
+        description: 'The run id of the workflow that created the artifact'
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      jdbcJar:
+        description: 'JDBC jar version (e.g: firebolt-jdbc-3.5.1.jar)'
+        required: false
+        type: string
+        default: 'firebolt-jdbc-3.6.0.jar'
+      runId:
+        description: 'The run id of the workflow that created the artifact'
+        required: true
+        type: string
+
+jobs:
+  run-jdbc-jar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
+      # check out only the SmokeTests class
+      - name: Download smoke test file
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            src/integrationTest/resources/SmokeTest.java
+          sparse-checkout-cone-mode: false
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.jdbcJar }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.runId }}
+
+      - name: Compile class
+        run: javac -cp ${{ inputs.jdbcJar }} src/integrationTest/resources/SmokeTest.java
+
+      - name: Run class
+        run: java -cp ${{ inputs.jdbcJar }}:src/integrationTest/resources/. SmokeTest
