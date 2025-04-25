@@ -39,4 +39,9 @@ class InMemoryCacheService implements CacheService {
         return Optional.ofNullable(map.get(key.getValue()));
     }
 
+    @Override
+    public void remove(CacheKey key) {
+        map.remove(key.getValue());
+    }
+
 }

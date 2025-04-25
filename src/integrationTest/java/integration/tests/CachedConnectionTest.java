@@ -1,22 +1,24 @@
 package integration.tests;
 
+import com.firebolt.jdbc.cache.CacheService;
+import com.firebolt.jdbc.cache.CacheServiceProvider;
+import com.firebolt.jdbc.cache.CacheType;
 import com.firebolt.jdbc.cache.DirectoryPathResolver;
 import com.firebolt.jdbc.cache.FileService;
 import com.firebolt.jdbc.cache.FilenameGenerator;
+import com.firebolt.jdbc.cache.key.CacheKey;
 import com.firebolt.jdbc.cache.key.ClientSecretCacheKey;
+import com.firebolt.jdbc.testutils.TestFixtures;
 import com.firebolt.jdbc.testutils.TestTag;
 import integration.ConnectionInfo;
 import integration.IntegrationTest;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
-import java.util.stream.Stream;
 import lombok.CustomLog;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -38,12 +40,16 @@ public class CachedConnectionTest extends IntegrationTest {
         DirectoryPathResolver directoryPathResolver = new DirectoryPathResolver();
 
         // remove all the files from the directory path resolver
-        Path fireboltDriverDirectory = directoryPathResolver.resolveFireboltJdbcDirectory();
-        clearFireboltJdbcDriverFolder(fireboltDriverDirectory);
+        CacheService cacheService = CacheServiceProvider.getInstance().getCacheService(CacheType.DISK);
+        CacheKey cacheKey = new ClientSecretCacheKey(ConnectionInfo.getInstance().getPrincipal(), ConnectionInfo.getInstance().getSecret(), ConnectionInfo.getInstance().getAccount());
+        cacheService.remove(cacheKey);
+
+        // allow the file to be deleted
+        sleepForMillis(200);
 
         FilenameGenerator filenameGenerator = new FilenameGenerator();
-        String expectedCacheFile = filenameGenerator.generate(new ClientSecretCacheKey(ConnectionInfo.getInstance().getPrincipal(), ConnectionInfo.getInstance().getSecret(), ConnectionInfo.getInstance().getAccount()));
-        File file = Paths.get(fireboltDriverDirectory.toString(), expectedCacheFile).toFile();
+        String expectedCacheFile = filenameGenerator.generate(cacheKey);
+        File file = Paths.get(directoryPathResolver.resolveFireboltJdbcDirectory().toString(), expectedCacheFile).toFile();
         assertFalse(file.exists());
 
         executeStatementFromFile("/statements/cached-connection/ddl.sql");
@@ -154,12 +160,16 @@ public class CachedConnectionTest extends IntegrationTest {
     }
 
     @Test
+    @Tag(TestTag.V2)
     void canDetectFileCacheCreationTime() throws SQLException {
         // create a connection on the first engine and database
         try (Connection connection = createConnection()) {
             ResultSet rs = connection.createStatement().executeQuery("SELECT 808");
             assertTrue(rs.next());
         }
+
+        // sleep for some time to allow for the file to be created
+        TestFixtures.sleepForMillis(200);
 
         DirectoryPathResolver directoryPathResolver = new DirectoryPathResolver();
         Path fireboltDriverDirectory = directoryPathResolver.resolveFireboltJdbcDirectory();
@@ -169,27 +179,9 @@ public class CachedConnectionTest extends IntegrationTest {
 
         File file = Paths.get(fireboltDriverDirectory.toString(), expectedCacheFile).toFile();
         FileService fileService = FileService.getInstance();
-        assertFalse(fileService.wasFileCreatedBeforeTimestamp(file, 3, ChronoUnit.MINUTES));
+
+        assertTrue(file.exists(), "Did not find the cache file");
+        assertFalse(fileService.wasFileCreatedBeforeTimestamp(file, 2, ChronoUnit.MINUTES));
         assertTrue(fileService.wasFileCreatedBeforeTimestamp(file, 1, ChronoUnit.MILLIS));
     }
-
-    private void clearFireboltJdbcDriverFolder(Path fireboltDriverPath) {
-        if (!Files.exists(fireboltDriverPath) || !Files.isDirectory(fireboltDriverPath)) {
-            return;
-        }
-
-        try (Stream<Path> paths = Files.walk(fireboltDriverPath)) {
-            paths.filter(path -> !path.equals(fireboltDriverPath)) // skip the root directory
-                .forEach(path -> {
-                    try {
-                        Files.delete(path);
-                    } catch (IOException e) {
-                        log.error("Failed to delete " + path ,  e.getMessage());
-                    }
-                 });
-        } catch (IOException e) {
-            log.error("Failed to list the files under directory + " + fireboltDriverPath, e);
-        }
-    }
-
 }

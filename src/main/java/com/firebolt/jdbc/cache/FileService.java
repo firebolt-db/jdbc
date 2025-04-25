@@ -88,6 +88,14 @@ public class FileService {
                         log.warn("Cannot create file to save the connection cache.");
                         return;
                     }
+
+                    // for windows only there is a problem that we have to force a new creation time everytime we create a new file
+                    // the problem is with the file metadata on windows. If a file is created with file1.txt, then deleted and after 5 minutes
+                    // recreated with the same file1.txt name, then the creationTime of the file will be the first time the file was created, not the last
+                    // time. This is our caching scenario. To overcome this, when we create a new file, force a new creation time
+                    if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                        Files.setAttribute(file.toPath(), CREATION_TIME_FILE_ATTRIBUTE, FileTime.from(Instant.now()));
+                    }
                 } catch (IOException e) {
                     // maybe do not have permission to write to that location
                     log.warn("Cannot create on-disk connection cache. Maybe do not have the write permission. ", e);
@@ -170,6 +178,7 @@ public class FileService {
     public boolean wasFileCreatedBeforeTimestamp(File file, long value, ChronoUnit timeUnit) {
         try {
             FileTime creationTime = (FileTime) Files.getAttribute(file.toPath(), FileService.CREATION_TIME_FILE_ATTRIBUTE);
+            log.info("Creation time for {} is {}", file.toString(), creationTime.toString());
             return creationTime.toInstant().isBefore(Instant.now().minus(value, timeUnit));
         } catch (IOException e) {
             log.warn("Failed to check the creation time of the file", e);
