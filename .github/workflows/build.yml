@@ -14,7 +14,6 @@ on:
       sources-jar:
         description: Jar that contains only the source code
         value: ${{ jobs.build.outputs.sources-jar }}
-
   push:
 jobs:
   build:
