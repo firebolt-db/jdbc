@@ -1,5 +1,6 @@
 package integration.tests;
 
+import com.firebolt.jdbc.testutils.TestTag;
 import integration.IntegrationTest;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -48,8 +49,8 @@ public class CachedConnectionTest extends IntegrationTest {
     }
 
     @Test
-    @Tag("v2")
-    @Tag("slow")
+    @Tag(TestTag.V2)
+    @Tag(TestTag.SLOW)
     void createTwoConnections() throws SQLException {
         String testStartTime = getCurrentUTCTime();
 
