@@ -170,7 +170,7 @@ public class CachedConnectionTest extends IntegrationTest {
 
         File file = Paths.get(fireboltDriverDirectory.toString(), expectedCacheFile).toFile();
         FileService fileService = FileService.getInstance();
-        assertFalse(fileService.wasFileCreatedBeforeTimestamp(file, 3, ChronoUnit.MINUTES));
+        assertFalse(fileService.wasFileCreatedBeforeTimestamp(file, 2, ChronoUnit.MINUTES));
         assertTrue(fileService.wasFileCreatedBeforeTimestamp(file, 1, ChronoUnit.MILLIS));
     }
 

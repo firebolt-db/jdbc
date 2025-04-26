@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
@@ -89,6 +88,14 @@ public class FileService {
                         log.warn("Cannot create file to save the connection cache.");
                         return;
                     }
+
+                    // for windows only there is a problem that we have to force a new creation time everytime we create a new file
+                    // the problem is with the file metadata on windows. If a file is created with file1.txt, then deleted and after 5 minutes
+                    // recreated with the same file1.txt name, then the creationTime of the file will be the first time the file was created, not the last
+                    // time. This is our caching scenario. To overcome this, when we create a new file, force a new creation time
+                    if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                        Files.setAttribute(file.toPath(), CREATION_TIME_FILE_ATTRIBUTE, FileTime.from(Instant.now()));
+                    }
                 } catch (IOException e) {
                     // maybe do not have permission to write to that location
                     log.warn("Cannot create on-disk connection cache. Maybe do not have the write permission. ", e);
@@ -156,13 +163,6 @@ public class FileService {
 
     public void safelyDeleteFile(Path filePath) {
         try {
-
-            // On Windows, rename the file first to break any cached references
-            Path tempPath = filePath.resolveSibling(filePath.getFileName() + ".deleting");
-            Files.move(filePath, tempPath, StandardCopyOption.ATOMIC_MOVE);
-            filePath = tempPath;
-
-            // Now delete the file
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
             log.warn("Failed to delete the cache file", e);
