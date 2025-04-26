@@ -4,6 +4,7 @@ import com.firebolt.jdbc.cache.DirectoryPathResolver;
 import com.firebolt.jdbc.cache.FileService;
 import com.firebolt.jdbc.cache.FilenameGenerator;
 import com.firebolt.jdbc.cache.key.ClientSecretCacheKey;
+import com.firebolt.jdbc.testutils.TestFixtures;
 import com.firebolt.jdbc.testutils.TestTag;
 import integration.ConnectionInfo;
 import integration.IntegrationTest;
@@ -16,6 +17,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import lombok.CustomLog;
 import org.junit.jupiter.api.AfterAll;
@@ -162,6 +164,9 @@ public class CachedConnectionTest extends IntegrationTest {
             assertTrue(rs.next());
         }
 
+        // sleep for 4 second to give time for the cache to be written
+        TestFixtures.sleepForMillis(TimeUnit.SECONDS.toMillis(4));
+
         DirectoryPathResolver directoryPathResolver = new DirectoryPathResolver();
         Path fireboltDriverDirectory = directoryPathResolver.resolveFireboltJdbcDirectory();
 
@@ -170,6 +175,8 @@ public class CachedConnectionTest extends IntegrationTest {
 
         File file = Paths.get(fireboltDriverDirectory.toString(), expectedCacheFile).toFile();
         FileService fileService = FileService.getInstance();
+
+        assertTrue(file.exists(), "Did not find the cache file");
         assertFalse(fileService.wasFileCreatedBeforeTimestamp(file, 2, ChronoUnit.MINUTES));
         assertTrue(fileService.wasFileCreatedBeforeTimestamp(file, 1, ChronoUnit.MILLIS));
     }
