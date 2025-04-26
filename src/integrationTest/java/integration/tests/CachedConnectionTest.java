@@ -79,6 +79,7 @@ public class CachedConnectionTest extends IntegrationTest {
     @Tag(TestTag.V2)
     @Tag(TestTag.SLOW)
     void createTwoConnections() throws SQLException {
+        log.info("Starting test createTwoConnections");
         String testStartTime = getCurrentUTCTime();
 
         // create a connection on the first engine and database
@@ -153,11 +154,13 @@ public class CachedConnectionTest extends IntegrationTest {
         // the cache file exists
         File file = Paths.get(fireboltDriverDirectory.toString(), expectedCacheFile).toFile();
         assertTrue(file.exists());
+        log.info("Finished test createTwoConnections");
     }
 
     @Test
     @Tag(TestTag.V2)
     void canDetectFileCacheCreationTime() throws SQLException {
+        log.info("Starting test canDetectFileCacheCreationTime");
         // create a connection on the first engine and database
         try (Connection connection = createConnection()) {
             ResultSet rs = connection.createStatement().executeQuery("SELECT 808");
@@ -179,6 +182,7 @@ public class CachedConnectionTest extends IntegrationTest {
         assertTrue(file.exists(), "Did not find the cache file");
         assertFalse(fileService.wasFileCreatedBeforeTimestamp(file, 2, ChronoUnit.MINUTES));
         assertTrue(fileService.wasFileCreatedBeforeTimestamp(file, 1, ChronoUnit.MILLIS));
+        log.info("Finished test canDetectFileCacheCreationTime");
     }
 
     private void clearFireboltJdbcDriverFolder(Path fireboltDriverPath) {
