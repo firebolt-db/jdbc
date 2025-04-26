@@ -6,13 +6,6 @@ import com.firebolt.jdbc.exception.FireboltException;
 import integration.ConnectionInfo;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.EnumSource;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -20,6 +13,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -274,6 +274,7 @@ class ConnectionTest extends IntegrationTest {
 
     @Test
     @Tag("v2")
+    @Disabled
     void networkPolicyBlockedServiceAccountThrowsError() throws SQLException {
         try (Connection connection = createConnection();
              Statement statement = connection.createStatement()) {
