@@ -42,7 +42,7 @@ public class CachedConnectionTest extends IntegrationTest {
 
         //Displaying the value stored in variable "avpro"
         System.out.println("Available Processors : "+avpro);
-        
+
         DirectoryPathResolver directoryPathResolver = new DirectoryPathResolver();
 
         // remove all the files from the directory path resolver

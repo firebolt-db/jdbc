@@ -37,7 +37,7 @@ public class FileService {
     @ExcludeFromJacocoGeneratedReport
     public static FileService getInstance() {
         if (instance == null) {
-            instance = new FileService(new DirectoryPathResolver(), new FilenameGenerator(), new EncryptionService(), Executors.newFixedThreadPool(4));
+            instance = new FileService(new DirectoryPathResolver(), new FilenameGenerator(), new EncryptionService(), Executors.newWorkStealingPool());
         }
         return instance;
     }
