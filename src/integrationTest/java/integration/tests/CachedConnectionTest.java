@@ -37,6 +37,12 @@ public class CachedConnectionTest extends IntegrationTest {
 
     @BeforeAll
     void beforeAll() throws SQLException {
+        //invoing method to get the value
+        int avpro = Runtime.getRuntime().availableProcessors();
+
+        //Displaying the value stored in variable "avpro"
+        System.out.println("Available Processors : "+avpro);
+        
         DirectoryPathResolver directoryPathResolver = new DirectoryPathResolver();
 
         // remove all the files from the directory path resolver
@@ -168,7 +174,7 @@ public class CachedConnectionTest extends IntegrationTest {
         }
 
         // sleep for 4 second to give time for the cache to be written
-        TestFixtures.sleepForMillis(TimeUnit.SECONDS.toMillis(4));
+        TestFixtures.sleepForMillis(TimeUnit.SECONDS.toMillis(10));
 
         DirectoryPathResolver directoryPathResolver = new DirectoryPathResolver();
         Path fireboltDriverDirectory = directoryPathResolver.resolveFireboltJdbcDirectory();
