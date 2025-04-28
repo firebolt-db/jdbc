@@ -86,6 +86,29 @@ class OnDiskMemoryCacheService implements CacheService {
         return Optional.of(onDiskConnectionCache);
     }
 
+    @Override
+    public void remove(CacheKey key) {
+        // remove it from memory
+        inMemoryCacheService.remove(key);
+
+        // remove it from disk
+        File cacheFile;
+        try {
+            cacheFile = fileService.findFileForKey(key);
+        } catch (FilenameGenerationException e) {
+            log.error("Failed to generate the file name for key, so cannot remove it");
+            return;
+        }
+
+        if (!cacheFile.exists()) {
+            log.debug("Cache file does not exist");
+            return;
+        }
+
+        // found the file, make sure we can still use it
+        fileService.safelyDeleteFile(cacheFile.toPath());
+    }
+
     /**
      * Reads the connection cache object from disk. If we cannot deserialize the object from file content, it means that the file was corrupted and we can delete it.
      */

@@ -29,4 +29,10 @@ public interface CacheService {
      */
     Optional<ConnectionCache> get(CacheKey key) throws CacheException;
 
+    /**
+     * Removes an entry from the cache if it exists. If there is no entry with the specified key, then it will be a no-op
+     * @param key - the key to be removed
+     */
+    void remove(CacheKey key);
+
 }
