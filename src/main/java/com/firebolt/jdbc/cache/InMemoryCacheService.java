@@ -30,8 +30,7 @@ class InMemoryCacheService implements CacheService {
 
     @Override
     public void put(CacheKey key, ConnectionCache connectionCache) throws CacheException {
-        // set the source as memory
-        connectionCache.setCacheSource("Memory");
+        connectionCache.setCacheSource(CacheType.MEMORY.name());
         map.put(key.getValue(), connectionCache, ExpirationPolicy.CREATED, DEFAULT_CACHE_TTL_IN_HOURS, TimeUnit.HOURS);
     }
 
@@ -39,4 +38,10 @@ class InMemoryCacheService implements CacheService {
     public Optional<ConnectionCache> get(CacheKey key) throws CacheException {
         return Optional.ofNullable(map.get(key.getValue()));
     }
+
+    @Override
+    public void remove(CacheKey key) {
+        map.remove(key.getValue());
+    }
+
 }

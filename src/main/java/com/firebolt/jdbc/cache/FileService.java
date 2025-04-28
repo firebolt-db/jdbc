@@ -12,6 +12,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,6 +22,8 @@ import org.json.JSONObject;
 
 @CustomLog
 public class FileService {
+
+    static final String CREATION_TIME_FILE_ATTRIBUTE = "basic:creationTime";
 
     private DirectoryPathResolver directoryPathResolver;
     private FilenameGenerator filenameGenerator;
@@ -84,6 +88,14 @@ public class FileService {
                         log.warn("Cannot create file to save the connection cache.");
                         return;
                     }
+
+                    // for windows only there is a problem that we have to force a new creation time everytime we create a new file
+                    // the problem is with the file metadata on windows. If a file is created with file1.txt, then deleted and after 5 minutes
+                    // recreated with the same file1.txt name, then the creationTime of the file will be the first time the file was created, not the last
+                    // time. This is our caching scenario. To overcome this, when we create a new file, force a new creation time
+                    if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                        Files.setAttribute(file.toPath(), CREATION_TIME_FILE_ATTRIBUTE, FileTime.from(Instant.now()));
+                    }
                 } catch (IOException e) {
                     // maybe do not have permission to write to that location
                     log.warn("Cannot create on-disk connection cache. Maybe do not have the write permission. ", e);
@@ -115,13 +127,13 @@ public class FileService {
     void safelyWriteFile(File file, String encryptedConnectionCache) {
         try {
             // get the original create time so we don't override it
-            FileTime creationTime = (FileTime) Files.getAttribute(file.toPath(), "basic:creationTime");
+            FileTime creationTime = (FileTime) Files.getAttribute(file.toPath(), CREATION_TIME_FILE_ATTRIBUTE);
 
             // overwrite the existing file
             Files.writeString(file.toPath(), encryptedConnectionCache, StandardOpenOption.TRUNCATE_EXISTING);
 
             // Restore the original creation time
-            Files.setAttribute(file.toPath(), "basic:creationTime", creationTime);
+            Files.setAttribute(file.toPath(), CREATION_TIME_FILE_ATTRIBUTE, creationTime);
         } catch (IOException e) {
             log.warn("Failed to write to cache");
         }
@@ -154,6 +166,25 @@ public class FileService {
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
             log.warn("Failed to delete the cache file", e);
+        }
+    }
+
+    /**
+     * From the current time we subtract the value passed in as parameter and compare it against the file creation time from disk
+     * The assumption is that the file exists.
+     *
+     * @return - true if the file was created before the specified time
+     */
+    public boolean wasFileCreatedBeforeTimestamp(File file, long value, ChronoUnit timeUnit) {
+        try {
+            FileTime creationTime = (FileTime) Files.getAttribute(file.toPath(), FileService.CREATION_TIME_FILE_ATTRIBUTE);
+            log.debug("Creation time for {} is {}", file.toString(), creationTime.toString());
+            return creationTime.toInstant().isBefore(Instant.now().minus(value, timeUnit));
+        } catch (IOException e) {
+            log.warn("Failed to check the creation time of the file", e);
+
+            // will assume we cannot use the file
+            return true;
         }
     }
 }

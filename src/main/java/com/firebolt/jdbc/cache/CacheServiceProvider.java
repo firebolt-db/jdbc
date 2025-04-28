@@ -8,8 +8,8 @@ public class CacheServiceProvider {
 
     private static CacheServiceProvider instance;
 
-    private CacheService inMemoryCacheService;
-    private CacheService onDiskCacheService;
+    private InMemoryCacheService inMemoryCacheService;
+    private OnDiskMemoryCacheService onDiskCacheService;
 
     // disable creation of the CacheServiceProvider using a constructor from outside this class
     private CacheServiceProvider() {

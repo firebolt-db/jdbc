@@ -11,6 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -25,6 +27,8 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.firebolt.jdbc.cache.FileService.CREATION_TIME_FILE_ATTRIBUTE;
+import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -198,14 +202,14 @@ class FileServiceTest {
         when(mockFile.toPath()).thenReturn(mockPath);
 
         try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
-            filesMockedStatic.when(() -> Files.getAttribute(mockPath, "basic:creationTime")).thenReturn(mockFileTime);
+            filesMockedStatic.when(() -> Files.getAttribute(mockPath, CREATION_TIME_FILE_ATTRIBUTE)).thenReturn(mockFileTime);
             filesMockedStatic.when(() -> Files.writeString(any(Path.class), anyString(), eq(StandardOpenOption.TRUNCATE_EXISTING))).thenThrow(IOException.class);
 
             fileService.safelyWriteFile(mockFile, ENCRYPTED_CONTENT);
 
-            filesMockedStatic.verify(() -> Files.getAttribute(mockPath, "basic:creationTime"));
+            filesMockedStatic.verify(() -> Files.getAttribute(mockPath, CREATION_TIME_FILE_ATTRIBUTE));
             filesMockedStatic.verify(() -> Files.writeString(mockPath, ENCRYPTED_CONTENT, StandardOpenOption.TRUNCATE_EXISTING));
-            filesMockedStatic.verify(() -> Files.setAttribute(mockPath, "basic:creationTime", mockFileTime), never());
+            filesMockedStatic.verify(() -> Files.setAttribute(mockPath, CREATION_TIME_FILE_ATTRIBUTE, mockFileTime), never());
         }
     }
 
@@ -214,15 +218,15 @@ class FileServiceTest {
         when(mockFile.toPath()).thenReturn(mockPath);
 
         try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
-            filesMockedStatic.when(() -> Files.getAttribute(mockPath, "basic:creationTime")).thenReturn(mockFileTime);
+            filesMockedStatic.when(() -> Files.getAttribute(mockPath, CREATION_TIME_FILE_ATTRIBUTE)).thenReturn(mockFileTime);
             filesMockedStatic.when(() -> Files.writeString(any(Path.class), anyString(), eq(StandardOpenOption.TRUNCATE_EXISTING))).thenReturn(mockPath);
-            filesMockedStatic.when(() -> Files.setAttribute(mockPath,"basic:creationTime", mockFileTime)).thenReturn(mockPath);
+            filesMockedStatic.when(() -> Files.setAttribute(mockPath,CREATION_TIME_FILE_ATTRIBUTE, mockFileTime)).thenReturn(mockPath);
 
             fileService.safelyWriteFile(mockFile, ENCRYPTED_CONTENT);
 
-            filesMockedStatic.verify(() -> Files.getAttribute(mockPath, "basic:creationTime"));
+            filesMockedStatic.verify(() -> Files.getAttribute(mockPath, CREATION_TIME_FILE_ATTRIBUTE));
             filesMockedStatic.verify(() -> Files.writeString(mockPath, ENCRYPTED_CONTENT, StandardOpenOption.TRUNCATE_EXISTING));
-            filesMockedStatic.verify(() -> Files.setAttribute(mockPath, "basic:creationTime", mockFileTime));
+            filesMockedStatic.verify(() -> Files.setAttribute(mockPath, CREATION_TIME_FILE_ATTRIBUTE, mockFileTime));
         }
     }
 
@@ -233,6 +237,41 @@ class FileServiceTest {
             filesMockedStatic.when(() -> Files.deleteIfExists(filePathThatDoesNotExist)).thenReturn(false);
             fileService.safelyDeleteFile(filePathThatDoesNotExist);
             filesMockedStatic.verify(() -> Files.deleteIfExists(filePathThatDoesNotExist));
+        }
+    }
+
+    @Test
+    void canDetectWhenFileWasCreatedBeforeTimestamp() {
+        when(mockFile.toPath()).thenReturn(mockPath);
+
+        try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+            filesMockedStatic.when(() -> Files.getAttribute(mockPath, CREATION_TIME_FILE_ATTRIBUTE)).thenReturn(mockFileTime);
+            when(mockFileTime.toInstant()).thenReturn(Instant.now().minus(10, ChronoUnit.MINUTES));
+
+            assertTrue(fileService.wasFileCreatedBeforeTimestamp(mockFile, 5, ChronoUnit.MINUTES));
+        }
+
+    }
+
+    @Test
+    void canDetectWhenFileWasCreatedAfterTimestamp() {
+        when(mockFile.toPath()).thenReturn(mockPath);
+
+        try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+            filesMockedStatic.when(() -> Files.getAttribute(mockPath, CREATION_TIME_FILE_ATTRIBUTE)).thenReturn(mockFileTime);
+            when(mockFileTime.toInstant()).thenReturn(Instant.now().minus(1, ChronoUnit.MINUTES));
+
+            assertFalse(fileService.wasFileCreatedBeforeTimestamp(mockFile, 5, ChronoUnit.MINUTES));
+        }
+    }
+
+    @Test
+    void canDetectWhenFileWasCreatedBeforeTimestampWhenCannotGetTheCreationTime() {
+        when(mockFile.toPath()).thenReturn(mockPath);
+
+        try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
+            filesMockedStatic.when(() -> Files.getAttribute(mockPath, CREATION_TIME_FILE_ATTRIBUTE)).thenThrow(IOException.class);
+            assertTrue(fileService.wasFileCreatedBeforeTimestamp(mockFile, 5, ChronoUnit.MINUTES));
         }
     }
 

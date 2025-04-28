@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -67,6 +68,30 @@ class InMemoryCacheServiceTest {
 
         // should not get the key
         assertTrue(inMemoryCacheService.get(cacheKey).isEmpty());
+    }
+
+    @Test
+    void willCreateTheInMemoryConnectionCache() {
+        CacheKey testCacheKey = new TestCacheKey("key");
+        ConnectionCache connectionCache = new ConnectionCache("a sample connection id");
+        inMemoryCacheService.put(testCacheKey, connectionCache);
+        assertEquals("a sample connection id", connectionCache.getConnectionId());
+        assertEquals(CacheType.MEMORY.name(), connectionCache.getCacheSource());
+    }
+
+    @Test
+    void canRemoveCacheKey() {
+        CacheKey testCacheKey = new TestCacheKey("key");
+        ConnectionCache connectionCache = new ConnectionCache("a sample connection id");
+        inMemoryCacheService.put(testCacheKey, connectionCache);
+
+        Optional<ConnectionCache> connectionCacheOptional = inMemoryCacheService.get(testCacheKey);
+        assertEquals("a sample connection id", connectionCacheOptional.get().getConnectionId());
+
+        inMemoryCacheService.remove(testCacheKey);
+
+        connectionCacheOptional = inMemoryCacheService.get(testCacheKey);
+        assertTrue(connectionCacheOptional.isEmpty());
     }
 
     private class TestCacheKey implements CacheKey {

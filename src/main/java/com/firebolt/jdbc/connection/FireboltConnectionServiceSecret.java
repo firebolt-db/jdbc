@@ -48,6 +48,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
      */
     private String connectionId;
 
+
     FireboltConnectionServiceSecret(@NonNull Pair<String, Properties> urlConnectionParams,
                                     FireboltAuthenticationService fireboltAuthenticationService,
                                     FireboltGatewayUrlService fireboltGatewayUrlService,
@@ -112,6 +113,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
                 // only save it in cache if not empty
                 if (StringUtils.isNotBlank(accessTokenFromFirebolt)) {
                     connectionCache.setAccessToken(accessTokenFromFirebolt);
+                    cacheService.put(getCacheKey(), connectionCache);
                 }
 
                 return accessTokenFromFirebolt;
@@ -224,7 +226,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
 
         Optional<ConnectionCache> connectionCacheOptional = !isConnectionCachingEnabled() ? Optional.empty() : Optional.of(connectionCache);
 
-        Engine engine = fireboltEngineVersion2Service.getEngine(loginProperties, connectionCacheOptional);
+        Engine engine = fireboltEngineVersion2Service.getEngine(loginProperties, connectionCacheOptional, cacheService, getCacheKey());
 
         // update Firebolt properties. If we are here there are no contradictions between discovered and supplied parameters (db or engine): all validations are done in getEngine()
         return loginProperties.toBuilder()
@@ -272,6 +274,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
             // only save it in cache if not empty
             if (StringUtils.isNotBlank(systemEngineUrlFromFirebolt)) {
                 connectionCache.setSystemEngineUrl(systemEngineUrlFromFirebolt);
+                cacheService.put(getCacheKey(), connectionCache);
             }
 
             return systemEngineUrlFromFirebolt;

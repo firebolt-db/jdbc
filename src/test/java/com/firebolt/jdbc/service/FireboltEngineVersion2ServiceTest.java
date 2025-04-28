@@ -1,8 +1,10 @@
 package com.firebolt.jdbc.service;
 
+import com.firebolt.jdbc.cache.CacheService;
 import com.firebolt.jdbc.cache.ConnectionCache;
 import com.firebolt.jdbc.cache.DatabaseOptions;
 import com.firebolt.jdbc.cache.EngineOptions;
+import com.firebolt.jdbc.cache.key.CacheKey;
 import com.firebolt.jdbc.connection.Engine;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
@@ -30,6 +32,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -48,6 +51,10 @@ class FireboltEngineVersion2ServiceTest {
     private FireboltConnection mockFireboltConnection;
     @Mock
     private Statement mockFireboltStatement;
+    @Mock
+    private CacheService mockCacheService;
+    @Mock
+    private CacheKey mockCacheKey;
 
     @Captor
     private ArgumentCaptor<DatabaseOptions> databaseOptionsArgumentCaptor;
@@ -91,8 +98,10 @@ class FireboltEngineVersion2ServiceTest {
         when(mockFireboltConnection.getEndpoint()).thenReturn(MY_ENGINE_ENDPOINT);
 
         FireboltEngineVersion2Service  service = new FireboltEngineVersion2Service(mockFireboltConnection);
-        Engine actualEngine = service.getEngine(properties, Optional.empty());
+        Engine actualEngine = service.getEngine(properties, Optional.empty(), mockCacheService, mockCacheKey);
         assertEquals(new Engine(MY_ENGINE_ENDPOINT, null, MY_ENGINE, database, null), actualEngine);
+
+        verify(mockCacheService, never()).put(eq(mockCacheKey), any(ConnectionCache.class));
     }
 
     @Test
@@ -104,12 +113,14 @@ class FireboltEngineVersion2ServiceTest {
         when(mockFireboltConnection.getEndpoint()).thenReturn(MY_ENGINE_ENDPOINT);
 
         FireboltEngineVersion2Service service = new FireboltEngineVersion2Service(mockFireboltConnection);
-        Engine actualEngine = service.getEngine(properties, Optional.empty());
+        Engine actualEngine = service.getEngine(properties, Optional.empty(), mockCacheService, mockCacheKey);
         assertEquals(new Engine(MY_ENGINE_ENDPOINT, null, MY_ENGINE, MY_DATABASE, null), actualEngine);
 
         // should make calls to the system engine url to check the database and engine
         verify(mockFireboltStatement).executeUpdate("USE DATABASE \"" + MY_DATABASE + "\"");
         verify(mockFireboltStatement).executeUpdate("USE ENGINE \"" + MY_ENGINE + "\"");
+
+        verify(mockCacheService, never()).put(eq(mockCacheKey), any(ConnectionCache.class));
     }
 
     @Test
@@ -130,7 +141,7 @@ class FireboltEngineVersion2ServiceTest {
         when(mockFireboltStatement.executeUpdate("USE ENGINE \"" + MY_ENGINE + "\"")).thenReturn(1);
 
         FireboltEngineVersion2Service service = new FireboltEngineVersion2Service(mockFireboltConnection);
-        Engine actualEngine = service.getEngine(properties, Optional.of(mockConnectionCache));
+        Engine actualEngine = service.getEngine(properties, Optional.of(mockConnectionCache), mockCacheService, mockCacheKey);
         assertEquals(new Engine(MY_ENGINE_ENDPOINT, null, MY_ENGINE, MY_DATABASE, null), actualEngine);
 
         // should make calls to the system engine url to check the database and engine
@@ -151,6 +162,9 @@ class FireboltEngineVersion2ServiceTest {
         assertEquals(1, engineOptions.getParameters().size());
         assertEquals("engine", engineOptions.getParameters().get(0).getKey());
         assertEquals(MY_ENGINE, engineOptions.getParameters().get(0).getValue());
+
+        // one for the db and one for engine
+        verify(mockCacheService, times(2)).put(mockCacheKey, mockConnectionCache);
     }
 
     @Test
@@ -170,7 +184,7 @@ class FireboltEngineVersion2ServiceTest {
         when(mockFireboltConnection.getEndpoint()).thenReturn(MY_ENGINE_ENDPOINT);
 
         FireboltEngineVersion2Service service = new FireboltEngineVersion2Service(mockFireboltConnection);
-        Engine actualEngine = service.getEngine(properties, Optional.of(mockConnectionCache));
+        Engine actualEngine = service.getEngine(properties, Optional.of(mockConnectionCache), mockCacheService, mockCacheKey);
         assertEquals(new Engine(MY_ENGINE_ENDPOINT, null, MY_ENGINE, MY_DATABASE, null), actualEngine);
 
         // should not make db calls
@@ -185,6 +199,8 @@ class FireboltEngineVersion2ServiceTest {
         verify(mockFireboltConnection).addProperty("database", MY_DATABASE, false);
         verify(mockFireboltConnection).addProperty("engine", MY_ENGINE, false);
         verify(mockFireboltConnection).setEndpoint(MY_ENGINE_ENDPOINT);
+
+        verify(mockCacheService, never()).put(eq(mockCacheKey), any(ConnectionCache.class));
     }
 
     @Test
@@ -205,7 +221,7 @@ class FireboltEngineVersion2ServiceTest {
         when(mockFireboltConnection.getEndpoint()).thenReturn(MY_ENGINE_ENDPOINT);
 
         FireboltEngineVersion2Service service = new FireboltEngineVersion2Service(mockFireboltConnection);
-        Engine actualEngine = service.getEngine(properties, Optional.of(mockConnectionCache));
+        Engine actualEngine = service.getEngine(properties, Optional.of(mockConnectionCache), mockCacheService, mockCacheKey);
         assertEquals(new Engine(MY_ENGINE_ENDPOINT, null, MY_ENGINE, MY_DATABASE, null), actualEngine);
 
         // should only make the call to get the database
@@ -226,6 +242,9 @@ class FireboltEngineVersion2ServiceTest {
         verify(mockFireboltConnection, never()).addProperty("database", MY_DATABASE, false);
         verify(mockFireboltConnection).addProperty("engine", MY_ENGINE, false);
         verify(mockFireboltConnection).setEndpoint(MY_ENGINE_ENDPOINT);
+
+        // should update the cache
+        verify(mockCacheService).put(mockCacheKey, mockConnectionCache);
     }
 
    @Test
@@ -246,7 +265,7 @@ class FireboltEngineVersion2ServiceTest {
         when(mockFireboltConnection.getEndpoint()).thenReturn(MY_ENGINE_ENDPOINT);
 
         FireboltEngineVersion2Service service = new FireboltEngineVersion2Service(mockFireboltConnection);
-        Engine actualEngine = service.getEngine(properties, Optional.of(mockConnectionCache));
+        Engine actualEngine = service.getEngine(properties, Optional.of(mockConnectionCache), mockCacheService, mockCacheKey);
         assertEquals(new Engine(MY_ENGINE_ENDPOINT, null, MY_ENGINE, MY_DATABASE, null), actualEngine);
 
         // should only make the call to get the engine
@@ -268,6 +287,9 @@ class FireboltEngineVersion2ServiceTest {
         verify(mockFireboltConnection).addProperty("database", MY_DATABASE, false);
         verify(mockFireboltConnection, never()).addProperty("engine", MY_ENGINE, false);
         verify(mockFireboltConnection, never()).setEndpoint(MY_ENGINE_ENDPOINT);
-    }
+
+       // should update the cache
+       verify(mockCacheService).put(mockCacheKey, mockConnectionCache);
+   }
 
 }
