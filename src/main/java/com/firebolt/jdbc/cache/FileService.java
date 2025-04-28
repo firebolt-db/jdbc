@@ -178,7 +178,7 @@ public class FileService {
     public boolean wasFileCreatedBeforeTimestamp(File file, long value, ChronoUnit timeUnit) {
         try {
             FileTime creationTime = (FileTime) Files.getAttribute(file.toPath(), FileService.CREATION_TIME_FILE_ATTRIBUTE);
-            log.info("Creation time for {} is {}", file.toString(), creationTime.toString());
+            log.debug("Creation time for {} is {}", file.toString(), creationTime.toString());
             return creationTime.toInstant().isBefore(Instant.now().minus(value, timeUnit));
         } catch (IOException e) {
             log.warn("Failed to check the creation time of the file", e);
