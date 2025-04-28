@@ -96,7 +96,7 @@ class OnDiskMemoryCacheService implements CacheService {
         try {
             cacheFile = fileService.findFileForKey(key);
         } catch (FilenameGenerationException e) {
-            log.error("Failed to generate the file name for key, so cannot remove it");
+            log.warn("Failed to generate the file name for key, so cannot remove it");
             return;
         }
 
