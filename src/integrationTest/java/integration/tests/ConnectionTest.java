@@ -18,6 +18,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -279,7 +280,7 @@ class ConnectionTest extends IntegrationTest {
              Statement statement = connection.createStatement()) {
             //this is done as to not clutter the environment variables for one test
             ConnectionInfo connectionInfo = getConnectionInfoForNetworkPolicyTest(statement);
-            String jdbcUrl = getJdbcUrl(connectionInfo, true, true);
+            String jdbcUrl = connectionInfo.toJdbcUrl();
 
             //this should fail when executing setting the database
             FireboltException exception = assertThrows(FireboltException.class,
@@ -290,9 +291,8 @@ class ConnectionTest extends IntegrationTest {
             ((CacheListener)connection).cleanup();
 
             // This should fail when getting the system engine url with a more specific error message
-            ConnectionInfo connectionInfo2 = getConnectionInfoForNetworkPolicyTest(statement);
             exception = assertThrows(FireboltException.class,
-                    () -> DriverManager.getConnection(jdbcUrl, connectionInfo2.getPrincipal(), connectionInfo2.getSecret()));
+                    () -> DriverManager.getConnection(jdbcUrl, connectionInfo.getPrincipal(), connectionInfo.getSecret()));
             assertTrue(exception.getMessage().contains("network restrictions"));
 
         }
@@ -309,7 +309,8 @@ class ConnectionTest extends IntegrationTest {
                 ConnectionInfo.getInstance().getDatabase(),
                 ConnectionInfo.getInstance().getAccount(),
                 ConnectionInfo.getInstance().getEngine(),
-                ConnectionInfo.getInstance().getApi());
+                ConnectionInfo.getInstance().getApi(),
+                Map.of("cache_connection", "false"));
     }
 
     void unsuccessfulConnect(boolean useDatabase, boolean useEngine) {
