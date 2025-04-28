@@ -79,6 +79,21 @@ class InMemoryCacheServiceTest {
         assertEquals(CacheType.MEMORY.name(), connectionCache.getCacheSource());
     }
 
+    @Test
+    void canRemoveCacheKey() {
+        CacheKey testCacheKey = new TestCacheKey("key");
+        ConnectionCache connectionCache = new ConnectionCache("a sample connection id");
+        inMemoryCacheService.put(testCacheKey, connectionCache);
+
+        Optional<ConnectionCache> connectionCacheOptional = inMemoryCacheService.get(testCacheKey);
+        assertEquals("a sample connection id", connectionCacheOptional.get().getConnectionId());
+
+        inMemoryCacheService.remove(testCacheKey);
+
+        connectionCacheOptional = inMemoryCacheService.get(testCacheKey);
+        assertTrue(connectionCacheOptional.isEmpty());
+    }
+
     private class TestCacheKey implements CacheKey {
 
         private String keyValue;

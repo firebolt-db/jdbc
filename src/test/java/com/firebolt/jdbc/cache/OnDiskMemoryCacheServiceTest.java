@@ -5,7 +5,6 @@ import com.firebolt.jdbc.cache.exception.FilenameGenerationException;
 import com.firebolt.jdbc.cache.key.CacheKey;
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,8 +34,6 @@ class OnDiskMemoryCacheServiceTest {
     private File mockDiskFile;
     @Mock
     private Path mockFilePath;
-    @Mock
-    private FileTime mockFileTime;
 
     private OnDiskMemoryCacheService onDiskMemoryCacheService;
 
@@ -122,6 +119,17 @@ class OnDiskMemoryCacheServiceTest {
         onDiskMemoryCacheService.put(mockCacheKey, mockConnectionCache);
         verify(mockInMemoryCacheService).put(mockCacheKey, mockConnectionCache);
         verify(mockFileService).safeSaveToDiskAsync(mockCacheKey, mockConnectionCache);
+    }
+
+    @Test
+    void canRemoveCacheKey() {
+        when(mockFileService.findFileForKey(mockCacheKey)).thenReturn(mockDiskFile);
+        when(mockDiskFile.toPath()).thenReturn(mockFilePath);
+        when(mockDiskFile.exists()).thenReturn(true);
+
+        onDiskMemoryCacheService.remove(mockCacheKey);
+        verify(mockInMemoryCacheService).remove(mockCacheKey);
+        verify(mockFileService).safelyDeleteFile(mockFilePath);
     }
 
 }
