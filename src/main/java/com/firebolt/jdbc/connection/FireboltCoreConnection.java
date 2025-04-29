@@ -2,7 +2,9 @@ package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.client.authentication.AuthenticationRequest;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
+import com.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
 import com.firebolt.jdbc.type.ParserVersion;
+import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.Properties;
@@ -30,6 +32,11 @@ public class FireboltCoreConnection extends FireboltConnection {
         sessionProperties = loginProperties;
     }
 
+    protected DatabaseMetaData retrieveMetaData() {
+        return new FireboltDatabaseMetadata(httpConnectionUrl, this);
+    }
+
+
     /**
      * For firebolt core the required parameters are:
      * - host - can be either an IPv4 address or a hostname
@@ -47,8 +54,6 @@ public class FireboltCoreConnection extends FireboltConnection {
         if (StringUtils.isEmpty(host)) {
             throw new SQLException("Host is required for firebolt core");
         }
-
-        System.out.println("Testing hostname:" + host);
 
         // consider localhost a valid hostname
         if (!"localhost".equalsIgnoreCase(host)) {
@@ -70,6 +75,16 @@ public class FireboltCoreConnection extends FireboltConnection {
                 return null;
             }
         };
+    }
+
+    /**
+     * There is no authentication for core, thus no token
+     * @return
+     * @throws SQLException
+     */
+    @Override
+    public Optional<String> getAccessToken() throws SQLException {
+        return Optional.empty();
     }
 
     @Override

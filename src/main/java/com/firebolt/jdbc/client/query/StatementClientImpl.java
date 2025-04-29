@@ -293,7 +293,9 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 				.scheme(fireboltProperties.isSsl() ? "https" : "http")
 				.host(fireboltProperties.getHost())
 				.port(fireboltProperties.getPort());
-		parameters.forEach(httpUrlBuilder::addQueryParameter);
+		parameters.entrySet().stream()
+				.filter(paramEntry -> paramEntry.getValue() != null)
+				.forEach(paramEntry -> httpUrlBuilder.addQueryParameter(paramEntry.getKey(), paramEntry.getValue()));
 
 		pathSegments.forEach(httpUrlBuilder::addPathSegment);
 		return httpUrlBuilder.build().uri();

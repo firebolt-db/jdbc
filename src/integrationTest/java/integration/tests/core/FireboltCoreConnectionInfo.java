@@ -1,7 +1,8 @@
-package integration;
+package integration.tests.core;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import lombok.Builder;
 import org.apache.commons.lang3.StringUtils;
 
@@ -21,7 +22,8 @@ public class FireboltCoreConnectionInfo {
             "ssl_mode", "none"
     );
 
-    private String database;
+    @Builder.Default
+    private Optional<String> database = Optional.empty();
     @Builder.Default
     private String host = DEFAULT_HOSTNAME;
     @Builder.Default
@@ -30,8 +32,8 @@ public class FireboltCoreConnectionInfo {
     private Map<String, String> connectionParams = DEFAULT_CONNECTION_PARAMS;
 
     public String toJdbcUrl() {
-        if (host == null || port == null || database == null) {
-            throw new IllegalStateException("Either host, port or database are not set");
+        if (host == null || port == null) {
+            throw new IllegalStateException("Either host or port are not set");
         }
 
         String params = connectionParams == null ? "" : connectionParams.entrySet().stream()
@@ -39,11 +41,17 @@ public class FireboltCoreConnectionInfo {
                 .filter(Objects::nonNull)
                 .collect(joining("&"));
 
-        if (StringUtils.isNotBlank(params)) {
-            params = "?" + params;
+        StringBuilder jdbcBuilder = new StringBuilder("jdbc:firebolt://")
+                .append(host).append(":").append(port);
+
+        if (database.isPresent()) {
+            jdbcBuilder.append("/").append(database.get());
         }
 
-        return "jdbc:firebolt://" + host + ":" + port + "/" + database + params;
+        if (StringUtils.isNotBlank(params)) {
+            jdbcBuilder.append("?").append(params);
+        }
+        return jdbcBuilder.toString();
     }
 
     private String param(String name, String value) {

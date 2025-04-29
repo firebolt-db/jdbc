@@ -1,6 +1,7 @@
 package integration;
 
 import com.firebolt.jdbc.client.HttpClientConfig;
+import integration.tests.core.FireboltCoreConnectionInfo;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
@@ -14,15 +15,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import lombok.CustomLog;
 import lombok.SneakyThrows;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 
 import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
-import static java.lang.System.getProperty;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @CustomLog
@@ -84,7 +84,7 @@ public abstract class IntegrationTest {
 	}
 
 	protected Connection createFireboltCoreConnection(String host, Integer port) throws SQLException {
-		return createFireboltCoreConnection(getProperty("db"), host, port);
+		return createFireboltCoreConnection(null, host, port, new Properties());
 	}
 
 	protected Connection createFireboltCoreConnection(String database, String host, Integer port) throws SQLException {
@@ -92,7 +92,7 @@ public abstract class IntegrationTest {
 	}
 
 	protected Connection createFireboltCoreConnection(String database, String host, Integer port, Properties properties) throws SQLException {
-		return DriverManager.getConnection(FireboltCoreConnectionInfo.builder().database(database).host(host).port(port).build().toJdbcUrl(), properties);
+		return DriverManager.getConnection(FireboltCoreConnectionInfo.builder().database(Optional.ofNullable(database)).host(host).port(port).build().toJdbcUrl(), properties);
 	}
 
 	@SneakyThrows
@@ -111,8 +111,8 @@ public abstract class IntegrationTest {
 	}
 
 	@SneakyThrows
-	protected void executeStatementFromFileOnFireboltCore(String path) {
-		try (Connection connection = createFireboltCoreConnection("localhost", 3473); Statement statement = connection.createStatement(); InputStream is = IntegrationTest.class.getResourceAsStream(path)) {
+	protected void executeStatementFromFileOnFireboltCore(String database, String path) {
+		try (Connection connection = createFireboltCoreConnection(database, "localhost", 3473); Statement statement = connection.createStatement(); InputStream is = IntegrationTest.class.getResourceAsStream(path)) {
 			assertNotNull(is);
 			String sql = new String(is.readAllBytes(), StandardCharsets.UTF_8);
 			statement.execute(sql);
