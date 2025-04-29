@@ -17,6 +17,7 @@ jobs:
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
       
   bump-version:
+    needs: pre-release-testing
     runs-on: ubuntu-latest
     env:
       newVersion: ${{ github.event.inputs.tag_name }}
@@ -52,7 +53,6 @@ jobs:
         git push origin master
         # Push tag
         git push origin $newVersion
-
 
   build:
     needs: bump-version
