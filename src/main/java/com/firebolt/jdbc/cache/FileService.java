@@ -81,7 +81,7 @@ public class FileService {
             }
 
             if (!file.exists()) {
-                log.debug("Creating a new file for on disk caching");
+                log.debug("Creating a new file for on disk caching: {} in directory: {}", file.getName(), file.getPath());
                 try {
                     boolean fileCreated = file.createNewFile();
                     if (!fileCreated) {
@@ -179,6 +179,7 @@ public class FileService {
         try {
             FileTime creationTime = (FileTime) Files.getAttribute(file.toPath(), FileService.CREATION_TIME_FILE_ATTRIBUTE);
             log.debug("Creation time for {} is {}", file.toString(), creationTime.toString());
+            log.debug("Creation time: {}. We are comparing with: {}", creationTime.toInstant().toEpochMilli(), Instant.now().minus(value, timeUnit));
             return creationTime.toInstant().isBefore(Instant.now().minus(value, timeUnit));
         } catch (IOException e) {
             log.warn("Failed to check the creation time of the file", e);
