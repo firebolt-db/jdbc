@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.FireboltDriver;
 import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.cache.CacheServiceProvider;
@@ -8,13 +9,10 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.util.PropertyUtil;
 import java.sql.SQLException;
-import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
 import java.util.regex.Pattern;
 import lombok.CustomLog;
 import lombok.NonNull;
-import org.apache.commons.lang3.StringUtils;
 
 import static java.lang.String.format;
 
@@ -24,6 +22,7 @@ import static java.lang.String.format;
 @CustomLog
 public class FireboltConnectionProvider {
 
+    private static final String FIREBOLT_CORE_PREFIX = FireboltDriver.JDBC_FIREBOLT + "core:";
 
     private FireboltConnectionProviderWrapper fireboltConnectionProviderWrapper;
 
@@ -40,15 +39,11 @@ public class FireboltConnectionProvider {
      * From the url and connection properties, determine the appropriate firebolt connection
      */
     public FireboltConnection create(@NonNull String url, Properties connectionSettings) throws SQLException {
-        int urlVersion = getUrlVersion(url, connectionSettings);
-        if (urlVersion == 1) {
-            return fireboltConnectionProviderWrapper.createFireboltConnectionUsernamePassword(url, connectionSettings, ParserVersion.LEGACY);
-        }
-
-        // for v2 connection check the connection type
-        FireboltBackendType fireboltBackendType = getConnectionTypeForV2(url, connectionSettings);
+        FireboltBackendType fireboltBackendType = getFireboltBackend(url, connectionSettings);
 
         switch (fireboltBackendType) {
+            case CLOUD_1_0:
+                return fireboltConnectionProviderWrapper.createFireboltConnectionUsernamePassword(url, connectionSettings, ParserVersion.LEGACY);
             case CLOUD_2_0:
                 return fireboltConnectionProviderWrapper.createFireboltConnectionServiceSecret(url, connectionSettings);
             case LOCALHOST:
@@ -66,31 +61,20 @@ public class FireboltConnectionProvider {
      * @param connectionProperties
      * @return
      */
-    private FireboltBackendType getConnectionTypeForV2(String jdbcUri, Properties connectionProperties) {
-        FireboltProperties fireboltProperties = new FireboltProperties(new Properties[] {UrlUtil.extractProperties(jdbcUri), connectionProperties});
-
-        String connectionType = fireboltProperties.getConnectionType();
-
-        // connection type was recently added. if not present, fallback to existing behavior
-        if (StringUtils.isBlank(connectionType)) {
-            if (isLocalhostConnection(jdbcUri, connectionProperties)) {
-                return FireboltBackendType.LOCALHOST;
-            } else {
-                return FireboltBackendType.CLOUD_2_0;
-            }
+    private FireboltBackendType getFireboltBackend(String jdbcUri, Properties connectionProperties) {
+        // short circuit in case of firebolt core
+        if (jdbcUri.toLowerCase().startsWith(FIREBOLT_CORE_PREFIX)) {
+            return FireboltBackendType.FIREBOLT_CORE;
         }
 
-        // the connection type was passed in
-        Optional<FireboltBackendType> fireboltBackendType = FireboltBackendType.fromString(connectionType);
-        if (fireboltBackendType.isEmpty()) {
-            // exclude the packbb connection type from the error message
-            log.warn("Invalid connection type: {}. The valid values that we support are: {}", connectionType, Set.of(FireboltBackendType.CLOUD_2_0.getValue(), FireboltBackendType.FIREBOLT_CORE.getValue()));
-            throw new IllegalArgumentException(format("Invalid connection_type parameter %s. The supported values are: %s", connectionType, Set.of(FireboltBackendType.CLOUD_2_0.getValue(), FireboltBackendType.FIREBOLT_CORE.getValue())));
+        // not firebolt core, the failback on the previous way of detecting the backend
+        int urlVersion = getUrlVersion(jdbcUri, connectionProperties);
+        if (urlVersion == 1) {
+            return FireboltBackendType.CLOUD_1_0;
+        } else {
+            return isLocalhostConnection(jdbcUri, connectionProperties) ? FireboltBackendType.LOCALHOST : FireboltBackendType.CLOUD_2_0;
         }
-
-        return fireboltBackendType.get();
     }
-
 
     private boolean isLocalhostConnection(String jdbcUri, Properties connectionProperties) {
         FireboltProperties fireboltProperties = new FireboltProperties(new Properties[] {UrlUtil.extractProperties(jdbcUri), connectionProperties});

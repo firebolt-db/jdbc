@@ -1,5 +1,6 @@
 package integration.tests.core;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -14,13 +15,12 @@ public class FireboltCoreConnectionInfo {
 
     private static final String JDBC_URL_PREFIX = "jdbc:firebolt:";
 
+    static final String HTTP_PROTOCOL = "http";
+    static final String HTTPS_PROTOCOL = "https";
+
     private static final String DEFAULT_HOSTNAME = "localhost";
     private static final Integer DEFAULT_PORT = 3473;
-    private static final Map<String, String> DEFAULT_CONNECTION_PARAMS = Map.of(
-            "connection_type", "core",
-            "ssl", "false",
-            "ssl_mode", "none"
-    );
+    private static final Map<String, String> DEFAULT_CONNECTION_PARAMS = new HashMap<>();
 
     @Builder.Default
     private Optional<String> database = Optional.empty();
@@ -29,29 +29,42 @@ public class FireboltCoreConnectionInfo {
     @Builder.Default
     private Integer port = DEFAULT_PORT;
     @Builder.Default
+    private String protocol = HTTP_PROTOCOL;
+    @Builder.Default
     private Map<String, String> connectionParams = DEFAULT_CONNECTION_PARAMS;
 
     public String toJdbcUrl() {
-        if (host == null || port == null) {
-            throw new IllegalStateException("Either host or port are not set");
+        String queryParams = getQueryParams();
+        StringBuilder jdbcBuilder = new StringBuilder("jdbc:firebolt:core:");
+
+        if (database.isPresent()) {
+            jdbcBuilder.append(database.get());
+        }
+
+        if (StringUtils.isNotBlank(queryParams)) {
+            jdbcBuilder.append("?").append(queryParams);
+        }
+        return jdbcBuilder.toString();
+    }
+
+    private String getQueryParams() {
+        if (StringUtils.isNotBlank(host) && connectionParams!=null && !connectionParams.containsKey("host")) {
+            connectionParams.put("host", host);
+        }
+
+        if (port != null && connectionParams!=null && !connectionParams.containsKey("port")) {
+            connectionParams.put("port", String.valueOf(port));
+        }
+
+        if (StringUtils.isNotBlank(protocol) && connectionParams!=null && !connectionParams.containsKey("protocol")) {
+            connectionParams.put("protocol", protocol);
         }
 
         String params = connectionParams == null ? "" : connectionParams.entrySet().stream()
-                .map(p -> param(p.getKey(), p.getValue()))
-                .filter(Objects::nonNull)
-                .collect(joining("&"));
-
-        StringBuilder jdbcBuilder = new StringBuilder("jdbc:firebolt://")
-                .append(host).append(":").append(port);
-
-        if (database.isPresent()) {
-            jdbcBuilder.append("/").append(database.get());
-        }
-
-        if (StringUtils.isNotBlank(params)) {
-            jdbcBuilder.append("?").append(params);
-        }
-        return jdbcBuilder.toString();
+        .map(p -> param(p.getKey(), p.getValue()))
+        .filter(Objects::nonNull)
+        .collect(joining("&"));
+        return params;
     }
 
     private String param(String name, String value) {

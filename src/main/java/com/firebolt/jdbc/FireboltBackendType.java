@@ -1,15 +1,17 @@
 package com.firebolt.jdbc;
 
-import java.util.Arrays;
-import java.util.Optional;
 import lombok.Getter;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * What type of backend is driver connecting to
  */
 @Getter
 public enum FireboltBackendType {
+
+    /**
+     * firebolt hosted cloud version 1.0
+     */
+    CLOUD_1_0("cloudv1"),
 
     /**
      * firebolt hosted cloud version 2.0
@@ -33,16 +35,6 @@ public enum FireboltBackendType {
 
     FireboltBackendType(String value) {
         this.value = value;
-    }
-
-    public static Optional<FireboltBackendType> fromString(String value) {
-        if (StringUtils.isBlank(value)) {
-            return Optional.empty();
-        }
-
-        return Arrays.stream(FireboltBackendType.values())
-                .filter(fireboltBackendType -> fireboltBackendType.getValue().equalsIgnoreCase(value))
-                .findFirst();
     }
 
 }

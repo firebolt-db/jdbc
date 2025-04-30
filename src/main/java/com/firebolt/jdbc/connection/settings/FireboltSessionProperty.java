@@ -77,10 +77,6 @@ public enum FireboltSessionProperty {
 	 */
 	CACHE_CONNECTION("cache_connection", true, Boolean.class, "Available only for Firebolt 2.0 connections. If true, the connection will be cached for 1 hour.", FireboltProperties::isConnectionCachingEnabled),
 
-	/**
-	 * We support multiple firebolt backends: hosted cloud 1.0, hosted cloud 2.0, firebolt_core (self hosted on private networks)
-	 */
-	CONNECTION_TYPE("connection_type", null, String.class, "The firebolt backend type that the connection is trying to be established (e.g: firebolt_core", FireboltProperties::getConnectionType),
 	// We keep all the deprecated properties to ensure backward compatibility - but
 	// they do not have any effect.
 	@Deprecated
