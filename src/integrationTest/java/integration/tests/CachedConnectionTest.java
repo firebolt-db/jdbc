@@ -37,6 +37,24 @@ public class CachedConnectionTest extends IntegrationTest {
 
     @BeforeAll
     void beforeAll() throws SQLException {
+        executeStatementFromFile("/statements/cached-connection/ddl.sql");
+
+        // create the engine and db here rather than the ddl so we can add the prefix to the engine and db names
+        String engine = System.getProperty("engine");
+        String db = System.getProperty("db");
+
+        secondEngineName = engine + "_second_engine";
+        secondDbName = db + "_second_db";
+
+        try (Connection connection = createConnection()) {
+            connection.createStatement().execute("CREATE ENGINE IF NOT EXISTS "  + secondEngineName +";");
+            // manually start the engine
+            connection.createStatement().execute("START ENGINE "  + secondEngineName +";");
+            connection.createStatement().execute("CREATE DATABASE IF NOT EXISTS " + secondDbName + ";");
+        }
+
+        // clean up the cache directory after the fact, since creating and starting the engine might take some time and we
+        // are expecting the cache file not to be older than 2 minutes.
         DirectoryPathResolver directoryPathResolver = new DirectoryPathResolver();
 
         // remove all the files from the directory path resolver
@@ -51,20 +69,6 @@ public class CachedConnectionTest extends IntegrationTest {
         String expectedCacheFile = filenameGenerator.generate(cacheKey);
         File file = Paths.get(directoryPathResolver.resolveFireboltJdbcDirectory().toString(), expectedCacheFile).toFile();
         assertFalse(file.exists());
-
-        executeStatementFromFile("/statements/cached-connection/ddl.sql");
-
-        // create the engine and db here rather than the ddl so we can add the prefix to the engine and db names
-        String engine = System.getProperty("engine");
-        String db = System.getProperty("db");
-
-        secondEngineName = engine + "_second_engine";
-        secondDbName = db + "_second_db";
-
-        try (Connection connection = createConnection()) {
-            connection.createStatement().execute("CREATE ENGINE IF NOT EXISTS "  + secondEngineName +";");
-            connection.createStatement().execute("CREATE DATABASE IF NOT EXISTS " + secondDbName + ";");
-        }
 
     }
 
