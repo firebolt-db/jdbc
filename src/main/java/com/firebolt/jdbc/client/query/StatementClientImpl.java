@@ -145,7 +145,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		String label = params.getOrDefault(QUERY_LABEL.getKey(), statementInfoWrapper.getLabel());
 		String errorMessage = format("Error executing statement with label %s: %s", label, formattedStatement);
 		try {
-			String uri = buildQueryUri(connectionProperties, params).toString();
+			String uri = buildQueryUri(params).toString();
 			return executeSqlStatementWithRetryOnUnauthorized(label, connectionProperties, formattedStatement, uri);
 		} catch (FireboltException e) {
 			throw e;
@@ -216,7 +216,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			if (id == null) {
 				throw new FireboltException("Cannot retrieve id for statement with label " + label);
 			}
-			String uri = buildCancelUri(fireboltProperties, id).toString();
+			String uri = buildCancelUri(id).toString();
 			Request rq = createPostRequest(uri, null, (RequestBody)null, getConnection().getAccessToken().orElse(null));
 			try (Response response = execute(rq, fireboltProperties.getHost())) {
 				CloseableUtil.close(response);
@@ -278,21 +278,18 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		return getQueuedCallWithLabel(statementId).isPresent() || getRunningCallWithLabel(statementId).isPresent();
 	}
 
-	private URI buildQueryUri(FireboltProperties fireboltProperties, Map<String, String> parameters) {
-		return buildURI(fireboltProperties, parameters, Collections.emptyList());
+	private URI buildQueryUri(Map<String, String> parameters) {
+		return buildURI(parameters, Collections.emptyList());
 	}
 
-	private URI buildCancelUri(FireboltProperties fireboltProperties, String id) {
+	private URI buildCancelUri(String id) {
 		Map<String, String> params = getCancelParameters(id);
-		return buildURI(fireboltProperties, params, Collections.singletonList("cancel"));
+		return buildURI(params, Collections.singletonList("cancel"));
 	}
 
-	private URI buildURI(FireboltProperties fireboltProperties, Map<String, String> parameters,
+	private URI buildURI(Map<String, String> parameters,
 			List<String> pathSegments) {
-		HttpUrl.Builder httpUrlBuilder = new HttpUrl.Builder()
-				.scheme(fireboltProperties.isSsl() ? "https" : "http")
-				.host(fireboltProperties.getHost())
-				.port(fireboltProperties.getPort());
+		HttpUrl.Builder httpUrlBuilder = HttpUrl.parse(getConnection().getEndpoint()).newBuilder();
 		parameters.forEach(httpUrlBuilder::addQueryParameter);
 
 		pathSegments.forEach(httpUrlBuilder::addPathSegment);

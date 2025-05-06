@@ -69,6 +69,8 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
     private static final String A_CONNECTION_ID = "a_connection_id";
     private static final String ANOTHER_CONNECTION_ID = "another_connection_id";
 
+    private static final String URL = "jdbc:firebolt:db?env=dev&engine=eng&account=dev";
+
     @Mock
     private FireboltEngineVersion2Service fireboltEngineVersion2Service;
     @Mock
@@ -86,7 +88,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
     private CacheKey cacheKey;
 
     public FireboltConnectionServiceSecretTest() {
-        super("jdbc:firebolt:db?env=dev&engine=eng&account=dev");
+        super(URL);
     }
 
     @BeforeEach
@@ -227,7 +229,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         propsWithToken.setProperty("client_secret", "do_not_tell_anyone");
         propsWithToken.setProperty(HOST.getKey(), "firebolt_stating_url");
         propsWithToken.setProperty("access_token", "some token");
-        FireboltException exception = assertThrows(FireboltException.class, () -> createConnection(url, propsWithToken));
+        FireboltException exception = assertThrows(FireboltException.class, () -> createConnection(URL, propsWithToken));
         assertEquals("Ambiguity: Both access token and client ID/secret are supplied", exception.getMessage());
         Mockito.verifyNoMoreInteractions(fireboltAuthenticationService);
     }
@@ -272,7 +274,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
     void shouldGetEngineUrlWhenEngineIsProvided() throws SQLException {
         connectionProperties.put("engine", "engine");
         when(fireboltEngineVersion2Service.getEngine(any(), any(), any(), any())).thenReturn(new Engine("http://my_endpoint", null, null, null, null));
-        try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
+        try (FireboltConnection fireboltConnection = createConnection(URL, connectionProperties)) {
             verify(fireboltEngineVersion2Service).getEngine(argThat(props -> "engine".equals(props.getEngine()) && "db".equals(props.getDatabase())), any(), eq(mockCacheService), any());
             assertEquals("http://my_endpoint", fireboltConnection.getSessionProperties().getHost());
         }
@@ -439,6 +441,36 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
             String additionalUserAgentValue = fireboltConnection.getConnectionUserAgentHeader().get();
             String expectedUserAgent = "connId:" + A_CONNECTION_ID + ";cachedConnId:" + ANOTHER_CONNECTION_ID + "-memory";
             assertEquals(expectedUserAgent, additionalUserAgentValue);
+        }
+    }
+
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "8080, true, new-endpoint.com, https://new-endpoint.com:8080",
+            "'', true, new-endpoint.com, https://new-endpoint.com:443", // default ssl port
+            "8080, true, new-endpoint.com:12345, https://new-endpoint.com:12345",
+            "8080, false, new-endpoint.com, http://new-endpoint.com:8080",
+            "'', false, new-endpoint.com, http://new-endpoint.com:9090", // default non-ssl port
+            "8080, false, new-endpoint.com:23456, http://new-endpoint.com:23456"
+    }, nullValues = {""}
+    )
+    void shouldUpdateEndpointWithHttp(Integer port, boolean ssl, String newEndpoint, String expectedEndpoint) throws SQLException {
+        Properties props = new Properties();
+        props.setProperty("client_id", "my_client");
+        props.setProperty("client_secret", "my_secret");
+        props.setProperty("account", "account");
+        props.setProperty(HOST.getKey(), "myhost.com");
+        if (port != null) {
+            props.setProperty("port", port.toString());
+        }
+        props.setProperty("ssl", Boolean.valueOf(ssl).toString());
+
+        when(fireboltAuthenticationService.getConnectionTokens(any(), any())).thenReturn(mockFireboltConnectionTokens);
+
+        try (FireboltConnection connection = createConnection(URL, props)) {
+            connection.setEndpoint(newEndpoint);
+            assertEquals(expectedEndpoint, connection.getEndpoint());
         }
     }
 

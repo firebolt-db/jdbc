@@ -35,6 +35,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okio.Buffer;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -69,7 +70,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class StatementClientImplTest {
 	private static final String HOST = "firebolt1";
-	private static final FireboltProperties FIREBOLT_PROPERTIES = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).build();
+	private static final int PORT = 555;
+	private static final FireboltProperties FIREBOLT_PROPERTIES = FireboltProperties.builder().database("db1").compress(true).host(HOST).port(PORT).build();
 
 	private static final int QUERY_TIMEOUT = 15;
 
@@ -81,10 +83,15 @@ class StatementClientImplTest {
 	@Mock
 	private FireboltConnection connection;
 
+	@BeforeEach
+	void setupMethod() {
+		lenient().when(connection.getEndpoint()).thenReturn("https://" + HOST + ":555");
+	}
+
 	@ParameterizedTest
 	@CsvSource({
-			"false,http://firebolt1:555/?database=db1&output_format=TabSeparatedWithNamesAndTypes&compress=1&max_execution_time=15",
-			"true,http://firebolt1:555/?database=db1&account_id=12345&output_format=TabSeparatedWithNamesAndTypes"
+			"false,https://firebolt1:555/?database=db1&output_format=TabSeparatedWithNamesAndTypes&compress=1&max_execution_time=15",
+			"true,https://firebolt1:555/?database=db1&account_id=12345&output_format=TabSeparatedWithNamesAndTypes"
 	})
 	void shouldPostSqlQueryWithExpectedUrl(boolean systemEngine, String expectedUrl) throws SQLException, IOException {
 		assertEquals(expectedUrl, shouldPostSqlQuery(systemEngine).getValue());
@@ -188,7 +195,7 @@ class StatementClientImplTest {
 		when(okHttpClient.dispatcher()).thenReturn(mock(Dispatcher.class));
 		statementClient.abortStatement(id, FIREBOLT_PROPERTIES);
 		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
-		assertEquals("http://firebolt1:555/cancel?query_id=12345",
+		assertEquals("https://firebolt1:555/cancel?query_id=12345",
 				requestArgumentCaptor.getValue().url().uri().toString());
 	}
 
@@ -210,7 +217,7 @@ class StatementClientImplTest {
 		when(okHttpClient.dispatcher()).thenReturn(mock(Dispatcher.class));
 		statementClient.abortStatement(id, FIREBOLT_PROPERTIES);
 		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
-		assertEquals("http://firebolt1:555/cancel?query_id=12345",
+		assertEquals("https://firebolt1:555/cancel?query_id=12345",
 				requestArgumentCaptor.getValue().url().uri().toString());
 	}
 
@@ -327,7 +334,7 @@ class StatementClientImplTest {
 			assertEquals("db2", fbProps.getDatabase());
 			assertEquals("e2", fbProps.getEngine());
 			assertEquals("a1", fbProps.getAccountId());
-			assertEquals("other.com", connection.getEndpoint());
+			assertEquals("https://other.com:443", connection.getEndpoint());
 			Map<String, String> additionalProperties = fbProps.getAdditionalProperties();
 			assertEquals("something else", additionalProperties.get("addition"));
 			assertEquals("bar", additionalProperties.get("foo"));

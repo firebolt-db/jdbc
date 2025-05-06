@@ -23,6 +23,8 @@ import com.firebolt.jdbc.type.array.FireboltArray;
 import com.firebolt.jdbc.type.lob.FireboltBlob;
 import com.firebolt.jdbc.type.lob.FireboltClob;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
 import java.sql.Array;
 import java.sql.Blob;
@@ -75,6 +77,8 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	private final FireboltAuthenticationService fireboltAuthenticationService;
 	private final FireboltStatementService fireboltStatementService;
+
+	// the url where firebolt is deployed: it will contain the protocol, hostname and port
 	protected String httpConnectionUrl;
 	private final List<FireboltStatement> statements;
 	private final int connectionTimeout;
@@ -496,10 +500,41 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		}
 	}
 
-	public void setEndpoint(String endpoint) {
-		this.httpConnectionUrl = endpoint;
+	/**
+	 * If the endpoint does not have the schema or the port then add it before setting the httpConnectionUrl
+	 * @param endpoint
+	 */
+	public void setEndpoint(String endpoint) throws SQLException {
+		if (StringUtils.isBlank(endpoint)) {
+			return;
+		}
+
+		String endpointWithScheme = endpoint;
+		if (!endpoint.startsWith("http://") && !endpoint.startsWith("https://")) {
+			endpointWithScheme = (sessionProperties.isSsl() ? "https://" : "http://") + endpoint;
+		}
+
+		// used to check for port
+		URI uri;
+		try {
+			uri = new URI(endpointWithScheme);
+		} catch (URISyntaxException e) {
+			// this should not happen as we know it is a valid URI
+			throw new SQLException("Invalid endpoint: " + endpoint);
+		}
+
+		boolean hasPort = uri.getPort() != -1;
+		if (!hasPort && sessionProperties.getPort() != null) {
+			endpointWithScheme = endpointWithScheme + ":" + sessionProperties.getPort();
+		}
+
+		this.httpConnectionUrl = endpointWithScheme;
 	}
 
+	/**
+	 * Firebolt endpoint for making SQL calls
+	 * @return
+	 */
 	public String getEndpoint() {
 		return httpConnectionUrl;
 	}

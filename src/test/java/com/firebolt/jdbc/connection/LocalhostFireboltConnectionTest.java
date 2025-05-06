@@ -205,6 +205,28 @@ class LocalhostFireboltConnectionTest {
         }
     }
 
+    @Test
+    void shouldGetEndpointWithDefaultPort() throws SQLException {
+        Properties props = new Properties();
+        props.setProperty(ACCESS_TOKEN.getKey(), "the token");
+
+        // when port not specifically set and the ssl is not set as well, then the default port used is 9090
+        try (FireboltConnection connection = createConnection(LOCAL_URL, props)) {
+            assertEquals("http://localhost:9090", connection.getEndpoint());
+        }
+    }
+
+    @Test
+    void shouldGetEndpointWithCustomPort() throws SQLException {
+        Properties props = new Properties();
+        props.setProperty(ACCESS_TOKEN.getKey(), "the token");
+        props.setProperty("port", "8080");
+
+        try (FireboltConnection connection = createConnection(LOCAL_URL, props)) {
+            assertEquals("http://localhost:8080", connection.getEndpoint());
+        }
+    }
+
     private void disableCacheConnection() {
         connectionProperties.put("cache_connection", "none");
     }

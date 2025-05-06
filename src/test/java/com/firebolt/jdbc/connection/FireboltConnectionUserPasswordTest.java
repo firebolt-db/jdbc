@@ -8,6 +8,7 @@ import java.util.Properties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mock;
 
 import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static java.lang.String.format;
@@ -27,6 +28,10 @@ import static org.mockito.Mockito.when;
 
 class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
     private static final String SYSTEM_ENGINE_URL = "jdbc:firebolt:db?env=dev&account=dev&engine=system";
+
+
+    @Mock
+    private FireboltConnectionTokens mockFireboltConnectionTokens;
 
     public FireboltConnectionUserPasswordTest() {
         super("jdbc:firebolt://api.dev.firebolt.io/db");
@@ -113,6 +118,32 @@ class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
     void willNotAddAnyAdditionalUserAgentHeaderValue() throws SQLException {
         try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
             assertTrue(fireboltConnection.getConnectionUserAgentHeader().isEmpty());
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "8080, true, new-endpoint.com, https://new-endpoint.com:8080",
+            "'', true, new-endpoint.com, https://new-endpoint.com:443", // default ssl port
+            "8080, true, new-endpoint.com:12345, https://new-endpoint.com:12345",
+            "8080, false, new-endpoint.com, http://new-endpoint.com:8080",
+            "'', false, new-endpoint.com, http://new-endpoint.com:9090", // default non-ssl port
+            "8080, false, new-endpoint.com:23456, http://new-endpoint.com:23456"
+    }, nullValues = {""}
+    )
+    void shouldUpdateEndpointWithHttp(Integer port, boolean ssl, String newEndpoint, String expectedEndpoint) throws SQLException {
+        Properties props = new Properties();
+        props.setProperty("user", "user@example.com");
+        props.setProperty("password", "password");
+        props.setProperty("account", "account");
+        if (port != null) {
+            props.setProperty("port", port.toString());
+        }
+        props.setProperty("ssl", Boolean.valueOf(ssl).toString());
+        when(fireboltAuthenticationService.getConnectionTokens(any(), any())).thenReturn(mockFireboltConnectionTokens);
+        try (FireboltConnection connection = createConnection(url, props)) {
+            connection.setEndpoint(newEndpoint);
+            assertEquals(expectedEndpoint, connection.getEndpoint());
         }
     }
 

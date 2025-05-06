@@ -273,6 +273,11 @@ public class FireboltProperties {
 		runtimeAdditionalProperties.clear();
 	}
 
+	/**
+	 * If the endpoint contains https:// or http:// it will be removed
+	 * @param endpoint
+	 * @return
+	 */
 	public String processEngineUrl(String endpoint) {
 		String[] engineUrl = endpoint.split("\\?", 2);
 		String engineHost = engineUrl[0].replaceFirst("^https?://", ""); // just in case remove URL scheme although right now server never returns it

@@ -76,4 +76,16 @@ public class LocalhostFireboltConnection extends FireboltConnectionServiceSecret
         return new LocalhostCacheKey(loginProperties.getAccessToken());
     }
 
+    @Override
+    public void setEndpoint(String endpoint) {
+        // for local connection we should never update the connection endpoint
+    }
+
+    @Override
+    public String getEndpoint() {
+        // for localhost connection the end point does not change
+        String port = loginProperties.getPort() == null ? "" : ":" + loginProperties.getPort();
+        return "http://localhost" + port;
+    }
+
 }
