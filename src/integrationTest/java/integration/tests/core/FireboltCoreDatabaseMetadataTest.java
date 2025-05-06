@@ -69,14 +69,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag(TestTag.FIREBOLT_CORE)
 class FireboltCoreDatabaseMetadataTest extends IntegrationTest {
 
-    private static final String HOSTNAME = "localhost";
-    private static final Integer PORT = 3473;
+    private static final String URL = "http://localhost:3473";
 
-    private static final String DATABASE = "my_database";
+    private static final String DATABASE = "integration_test_db";
 
     @BeforeAll
     void beforeAll() throws SQLException {
-        try (Connection connection = createFireboltCoreConnection(HOSTNAME, PORT)) {
+        try (Connection connection = createFireboltCoreConnection(URL)) {
             connection.createStatement().execute("CREATE DATABASE IF NOT EXISTS " + DATABASE);
         }
 
@@ -88,14 +87,14 @@ class FireboltCoreDatabaseMetadataTest extends IntegrationTest {
     void afterEach() throws SQLException {
         executeStatementFromFileOnFireboltCore(DATABASE, "/statements/metadata/cleanup.sql");
 
-        try (Connection connection = createFireboltCoreConnection(HOSTNAME, PORT)) {
+        try (Connection connection = createFireboltCoreConnection(URL)) {
             connection.createStatement().execute("DROP DATABASE IF EXISTS " + DATABASE);
         }
     }
 
     @Test
     void getMetadata() throws SQLException {
-        try (Connection connection = createFireboltCoreConnection(DATABASE, HOSTNAME, PORT)) {
+        try (Connection connection = createFireboltCoreConnection(DATABASE, URL)) {
             DatabaseMetaData databaseMetaData = connection.getMetaData();
             assertNotNull(databaseMetaData);
             assertSame(databaseMetaData, connection.getMetaData());
@@ -108,7 +107,7 @@ class FireboltCoreDatabaseMetadataTest extends IntegrationTest {
     void shouldReturnSchema() throws SQLException {
         List<String> schemas = new ArrayList<>();
         List<String> catalogs = new ArrayList<>();
-        try (Connection connection = createFireboltCoreConnection(DATABASE, HOSTNAME, PORT)) {
+        try (Connection connection = createFireboltCoreConnection(DATABASE, URL)) {
             DatabaseMetaData databaseMetaData = connection.getMetaData();
 
             try (ResultSet resultSet = databaseMetaData.getSchemas()) {
@@ -125,7 +124,7 @@ class FireboltCoreDatabaseMetadataTest extends IntegrationTest {
     @Test
     void shouldReturnTable() throws SQLException {
         Map<String, List<String>> result = new HashMap<>();
-        try (Connection connection = createFireboltCoreConnection(DATABASE, HOSTNAME, PORT);
+        try (Connection connection = createFireboltCoreConnection(DATABASE, URL);
              ResultSet rs = connection.getMetaData().getTables(DATABASE, "public", "integration_test", null)) {
             ResultSetMetaData metadata = rs.getMetaData();
             while (rs.next()) {
@@ -178,7 +177,7 @@ class FireboltCoreDatabaseMetadataTest extends IntegrationTest {
         Collection<String> expectedNames = expectedNamesStr == null ? Set.of() : Set.of(expectedNamesStr.split(";"));
         Collection<String> unexpectedNames = unexpectedNamesStr == null ? Set.of() : Set.of(unexpectedNamesStr.split(";"));
         List<String> names = new ArrayList<>();
-        try (Connection connection = createFireboltCoreConnection(DATABASE, HOSTNAME, PORT);
+        try (Connection connection = createFireboltCoreConnection(DATABASE, URL);
              ResultSet rs = connection.getMetaData().getTables(catalog, schemaPattern, tableNamePattern, types)) {
             while (rs.next()) {
                 names.add(rs.getString(TABLE_NAME));
@@ -192,7 +191,7 @@ class FireboltCoreDatabaseMetadataTest extends IntegrationTest {
     @Test
     void shouldReturnColumns() throws SQLException {
         Map<String, List<String>> result = new HashMap<>();
-        try (Connection connection = createFireboltCoreConnection(DATABASE, HOSTNAME, PORT);
+        try (Connection connection = createFireboltCoreConnection(DATABASE, URL);
              ResultSet rs = connection.getMetaData().getColumns(connection.getCatalog(), "public", "integration_test", null)) {
             ResultSetMetaData metadata = rs.getMetaData();
             while (rs.next()) {
@@ -233,7 +232,7 @@ class FireboltCoreDatabaseMetadataTest extends IntegrationTest {
     @Test
     void shouldReturnColumnsFromSelect() throws SQLException {
         Map<Integer, Map<String, Object>> result = new TreeMap<>();
-        try (Connection connection = createFireboltCoreConnection(DATABASE, HOSTNAME, PORT);
+        try (Connection connection = createFireboltCoreConnection(DATABASE, URL);
              ResultSet rs = connection.createStatement().executeQuery("select * from integration_test")) {
             ResultSetMetaData metadata = rs.getMetaData();
             for (int i = 1; i <= metadata.getColumnCount(); i++) {

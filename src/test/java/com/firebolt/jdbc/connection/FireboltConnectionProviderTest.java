@@ -37,6 +37,9 @@ class FireboltConnectionProviderTest {
     @Mock
     private LocalhostFireboltConnection mockLocalhostFireboltConnection;
 
+    @Mock
+    private FireboltCoreConnection mockFireboltCoreConnection;
+
     private FireboltConnectionProvider fireboltConnectionProvider;
 
     @BeforeEach
@@ -128,6 +131,56 @@ class FireboltConnectionProviderTest {
         assertThrows(SQLException.class, () -> fireboltConnectionProvider.create(validJdbc2LocalhostUrl, validV2LocalhostProperties));
     }
 
+    static Stream<Arguments> coreJdbcConnection() {
+        return Stream.of(
+                Arguments.of("jdbc:firebolt:my_db?url=http://localhost:8080", new Properties()),
+                Arguments.of("jdbc:firebolt:my_db?url=https://example.com:443", new Properties()),
+                Arguments.of("jdbc:firebolt:my_db?url=http://192.168.1.1:8080", new Properties()),
+                Arguments.of("jdbc:firebolt:my_db?url=https://[2001:db8::1]:8080", new Properties())
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("coreJdbcConnection")
+    void canDetectCoreConnection(String url, Properties connectionProperties) throws SQLException {
+        when(mockFireboltConnectionProviderWrapper.createFireboltCoreConnection(url, connectionProperties))
+                .thenReturn(mockFireboltCoreConnection);
+
+        FireboltConnection fireboltConnection = fireboltConnectionProvider.create(url, connectionProperties);
+        assertSame(mockFireboltCoreConnection, fireboltConnection);
+
+        verify(mockFireboltConnectionProviderWrapper, never()).createFireboltConnectionServiceSecret(anyString(), any(Properties.class));
+        verify(mockFireboltConnectionProviderWrapper, never()).createFireboltConnectionUsernamePassword(anyString(), any(Properties.class), any(ParserVersion.class));
+        verify(mockFireboltConnectionProviderWrapper, never()).createLocalhostFireboltConnectionServiceSecret(anyString(), any(Properties.class));
+    }
+
+    @Test
+    void cannotCreateCoreConnectionWhenConnectingToBackendFails() throws SQLException {
+        String validCoreUrl = "jdbc:firebolt:my_db?url=http://localhost:8080";
+        Properties properties = new Properties();
+
+        when(mockFireboltConnectionProviderWrapper.createFireboltCoreConnection(validCoreUrl, properties))
+                .thenThrow(SQLException.class);
+        assertThrows(SQLException.class, () -> fireboltConnectionProvider.create(validCoreUrl, properties));
+    }
+
+    @Test
+    void cannotCreateCoreConnectionWithInvalidUrl() throws SQLException {
+        String invalidCoreUrl = "jdbc:firebolt:my_db?url=invalid-url";
+        Properties properties = new Properties();
+
+        assertThrows(SQLException.class, () -> fireboltConnectionProvider.create(invalidCoreUrl, properties));
+        verify(mockFireboltConnectionProviderWrapper, never()).createFireboltCoreConnection(anyString(), any(Properties.class));
+    }
+
+    @Test
+    void cannotCreateCoreConnectionWithoutUrl() throws SQLException {
+        String invalidCoreUrl = "jdbc:firebolt:my_db";
+        Properties properties = new Properties();
+
+        assertThrows(SQLException.class, () -> fireboltConnectionProvider.create(invalidCoreUrl, properties));
+        verify(mockFireboltConnectionProviderWrapper, never()).createFireboltCoreConnection(anyString(), any(Properties.class));
+    }
 
     private static Properties asProperties(Map<String, String> map) {
         Properties properties = new Properties();

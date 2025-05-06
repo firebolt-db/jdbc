@@ -83,16 +83,16 @@ public abstract class IntegrationTest {
 		}
 	}
 
-	protected Connection createFireboltCoreConnection(String host, Integer port) throws SQLException {
-		return createFireboltCoreConnection(null, host, port, new Properties());
+	protected Connection createFireboltCoreConnection(String url) throws SQLException {
+		return createFireboltCoreConnection(null, url, new Properties());
 	}
 
-	protected Connection createFireboltCoreConnection(String database, String host, Integer port) throws SQLException {
-		return createFireboltCoreConnection(database, host, port, new Properties());
+	protected Connection createFireboltCoreConnection(String database, String url) throws SQLException {
+		return createFireboltCoreConnection(database, url, new Properties());
 	}
 
-	protected Connection createFireboltCoreConnection(String database, String host, Integer port, Properties properties) throws SQLException {
-		return DriverManager.getConnection(FireboltCoreConnectionInfo.builder().database(Optional.ofNullable(database)).host(host).port(port).build().toJdbcUrl(), properties);
+	protected Connection createFireboltCoreConnection(String database, String url, Properties properties) throws SQLException {
+		return DriverManager.getConnection(FireboltCoreConnectionInfo.builder().database(Optional.ofNullable(database)).url(url).build().toJdbcUrl(), properties);
 	}
 
 	@SneakyThrows
@@ -112,7 +112,7 @@ public abstract class IntegrationTest {
 
 	@SneakyThrows
 	protected void executeStatementFromFileOnFireboltCore(String database, String path) {
-		try (Connection connection = createFireboltCoreConnection(database, "localhost", 3473); Statement statement = connection.createStatement(); InputStream is = IntegrationTest.class.getResourceAsStream(path)) {
+		try (Connection connection = createFireboltCoreConnection(database, "http://localhost:3473"); Statement statement = connection.createStatement(); InputStream is = IntegrationTest.class.getResourceAsStream(path)) {
 			assertNotNull(is);
 			String sql = new String(is.readAllBytes(), StandardCharsets.UTF_8);
 			statement.execute(sql);
