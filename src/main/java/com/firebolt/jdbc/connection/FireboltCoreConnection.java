@@ -4,6 +4,8 @@ import com.firebolt.jdbc.client.authentication.AuthenticationRequest;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
 import com.firebolt.jdbc.type.ParserVersion;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Optional;
@@ -33,37 +35,53 @@ public class FireboltCoreConnection extends FireboltConnection {
     }
 
     protected DatabaseMetaData retrieveMetaData() {
-        return new FireboltDatabaseMetadata(httpConnectionUrl, this);
+        return new FireboltDatabaseMetadata(getEndpoint(), this);
     }
 
 
     /**
      * For firebolt core the required parameters are:
-     * - host - can be either an IPv4 address or a hostname
-     * - port - must be a positive number between 1 and 65535
+     * - url - in the form of: <protocol>://<host>:<port>
      */
     @Override
     protected void validateConnectionParameters() throws SQLException {
-        Integer portInt = loginProperties.getPort();
-        // check if the port is a valid port number
-        if (portInt < 1 || portInt > 65535) {
-            throw new SQLException("Port must be a positive number between 1 and 65535");
+        if (StringUtils.isEmpty(loginProperties.getUrl())) {
+            throw new SQLException("Url is required for firebolt core");
         }
 
-        String host = loginProperties.getHost();
-        if (StringUtils.isEmpty(host)) {
-            throw new SQLException("Host is required for firebolt core");
-        }
+        try {
+            URL fireboltCoreUrl = new URL(loginProperties.getUrl());
+            String protocol = fireboltCoreUrl.getProtocol();
+            String host = fireboltCoreUrl.getHost();
+            int port = fireboltCoreUrl.getPort();
 
-        // consider localhost a valid hostname
-        if (!"localhost".equalsIgnoreCase(host)) {
-            // Use Apache Commons Validator to validate IPv4, IPv6 and hostname
-            DomainValidator domainValidator = DomainValidator.getInstance(false);
-            InetAddressValidator inetAddressValidator = InetAddressValidator.getInstance();
-
-            if (!inetAddressValidator.isValid(host) && !domainValidator.isValid(host)) {
-                throw new SQLException("Invalid host: " + host);
+            if (StringUtils.isEmpty(protocol) || StringUtils.isEmpty(host)) {
+                throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>");
             }
+
+            // Validate port range
+            if (port <= 0 || port > 65535) {
+                throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>");
+            }
+
+            // Validate hostname
+            if (!"localhost".equalsIgnoreCase(host)) {
+                // Remove IPv6 brackets if present
+                String hostToValidate = host;
+                boolean isIPv6 = host.startsWith("[") && host.endsWith("]");
+                if (isIPv6) {
+                    hostToValidate = host.substring(1, host.length() - 1);
+                }
+
+                InetAddressValidator inetAddressValidator = InetAddressValidator.getInstance();
+                DomainValidator domainValidator = DomainValidator.getInstance(false);
+
+                if (!inetAddressValidator.isValid(hostToValidate) && !domainValidator.isValid(hostToValidate)) {
+                    throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>");
+                }
+            }
+        } catch (MalformedURLException e) {
+            throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>");
         }
     }
 
@@ -75,6 +93,11 @@ public class FireboltCoreConnection extends FireboltConnection {
                 return null;
             }
         };
+    }
+
+    @Override
+    public String getEndpoint() {
+        return loginProperties.getUrl();
     }
 
     /**

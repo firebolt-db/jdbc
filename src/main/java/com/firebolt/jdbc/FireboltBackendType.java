@@ -21,7 +21,7 @@ public enum FireboltBackendType {
     /**
      * only used for testing by packdb
      */
-    LOCALHOST("localhost"),
+    PACKDB_DEV("packdb_dev"),
 
     /**
      * Connecting to firebolt core

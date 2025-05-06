@@ -1,6 +1,5 @@
 package com.firebolt.jdbc.connection;
 
-import com.firebolt.FireboltDriver;
 import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.cache.CacheServiceProvider;
@@ -13,6 +12,7 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 import lombok.CustomLog;
 import lombok.NonNull;
+import org.apache.commons.lang3.StringUtils;
 
 import static java.lang.String.format;
 
@@ -21,8 +21,6 @@ import static java.lang.String.format;
  */
 @CustomLog
 public class FireboltConnectionProvider {
-
-    private static final String FIREBOLT_CORE_PREFIX = FireboltDriver.JDBC_FIREBOLT + "core:";
 
     private FireboltConnectionProviderWrapper fireboltConnectionProviderWrapper;
 
@@ -46,7 +44,7 @@ public class FireboltConnectionProvider {
                 return fireboltConnectionProviderWrapper.createFireboltConnectionUsernamePassword(url, connectionSettings, ParserVersion.LEGACY);
             case CLOUD_2_0:
                 return fireboltConnectionProviderWrapper.createFireboltConnectionServiceSecret(url, connectionSettings);
-            case LOCALHOST:
+            case PACKDB_DEV:
                 return fireboltConnectionProviderWrapper.createLocalhostFireboltConnectionServiceSecret(url, connectionSettings);
             case FIREBOLT_CORE:
                 return fireboltConnectionProviderWrapper.createFireboltCoreConnection(url, connectionSettings);
@@ -62,23 +60,20 @@ public class FireboltConnectionProvider {
      * @return
      */
     private FireboltBackendType getFireboltBackend(String jdbcUri, Properties connectionProperties) {
-        // short circuit in case of firebolt core
-        if (jdbcUri.toLowerCase().startsWith(FIREBOLT_CORE_PREFIX)) {
-            return FireboltBackendType.FIREBOLT_CORE;
-        }
-
         // not firebolt core, the failback on the previous way of detecting the backend
         int urlVersion = getUrlVersion(jdbcUri, connectionProperties);
         if (urlVersion == 1) {
             return FireboltBackendType.CLOUD_1_0;
         } else {
-            return isLocalhostConnection(jdbcUri, connectionProperties) ? FireboltBackendType.LOCALHOST : FireboltBackendType.CLOUD_2_0;
-        }
-    }
+            // check if there is an url connection parameter)
+            FireboltProperties fireboltProperties = new FireboltProperties(new Properties[] {UrlUtil.extractProperties(jdbcUri), connectionProperties});
 
-    private boolean isLocalhostConnection(String jdbcUri, Properties connectionProperties) {
-        FireboltProperties fireboltProperties = new FireboltProperties(new Properties[] {UrlUtil.extractProperties(jdbcUri), connectionProperties});
-        return PropertyUtil.isLocalDb(fireboltProperties);
+            if (StringUtils.isNotBlank(fireboltProperties.getUrl())) {
+                return FireboltBackendType.FIREBOLT_CORE;
+            }
+
+            return PropertyUtil.isLocalDb(fireboltProperties) ? FireboltBackendType.PACKDB_DEV : FireboltBackendType.CLOUD_2_0;
+        }
     }
 
     private int getUrlVersion(String url, Properties connectionSettings) {
