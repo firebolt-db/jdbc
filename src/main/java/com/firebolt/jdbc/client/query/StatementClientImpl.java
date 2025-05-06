@@ -331,7 +331,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			params.put(FireboltQueryParameterKey.COMPRESS.getKey(), fireboltProperties.isCompress() ? "1" : "0");
 
 			if (queryTimeout > 0) {
-				params.put("max_execution_time", String.valueOf(queryTimeout));
+				params.put("statement_timeout", String.valueOf(queryTimeout));
 			}
 		}
 		params.put(FireboltQueryParameterKey.DATABASE.getKey(), fireboltProperties.getDatabase());

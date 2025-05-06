@@ -83,7 +83,7 @@ class StatementClientImplTest {
 
 	@ParameterizedTest
 	@CsvSource({
-			"false,http://firebolt1:555/?database=db1&output_format=TabSeparatedWithNamesAndTypes&compress=1&max_execution_time=15",
+			"false,http://firebolt1:555/?database=db1&output_format=TabSeparatedWithNamesAndTypes&compress=1&statement_timeout=15",
 			"true,http://firebolt1:555/?database=db1&account_id=12345&output_format=TabSeparatedWithNamesAndTypes"
 	})
 	void shouldPostSqlQueryWithExpectedUrl(boolean systemEngine, String expectedUrl) throws SQLException, IOException {
