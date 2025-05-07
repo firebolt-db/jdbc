@@ -9,7 +9,7 @@ public class TestTag {
     public static final String V2 = "v2";
 
     // tests that are run against firebolt core
-    public static final String FIREBOLT_CORE = "firebolt-core";
+    public static final String CORE = "core";
 
     // tests that are slow
     public static final String SLOW = "slow";
