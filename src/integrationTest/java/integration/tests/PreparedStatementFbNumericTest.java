@@ -1,7 +1,7 @@
 package integration.tests;
 
 import com.firebolt.jdbc.CheckedBiFunction;
-import com.firebolt.jdbc.CheckedTriFunction;
+import com.firebolt.jdbc.CheckedVoidTriFunction;
 import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.testutils.AssertionUtil;
@@ -67,6 +67,7 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag("v2")
 	void shouldInsertRecordsInBatch() throws SQLException {
 		Car car1 = Car.builder().make("Ford").sales(150).build();
 		Car car2 = Car.builder().make("Tesla").sales(300).build();
@@ -102,46 +103,40 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	Stream<Arguments> numericTypes() {
 		return Stream.of(
 				Arguments.of("byte",
-						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
 							s.setByte(i, v.byteValue());
-							return null;
 						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getByte(i)),
 
 				Arguments.of("short",
-						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
 							s.setShort(i, v.shortValue());
-							return null;
 						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getShort(i)),
 
 				Arguments.of("int",
-						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
-							s.setInt(i, v);
-							return null;
-						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getInt(i)),
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) PreparedStatement::setInt,
+						(CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getInt(i)),
 
 				Arguments.of("long",
-						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
 							s.setLong(i, v.longValue());
-							return null;
 						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getLong(i)),
 
 				Arguments.of("getObject(Long.class)",
-						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
 							s.setLong(i, v.longValue());
-							return null;
 						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> rs.getObject(i, Long.class).intValue()),
 
 				Arguments.of("getObject(i, java.util.Map.of(\"long\", Integer.class)",
-						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
 							s.setLong(i, v.longValue());
-							return null;
 						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getObject(i, java.util.Map.of("long", Integer.class)))
 		);
 	}
 
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("numericTypes")
-	<T> void shouldInsertRecordsUsingDifferentNumericTypes(String name, CheckedTriFunction<PreparedStatement, Integer, Integer, Void> setter, CheckedBiFunction<ResultSet, Integer, T> getter) throws SQLException {
+	@Tag("v2")
+	<T> void shouldInsertRecordsUsingDifferentNumericTypes(String name, CheckedVoidTriFunction<PreparedStatement, Integer, Integer> setter, CheckedBiFunction<ResultSet, Integer, T> getter) throws SQLException {
 		Car car = Car.builder().make("Tesla").sales(42).build();
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 
@@ -165,9 +160,14 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag("v2")
 	void shouldReplaceParamMarkers() throws SQLException {
 		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  ($1,$2)";
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
+			try (Statement statement = connection.createStatement();
+				 ResultSet resultSet = statement.executeQuery("SELECT * FROM prepared_statement_test")) {
+				assertFalse(resultSet.next());
+			}
 
 			try (PreparedStatement statement = connection.prepareStatement(insertSql)) {
 				statement.setObject(1, 200);
@@ -193,7 +193,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
-	void shouldParReplaceParamMarkersInMultistatementStatement() throws SQLException {
+	@Tag("v2")
+	void shouldReplaceParamMarkersInMultistatementStatement() throws SQLException {
 		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  ($1,$2);"
 				+ "INSERT INTO prepared_statement_test(sales, make) VALUES ($3,$4)";
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
@@ -233,6 +234,7 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag("v2")
 	void shouldFailSQLInjectionAttempt() throws SQLException {
 		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  ($1,$2)";
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
@@ -258,6 +260,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 
 	@Disabled
 	@Test
+	@Tag("v2")
+	//todo fix BYTEA in prepared statements FIR-45674
 	void shouldInsertAndSelectByteArray() throws SQLException {
 		Car car1 = Car.builder().make("Ford").sales(12345).signature("Henry Ford".getBytes()).build();
 		Car car2 = Car.builder().make("Tesla").sales(54321).signature("Elon Musk".getBytes()).build();
@@ -290,6 +294,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 
 	@Disabled
 	@Test
+	@Tag("v2")
+	//todo fix BYTEA in prepared statements FIR-45674
 	void shouldInsertAndSelectBlobClob() throws SQLException, IOException {
 		Car car1 = Car.builder().make("Ford").sales(12345).signature("Henry Ford".getBytes()).build();
 		Car car2 = Car.builder().make("Tesla").sales(54321).signature("Elon Musk".getBytes()).build();
@@ -338,6 +344,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 
 	@Disabled
 	@Test
+	@Tag("v2")
+	//todo fix BYTEA in prepared statements FIR-45674
 	void shouldInsertAndSelectStreams() throws SQLException, IOException {
 		Car car1 = Car.builder().make("Ford").sales(12345).signature("Henry Ford".getBytes()).build();
 		Car car2 = Car.builder().make("Tesla").sales(54321).signature("Elon Musk".getBytes()).build();
@@ -373,6 +381,7 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag("v2")
 	void shouldInsertAndSelectDateTime() throws SQLException {
 		Car car1 = Car.builder().make("Ford").sales(12345).ts(new Timestamp(2)).d(new Date(3)).build();
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
@@ -461,7 +470,6 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 		}
 	}
 
-	@Disabled
 	@Test
 	@Tag("v2")
 	void shouldInsertAndSelectComplexStruct() throws SQLException {
@@ -510,8 +518,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 
 	}
 
-	@Disabled
 	@Test
+	@Tag("v2")
 	void shouldInsertAndRetrieveUrl() throws SQLException, MalformedURLException {
 		Car tesla = Car.builder().make("Tesla").url(new URL("https://www.tesla.com/")).sales(300).build();
 		Car nothing = Car.builder().sales(0).build();
@@ -542,7 +550,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
-	void shouldFetchSpecialCharacters() throws SQLException, MalformedURLException {
+	@Tag("v2")
+	void shouldFetchSpecialCharacters() throws SQLException {
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 			try (PreparedStatement statement = connection
 					.prepareStatement("SELECT $1 as a, $2 as b, $3 as c, $4 as d")) {
