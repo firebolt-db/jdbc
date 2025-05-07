@@ -236,7 +236,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		return databaseMetaData;
 	}
 
-	private DatabaseMetaData retrieveMetaData() {
+	protected DatabaseMetaData retrieveMetaData() {
 		if (!loginProperties.isSystemEngine()) {
 			return new FireboltDatabaseMetadata(httpConnectionUrl, this);
 		} else {

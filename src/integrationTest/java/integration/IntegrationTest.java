@@ -1,6 +1,7 @@
 package integration;
 
 import com.firebolt.jdbc.client.HttpClientConfig;
+import integration.tests.core.FireboltCoreConnectionInfo;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
@@ -14,9 +15,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
 import lombok.CustomLog;
 import lombok.SneakyThrows;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 
@@ -81,14 +83,36 @@ public abstract class IntegrationTest {
 		}
 	}
 
+	protected Connection createFireboltCoreConnection(String url) throws SQLException {
+		return createFireboltCoreConnection(null, url, new Properties());
+	}
+
+	protected Connection createFireboltCoreConnection(String database, String url) throws SQLException {
+		return createFireboltCoreConnection(database, url, new Properties());
+	}
+
+	protected Connection createFireboltCoreConnection(String database, String url, Properties properties) throws SQLException {
+		return DriverManager.getConnection(FireboltCoreConnectionInfo.builder().database(Optional.ofNullable(database)).url(url).build().toJdbcUrl(), properties);
+	}
+
 	@SneakyThrows
 	protected void executeStatementFromFile(String path) {
 		executeStatementFromFile(path, integration.ConnectionInfo.getInstance().getEngine());
 	}
 
+
 	@SneakyThrows
 	protected void executeStatementFromFile(String path, String engine) {
 		try (Connection connection = createConnection(engine); Statement statement = connection.createStatement(); InputStream is = IntegrationTest.class.getResourceAsStream(path)) {
+			assertNotNull(is);
+			String sql = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+			statement.execute(sql);
+		}
+	}
+
+	@SneakyThrows
+	protected void executeStatementFromFileOnFireboltCore(String database, String path) {
+		try (Connection connection = createFireboltCoreConnection(database, "http://localhost:3473"); Statement statement = connection.createStatement(); InputStream is = IntegrationTest.class.getResourceAsStream(path)) {
 			assertNotNull(is);
 			String sql = new String(is.readAllBytes(), StandardCharsets.UTF_8);
 			statement.execute(sql);
