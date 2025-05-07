@@ -1,7 +1,6 @@
 package integration.tests.core;
 
 import com.firebolt.jdbc.testutils.TestTag;
-import integration.ConnectionInfo;
 import integration.IntegrationTest;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -200,7 +199,6 @@ class FireboltCoreDatabaseMetadataTest extends IntegrationTest {
                 }
             }
         }
-        String database = ConnectionInfo.getInstance().getDatabase();
         String tableName = "integration_test";
         String schemaName = "public";
         assertThat(result.get(SCOPE_TABLE), contains(null, null, null, null, null, null, null));

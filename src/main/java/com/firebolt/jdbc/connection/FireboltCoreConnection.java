@@ -5,6 +5,8 @@ import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
 import com.firebolt.jdbc.type.ParserVersion;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
@@ -32,6 +34,20 @@ public class FireboltCoreConnection extends FireboltConnection {
 
         // When running firebolt core the login properties are the session properties
         sessionProperties = loginProperties;
+
+        // StatementClientImpl expects the URI creation to use host/port and isSsl. So set these values from the URL
+        try {
+            URI uri = new URI(sessionProperties.getUrl());
+
+            sessionProperties = sessionProperties.toBuilder()
+                    .host(uri.getHost())
+                    .port(uri.getPort())
+                    .ssl(uri.getScheme().startsWith("https://"))
+                    .build();
+
+        } catch (URISyntaxException e) {
+            // this should not happen as we had validate the url already validated
+        }
     }
 
     protected DatabaseMetaData retrieveMetaData() {

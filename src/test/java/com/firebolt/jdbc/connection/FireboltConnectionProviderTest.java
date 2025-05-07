@@ -165,21 +165,15 @@ class FireboltConnectionProviderTest {
     }
 
     @Test
-    void cannotCreateCoreConnectionWithInvalidUrl() throws SQLException {
-        String invalidCoreUrl = "jdbc:firebolt:my_db?url=invalid-url";
-        Properties properties = new Properties();
-
-        assertThrows(SQLException.class, () -> fireboltConnectionProvider.create(invalidCoreUrl, properties));
-        verify(mockFireboltConnectionProviderWrapper, never()).createFireboltCoreConnection(anyString(), any(Properties.class));
-    }
-
-    @Test
-    void cannotCreateCoreConnectionWithoutUrl() throws SQLException {
+    void willCreateClientSecretConnectionIfNoUrlIsPassedIn() throws SQLException {
         String invalidCoreUrl = "jdbc:firebolt:my_db";
         Properties properties = new Properties();
 
-        assertThrows(SQLException.class, () -> fireboltConnectionProvider.create(invalidCoreUrl, properties));
+        fireboltConnectionProvider.create(invalidCoreUrl, properties);
         verify(mockFireboltConnectionProviderWrapper, never()).createFireboltCoreConnection(anyString(), any(Properties.class));
+        verify(mockFireboltConnectionProviderWrapper, never()).createLocalhostFireboltConnectionServiceSecret(anyString(), any(Properties.class));
+        verify(mockFireboltConnectionProviderWrapper, never()).createFireboltConnectionUsernamePassword(anyString(), any(Properties.class), any(ParserVersion.class));
+        verify(mockFireboltConnectionProviderWrapper).createFireboltConnectionServiceSecret(anyString(), any(Properties.class));
     }
 
     private static Properties asProperties(Map<String, String> map) {
