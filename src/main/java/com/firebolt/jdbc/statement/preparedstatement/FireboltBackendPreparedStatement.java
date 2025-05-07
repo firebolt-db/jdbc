@@ -24,7 +24,6 @@ import static com.firebolt.jdbc.statement.StatementUtil.prepareFbNumericStatemen
 import static java.lang.String.format;
 import static java.sql.Types.DECIMAL;
 import static java.sql.Types.NUMERIC;
-import static java.sql.Types.VARBINARY;
 
 @CustomLog
 public class FireboltBackendPreparedStatement extends FireboltPreparedStatement {
@@ -174,11 +173,6 @@ public class FireboltBackendPreparedStatement extends FireboltPreparedStatement 
         }
     }
 
-    //todo: implement FIR-45674
-//    @Override
-//    public void setBlob(int parameterIndex, Blob blob) throws SQLException {
-//        setBytes(parameterIndex, blob == null ? null : blob.getBytes(1, (int) blob.length()));
-//    }
     @Override
     protected List<StatementInfoWrapper> prepareSQL(@NonNull Map<Integer, Object> params) {
         return prepareFbNumericStatement(params, rawStatement);

@@ -87,32 +87,6 @@ public class StatementUtil {
 		return new SqlParser(sql, paramStyle).parse();
 	}
 
-	private boolean isEndingSemicolon(char currentChar, char previousChar, boolean foundSubQueryEndingSemicolon,
-			boolean isPreviousCharInComment) {
-		if (foundSubQueryEndingSemicolon) {
-			return true;
-		}
-		return (';' == previousChar && currentChar != ';' && !isPreviousCharInComment);
-	}
-
-	private boolean isEndOfSubQuery(char currentChar) {
-		return currentChar != '-' && currentChar != '/' && currentChar != ' ' && currentChar != '\n';
-	}
-
-	private boolean isCommentStart(char currentChar) {
-		return currentChar == '-' || currentChar == '/';
-	}
-
-	private static boolean isInMultipleLinesComment(char currentChar, char previousChar,
-			boolean isCurrentSubstringBetweenQuotes, boolean isInMultipleLinesComment) {
-		if (!isCurrentSubstringBetweenQuotes && (previousChar == '/' && currentChar == '*')) {
-			return true;
-		} else if ((previousChar == '*' && currentChar == '/')) {
-			return false;
-		}
-		return isInMultipleLinesComment;
-	}
-
 	/**
 	 * Returns the positions of the params markers
 	 * 
@@ -262,16 +236,6 @@ public class StatementUtil {
 					int dbNameEndPos = fromPartOfTheQuery.indexOf('.');
 					return fromPartOfTheQuery.substring(0, dbNameEndPos);
 				});
-	}
-
-	private boolean isInSingleLineComment(char currentChar, char previousChar, boolean isCurrentSubstringBetweenQuotes,
-			boolean isInSingleLineComment) {
-		if (!isCurrentSubstringBetweenQuotes && (previousChar == '-' && currentChar == '-')) {
-			return true;
-		} else if (currentChar == '\n') {
-			return false;
-		}
-		return isInSingleLineComment;
 	}
 
 	private Optional<Entry<String, String>> extractPropertyPair(String cleanStatement, String sql) {
