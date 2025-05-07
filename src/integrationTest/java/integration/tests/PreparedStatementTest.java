@@ -1,7 +1,7 @@
 package integration.tests;
 
 import com.firebolt.jdbc.CheckedBiFunction;
-import com.firebolt.jdbc.CheckedTriFunction;
+import com.firebolt.jdbc.CheckedVoidTriFunction;
 import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.testutils.AssertionUtil;
@@ -105,46 +105,39 @@ class PreparedStatementTest extends IntegrationTest {
 	Stream<Arguments> numericTypes() {
 		return Stream.of(
 				Arguments.of("byte",
-						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
 							s.setByte(i, v.byteValue());
-							return null;
 						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getByte(i)),
 
 				Arguments.of("short",
-						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
 							s.setShort(i, v.shortValue());
-							return null;
 						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getShort(i)),
 
 				Arguments.of("int",
-						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
-							s.setInt(i, v);
-							return null;
-						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getInt(i)),
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) PreparedStatement::setInt,
+						(CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getInt(i)),
 
 				Arguments.of("long",
-						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
 							s.setLong(i, v.longValue());
-							return null;
 						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getLong(i)),
 
 				Arguments.of("getObject(Long.class)",
-						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
 							s.setLong(i, v.longValue());
-							return null;
 						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> rs.getObject(i, Long.class).intValue()),
 
 				Arguments.of("getObject(i, java.util.Map.of(\"long\", Integer.class)",
-						(CheckedTriFunction<PreparedStatement, Integer, Integer, Void>) (s, i, v) -> {
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
 							s.setLong(i, v.longValue());
-							return null;
 						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getObject(i, java.util.Map.of("long", Integer.class)))
 		);
 	}
 
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("numericTypes")
-	<T> void shouldInsertRecordsUsingDifferentNumericTypes(String name, CheckedTriFunction<PreparedStatement, Integer, Integer, Void> setter, CheckedBiFunction<ResultSet, Integer, T> getter) throws SQLException {
+	<T> void shouldInsertRecordsUsingDifferentNumericTypes(String name, CheckedVoidTriFunction<PreparedStatement, Integer, Integer> setter, CheckedBiFunction<ResultSet, Integer, T> getter) throws SQLException {
 		Car car = Car.builder().make("Tesla").sales(42).build();
 		try (Connection connection = createConnection()) {
 

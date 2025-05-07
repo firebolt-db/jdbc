@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 public enum PreparedStatementParamStyle {
     NATIVE('?'),
-    FB_NUMERIC('$'),;
+    FB_NUMERIC('$');
 
     private final char queryParam;
 

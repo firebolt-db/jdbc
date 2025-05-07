@@ -236,7 +236,7 @@ class FireboltPreparedStatementFbNumericTest {
 		assertEquals("[{\"name\":\"$1\",\"value\":500},{\"name\":\"$2\",\"value\":\"Ford\"}," +
 				"{\"name\":\"$3\",\"value\":\"FOCUS\"},{\"name\":\"$4\",\"value\":null},{\"name\":\"$5\",\"value\":null}," +
 				"{\"name\":\"$6\",\"value\":\"sedan\"}]",
-				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
@@ -257,7 +257,7 @@ class FireboltPreparedStatementFbNumericTest {
 		assertEquals("[{\"name\":\"$1\",\"value\":500},{\"name\":\"$2\",\"value\":\"Ford\"}," +
 						"{\"name\":\"$3\",\"value\":\"FOCUS\"},{\"name\":\"$4\",\"value\":null},{\"name\":\"$5\",\"value\":null}," +
 						"{\"name\":\"$6\",\"value\":\"sedan\"},{\"name\":\"$7\",\"value\":null}]",
-				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@ParameterizedTest(name = "{0}")
@@ -269,7 +269,7 @@ class FireboltPreparedStatementFbNumericTest {
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals("INSERT INTO data (field) VALUES ($1)", queryInfoWrapperArgumentCaptor.getValue().getSql());
 		assertEquals("[{\"name\":\"$1\",\"value\":" + expected + "}]",
-				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
@@ -313,9 +313,9 @@ class FireboltPreparedStatementFbNumericTest {
 		assertEquals("INSERT INTO cars (sales, make) VALUES ($1,$2)",
 				queryInfoWrapperArgumentCaptor.getAllValues().get(1).getSql());
 		assertEquals("[{\"name\":\"$1\",\"value\":150},{\"name\":\"$2\",\"value\":\"Ford\"}]",
-				queryInfoWrapperArgumentCaptor.getAllValues().get(0).getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getAllValues().get(0).getPreparedStatementParameters());
 		assertEquals("[{\"name\":\"$1\",\"value\":300},{\"name\":\"$2\",\"value\":\"Tesla\"}]",
-				queryInfoWrapperArgumentCaptor.getAllValues().get(1).getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getAllValues().get(1).getPreparedStatementParameters());
 	}
 
 	@ParameterizedTest
@@ -342,7 +342,7 @@ class FireboltPreparedStatementFbNumericTest {
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals(sql, queryInfoWrapperArgumentCaptor.getValue().getSql());
 		assertEquals("[{\"name\":\"$1\",\"value\":\"?\"},{\"name\":\"$2\",\"value\":\" ?\"}]",
-				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
@@ -368,7 +368,7 @@ class FireboltPreparedStatementFbNumericTest {
 		assertEquals("update cars set sales = $1 where make = $2",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 		assertEquals("[{\"name\":\"$1\",\"value\":150},{\"name\":\"$2\",\"value\":\"Ford\"}]",
-				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 
@@ -395,7 +395,7 @@ class FireboltPreparedStatementFbNumericTest {
 		assertEquals("INSERT INTO cars (sales, make) VALUES ($1,$2)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 		assertEquals("[{\"name\":\"$1\",\"value\":null},{\"name\":\"$2\",\"value\":null}]",
-				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
@@ -407,7 +407,7 @@ class FireboltPreparedStatementFbNumericTest {
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		assertEquals("INSERT INTO cars(available) VALUES ($1)", queryInfoWrapperArgumentCaptor.getValue().getSql());
-		assertEquals("[{\"name\":\"$1\",\"value\":true}]", queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+		assertEquals("[{\"name\":\"$1\",\"value\":true}]", queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@ParameterizedTest
@@ -426,7 +426,7 @@ class FireboltPreparedStatementFbNumericTest {
 		assertEquals("INSERT INTO companies (name, url) VALUES ($1,$2)", queryInfoWrapperArgumentCaptor.getValue().getSql());
 		assertEquals("[{\"name\":\"$1\",\"value\":\"" + name + "\"}," +
 				"{\"name\":\"$2\",\"value\":" + sqlQuote(url) + "}]",
-				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	private String sqlQuote(Object value) {
@@ -463,7 +463,7 @@ class FireboltPreparedStatementFbNumericTest {
 		assertEquals("INSERT INTO cars(release_date) VALUES ($1)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 		assertEquals("[{\"name\":\"$1\",\"value\":\"2019-07-31\"}]",
-				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
@@ -478,7 +478,7 @@ class FireboltPreparedStatementFbNumericTest {
 		assertEquals("INSERT INTO cars(release_date) VALUES ($1)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 		assertEquals("[{\"name\":\"$1\",\"value\":\"2024-04-19\"}]",
-				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
@@ -493,7 +493,7 @@ class FireboltPreparedStatementFbNumericTest {
 		assertEquals("INSERT INTO cars(release_date) VALUES ($1)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 		assertEquals("[{\"name\":\"$1\",\"value\":\"2019-07-31\"}]",
-				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
@@ -508,7 +508,7 @@ class FireboltPreparedStatementFbNumericTest {
 		assertEquals("INSERT INTO cars(release_date) VALUES ($1)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 		assertEquals("[{\"name\":\"$1\",\"value\":\"2024-04-19 05:11:01\"}]",
-				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
@@ -523,7 +523,7 @@ class FireboltPreparedStatementFbNumericTest {
 		assertEquals("INSERT INTO cars(release_date) VALUES ($1)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 		assertEquals("[{\"name\":\"$1\",\"value\":\"2019-07-31 12:15:13.0\"}]",
-				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
@@ -538,7 +538,7 @@ class FireboltPreparedStatementFbNumericTest {
 		assertEquals("INSERT INTO cars(release_date) VALUES ($1)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
 		assertEquals("[{\"name\":\"$1\",\"value\":null}]",
-				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
@@ -565,7 +565,7 @@ class FireboltPreparedStatementFbNumericTest {
 		assertEquals("[{\"name\":\"$1\",\"value\":\"2019-07-31 12:15:13.0\"},{\"name\":\"$2\",\"value\":\"2019-07-31\"}," +
 						"{\"name\":\"$3\",\"value\":5.5},{\"name\":\"$4\",\"value\":5},{\"name\":\"$5\",\"value\":555555555555.55555555}," +
 						"{\"name\":\"$6\",\"value\":null},{\"name\":\"$7\",\"value\":true},{\"name\":\"$8\",\"value\":5}]",
-				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
@@ -593,7 +593,7 @@ class FireboltPreparedStatementFbNumericTest {
 		assertEquals("[{\"name\":\"$1\",\"value\":\"2019-07-31 12:15:13.0\"},{\"name\":\"$2\",\"value\":\"2019-07-31\"}," +
 						"{\"name\":\"$3\",\"value\":5.5},{\"name\":\"$4\",\"value\":5},{\"name\":\"$5\",\"value\":555555555555.55555555}," +
 						"{\"name\":\"$6\",\"value\":null},{\"name\":\"$7\",\"value\":true},{\"name\":\"$8\",\"value\":5}]",
-				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@ParameterizedTest
@@ -670,7 +670,7 @@ class FireboltPreparedStatementFbNumericTest {
 
 		assertEquals("INSERT INTO data (column) VALUES ($1)", queryInfoWrapperArgumentCaptor.getValue().getSql());
 		assertEquals("[{\"name\":\"$1\",\"value\":" + expected + "}]",
-				queryInfoWrapperArgumentCaptor.getValue().getQueryParameters());
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
@@ -692,6 +692,6 @@ class FireboltPreparedStatementFbNumericTest {
 	}
 
 	private FireboltPreparedStatement createStatementWithSql(String sql) {
-		return new FireboltPreparedStatement(fireboltStatementService, connection, sql);
+		return new FireboltBackendPreparedStatement(fireboltStatementService, connection, sql);
 	}
 }

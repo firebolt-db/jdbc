@@ -13,8 +13,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.firebolt.jdbc.statement.preparedstatement.PreparedStatementParamStyle;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.CustomLog;

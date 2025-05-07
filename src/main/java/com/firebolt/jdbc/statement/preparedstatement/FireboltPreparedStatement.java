@@ -45,7 +45,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.firebolt.jdbc.statement.StatementUtil.prepareFbNumericStatement;
 import static com.firebolt.jdbc.statement.StatementUtil.replaceParameterMarksWithValues;
 import static com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory.createValidator;
 import static java.lang.String.format;
@@ -56,11 +55,10 @@ import static java.sql.Types.VARBINARY;
 @CustomLog
 public class FireboltPreparedStatement extends FireboltStatement implements PreparedStatement {
 
-	private final RawStatementWrapper rawStatement;
+	protected final RawStatementWrapper rawStatement;
+	protected Map<Integer, Object> providedParameters;
 	private final List<Map<Integer, Object>> rows;
-	private Map<Integer, Object> providedParameters;
 	private final ParserVersion parserVersion;
-	private final PreparedStatementParamStyle queryParamStyle;
 
 	public FireboltPreparedStatement(FireboltStatementService statementService, FireboltConnection connection, String sql) {
 		this(statementService, connection.getSessionProperties(), connection, sql);
@@ -71,7 +69,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		super(statementService, sessionProperties, connection);
 		log.debug("Populating PreparedStatement object for SQL: {}", sql);
 		this.providedParameters = new HashMap<>();
-		queryParamStyle = PreparedStatementParamStyle.fromString(sessionProperties.getPreparedStatementParamStyle());
+		PreparedStatementParamStyle queryParamStyle = PreparedStatementParamStyle.fromString(sessionProperties.getPreparedStatementParamStyle());
 		this.rawStatement = StatementUtil.parseToRawStatementWrapper(sql, queryParamStyle);
 		rawStatement.getSubStatements().forEach(statement -> createValidator(statement, connection).validate(statement));
 		this.rows = new ArrayList<>();
@@ -83,12 +81,8 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		return super.executeQuery(prepareSQL(providedParameters));
 	}
 
-	private List<StatementInfoWrapper> prepareSQL(@NonNull Map<Integer, Object> params) {
-		if (queryParamStyle.equals(PreparedStatementParamStyle.FB_NUMERIC)) {
-			return prepareFbNumericStatement(params, rawStatement);
-		} else {
-			return replaceParameterMarksWithValues(params, rawStatement);
-		}
+	protected List<StatementInfoWrapper> prepareSQL(@NonNull Map<Integer, Object> params) {
+		return replaceParameterMarksWithValues(params, rawStatement);
 	}
 
 	@Override
@@ -101,70 +95,70 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public void setNull(int parameterIndex, int sqlType) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, isFbNumeric() ? null : JavaTypeToFireboltSQLString.NULL_VALUE);
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.NULL_VALUE);
 	}
 
 	@Override
 	public void setBoolean(int parameterIndex, boolean x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, isFbNumeric() ? x : JavaTypeToFireboltSQLString.BOOLEAN.transform(x));
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.BOOLEAN.transform(x));
 	}
 
 	@Override
 	public void setByte(int parameterIndex, byte x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, isFbNumeric() ? x : JavaTypeToFireboltSQLString.BYTE.transform(x));
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.BYTE.transform(x));
 	}
 
 	@Override
 	public void setShort(int parameterIndex, short x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, isFbNumeric() ? x : JavaTypeToFireboltSQLString.SHORT.transform(x));
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.SHORT.transform(x));
 	}
 
 	@Override
 	public void setInt(int parameterIndex, int x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, isFbNumeric() ? x : JavaTypeToFireboltSQLString.INTEGER.transform(x));
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.INTEGER.transform(x));
 	}
 
 	@Override
 	public void setLong(int parameterIndex, long x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, isFbNumeric() ? x : JavaTypeToFireboltSQLString.LONG.transform(x));
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.LONG.transform(x));
 	}
 
 	@Override
 	public void setFloat(int parameterIndex, float x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, isFbNumeric() ? x : JavaTypeToFireboltSQLString.FLOAT.transform(x));
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.FLOAT.transform(x));
 	}
 
 	@Override
 	public void setDouble(int parameterIndex, double x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, isFbNumeric() ? x : JavaTypeToFireboltSQLString.DOUBLE.transform(x));
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.DOUBLE.transform(x));
 	}
 
 	@Override
 	public void setBigDecimal(int parameterIndex, BigDecimal x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, isFbNumeric() ? x : JavaTypeToFireboltSQLString.BIG_DECIMAL.transform(x));
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.BIG_DECIMAL.transform(x));
 	}
 
 	@Override
 	public void setString(int parameterIndex, String x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, isFbNumeric() ? x : JavaTypeToFireboltSQLString.STRING.transform(x, parserVersion));
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.STRING.transform(x, parserVersion));
 	}
 
 	@Override
@@ -180,7 +174,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public void setDate(int parameterIndex, Date x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, isFbNumeric() ? x : JavaTypeToFireboltSQLString.DATE.transform(x));
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.DATE.transform(x));
 	}
 
 	@Override
@@ -193,7 +187,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, isFbNumeric() ? x : JavaTypeToFireboltSQLString.TIMESTAMP.transform(x));
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.TIMESTAMP.transform(x));
 	}
 
 	@Override
@@ -207,16 +201,8 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
 		try {
-			if (isFbNumeric()) {
-				JavaTypeToFireboltSQLString.validateObjectIsOfSupportedType(x);
-				//this is used as a supported target type verification. null is not supported
-				if (x != null) {
-					JavaTypeToFireboltSQLString.getType(targetSqlType, x);
-				}
-				providedParameters.put(parameterIndex, x);
-			} else {
-				providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x, targetSqlType, parserVersion));
-			}
+			providedParameters.put(parameterIndex,
+							JavaTypeToFireboltSQLString.transformAny(x, targetSqlType, parserVersion));
 		} catch (FireboltException fbe) {
 			if (ExceptionType.TYPE_NOT_SUPPORTED.equals(fbe.getType())) {
 				throw new SQLFeatureNotSupportedException(fbe.getMessage(), fbe);
@@ -229,12 +215,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public void setObject(int parameterIndex, Object x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		if (isFbNumeric()) {
-			JavaTypeToFireboltSQLString.validateObjectIsOfSupportedType(x);
-			providedParameters.put(parameterIndex, x);
-		} else {
-			providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x));
-		}
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.transformAny(x));
 	}
 
 	@Override
@@ -259,7 +240,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public void setNull(int parameterIndex, int sqlType, String typeName) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, isFbNumeric() ? null : JavaTypeToFireboltSQLString.NULL_VALUE);
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.NULL_VALUE);
 	}
 
 	@Override
@@ -278,7 +259,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	public void setArray(int parameterIndex, Array x) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
-		providedParameters.put(parameterIndex, isFbNumeric() ? x : JavaTypeToFireboltSQLString.ARRAY.transform(x));
+		providedParameters.put(parameterIndex, JavaTypeToFireboltSQLString.ARRAY.transform(x));
 	}
 
 	@Override
@@ -303,14 +284,14 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		return result;
 	}
 
-	private StatementInfoWrapper asSingleStatement(List<StatementInfoWrapper> queries) {
+	protected StatementInfoWrapper asSingleStatement(List<StatementInfoWrapper> queries) {
 		// merge all queries into a single query, separated by semicolons
 		StringBuilder sb = new StringBuilder();
 		var first = queries.get(0);
 		for (StatementInfoWrapper query : queries) {
 			sb.append(query.getSql()).append(";");
 		}
-		return new StatementInfoWrapper(sb.toString(), first.getInitialStatement().getStatementType(), first.getParam(), first.getInitialStatement(), null);
+		return new StatementInfoWrapper(sb.toString(), first.getInitialStatement().getStatementType(), first.getParam(), first.getInitialStatement());
 	}
 
 	@Override
@@ -319,7 +300,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltException("Cannot call method executeUpdate(String sql) on a PreparedStatement");
 	}
 
-	private void validateParamIndex(int paramIndex) throws SQLException {
+	protected void validateParamIndex(int paramIndex) throws SQLException {
 		if (rawStatement.getTotalParams() < paramIndex) {
 			throw new FireboltException(
 					format("Cannot set parameter as there is no parameter at index: %d for statement: %s",
@@ -373,14 +354,13 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		setDateTime(parameterIndex, timestamp, calendar, JavaTypeToFireboltSQLString.TIMESTAMP);
 	}
 
-	private <T extends java.util.Date> void setDateTime(int parameterIndex, T datetime, Calendar calendar, JavaTypeToFireboltSQLString type) throws SQLException {
+	protected <T extends java.util.Date> void setDateTime(int parameterIndex, T datetime, Calendar calendar, JavaTypeToFireboltSQLString type) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
 		if (datetime == null || calendar == null) {
-			providedParameters.put(parameterIndex, isFbNumeric() ? datetime : type.transform(datetime));
+			providedParameters.put(parameterIndex, type.transform(datetime));
 		} else {
-			String timeZoneId = calendar.getTimeZone().getID();
-			providedParameters.put(parameterIndex, isFbNumeric() ? type.transformDateTimeForServerSide(datetime, timeZoneId) : type.transform(datetime, timeZoneId));
+			providedParameters.put(parameterIndex, type.transform(datetime, calendar.getTimeZone().getID()));
 		}
 	}
 
@@ -435,11 +415,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 			// scaleOfLength should affect only DECIMAL and NUMERIC types
 			boolean isNumber = (DECIMAL == targetSqlType || NUMERIC == targetSqlType) && x instanceof Number;
 			String str = isNumber ? formatDecimalNumber(x, scaleOrLength) : JavaTypeToFireboltSQLString.transformAny(x, targetSqlType);
-			if (isFbNumeric()) {
-				providedParameters.put(parameterIndex, Double.valueOf(str));
-			} else {
-				providedParameters.put(parameterIndex, str);
-			}
+			providedParameters.put(parameterIndex, str);
 		} catch (FireboltException fbe) {
 			if (ExceptionType.TYPE_NOT_SUPPORTED.equals(fbe.getType())) {
 				throw new SQLFeatureNotSupportedException(fbe.getMessage(), fbe);
@@ -447,7 +423,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		}
 	}
 
-	private String formatDecimalNumber(Object x, int scaleOrLength) {
+	protected String formatDecimalNumber(Object x, int scaleOrLength) {
 		String format = format("%%.%df", scaleOrLength);
 		return format(format, ((Number)x).doubleValue());
 	}
@@ -524,9 +500,4 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 			throw new SQLException(e);
 		}
 	}
-
-	private boolean isFbNumeric() {
-		return queryParamStyle.equals(PreparedStatementParamStyle.FB_NUMERIC);
-	}
-
 }
