@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.cache.CacheServiceProvider;
 import com.firebolt.jdbc.cache.CacheType;
@@ -9,15 +10,17 @@ import com.firebolt.jdbc.util.PropertyUtil;
 import java.sql.SQLException;
 import java.util.Properties;
 import java.util.regex.Pattern;
+import lombok.CustomLog;
 import lombok.NonNull;
+import org.apache.commons.lang3.StringUtils;
 
 import static java.lang.String.format;
 
 /**
  * Based on the connection url and the connection properties this class will generate the correct firebolt connection
  */
+@CustomLog
 public class FireboltConnectionProvider {
-
 
     private FireboltConnectionProviderWrapper fireboltConnectionProviderWrapper;
 
@@ -34,20 +37,42 @@ public class FireboltConnectionProvider {
      * From the url and connection properties, determine the appropriate firebolt connection
      */
     public FireboltConnection create(@NonNull String url, Properties connectionSettings) throws SQLException {
-        switch(getUrlVersion(url, connectionSettings)) {
-            case 1:
+        FireboltBackendType fireboltBackendType = getFireboltBackend(url, connectionSettings);
+
+        switch (fireboltBackendType) {
+            case CLOUD_1_0:
                 return fireboltConnectionProviderWrapper.createFireboltConnectionUsernamePassword(url, connectionSettings, ParserVersion.LEGACY);
-            case 2:
-                return isLocalhostConnection(url, connectionSettings) ?
-                        fireboltConnectionProviderWrapper.createLocalhostFireboltConnectionServiceSecret(url, connectionSettings) :
-                        fireboltConnectionProviderWrapper.createFireboltConnectionServiceSecret(url, connectionSettings);
-            default: throw new IllegalArgumentException(format("Cannot distinguish version from url %s", url));
+            case CLOUD_2_0:
+                return fireboltConnectionProviderWrapper.createFireboltConnectionServiceSecret(url, connectionSettings);
+            case PACKDB_DEV:
+                return fireboltConnectionProviderWrapper.createLocalhostFireboltConnectionServiceSecret(url, connectionSettings);
+            case FIREBOLT_CORE:
+                return fireboltConnectionProviderWrapper.createFireboltCoreConnection(url, connectionSettings);
+            default:
+                throw new IllegalArgumentException(format("Cannot distinguish version from url %s", url));
         }
     }
 
-    private boolean isLocalhostConnection(String jdbcUri, Properties connectionProperties) {
-        FireboltProperties fireboltProperties = new FireboltProperties(new Properties[] {UrlUtil.extractProperties(jdbcUri), connectionProperties});
-        return PropertyUtil.isLocalDb(fireboltProperties);
+    /**
+     *
+     * @param jdbcUri
+     * @param connectionProperties
+     * @return
+     */
+    private FireboltBackendType getFireboltBackend(String jdbcUri, Properties connectionProperties) {
+        int urlVersion = getUrlVersion(jdbcUri, connectionProperties);
+        if (urlVersion == 1) {
+            return FireboltBackendType.CLOUD_1_0;
+        } else {
+            // check if there is an url connection parameter
+            FireboltProperties fireboltProperties = new FireboltProperties(new Properties[] {UrlUtil.extractProperties(jdbcUri), connectionProperties});
+
+            if (StringUtils.isNotBlank(fireboltProperties.getUrl())) {
+                return FireboltBackendType.FIREBOLT_CORE;
+            }
+
+            return PropertyUtil.isLocalDb(fireboltProperties) ? FireboltBackendType.PACKDB_DEV : FireboltBackendType.CLOUD_2_0;
+        }
     }
 
     private int getUrlVersion(String url, Properties connectionSettings) {
@@ -88,6 +113,10 @@ public class FireboltConnectionProvider {
             CacheServiceProvider cacheServiceProvider = CacheServiceProvider.getInstance();
             // only in memory caching for localhost connections
             return new LocalhostFireboltConnection(url, connectionSettings, cacheServiceProvider.getCacheService(CacheType.MEMORY));
+        }
+
+        public FireboltCoreConnection createFireboltCoreConnection(String url, Properties connectionSettings) throws SQLException {
+            return new FireboltCoreConnection(url, connectionSettings);
         }
     }
 
