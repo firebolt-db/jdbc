@@ -326,7 +326,8 @@ class FireboltPreparedStatementFbNumericTest {
 	})
 	void shouldThrowExceptionWhenAllParametersAreNotDefined(String query) throws SQLException {
 		try (PreparedStatement ps = createStatementWithSql(query)) {
-			assertThrows(IllegalArgumentException.class, ps::executeQuery);
+			ps.execute();
+			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 		}
 	}
 
@@ -596,6 +597,42 @@ class FireboltPreparedStatementFbNumericTest {
 				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
+	@Test
+	@DefaultTimeZone("Europe/London")
+	void shouldSetParametersWithRandomIndex() throws SQLException {
+		statement = createStatementWithSql("INSERT INTO cars (float, long, null) VALUES ($1,$42,$32)");
+
+		statement.setObject(1, 5.5F, Types.FLOAT);
+		statement.setObject(42, 5L, Types.BIGINT);
+		statement.setObject(32, null, Types.JAVA_OBJECT);
+
+		statement.execute();
+
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
+
+		assertEquals("INSERT INTO cars (float, long, null) VALUES ($1,$42,$32)",
+				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$32\",\"value\":null},{\"name\":\"$1\",\"value\":5.5},{\"name\":\"$42\",\"value\":5}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
+	}
+
+	@Test
+	@DefaultTimeZone("Europe/London")
+	void shouldSetParametersWithRepeatingValues() throws SQLException {
+		statement = createStatementWithSql("INSERT INTO cars (float, long, null) VALUES ($1,$1,$1)");
+
+		statement.setObject(1, 5.5F, Types.FLOAT);
+
+		statement.execute();
+
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
+
+		assertEquals("INSERT INTO cars (float, long, null) VALUES ($1,$1,$1)",
+				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":5.5}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
+	}
+
 	@ParameterizedTest
 	@CsvSource(value = {
 			"123," + Types.TINYINT + ",3",
@@ -679,9 +716,8 @@ class FireboltPreparedStatementFbNumericTest {
 		statement.setObject(1, ""); // set parameter
 		statement.execute(); // execute statement - should work because all parameters are set
 		statement.clearParameters(); // clear parameters; now there are no parameters
-		assertThrows(IllegalArgumentException.class, () -> statement.execute()); // execution fails because parameters are not set
-		statement.setObject(1, ""); // set parameter again
-		statement.execute(); // now execution is successful
+		statement.execute(); // execution passes because we rely on server validation
+		verify(fireboltStatementService, times(2)).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 	}
 
 	@Test

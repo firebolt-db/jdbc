@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -27,6 +28,7 @@ public class StatementUtil {
 
 	private static final String SET_PREFIX = "set";
 	private static final Pattern SET_WITH_SPACE_REGEX = Pattern.compile(SET_PREFIX + " ", Pattern.CASE_INSENSITIVE);
+	private static final Pattern FB_NUMERIC_PARAMETER = Pattern.compile("\\$(\\d+)");
 	private static final String[] SELECT_KEYWORDS = new String[] { "show", "select", "describe", "exists", "explain",
 			"with", "call" };
 
@@ -227,13 +229,6 @@ public class StatementUtil {
 	 */
 	public static List<StatementInfoWrapper> prepareFbNumericStatement(@NonNull Map<Integer, Object> params,
 			@NonNull RawStatementWrapper rawStatement) {
-
-		if (params.size() != rawStatement.getTotalParams()) {
-			throw new IllegalArgumentException(String.format(
-					"The number of parameters passed does not equal the number of parameter markers in the SQL query. Provided: %d, Parameter markers in the SQL query: %d",
-					params.size(), rawStatement.getTotalParams()));
-		}
-
 		List<StatementInfoWrapper> subQueries = new ArrayList<>();
 		String queryParameters = getPreparedStatementQueryParameters(params);
 		for (int subQueryIndex = 0; subQueryIndex < rawStatement.getSubStatements().size(); subQueryIndex++) {
@@ -367,34 +362,20 @@ public class StatementUtil {
 			cleanedSubQuery.setLength(0);
 		}
 
-		private void handleParamMarker(char currentChar) {
-			if (currentChar != queryParamChar || isInSingleQuote || isInDoubleQuote) return;
-
-			String expectedIndex = String.valueOf(subQueryParamsCount + 1);
-			int nextIndex = currentIndex + 1;
-			int end = nextIndex + expectedIndex.length();
-
-			boolean matchesExpected = false;
-
-			if (paramStyle == PreparedStatementParamStyle.NATIVE) {
-				matchesExpected = true;
-			} else if (paramStyle == PreparedStatementParamStyle.FB_NUMERIC) {
-				matchesExpected = end <= sql.length()
-						&& sql.substring(nextIndex, end).equals(expectedIndex);
-			}
-
-			if (matchesExpected) {
-				currentParamMarkers.add(new ParamMarker(++subQueryParamsCount, currentIndex - subQueryStart));
-			}
-		}
-
 		private void handleCommentOrParamMarker(char currentChar) {
 			if (currentChar == '\'') {
 				isInSingleQuote = !isInSingleQuote;
 			} else if (currentChar == '"') {
 				isInDoubleQuote = !isInDoubleQuote;
-			} else {
-				handleParamMarker(currentChar);
+			} else if (currentChar == queryParamChar && !isInSingleQuote && !isInDoubleQuote) {
+				if (paramStyle == PreparedStatementParamStyle.NATIVE) {
+					currentParamMarkers.add(new ParamMarker(++subQueryParamsCount, currentIndex - subQueryStart));
+				} else if (paramStyle == PreparedStatementParamStyle.FB_NUMERIC) {
+					Matcher matcher = FB_NUMERIC_PARAMETER.matcher(sql.substring(currentIndex));
+					if (matcher.find()) {
+						currentParamMarkers.add(new ParamMarker(Integer.parseInt(matcher.group(1)), currentIndex - subQueryStart));
+					}
+				}
 			}
 		}
 

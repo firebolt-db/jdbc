@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.firebolt.jdbc.statement.StatementUtil.prepareFbNumericStatement;
+import static java.lang.String.format;
 import static java.sql.Types.DECIMAL;
 import static java.sql.Types.NUMERIC;
 import static java.sql.Types.VARBINARY;
@@ -30,11 +31,6 @@ public class FireboltBackendPreparedStatement extends FireboltPreparedStatement 
 
     public FireboltBackendPreparedStatement(FireboltStatementService statementService, FireboltConnection connection, String sql) {
         super(statementService, connection, sql);
-    }
-
-    @Override
-    protected List<StatementInfoWrapper> prepareSQL(@NonNull Map<Integer, Object> params) {
-        return prepareFbNumericStatement(params, rawStatement);
     }
 
     @Override
@@ -107,15 +103,6 @@ public class FireboltBackendPreparedStatement extends FireboltPreparedStatement 
         providedParameters.put(parameterIndex, x);
     }
 
-//    @Override
-//    public void setBytes(int parameterIndex, byte[] bytes) throws SQLException {
-//        if (bytes == null) {
-//            setNull(parameterIndex, VARBINARY);
-//        } else {
-//            setObject(parameterIndex, bytes, VARBINARY);
-//        }
-//    }
-
     @Override
     public void setDate(int parameterIndex, Date x) throws SQLException {
         validateStatementIsNotClosed();
@@ -171,24 +158,6 @@ public class FireboltBackendPreparedStatement extends FireboltPreparedStatement 
         providedParameters.put(parameterIndex, new JSONArray(x.getArray()).toString());
     }
 
-    //todo: implement FIR-45674
-//    @Override
-//    public void setBlob(int parameterIndex, Blob blob) throws SQLException {
-//        setBytes(parameterIndex, blob == null ? null : blob.getBytes(1, (int) blob.length()));
-//    }
-
-    @Override
-    protected <T extends java.util.Date> void setDateTime(int parameterIndex, T datetime, Calendar calendar, JavaTypeToFireboltSQLString type) throws SQLException {
-        validateStatementIsNotClosed();
-        validateParamIndex(parameterIndex);
-        if (datetime == null || calendar == null) {
-            providedParameters.put(parameterIndex, datetime);
-        } else {
-            String timeZoneId = calendar.getTimeZone().getID();
-            providedParameters.put(parameterIndex, type.transformDateTimeForServerSide(datetime, timeZoneId));
-        }
-    }
-
     @Override
     public void setObject(int parameterIndex, Object x, int targetSqlType, int scaleOrLength) throws SQLException {
         validateStatementIsNotClosed();
@@ -202,6 +171,37 @@ public class FireboltBackendPreparedStatement extends FireboltPreparedStatement 
             if (ExceptionType.TYPE_NOT_SUPPORTED.equals(fbe.getType())) {
                 throw new SQLFeatureNotSupportedException(fbe.getMessage(), fbe);
             }
+        }
+    }
+
+    //todo: implement FIR-45674
+//    @Override
+//    public void setBlob(int parameterIndex, Blob blob) throws SQLException {
+//        setBytes(parameterIndex, blob == null ? null : blob.getBytes(1, (int) blob.length()));
+//    }
+    @Override
+    protected List<StatementInfoWrapper> prepareSQL(@NonNull Map<Integer, Object> params) {
+        return prepareFbNumericStatement(params, rawStatement);
+    }
+
+    @Override
+    protected void validateParamIndex(int paramIndex) throws SQLException {
+        if (!rawStatement.getSubStatementParamMarkersIndices().contains(paramIndex)) {
+            throw new FireboltException(
+                    format("Cannot set parameter as there is no parameter at index: %d for statement: %s",
+                            paramIndex, rawStatement));
+        }
+    }
+
+    @Override
+    protected <T extends java.util.Date> void setDateTime(int parameterIndex, T datetime, Calendar calendar, JavaTypeToFireboltSQLString type) throws SQLException {
+        validateStatementIsNotClosed();
+        validateParamIndex(parameterIndex);
+        if (datetime == null || calendar == null) {
+            providedParameters.put(parameterIndex, datetime);
+        } else {
+            String timeZoneId = calendar.getTimeZone().getID();
+            providedParameters.put(parameterIndex, type.transformDateTimeForServerSide(datetime, timeZoneId));
         }
     }
 }
