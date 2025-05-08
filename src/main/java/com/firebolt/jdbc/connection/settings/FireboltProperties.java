@@ -78,6 +78,9 @@ public class FireboltProperties {
 	private final boolean mergePreparedStatementBatches;
 	private final boolean connectionCachingEnabled;
 
+	// firebolt core url
+	private final String url;
+
 	@Builder.Default
 	private Map<String, String> initialAdditionalProperties = new HashMap<>();
 	@Builder.Default
@@ -116,12 +119,11 @@ public class FireboltProperties {
 		validateOnSystemEngine = getSetting(properties, FireboltSessionProperty.VALIDATE_ON_SYSTEM_ENGINE);
 		mergePreparedStatementBatches = getSetting(properties, FireboltSessionProperty.MERGE_PREPARED_STATEMENT_BATCHES);
 		connectionCachingEnabled = getSetting(properties, FireboltSessionProperty.CACHE_CONNECTION);
-
 		environment = getEnvironment(configuredEnvironment, properties);
 		host = getHost(configuredEnvironment, properties);
 		port = getPort(properties, ssl);
 		accessToken =  getSetting(properties, FireboltSessionProperty.ACCESS_TOKEN);
-
+		url = getSetting(properties, FireboltSessionProperty.URL);
 		initialAdditionalProperties = getFireboltCustomProperties(properties);
 		runtimeAdditionalProperties = new HashMap<>();
 	}
