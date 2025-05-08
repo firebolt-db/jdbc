@@ -125,7 +125,6 @@ class FireboltPreparedStatementFbNumericTest {
 				Arguments.of("setBlob((Blob)null)", (Setter) statement -> statement.setBlob(1, (Blob)null), "null"),
 				Arguments.of("setBClob((InputStream)null)", (Setter) statement -> statement.setBlob(1, (InputStream)null), "null"),
 				Arguments.of("setBClob((InputStream)null, length)", (Setter) statement -> statement.setBlob(1, null, 1L), "null"),
-//				Arguments.of("setBlob((Clob)null)", (Setter) statement -> statement.setBlob(1, new FireboltBlob("hello".getBytes())), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
 
 				Arguments.of("setCharacterStream(null)", (Setter) statement -> statement.setCharacterStream(1, null), "null"),
 				Arguments.of("setCharacterStream(null, int)", (Setter) statement -> statement.setCharacterStream(1, null, 1), "null"),
@@ -152,24 +151,10 @@ class FireboltPreparedStatementFbNumericTest {
 				Arguments.of("setAsciiStream(null)", (Setter) statement -> statement.setAsciiStream(1, null), "null"),
 				Arguments.of("setAsciiStream(null, int)", (Setter) statement -> statement.setAsciiStream(1, null, 1), "null"),
 				Arguments.of("setAsciiStream(null, long)", (Setter) statement -> statement.setAsciiStream(1, null, 1L), "null"),
-//				Arguments.of("setAsciiStream(InputStream)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes())), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-//				Arguments.of("setAsciiStream(InputStream, length=)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 5), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-//				Arguments.of("setAsciiStream(InputStream, length-1)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 4), "E'\\x68\\x65\\x6c\\x6c'::BYTEA"),
-//				Arguments.of("setAsciiStream(InputStream, length+1)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 6), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-//				Arguments.of("setAsciiStream(InputStream, 42)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 42), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-//				Arguments.of("setAsciiStream(InputStream, 1)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 1), "E'\\x68'::BYTEA"),
-//				Arguments.of("setAsciiStream(InputStream, 0)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 0), "E'\\x'::BYTEA"),
 
 				Arguments.of("setBinaryStream(null)", (Setter) statement -> statement.setBinaryStream(1, null), "null"),
 				Arguments.of("setBinaryStream(null, int)", (Setter) statement -> statement.setBinaryStream(1, null, 1), "null"),
 				Arguments.of("setBinaryStream(null, long)", (Setter) statement -> statement.setBinaryStream(1, null, 1L), "null"));
-//				Arguments.of("setBinaryStream(InputStream)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes())), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-//				Arguments.of("setBinaryStream(InputStream, length=)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 5), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-//				Arguments.of("setBinaryStream(InputStream, length-1)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 4), "E'\\x68\\x65\\x6c\\x6c'::BYTEA"),
-//				Arguments.of("setBinaryStream(InputStream, length+1)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 6), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-//				Arguments.of("setBinaryStream(InputStream, 42)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 42), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-//				Arguments.of("setBinaryStream(InputStream, 1)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 1), "E'\\x68'::BYTEA"),
-//				Arguments.of("setBinaryStream(InputStream, 0)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 0), "E'\\x'::BYTEA"),
 	}
 
 	private static Stream<Arguments> setNumber() {
