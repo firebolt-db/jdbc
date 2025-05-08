@@ -1,6 +1,5 @@
 package com.firebolt.jdbc.statement.rawstatement;
 
-import com.firebolt.jdbc.statement.ParamMarker;
 import lombok.CustomLog;
 import lombok.Value;
 
@@ -13,17 +12,11 @@ import java.util.stream.Collectors;
 public class RawStatementWrapper {
 
 	List<RawStatement> subStatements;
-	List<Integer> subStatementParamMarkersIndices;
 
 	long totalParams;
 
 	public RawStatementWrapper(List<RawStatement> subStatements) {
 		this.subStatements = subStatements;
-		this.subStatementParamMarkersIndices = subStatements.stream()
-				.flatMap(subStatement -> subStatement.getParamMarkers().stream())
-				.map(ParamMarker::getId)
-				.distinct()
-				.collect(Collectors.toList());
 		this.totalParams = subStatements.stream().map(RawStatement::getParamMarkers).mapToLong(Collection::size).sum();
 	}
 
