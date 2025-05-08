@@ -3,6 +3,7 @@ package integration.tests;
 import com.firebolt.jdbc.CheckedBiFunction;
 import com.firebolt.jdbc.CheckedVoidTriFunction;
 import com.firebolt.jdbc.QueryResult;
+import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.testutils.AssertionUtil;
 import com.firebolt.jdbc.type.FireboltDataType;
@@ -12,7 +13,6 @@ import lombok.Builder;
 import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -21,14 +21,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.sql.Blob;
-import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -36,14 +30,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.sql.Statement.SUCCESS_NO_INFO;
@@ -51,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
@@ -444,6 +437,100 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 				assertEquals("\n", rs.getString(2));
 				assertEquals("\\", rs.getString(3));
 				assertEquals("don't", rs.getString(4));
+			}
+		}
+	}
+
+	@Test
+	@Tag("v2")
+	void shouldSetParametersWithRandomIndex() throws SQLException {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("SELECT $1::real, $42::long, $32::text")) {
+
+				statement.setObject(1, 5.5F, Types.FLOAT);
+				statement.setObject(42, 5L, Types.BIGINT);
+				statement.setObject(32, null, Types.JAVA_OBJECT);
+				statement.execute();
+				try (ResultSet rs = statement.getResultSet()) {
+					assertTrue(rs.next());
+					assertEquals(5.5F, rs.getFloat(1));
+					assertEquals(5L, rs.getLong(2));
+					assertNull(rs.getObject(3));
+				}
+			}
+		}
+	}
+
+	@Test
+	@Tag("v2")
+	void shouldSetParametersWithRepeatingValues() throws SQLException {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("SELECT $1::real, $1::long, $1::text")) {
+
+				statement.setObject(1, 5.5F, Types.FLOAT);
+				statement.execute();
+				try (ResultSet rs = statement.getResultSet()) {
+					assertTrue(rs.next());
+					assertEquals(5.5F, rs.getFloat(1));
+					assertEquals(6L, rs.getLong(2));
+					assertEquals("5.5", rs.getString(3));
+				}
+			}
+		}
+	}
+
+	@Test
+	@Tag("v2")
+	void shouldNotFailWhenParametersNotPresentAreSet() throws SQLException {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("SELECT $1::real, $1::long, $1::text")) {
+
+				statement.setObject(1, 5.5F, Types.FLOAT);
+				statement.setObject(2, 5.5F, Types.FLOAT);
+				statement.execute();
+				try (ResultSet rs = statement.getResultSet()) {
+					assertTrue(rs.next());
+					assertEquals(5.5F, rs.getFloat(1));
+					assertEquals(6L, rs.getLong(2));
+					assertEquals("5.5", rs.getString(3));
+				}
+			}
+		}
+	}
+
+	@Test
+	@Tag("v2")
+	void shouldResetTheParameterIndex() throws SQLException {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("SELECT $1::real, $1::long, $1::text")) {
+
+				statement.setObject(1, 4.5F, Types.FLOAT);
+				statement.setObject(1, 5.5F, Types.FLOAT);
+				statement.execute();
+				try (ResultSet rs = statement.getResultSet()) {
+					assertTrue(rs.next());
+					assertEquals(5.5F, rs.getFloat(1));
+					assertEquals(6L, rs.getLong(2));
+					assertEquals("5.5", rs.getString(3));
+				}
+			}
+		}
+	}
+
+	@Test
+	@Tag("v2")
+	void shouldFailWhenParameterNotProvided() throws SQLException {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("SELECT $1, $2")) {
+
+				statement.setObject(1, 5.5F, Types.FLOAT);
+				assertEquals("Line 1, Column 12: Query referenced positional parameter $2, but it was not set",
+						assertThrows(FireboltException.class, statement::execute).getErrorMessageFromServer());
 			}
 		}
 	}
