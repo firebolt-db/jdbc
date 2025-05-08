@@ -1,4 +1,4 @@
-name: Run integration tests v2
+name: Core integration tests
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
         description: 'The docker image tag for the firebolt core'
         required: false
         type: string
-        default: 'v4.19.3_x86'
+        default: '4.21.0-pre.0.20250508101124.cfa76a685ee8_x86'
       java_version:
         description: 'JRE version'
         required: false
@@ -24,7 +24,7 @@ on:
         description: 'The docker image tag for the firebolt core'
         required: false
         type: string
-        default: 'v4.19.3_x86'
+        default: '4.21.0-pre.0.20250508101124.cfa76a685ee8_x86'
       os_name:
         description: 'Operating system'
         required: false
@@ -39,8 +39,13 @@ on:
 jobs:
   run-core-integration-tests:
     runs-on: ${{ inputs.os_name }}
+    env:
+      DOCKER_COMPOSE_FILE: ${{ github.workspace }}/src/integrationTest/resources/core/docker-compose.yaml
+      SERVICE_PORT: 3473
+      SERVICE_URL: http://localhost:3473
+      MAX_RETRIES: 30
+      RETRY_INTERVAL: 2
     steps:
-      # need to use the docker-compose and config json from the checked out code
       - name: Check out code
         uses: actions/checkout@v4
 
@@ -49,6 +54,7 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: ${{ inputs.java_version }}
+          cache: 'gradle'
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -57,35 +63,57 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Prepare docker-compose.yml with image version and base directory
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Prepare docker-compose.yml
         run: |
-          sed -i "s|\${IMAGE_TAG}|${{ inputs.tag_version }}|g" docker-compose.yml
-          workspace="${{ github.workspace }}"
-          sed -i "s|\${BASE_DIR}|$workspace|g" docker-compose.yml
+          if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
+            echo "Error: Docker compose file not found at $DOCKER_COMPOSE_FILE"
+            exit 1
+          fi
+          sed -i "s|\${IMAGE_TAG}|${{ inputs.tag_version }}|g" "$DOCKER_COMPOSE_FILE"
+          sed -i "s|\${BASE_DIR}|${{ github.workspace }}|g" "$DOCKER_COMPOSE_FILE"
+          echo "Docker compose file prepared:"
+          cat "$DOCKER_COMPOSE_FILE"
 
       - name: Start service container
         run: |
-          docker compose up
+          docker compose -f "$DOCKER_COMPOSE_FILE" up -d
+          docker compose -f "$DOCKER_COMPOSE_FILE" ps
 
-      # we start the docker compose on port 3473
       - name: Wait for service to be ready
         run: |
-          for i in {1..30}; do
-            if curl --silent http://localhost:3473 --data-binary "SELECT 1" | grep -q "1"; then
-              echo "Service is up!";
-              break;
+          for i in $(seq 1 $MAX_RETRIES); do
+            if curl --silent --fail "$SERVICE_URL" --data-binary "SELECT 1" | grep -q "1"; then
+              echo "Service is up and responding!"
+              exit 0
             fi
-            echo "Waiting for service... ($i)";
-            sleep 2
+            echo "Waiting for service... ($i/$MAX_RETRIES)"
+            sleep $RETRY_INTERVAL
           done
+          echo "Error: Service failed to start within timeout"
+          docker compose -f "$DOCKER_COMPOSE_FILE" logs
+          exit 1
 
       - name: Grant execute permission (Unix)
         if: runner.os != 'Windows'
         run: chmod +x gradlew
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -DexcludeTags="v1,v2,slow"
+        run: ./gradlew integrationTest -DincludeTags="core" --info
+        env:
+          GRADLE_OPTS: -Dorg.gradle.daemon=false
 
       - name: Stop container
         if: always()
-        run: docker stop test-service && docker rm test-service
+        run: |
+          docker compose -f "$DOCKER_COMPOSE_FILE" down

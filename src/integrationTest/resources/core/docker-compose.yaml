@@ -6,15 +6,13 @@ services:
     container_name: firebolt-core
     command: --node 0
     privileged: true
-    stdin_open: true      # equivalent to -it
-    tty: true             # keep stdin open for interactive session
-    restart: "no"         # equivalent to --rm (no persistence)
+    restart: no         # equivalent to --rm (no persistence)
     ulimits:
       memlock: 8589934592
     ports:
-      - "3473:3473"
+      - 3473:3473
     volumes:
       # Mount the config file into the container.
-      - ${BASE_DIR}/src/integrationTests/resources/core/config.json:/firebolt-core/config.json:ro
+      - ${BASE_DIR}/src/integrationTest/resources/core/config.json:/firebolt-core/config.json:ro
       # Create an anonymous volume for Firebolt's internal database files. Not using a volume would have a performance impact.
-      - /firebolt-core/data
+      - ${BASE_DIR}/firebolt-core:/firebolt-core/data
