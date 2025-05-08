@@ -3,6 +3,7 @@ package com.firebolt.jdbc.util;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.statement.ParamMarker;
 import com.firebolt.jdbc.statement.StatementUtil;
+import com.firebolt.jdbc.statement.preparedstatement.PreparedStatementParamStyle;
 import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
 import com.firebolt.jdbc.statement.rawstatement.RawStatement;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
@@ -25,11 +26,12 @@ import java.util.stream.Collectors;
 
 import static com.firebolt.jdbc.statement.StatementType.PARAM_SETTING;
 import static com.firebolt.jdbc.statement.StatementUtil.isQuery;
-import static com.firebolt.jdbc.statement.StatementUtil.parseToRawStatementWrapper;
+import static com.firebolt.jdbc.statement.StatementUtil.parseToRawStatementWrapperNative;
 import static com.firebolt.jdbc.statement.StatementUtil.replaceParameterMarksWithValues;
 import static com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory.createValidator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -73,7 +75,7 @@ class StatementUtilTest {
 
 	@Test
 	void shouldReturnEmptyListForEmptySql() {
-		assertTrue(parseToRawStatementWrapper("").getSubStatements().isEmpty());
+		assertTrue(parseToRawStatementWrapperNative("").getSubStatements().isEmpty());
 	}
 
 	@ParameterizedTest
@@ -89,7 +91,7 @@ class StatementUtilTest {
 	void shouldThrowWhenSettingPropertyThatShouldBeSetByUse(int infraVersion, String statement, String error) {
 		FireboltConnection connection = mock(FireboltConnection.class);
 		when(connection.getInfraVersion()).thenReturn(infraVersion);
-		List<RawStatement> rawStatements = parseToRawStatementWrapper(statement).getSubStatements();
+		List<RawStatement> rawStatements = parseToRawStatementWrapperNative(statement).getSubStatements();
 		IllegalArgumentException e = assertThrows(
 				IllegalArgumentException.class,
 				() -> rawStatements.forEach(s -> createValidator(s, connection).validate(s)));
@@ -100,7 +102,7 @@ class StatementUtilTest {
 	void shouldSuccessfullySetAccountIdForInfraVersion2() {
 		FireboltConnection connection = mock(FireboltConnection.class);
 		when(connection.getInfraVersion()).thenReturn(2);
-		parseToRawStatementWrapper("set account_id='123'").getSubStatements().forEach(s -> createValidator(s, connection).validate(s));
+		parseToRawStatementWrapperNative("set account_id='123'").getSubStatements().forEach(s -> createValidator(s, connection).validate(s));
 	}
 
 	@Test
@@ -108,7 +110,7 @@ class StatementUtilTest {
 		List<String> keywords = Arrays.asList("shOW", "seleCt", "DESCRIBE", "exists", "explain", "with", "call");
 
 		String query = "/* Some random command*/ -- oneLineOfComment INSERT \n %s anything";
-		keywords.forEach(keyword -> assertTrue(isQuery(parseToRawStatementWrapper(String.format(query, keyword)).getSubStatements().get(0).getCleanSql())));
+		keywords.forEach(keyword -> assertTrue(isQuery(parseToRawStatementWrapperNative(String.format(query, keyword)).getSubStatements().get(0).getCleanSql())));
 	}
 
 	@Test
@@ -123,7 +125,7 @@ class StatementUtilTest {
 		String query = "/* Some random comment*/ SELECT /* Second comment */ * FROM -- third comment \n EMPLOYEES WHERE id = 5";
 
 		assertEquals("EMPLOYEES",
-				((QueryRawStatement) parseToRawStatementWrapper(query).getSubStatements().get(0))
+				((QueryRawStatement) parseToRawStatementWrapperNative(query).getSubStatements().get(0))
 						.getTable());
 	}
 
@@ -131,24 +133,22 @@ class StatementUtilTest {
 	void shouldExtractDbNameFromQuery() {
 		String query = "-- Some random command   \n       SELECT *     FROM    db.schema.EMPLOYEES      WHERE id = 5";
 		assertEquals("db",
-				((QueryRawStatement) parseToRawStatementWrapper(query).getSubStatements().get(0))
+				((QueryRawStatement) parseToRawStatementWrapperNative(query).getSubStatements().get(0))
 						.getDatabase());
 	}
 
 	@Test
 	void shouldBeEmptyWhenGettingDbNameAndThereIsNoDbName() {
 		String query = "/* Some random command*/ SELECT * FROM EMPLOYEES WHERE id = 5";
-		assertEquals(null,
-				((QueryRawStatement) parseToRawStatementWrapper(query).getSubStatements().get(0))
-						.getDatabase());
+        assertNull(((QueryRawStatement) parseToRawStatementWrapperNative(query).getSubStatements().get(0))
+                .getDatabase());
 	}
 
 	@Test
 	void shouldBeEmptyWhenGettingDbNameFromAQueryWithoutFrom() {
 		String query = "SELECT *";
-		assertEquals(null,
-				((QueryRawStatement) parseToRawStatementWrapper(query).getSubStatements().get(0))
-						.getDatabase());
+        assertNull(((QueryRawStatement) parseToRawStatementWrapperNative(query).getSubStatements().get(0))
+                .getDatabase());
 	}
 
 	@Test
@@ -182,10 +182,10 @@ class StatementUtilTest {
 	void shouldCleanQueryWithComments() {
 		String sql = getSqlFromFile("/queries/query-with-comment.sql");
 		String expectedCleanQuery = getSqlFromFile("/queries/query-with-comment-cleaned.sql");
-		String cleanStatement = parseToRawStatementWrapper(sql).getSubStatements().get(0).getCleanSql();
+		String cleanStatement = parseToRawStatementWrapperNative(sql).getSubStatements().get(0).getCleanSql();
 		assertEquals(expectedCleanQuery, cleanStatement);
 		assertEquals(expectedCleanQuery,
-				parseToRawStatementWrapper(sql).getSubStatements().get(0).getCleanSql());
+				parseToRawStatementWrapperNative(sql).getSubStatements().get(0).getCleanSql());
 	}
 
 	@Test
@@ -195,7 +195,7 @@ class StatementUtilTest {
 		String expectedCleanQuery = "INSERT INTO regex_test (name)\n" + "\n" + "VALUES (\n"
 				+ "'Taylor''s Prime Steak House 3' )";
 		assertEquals(expectedCleanQuery,
-				parseToRawStatementWrapper(sql).getSubStatements().get(0).getCleanSql());
+				parseToRawStatementWrapperNative(sql).getSubStatements().get(0).getCleanSql());
 
 	}
 
@@ -203,83 +203,139 @@ class StatementUtilTest {
 	void shouldCleanQueryWithSingleLineComment() {
 		String sql = getSqlFromFile("/queries/query-with-comment.sql");
 		String expectedCleanQuery = getSqlFromFile("/queries/query-with-comment-cleaned.sql");
-		String cleanStatement = parseToRawStatementWrapper(sql).getSubStatements().get(0).getCleanSql();
+		String cleanStatement = parseToRawStatementWrapperNative(sql).getSubStatements().get(0).getCleanSql();
 		assertEquals(expectedCleanQuery, cleanStatement);
 		assertEquals(expectedCleanQuery,
-				parseToRawStatementWrapper(sql).getSubStatements().get(0).getCleanSql());
+				parseToRawStatementWrapperNative(sql).getSubStatements().get(0).getCleanSql());
 
 	}
 
 	@Test
 	void shouldCountParametersFromLongQueryWithComments() {
 		String sql = getSqlFromFile("/queries/query-with-comment.sql");
-		parseToRawStatementWrapper(sql).getSubStatements().get(0).getSql();
-		assertEquals(Arrays.asList(new ParamMarker(1, 200)),
-				parseToRawStatementWrapper(sql).getSubStatements().get(0).getParamMarkers());
-		assertEquals(1, parseToRawStatementWrapper(sql).getSubStatements().size());
+		parseToRawStatementWrapperNative(sql).getSubStatements().get(0).getSql();
+		assertEquals(List.of(new ParamMarker(1, 200)),
+				parseToRawStatementWrapperNative(sql).getSubStatements().get(0).getParamMarkers());
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
 	}
 
 	@Test
-	void shouldGetAllQueryParams() {
+	void shouldGetAllQueryParamsNative() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id = ?";
-		assertEquals(Map.of(1, 35), StatementUtil.getParamMarketsPositions(sql));
-		assertEquals(1, parseToRawStatementWrapper(sql).getSubStatements().size());
+		assertEquals(Map.of(1, 35), StatementUtil.getParamMarketsPositionsNative(sql));
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
 	}
 
 	@Test
-	void shouldGetAllQueryParamsWithoutTrimmingRequest() {
+	void shouldGetAllQueryParamsFbNumeric() {
+		String sql = "SElECT * FROM EMPLOYEES WHERE id = $1";
+		assertEquals(Map.of(1, 35), StatementUtil.getParamMarketsPositions(sql, PreparedStatementParamStyle.FB_NUMERIC));
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
+	}
+
+	@Test
+	void shouldGetAllQueryParamsWithoutTrimmingRequestNative() {
 		String sql = "     SElECT * FROM EMPLOYEES WHERE id = ?";
-		assertEquals(Map.of(1, 40), StatementUtil.getParamMarketsPositions(sql));
-		assertEquals(1, parseToRawStatementWrapper(sql).getSubStatements().size());
+		assertEquals(Map.of(1, 40), StatementUtil.getParamMarketsPositionsNative(sql));
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
 	}
 
 	@Test
-	void shouldGetAllQueryParamsFromIn() {
+	void shouldGetAllQueryParamsWithoutTrimmingRequestFbNumeric() {
+		String sql = "     SElECT * FROM EMPLOYEES WHERE id = $1";
+		assertEquals(Map.of(1, 40), StatementUtil.getParamMarketsPositions(sql, PreparedStatementParamStyle.FB_NUMERIC));
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
+	}
+
+	@Test
+	void shouldGetAllQueryParamsFromInNative() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id IN (?,?)";
-		assertEquals(Map.of(1, 37, 2, 39), StatementUtil.getParamMarketsPositions(sql));
-		assertEquals(1, parseToRawStatementWrapper(sql).getSubStatements().size());
+		assertEquals(Map.of(1, 37, 2, 39), StatementUtil.getParamMarketsPositionsNative(sql));
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
 	}
 
 	@Test
-	void shouldGetAllQueryParamsThatAreNotInComments() {
+	void shouldGetAllQueryParamsFromInFbNumeric() {
+		String sql = "SElECT * FROM EMPLOYEES WHERE id IN ($1,$2)";
+		assertEquals(Map.of(1, 37, 2, 40), StatementUtil.getParamMarketsPositions(sql, PreparedStatementParamStyle.FB_NUMERIC));
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
+	}
+
+	@Test
+	void shouldGetAllQueryParamsThatAreNotInCommentsNative() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE /* ?*/id IN (?,?)";
-		assertEquals(Map.of(1, 43, 2, 45), StatementUtil.getParamMarketsPositions(sql));
-		assertEquals(1, parseToRawStatementWrapper(sql).getSubStatements().size());
+		assertEquals(Map.of(1, 43, 2, 45), StatementUtil.getParamMarketsPositionsNative(sql));
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
 	}
 
 	@Test
-	void shouldGetAllQueryParamsThatAreNotInComments2() {
+	void shouldGetAllQueryParamsThatAreNotInCommentsFbNumeric() {
+		String sql = "SElECT * FROM EMPLOYEES WHERE /* ?*/id IN ($1,$2)";
+		assertEquals(Map.of(1, 43, 2, 46), StatementUtil.getParamMarketsPositions(sql, PreparedStatementParamStyle.FB_NUMERIC));
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
+	}
+
+	@Test
+	void shouldGetAllQueryParamsThatAreNotInComments2Native() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE /* ?id IN (?,?)*/";
-		assertEquals(Map.of(), StatementUtil.getParamMarketsPositions(sql));
-		assertEquals(1, parseToRawStatementWrapper(sql).getSubStatements().size());
+		assertEquals(Map.of(), StatementUtil.getParamMarketsPositionsNative(sql));
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
 	}
 
 	@Test
-	void shouldGetAllQueryParamsThatAreNotInSingleLineComment() {
+	void shouldGetAllQueryParamsThatAreNotInComments2FbNumeric() {
+		String sql = "SElECT * FROM EMPLOYEES WHERE /* ?id IN ($1,$2)*/";
+		assertEquals(Map.of(), StatementUtil.getParamMarketsPositions(sql, PreparedStatementParamStyle.FB_NUMERIC));
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
+	}
+
+	@Test
+	void shouldGetAllQueryParamsThatAreNotInSingleLineCommentNative() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n";
-		assertEquals(Map.of(), StatementUtil.getParamMarketsPositions(sql));
-		assertEquals(1, parseToRawStatementWrapper(sql).getSubStatements().size());
+		assertEquals(Map.of(), StatementUtil.getParamMarketsPositionsNative(sql));
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
 	}
 
 	@Test
-	void shouldGetAllQueryParamsThatAreNotInSingleLineComment2() {
+	void shouldGetAllQueryParamsThatAreNotInSingleLineCommentFbNumeric() {
+		String sql = "SElECT * FROM EMPLOYEES WHERE id IN --($1,$2)\n";
+		assertEquals(Map.of(), StatementUtil.getParamMarketsPositions(sql, PreparedStatementParamStyle.FB_NUMERIC));
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
+	}
+
+	@Test
+	void shouldGetAllQueryParamsThatAreNotInSingleLineCommentNative2() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id IN --\n(?,?)";
-		assertEquals(Map.of(1, 40, 2, 42), StatementUtil.getParamMarketsPositions(sql));
-		assertEquals(1, parseToRawStatementWrapper(sql).getSubStatements().size());
+		assertEquals(Map.of(1, 40, 2, 42), StatementUtil.getParamMarketsPositionsNative(sql));
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
 	}
 
 	@Test
-	void shouldGetAllQueryParamsThatAreNotInBetweenQuotesOrComments() {
+	void shouldGetAllQueryParamsThatAreNotInSingleLineCommentFbNumeric2() {
+		String sql = "SElECT * FROM EMPLOYEES WHERE id IN --\n($1,$2)";
+		assertEquals(Map.of(1, 40, 2, 43), StatementUtil.getParamMarketsPositions(sql, PreparedStatementParamStyle.FB_NUMERIC));
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
+	}
+
+	@Test
+	void shouldGetAllQueryParamsThatAreNotInBetweenQuotesOrCommentsNative() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE ? AND my_date = ?";
-		assertEquals(Map.of(1, 93, 2, 109), StatementUtil.getParamMarketsPositions(sql));
-		assertEquals(1, parseToRawStatementWrapper(sql).getSubStatements().size());
+		assertEquals(Map.of(1, 93, 2, 109), StatementUtil.getParamMarketsPositionsNative(sql));
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
+	}
+
+	@Test
+	void shouldGetAllQueryParamsThatAreNotInBetweenQuotesOrCommentsFbNumeric() {
+		String sql = "SElECT * FROM EMPLOYEES WHERE id IN --($1,$2)\n AND name NOT LIKE '$1 Hello $2 ' AND address LIKE $1 AND my_date = $2";
+		assertEquals(Map.of(1, 97, 2, 114), StatementUtil.getParamMarketsPositions(sql, PreparedStatementParamStyle.FB_NUMERIC));
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
 	}
 
 	@Test
 	void shouldReplaceOneQueryParamsThatAreNotInBetweenQuotesOrComments() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE ?";
 		String expectedSql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE '55 Liverpool road%'";
-		Map<Integer, String> params = Map.of(1, "'55 Liverpool road%'");
+		Map<Integer, Object> params = Map.of(1, "'55 Liverpool road%'");
 		assertEquals(expectedSql, replaceParameterMarksWithValues(params, sql).get(0).getSql());
 	}
 
@@ -287,7 +343,7 @@ class StatementUtilTest {
 	void shouldReplaceAQueryParam() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id is ?";
 		String expectedSql = "SElECT * FROM EMPLOYEES WHERE id is 5";
-		Map<Integer, String> params = Map.of(1, "5");
+		Map<Integer, Object> params = Map.of(1, "5");
 		assertEquals(expectedSql, replaceParameterMarksWithValues(params, sql).get(0).getSql());
 	}
 
@@ -295,7 +351,7 @@ class StatementUtilTest {
 	void shouldReplaceMultipleQueryParams() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id = ? AND name LIKE ? AND dob = ? ";
 		String expectedSql = "SElECT * FROM EMPLOYEES WHERE id = 5 AND name LIKE 'George' AND dob = '1980-05-22' ";
-		Map<Integer, String> params = Map.of(1, "5", 2, "'George'", 3, "'1980-05-22'");
+		Map<Integer, Object> params = Map.of(1, "5", 2, "'George'", 3, "'1980-05-22'");
 		assertEquals(expectedSql, replaceParameterMarksWithValues(params, sql).get(0).getSql());
 	}
 
@@ -303,7 +359,7 @@ class StatementUtilTest {
 	void shouldReplaceAllQueryParamsThatAreNotInBetweenQuotesOrComments() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE ? AND my_date = ? AND age = /* */ ?";
 		String expectedSql = "SElECT * FROM EMPLOYEES WHERE id IN --(?,?)\n AND name NOT LIKE '? Hello ? ' AND address LIKE '55 Liverpool road%' AND my_date = '2022-01-01' AND age = /* */ 5";
-		Map<Integer, String> params = Map.of(1, "'55 Liverpool road%'", 2, "'2022-01-01'", 3, "5");
+		Map<Integer, Object> params = Map.of(1, "'55 Liverpool road%'", 2, "'2022-01-01'", 3, "5");
 		assertEquals(expectedSql, replaceParameterMarksWithValues(params, sql).get(0).getSql());
 	}
 
@@ -313,7 +369,7 @@ class StatementUtilTest {
 		String expectedFirstSql = "SElECT * FROM EMPLOYEES WHERE id = 5 AND name LIKE 'George' AND dob = '1980-05-22' ; ";
 		String expectedSecondSql = "SELECT * FROM cats WHERE name IN ('Elizabeth', 'Charles')";
 
-		Map<Integer, String> params = Map.of(1, "5", 2, "'George'", 3, "'1980-05-22'", 4, "'Elizabeth'", 5,
+		Map<Integer, Object> params = Map.of(1, "5", 2, "'George'", 3, "'1980-05-22'", 4, "'Elizabeth'", 5,
 				"'Charles'");
 		assertEquals(expectedFirstSql, replaceParameterMarksWithValues(params, sql).get(0).getSql());
 		assertEquals(expectedSecondSql, replaceParameterMarksWithValues(params, sql).get(1).getSql());
@@ -321,7 +377,7 @@ class StatementUtilTest {
 
 	@Test
 	void shouldThrowExceptionWhenTheNumberOfParamsIsNotTheSameAsTheNumberOfParamMarkers() {
-		Map<Integer, String> params = Map.of(1, "1");
+		Map<Integer, Object> params = Map.of(1, "1");
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
 				() -> replaceParameterMarksWithValues(params, "SELECT 1;"));
 		assertEquals(
@@ -332,7 +388,7 @@ class StatementUtilTest {
 	@Test
 	void shouldThrowExceptionWhenTheParameterProvidedIsNull() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id is ?";
-		Map<Integer, String> params = new HashMap<>();
+		Map<Integer, Object> params = new HashMap<>();
 		params.put(1, null);
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
 				() -> replaceParameterMarksWithValues(params, sql));
@@ -342,7 +398,7 @@ class StatementUtilTest {
 	@Test
 	void shouldCountOnlyTwoQueriesWhenTheLastPartOfTheLastQueryIsAComment() {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id = ? AND name LIKE ? AND dob = ? ; SELECT 1;   --Some comment";
-		assertEquals(2, parseToRawStatementWrapper(sql).getSubStatements().size());
+		assertEquals(2, parseToRawStatementWrapperNative(sql).getSubStatements().size());
 	}
 
 	@Test
@@ -350,10 +406,10 @@ class StatementUtilTest {
 		String sql = "SElECT * FROM EMPLOYEES WHERE id = ? AND name LIKE ? AND dob = ? --Fetch employee with provided id \n ;\n\n\n\n\n SELECT 1;;;;;;;;;;;;; --Some comment";
 		assertEquals(
 				"SElECT * FROM EMPLOYEES WHERE id = ? AND name LIKE ? AND dob = ? --Fetch employee with provided id \n ;\n\n\n\n\n ",
-				parseToRawStatementWrapper(sql).getSubStatements().get(0).getSql());
+				parseToRawStatementWrapperNative(sql).getSubStatements().get(0).getSql());
 		assertEquals("SELECT 1;;;;;;;;;;;;; --Some comment",
-				parseToRawStatementWrapper(sql).getSubStatements().get(1).getSql());
-		assertEquals(2, parseToRawStatementWrapper(sql).getSubStatements().size());
+				parseToRawStatementWrapperNative(sql).getSubStatements().get(1).getSql());
+		assertEquals(2, parseToRawStatementWrapperNative(sql).getSubStatements().size());
 	}
 
 	@Test
@@ -361,8 +417,8 @@ class StatementUtilTest {
 		String sql = "\n\n\n  -- PARTITION BY \"name\";\n" + "\n" + "INSERT INTO employees VALUES(\n" + "  1,\n"
 				+ "  'hello',\n" + "  'world',\n" + "  'site',\n" + ");";
 
-		assertEquals(sql, parseToRawStatementWrapper(sql).getSubStatements().get(0).getSql());
-		assertEquals(1, parseToRawStatementWrapper(sql).getSubStatements().size());
+		assertEquals(sql, parseToRawStatementWrapperNative(sql).getSubStatements().get(0).getSql());
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
 
 	}
 
@@ -370,18 +426,18 @@ class StatementUtilTest {
 	void shouldFindOnlyOneQueryAndNoParamInHugeStatement() {
 		String sql = getSqlFromFile("/queries/query-with-huge-select.sql");
 		assertEquals(Collections.emptyList(),
-				parseToRawStatementWrapper(sql).getSubStatements().get(0).getParamMarkers());
-		assertEquals(1, parseToRawStatementWrapper(sql).getSubStatements().size());
+				parseToRawStatementWrapperNative(sql).getSubStatements().get(0).getParamMarkers());
+		assertEquals(1, parseToRawStatementWrapperNative(sql).getSubStatements().size());
 	}
 
 	@Test
 	void shouldCountOnlyTwoSubStatementsInMultiStatementWithALotOfComments() {
 		String sql = "  --Getting Multiple RS;\nSELECT 1; /* comment 1 ; ; ; */\n\n --Another comment ; \n  -- ; \n SELECT 2; /* comment 2 */";
-		assertEquals(2, parseToRawStatementWrapper(sql).getSubStatements().size());
+		assertEquals(2, parseToRawStatementWrapperNative(sql).getSubStatements().size());
 		assertEquals("SELECT 1;",
-				parseToRawStatementWrapper(sql).getSubStatements().get(0).getCleanSql());
+				parseToRawStatementWrapperNative(sql).getSubStatements().get(0).getCleanSql());
 		assertEquals("SELECT 2;",
-				parseToRawStatementWrapper(sql).getSubStatements().get(1).getCleanSql());
+				parseToRawStatementWrapperNative(sql).getSubStatements().get(1).getCleanSql());
 	}
 
 	@Test
@@ -396,7 +452,7 @@ class StatementUtilTest {
 
 	@Test
 	void shouldThrowExceptionWhenTryingToSetAParamWithAnInvalidPosition() {
-		Map<Integer, String> params = new HashMap<>();
+		Map<Integer, Object> params = new HashMap<>();
 		params.put(2, "John");
 		assertThrows(IllegalArgumentException.class,
 				() -> replaceParameterMarksWithValues(params, "SELECT * FROM employees WHERE name = ?"));
@@ -405,7 +461,7 @@ class StatementUtilTest {
 	@Test
 	void shouldParseStatementWithTypeParamSettingForStatementThatSetAdditionalParam() {
 		String sql = "-- comment \n \n    SET x = 1 ;";
-		RawStatementWrapper rawStatementWrapper = parseToRawStatementWrapper(sql);
+		RawStatementWrapper rawStatementWrapper = parseToRawStatementWrapperNative(sql);
 		assertEquals(PARAM_SETTING, rawStatementWrapper.getSubStatements().get(0).getStatementType());
 		assertEquals(Map.entry("x", "1"),
 				((SetParamRawStatement) rawStatementWrapper.getSubStatements().get(0)).getAdditionalProperty());
@@ -428,7 +484,7 @@ class StatementUtilTest {
 				+ "             \"test_data_venues\".\"price\"        AS \"price\",\n"
 				+ "             (\"test_data_venues\".\"price\" * -1) AS \"Refund Amount (?)\"\n"
 				+ "      FROM \"test_data_venues\") \"source\"\n" + "ORDER BY \"source\".\"id\" ASC LIMIT 1";
-		RawStatementWrapper rawStatementWrapper = parseToRawStatementWrapper(sql);
+		RawStatementWrapper rawStatementWrapper = parseToRawStatementWrapperNative(sql);
 		assertEquals(0, rawStatementWrapper.getTotalParams());
 	}
 

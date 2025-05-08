@@ -260,7 +260,7 @@ class FireboltStatementTest {
         // But next invocation of getLabel() will return other value, so the statement will not be found in list of running
         // queries and will be considered as cancelled.
         // It is ugly trick, but I do not know better way to simulate cancelled query.
-        StatementInfoWrapper statementInfoWrapper = new StatementInfoWrapper(query, StatementType.QUERY, null, new QueryRawStatement(query, query, List.of())) {
+        StatementInfoWrapper statementInfoWrapper = new StatementInfoWrapper(query, StatementType.QUERY, null, new QueryRawStatement(query, query, List.of()), null) {
             String label = null;
             @Override
             public String getLabel() {

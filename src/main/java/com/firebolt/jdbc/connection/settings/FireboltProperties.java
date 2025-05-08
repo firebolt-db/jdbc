@@ -77,6 +77,7 @@ public class FireboltProperties {
 	private final boolean validateOnSystemEngine;
 	private final boolean mergePreparedStatementBatches;
 	private final boolean connectionCachingEnabled;
+	private final String preparedStatementParamStyle;
 
 	@Builder.Default
 	private Map<String, String> initialAdditionalProperties = new HashMap<>();
@@ -116,6 +117,7 @@ public class FireboltProperties {
 		validateOnSystemEngine = getSetting(properties, FireboltSessionProperty.VALIDATE_ON_SYSTEM_ENGINE);
 		mergePreparedStatementBatches = getSetting(properties, FireboltSessionProperty.MERGE_PREPARED_STATEMENT_BATCHES);
 		connectionCachingEnabled = getSetting(properties, FireboltSessionProperty.CACHE_CONNECTION);
+        preparedStatementParamStyle = getSetting(properties, FireboltSessionProperty.PREPARED_STATEMENT_PARAM_STYLE);
 
 		environment = getEnvironment(configuredEnvironment, properties);
 		host = getHost(configuredEnvironment, properties);
@@ -124,7 +126,7 @@ public class FireboltProperties {
 
 		initialAdditionalProperties = getFireboltCustomProperties(properties);
 		runtimeAdditionalProperties = new HashMap<>();
-	}
+    }
 
 	private static String getEngine(Properties mergedProperties) {
 		return getSetting(mergedProperties, FireboltSessionProperty.ENGINE);

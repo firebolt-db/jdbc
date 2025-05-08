@@ -6,21 +6,16 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
-import com.firebolt.jdbc.type.FireboltDataType;
-import com.firebolt.jdbc.type.array.FireboltArray;
-import com.firebolt.jdbc.type.lob.FireboltBlob;
 import com.firebolt.jdbc.type.lob.FireboltClob;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.junitpioneer.jupiter.DefaultTimeZone;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -50,8 +45,6 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Optional;
 import java.util.TimeZone;
@@ -72,9 +65,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(MockitoExtension.class)
-class FireboltPreparedStatementTest {
+class FireboltPreparedStatementFbNumericTest {
 
 	@Captor
 	ArgumentCaptor<StatementInfoWrapper> queryInfoWrapperArgumentCaptor;
@@ -101,92 +93,67 @@ class FireboltPreparedStatementTest {
 					Arguments.of("setTime(calendar)", (Executable) () -> statement.setTime(1, new Time(System.currentTimeMillis()), Calendar.getInstance())),
 					Arguments.of("setRowId", (Executable) () -> statement.setRowId(1, mock(RowId.class))),
 					Arguments.of("setSQLXML", (Executable) () -> statement.setSQLXML(1, mock(SQLXML.class))),
-
-					// TODO: add support of these methods
 					Arguments.of("getParameterMetaData", (Executable) () -> statement.getParameterMetaData())
 		);
 	}
 
 	private static Stream<Arguments> buffers() {
 		return Stream.of(
-				Arguments.of("setClob((Clob)null)", (Setter) statement -> statement.setClob(1, (Clob)null), "NULL"),
-				Arguments.of("setClob((Reader)null)", (Setter) statement -> statement.setClob(1, (Reader)null), "NULL"),
-				Arguments.of("setClob((Reader)null, length)", (Setter) statement -> statement.setClob(1, null, 1L), "NULL"),
-				Arguments.of("setClob(Reader)", (Setter) statement -> statement.setClob(1, new FireboltClob("hello".toCharArray())), "'hello'"),
-				Arguments.of("setClob(Reader, length=)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 5), "'hello'"),
-				Arguments.of("setClob(Reader, length-1)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 4), "'hell'"),
-				Arguments.of("setClob(Reader, length+1)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 6), "'hello'"),
-				Arguments.of("setClob(Reader, 42)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 42), "'hello'"),
-				Arguments.of("setClob(Reader, 1)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 1), "'h'"),
-				Arguments.of("setClob(Reader, 0)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 0), "''"),
+				Arguments.of("setClob((Clob)null)", (Setter) statement -> statement.setClob(1, (Clob)null), "null"),
+				Arguments.of("setClob((Reader)null)", (Setter) statement -> statement.setClob(1, (Reader)null), "null"),
+				Arguments.of("setClob((Reader)null, length)", (Setter) statement -> statement.setClob(1, null, 1L), "null"),
+				Arguments.of("setClob(Reader)", (Setter) statement -> statement.setClob(1, new FireboltClob("hello".toCharArray())), "\"hello\""),
+				Arguments.of("setClob(Reader, length=)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 5), "\"hello\""),
+				Arguments.of("setClob(Reader, length-1)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 4), "\"hell\""),
+				Arguments.of("setClob(Reader, length+1)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 6), "\"hello\""),
+				Arguments.of("setClob(Reader, 42)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 42), "\"hello\""),
+				Arguments.of("setClob(Reader, 1)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 1), "\"h\""),
+				Arguments.of("setClob(Reader, 0)", (Setter) statement -> statement.setClob(1, new StringReader("hello"), 0), "\"\""),
 
-				Arguments.of("setNClob((NClob)null)", (Setter) statement -> statement.setNClob(1, (NClob)null), "NULL"),
-				Arguments.of("setNClob((Reader)null)", (Setter) statement -> statement.setNClob(1, (Reader)null), "NULL"),
-				Arguments.of("setNClob((Reader)null, length)", (Setter) statement -> statement.setNClob(1, null, 1L), "NULL"),
-				Arguments.of("setClob(Reader)", (Setter) statement -> statement.setNClob(1, new FireboltClob("hello".toCharArray())), "'hello'"),
-				Arguments.of("setNClob(Reader, length=)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 5), "'hello'"),
-				Arguments.of("setNClob(Reader, length-1)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 4), "'hell'"),
-				Arguments.of("setNClob(Reader, length+1)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 6), "'hello'"),
-				Arguments.of("setNClob(Reader, 42)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 42), "'hello'"),
-				Arguments.of("setNClob(Reader, 1)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 1), "'h'"),
-				Arguments.of("setNClob(Reader, 0)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 0), "''"),
+				Arguments.of("setNClob((NClob)null)", (Setter) statement -> statement.setNClob(1, (NClob)null), "null"),
+				Arguments.of("setNClob((Reader)null)", (Setter) statement -> statement.setNClob(1, (Reader)null), "null"),
+				Arguments.of("setNClob((Reader)null, length)", (Setter) statement -> statement.setNClob(1, null, 1L), "null"),
+				Arguments.of("setClob(Reader)", (Setter) statement -> statement.setNClob(1, new FireboltClob("hello".toCharArray())), "\"hello\""),
+				Arguments.of("setNClob(Reader, length=)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 5), "\"hello\""),
+				Arguments.of("setNClob(Reader, length-1)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 4), "\"hell\""),
+				Arguments.of("setNClob(Reader, length+1)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 6), "\"hello\""),
+				Arguments.of("setNClob(Reader, 42)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 42), "\"hello\""),
+				Arguments.of("setNClob(Reader, 1)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 1), "\"h\""),
+				Arguments.of("setNClob(Reader, 0)", (Setter) statement -> statement.setNClob(1, new StringReader("hello"), 0), "\"\""),
 
-				Arguments.of("setBlob((Blob)null)", (Setter) statement -> statement.setBlob(1, (Blob)null), "NULL"),
-				Arguments.of("setBClob((InputStream)null)", (Setter) statement -> statement.setBlob(1, (InputStream)null), "NULL"),
-				Arguments.of("setBClob((InputStream)null, length)", (Setter) statement -> statement.setBlob(1, null, 1L), "NULL"),
-				Arguments.of("setBlob((Clob)null)", (Setter) statement -> statement.setBlob(1, new FireboltBlob("hello".getBytes())), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
+				Arguments.of("setBlob((Blob)null)", (Setter) statement -> statement.setBlob(1, (Blob)null), "null"),
+				Arguments.of("setBClob((InputStream)null)", (Setter) statement -> statement.setBlob(1, (InputStream)null), "null"),
+				Arguments.of("setBClob((InputStream)null, length)", (Setter) statement -> statement.setBlob(1, null, 1L), "null"),
 
-				Arguments.of("setCharacterStream(null)", (Setter) statement -> statement.setCharacterStream(1, null), "NULL"),
-				Arguments.of("setCharacterStream(null, int)", (Setter) statement -> statement.setCharacterStream(1, null, 1), "NULL"),
-				Arguments.of("setCharacterStream(null, long)", (Setter) statement -> statement.setCharacterStream(1, null, 1L), "NULL"),
-				Arguments.of("setCharacterStream(Reader)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello")), "'hello'"),
-				Arguments.of("setCharacterStream(Reader, length=)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 5), "'hello'"),
-				Arguments.of("setCharacterStream(Reader, length-1)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 4), "'hell'"),
-				Arguments.of("setCharacterStream(Reader, length+1)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 6), "'hello'"),
-				Arguments.of("setCharacterStream(Reader, 42)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 42), "'hello'"),
-				Arguments.of("setCharacterStream(Reader, 1)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 1), "'h'"),
-				Arguments.of("setCharacterStream(Reader, 0)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 0), "''"),
+				Arguments.of("setCharacterStream(null)", (Setter) statement -> statement.setCharacterStream(1, null), "null"),
+				Arguments.of("setCharacterStream(null, int)", (Setter) statement -> statement.setCharacterStream(1, null, 1), "null"),
+				Arguments.of("setCharacterStream(null, long)", (Setter) statement -> statement.setCharacterStream(1, null, 1L), "null"),
+				Arguments.of("setCharacterStream(Reader)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello")), "\"hello\""),
+				Arguments.of("setCharacterStream(Reader, length=)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 5), "\"hello\""),
+				Arguments.of("setCharacterStream(Reader, length-1)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 4), "\"hell\""),
+				Arguments.of("setCharacterStream(Reader, length+1)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 6), "\"hello\""),
+				Arguments.of("setCharacterStream(Reader, 42)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 42), "\"hello\""),
+				Arguments.of("setCharacterStream(Reader, 1)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 1), "\"h\""),
+				Arguments.of("setCharacterStream(Reader, 0)", (Setter) statement -> statement.setCharacterStream(1, new StringReader("hello"), 0), "\"\""),
 
-				Arguments.of("setNCharacterStream(null)", (Setter) statement -> statement.setNCharacterStream(1, null), "NULL"),
-				Arguments.of("setNCharacterStream(null, int)", (Setter) statement -> statement.setNCharacterStream(1, null, 1), "NULL"),
-				Arguments.of("setNCharacterStream(null, long)", (Setter) statement -> statement.setNCharacterStream(1, null, 1L), "NULL"),
-				Arguments.of("setNCharacterStream(Reader)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello")), "'hello'"),
-				Arguments.of("setNCharacterStream(Reader, length=)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 5), "'hello'"),
-				Arguments.of("setNCharacterStream(Reader, length-1)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 4), "'hell'"),
-				Arguments.of("setNCharacterStream(Reader, length+1)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 6), "'hello'"),
-				Arguments.of("setNCharacterStream(Reader, 42)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 42), "'hello'"),
-				Arguments.of("setNCharacterStream(Reader, 1)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 1), "'h'"),
-				Arguments.of("setNCharacterStream(Reader, 0)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 0), "''"),
+				Arguments.of("setNCharacterStream(null)", (Setter) statement -> statement.setNCharacterStream(1, null), "null"),
+				Arguments.of("setNCharacterStream(null, int)", (Setter) statement -> statement.setNCharacterStream(1, null, 1), "null"),
+				Arguments.of("setNCharacterStream(null, long)", (Setter) statement -> statement.setNCharacterStream(1, null, 1L), "null"),
+				Arguments.of("setNCharacterStream(Reader)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello")), "\"hello\""),
+				Arguments.of("setNCharacterStream(Reader, length=)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 5), "\"hello\""),
+				Arguments.of("setNCharacterStream(Reader, length-1)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 4), "\"hell\""),
+				Arguments.of("setNCharacterStream(Reader, length+1)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 6), "\"hello\""),
+				Arguments.of("setNCharacterStream(Reader, 42)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 42), "\"hello\""),
+				Arguments.of("setNCharacterStream(Reader, 1)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 1), "\"h\""),
+				Arguments.of("setNCharacterStream(Reader, 0)", (Setter) statement -> statement.setNCharacterStream(1, new StringReader("hello"), 0), "\"\""),
 
-				Arguments.of("setAsciiStream(null)", (Setter) statement -> statement.setAsciiStream(1, null), "NULL"),
-				Arguments.of("setAsciiStream(null, int)", (Setter) statement -> statement.setAsciiStream(1, null, 1), "NULL"),
-				Arguments.of("setAsciiStream(null, long)", (Setter) statement -> statement.setAsciiStream(1, null, 1L), "NULL"),
-				Arguments.of("setAsciiStream(InputStream)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes())), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-				Arguments.of("setAsciiStream(InputStream, length=)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 5), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-				Arguments.of("setAsciiStream(InputStream, length-1)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 4), "E'\\x68\\x65\\x6c\\x6c'::BYTEA"),
-				Arguments.of("setAsciiStream(InputStream, length+1)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 6), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-				Arguments.of("setAsciiStream(InputStream, 42)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 42), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-				Arguments.of("setAsciiStream(InputStream, 1)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 1), "E'\\x68'::BYTEA"),
-				Arguments.of("setAsciiStream(InputStream, 0)", (Setter) statement -> statement.setAsciiStream(1, new ByteArrayInputStream("hello".getBytes()), 0), "E'\\x'::BYTEA"),
+				Arguments.of("setAsciiStream(null)", (Setter) statement -> statement.setAsciiStream(1, null), "null"),
+				Arguments.of("setAsciiStream(null, int)", (Setter) statement -> statement.setAsciiStream(1, null, 1), "null"),
+				Arguments.of("setAsciiStream(null, long)", (Setter) statement -> statement.setAsciiStream(1, null, 1L), "null"),
 
-				Arguments.of("setBinaryStream(null)", (Setter) statement -> statement.setBinaryStream(1, null), "NULL"),
-				Arguments.of("setBinaryStream(null, int)", (Setter) statement -> statement.setBinaryStream(1, null, 1), "NULL"),
-				Arguments.of("setBinaryStream(null, long)", (Setter) statement -> statement.setBinaryStream(1, null, 1L), "NULL"),
-				Arguments.of("setBinaryStream(InputStream)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes())), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-				Arguments.of("setBinaryStream(InputStream, length=)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 5), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-				Arguments.of("setBinaryStream(InputStream, length-1)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 4), "E'\\x68\\x65\\x6c\\x6c'::BYTEA"),
-				Arguments.of("setBinaryStream(InputStream, length+1)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 6), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-				Arguments.of("setBinaryStream(InputStream, 42)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 42), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-				Arguments.of("setBinaryStream(InputStream, 1)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 1), "E'\\x68'::BYTEA"),
-				Arguments.of("setBinaryStream(InputStream, 0)", (Setter) statement -> statement.setBinaryStream(1, new ByteArrayInputStream("hello".getBytes()), 0), "E'\\x'::BYTEA"),
-
-				Arguments.of("setUnicodeStream(null, int)", (Setter) statement -> statement.setUnicodeStream(1, null, 1), "NULL"),
-				Arguments.of("setUnicodeStream(InputStream, length=)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 5), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-				Arguments.of("setUnicodeStream(InputStream, length-1)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 4), "E'\\x68\\x65\\x6c\\x6c'::BYTEA"),
-				Arguments.of("setUnicodeStream(InputStream, length+1)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 6), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-				Arguments.of("setUnicodeStream(InputStream, 42)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 42), "E'\\x68\\x65\\x6c\\x6c\\x6f'::BYTEA"),
-				Arguments.of("setUnicodeStream(InputStream, 1)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 1), "E'\\x68'::BYTEA"),
-				Arguments.of("setUnicodeStream(InputStream, 0)", (Setter) statement -> statement.setUnicodeStream(1, new ByteArrayInputStream("hello".getBytes()), 0), "E'\\x'::BYTEA"));
+				Arguments.of("setBinaryStream(null)", (Setter) statement -> statement.setBinaryStream(1, null), "null"),
+				Arguments.of("setBinaryStream(null, int)", (Setter) statement -> statement.setBinaryStream(1, null, 1), "null"),
+				Arguments.of("setBinaryStream(null, long)", (Setter) statement -> statement.setBinaryStream(1, null, 1L), "null"));
 	}
 
 	private static Stream<Arguments> setNumber() {
@@ -204,7 +171,7 @@ class FireboltPreparedStatementTest {
 	@BeforeEach
 	void beforeEach() throws SQLException {
 		when(connection.getSessionProperties()).thenReturn(properties);
-		lenient().when(properties.getPreparedStatementParamStyle()).thenReturn("native");
+		lenient().when(properties.getPreparedStatementParamStyle()).thenReturn("fb_numeric");
 		lenient().when(properties.getBufferSize()).thenReturn(10);
 		lenient().when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
 	}
@@ -218,12 +185,12 @@ class FireboltPreparedStatementTest {
 
 	@ParameterizedTest
 	@CsvSource(value = {
-			"INSERT INTO data (field) VALUES (?),false",
-			"SELECT * FROM data WHERE field=?,true",
+			"INSERT INTO data (field) VALUES ($1),false",
+			"SELECT * FROM data WHERE field=$1,true",
 	})
 	void getMetadata(String query, boolean expectedResultSet) throws SQLException {
 		StatementClient statementClient = mock(StatementClient.class);
-		when(statementClient.executeSqlStatement(any(), any(), anyBoolean(), anyInt(), eq(false))).thenReturn(new ByteArrayInputStream(new byte[0]));
+		when(statementClient.executeSqlStatement(any(), any(), anyBoolean(), anyInt(), anyBoolean())).thenReturn(new ByteArrayInputStream(new byte[0]));
 		statement = new FireboltPreparedStatement(new FireboltStatementService(statementClient), connection, query);
 		assertNull(statement.getMetaData());
 		statement.setObject(1, null);
@@ -238,7 +205,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldExecute() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (?,?,?,?,?,?,?,?)");
+		statement = createStatementWithSql("INSERT INTO cars (sales, make, model, minor_model, color, type) VALUES ($1,$2,$3,$4,$5,$6)");
 
 		statement.setInt(1, 500);
 		statement.setString(2, "Ford");
@@ -246,17 +213,19 @@ class FireboltPreparedStatementTest {
 		statement.setNull(4, Types.VARCHAR);
 		statement.setNull(5, Types.VARCHAR,  "VARCHAR");
 		statement.setNString(6, "sedan");
-		statement.setArray(7, new FireboltArray(FireboltDataType.TEXT, new String[] {"sedan", "hatchback", "coupe"}));
-		statement.setBytes(8, "HarryFord".getBytes());
 		statement.execute();
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (500,'Ford','FOCUS',NULL,NULL,'sedan',['sedan','hatchback','coupe'],E'\\x48\\x61\\x72\\x72\\x79\\x46\\x6f\\x72\\x64'::BYTEA)",
+		assertEquals("INSERT INTO cars (sales, make, model, minor_model, color, type) VALUES ($1,$2,$3,$4,$5,$6)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":500},{\"name\":\"$2\",\"value\":\"Ford\"}," +
+				"{\"name\":\"$3\",\"value\":\"FOCUS\"},{\"name\":\"$4\",\"value\":null},{\"name\":\"$5\",\"value\":null}," +
+				"{\"name\":\"$6\",\"value\":\"sedan\"}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
 	void setNullByteArray() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (?,?,?,?,?,?,?,?)");
+		statement = createStatementWithSql("INSERT INTO cars (sales, make, model, minor_model, color, type, signature) VALUES ($1,$2,$3,$4,$5,$6,$7)");
 
 		statement.setShort(1, (short)500);
 		statement.setString(2, "Ford");
@@ -264,22 +233,27 @@ class FireboltPreparedStatementTest {
 		statement.setNull(4, Types.VARCHAR);
 		statement.setNull(5, Types.VARCHAR,  "VARCHAR");
 		statement.setNString(6, "sedan");
-		statement.setArray(7, new FireboltArray(FireboltDataType.TEXT, new String[] {"sedan", "hatchback", "coupe"}));
-		statement.setBytes(8, null);
+		statement.setBytes(7, null);
 		statement.execute();
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("INSERT INTO cars (sales, make, model, minor_model, color, type, types, signature) VALUES (500,'Ford','FOCUS',NULL,NULL,'sedan',['sedan','hatchback','coupe'],NULL)",
+		assertEquals("INSERT INTO cars (sales, make, model, minor_model, color, type, signature) VALUES ($1,$2,$3,$4,$5,$6,$7)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":500},{\"name\":\"$2\",\"value\":\"Ford\"}," +
+						"{\"name\":\"$3\",\"value\":\"FOCUS\"},{\"name\":\"$4\",\"value\":null},{\"name\":\"$5\",\"value\":null}," +
+						"{\"name\":\"$6\",\"value\":\"sedan\"},{\"name\":\"$7\",\"value\":null}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("buffers")
 	void setBuffer(String name, Setter setter, String expected) throws SQLException {
-		statement = createStatementWithSql("INSERT INTO data (field) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO data (field) VALUES ($1)");
 		setter.set(statement);
 		statement.execute();
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals(format("INSERT INTO data (field) VALUES (%s)", expected), queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("INSERT INTO data (field) VALUES ($1)", queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":" + expected + "}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
@@ -308,7 +282,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldExecuteBatch() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars (sales, make) VALUES (?,?)");
+		statement = createStatementWithSql("INSERT INTO cars (sales, make) VALUES ($1,$2)");
 
 		statement.setObject(1, 150);
 		statement.setObject(2, "Ford");
@@ -318,52 +292,50 @@ class FireboltPreparedStatementTest {
 		statement.addBatch();
 		statement.executeBatch();
 		verify(fireboltStatementService, times(2)).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("INSERT INTO cars (sales, make) VALUES (150,'Ford')",
+		assertEquals("INSERT INTO cars (sales, make) VALUES ($1,$2)",
 				queryInfoWrapperArgumentCaptor.getAllValues().get(0).getSql());
-		assertEquals("INSERT INTO cars (sales, make) VALUES (300,'Tesla')",
+		assertEquals("INSERT INTO cars (sales, make) VALUES ($1,$2)",
 				queryInfoWrapperArgumentCaptor.getAllValues().get(1).getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":150},{\"name\":\"$2\",\"value\":\"Ford\"}]",
+				queryInfoWrapperArgumentCaptor.getAllValues().get(0).getPreparedStatementParameters());
+		assertEquals("[{\"name\":\"$1\",\"value\":300},{\"name\":\"$2\",\"value\":\"Tesla\"}]",
+				queryInfoWrapperArgumentCaptor.getAllValues().get(1).getPreparedStatementParameters());
 	}
 
-	@ParameterizedTest
-	@ValueSource(strings = {
-			"SELECT * FROM cars WHERE make LIKE ?",
-			"SELECT * FROM cars WHERE make LIKE ,?",
-			"SELECT * FROM cars WHERE make LIKE (?"
-	})
-	void shouldThrowExceptionWhenAllParametersAreNotDefined(String query) throws SQLException {
-		try (PreparedStatement ps = createStatementWithSql(query)) {
-			assertThrows(IllegalArgumentException.class, ps::executeQuery);
+	@Test
+	void shouldThrowExceptionWhenAllParametersAreNotDefined() throws SQLException {
+		try (PreparedStatement ps = createStatementWithSql("SELECT * FROM cars WHERE make LIKE $1")) {
+			when(fireboltStatementService.execute(any(), any(), any()))
+					.thenThrow(
+						new FireboltException(
+							"Line 1, Column 8: Query referenced positional parameter $3, but it was not set",
+							400,
+							"Line 1, Column 8: Query referenced positional parameter $3, but it was not set"
+						)
+					);
+			assertEquals("Line 1, Column 8: Query referenced positional parameter $3, but it was not set",
+					assertThrows(FireboltException.class, ps::execute).getErrorMessageFromServer());
 		}
 	}
 
 	@Test
 	void shouldExecuteWithSpecialCharactersInQuery() throws SQLException {
-		String sql = "INSERT INTO cars (model ,sales, make) VALUES (?,?,'(?:^|[^\\\\p{L}\\\\p{N}])(?i)(phone)(?:[^\\\\p{L}\\\\p{N}]|$)')";
+		String sql = "INSERT INTO cars (model ,sales, make) VALUES ($1,$2,'($3:^|[^\\\\p{L}\\\\p{N}])($4i)(phone)($5:[^\\\\p{L}\\\\p{N}]|$)')";
 		statement = createStatementWithSql(sql);
 
 		statement.setObject(1, "?");
 		statement.setObject(2, " ?");
 
-		String expectedSql = "INSERT INTO cars (model ,sales, make) VALUES ('?',' ?','(?:^|[^\\\\p{L}\\\\p{N}])(?i)(phone)(?:[^\\\\p{L}\\\\p{N}]|$)')";
-
 		statement.execute();
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals(expectedSql, queryInfoWrapperArgumentCaptor.getValue().getSql());
-	}
-
-	@Test
-	void shouldThrowExceptionWhenTooManyParametersAreProvided() throws SQLException {
-		String sql = "INSERT INTO cars (model ,sales, make) VALUES (?, '(?:^|[^\\\\p{L}\\\\p{N}])(?i)(phone)(?:[^\\\\p{L}\\\\p{N}]|$)')";
-		statement  = createStatementWithSql(sql);
-
-		statement.setObject(1, "A");
-
-		assertThrows(FireboltException.class, () -> statement.setObject(2, "B"));
+		assertEquals(sql, queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":\"?\"},{\"name\":\"$2\",\"value\":\" ?\"}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
 	void shouldExecuteUpdate() throws SQLException {
-		statement  = createStatementWithSql("update cars set sales = ? where make = ?");
+		statement  = createStatementWithSql("update cars set sales = $1 where make = $2");
 
 		statement.setObject(1, 150);
 		statement.setObject(2, "Ford");
@@ -371,14 +343,16 @@ class FireboltPreparedStatementTest {
 		assertEquals(0, statement.executeUpdate()); // we are not able to return number of affected lines right now
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("update cars set sales = 150 where make = 'Ford'",
+		assertEquals("update cars set sales = $1 where make = $2",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":150},{\"name\":\"$2\",\"value\":\"Ford\"}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 
 	@Test
 	void shouldThrowsExceptionWhenTryingToExecuteUpdateWithQuery() throws SQLException {
-		statement  = createStatementWithSql("update cars set sales = ? where make = ?");
+		statement  = createStatementWithSql("update cars set sales = $1 where make = $2");
 
 		statement.setObject(1, 150);
 		statement.setObject(2, "Ford");
@@ -389,26 +363,29 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void shouldSetNull() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars (sales, make) VALUES (?,?)");
+		statement = createStatementWithSql("INSERT INTO cars (sales, make) VALUES ($1,$2)");
 
 		statement.setNull(1, 0);
 		statement.setNull(2, 0);
 		statement.execute();
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("INSERT INTO cars (sales, make) VALUES (NULL,NULL)",
+		assertEquals("INSERT INTO cars (sales, make) VALUES ($1,$2)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":null},{\"name\":\"$2\",\"value\":null}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
 	void shouldSetBoolean() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars(available) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO cars(available) VALUES ($1)");
 
 		statement.setBoolean(1, true);
 		statement.execute();
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("INSERT INTO cars(available) VALUES (true)", queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("INSERT INTO cars(available) VALUES ($1)", queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":true}]", queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@ParameterizedTest
@@ -417,31 +394,34 @@ class FireboltPreparedStatementTest {
 			"Firebolt,http://www.firebolt.io"
 	})
 	void shouldSetUrl(String name, URL url) throws SQLException {
-		statement = createStatementWithSql("INSERT INTO companies (name, url) VALUES (?,?)");
+		statement = createStatementWithSql("INSERT INTO companies (name, url) VALUES ($1,$2)");
 
 		statement.setString(1, name);
 		statement.setURL(2, url);
 		statement.execute();
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals(format("INSERT INTO companies (name, url) VALUES (%s,%s)", sqlQuote(name), sqlQuote(url)), queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("INSERT INTO companies (name, url) VALUES ($1,$2)", queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":\"" + name + "\"}," +
+				"{\"name\":\"$2\",\"value\":" + sqlQuote(url) + "}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	private String sqlQuote(Object value) {
-		return value == null ? "NULL" : format("'%s'", value);
+		return value == null ? "null" : format("\"%s\"", value);
 	}
 
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("unsupported")
 	void shouldThrowSQLFeatureNotSupportedException(String name, Executable function) {
-		statement = createStatementWithSql("INSERT INTO cars(make) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO cars(make) VALUES ($1)");
 		assertThrows(SQLFeatureNotSupportedException.class, function);
 	}
 
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("setNumber")
 	<T> void shouldSetNumber(String name, ParameterizedSetter<T> setter, T value) throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars(price) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO cars(price) VALUES ($1)");
 
 		setter.set(statement, 1, value);
 		statement.execute();
@@ -452,91 +432,102 @@ class FireboltPreparedStatementTest {
 	@Test
 	@DefaultTimeZone("Europe/London")
 	void shouldSetDate() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES ($1)");
 
 		statement.setDate(1, new Date(1564527600000L));
 		statement.execute();
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("INSERT INTO cars(release_date) VALUES ('2019-07-31')",
+		assertEquals("INSERT INTO cars(release_date) VALUES ($1)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":\"2019-07-31\"}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
 	void shouldSetDateWithCalendar() throws SQLException, ParseException {
-		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES ($1)");
 		Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("JST"));
 		calendar.setTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z").parse("2024-04-18 20:00:00 GMT"));
 		statement.setDate(1, new Date(calendar.getTimeInMillis()), calendar);
 		statement.execute();
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("INSERT INTO cars(release_date) VALUES ('2024-04-19')",
+		assertEquals("INSERT INTO cars(release_date) VALUES ($1)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":\"2024-04-19\"}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
 	@DefaultTimeZone("Europe/London")
-	void shouldSetDateWithNullCalendar() throws SQLException, ParseException {
-		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
+	void shouldSetDateWithNullCalendar() throws SQLException {
+		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES ($1)");
 
 		statement.setDate(1, new Date(1564527600000L), null);
 		statement.execute();
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("INSERT INTO cars(release_date) VALUES ('2019-07-31')",
+		assertEquals("INSERT INTO cars(release_date) VALUES ($1)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":\"2019-07-31\"}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
 	void shouldSetTimeStampWithCalendar() throws SQLException, ParseException {
-		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES ($1)");
 		Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("JST"));
 		calendar.setTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z").parse("2024-04-18 20:11:01 GMT"));
 		statement.setTimestamp(1, new Timestamp(calendar.getTimeInMillis()), calendar);
 		statement.execute();
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("INSERT INTO cars(release_date) VALUES ('2024-04-19 05:11:01')",
+		assertEquals("INSERT INTO cars(release_date) VALUES ($1)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":\"2024-04-19 05:11:01\"}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
 	@DefaultTimeZone("Europe/London")
 	void shouldSetTimeStamp() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES ($1)");
 
 		statement.setTimestamp(1, new Timestamp(1564571713000L));
 		statement.execute();
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("INSERT INTO cars(release_date) VALUES ('2019-07-31 12:15:13')",
+		assertEquals("INSERT INTO cars(release_date) VALUES ($1)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":\"2019-07-31 12:15:13.0\"}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
 	void shouldSetNullTimeStampWithCalendar() throws SQLException, ParseException {
-		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO cars(release_date) VALUES ($1)");
 		Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("JST"));
 		calendar.setTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z").parse("2024-04-18 20:11:01 GMT"));
 		statement.setTimestamp(1, null, calendar);
 		statement.execute();
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals("INSERT INTO cars(release_date) VALUES (NULL)",
+		assertEquals("INSERT INTO cars(release_date) VALUES ($1)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":null}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
-	@ParameterizedTest
+	@Test
 	@DefaultTimeZone("Europe/London")
-	@MethodSource("dateTypes")
-	void shouldSetAllObjects(Object timestampOrLocalDateTime, Object dateOrLocalDate) throws SQLException {
+	void shouldSetAllObjects() throws SQLException {
 		statement = createStatementWithSql(
-				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) "
-						+ "VALUES (?,?,?,?,?,?,?,?)");
+				"INSERT INTO cars (timestamp, date, float, long, big_decimal, null, boolean, int) " +
+						"VALUES ($1,$2,$3,$4,$5,$6,$7,$8)");
 
-		statement.setObject(1, timestampOrLocalDateTime);
-		statement.setObject(2, dateOrLocalDate);
+		statement.setObject(1, new Timestamp(1564571713000L));
+		statement.setObject(2, new Date(1564527600000L));
 		statement.setObject(3, 5.5F);
 		statement.setObject(4, 5L);
 		statement.setObject(5, new BigDecimal("555555555555.55555555"));
@@ -547,21 +538,23 @@ class FireboltPreparedStatementTest {
 		statement.execute();
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-		assertEquals(
-				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,true,5)",
+		assertEquals("INSERT INTO cars (timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":\"2019-07-31 12:15:13.0\"},{\"name\":\"$2\",\"value\":\"2019-07-31\"}," +
+						"{\"name\":\"$3\",\"value\":5.5},{\"name\":\"$4\",\"value\":5},{\"name\":\"$5\",\"value\":555555555555.55555555}," +
+						"{\"name\":\"$6\",\"value\":null},{\"name\":\"$7\",\"value\":true},{\"name\":\"$8\",\"value\":5}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
-	@ParameterizedTest
+	@Test
 	@DefaultTimeZone("Europe/London")
-	@MethodSource("dateTypes")
-	void shouldSetAllObjectsWithCorrectSqlType(Object timestampOrLocalDateTime, Object dateOrLocalDate) throws SQLException {
+	void shouldSetAllObjectsWithCorrectSqlType() throws SQLException {
 		statement = createStatementWithSql(
-				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) "
-						+ "VALUES (?,?,?,?,?,?,?,?)");
+				"INSERT INTO cars (timestamp, date, float, long, big_decimal, null, boolean, int) " +
+						"VALUES ($1,$2,$3,$4,$5,$6,$7,$8)");
 
-		statement.setObject(1, timestampOrLocalDateTime, Types.TIMESTAMP);
-		statement.setObject(2, dateOrLocalDate, Types.DATE);
+		statement.setObject(1, new Timestamp(1564571713000L), Types.TIMESTAMP);
+		statement.setObject(2, new Date(1564527600000L), Types.DATE);
 		statement.setObject(3, 5.5F, Types.FLOAT);
 		statement.setObject(4, 5L, Types.BIGINT);
 		statement.setObject(5, new BigDecimal("555555555555.55555555"), Types.NUMERIC);
@@ -573,9 +566,46 @@ class FireboltPreparedStatementTest {
 
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 
-		assertEquals(
-				"INSERT INTO cars(timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ('2019-07-31 12:15:13','2019-07-31',5.5,5,555555555555.55555555,NULL,true,5)",
+		assertEquals("INSERT INTO cars (timestamp, date, float, long, big_decimal, null, boolean, int) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
 				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":\"2019-07-31 12:15:13.0\"},{\"name\":\"$2\",\"value\":\"2019-07-31\"}," +
+						"{\"name\":\"$3\",\"value\":5.5},{\"name\":\"$4\",\"value\":5},{\"name\":\"$5\",\"value\":555555555555.55555555}," +
+						"{\"name\":\"$6\",\"value\":null},{\"name\":\"$7\",\"value\":true},{\"name\":\"$8\",\"value\":5}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
+	}
+
+	@Test
+	void shouldSetParametersWithRandomIndex() throws SQLException {
+		statement = createStatementWithSql("INSERT INTO cars (float, long, null) VALUES ($1,$42,$32)");
+
+		statement.setObject(1, 5.5F, Types.FLOAT);
+		statement.setObject(42, 5L, Types.BIGINT);
+		statement.setObject(32, null, Types.JAVA_OBJECT);
+
+		statement.execute();
+
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
+
+		assertEquals("INSERT INTO cars (float, long, null) VALUES ($1,$42,$32)",
+				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$32\",\"value\":null},{\"name\":\"$1\",\"value\":5.5},{\"name\":\"$42\",\"value\":5}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
+	}
+
+	@Test
+	void shouldSetParametersWithRepeatingValues() throws SQLException {
+		statement = createStatementWithSql("INSERT INTO cars (float, long, null) VALUES ($1,$1,$1)");
+
+		statement.setObject(1, 5.5F, Types.FLOAT);
+
+		statement.execute();
+
+		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
+
+		assertEquals("INSERT INTO cars (float, long, null) VALUES ($1,$1,$1)",
+				queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":5.5}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@ParameterizedTest
@@ -594,7 +624,7 @@ class FireboltPreparedStatementTest {
 	@CsvSource(value = {
 			"3.14," + Types.DECIMAL + ",2,3.14",
 			"3.1415926," + Types.DECIMAL + ",2,3.14",
-			"2.7," + Types.NUMERIC + ",2,2.70",
+			"2.7," + Types.NUMERIC + ",2,2.7",
 			"2.718281828," + Types.NUMERIC + ",1,2.7",
 			"2.718281828," + Types.NUMERIC + ",5,2.71828",
 	})
@@ -606,7 +636,7 @@ class FireboltPreparedStatementTest {
 	@CsvSource(value = {
 			"3.14," + Types.DECIMAL + ",2,3.14",
 			"3.1415926," + Types.DECIMAL + ",2,3.14",
-			"2.7," + Types.NUMERIC + ",2,2.70",
+			"2.7," + Types.NUMERIC + ",2,2.7",
 			"2.718281828," + Types.NUMERIC + ",1,2.7",
 			"2.718281828," + Types.NUMERIC + ",5,2.71828",
 	})
@@ -626,7 +656,7 @@ class FireboltPreparedStatementTest {
 
 	@Test
 	void unsupportedType() {
-		statement = createStatementWithSql("INSERT INTO data (column) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO data (column) VALUES ($1)");
 		assertThrows(SQLException.class, () -> statement.setObject(1, this));
 		// STRUCT is not supported now, so it can be used as an example of unsupported type
 		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setObject(1, "", Types.STRUCT));
@@ -641,7 +671,7 @@ class FireboltPreparedStatementTest {
 	}
 
 	private void shouldSetObjectWithCorrectSqlType(Object value, int type, Integer scale, String expected) throws SQLException {
-		statement = createStatementWithSql("INSERT INTO data (column) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO data (column) VALUES ($1)");
 		if (scale == null) {
 			statement.setObject(1, value, type);
 		} else {
@@ -650,18 +680,19 @@ class FireboltPreparedStatementTest {
 		statement.execute();
 		verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 
-		assertEquals(format("INSERT INTO data (column) VALUES (%s)", expected), queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("INSERT INTO data (column) VALUES ($1)", queryInfoWrapperArgumentCaptor.getValue().getSql());
+		assertEquals("[{\"name\":\"$1\",\"value\":" + expected + "}]",
+				queryInfoWrapperArgumentCaptor.getValue().getPreparedStatementParameters());
 	}
 
 	@Test
 	void clearParameters() throws SQLException {
-		statement = createStatementWithSql("INSERT INTO data (column) VALUES (?)");
+		statement = createStatementWithSql("INSERT INTO data (column) VALUES ($1)");
 		statement.setObject(1, ""); // set parameter
 		statement.execute(); // execute statement - should work because all parameters are set
 		statement.clearParameters(); // clear parameters; now there are no parameters
-		assertThrows(IllegalArgumentException.class, () -> statement.execute()); // execution fails because parameters are not set
-		statement.setObject(1, ""); // set parameter again
-		statement.execute(); // now execution is successful
+		statement.execute(); // execution passes because we rely on server validation
+		verify(fireboltStatementService, times(2)).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 	}
 
 	@Test
@@ -672,15 +703,6 @@ class FireboltPreparedStatementTest {
 	}
 
 	private FireboltPreparedStatement createStatementWithSql(String sql) {
-		return new FireboltPreparedStatement(fireboltStatementService, connection, sql);
-	}
-
-	Stream<Arguments> dateTypes() {
-		return Stream.of(
-				Arguments.of(LocalDateTime.of(2019, 7, 31, 12, 15, 13),
-						LocalDate.of(2019, 7, 31)),
-				Arguments.of(new Timestamp(1564571713000L),
-						new Date(1564527600000L))
-		);
+		return new FireboltBackendPreparedStatement(fireboltStatementService, connection, sql);
 	}
 }
