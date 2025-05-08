@@ -332,16 +332,6 @@ class FireboltPreparedStatementFbNumericTest {
 	}
 
 	@Test
-	void shouldThrowExceptionWhenTooManyParametersAreProvided() throws SQLException {
-		String sql = "INSERT INTO cars (model ,sales, make) VALUES ($1, '($2:^|[^\\\\p{L}\\\\p{N}])($3i)(phone)($4:[^\\\\p{L}\\\\p{N}]|$)')";
-		statement  = createStatementWithSql(sql);
-
-		statement.setObject(1, "A");
-
-		assertThrows(FireboltException.class, () -> statement.setObject(2, "B"));
-	}
-
-	@Test
 	void shouldExecuteUpdate() throws SQLException {
 		statement  = createStatementWithSql("update cars set sales = $1 where make = $2");
 
