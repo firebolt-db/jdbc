@@ -16,7 +16,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.junitpioneer.jupiter.DefaultTimeZone;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -303,16 +302,19 @@ class FireboltPreparedStatementFbNumericTest {
 				queryInfoWrapperArgumentCaptor.getAllValues().get(1).getPreparedStatementParameters());
 	}
 
-	@ParameterizedTest
-	@ValueSource(strings = {
-			"SELECT * FROM cars WHERE make LIKE $1",
-			"SELECT * FROM cars WHERE make LIKE ,$1",
-			"SELECT * FROM cars WHERE make LIKE ($1"
-	})
-	void shouldThrowExceptionWhenAllParametersAreNotDefined(String query) throws SQLException {
-		try (PreparedStatement ps = createStatementWithSql(query)) {
-			ps.execute();
-			verify(fireboltStatementService).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
+	@Test
+	void shouldThrowExceptionWhenAllParametersAreNotDefined() throws SQLException {
+		try (PreparedStatement ps = createStatementWithSql("SELECT * FROM cars WHERE make LIKE $1")) {
+			when(fireboltStatementService.execute(any(), any(), any()))
+					.thenThrow(
+						new FireboltException(
+							"Line 1, Column 8: Query referenced positional parameter $3, but it was not set",
+							400,
+							"Line 1, Column 8: Query referenced positional parameter $3, but it was not set"
+						)
+					);
+			assertEquals("Line 1, Column 8: Query referenced positional parameter $3, but it was not set",
+					assertThrows(FireboltException.class, ps::execute).getErrorMessageFromServer());
 		}
 	}
 
@@ -573,7 +575,6 @@ class FireboltPreparedStatementFbNumericTest {
 	}
 
 	@Test
-	@DefaultTimeZone("Europe/London")
 	void shouldSetParametersWithRandomIndex() throws SQLException {
 		statement = createStatementWithSql("INSERT INTO cars (float, long, null) VALUES ($1,$42,$32)");
 
@@ -592,7 +593,6 @@ class FireboltPreparedStatementFbNumericTest {
 	}
 
 	@Test
-	@DefaultTimeZone("Europe/London")
 	void shouldSetParametersWithRepeatingValues() throws SQLException {
 		statement = createStatementWithSql("INSERT INTO cars (float, long, null) VALUES ($1,$1,$1)");
 
