@@ -31,8 +31,6 @@ public class SqlDateUtil {
 
 	public static final Function<LocalDateTime, String> transformFromLocalDateTimeToSQLStringFunction = value -> String
 			.format("'%s'", dateTimeFormatter.format(value));
-	public static final Function<OffsetDateTime, String> transformFromOffsetDateTimeToSQLStringFunction = value -> String
-			.format("'%s'", dateTimeFormatter.format(value));
 	public static final Function<Timestamp, String> transformFromTimestampToSQLStringFunction = value ->
 			transformFromLocalDateTimeToSQLStringFunction.apply(value.toLocalDateTime());
 	public static final BiFunction<Timestamp, TimeZone, String> transformFromTimestampWithTimezoneToStringFunction =

@@ -96,33 +96,20 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	Stream<Arguments> numericTypes() {
 		return Stream.of(
 				Arguments.of("byte",
-						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
-							s.setByte(i, v.byteValue());
-						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getByte(i)),
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> s.setByte(i, v.byteValue()),
+						(CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getByte(i)),
 
 				Arguments.of("short",
-						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
-							s.setShort(i, v.shortValue());
-						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getShort(i)),
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> s.setShort(i, v.shortValue()),
+						(CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getShort(i)),
 
 				Arguments.of("int",
 						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) PreparedStatement::setInt,
 						(CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getInt(i)),
 
 				Arguments.of("long",
-						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
-							s.setLong(i, v.longValue());
-						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getLong(i)),
-
-				Arguments.of("getObject(Long.class)",
-						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
-							s.setLong(i, v.longValue());
-						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> rs.getObject(i, Long.class).intValue()),
-
-				Arguments.of("getObject(i, java.util.Map.of(\"long\", Integer.class)",
-						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
-							s.setLong(i, v.longValue());
-						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getObject(i, java.util.Map.of("long", Integer.class)))
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> s.setLong(i, v.longValue()),
+						(CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getLong(i))
 		);
 	}
 

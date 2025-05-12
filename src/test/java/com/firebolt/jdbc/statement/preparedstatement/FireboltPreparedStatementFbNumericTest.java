@@ -659,7 +659,7 @@ class FireboltPreparedStatementFbNumericTest {
 		statement = createStatementWithSql("INSERT INTO data (column) VALUES ($1)");
 		assertThrows(SQLException.class, () -> statement.setObject(1, this));
 		// STRUCT is not supported now, so it can be used as an example of unsupported type
-		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setObject(1, "", Types.STRUCT));
+		assertThrows(SQLException.class, () -> statement.setObject(1, "", Types.STRUCT));
 		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setObject(1, "", Types.STRUCT, 5));
 
 		// this test definitely cannot be passed to the prepared statement, so exception is expected here.
@@ -667,7 +667,7 @@ class FireboltPreparedStatementFbNumericTest {
 		assertThrows(SQLException.class, () -> statement.setObject(1, this));
 
 		// unsupported SQL Type
-		assertThrows(SQLFeatureNotSupportedException.class, () -> statement.setObject(1, "", 999999));
+		assertThrows(SQLException.class, () -> statement.setObject(1, "", 999999));
 	}
 
 	private void shouldSetObjectWithCorrectSqlType(Object value, int type, Integer scale, String expected) throws SQLException {

@@ -18,6 +18,7 @@ import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltBackendPreparedStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
+import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatementProvider;
 import com.firebolt.jdbc.statement.preparedstatement.PreparedStatementParamStyle;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.ParserVersion;
@@ -387,13 +388,11 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	private PreparedStatement createPreparedStatement(String sql) throws SQLException {
 		validateConnectionIsNotClose();
-		FireboltPreparedStatement statement;
-		if (PreparedStatementParamStyle.fromString(sessionProperties.getPreparedStatementParamStyle())
-				.equals(PreparedStatementParamStyle.FB_NUMERIC)) {
-			statement = new FireboltBackendPreparedStatement(fireboltStatementService, this, sql);
-		} else {
-			statement = new FireboltPreparedStatement(fireboltStatementService, this, sql);
-		}
+		FireboltPreparedStatementProvider preparedStatementProvider = FireboltPreparedStatementProvider.getInstance();
+		FireboltPreparedStatement statement = preparedStatementProvider.getPreparedStatement(sessionProperties,
+				this,
+				fireboltStatementService,
+				sql);
 		addStatement(statement);
 		return statement;
 	}

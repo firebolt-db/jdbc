@@ -144,7 +144,7 @@ public enum JavaTypeToFireboltSQLString {
 		return object.getClass().isArray() && !byte[].class.equals(object.getClass()) ? Array.class : object.getClass();
 	}
 
-	public static Class<?> getType(int sqlType, Object o) throws SQLException {
+	private static Class<?> getType(int sqlType, Object o) throws SQLException {
 		try {
 			JDBCType jdbcType = JDBCType.valueOf(sqlType);
 			List<Class<?>> classes = Optional.ofNullable(jdbcTypeToClass.get(jdbcType))
@@ -210,12 +210,15 @@ public enum JavaTypeToFireboltSQLString {
 		}
 	}
 
-	public static void validateObjectIsOfSupportedType(Object object) throws SQLException {
+	public static void validateObjectIsOfSupportedType(Object object, Integer targetSqlType) throws SQLException {
 		if (object == null) {
 			return;
 		}
 		if (!classToType.containsKey(object.getClass())) {
 			throw new FireboltException(format(UNSUPPORTED_JDBC_TYPE_FORMAT, object.getClass()), TYPE_NOT_SUPPORTED);
+		}
+		if (targetSqlType != null) {
+			JavaTypeToFireboltSQLString.getType(targetSqlType, object);
 		}
 	}
 

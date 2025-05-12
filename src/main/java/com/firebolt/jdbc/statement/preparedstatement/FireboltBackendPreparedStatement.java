@@ -106,25 +106,14 @@ public class FireboltBackendPreparedStatement extends FireboltPreparedStatement 
     @Override
     public void setObject(int parameterIndex, Object x, int targetSqlType) throws SQLException {
         validateStatementIsNotClosed();
-        try {
-            JavaTypeToFireboltSQLString.validateObjectIsOfSupportedType(x);
-            //this is used as a supported target type verification. null is not supported
-            if (x != null) {
-                JavaTypeToFireboltSQLString.getType(targetSqlType, x);
-            }
-            providedParameters.put(parameterIndex, x);
-        } catch (FireboltException fbe) {
-            if (ExceptionType.TYPE_NOT_SUPPORTED.equals(fbe.getType())) {
-                throw new SQLFeatureNotSupportedException(fbe.getMessage(), fbe);
-            }
-            throw fbe;
-        }
+        JavaTypeToFireboltSQLString.validateObjectIsOfSupportedType(x, targetSqlType);
+        providedParameters.put(parameterIndex, x);
     }
 
     @Override
     public void setObject(int parameterIndex, Object x) throws SQLException {
         validateStatementIsNotClosed();
-        JavaTypeToFireboltSQLString.validateObjectIsOfSupportedType(x);
+        JavaTypeToFireboltSQLString.validateObjectIsOfSupportedType(x, null);
         providedParameters.put(parameterIndex, x);
     }
 
@@ -152,6 +141,7 @@ public class FireboltBackendPreparedStatement extends FireboltPreparedStatement 
             if (ExceptionType.TYPE_NOT_SUPPORTED.equals(fbe.getType())) {
                 throw new SQLFeatureNotSupportedException(fbe.getMessage(), fbe);
             }
+            throw fbe;
         }
     }
 
