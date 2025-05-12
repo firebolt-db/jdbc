@@ -39,16 +39,16 @@ on:
         description: 'Account override'
         required: false
         type: string
-      os_name:
-        description: 'Operating system'
-        required: false
-        type: string
-        default: 'ubuntu-latest'
       java_version:
         description: 'Java'
         required: false
         type: string
         default: '11'
+      os_name:
+        description: 'Operating system'
+        required: false
+        type: string
+        default: 'ubuntu-latest'
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN:
         required: true
