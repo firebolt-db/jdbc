@@ -73,6 +73,8 @@ class AsyncQueryTest extends IntegrationTest {
     @Test
     @Tag("v2")
     void executeServerSideAsyncTest() throws SQLException {
+        System.out.println("Tags included: " + System.getProperty("includeTags"));
+        System.out.println("Tags excluded: " + System.getProperty("excludeTags"));
         try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class);
              FireboltStatement statement = connection.createStatement().unwrap(FireboltStatement.class)) {
             statement.executeAsync("INSERT INTO async_table_test SELECT checksum(*) FROM GENERATE_SERIES(1, 2500000000)");

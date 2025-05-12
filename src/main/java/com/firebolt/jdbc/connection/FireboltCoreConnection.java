@@ -65,21 +65,28 @@ public class FireboltCoreConnection extends FireboltConnection {
      */
     @Override
     protected void validateConnectionParameters() throws SQLException {
-        if (StringUtils.isEmpty(loginProperties.getUrl())) {
+        String url = loginProperties.getUrl();
+        if (StringUtils.isBlank(url)) {
             throw new SQLException("Url is required for firebolt core");
         }
 
         try {
-            URL fireboltCoreUrl = new URL(loginProperties.getUrl());
-            String protocol = fireboltCoreUrl.getProtocol();
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You did not pass in the protocol. It has to be either http or https.");
+            }
+
+            URL fireboltCoreUrl = new URL(url);
             String host = fireboltCoreUrl.getHost();
             int port = fireboltCoreUrl.getPort();
 
-            if (StringUtils.isEmpty(protocol) || StringUtils.isEmpty(host)) {
+            if (StringUtils.isEmpty(host)) {
                 throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You did not pass in the protocol or the host");
             }
 
             // Validate port range
+            if (port == -1) {
+                throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You must specify the port.");
+            }
             if (port <= 0 || port > 65535) {
                 throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. The port value should be a positive integer between 1 and 65535. You have the port as:" + port);
             }
@@ -101,7 +108,7 @@ public class FireboltCoreConnection extends FireboltConnection {
                 }
             }
         } catch (MalformedURLException e) {
-            throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>");
+            throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. "+e.getMessage());
         }
     }
 

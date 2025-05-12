@@ -118,7 +118,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -DexcludeTags="v1,v2" --info
+        run: ./gradlew integrationTest -DexcludeTags="v1,v2" -Ddb=integration_test_db --info
         env:
           GRADLE_OPTS: -Dorg.gradle.daemon=false
 

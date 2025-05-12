@@ -3,24 +3,24 @@ package integration.tests;
 import com.firebolt.jdbc.connection.CacheListener;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.testutils.TestTag;
 import integration.ConnectionInfo;
+import integration.ConnectionOptions;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -296,6 +296,21 @@ class ConnectionTest extends IntegrationTest {
             assertTrue(exception.getMessage().contains("network restrictions"));
 
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "http://172.0.1.280,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You must specify the port.",
+            "http://172.0.0.1:,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You must specify the port.",
+            "http://172.0.0.1:-2,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. Invalid port number :-2",
+            "http://172.0.0.1:70000,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. The port value should be a positive integer between 1 and 65535. You have the port as:70000",
+            "localhost:8080,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You did not pass in the protocol. It has to be either http or https.",
+            "https://mydomain.com,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You must specify the port."
+    }, delimiter = ',')
+    @Tag(TestTag.CORE)
+    void cannotConnectToFireboltCoreWithInvalidUrl(String invalidUrl, String expectedErrorMessage) {
+        SQLException exception = assertThrows(SQLException.class, () -> createConnectionWithOptions(ConnectionOptions.builder().url(invalidUrl).build()));
+        assertEquals(expectedErrorMessage, exception.getMessage());
     }
 
     private ConnectionInfo getConnectionInfoForNetworkPolicyTest(Statement statement) throws SQLException {
