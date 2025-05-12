@@ -44,11 +44,13 @@ public class FireboltCoreConnectionInfo {
     }
 
     private String getQueryParams() {
+        // connection params might be immutable so we cannot add values to it
+        Map<String,String> paramsMap = new HashMap<>(connectionParams);
         if (StringUtils.isNotBlank(url) && connectionParams !=null && !connectionParams.containsKey("url")) {
-            connectionParams.put("url", url);
+            paramsMap.put("url", url);
         }
 
-        String params = connectionParams == null ? "" : connectionParams.entrySet().stream()
+        String params = paramsMap == null ? "" : paramsMap.entrySet().stream()
         .map(p -> param(p.getKey(), p.getValue()))
         .filter(Objects::nonNull)
         .collect(joining("&"));

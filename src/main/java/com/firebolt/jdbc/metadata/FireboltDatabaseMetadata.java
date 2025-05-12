@@ -7,8 +7,6 @@ import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.resultset.column.Column;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.util.VersionUtil;
-import lombok.CustomLog;
-
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.JDBCType;
@@ -27,6 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import lombok.CustomLog;
 
 import static com.firebolt.jdbc.metadata.MetadataColumns.ASC_OR_DESC;
 import static com.firebolt.jdbc.metadata.MetadataColumns.ATTR_DEF;

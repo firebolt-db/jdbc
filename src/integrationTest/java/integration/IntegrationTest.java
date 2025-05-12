@@ -1,26 +1,22 @@
 package integration;
 
 import com.firebolt.jdbc.client.HttpClientConfig;
-import integration.tests.core.FireboltCoreConnectionInfo;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
 import lombok.CustomLog;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -28,9 +24,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @CustomLog
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Tag("common")
+@ExtendWith(GlobalSetupExtension.class)
 public abstract class IntegrationTest {
 
-	private static final String JDBC_URL_PREFIX = "jdbc:firebolt:";
+	protected static final String JDBC_URL_PREFIX = "jdbc:firebolt:";
 
 	// timestamp format on the backend
 	private static ZoneId UTC_ZONE_ID = ZoneId.of("UTC"); // Change this to your desired timezone
@@ -39,27 +36,31 @@ public abstract class IntegrationTest {
 	private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss";
 	private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(TIMESTAMP_FORMAT);
 
-	protected Connection createLocalConnection(String queryParams) throws SQLException {
-		return DriverManager.getConnection(
-				JDBC_URL_PREFIX + integration.ConnectionInfo.getInstance().getDatabase()
-						+ queryParams + "&host=localhost" + getAccountParam(),
-				integration.ConnectionInfo.getInstance().getPrincipal(),
-				integration.ConnectionInfo.getInstance().getSecret());
+	private static ConnectionFactory connectionFactory;
+
+	public static void setConnectionFactory(ConnectionFactory factory) {
+		connectionFactory = factory;
 	}
 
 	protected Connection createConnection() throws SQLException {
-		return createConnection(integration.ConnectionInfo.getInstance().getEngine());
+		return connectionFactory.create(ConnectionOptions.builder()
+				.database(ConnectionInfo.getInstance().getDatabase())
+				.engine(ConnectionInfo.getInstance().getEngine())
+				.build());
 	}
 
 	protected Connection createConnection(String engine) throws SQLException {
-		return createConnection(engine, new HashMap<>());
+		return connectionFactory.create(ConnectionOptions.builder()
+				.database(ConnectionInfo.getInstance().getDatabase())
+				.engine(engine)
+				.build());
 	}
 
 	protected Connection createConnection(String engine, String database) throws SQLException {
-		ConnectionInfo updated = getConnectionInfoWithEngineAndDatabase(engine, database);
-		return DriverManager.getConnection(updated.toJdbcUrl(),
-				integration.ConnectionInfo.getInstance().getPrincipal(),
-				integration.ConnectionInfo.getInstance().getSecret());
+		return connectionFactory.create(ConnectionOptions.builder()
+				.database(database)
+				.engine(engine)
+				.build());
 	}
 
 	protected ConnectionInfo getConnectionInfoWithEngineAndDatabase(String engine, String database) {
@@ -69,12 +70,15 @@ public abstract class IntegrationTest {
 	}
 
 	protected Connection createConnection(String engine, Map<String, String> extra) throws SQLException {
-		ConnectionInfo current = integration.ConnectionInfo.getInstance();
-		ConnectionInfo updated = new ConnectionInfo(current.getPrincipal(), current.getSecret(),
-				current.getEnv(), current.getDatabase(), current.getAccount(), engine, current.getApi(), extra);
-		return DriverManager.getConnection(updated.toJdbcUrl(),
-				integration.ConnectionInfo.getInstance().getPrincipal(),
-				integration.ConnectionInfo.getInstance().getSecret());
+		return connectionFactory.create(ConnectionOptions.builder()
+				.database(ConnectionInfo.getInstance().getDatabase())
+				.engine(engine)
+				.connectionParams(extra)
+				.build());
+	}
+
+	protected Connection createConnectionWithOptions(ConnectionOptions connectionOptions) throws SQLException {
+		return connectionFactory.create(connectionOptions);
 	}
 
 	protected void setParam(Connection connection, String name, String value) throws SQLException {
@@ -83,23 +87,10 @@ public abstract class IntegrationTest {
 		}
 	}
 
-	protected Connection createFireboltCoreConnection(String url) throws SQLException {
-		return createFireboltCoreConnection(null, url, new Properties());
-	}
-
-	protected Connection createFireboltCoreConnection(String database, String url) throws SQLException {
-		return createFireboltCoreConnection(database, url, new Properties());
-	}
-
-	protected Connection createFireboltCoreConnection(String database, String url, Properties properties) throws SQLException {
-		return DriverManager.getConnection(FireboltCoreConnectionInfo.builder().database(Optional.ofNullable(database)).url(url).build().toJdbcUrl(), properties);
-	}
-
 	@SneakyThrows
 	protected void executeStatementFromFile(String path) {
 		executeStatementFromFile(path, integration.ConnectionInfo.getInstance().getEngine());
 	}
-
 
 	@SneakyThrows
 	protected void executeStatementFromFile(String path, String engine) {
@@ -110,23 +101,10 @@ public abstract class IntegrationTest {
 		}
 	}
 
-	@SneakyThrows
-	protected void executeStatementFromFileOnFireboltCore(String database, String path) {
-		try (Connection connection = createFireboltCoreConnection(database, "http://localhost:3473"); Statement statement = connection.createStatement(); InputStream is = IntegrationTest.class.getResourceAsStream(path)) {
-			assertNotNull(is);
-			String sql = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-			statement.execute(sql);
-		}
-	}
-
 	protected void removeExistingClient() throws NoSuchFieldException, IllegalAccessException {
 		Field field = HttpClientConfig.class.getDeclaredField("instance");
 		field.setAccessible(true);
 		field.set(null, null);
-	}
-
-	private String getAccountParam() {
-		return "&account=" + integration.ConnectionInfo.getInstance().getAccount();
 	}
 
 	protected String getSystemEngineName() {
@@ -146,6 +124,10 @@ public abstract class IntegrationTest {
 		} catch (InterruptedException e) {
 			// do nothing
 		}
+	}
+
+	protected String getDefaultDatabase() {
+		return connectionFactory.getDefaultDatabase();
 	}
 
 }

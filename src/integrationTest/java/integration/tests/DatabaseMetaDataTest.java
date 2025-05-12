@@ -2,12 +2,6 @@ package integration.tests;
 
 import integration.ConnectionInfo;
 import integration.IntegrationTest;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -22,6 +16,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static com.firebolt.jdbc.metadata.MetadataColumns.BUFFER_LENGTH;
 import static com.firebolt.jdbc.metadata.MetadataColumns.CHAR_OCTET_LENGTH;
@@ -103,7 +102,7 @@ class DatabaseMetaDataTest extends IntegrationTest {
 			}
 		}
 		assertThat(schemas, containsInAnyOrder("public", "information_schema"));
-		String dbName = ConnectionInfo.getInstance().getDatabase();
+		String dbName = getDefaultDatabase();
 		assertThat(catalogs, contains(dbName, dbName));
 	}
 

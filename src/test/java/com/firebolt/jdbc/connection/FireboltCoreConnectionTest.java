@@ -28,6 +28,7 @@ class FireboltCoreConnectionTest {
 
     @ParameterizedTest(name = "Invalid URL: {0}")
     @ValueSource(strings = {
+        "mydomain.com:8080",
         "http://",
         "https://",
         "http://localhost",
