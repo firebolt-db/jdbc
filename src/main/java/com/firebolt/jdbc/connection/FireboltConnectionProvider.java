@@ -44,7 +44,7 @@ public class FireboltConnectionProvider {
                 return fireboltConnectionProviderWrapper.createFireboltConnectionUsernamePassword(url, connectionSettings, ParserVersion.LEGACY);
             case CLOUD_2_0:
                 return fireboltConnectionProviderWrapper.createFireboltConnectionServiceSecret(url, connectionSettings);
-            case PACKDB_DEV:
+            case DEV:
                 return fireboltConnectionProviderWrapper.createLocalhostFireboltConnectionServiceSecret(url, connectionSettings);
             case FIREBOLT_CORE:
                 return fireboltConnectionProviderWrapper.createFireboltCoreConnection(url, connectionSettings);
@@ -71,7 +71,7 @@ public class FireboltConnectionProvider {
                 return FireboltBackendType.FIREBOLT_CORE;
             }
 
-            return PropertyUtil.isLocalDb(fireboltProperties) ? FireboltBackendType.PACKDB_DEV : FireboltBackendType.CLOUD_2_0;
+            return PropertyUtil.isLocalDb(fireboltProperties) ? FireboltBackendType.DEV : FireboltBackendType.CLOUD_2_0;
         }
     }
 

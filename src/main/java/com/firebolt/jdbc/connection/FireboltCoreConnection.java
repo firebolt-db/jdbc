@@ -49,6 +49,7 @@ public class FireboltCoreConnection extends FireboltConnection {
             this.httpConnectionUrl = sessionProperties.getUrl();
         } catch (URISyntaxException e) {
             // this should not happen as we had validate the url already validated
+            throw new SQLException("Invalid url: " + sessionProperties.getUrl());
         }
     }
 
@@ -75,12 +76,12 @@ public class FireboltCoreConnection extends FireboltConnection {
             int port = fireboltCoreUrl.getPort();
 
             if (StringUtils.isEmpty(protocol) || StringUtils.isEmpty(host)) {
-                throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>");
+                throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You did not pass in the protocol or the host");
             }
 
             // Validate port range
             if (port <= 0 || port > 65535) {
-                throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>");
+                throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. The port value should be a positive integer between 1 and 65535. You have the port as:" + port);
             }
 
             // Validate hostname
@@ -96,7 +97,7 @@ public class FireboltCoreConnection extends FireboltConnection {
                 DomainValidator domainValidator = DomainValidator.getInstance(false);
 
                 if (!inetAddressValidator.isValid(hostToValidate) && !domainValidator.isValid(hostToValidate)) {
-                    throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>");
+                    throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. The host is not valid. It must be a valid IPv4, IPv6 or domain name or even localhost");
                 }
             }
         } catch (MalformedURLException e) {
