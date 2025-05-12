@@ -25,17 +25,16 @@ on:
         required: false
         type: string
         default: '4.21.0-pre.0.20250508101124.cfa76a685ee8_x86'
-      os_name:
-        description: 'Operating system'
-        required: false
-        type: string
-        default: 'ubuntu-latest'
       java_version:
         description: 'Java'
         required: false
         type: string
         default: '11'
-
+      os_name:
+        description: 'Operating system'
+        required: false
+        type: string
+        default: 'ubuntu-latest'
 jobs:
   run-core-integration-tests:
     runs-on: ${{ inputs.os_name }}
