@@ -3,13 +3,6 @@ package integration.tests;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.array.FireboltArray;
 import integration.IntegrationTest;
-import lombok.CustomLog;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-
 import java.sql.Array;
 import java.sql.Connection;
 import java.sql.JDBCType;
@@ -21,6 +14,12 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import lombok.CustomLog;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;

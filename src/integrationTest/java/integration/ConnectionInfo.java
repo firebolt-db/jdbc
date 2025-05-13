@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.StringUtils;
 
 import static java.lang.String.format;
 import static java.lang.System.getProperty;
@@ -101,7 +102,15 @@ public class ConnectionInfo {
 	}
 
 	private String toJdbcUrl1() {
-		return "jdbc:firebolt://" + api + "/" + (database == null ? "" : database) + (engine == null ? "" : "?engine=" + engine);
+		String params = extra == null || extra.isEmpty() ? "" :
+				extra.entrySet().stream()
+						.map(e -> param(e.getKey(), e.getValue()))
+						.filter(Objects::nonNull)
+						.collect(joining("&"));
+		if ((StringUtils.isNotBlank(params))) {
+			params = "&" + params;
+		}
+		return "jdbc:firebolt://" + api + "/" + (database == null ? "" : database) + (engine == null ? "" : "?engine=" + engine) + params;
 	}
 
 	private String toJdbcUrl2() {

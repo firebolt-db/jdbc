@@ -140,6 +140,14 @@ tasks.register('integrationTest', Test) {
     testLogging {
         events 'PASSED', 'FAILED', 'SKIPPED'
     }
+
+    // print a summary of the results
+    afterSuite { desc, result ->
+        if (!desc.parent) { // will match the outermost suite
+            println "\nTest result: ${result.resultType}"
+            println "Tests run: ${result.testCount}, Passed: ${result.successfulTestCount}, Failed: ${result.failedTestCount}, Skipped: ${result.skippedTestCount}"
+        }
+    }
 }
 
 allprojects {
