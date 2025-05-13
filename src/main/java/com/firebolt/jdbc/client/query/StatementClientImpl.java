@@ -38,6 +38,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.internal.http2.StreamResetException;
+import org.apache.commons.lang3.StringUtils;
 
 import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.DEFAULT_FORMAT;
 import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.OUTPUT_FORMAT;
@@ -310,6 +311,10 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 		getResponseFormatParameter(statementInfoWrapper.getType() == StatementType.QUERY, isLocalDb)
 				.ifPresent(format -> params.put(format.getKey(), format.getValue()));
+
+		if (StringUtils.isNotBlank(statementInfoWrapper.getPreparedStatementParameters())) {
+			params.put(FireboltQueryParameterKey.QUERY_PARAMETERS.getKey(), statementInfoWrapper.getPreparedStatementParameters());
+		}
 
 		String accountId = fireboltProperties.getAccountId();
 		if (systemEngine) {

@@ -26,12 +26,18 @@ public class StatementInfoWrapper {
 	private final StatementType type;
 	private final Entry<String, String> param;
 	private final RawStatement initialStatement;
+	private final String preparedStatementParameters; //query parameters json string for server-side prepared statements
 
 	public StatementInfoWrapper(String sql, StatementType type, Entry<String, String> param, RawStatement initialStatement) {
+		this(sql, type, param, initialStatement, null);
+	}
+
+	public StatementInfoWrapper(String sql, StatementType type, Entry<String, String> param, RawStatement initialStatement, String preparedStatementParameters) {
 		this.sql = sql;
 		this.type = type;
 		this.param = param;
 		this.initialStatement = initialStatement;
+        this.preparedStatementParameters = preparedStatementParameters;
 
 		// if the param is the query_label then use that value as a label. If not create a random one.
 		this.label =  param != null && param.getKey().equals(FireboltQueryParameterKey.QUERY_LABEL.getKey()) ? param.getValue() : UUID.randomUUID().toString();
@@ -48,6 +54,6 @@ public class StatementInfoWrapper {
 				? ((SetParamRawStatement) rawStatement).getAdditionalProperty()
 				: null;
 		return new StatementInfoWrapper(rawStatement.getSql(), rawStatement.getStatementType(),
-				additionalProperties, rawStatement);
+				additionalProperties, rawStatement, null);
 	}
 }

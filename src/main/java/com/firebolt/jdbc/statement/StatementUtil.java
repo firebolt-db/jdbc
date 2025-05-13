@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.statement;
 
+import com.firebolt.jdbc.statement.preparedstatement.PreparedStatementParamStyle;
 import com.firebolt.jdbc.statement.rawstatement.RawStatement;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
 import com.firebolt.jdbc.statement.rawstatement.SetParamRawStatement;
@@ -7,6 +8,8 @@ import com.firebolt.jdbc.util.StringUtil;
 import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -24,6 +28,7 @@ public class StatementUtil {
 
 	private static final String SET_PREFIX = "set";
 	private static final Pattern SET_WITH_SPACE_REGEX = Pattern.compile(SET_PREFIX + " ", Pattern.CASE_INSENSITIVE);
+	private static final Pattern FB_NUMERIC_PARAMETER = Pattern.compile("\\$(\\d+)");
 	private static final String[] SELECT_KEYWORDS = new String[] { "show", "select", "describe", "exists", "explain",
 			"with", "call" };
 
@@ -59,7 +64,7 @@ public class StatementUtil {
 	 * @return a list of {@link StatementInfoWrapper}
 	 */
 	public List<StatementInfoWrapper> parseToStatementInfoWrappers(String sql) {
-		return parseToRawStatementWrapper(sql).getSubStatements().stream().map(StatementInfoWrapper::of)
+		return parseToRawStatementWrapperNative(sql).getSubStatements().stream().map(StatementInfoWrapper::of)
 				.collect(Collectors.toList());
 	}
 
@@ -71,92 +76,15 @@ public class StatementUtil {
 	 * @param sql the sql statement
 	 * @return a list of {@link StatementInfoWrapper}
 	 */
-	public RawStatementWrapper parseToRawStatementWrapper(String sql) {
+	public RawStatementWrapper parseToRawStatementWrapperNative(String sql) {
+		return parseToRawStatementWrapper(sql, PreparedStatementParamStyle.NATIVE);
+	}
+
+	public RawStatementWrapper parseToRawStatementWrapper(String sql, PreparedStatementParamStyle paramStyle) {
 		if (sql.isEmpty()) {
 			return new RawStatementWrapper(List.of());
 		}
-		List<RawStatement> subStatements = new ArrayList<>();
-		List<ParamMarker> subStatementParamMarkersPositions = new ArrayList<>();
-		int subQueryStart = 0;
-		int currentIndex = 0;
-		char currentChar = sql.charAt(currentIndex);
-		StringBuilder cleanedSubQuery = isCommentStart(currentChar) ? new StringBuilder()
-				: new StringBuilder(String.valueOf(currentChar));
-		boolean isCurrentSubstringBetweenQuotes = currentChar == '\'';
-		boolean isCurrentSubstringBetweenDoubleQuotes = currentChar == '"';
-		boolean isInSingleLineComment = false;
-		boolean isInMultipleLinesComment = false;
-		boolean isInComment = false;
-		boolean foundSubQueryEndingSemicolon = false;
-		char previousChar;
-		int subQueryParamsCount = 0;
-		boolean isPreviousCharInComment;
-		while (currentIndex++ < sql.length() - 1) {
-			isPreviousCharInComment = isInComment;
-			previousChar = currentChar;
-			currentChar = sql.charAt(currentIndex);
-			isInSingleLineComment = isInSingleLineComment(currentChar, previousChar, isCurrentSubstringBetweenQuotes,
-					isInSingleLineComment);
-			isInMultipleLinesComment = isInMultipleLinesComment(currentChar, previousChar,
-					isCurrentSubstringBetweenQuotes, isInMultipleLinesComment);
-			isInComment = isInSingleLineComment || isInMultipleLinesComment;
-			if (!isInComment) {
-				// Although the ending semicolon may have been found, we need to include any
-				// potential comments to the sub-query
-				if (!isCurrentSubstringBetweenQuotes && isEndingSemicolon(currentChar, previousChar,
-						foundSubQueryEndingSemicolon, isPreviousCharInComment)) {
-					foundSubQueryEndingSemicolon = true;
-					if (isEndOfSubQuery(currentChar)) {
-						subStatements.add(RawStatement.of(sql.substring(subQueryStart, currentIndex),
-								subStatementParamMarkersPositions, cleanedSubQuery.toString().trim()));
-						subStatementParamMarkersPositions = new ArrayList<>();
-						subQueryStart = currentIndex;
-						foundSubQueryEndingSemicolon = false;
-						cleanedSubQuery = new StringBuilder();
-					}
-				} else if (currentChar == '?' && !isCurrentSubstringBetweenQuotes
-						&& !isCurrentSubstringBetweenDoubleQuotes) {
-					subStatementParamMarkersPositions
-							.add(new ParamMarker(++subQueryParamsCount, currentIndex - subQueryStart));
-				} else if (currentChar == '\'') {
-					isCurrentSubstringBetweenQuotes = !isCurrentSubstringBetweenQuotes;
-				} else if (currentChar == '"') {
-					isCurrentSubstringBetweenDoubleQuotes = !isCurrentSubstringBetweenDoubleQuotes;
-				}
-				if (!(isCommentStart(currentChar) && !isCurrentSubstringBetweenQuotes)) {
-					cleanedSubQuery.append(currentChar);
-				}
-			}
-		}
-		subStatements.add(RawStatement.of(sql.substring(subQueryStart, currentIndex), subStatementParamMarkersPositions,
-				cleanedSubQuery.toString().trim()));
-		return new RawStatementWrapper(subStatements);
-	}
-
-	private boolean isEndingSemicolon(char currentChar, char previousChar, boolean foundSubQueryEndingSemicolon,
-			boolean isPreviousCharInComment) {
-		if (foundSubQueryEndingSemicolon) {
-			return true;
-		}
-		return (';' == previousChar && currentChar != ';' && !isPreviousCharInComment);
-	}
-
-	private boolean isEndOfSubQuery(char currentChar) {
-		return currentChar != '-' && currentChar != '/' && currentChar != ' ' && currentChar != '\n';
-	}
-
-	private boolean isCommentStart(char currentChar) {
-		return currentChar == '-' || currentChar == '/';
-	}
-
-	private static boolean isInMultipleLinesComment(char currentChar, char previousChar,
-			boolean isCurrentSubstringBetweenQuotes, boolean isInMultipleLinesComment) {
-		if (!isCurrentSubstringBetweenQuotes && (previousChar == '/' && currentChar == '*')) {
-			return true;
-		} else if ((previousChar == '*' && currentChar == '/')) {
-			return false;
-		}
-		return isInMultipleLinesComment;
+		return new SqlParser(sql, paramStyle).parse();
 	}
 
 	/**
@@ -165,10 +93,14 @@ public class StatementUtil {
 	 * @param sql the sql statement
 	 * @return the positions of the params markers
 	 */
-	public Map<Integer, Integer> getParamMarketsPositions(String sql) {
-		RawStatementWrapper rawStatementWrapper = parseToRawStatementWrapper(sql);
+	public Map<Integer, Integer> getParamMarketsPositions(String sql, PreparedStatementParamStyle paramStyle) {
+		RawStatementWrapper rawStatementWrapper = parseToRawStatementWrapper(sql, paramStyle);
 		return rawStatementWrapper.getSubStatements().stream().map(RawStatement::getParamMarkers)
 				.flatMap(Collection::stream).collect(Collectors.toMap(ParamMarker::getId, ParamMarker::getPosition));
+	}
+
+	public Map<Integer, Integer> getParamMarketsPositionsNative(String sql) {
+		return getParamMarketsPositions(sql, PreparedStatementParamStyle.NATIVE);
 	}
 
 	/**
@@ -208,9 +140,9 @@ public class StatementUtil {
 	 * @param sql    the sql statement
 	 * @return a list of sql statements containing the provided parameters
 	 */
-	public static List<StatementInfoWrapper> replaceParameterMarksWithValues(@NonNull Map<Integer, String> params,
+	public static List<StatementInfoWrapper> replaceParameterMarksWithValues(@NonNull Map<Integer, Object> params,
 			@NonNull String sql) {
-		RawStatementWrapper rawStatementWrapper = parseToRawStatementWrapper(sql);
+		RawStatementWrapper rawStatementWrapper = parseToRawStatementWrapperNative(sql);
 		return replaceParameterMarksWithValues(params, rawStatementWrapper);
 	}
 
@@ -222,7 +154,7 @@ public class StatementUtil {
 	 * @param rawStatement the rawStatement
 	 * @return a list of sql statements containing the provided parameters
 	 */
-	public List<StatementInfoWrapper> replaceParameterMarksWithValues(@NonNull Map<Integer, String> params,
+	public List<StatementInfoWrapper> replaceParameterMarksWithValues(@NonNull Map<Integer, Object> params,
 			@NonNull RawStatementWrapper rawStatement) {
 		List<StatementInfoWrapper> subQueries = new ArrayList<>();
 		for (int subQueryIndex = 0; subQueryIndex < rawStatement.getSubStatements().size(); subQueryIndex++) {
@@ -241,7 +173,7 @@ public class StatementUtil {
 						params.size(), rawStatement.getTotalParams()));
 			}
 			for (ParamMarker param : subQuery.getParamMarkers()) {
-				String value = params.get(param.getId());
+				String value = (String) params.get(param.getId());
 				if (value == null) {
 					throw new IllegalArgumentException("No value for parameter marker at position: " + param.getId());
 				}
@@ -256,9 +188,39 @@ public class StatementUtil {
 			Entry<String, String> additionalParams = subQuery.getStatementType() == StatementType.PARAM_SETTING
 					? ((SetParamRawStatement) subQuery).getAdditionalProperty()
 					: null;
-			subQueries.add(new StatementInfoWrapper(subQueryWithParams, subQuery.getStatementType(), additionalParams, subQuery));
+			subQueries.add(new StatementInfoWrapper(subQueryWithParams, subQuery.getStatementType(), additionalParams, subQuery, null));
 		}
 		return subQueries;
+	}
+
+	/**
+	 * Returns a list of {@link StatementInfoWrapper} containing sql statements
+	 * from the {@link RawStatementWrapper} with the parameters provided in the {@link StatementInfoWrapper} queryParameters String
+	 *
+	 * @param params       the parameters
+	 * @param rawStatement the rawStatement
+	 * @return a list of sql statements containing the provided parameters inside the queryParameters String
+	 */
+	public static List<StatementInfoWrapper> prepareFbNumericStatement(@NonNull Map<Integer, Object> params,
+			@NonNull RawStatementWrapper rawStatement) {
+		List<StatementInfoWrapper> subQueries = new ArrayList<>();
+		String queryParameters = getPreparedStatementQueryParameters(params);
+		for (int subQueryIndex = 0; subQueryIndex < rawStatement.getSubStatements().size(); subQueryIndex++) {
+			RawStatement subQuery = rawStatement.getSubStatements().get(subQueryIndex);
+
+			Entry<String, String> additionalParams = subQuery.getStatementType() == StatementType.PARAM_SETTING
+					? ((SetParamRawStatement) subQuery).getAdditionalProperty()
+					: null;
+			subQueries.add(new StatementInfoWrapper(subQuery.getSql(), subQuery.getStatementType(), additionalParams, subQuery, queryParameters));
+		}
+		return subQueries;
+	}
+
+	private String getPreparedStatementQueryParameters(@NonNull Map<Integer, Object> params) {
+		JSONArray jsonArray = new JSONArray();
+		params.forEach((key, value) -> jsonArray.put(new JSONObject().put("name", "$" + key).put("value", value == null ? JSONObject.NULL : value)));
+
+		return jsonArray.toString();
 	}
 
 	private Optional<String> extractTableNameFromFromPartOfTheQuery(String from) {
@@ -276,16 +238,6 @@ public class StatementUtil {
 				});
 	}
 
-	private boolean isInSingleLineComment(char currentChar, char previousChar, boolean isCurrentSubstringBetweenQuotes,
-			boolean isInSingleLineComment) {
-		if (!isCurrentSubstringBetweenQuotes && (previousChar == '-' && currentChar == '-')) {
-			return true;
-		} else if (currentChar == '\n') {
-			return false;
-		}
-		return isInSingleLineComment;
-	}
-
 	private Optional<Entry<String, String>> extractPropertyPair(String cleanStatement, String sql) {
 		String setQuery = SET_WITH_SPACE_REGEX.matcher(cleanStatement).replaceFirst("");
 		String[] values = setQuery.split("=");
@@ -296,4 +248,144 @@ public class StatementUtil {
 		}
 		throw new IllegalArgumentException("Cannot parse the additional properties provided in the statement: " + sql);
 	}
+
+	private static class SqlParser {
+		private final String sql;
+		private final PreparedStatementParamStyle paramStyle;
+		private final char queryParamChar;
+
+		private int currentIndex = 0;
+		private int subQueryStart = 0;
+		private int subQueryParamsCount = 0;
+
+		private boolean isInSingleQuote = false;
+		private boolean isInDoubleQuote = false;
+		private boolean isInSingleLineComment = false;
+		private boolean isInMultiLineComment = false;
+		private boolean foundSubQuerySemicolon = false;
+
+		private final List<RawStatement> subStatements = new ArrayList<>();
+		private final StringBuilder cleanedSubQuery = new StringBuilder();
+		private List<ParamMarker> currentParamMarkers = new ArrayList<>();
+
+		public SqlParser(String sql, PreparedStatementParamStyle paramStyle) {
+			this.sql = sql;
+			this.paramStyle = paramStyle;
+			this.queryParamChar = paramStyle.getQueryParam();
+		}
+
+		public RawStatementWrapper parse() {
+			char currentChar = sql.charAt(currentIndex);
+			if (!isCommentStart(currentChar)) {
+				cleanedSubQuery.append(currentChar);
+			}
+
+			while (currentIndex++ < sql.length() - 1) {
+				char previousChar = sql.charAt(currentIndex - 1);
+				currentChar = sql.charAt(currentIndex);
+
+				boolean wasInComment = isInComment();
+				updateCommentState(currentChar, previousChar);
+
+				if (!isInComment()) {
+					if (!isInSingleQuote && isEndingSemicolon(currentChar, previousChar, foundSubQuerySemicolon, wasInComment)) {
+						handleEndOfSubQuery(currentChar);
+					} else {
+						handleCommentOrParamMarker(currentChar);
+					}
+					if (!(isCommentStart(currentChar) && !isInSingleQuote)) {
+						cleanedSubQuery.append(currentChar);
+					}
+				}
+
+			}
+
+			// Final sub-statement
+			finalizeSubStatement();
+			return new RawStatementWrapper(subStatements);
+		}
+
+		private void handleEndOfSubQuery(char currentChar) {
+			foundSubQuerySemicolon = true;
+			if (isEndOfSubQuery(currentChar)) {
+				finalizeSubStatement();
+				resetSubQueryState();
+			}
+		}
+
+		private void finalizeSubStatement() {
+			String originalSql = sql.substring(subQueryStart, currentIndex);
+			String cleaned = cleanedSubQuery.toString().trim();
+			subStatements.add(RawStatement.of(originalSql, currentParamMarkers, cleaned));
+		}
+
+		private void resetSubQueryState() {
+			subQueryStart = currentIndex;
+			currentParamMarkers = new ArrayList<>();
+			foundSubQuerySemicolon = false;
+			cleanedSubQuery.setLength(0);
+		}
+
+		private void handleCommentOrParamMarker(char currentChar) {
+			if (currentChar == '\'') {
+				isInSingleQuote = !isInSingleQuote;
+			} else if (currentChar == '"') {
+				isInDoubleQuote = !isInDoubleQuote;
+			} else if (currentChar == queryParamChar && !isInSingleQuote && !isInDoubleQuote) {
+				if (paramStyle == PreparedStatementParamStyle.NATIVE) {
+					currentParamMarkers.add(new ParamMarker(++subQueryParamsCount, currentIndex - subQueryStart));
+				} else if (paramStyle == PreparedStatementParamStyle.FB_NUMERIC) {
+					Matcher matcher = FB_NUMERIC_PARAMETER.matcher(sql.substring(currentIndex));
+					if (matcher.find()) {
+						currentParamMarkers.add(new ParamMarker(Integer.parseInt(matcher.group(1)), currentIndex - subQueryStart));
+					}
+				}
+			}
+		}
+
+		private void updateCommentState(char current, char previous) {
+			isInSingleLineComment = isInSingleLineComment(current, previous, isInSingleQuote, isInSingleLineComment);
+			isInMultiLineComment = isInMultipleLinesComment(current, previous, isInSingleQuote, isInMultiLineComment);
+		}
+
+		private boolean isInComment() {
+			return isInSingleLineComment || isInMultiLineComment;
+		}
+
+		private boolean isEndingSemicolon(char currentChar, char previousChar, boolean foundSubQueryEndingSemicolon,
+										  boolean isPreviousCharInComment) {
+			if (foundSubQueryEndingSemicolon) {
+				return true;
+			}
+			return (';' == previousChar && currentChar != ';' && !isPreviousCharInComment);
+		}
+
+		private boolean isEndOfSubQuery(char currentChar) {
+			return currentChar != '-' && currentChar != '/' && currentChar != ' ' && currentChar != '\n';
+		}
+
+		private boolean isCommentStart(char currentChar) {
+			return currentChar == '-' || currentChar == '/';
+		}
+
+		private static boolean isInMultipleLinesComment(char currentChar, char previousChar,
+														boolean isCurrentSubstringBetweenQuotes, boolean isInMultipleLinesComment) {
+			if (!isCurrentSubstringBetweenQuotes && (previousChar == '/' && currentChar == '*')) {
+				return true;
+			} else if ((previousChar == '*' && currentChar == '/')) {
+				return false;
+			}
+			return isInMultipleLinesComment;
+		}
+		private boolean isInSingleLineComment(char currentChar, char previousChar, boolean isCurrentSubstringBetweenQuotes,
+											  boolean isInSingleLineComment) {
+			if (!isCurrentSubstringBetweenQuotes && (previousChar == '-' && currentChar == '-')) {
+				return true;
+			} else if (currentChar == '\n') {
+				return false;
+			}
+			return isInSingleLineComment;
+		}
+	}
+
 }

@@ -204,6 +204,7 @@ class FireboltPreparedStatementTest {
 	@BeforeEach
 	void beforeEach() throws SQLException {
 		when(connection.getSessionProperties()).thenReturn(properties);
+		lenient().when(properties.getPreparedStatementParamStyle()).thenReturn("native");
 		lenient().when(properties.getBufferSize()).thenReturn(10);
 		lenient().when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
 	}

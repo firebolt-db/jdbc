@@ -55,9 +55,9 @@ import static java.sql.Types.VARBINARY;
 @CustomLog
 public class FireboltPreparedStatement extends FireboltStatement implements PreparedStatement {
 
-	private final RawStatementWrapper rawStatement;
-	private final List<Map<Integer, String>> rows;
-	private Map<Integer, String> providedParameters;
+	protected final RawStatementWrapper rawStatement;
+	protected Map<Integer, Object> providedParameters;
+	private final List<Map<Integer, Object>> rows;
 	private final ParserVersion parserVersion;
 
 	public FireboltPreparedStatement(FireboltStatementService statementService, FireboltConnection connection, String sql) {
@@ -69,7 +69,8 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		super(statementService, sessionProperties, connection);
 		log.debug("Populating PreparedStatement object for SQL: {}", sql);
 		this.providedParameters = new HashMap<>();
-		this.rawStatement = StatementUtil.parseToRawStatementWrapper(sql);
+		PreparedStatementParamStyle queryParamStyle = PreparedStatementParamStyle.fromString(sessionProperties.getPreparedStatementParamStyle());
+		this.rawStatement = StatementUtil.parseToRawStatementWrapper(sql, queryParamStyle);
 		rawStatement.getSubStatements().forEach(statement -> createValidator(statement, connection).validate(statement));
 		this.rows = new ArrayList<>();
 		this.parserVersion = connection.getParserVersion();
@@ -77,11 +78,10 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 
 	@Override
 	public ResultSet executeQuery() throws SQLException {
-		List<StatementInfoWrapper> rawStatementWrapper = prepareSQL(providedParameters);
-		return super.executeQuery(rawStatementWrapper);
+		return super.executeQuery(prepareSQL(providedParameters));
 	}
 
-	private List<StatementInfoWrapper> prepareSQL(@NonNull Map<Integer, String> params) {
+	protected List<StatementInfoWrapper> prepareSQL(@NonNull Map<Integer, Object> params) {
 		return replaceParameterMarksWithValues(params, rawStatement);
 	}
 
@@ -268,7 +268,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		log.debug("Executing batch for statement: {}", rawStatement);
 		List<StatementInfoWrapper> statements = new ArrayList<>();
 		int[] result = new int[rows.size()];
-		for (Map<Integer, String> row : rows) {
+		for (Map<Integer, Object> row : rows) {
 			statements.addAll(prepareSQL(row));
 		}
 		if (sessionProperties.isMergePreparedStatementBatches()) {
@@ -284,7 +284,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		return result;
 	}
 
-	private StatementInfoWrapper asSingleStatement(List<StatementInfoWrapper> queries) {
+	protected StatementInfoWrapper asSingleStatement(List<StatementInfoWrapper> queries) {
 		// merge all queries into a single query, separated by semicolons
 		StringBuilder sb = new StringBuilder();
 		var first = queries.get(0);
@@ -300,7 +300,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		throw new FireboltException("Cannot call method executeUpdate(String sql) on a PreparedStatement");
 	}
 
-	private void validateParamIndex(int paramIndex) throws SQLException {
+	protected void validateParamIndex(int paramIndex) throws SQLException {
 		if (rawStatement.getTotalParams() < paramIndex) {
 			throw new FireboltException(
 					format("Cannot set parameter as there is no parameter at index: %d for statement: %s",
@@ -354,7 +354,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		setDateTime(parameterIndex, timestamp, calendar, JavaTypeToFireboltSQLString.TIMESTAMP);
 	}
 
-	private <T extends java.util.Date> void setDateTime(int parameterIndex, T datetime, Calendar calendar, JavaTypeToFireboltSQLString type) throws SQLException {
+	protected <T extends java.util.Date> void setDateTime(int parameterIndex, T datetime, Calendar calendar, JavaTypeToFireboltSQLString type) throws SQLException {
 		validateStatementIsNotClosed();
 		validateParamIndex(parameterIndex);
 		if (datetime == null || calendar == null) {
@@ -423,7 +423,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		}
 	}
 
-	private String formatDecimalNumber(Object x, int scaleOrLength) {
+	protected String formatDecimalNumber(Object x, int scaleOrLength) {
 		String format = format("%%.%df", scaleOrLength);
 		return format(format, ((Number)x).doubleValue());
 	}
