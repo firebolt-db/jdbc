@@ -1,0 +1,77 @@
+name: Nightly integration tests core
+
+on:
+  schedule:
+    - cron: '30 0 * * *'        # Daily at 03:00 UTC
+  workflow_dispatch:             # Allow manual trigger
+
+jobs:
+  detect-latest-image-available:
+    runs-on: ubuntu-latest
+    outputs:
+      latest_tag: ${{ steps.set-tag.outputs.latest_tag }}
+    steps:
+      - name: detect latest image availabe
+        id: set-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PREFIX: "4.21"
+          SUFFIX: "x86"
+        run: |
+          echo "Querying GHCR image tags from $OWNER/$IMAGE_NAME..."
+          
+          # Query image versions from GitHub Container Registry
+          response=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/orgs/firebolt-db/packages/container/firebolt-core/versions?per_page=100")
+          
+          # Check if response is empty or null
+          if [ -z "$response" ]; then
+            echo "Error: Empty response from API"
+            exit 1
+          fi
+                    
+          echo "Looking for tags with prefix: ${PREFIX} and suffix: ${SUFFIX}"
+          
+          # Debug: Show all tags before filtering
+          echo "All available tags:"
+          echo "$response" | jq -r '.[].metadata.container.tags[]' | sort
+          
+          # Process response with better null handling and debug output
+          LATEST_TAG=$(echo "$response" | jq -r --arg prefix "$PREFIX" --arg suffix "$SUFFIX" '
+            if . == null then
+              error("Response is null")
+            else
+              .[] | 
+              if .metadata == null then
+                empty
+              elif .metadata.container == null then
+                empty
+              elif .metadata.container.tags == null then
+                empty
+              else
+                . as $parent |
+                .metadata.container.tags[] | 
+                select(. != null) |
+                select(startswith($prefix) and endswith($suffix)) |
+                {tag: ., created: $parent.created_at} |
+                "\(.created) \(.tag)"
+              end
+            end
+          ' | sort -r | head -n 1 | awk '{print $2}')
+          
+          if [ -z "$LATEST_TAG" ]; then
+            echo "Error: No matching tags found with prefix ${PREFIX} and suffix ${SUFFIX}"
+            exit 1
+          fi
+          
+          echo "Latest matching tag: $LATEST_TAG"
+          echo "latest_tag=$LATEST_TAG" >> "$GITHUB_OUTPUT"
+
+  nightly-integration-runs-core:
+    needs: detect-latest-image-available
+    uses: ./.github/workflows/core-integration-test.yml
+    with:
+      os_name: ubuntu-latest
+      java_version: 11
+      tag_version: ${{ needs.detect-latest-image-available.outputs.latest_tag }}
+    secrets: inherit
