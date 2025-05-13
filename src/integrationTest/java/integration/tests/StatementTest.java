@@ -2,6 +2,7 @@ package integration.tests;
 
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.testutils.TestTag;
 import integration.ConnectionInfo;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
@@ -553,6 +554,56 @@ class StatementTest extends IntegrationTest {
 			 Statement limitedStatement = connection.createStatement()) {
 			limitedStatement.setMaxFieldSize(maxFieldSize);
 			assertEquals(readValues(unlimitedStatement, query, 1), readValues(limitedStatement, query, 1));
+		}
+	}
+
+	@Test
+	@Tag(TestTag.V2)
+	@EnvironmentCondition(value = "4.16.0", attribute = databaseVersion, comparison = EnvironmentCondition.Comparison.GE)
+	void canUseStatementTimeout() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			statement.execute("set statement_timeout=1");
+			ResultSet resultSet = statement.executeQuery("SELECT * FROM GENERATE_SERIES(1, 10000000);");
+			boolean errorFound = false;
+			while (resultSet.next()) {
+				String object = resultSet.getString(1);
+				if (object.contains("Query was canceled with reason 'Query timeout expired (1 ms)")) {
+					errorFound = true;
+				}
+			}
+			assertTrue(errorFound, "Did not find the error for query timing out");
+		}
+	}
+
+	@Test
+	@Tag(TestTag.V2)
+	@EnvironmentCondition(value = "4.16.0", attribute = databaseVersion, comparison = EnvironmentCondition.Comparison.GE)
+	void canUseStatementQueryTimeout() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			statement.setQueryTimeout(1);
+			ResultSet resultSet = statement.executeQuery("SELECT * FROM GENERATE_SERIES(1, 10000000);");
+			boolean errorFound = false;
+			while (resultSet.next()) {
+				String object = resultSet.getString(1);
+				if (object.contains("Query was canceled with reason 'Query timeout expired (1 ms)")) {
+					errorFound = true;
+				}
+			}
+			assertTrue(errorFound, "Did not find the error for query timing out");
+		}
+	}
+
+	@Test
+	@Tag(TestTag.V2)
+	@EnvironmentCondition(value = "4.16.0", attribute = databaseVersion, comparison = EnvironmentCondition.Comparison.GE)
+	void canExecuteStatementWithoutTimeout() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			ResultSet resultSet = statement.executeQuery("SELECT * FROM GENERATE_SERIES(1, 10000000);");
+			int lastNumberReturned = 0;
+			while (resultSet.next()) {
+				lastNumberReturned++;
+			}
+			assertEquals(1000000, lastNumberReturned);
 		}
 	}
 
