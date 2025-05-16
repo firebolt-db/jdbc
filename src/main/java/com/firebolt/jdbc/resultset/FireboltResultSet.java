@@ -82,6 +82,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	private final int maxRows;
 	private final int maxFieldSize;
 	private String currentLine;
+	private String nextLine;
 	private int currentRow = 0;
 	private int lastSplitRow = -1;
 	private boolean isClosed = false;
@@ -107,6 +108,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 		}
 
 		try {
+			nextLine = reader.readLine();
 			next();
 			String[] fields = toStringArray(currentLine);
 			this.columnNameToColumnNumber = getColumnNamesToIndexes(fields);
@@ -146,7 +148,8 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 		}
 
 		try {
-			currentLine = reader.readLine();
+			currentLine = nextLine;
+			nextLine = reader.readLine();
 			currentRow++;
 		} catch (IOException e) {
 			throw new SQLException("Error reading result from stream", e);
@@ -447,7 +450,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	@Override
 	public boolean isBeforeFirst() throws SQLException {
 		checkStreamNotClosed();
-		return currentRow < 3 || !hasNext();
+		return currentRow < 3;
 	}
 
 	@Override
@@ -457,7 +460,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	private boolean hasNext() {
-		return reader.lines().iterator().hasNext();
+		return nextLine != null;
 	}
 
 	@Override
