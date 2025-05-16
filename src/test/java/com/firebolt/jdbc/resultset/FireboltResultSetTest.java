@@ -290,6 +290,43 @@ class FireboltResultSetTest {
 	void shouldNotBeLastAtLastLine() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
+		assertFalse(resultSet.isLast());
+		assertFalse(resultSet.isLast());
+		assertFalse(resultSet.isLast());
+		assertFalse(resultSet.isLast());
+	}
+
+	@Test
+	void sholdNotConsumeRows() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = createResultSet(inputStream);
+		assertTrue(resultSet.isBeforeFirst());
+		assertTrue(resultSet.isBeforeFirst());
+		assertFalse(resultSet.isLast());
+		assertFalse(resultSet.isLast());
+		assertFalse(resultSet.isAfterLast());
+		assertFalse(resultSet.isAfterLast());
+		int count = 0;
+		while (resultSet.next()) {
+			count++;
+			assertFalse(resultSet.isBeforeFirst());
+			assertFalse(resultSet.isAfterLast());
+			if (count == 1) {
+				assertFalse(resultSet.isLast());
+			} else {
+				assertTrue(resultSet.isLast());
+			}
+		}
+		assertEquals(2, count);
+		assertFalse(resultSet.isBeforeFirst());
+		assertFalse(resultSet.isLast());
+		assertTrue(resultSet.isAfterLast());
+	}
+
+	@Test
+	void shouldBeAtLastLine() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = createResultSet(inputStream);
 		resultSet.next();
 		resultSet.next();
 		assertTrue(resultSet.isLast());
@@ -325,6 +362,7 @@ class FireboltResultSetTest {
 	void shouldBeBeforeFirstIfFirstRowNotRead() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
+		assertTrue(resultSet.isBeforeFirst());
 		assertTrue(resultSet.isBeforeFirst());
 		resultSet.next();
 		assertFalse(resultSet.isBeforeFirst());
