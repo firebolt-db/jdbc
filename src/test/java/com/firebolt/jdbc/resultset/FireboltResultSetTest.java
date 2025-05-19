@@ -287,7 +287,7 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldNotBeLastAtLastLine() throws SQLException {
+	void shouldNotBeLastIfNotLast() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
 		assertFalse(resultSet.isLast());
@@ -324,7 +324,7 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldBeAtLastLine() throws SQLException {
+	void shouldBeLastAtLastLine() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
 		resultSet.next();
