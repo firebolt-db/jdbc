@@ -297,7 +297,25 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void sholdNotConsumeRows() throws SQLException {
+	void shouldNotBeLastIfNoRowsInResponse() throws SQLException {
+		inputStream = getInputStreamWithNoRows();
+		resultSet = createResultSet(inputStream);
+		assertFalse(resultSet.isLast());
+		assertFalse(resultSet.next());
+		assertFalse(resultSet.isLast());
+	}
+
+	@Test
+	void shouldNotBeforeFirst() throws SQLException {
+		inputStream = getInputStreamWithNoRows();
+		resultSet = createResultSet(inputStream);
+		assertFalse(resultSet.isBeforeFirst());
+		assertFalse(resultSet.next());
+		assertFalse(resultSet.isBeforeFirst());
+	}
+
+	@Test
+	void shouldNotConsumeRows() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
 		assertTrue(resultSet.isBeforeFirst());
@@ -1617,6 +1635,10 @@ class FireboltResultSetTest {
 
 	private InputStream getInputStreamWithStruct() {
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-struct-nofalse");
+	}
+
+	private InputStream getInputStreamWithNoRows() {
+		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-no-results");
 	}
 
 	private ResultSet createResultSet(InputStream is) throws SQLException {

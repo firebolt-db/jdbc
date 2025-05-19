@@ -450,7 +450,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	@Override
 	public boolean isBeforeFirst() throws SQLException {
 		checkStreamNotClosed();
-		return currentRow < 3;
+		return currentRow == 2 && hasNext();
 	}
 
 	@Override
@@ -471,7 +471,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	@Override
 	public boolean isLast() {
-		return !hasNext() && currentLine != null;
+		return currentRow != 2 && !hasNext() && currentLine != null;
 	}
 
 	@Override
