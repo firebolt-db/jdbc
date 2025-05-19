@@ -93,6 +93,7 @@ public enum JavaTypeToFireboltSQLString {
 	private final CheckedFunction<Object, String> transformToJavaTypeFunction;
 	private final CheckedBiFunction<Object, Object, String> transformToJavaTypeFunctionWithParameter;
 	public static final String NULL_VALUE = "NULL";
+	private static final String UNSUPPORTED_JDBC_TYPE_FORMAT = "Unsupported JDBC type %s";
 	private static final Map<Class<?>, JavaTypeToFireboltSQLString> classToType = Stream.of(JavaTypeToFireboltSQLString.values())
 			.collect(toMap(type -> type.sourceType, type -> type));
 
@@ -147,13 +148,13 @@ public enum JavaTypeToFireboltSQLString {
 		try {
 			JDBCType jdbcType = JDBCType.valueOf(sqlType);
 			List<Class<?>> classes = Optional.ofNullable(jdbcTypeToClass.get(jdbcType))
-					.orElseThrow(() -> new FireboltException(format("Unsupported JDBC type %s", jdbcType), TYPE_NOT_SUPPORTED));
+					.orElseThrow(() -> new FireboltException(format(UNSUPPORTED_JDBC_TYPE_FORMAT, jdbcType), TYPE_NOT_SUPPORTED));
 			if (classes.size() > 1 && classes.contains(o.getClass())) {
 				return o.getClass();
 			} else if (classes.size() == 1) {
 				return classes.get(0);
 			} else {
-				throw new FireboltException(format("Unsupported JDBC type %s", jdbcType), TYPE_NOT_SUPPORTED);
+				throw new FireboltException(format(UNSUPPORTED_JDBC_TYPE_FORMAT, jdbcType), TYPE_NOT_SUPPORTED);
 			}
 		} catch(IllegalArgumentException e) {
 			throw new FireboltException(format("Unsupported SQL type %d", sqlType), TYPE_NOT_SUPPORTED);
@@ -187,6 +188,37 @@ public enum JavaTypeToFireboltSQLString {
 			} catch (Exception e) {
 				throw new FireboltException("Could not convert object to a String ", e, TYPE_TRANSFORMATION_ERROR);
 			}
+		}
+	}
+
+	public String transformDateTimeForServerSide(Object datetime, String timeZoneId) throws SQLException {
+		if (datetime == null) {
+			return NULL_VALUE;
+		} else {
+			try {
+				TimeZone tz = toTimeZone(timeZoneId);
+				if (this.equals(JavaTypeToFireboltSQLString.TIMESTAMP)) {
+					return SqlDateUtil.transformFromTimestampWithTimezoneToStringFunction.apply((Timestamp) datetime, tz);
+				} else if (this.equals(JavaTypeToFireboltSQLString.DATE)) {
+					return SqlDateUtil.transformFromDateWithTimezoneToStringFunction.apply((Date) datetime, tz);
+				} else {
+					throw new FireboltException(format(UNSUPPORTED_JDBC_TYPE_FORMAT, datetime), TYPE_NOT_SUPPORTED);
+				}
+			} catch (Exception e) {
+				throw new FireboltException("Could not convert object to a String ", e, TYPE_TRANSFORMATION_ERROR);
+			}
+		}
+	}
+
+	public static void validateObjectIsOfSupportedType(Object object, Integer targetSqlType) throws SQLException {
+		if (object == null) {
+			return;
+		}
+		if (!classToType.containsKey(object.getClass())) {
+			throw new FireboltException(format(UNSUPPORTED_JDBC_TYPE_FORMAT, object.getClass()), TYPE_NOT_SUPPORTED);
+		}
+		if (targetSqlType != null) {
+			JavaTypeToFireboltSQLString.getType(targetSqlType, object);
 		}
 	}
 

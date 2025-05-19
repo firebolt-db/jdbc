@@ -78,6 +78,9 @@ public enum FireboltSessionProperty {
 	CACHE_CONNECTION("cache_connection", true, Boolean.class, "Available only for Firebolt 2.0 connections. If true, the connection will be cached for 1 hour.", FireboltProperties::isConnectionCachingEnabled),
 
 	URL("url", null, String.class, "Firebolt Core deployment url. It needs to include protocol: http or https, host or IP address and port number. E.g: http://localhost:3473", FireboltProperties::getUrl),
+
+	PREPARED_STATEMENT_PARAM_STYLE("prepared_statement_param_style", "native", String.class,
+			"Prepared statement parameter style. Supported values: native, fb_numeric. Default is native.", FireboltProperties::getPreparedStatementParamStyle),
 	// We keep all the deprecated properties to ensure backward compatibility - but
 	// they do not have any effect.
 	@Deprecated

@@ -3,6 +3,7 @@ package integration.tests;
 import com.firebolt.jdbc.CheckedBiFunction;
 import com.firebolt.jdbc.CheckedVoidTriFunction;
 import com.firebolt.jdbc.QueryResult;
+import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.testutils.AssertionUtil;
 import com.firebolt.jdbc.type.FireboltDataType;
@@ -14,22 +15,14 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junitpioneer.jupiter.DefaultTimeZone;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.sql.Blob;
-import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -38,15 +31,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static java.sql.Statement.SUCCESS_NO_INFO;
@@ -54,10 +43,11 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
-class PreparedStatementTest extends IntegrationTest {
+class PreparedStatementFbNumericTest extends IntegrationTest {
 
 	@BeforeEach
 	void beforeEach() {
@@ -70,13 +60,14 @@ class PreparedStatementTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag("v2")
 	void shouldInsertRecordsInBatch() throws SQLException {
 		Car car1 = Car.builder().make("Ford").sales(150).build();
 		Car car2 = Car.builder().make("Tesla").sales(300).build();
-		try (Connection connection = createConnection()) {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 
 			try (PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO prepared_statement_test (sales, make) VALUES (?,?)")) {
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make) VALUES ($1,$2)")) {
 				statement.setObject(1, car1.getSales());
 				statement.setObject(2, car1.getMake());
 				statement.addBatch();
@@ -105,44 +96,32 @@ class PreparedStatementTest extends IntegrationTest {
 	Stream<Arguments> numericTypes() {
 		return Stream.of(
 				Arguments.of("byte",
-						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
-							s.setByte(i, v.byteValue());
-						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getByte(i)),
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> s.setByte(i, v.byteValue()),
+						(CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getByte(i)),
 
 				Arguments.of("short",
-						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
-							s.setShort(i, v.shortValue());
-						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getShort(i)),
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> s.setShort(i, v.shortValue()),
+						(CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getShort(i)),
 
 				Arguments.of("int",
 						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) PreparedStatement::setInt,
 						(CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getInt(i)),
 
 				Arguments.of("long",
-						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
-							s.setLong(i, v.longValue());
-						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getLong(i)),
-
-				Arguments.of("getObject(Long.class)",
-						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
-							s.setLong(i, v.longValue());
-						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> rs.getObject(i, Long.class).intValue()),
-
-				Arguments.of("getObject(i, java.util.Map.of(\"long\", Integer.class)",
-						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> {
-							s.setLong(i, v.longValue());
-						}, (CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getObject(i, java.util.Map.of("long", Integer.class)))
+						(CheckedVoidTriFunction<PreparedStatement, Integer, Integer>) (s, i, v) -> s.setLong(i, v.longValue()),
+						(CheckedBiFunction<ResultSet, Integer, Number>) (rs, i) -> (int) rs.getLong(i))
 		);
 	}
 
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("numericTypes")
+	@Tag("v2")
 	<T> void shouldInsertRecordsUsingDifferentNumericTypes(String name, CheckedVoidTriFunction<PreparedStatement, Integer, Integer> setter, CheckedBiFunction<ResultSet, Integer, T> getter) throws SQLException {
 		Car car = Car.builder().make("Tesla").sales(42).build();
-		try (Connection connection = createConnection()) {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 
 			try (PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO prepared_statement_test (sales, make) VALUES (?,?)")) {
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make) VALUES ($1,$2)")) {
 				setter.apply(statement, 1, car.getSales());
 				statement.setString(2, car.getMake());
 				statement.executeUpdate();
@@ -161,9 +140,14 @@ class PreparedStatementTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag("v2")
 	void shouldReplaceParamMarkers() throws SQLException {
-		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  (?,?)";
-		try (Connection connection = createConnection()) {
+		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  ($1,$2)";
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
+			try (Statement statement = connection.createStatement();
+				 ResultSet resultSet = statement.executeQuery("SELECT * FROM prepared_statement_test")) {
+				assertFalse(resultSet.next());
+			}
 
 			try (PreparedStatement statement = connection.prepareStatement(insertSql)) {
 				statement.setObject(1, 200);
@@ -174,7 +158,7 @@ class PreparedStatementTest extends IntegrationTest {
 			List<List<?>> expectedRows = new ArrayList<>();
 			expectedRows.add(Arrays.asList(200, "VW"));
 
-			String selectSql = "SELECT sales, make FROM prepared_statement_test WHERE make = ?";
+			String selectSql = "SELECT sales, make FROM prepared_statement_test WHERE make = $1";
 			try (PreparedStatement selectStatement = connection.prepareStatement(selectSql)) {
 				QueryResult expectedResult = createExpectedResult(expectedRows);
 				selectStatement.setString(1, "VW");
@@ -189,10 +173,11 @@ class PreparedStatementTest extends IntegrationTest {
 	}
 
 	@Test
-	void shouldParReplaceParamMarkersInMultistatementStatement() throws SQLException {
-		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  (?,?);"
-				+ "INSERT INTO prepared_statement_test(sales, make) VALUES (?,?)";
-		try (Connection connection = createConnection()) {
+	@Tag("v2")
+	void shouldReplaceParamMarkersInMultistatementStatement() throws SQLException {
+		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  ($1,$2);"
+				+ "INSERT INTO prepared_statement_test(sales, make) VALUES ($3,$4)";
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 
 			try (PreparedStatement statement = connection.prepareStatement(insertSql)) {
 				statement.setObject(1, 5000);
@@ -207,7 +192,7 @@ class PreparedStatementTest extends IntegrationTest {
 			List<List<?>> secondExceptedRows = new ArrayList<>();
 			secondExceptedRows.add(Arrays.asList(10000, "Ferrari"));
 
-			String selectSql = "SELECT sales, make FROM prepared_statement_test WHERE make = ?; SELECT sales, make FROM prepared_statement_test WHERE make = ?";
+			String selectSql = "SELECT sales, make FROM prepared_statement_test WHERE make = $1; SELECT sales, make FROM prepared_statement_test WHERE make = $2";
 			try (PreparedStatement selectStatement = connection.prepareStatement(selectSql)) {
 				QueryResult expectedFirstResult = createExpectedResult(firstExpectedRows);
 				QueryResult expectedSecondResult = createExpectedResult(secondExceptedRows);
@@ -229,9 +214,10 @@ class PreparedStatementTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag("v2")
 	void shouldFailSQLInjectionAttempt() throws SQLException {
-		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  (?,?)";
-		try (Connection connection = createConnection()) {
+		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  ($1,$2)";
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 
 			try (PreparedStatement statement = connection.prepareStatement(insertSql)) {
 				statement.setObject(1, 200);
@@ -239,7 +225,7 @@ class PreparedStatementTest extends IntegrationTest {
 				assertFalse(statement.execute());
 			}
 
-			String selectSql = "SELECT sales, make FROM prepared_statement_test WHERE make = ?";
+			String selectSql = "SELECT sales, make FROM prepared_statement_test WHERE make = $1";
 			try (PreparedStatement statement = connection.prepareStatement(selectSql)) {
 				QueryResult emptyResult = createExpectedResult(Collections.emptyList());
 				statement.setString(1, "VW' OR 1=1");
@@ -253,125 +239,13 @@ class PreparedStatementTest extends IntegrationTest {
 	}
 
 	@Test
-	void shouldInsertAndSelectByteArray() throws SQLException {
-		Car car1 = Car.builder().make("Ford").sales(12345).signature("Henry Ford".getBytes()).build();
-		Car car2 = Car.builder().make("Tesla").sales(54321).signature("Elon Musk".getBytes()).build();
-		try (Connection connection = createConnection()) {
-
-			try (PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, signature) VALUES (?,?,?)")) {
-				statement.setLong(1, car1.getSales());
-				statement.setString(2, car1.getMake());
-				statement.setBytes(3, car1.getSignature());
-				statement.addBatch();
-				statement.setLong(1, car2.getSales());
-				statement.setString(2, car2.getMake());
-				statement.setBytes(3, car2.getSignature());
-				statement.addBatch();
-				int[] result = statement.executeBatch();
-				assertArrayEquals(new int[] { SUCCESS_NO_INFO, SUCCESS_NO_INFO }, result);
-			}
-
-			Set<Car> actual = new HashSet<>();
-			try (Statement statement = connection.createStatement();
-				 ResultSet rs = statement.executeQuery("SELECT sales, make, signature FROM prepared_statement_test")) {
-				while(rs.next()) {
-					actual.add(Car.builder().sales(rs.getInt(1)).make(rs.getString(2)).signature(rs.getBytes(3)).build());
-				}
-			}
-			assertEquals(Set.of(car1, car2), actual);
-		}
-	}
-
-	@Test
-	void shouldInsertAndSelectBlobClob() throws SQLException, IOException {
-		Car car1 = Car.builder().make("Ford").sales(12345).signature("Henry Ford".getBytes()).build();
-		Car car2 = Car.builder().make("Tesla").sales(54321).signature("Elon Musk".getBytes()).build();
-		try (Connection connection = createConnection()) {
-
-			try (PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, signature) VALUES (?,?,?)")) {
-				statement.setLong(1, car1.getSales());
-				statement.setClob(2, clob(connection, car1.getMake()));
-				statement.setBlob(3, blob(connection, car1.getSignature()));
-				statement.addBatch();
-				statement.setLong(1, car2.getSales());
-				statement.setClob(2, clob(connection, car2.getMake()));
-				statement.setBlob(3, blob(connection, car2.getSignature()));
-				statement.addBatch();
-				int[] result = statement.executeBatch();
-				assertArrayEquals(new int[] { SUCCESS_NO_INFO, SUCCESS_NO_INFO }, result);
-			}
-
-			Set<Car> actual = new HashSet<>();
-			try (Statement statement = connection.createStatement();
-				 ResultSet rs = statement.executeQuery("SELECT sales, make, signature FROM prepared_statement_test")) {
-				while(rs.next()) {
-					actual.add(Car.builder()
-							.sales(rs.getInt(1))
-							.make(new String(new BufferedReader(rs.getClob(2).getCharacterStream()).lines().collect(Collectors.joining(System.lineSeparator()))))
-							.signature(rs.getBlob(3).getBinaryStream().readAllBytes())
-							.build());
-				}
-			}
-			assertEquals(Set.of(car1, car2), actual);
-		}
-	}
-
-	private Blob blob(Connection connection, byte[] bytes) throws SQLException {
-		Blob blob = connection.createBlob();
-		blob.setBytes(1, bytes);
-		return blob;
-	}
-
-	private Clob clob(Connection connection, String text) throws SQLException {
-		Clob clob = connection.createClob();
-		clob.setString(1, text);
-		return clob;
-	}
-
-	@Test
-	void shouldInsertAndSelectStreams() throws SQLException, IOException {
-		Car car1 = Car.builder().make("Ford").sales(12345).signature("Henry Ford".getBytes()).build();
-		Car car2 = Car.builder().make("Tesla").sales(54321).signature("Elon Musk".getBytes()).build();
-		try (Connection connection = createConnection()) {
-
-			try (PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, signature) VALUES (?,?,?)")) {
-				statement.setLong(1, car1.getSales());
-				statement.setCharacterStream(2, new StringReader(car1.getMake()));
-				statement.setBinaryStream(3, new ByteArrayInputStream(car1.getSignature()));
-				statement.addBatch();
-				statement.setLong(1, car2.getSales());
-				statement.setCharacterStream(2, new StringReader(car2.getMake()));
-				statement.setBinaryStream(3, new ByteArrayInputStream(car2.getSignature()));
-				statement.addBatch();
-				int[] result = statement.executeBatch();
-				assertArrayEquals(new int[] { SUCCESS_NO_INFO, SUCCESS_NO_INFO }, result);
-			}
-
-			Set<Car> actual = new HashSet<>();
-			try (Statement statement = connection.createStatement();
-				 ResultSet rs = statement.executeQuery("SELECT sales, make, signature FROM prepared_statement_test")) {
-				while(rs.next()) {
-					actual.add(Car.builder()
-							.sales(rs.getInt(1))
-							.make(new String(rs.getAsciiStream(2).readAllBytes()))
-							.signature(rs.getBinaryStream(3).readAllBytes())
-							.build());
-				}
-			}
-			assertEquals(Set.of(car1, car2), actual);
-		}
-	}
-
-	@Test
+	@Tag("v2")
 	void shouldInsertAndSelectDateTime() throws SQLException {
 		Car car1 = Car.builder().make("Ford").sales(12345).ts(new Timestamp(2)).d(new Date(3)).build();
-		try (Connection connection = createConnection()) {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 
 			try (PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, ts, d) VALUES (?,?,?,?)")) {
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, ts, d) VALUES ($1,$2,$3,$4)")) {
 				statement.setLong(1, car1.getSales());
 				statement.setString(2, car1.getMake());
 				statement.setTimestamp(3, car1.getTs());
@@ -398,10 +272,10 @@ class PreparedStatementTest extends IntegrationTest {
 	void shouldInsertAndSelectGeography() throws SQLException {
 
 		executeStatementFromFile("/statements/prepared-statement/ddl_2_0.sql");
-		try (Connection connection = createConnection()) {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 
 			try (PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO prepared_statement_2_0_test (make, location) VALUES (?,?)")) {
+					.prepareStatement("INSERT INTO prepared_statement_2_0_test (make, location) VALUES ($1,$2)")) {
 				statement.setString(1, "Ford");
 				statement.setString(2, "POINT(1 1)");
 				statement.executeUpdate();
@@ -425,10 +299,11 @@ class PreparedStatementTest extends IntegrationTest {
 	void shouldInsertAndSelectStruct() throws SQLException {
 		Car car1 = Car.builder().make("Ford").sales(12345).ts(new Timestamp(2)).d(new Date(3)).build();
 
-		try (Connection connection = createConnection()) {
+		executeStatementFromFile("/statements/prepared-statement/ddl.sql");
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 
 			try (PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, ts, d) VALUES (?,?,?,?)")) {
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, ts, d) VALUES ($1,$2,$3,$4)")) {
 				statement.setLong(1, car1.getSales());
 				statement.setString(2, car1.getMake());
 				statement.setTimestamp(3, car1.getTs());
@@ -453,48 +328,16 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
-	@ParameterizedTest
-	@DefaultTimeZone("UTC")
-	@MethodSource("dateTypes")
-	void shouldFetchTimestampAndDate(Object timestampOrLocalDateTime, Object dateOrLocalDate, boolean addTargetSqlType) throws SQLException {
-		String expectedTimestamp = "2019-07-31 11:15:13";
-		String expectedDate = "2019-07-31";
-		try (Connection connection = createConnection()) {
-			try (PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO prepared_statement_test (ts, d, make, sales) VALUES (?,?, '', 0)")) {
-				// we need to specify make and sales values since they are not null
-				if (addTargetSqlType) {
-					statement.setObject(1, timestampOrLocalDateTime, Types.TIMESTAMP);
-					statement.setObject(2, dateOrLocalDate, Types.DATE);
-				} else {
-					statement.setObject(1, timestampOrLocalDateTime);
-					statement.setObject(2, dateOrLocalDate);
-				}
-				statement.executeUpdate();
-			}
-			try (Statement statement = connection.createStatement();
-				 ResultSet rs = statement
-						 .executeQuery("SELECT ts, d FROM prepared_statement_test")) {
-				rs.next();
-				assertEquals(expectedTimestamp, rs.getString(1));
-				assertEquals(expectedDate, rs.getString(2));
-			}
-		} finally {
-			executeStatementFromFile("/statements/prepared-statement/cleanup.sql");
-		}
-	}
-
-
 	@Test
 	@Tag("v2")
 	void shouldInsertAndSelectComplexStruct() throws SQLException {
 		Car car1 = Car.builder().ts(new Timestamp(2)).d(new Date(3)).tags(new String[] { "fast", "sleek" }).build();
 
 		executeStatementFromFile("/statements/prepared-statement-struct/ddl.sql");
-		try (Connection connection = createConnection()) {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 
 			try (PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO test_struct_helper(a, \"b column\") VALUES (?,?)")) {
+					.prepareStatement("INSERT INTO test_struct_helper(a, \"b column\") VALUES ($1,$2)")) {
 				statement.setArray(1, connection.createArrayOf("VARCHAR", car1.getTags()));
 				statement.setTimestamp(2, car1.getTs());
 				statement.executeUpdate();
@@ -534,12 +377,13 @@ class PreparedStatementTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag("v2")
 	void shouldInsertAndRetrieveUrl() throws SQLException, MalformedURLException {
 		Car tesla = Car.builder().make("Tesla").url(new URL("https://www.tesla.com/")).sales(300).build();
 		Car nothing = Car.builder().sales(0).build();
-		try (Connection connection = createConnection()) {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 			try (PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, url) VALUES (?,?,?)")) {
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make, url) VALUES ($1,$2,$3)")) {
 				statement.setInt(1, tesla.getSales());
 				statement.setString(2, tesla.getMake());
 				statement.setURL(3, tesla.getUrl());
@@ -564,10 +408,11 @@ class PreparedStatementTest extends IntegrationTest {
 	}
 
 	@Test
-	void shouldFetchSpecialCharacters() throws SQLException, MalformedURLException {
-		try (Connection connection = createConnection()) {
+	@Tag("v2")
+	void shouldFetchSpecialCharacters() throws SQLException {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 			try (PreparedStatement statement = connection
-					.prepareStatement("SELECT ? as a, ? as b, ? as c, ? as d")) {
+					.prepareStatement("SELECT $1 as a, $2 as b, $3 as c, $4 as d")) {
 				statement.setString(1, "ї");
 				statement.setString(2, "\n");
 				statement.setString(3, "\\");
@@ -584,62 +429,101 @@ class PreparedStatementTest extends IntegrationTest {
 	}
 
 	@Test
-	void shouldFetchBoolean() throws SQLException {
-		try (Connection connection = createConnection()) {
+	@Tag("v2")
+	void shouldSetParametersWithRandomIndex() throws SQLException {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 			try (PreparedStatement statement = connection
-					.prepareStatement("SELECT ? as a, ? as b, ? as c")) {
-				statement.setBoolean(1, true);
-				statement.setObject(2, false);
-				statement.setObject(3, true, Types.BOOLEAN);
+					.prepareStatement("SELECT $1::real, $42::long, $32::text")) {
+
+				statement.setObject(1, 5.5F, Types.FLOAT);
+				statement.setObject(42, 5L, Types.BIGINT);
+				statement.setObject(32, null, Types.JAVA_OBJECT);
 				statement.execute();
-				ResultSet rs = statement.getResultSet();
-				assertEquals(FireboltDataType.BOOLEAN.name().toLowerCase(),
-						rs.getMetaData().getColumnTypeName(1).toLowerCase());
-				assertEquals(FireboltDataType.BOOLEAN.name().toLowerCase(),
-						rs.getMetaData().getColumnTypeName(2).toLowerCase());
-				assertEquals(FireboltDataType.BOOLEAN.name().toLowerCase(),
-						rs.getMetaData().getColumnTypeName(3).toLowerCase());
-				assertTrue(rs.next());
-				assertTrue(rs.getBoolean(1));
-				assertFalse(rs.getBoolean(2));
-				assertTrue(rs.getBoolean(3));
+				try (ResultSet rs = statement.getResultSet()) {
+					assertTrue(rs.next());
+					assertEquals(5.5F, rs.getFloat(1));
+					assertEquals(5L, rs.getLong(2));
+					assertNull(rs.getObject(3));
+				}
 			}
 		}
 	}
 
-	@Disabled
-	@ParameterizedTest
-	@MethodSource("com.firebolt.jdbc.testutils.TestFixtures#booleanTypes")
-	void shouldFetchBooleanFromVariousObjects(Object objectTrue, Object objectFalse) throws SQLException {
-		try (Connection connection = createConnection()) {
+	@Test
+	@Tag("v2")
+	void shouldSetParametersWithRepeatingValues() throws SQLException {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 			try (PreparedStatement statement = connection
-					.prepareStatement("SELECT ? as a, ? as b")) {
-				statement.setObject(1, objectTrue, Types.BOOLEAN);
-				statement.setObject(2, objectFalse, Types.BOOLEAN);
+					.prepareStatement("SELECT $1::real, $1::long, $1::text")) {
+
+				statement.setObject(1, 5.5F, Types.FLOAT);
 				statement.execute();
-				ResultSet rs = statement.getResultSet();
-				assertEquals(FireboltDataType.BOOLEAN.name().toLowerCase(),
-						rs.getMetaData().getColumnTypeName(1).toLowerCase());
-				assertEquals(FireboltDataType.BOOLEAN.name().toLowerCase(),
-						rs.getMetaData().getColumnTypeName(2).toLowerCase());
-				assertTrue(rs.next());
-				assertTrue(rs.getBoolean(1));
-				assertFalse(rs.getBoolean(2));
+				try (ResultSet rs = statement.getResultSet()) {
+					assertTrue(rs.next());
+					assertEquals(5.5F, rs.getFloat(1));
+					assertEquals(6L, rs.getLong(2));
+					assertEquals("5.5", rs.getString(3));
+				}
 			}
 		}
 	}
 
-	Stream<Arguments> dateTypes() {
-		return Stream.of(
-				Arguments.of(LocalDateTime.of(2019, 7, 31, 11, 15, 13),
-						LocalDate.of(2019, 7, 31), true),
-				Arguments.of(new Timestamp(1564571713000L),
-						new Date(1564571713000L), true),
-				Arguments.of(LocalDateTime.of(2019, 7, 31, 11, 15, 13),
-						LocalDate.of(2019, 7, 31), false),
-				Arguments.of(new Timestamp(1564571713000L),
-						new Date(1564571713000L), false)
-		);
+	@Test
+	@Tag("v2")
+	void shouldNotFailWhenParametersNotPresentAreSet() throws SQLException {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("SELECT $1::real, $1::long, $1::text")) {
+
+				statement.setObject(1, 5.5F, Types.FLOAT);
+				statement.setObject(2, 5.5F, Types.FLOAT);
+				statement.execute();
+				try (ResultSet rs = statement.getResultSet()) {
+					assertTrue(rs.next());
+					assertEquals(5.5F, rs.getFloat(1));
+					assertEquals(6L, rs.getLong(2));
+					assertEquals("5.5", rs.getString(3));
+				}
+			}
+		}
+	}
+
+	@Test
+	@Tag("v2")
+	void shouldResetTheParameterIndex() throws SQLException {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("SELECT $1::real, $1::long, $1::text")) {
+
+				statement.setObject(1, 4.5F, Types.FLOAT);
+				statement.setObject(1, 5.5F, Types.FLOAT);
+				statement.execute();
+				try (ResultSet rs = statement.getResultSet()) {
+					assertTrue(rs.next());
+					assertEquals(5.5F, rs.getFloat(1));
+					assertEquals(6L, rs.getLong(2));
+					assertEquals("5.5", rs.getString(3));
+				}
+			}
+		}
+	}
+
+	@Test
+	@Tag("v2")
+	void shouldFailWhenParameterNotProvided() throws SQLException {
+		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("SELECT $1, $2")) {
+
+				statement.setObject(1, 5.5F, Types.FLOAT);
+				assertEquals("Line 1, Column 12: Query referenced positional parameter $2, but it was not set",
+						assertThrows(FireboltException.class, statement::execute).getErrorMessageFromServer());
+			}
+		}
+	}
+
+	private Connection getConnectionWithFbNumericQueryParameters() throws SQLException {
+		return createConnection(ConnectionInfo.getInstance().getEngine(), Map.of("prepared_statement_param_style", "fb_numeric"));
 	}
 
 	@Builder

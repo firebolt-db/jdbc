@@ -24,7 +24,7 @@ class FireboltPropertiesTest {
 				.principal(null).secret(null).host("host").ssl(true).initialAdditionalProperties(new HashMap<>())
 				.keepAliveTimeoutMillis(300000).maxConnectionsTotal(300).maxRetries(3)
 				.socketTimeoutMillis(0).connectionTimeoutMillis(60000).tcpKeepInterval(30).environment("app").tcpKeepIdle(60)
-				.tcpKeepCount(10).connectionCachingEnabled(true).build();
+				.tcpKeepCount(10).connectionCachingEnabled(true).preparedStatementParamStyle("native").build();
 
 		Properties properties = new Properties();
 		properties.put("engine", "engine");
@@ -49,6 +49,7 @@ class FireboltPropertiesTest {
 		properties.put("compress", "1");
 		properties.put("validate_on_system_engine", "true");
 		properties.put("merge_prepared_statement_batches", "true");
+		properties.put("prepared_statement_param_style", "fb_numeric");
 
 		Map<String, String> customProperties = new HashMap<>();
 		customProperties.put("someCustomProperties", "custom_value");
@@ -59,7 +60,7 @@ class FireboltPropertiesTest {
 				.initialAdditionalProperties(customProperties).keepAliveTimeoutMillis(300000)
 				.maxConnectionsTotal(300).maxRetries(3).socketTimeoutMillis(20).connectionTimeoutMillis(60000)
 				.tcpKeepInterval(30).tcpKeepIdle(60).tcpKeepCount(10).environment("app").validateOnSystemEngine(true)
-				.mergePreparedStatementBatches(true).connectionCachingEnabled(true).build();
+				.mergePreparedStatementBatches(true).connectionCachingEnabled(true).preparedStatementParamStyle("fb_numeric").build();
 		assertEquals(expectedDefaultProperties, new FireboltProperties(properties));
 	}
 
