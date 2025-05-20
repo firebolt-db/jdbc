@@ -306,11 +306,13 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldNotBeforeFirst() throws SQLException {
+	void shouldNotBeBeforeFirstOrLast() throws SQLException {
 		inputStream = getInputStreamWithNoRows();
 		resultSet = createResultSet(inputStream);
+		assertFalse(resultSet.isLast());
 		assertFalse(resultSet.isBeforeFirst());
 		assertFalse(resultSet.next());
+		assertFalse(resultSet.isLast());
 		assertFalse(resultSet.isBeforeFirst());
 	}
 
