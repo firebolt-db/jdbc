@@ -287,7 +287,64 @@ class FireboltResultSetTest {
 	}
 
 	@Test
-	void shouldNotBeLastAtLastLine() throws SQLException {
+	void shouldNotBeLastIfNotLast() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = createResultSet(inputStream);
+		assertFalse(resultSet.isLast());
+		assertFalse(resultSet.isLast());
+		assertFalse(resultSet.isLast());
+		assertFalse(resultSet.isLast());
+	}
+
+	@Test
+	void shouldNotBeLastIfNoRowsInResponse() throws SQLException {
+		inputStream = getInputStreamWithNoRows();
+		resultSet = createResultSet(inputStream);
+		assertFalse(resultSet.isLast());
+		assertFalse(resultSet.next());
+		assertFalse(resultSet.isLast());
+	}
+
+	@Test
+	void shouldNotBeBeforeFirstOrLast() throws SQLException {
+		inputStream = getInputStreamWithNoRows();
+		resultSet = createResultSet(inputStream);
+		assertFalse(resultSet.isLast());
+		assertFalse(resultSet.isBeforeFirst());
+		assertFalse(resultSet.next());
+		assertFalse(resultSet.isLast());
+		assertFalse(resultSet.isBeforeFirst());
+	}
+
+	@Test
+	void shouldNotConsumeRows() throws SQLException {
+		inputStream = getInputStreamWithCommonResponseExample();
+		resultSet = createResultSet(inputStream);
+		assertTrue(resultSet.isBeforeFirst());
+		assertTrue(resultSet.isBeforeFirst());
+		assertFalse(resultSet.isLast());
+		assertFalse(resultSet.isLast());
+		assertFalse(resultSet.isAfterLast());
+		assertFalse(resultSet.isAfterLast());
+		int count = 0;
+		while (resultSet.next()) {
+			count++;
+			assertFalse(resultSet.isBeforeFirst());
+			assertFalse(resultSet.isAfterLast());
+			if (count == 1) {
+				assertFalse(resultSet.isLast());
+			} else {
+				assertTrue(resultSet.isLast());
+			}
+		}
+		assertEquals(2, count);
+		assertFalse(resultSet.isBeforeFirst());
+		assertFalse(resultSet.isLast());
+		assertTrue(resultSet.isAfterLast());
+	}
+
+	@Test
+	void shouldBeLastAtLastLine() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
 		resultSet.next();
@@ -325,6 +382,7 @@ class FireboltResultSetTest {
 	void shouldBeBeforeFirstIfFirstRowNotRead() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
+		assertTrue(resultSet.isBeforeFirst());
 		assertTrue(resultSet.isBeforeFirst());
 		resultSet.next();
 		assertFalse(resultSet.isBeforeFirst());
@@ -1579,6 +1637,10 @@ class FireboltResultSetTest {
 
 	private InputStream getInputStreamWithStruct() {
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-struct-nofalse");
+	}
+
+	private InputStream getInputStreamWithNoRows() {
+		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-no-results");
 	}
 
 	private ResultSet createResultSet(InputStream is) throws SQLException {
