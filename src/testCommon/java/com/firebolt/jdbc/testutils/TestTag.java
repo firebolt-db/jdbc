@@ -1,5 +1,7 @@
 package com.firebolt.jdbc.testutils;
 
+import java.util.Set;
+
 public class TestTag {
 
     // tests that are run against firebolt 1.0
@@ -15,5 +17,9 @@ public class TestTag {
     public static final String SLOW = "slow";
 
     public static final String COMMON = "common";
+
+    public static Set<String> getAllSupportedTags() {
+        return Set.of(V1, V2, CORE, SLOW, COMMON);
+    }
 }
 

@@ -29,6 +29,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Tag(TestTag.V2)
 @CustomLog
 public class CachedConnectionTest extends IntegrationTest {
 

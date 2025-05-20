@@ -2,11 +2,11 @@ package integration.tests;
 
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.testutils.TestTag;
 import integration.ConnectionInfo;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -265,14 +265,24 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	/**
+	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v2 and v2
+	 */
 	@Test
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
 	void setWrongParameter() throws SQLException {
 		setWrongParameter("SET foo=bar", Map.of(), "foo");
 	}
 
+	/**
+	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v2 and v2
+	 */
 	@Test
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
 	void setCorrectThenWrongParameter() throws SQLException {
-		setWrongParameter("SET time_zone = 'EST';SET bar=tar", Map.of("time_zone", "EST"), "bar");
+			setWrongParameter("SET time_zone = 'EST';SET bar=tar", Map.of("time_zone", "EST"), "bar");
 	}
 
 	@Test
@@ -355,9 +365,7 @@ class StatementTest extends IntegrationTest {
 	 */
 	@Test
 	void successfulSettingOfPropertyThatRequiresAdvancedModeConfiguredWhenConnectionIsCreated() throws SQLException {
-		ConnectionInfo current = integration.ConnectionInfo.getInstance();
-		String url = current.toJdbcUrl() + "&advanced_mode=1";
-		try (Connection connection = DriverManager.getConnection(url, current.getPrincipal(), current.getSecret())) {
+		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), Map.of("advanced_mode", "1"))) {
 			setParam(connection, "force_pgdate_timestampntz", "1");
 		}
 	}
@@ -376,9 +384,11 @@ class StatementTest extends IntegrationTest {
 
 	/**
 	 * Try to set {@code force_pgdate_timestampntz} that requires advanced mode that was not set. This test will fail.
-	 * @throws SQLException if connection fails
+	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v2 and v2
 	 */
 	@Test
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
 	void failedSettingPropertyThatRequiresAdvancedModeThatWasNotSet() throws SQLException {
 		try (Connection connection = createConnection()) {
 			assertFailingSet(connection, "force_pgdate_timestampntz");
@@ -388,13 +398,13 @@ class StatementTest extends IntegrationTest {
 	/**
 	 * Connect to DB using {@code advanced_mode} sent in JDBC URL. Then set {@code advanced_mode=0} and
 	 * try to set {@code force_pgdate_timestampntz} that requires advanced mode and therefore fails.
-	 * @throws SQLException if connection fails
+	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v2 and v2
 	 */
 	@Test
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
 	void failedSettingPropertyThatRequiresAdvancedModeThatWasUnset() throws SQLException {
-		ConnectionInfo current = integration.ConnectionInfo.getInstance();
-		String url = current.toJdbcUrl() + "&advanced_mode=1";
-		try (Connection connection = DriverManager.getConnection(url, current.getPrincipal(), current.getSecret())) {
+		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), Map.of("advanced_mode", "1"))) {
 			setParam(connection, "advanced_mode", "0");
 			assertFailingSet(connection, "force_pgdate_timestampntz");
 		}

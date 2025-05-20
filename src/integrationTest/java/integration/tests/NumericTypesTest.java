@@ -1,13 +1,12 @@
 package integration.tests;
 
 import integration.IntegrationTest;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

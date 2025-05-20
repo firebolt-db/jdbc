@@ -3,12 +3,6 @@ package integration.tests;
 import com.firebolt.jdbc.testutils.AssertionUtil;
 import integration.IntegrationTest;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
-import lombok.CustomLog;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.DefaultTimeZone;
-
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Date;
@@ -31,6 +25,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.CustomLog;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.DefaultTimeZone;
 
 import static com.firebolt.jdbc.type.date.SqlDateUtil.ONE_DAY_MILLIS;
 import static java.sql.Types.TIMESTAMP;
