@@ -10,7 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public abstract class MockWebServerAwareIntegrationTest extends IntegrationTest {
+public abstract class MockWebServerAwareIntegrationTest extends CommonIntegrationTest {
     protected MockWebServer mockBackEnd;
 
     @BeforeEach

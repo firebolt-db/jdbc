@@ -1,4 +1,3 @@
-
 package integration;
 
 import com.firebolt.jdbc.FireboltBackendType;
@@ -57,43 +56,43 @@ public class GlobalSetupExtension implements BeforeAllCallback {
     }
 
     /**
-     * We will detect the firebolt backend by checking which tags to be excluded.
-     * If excluding: v1,v2 -> then we want to run against core backend
-     * If excluding: v1,core -> then we run against cloud v1
-     * If excluding: v2,core -> then we run against cloud v2
+     * We will detect the firebolt backend by checking which tags to be included/excluded.
+     * If including: core -> then we want to run against core backend
+     * If including: v1 -> then we run against cloud v1
+     * If including: v2 -> then we run against cloud v2
      * @return
      */
     private FireboltBackendType detectFireboltBackend() {
-        Set<String> excludeTags = getExcludeTags();
-        if (excludeTags.isEmpty()) {
+        Set<String> includeTags = getIncludeTags();
+        if (includeTags.isEmpty()) {
             throw new RuntimeException("Please specify which backend you want your tests to run. Use -DexcludeTags system parameter to exclude the backend (v1 or v2 or core)");
         }
 
-        // -DexcludeTags=v1,v2  -> then run against core
-        if (!excludeTags.contains(TestTag.CORE) && excludeTags.contains(TestTag.V1) && excludeTags.contains(TestTag.V2)) {
+        // -DincludeTags=core  -> then run against core
+        if (includeTags.contains(TestTag.CORE) && !includeTags.contains(TestTag.V1) && !includeTags.contains(TestTag.V2)) {
             return FireboltBackendType.FIREBOLT_CORE;
         }
 
-        // -DexcludeTags=core,v1  -> then run against cloud v2
-        if (excludeTags.contains(TestTag.CORE) && excludeTags.contains(TestTag.V1) && !excludeTags.contains(TestTag.V2)) {
+        // -DincludeTags=v2  -> then run against cloud v2
+        if (includeTags.contains(TestTag.V2) && !includeTags.contains(TestTag.CORE) && !includeTags.contains(TestTag.V1)) {
             return FireboltBackendType.CLOUD_2_0;
         }
 
-        // -DexcludeTags=core,v2  -> then run against cloud v1
-        if (excludeTags.contains(TestTag.CORE) && excludeTags.contains(TestTag.V2) && !excludeTags.contains(TestTag.V1)) {
+        // -DincludeTags=v1  -> then run against cloud v1
+        if (includeTags.contains(TestTag.V1) && !includeTags.contains(TestTag.CORE) && !includeTags.contains(TestTag.V2)) {
             return FireboltBackendType.CLOUD_1_0;
         }
 
-        // -DexcludeTags=v2 or -DexcludeTags=v1 -> then cannot detect against what we are going to run against
-        throw new RuntimeException("Cannot detect against which backend you want to run your tests. Use -DexcludeTags system parameter to exclude the backend (v1 or v2 or core)");
+        // -DincludeTags=v1,core or -DincludeTags=v1,v2 -> then cannot detect against what we are going to run against
+        throw new RuntimeException("Cannot detect against which backend you want to run your tests. Use -DincludeTags system parameter to specify the backend (v1 or v2 or core): -DincludeTags=v2");
     }
 
     /**
-     * The way that our integration workflow are setup is to use the -DexcludeTag to exclude the version of backend that we don't want in the current run.
+     * The way that our integration workflow are set up is to use the -DincludeTags to specify the tests groups to run (of which we should include one of: v1, v2 or core) to know against which backend the tests are running
      * @return
      */
-    private Set<String> getExcludeTags() {
-        String excludeTags = System.getProperty("excludeTags", "");
+    private Set<String> getIncludeTags() {
+        String excludeTags = System.getProperty("includeTags", "core");
         String[] tags = excludeTags.split(",");
 
         Set<String> allSupportedTags = TestTag.getAllSupportedTags();

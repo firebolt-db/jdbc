@@ -1,7 +1,7 @@
 package integration.tests;
 
 import com.firebolt.jdbc.testutils.AssertionUtil;
-import integration.IntegrationTest;
+import integration.CommonIntegrationTest;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import java.io.IOException;
 import java.sql.Connection;
@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @CustomLog
 @DefaultTimeZone("UTC")
-class TimestampTest extends IntegrationTest {
+class TimestampTest extends CommonIntegrationTest {
 	private static final TimeZone UTC_TZ = TimeZone.getTimeZone("UTC");
 	private static final Calendar EST_CALENDAR = Calendar.getInstance(TimeZone.getTimeZone("EST"));
 	private static final Calendar ECT_CALENDAR = Calendar.getInstance(TimeZone.getTimeZone("ECT"));

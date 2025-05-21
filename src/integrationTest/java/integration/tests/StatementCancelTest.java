@@ -3,20 +3,20 @@ package integration.tests;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.FireboltStatement;
+import com.firebolt.jdbc.testutils.TestTag;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.concurrent.TimeUnit;
 import lombok.CustomLog;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.concurrent.TimeUnit;
 
 import static integration.EnvironmentCondition.Attribute.databaseVersion;
 import static integration.EnvironmentCondition.Comparison.GE;
@@ -37,8 +37,8 @@ class StatementCancelTest extends IntegrationTest {
 
 	@Test
 	@Timeout(value = 2, unit = TimeUnit.MINUTES)
-	@Tag("v1") // generate_series is supported on all available engine of v2
-	@Tag("slow")
+	@Tag(TestTag.V1) // generate_series is supported on all available engine of v2
+	@Tag(TestTag.SLOW)
 	void shouldCancelQueryV1() throws SQLException, InterruptedException {
 		shouldCancelQuery();
 	}
@@ -46,9 +46,10 @@ class StatementCancelTest extends IntegrationTest {
 	@Test
 	@Timeout(value = 10, unit = TimeUnit.MINUTES)
 	@EnvironmentCondition(value = "3.33", attribute = databaseVersion, comparison = GE) // generate_series is supported starting from version 3.33 on v2
-	@Tag("v2")
-	@Tag("slow")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.SLOW)
 	void shouldCancelQueryV2() throws SQLException, InterruptedException {
+
 		shouldCancelQuery();
 	}
 

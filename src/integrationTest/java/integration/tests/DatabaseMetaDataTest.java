@@ -1,7 +1,7 @@
 package integration.tests;
 
+import integration.CommonIntegrationTest;
 import integration.ConnectionInfo;
-import integration.IntegrationTest;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -64,7 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class DatabaseMetaDataTest extends IntegrationTest {
+class DatabaseMetaDataTest extends CommonIntegrationTest {
 
 	@BeforeAll
 	void beforeAll() {

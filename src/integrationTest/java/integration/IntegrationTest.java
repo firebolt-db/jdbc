@@ -14,7 +14,6 @@ import java.util.Collections;
 import java.util.Map;
 import lombok.CustomLog;
 import lombok.SneakyThrows;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -23,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @CustomLog
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Tag("common")
 @ExtendWith(GlobalSetupExtension.class)
 public abstract class IntegrationTest {
 

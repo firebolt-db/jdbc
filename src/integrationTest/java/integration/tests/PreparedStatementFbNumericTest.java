@@ -6,21 +6,10 @@ import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.testutils.AssertionUtil;
+import com.firebolt.jdbc.testutils.TestTag;
 import com.firebolt.jdbc.type.FireboltDataType;
 import integration.ConnectionInfo;
 import integration.IntegrationTest;
-import lombok.Builder;
-import lombok.CustomLog;
-import lombok.EqualsAndHashCode;
-import lombok.Value;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
@@ -37,6 +26,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import lombok.Builder;
+import lombok.CustomLog;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.sql.Statement.SUCCESS_NO_INFO;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -60,7 +60,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldInsertRecordsInBatch() throws SQLException {
 		Car car1 = Car.builder().make("Ford").sales(150).build();
 		Car car2 = Car.builder().make("Tesla").sales(300).build();
@@ -115,7 +116,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("numericTypes")
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	<T> void shouldInsertRecordsUsingDifferentNumericTypes(String name, CheckedVoidTriFunction<PreparedStatement, Integer, Integer> setter, CheckedBiFunction<ResultSet, Integer, T> getter) throws SQLException {
 		Car car = Car.builder().make("Tesla").sales(42).build();
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
@@ -140,7 +142,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldReplaceParamMarkers() throws SQLException {
 		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  ($1,$2)";
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
@@ -173,7 +176,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldReplaceParamMarkersInMultistatementStatement() throws SQLException {
 		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  ($1,$2);"
 				+ "INSERT INTO prepared_statement_test(sales, make) VALUES ($3,$4)";
@@ -214,7 +218,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldFailSQLInjectionAttempt() throws SQLException {
 		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  ($1,$2)";
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
@@ -239,7 +244,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldInsertAndSelectDateTime() throws SQLException {
 		Car car1 = Car.builder().make("Ford").sales(12345).ts(new Timestamp(2)).d(new Date(3)).build();
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
@@ -268,7 +274,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldInsertAndSelectGeography() throws SQLException {
 
 		executeStatementFromFile("/statements/prepared-statement/ddl_2_0.sql");
@@ -295,7 +302,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldInsertAndSelectStruct() throws SQLException {
 		Car car1 = Car.builder().make("Ford").sales(12345).ts(new Timestamp(2)).d(new Date(3)).build();
 
@@ -329,7 +337,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldInsertAndSelectComplexStruct() throws SQLException {
 		Car car1 = Car.builder().ts(new Timestamp(2)).d(new Date(3)).tags(new String[] { "fast", "sleek" }).build();
 
@@ -377,7 +386,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldInsertAndRetrieveUrl() throws SQLException, MalformedURLException {
 		Car tesla = Car.builder().make("Tesla").url(new URL("https://www.tesla.com/")).sales(300).build();
 		Car nothing = Car.builder().sales(0).build();
@@ -408,7 +418,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldFetchSpecialCharacters() throws SQLException {
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 			try (PreparedStatement statement = connection
@@ -429,7 +440,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldSetParametersWithRandomIndex() throws SQLException {
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 			try (PreparedStatement statement = connection
@@ -450,7 +462,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldSetParametersWithRepeatingValues() throws SQLException {
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 			try (PreparedStatement statement = connection
@@ -469,7 +482,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldNotFailWhenParametersNotPresentAreSet() throws SQLException {
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 			try (PreparedStatement statement = connection
@@ -489,7 +503,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldResetTheParameterIndex() throws SQLException {
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 			try (PreparedStatement statement = connection
@@ -509,7 +524,8 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+//	@Tag(TestTag.CORE) - this fails, against core. Will be fixed in next review
 	void shouldFailWhenParameterNotProvided() throws SQLException {
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 			try (PreparedStatement statement = connection

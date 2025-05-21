@@ -16,10 +16,8 @@ public class TestTag {
     // tests that are slow
     public static final String SLOW = "slow";
 
-    public static final String COMMON = "common";
-
     public static Set<String> getAllSupportedTags() {
-        return Set.of(V1, V2, CORE, SLOW, COMMON);
+        return Set.of(V1, V2, CORE, SLOW);
     }
 }
 
