@@ -60,19 +60,19 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
         assertEquals(List.of(List.of("information_schema", database)), getRows(DatabaseMetaData::getSchemas));
     }
 
-	@Test
+    @Test
     @Tag(TestTag.V2)
-	void getCatalogs() throws SQLException {
-		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+    void getCatalogs() throws SQLException {
+        try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
             String database = integration.ConnectionInfo.getInstance().getDatabase();
             try {
-				statement.executeUpdate(format("CREATE DATABASE %s_get_catalogs", database));
-				assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
-				assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
-			} finally {
-				statement.executeUpdate(format("DROP DATABASE IF EXISTS %s_get_catalogs", database));
-			}
-		}
+                statement.executeUpdate(format("CREATE DATABASE %s_get_catalogs", database));
+                assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
+                assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
+            } finally {
+                statement.executeUpdate(format("DROP DATABASE IF EXISTS %s_get_catalogs", database));
+            }
+        }
     }
 
     @ParameterizedTest

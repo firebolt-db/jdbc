@@ -65,7 +65,7 @@ public class GlobalSetupExtension implements BeforeAllCallback {
     private FireboltBackendType detectFireboltBackend() {
         Set<String> includeTags = getIncludeTags();
         if (includeTags.isEmpty()) {
-            throw new RuntimeException("Please specify which backend you want your tests to run. Use -DexcludeTags system parameter to exclude the backend (v1 or v2 or core)");
+            throw new RuntimeException("Please specify which backend you want your tests to run. Use -DincludeTags system parameter to include the backend (v1 or v2 or core)");
         }
 
         // -DincludeTags=core  -> then run against core
@@ -92,8 +92,8 @@ public class GlobalSetupExtension implements BeforeAllCallback {
      * @return
      */
     private Set<String> getIncludeTags() {
-        String excludeTags = System.getProperty("includeTags", "core");
-        String[] tags = excludeTags.split(",");
+        String includeTags = System.getProperty("includeTags", "core");
+        String[] tags = includeTags.split(",");
 
         Set<String> allSupportedTags = TestTag.getAllSupportedTags();
         return Arrays.stream(tags).filter(tag -> allSupportedTags.contains(tag))

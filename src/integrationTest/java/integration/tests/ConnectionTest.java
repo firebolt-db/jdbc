@@ -160,7 +160,7 @@ class ConnectionTest extends IntegrationTest {
 
     @Test
     @Tag(TestTag.V2)
-    @Tag("slow")
+    @Tag(TestTag.SLOW)
     void successfulConnectWithoutStartingTheEngine() throws SQLException {
         String currentUTCTime = getCurrentUTCTime();
 
