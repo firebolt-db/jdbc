@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.client.authentication.AuthenticationRequest;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
@@ -135,6 +136,11 @@ public class FireboltCoreConnection extends FireboltConnection {
     @Override
     public Optional<String> getConnectionUserAgentHeader() {
         return Optional.empty();
+    }
+
+    @Override
+    public FireboltBackendType getBackendType() {
+        return FireboltBackendType.FIREBOLT_CORE;
     }
 
     @Override

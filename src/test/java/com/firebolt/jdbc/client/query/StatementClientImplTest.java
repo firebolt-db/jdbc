@@ -1,8 +1,11 @@
 package com.firebolt.jdbc.client.query;
 
+import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.connection.FireboltConnectionServiceSecret;
 import com.firebolt.jdbc.connection.FireboltConnectionTokens;
+import com.firebolt.jdbc.connection.FireboltConnectionUserPassword;
 import com.firebolt.jdbc.connection.UrlUtil;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.connection.settings.FireboltSessionProperty;
@@ -35,6 +38,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okio.Buffer;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -80,6 +84,16 @@ class StatementClientImplTest {
 
 	@Mock
 	private FireboltConnection connection;
+	@Mock
+	private FireboltConnectionServiceSecret cloudV2connection;
+	@Mock
+	private FireboltConnectionUserPassword cloudV1connection;
+
+	@BeforeEach
+	void setupMethod() {
+		lenient().when(cloudV1connection.getBackendType()).thenReturn(FireboltBackendType.CLOUD_1_0);
+		lenient().when(cloudV2connection.getBackendType()).thenReturn(FireboltBackendType.CLOUD_2_0);
+	}
 
 	@ParameterizedTest
 	@CsvSource({
@@ -92,9 +106,9 @@ class StatementClientImplTest {
 
 	private Entry<String, String> shouldPostSqlQuery(boolean systemEngine) throws SQLException, IOException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).accountId("12345").systemEngine(systemEngine).build();
-		when(connection.getAccessToken())
+		when(cloudV1connection.getAccessToken())
 				.thenReturn(Optional.of("token"));
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, cloudV1connection, "ConnA:1.0.9", "ConnB:2.0.9");
 		injectMockedResponse(okHttpClient, 200, "");
 		Call call = getMockedCallWithResponse(200, "");
 		when(okHttpClient.newCall(any())).thenReturn(call);
@@ -115,10 +129,10 @@ class StatementClientImplTest {
 	@Test
 	void willIncludeUserAgentWithConnectionInfo() throws SQLException, IOException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).accountId("12345").systemEngine(false).build();
-		when(connection.getAccessToken()).thenReturn(Optional.of("token"));
-		when(connection.getConnectionUserAgentHeader()).thenReturn(Optional.of("connectionInfo"));
+		when(cloudV2connection.getAccessToken()).thenReturn(Optional.of("token"));
+		when(cloudV2connection.getConnectionUserAgentHeader()).thenReturn(Optional.of("connectionInfo"));
 
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, cloudV2connection, "ConnA:1.0.9", "ConnB:2.0.9");
 		injectMockedResponse(okHttpClient, 200, "");
 		Call call = getMockedCallWithResponse(200, "");
 		when(okHttpClient.newCall(any())).thenReturn(call);
@@ -144,10 +158,10 @@ class StatementClientImplTest {
 	void shouldPostSqlWithExpectedQueryLabel(boolean systemEngine, int infraVersion, String connectionQueryLabel, boolean isAsync) throws SQLException, IOException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).accountId("12345").systemEngine(systemEngine)
 						.runtimeAdditionalProperties(Map.of("query_label", connectionQueryLabel)).build();
-		when(connection.getAccessToken()).thenReturn(Optional.of("token"));
-		when(connection.getInfraVersion()).thenReturn(infraVersion);
+		when(cloudV2connection.getAccessToken()).thenReturn(Optional.of("token"));
+		when(cloudV2connection.getInfraVersion()).thenReturn(infraVersion);
 
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, cloudV2connection, "ConnA:1.0.9", "ConnB:2.0.9");
 		injectMockedResponse(okHttpClient, 200, "");
 		Call call = getMockedCallWithResponse(200, "");
 		when(okHttpClient.newCall(any())).thenReturn(call);
@@ -256,17 +270,17 @@ class StatementClientImplTest {
 
 	@Test
 	void shouldRetryOnUnauthorized() throws IOException, SQLException {
-		when(connection.getAccessToken()).thenReturn(Optional.of("oldToken")).thenReturn(Optional.of("newToken"));
+		when(cloudV2connection.getAccessToken()).thenReturn(Optional.of("oldToken")).thenReturn(Optional.of("newToken"));
 		Call okCall = getMockedCallWithResponse(200, "");
 		Call unauthorizedCall = getMockedCallWithResponse(401, "");
 		when(okHttpClient.newCall(any())).thenReturn(unauthorizedCall).thenReturn(okCall);
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, cloudV2connection, "ConnA:1.0.9", "ConnB:2.0.9");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
 		statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, false, 5, false);
 		verify(okHttpClient, times(2)).newCall(requestArgumentCaptor.capture());
 		assertEquals("Bearer oldToken", requestArgumentCaptor.getAllValues().get(0).headers().get("Authorization")); // legit:ignore-secrets
 		assertEquals("Bearer newToken", requestArgumentCaptor.getAllValues().get(1).headers().get("Authorization")); // legit:ignore-secrets
-		verify(connection).removeExpiredTokens();
+		verify(cloudV2connection).removeExpiredTokens();
 	}
 
 	@Test
@@ -274,12 +288,12 @@ class StatementClientImplTest {
 		Call okCall = getMockedCallWithResponse(200, "");
 		Call unauthorizedCall = getMockedCallWithResponse(401, "");
 		when(okHttpClient.newCall(any())).thenReturn(unauthorizedCall).thenReturn(unauthorizedCall).thenReturn(okCall);
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, cloudV2connection, "ConnA:1.0.9", "ConnB:2.0.9");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
 		FireboltException ex = assertThrows(FireboltException.class, () -> statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, false, 5, false));
 		assertEquals(ExceptionType.UNAUTHORIZED, ex.getType());
 		verify(okHttpClient, times(2)).newCall(any());
-		verify(connection, times(2)).removeExpiredTokens();
+		verify(cloudV2connection, times(2)).removeExpiredTokens();
 	}
 
 	@ParameterizedTest
@@ -463,6 +477,11 @@ class StatementClientImplTest {
 				return Optional.empty();
 			}
 
+			@Override
+			public FireboltBackendType getBackendType() {
+				return mockedInfraVersion == 1 ? FireboltBackendType.CLOUD_1_0 : FireboltBackendType.CLOUD_2_0;
+			}
+
 		};
 		connection.createStatement().executeUpdate(useCommand);
 		return connection;
@@ -476,11 +495,11 @@ class StatementClientImplTest {
 			},
 			delimiter = ';')
 	void shouldThrowUnauthorizedExceptionWhenNoAssociatedUser(String serverErrorMessage, String exceptionMessage) throws SQLException, IOException {
-		when(connection.getAccessToken()).thenReturn(Optional.of("token"));
+		when(cloudV2connection.getAccessToken()).thenReturn(Optional.of("token"));
 		Call unauthorizedCall = getMockedCallWithResponse(500, serverErrorMessage);
 
 		when(okHttpClient.newCall(any())).thenReturn(unauthorizedCall);
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "ConnA:1.0.9", "ConnB:2.0.9");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, cloudV2connection, "ConnA:1.0.9", "ConnB:2.0.9");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
 		FireboltException exception = assertThrows(FireboltException.class, () -> statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, false, 5, false));
 		assertEquals(ExceptionType.UNAUTHORIZED, exception.getType());
@@ -497,7 +516,7 @@ class StatementClientImplTest {
 		Call call = mock(Call.class);
 		when(call.execute()).thenThrow(exceptionClass);
 		when(okHttpClient.newCall(any())).thenReturn(call);
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "", "");
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, cloudV2connection, "", "");
 		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("select 1").get(0);
 		FireboltException ex = assertThrows(FireboltException.class, () -> statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, false, 5, false));
 		assertEquals(exceptionType, ex.getType());
