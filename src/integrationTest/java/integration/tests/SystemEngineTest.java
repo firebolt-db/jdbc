@@ -1,44 +1,47 @@
 package integration.tests;
 
-import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
-import static integration.EnvironmentCondition.Attribute.databaseVersion;
-import static integration.EnvironmentCondition.Attribute.fireboltVersion;
-import static java.lang.String.format;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Map.entry;
-import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.sql.*;
+import com.firebolt.jdbc.connection.CacheListener;
+import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.testutils.TestTag;
+import integration.ConnectionInfo;
+import integration.EnvironmentCondition;
+import integration.IntegrationTest;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
-
+import lombok.CustomLog;
 import org.junit.Assert;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.firebolt.jdbc.connection.CacheListener;
-import com.firebolt.jdbc.connection.FireboltConnection;
-import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.exception.FireboltException;
-
-import integration.ConnectionInfo;
-import integration.EnvironmentCondition;
-import integration.IntegrationTest;
-import lombok.CustomLog;
+import static com.firebolt.jdbc.connection.FireboltConnectionUserPassword.SYSTEM_ENGINE_NAME;
+import static integration.EnvironmentCondition.Attribute.databaseVersion;
+import static java.lang.String.format;
+import static java.util.Map.entry;
+import static java.util.stream.Collectors.toList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
-@Tag("v2")
+@Tag(TestTag.V2)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SystemEngineTest extends IntegrationTest {
 
@@ -100,7 +103,6 @@ public class SystemEngineTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
 	void shouldFailToSelectFromCustomDbUsingSystemEngine() throws SQLException {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
 		String systemEngineJdbcUrl = new ConnectionInfo(current.getPrincipal(), current.getSecret(),
@@ -141,7 +143,6 @@ public class SystemEngineTest extends IntegrationTest {
 
 	@ParameterizedTest
 	@ValueSource(strings = {"", "DATABASE"})
-	@Tag("v2")
 	@EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.GE)
 	void useDatabase(String entityType) throws SQLException {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
@@ -176,8 +177,7 @@ public class SystemEngineTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
-	@Tag("slow")
+	@Tag(TestTag.SLOW)
 	@EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.GE)
 	void useEngine() throws SQLException {
 		try (Connection connection = createConnection(getSystemEngineName())) {
@@ -204,8 +204,7 @@ public class SystemEngineTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
-	@Tag("slow")
+	@Tag(TestTag.SLOW)
 	@EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.GE)
 	void useEngineMixedCase() throws SQLException {
 		String mixedCaseEngineName = "JavaIntegrationTestMixedCase" + ID;
@@ -224,8 +223,7 @@ public class SystemEngineTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
-	@Tag("slow")
+	@Tag(TestTag.SLOW)
 	@EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.GE)
 	void useEngineMixedCaseToLowerCase() throws SQLException {
 		String mixedCaseEngineName = "JavaIntegrationTestToLowerCase" + ID;
@@ -246,7 +244,6 @@ public class SystemEngineTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
 	void connectToAccountWithoutUser() throws SQLException {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
 		String database = current.getDatabase();
@@ -271,27 +268,6 @@ public class SystemEngineTest extends IntegrationTest {
 		}
 	}
 
-	// This method should be removed when FIR-28997 is fixed
-	private String getClientSecret(Connection connection, String serviceAccountName, String database) throws SQLException, IOException {
-		FireboltConnection fbConn = (FireboltConnection)connection;
-		String accessToken = fbConn.getAccessToken().orElseThrow(() -> new IllegalStateException("access token is not found"));
-		FireboltProperties fbProps = fbConn.getSessionProperties();
-		URL url = new URL(format("%s/query?output_format=TabSeparatedWithNamesAndTypes&database=%s", fbProps.getHttpConnectionUrl(), database));
-		HttpURLConnection con = (HttpURLConnection)url.openConnection();
-		con.setRequestMethod("POST");
-		con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-		con.setRequestProperty("authorization", "Bearer " + accessToken);
-		con.setDoOutput(true);
-		try (PrintStream ps = new PrintStream(con.getOutputStream())) {
-			ps.println(format("CALL fb_GENERATESERVICEACCOUNTKEY('%s')", serviceAccountName));
-		}
-		BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream(), UTF_8));
-		String[] data = br.readLine().split("\\t");
-		String clientSecret = data[2];
-		return clientSecret;
-
-	}
-
 	private String getTableDbName(Connection connection, String table) throws SQLException {
 		try (PreparedStatement ps = connection.prepareStatement("select table_catalog from information_schema.tables where table_name=?")) {
 			ps.setString(1, table);
@@ -302,8 +278,7 @@ public class SystemEngineTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("slow")
-	@Tag("v2") // does not work on new V1 - DB cannot be managed by system engine
+	@Tag(TestTag.SLOW)
 	void shouldExecuteEngineManagementQueries() throws SQLException {
 		try (Connection connection = createConnection(getSystemEngineName())) {
 			try {

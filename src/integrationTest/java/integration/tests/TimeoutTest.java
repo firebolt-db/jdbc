@@ -1,6 +1,7 @@
 package integration.tests;
 
 import com.firebolt.jdbc.connection.FireboltConnection;
+import com.firebolt.jdbc.testutils.TestTag;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
 import java.sql.Connection;
@@ -59,8 +60,8 @@ class TimeoutTest extends IntegrationTest {
 
 	@Test
 	@Timeout(value = 15, unit = TimeUnit.MINUTES)
-	@Tag("v1") // generate_series is supported on all available engine of v2
-	@Tag("slow")
+	@Tag(TestTag.V1)
+	@Tag(TestTag.SLOW)
 	void shouldExecuteRequestWithoutTimeoutV1() throws SQLException {
 		shouldExecuteRequestWithoutTimeout();
 	}
@@ -68,8 +69,9 @@ class TimeoutTest extends IntegrationTest {
 	@Test
 	@Timeout(value = 15, unit = TimeUnit.MINUTES)
 	@EnvironmentCondition(value = "3.33", attribute = databaseVersion, comparison = GE) // generate_series is supported starting from version 3.33 on v2
-	@Tag("v2")
-	@Tag("slow")
+	@Tag(TestTag.V2)
+//	@Tag(TestTag.CORE) - this fails, against core. Will be fixed in next review
+	@Tag(TestTag.SLOW)
 	void shouldExecuteRequestWithoutTimeoutV2() throws SQLException {
 		shouldExecuteRequestWithoutTimeout();
 	}

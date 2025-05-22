@@ -5,6 +5,7 @@ import com.firebolt.jdbc.CheckedVoidTriFunction;
 import com.firebolt.jdbc.QueryResult;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.testutils.AssertionUtil;
+import com.firebolt.jdbc.testutils.TestTag;
 import com.firebolt.jdbc.type.FireboltDataType;
 import integration.ConnectionInfo;
 import integration.IntegrationTest;
@@ -68,6 +69,9 @@ class PreparedStatementTest extends IntegrationTest {
 		executeStatementFromFile("/statements/prepared-statement/cleanup.sql");
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldInsertRecordsInBatch() throws SQLException {
 		Car car1 = Car.builder().make("Ford").sales(150).build();
@@ -93,9 +97,9 @@ class PreparedStatementTest extends IntegrationTest {
 			QueryResult queryResult = createExpectedResult(expectedRows);
 
 			try (Statement statement = connection.createStatement();
-					ResultSet rs = statement
-							.executeQuery("SELECT sales, make FROM prepared_statement_test ORDER BY make");
-					ResultSet expectedRs = FireboltResultSet.of(queryResult)) {
+				 ResultSet rs = statement
+						 .executeQuery("SELECT sales, make FROM prepared_statement_test ORDER BY make");
+				 ResultSet expectedRs = FireboltResultSet.of(queryResult)) {
 				AssertionUtil.assertResultSetEquality(expectedRs, rs);
 			}
 		}
@@ -136,6 +140,9 @@ class PreparedStatementTest extends IntegrationTest {
 
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("numericTypes")
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	<T> void shouldInsertRecordsUsingDifferentNumericTypes(String name, CheckedVoidTriFunction<PreparedStatement, Integer, Integer> setter, CheckedBiFunction<ResultSet, Integer, T> getter) throws SQLException {
 		Car car = Car.builder().make("Tesla").sales(42).build();
 		try (Connection connection = createConnection()) {
@@ -159,6 +166,9 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldReplaceParamMarkers() throws SQLException {
 		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  (?,?)";
@@ -187,6 +197,9 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldParReplaceParamMarkersInMultistatementStatement() throws SQLException {
 		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  (?,?);"
@@ -227,6 +240,9 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldFailSQLInjectionAttempt() throws SQLException {
 		String insertSql = "INSERT INTO prepared_statement_test(sales, make) VALUES /* Some comment ? */ -- other comment ? \n  (?,?)";
@@ -251,6 +267,9 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldInsertAndSelectByteArray() throws SQLException {
 		Car car1 = Car.builder().make("Ford").sales(12345).signature("Henry Ford".getBytes()).build();
@@ -282,6 +301,9 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldInsertAndSelectBlobClob() throws SQLException, IOException {
 		Car car1 = Car.builder().make("Ford").sales(12345).signature("Henry Ford".getBytes()).build();
@@ -329,6 +351,9 @@ class PreparedStatementTest extends IntegrationTest {
 		return clob;
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldInsertAndSelectStreams() throws SQLException, IOException {
 		Car car1 = Car.builder().make("Ford").sales(12345).signature("Henry Ford".getBytes()).build();
@@ -364,6 +389,9 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldInsertAndSelectDateTime() throws SQLException {
 		Car car1 = Car.builder().make("Ford").sales(12345).ts(new Timestamp(2)).d(new Date(3)).build();
@@ -393,7 +421,8 @@ class PreparedStatementTest extends IntegrationTest {
 
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldInsertAndSelectGeography() throws SQLException {
 
 		executeStatementFromFile("/statements/prepared-statement/ddl_2_0.sql");
@@ -420,7 +449,8 @@ class PreparedStatementTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldInsertAndSelectStruct() throws SQLException {
 		Car car1 = Car.builder().make("Ford").sales(12345).ts(new Timestamp(2)).d(new Date(3)).build();
 
@@ -455,6 +485,9 @@ class PreparedStatementTest extends IntegrationTest {
 	@ParameterizedTest
 	@DefaultTimeZone("UTC")
 	@MethodSource("dateTypes")
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldFetchTimestampAndDate(Object timestampOrLocalDateTime, Object dateOrLocalDate, boolean addTargetSqlType) throws SQLException {
 		String expectedTimestamp = "2019-07-31 11:15:13";
 		String expectedDate = "2019-07-31";
@@ -485,7 +518,8 @@ class PreparedStatementTest extends IntegrationTest {
 
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldInsertAndSelectComplexStruct() throws SQLException {
 		Car car1 = Car.builder().ts(new Timestamp(2)).d(new Date(3)).tags(new String[] { "fast", "sleek" }).build();
 
@@ -532,6 +566,9 @@ class PreparedStatementTest extends IntegrationTest {
 
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldInsertAndRetrieveUrl() throws SQLException, MalformedURLException {
 		Car tesla = Car.builder().make("Tesla").url(new URL("https://www.tesla.com/")).sales(300).build();
@@ -562,6 +599,9 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldFetchSpecialCharacters() throws SQLException, MalformedURLException {
 		try (Connection connection = createConnection()) {
@@ -582,6 +622,9 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldFetchBoolean() throws SQLException {
 		try (Connection connection = createConnection()) {
@@ -606,6 +649,9 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Disabled
 	@ParameterizedTest
 	@MethodSource("com.firebolt.jdbc.testutils.TestFixtures#booleanTypes")

@@ -1,6 +1,6 @@
 package integration.tests;
 
-import integration.IntegrationTest;
+import integration.CommonIntegrationTest;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class NumericTypesTest extends IntegrationTest {
+class NumericTypesTest extends CommonIntegrationTest {
     @Test
     void shouldHaveCorrectInfo() throws SQLException {
         try (Connection connection = createConnection(null);

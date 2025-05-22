@@ -60,6 +60,9 @@ class StatementTest extends IntegrationTest {
 		executeStatementFromFile("/statements/statement/cleanup.sql");
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldSelect1() throws SQLException {
 		try (Connection connection = createConnection();
@@ -72,6 +75,8 @@ class StatementTest extends IntegrationTest {
 
 	@Test
 	@EnabledIfSystemProperty(named = "engine", matches = ".+")
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
 	void shouldSelect1WithEngine() throws SQLException {
 		try (Connection connection = createConnection(System.getProperty("engine")); Statement statement = connection.createStatement()) {
 			statement.executeQuery("SELECT 1;");
@@ -79,6 +84,9 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldSelect1WithQueryTimeout() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
@@ -88,6 +96,9 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldReuseStatementWhenNotCloseOnCompletion() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
@@ -96,6 +107,9 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldThrowExceptionWhenTryingToReuseStatementClosedOnCompletion() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
@@ -106,7 +120,8 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldThrowExceptionWhenExecutingWrongQuery() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
@@ -115,7 +130,7 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
-	@Tag("v1")
+	@Tag(TestTag.V1)
 	@Test
 	void shouldThrowExceptionWhenExecutingWrongQueryV1() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
@@ -127,7 +142,8 @@ class StatementTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@EnvironmentCondition(value = "4.2.0", attribute = databaseVersion, comparison = EnvironmentCondition.Comparison.GE)
 	void shouldThrowExceptionWhenExecutingWrongQueryWithJsonError() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
@@ -140,6 +156,9 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldReturnTrueWhenExecutingAStatementThatReturnsAResultSet() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
@@ -147,6 +166,9 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldReturnTrueWhenExecutingMultiStatementWithFirstStatementReturningAResultSet() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
@@ -154,6 +176,9 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldReturnFalseWhenExecutingMultiStatementWithFirstStatementNotReturningAResultSet() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
@@ -161,6 +186,9 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldReturnLimitedNumberOfLines() throws SQLException {
 		try (Connection connection = createConnection(); Statement insert = connection.createStatement()) {
@@ -191,6 +219,9 @@ class StatementTest extends IntegrationTest {
 		return result;
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldExecuteBatch() throws SQLException {
 		int size = 10;
@@ -202,6 +233,9 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldThrowExceptionWhenTryingToExecuteQueryThatWouldReturnMultipleResultSets() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
@@ -209,6 +243,9 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldGetMultipleResultSets() throws SQLException {
 		String sql = "  --Getting Multiple RS;\nSELECT 1; /* comment 1 ; ; ; */\n\n --Another comment ; \n  -- ; \n SELECT 2; /* comment 2 */";
@@ -228,6 +265,9 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldNotCloseStatementWithCloseOnCompletionIfItHasMoreResults() throws SQLException {
 		String sql = "SELECT 1;SELECT 2;";
@@ -247,6 +287,9 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldGetBooleans() throws SQLException {
 		try (Connection connection = createConnection()) {
@@ -286,8 +329,9 @@ class StatementTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
-	@Tag("slow")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
+	@Tag(TestTag.SLOW)
 	void canSetQueryLabelMultipleTimes() throws SQLException {
 		try (Connection connection = createConnection()) {
 			try (Statement statement = connection.createStatement()) {
@@ -317,8 +361,9 @@ class StatementTest extends IntegrationTest {
 	}
 
 	@Test
-	@Tag("v2")
-	@Tag("slow")
+	@Tag(TestTag.V2)
+//	@Tag(TestTag.CORE) - this fails, against core. Will be fixed in next review
+	@Tag(TestTag.SLOW)
 	void willUseRandomQueryLabelIfNoneExplicitlySet() throws SQLException {
 		try (Connection connection = createConnection()) {
 			try (Statement statement = connection.createStatement()) {
@@ -363,6 +408,9 @@ class StatementTest extends IntegrationTest {
 	 * Connect to DB using {@code advanced_mode} sent in JDBC URL and set {@code force_pgdate_timestampntz} that requires advanced mode.
 	 * @throws SQLException if connection fails
 	 */
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void successfulSettingOfPropertyThatRequiresAdvancedModeConfiguredWhenConnectionIsCreated() throws SQLException {
 		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), Map.of("advanced_mode", "1"))) {
@@ -374,6 +422,9 @@ class StatementTest extends IntegrationTest {
 	 * Connect to DB without {@code advanced_mode}. Then set {@code advanced_mode=1} and {@code force_pgdate_timestampntz} that requires advanced mode.
 	 * @throws SQLException if connection fails
 	 */
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void successfulSettingOfPropertyThatRequiresAdvancedModePreviouslySetAtRuntime() throws SQLException {
 		try (Connection connection = createConnection()) {
@@ -387,8 +438,8 @@ class StatementTest extends IntegrationTest {
 	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v2 and v2
 	 */
 	@Test
-	@Tag(TestTag.V1)
 	@Tag(TestTag.V2)
+//	@Tag(TestTag.CORE) - this fails, against core. Will be fixed in next review
 	void failedSettingPropertyThatRequiresAdvancedModeThatWasNotSet() throws SQLException {
 		try (Connection connection = createConnection()) {
 			assertFailingSet(connection, "force_pgdate_timestampntz");
@@ -401,8 +452,8 @@ class StatementTest extends IntegrationTest {
 	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v2 and v2
 	 */
 	@Test
-	@Tag(TestTag.V1)
 	@Tag(TestTag.V2)
+//	@Tag(TestTag.CORE) - this fails, against core. Will be fixed in next review
 	void failedSettingPropertyThatRequiresAdvancedModeThatWasUnset() throws SQLException {
 		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), Map.of("advanced_mode", "1"))) {
 			setParam(connection, "advanced_mode", "0");
@@ -434,6 +485,9 @@ class StatementTest extends IntegrationTest {
 			"-- SELECT 1",
 			"/* {\"app\": \"dbt\", \"dbt_version\": \"0.20.0\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"fb_app\", \"connection_name\": \"macro_stage_external_sources\"} */"
 	})
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void empty(String sql) throws SQLException {
 		try (Connection connection = createConnection()) {
 			assertFalse(connection.createStatement().execute(sql));
@@ -445,6 +499,9 @@ class StatementTest extends IntegrationTest {
 	 * @throws SQLException if something is going wrong
 	 * see com.firebolt.jdbc.metadata.FireboltDatabaseMetadataTest#nullSorting
 	 */
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void nullSortOrder() throws SQLException {
 		try (Connection connection = createConnection();
@@ -464,6 +521,9 @@ class StatementTest extends IntegrationTest {
 	 * see com.firebolt.jdbc.metadata.FireboltDatabaseMetadataTest#identifiersCase
 	 * see com.firebolt.jdbc.metadata.FireboltDatabaseMetadataTest#quotedIdentifiersCase
 	 */
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@ParameterizedTest
 	@CsvSource(value = {
 			"select 1 as lower, 2 as UPPER, 3 AS MiXeD;lower,upper,mixed",
@@ -489,6 +549,9 @@ class StatementTest extends IntegrationTest {
 	 * see com.firebolt.jdbc.metadata.FireboltDatabaseMetadataTest#identifiersCase
 	 * see com.firebolt.jdbc.metadata.FireboltDatabaseMetadataTest#quotedIdentifiersCase
 	 */
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@ParameterizedTest
 	@CsvSource(value = {
 			"CREATE FACT TABLE Case_Test (x long);case_test;Case_Test;case_test",
@@ -519,6 +582,9 @@ class StatementTest extends IntegrationTest {
 	 * @param query the SQL statement that should fail
 	 * @throws SQLException if something is going wrong
 	 */
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@ParameterizedTest
 	@ValueSource(strings = {
 			"SELECT CONVERT(varchar, 3.14)" //com.firebolt.jdbc.metadata.FireboltDatabaseMetadataTest#supportsConvert
@@ -529,6 +595,9 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void caseInsensitiveGetter() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement();
@@ -544,6 +613,9 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@ParameterizedTest
 	@ValueSource(ints = {1, 3, 5, 50})
 	void maxFieldSize(int maxFieldSize) throws SQLException {
@@ -554,6 +626,9 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@ParameterizedTest
 	@ValueSource(ints = {0, -1, 100})
 	void unlimitedMaxFieldSize(int maxFieldSize) throws SQLException {

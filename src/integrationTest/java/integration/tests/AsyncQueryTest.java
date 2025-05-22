@@ -3,6 +3,7 @@ package integration.tests;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.FireboltStatement;
+import com.firebolt.jdbc.testutils.TestTag;
 import integration.IntegrationTest;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -71,7 +72,7 @@ class AsyncQueryTest extends IntegrationTest {
     }
 
     @Test
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void executeServerSideAsyncTest() throws SQLException {
         try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class);
              FireboltStatement statement = connection.createStatement().unwrap(FireboltStatement.class)) {
@@ -99,7 +100,7 @@ class AsyncQueryTest extends IntegrationTest {
     }
 
     @Test
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void executeServerSideAsyncTestFetchStatusWorksOnDifferentEngines() throws SQLException {
         try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class);
              FireboltStatement statement = connection.createStatement().unwrap(FireboltStatement.class)) {
@@ -128,7 +129,7 @@ class AsyncQueryTest extends IntegrationTest {
     }
 
     @Test
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void executeCancelServerSideAsyncQueryTest() throws SQLException {
         try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class);
              FireboltStatement statement = connection.createStatement().unwrap(FireboltStatement.class)) {
@@ -152,7 +153,7 @@ class AsyncQueryTest extends IntegrationTest {
     }
 
     @Test
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void executeCancelServerSideAsyncQueryWorksOnDifferentEngines() throws SQLException {
         try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class);
              FireboltStatement statement = connection.createStatement().unwrap(FireboltStatement.class)) {
@@ -181,7 +182,7 @@ class AsyncQueryTest extends IntegrationTest {
     }
 
     @Test
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void executeCancelServerSideAsyncQueryAfterQueryHasFinishedTest() throws SQLException {
         try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class);
              FireboltStatement statement = connection.createStatement().unwrap(FireboltStatement.class)) {
@@ -208,7 +209,7 @@ class AsyncQueryTest extends IntegrationTest {
     }
 
     @Test
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void executeCancelServerSideAsyncQueryWithNonExistentTokenTest() throws SQLException {
         try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 

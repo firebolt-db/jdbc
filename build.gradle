@@ -118,7 +118,7 @@ test {
 tasks.register('integrationTest', Test) {
     description = 'Runs integration tests.'
     useJUnitPlatform() {
-        includeTags(System.getProperty("includeTags", "common").split(","))
+        includeTags(System.getProperty("includeTags", "v2").split(","))
         excludeTags(System.getProperty("excludeTags", "nothing").split(","))
     }
     reports {

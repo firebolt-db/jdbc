@@ -2,7 +2,7 @@ package integration.tests;
 
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.array.FireboltArray;
-import integration.IntegrationTest;
+import integration.CommonIntegrationTest;
 import java.sql.Array;
 import java.sql.Connection;
 import java.sql.JDBCType;
@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 @CustomLog
-class PreparedStatementArrayTest extends IntegrationTest {
+class PreparedStatementArrayTest extends CommonIntegrationTest {
 	enum PreparedStatementValueSetter {
 		ARRAY {
 			Object create(FireboltDataType type, Object data) {

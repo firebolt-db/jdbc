@@ -1,17 +1,17 @@
 package integration.tests;
 
+import com.firebolt.jdbc.testutils.TestTag;
 import integration.IntegrationTest;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import lombok.CustomLog;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,114 +43,129 @@ public class SpecialValuesTest extends IntegrationTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"select 'inf'::float", "select '+inf'::float"})
-    @Tag("v1")
+    @Tag(TestTag.V1)
     void infFloatUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Float.POSITIVE_INFINITY);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select 'inf'::real", "select '+inf'::real"})
+    @Tag(TestTag.V2)
+    @Tag(TestTag.V1)
+    @Tag(TestTag.CORE)
     void infRealUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Float.POSITIVE_INFINITY);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select 'inf'::real", "select '+inf'::real"})
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void infRealSystemEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Float.POSITIVE_INFINITY);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select 'inf'::float", "select '+inf'::float"})
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void infFloatAsDoubleUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select 'inf'::float", "select '+inf'::float"})
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void infFloatAsDoubleSystemEngine(String query) throws SQLException {
         specialSelect(systemConnection, query, Float.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select 'inf'::double", "select '+inf'::double"})
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void infDoubleSystemEngine(String query) throws SQLException {
         specialSelect(systemConnection, query, Float.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select 'inf'::double", "select '+inf'::double"})
+    @Tag(TestTag.V2)
+    @Tag(TestTag.V1)
+    @Tag(TestTag.CORE)
     void infDoubleUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select '-inf'::float"})
-    @Tag("v1")
+    @Tag(TestTag.V1)
     void minusInfFloatUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select '-inf'::float"})
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void minusInfFloatAsDoubleUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select '-inf'::real"})
+    @Tag(TestTag.V2)
+    @Tag(TestTag.V1)
+    @Tag(TestTag.CORE)
     void minusInfRealUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select '-inf'::real"})
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void minusInfRealSystemEngine(String query) throws SQLException {
         specialSelect(systemConnection, query, Float.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select '-inf'::float"})
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void minusInfFloatAsDoubleSystemEngine(String query) throws SQLException {
         specialSelect(systemConnection, query, Float.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select '-inf'::double"})
+    @Tag(TestTag.V2)
+    @Tag(TestTag.V1)
+    @Tag(TestTag.CORE)
     void minusInfDoubleUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select 'nan'::float", "select '+nan'::float", "select '-nan'::float"})
-    @Tag("v1")
+    @Tag(TestTag.V1)
     void nanFloatUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.NaN, Double.NaN, Float.NaN);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select 'nan'::real", "select '+nan'::real", "select '-nan'::real"})
+    @Tag(TestTag.V2)
+    @Tag(TestTag.V1)
+    @Tag(TestTag.CORE)
     void nanRealUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.NaN, Double.NaN, Float.NaN);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select 'nan'::real", "select '+nan'::real", "select '-nan'::real"})
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void nanRealSystemEngine(String query) throws SQLException {
         specialSelect(systemConnection, query, Float.NaN, Double.NaN, Float.NaN);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select 'nan'::float", "select '+nan'::float", "select '-nan'::float"})
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void nanFloatAsDoubleUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.NaN, Double.NaN, Double.NaN);
     }
@@ -159,7 +174,7 @@ public class SpecialValuesTest extends IntegrationTest {
     @ValueSource(strings = {
             "select 'nan'::double", "select '+nan'::double", "select '-nan'::double"
     })
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void nanDoubleSystemEngine(String query) throws SQLException {
         specialSelect(systemConnection, query, Float.NaN, Double.NaN, Double.NaN);
     }
@@ -168,13 +183,16 @@ public class SpecialValuesTest extends IntegrationTest {
     @ValueSource(strings = {
             "select 'nan'::float", "select '+nan'::float", "select '-nan'::float",
     })
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void nanFloatAsDoubleSystemEngine(String query) throws SQLException {
         specialSelect(systemConnection, query, Float.NaN, Double.NaN, Double.NaN);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"select 'nan'::double", "select '+nan'::double", "select '-nan'::double"})
+    @Tag(TestTag.V2)
+    @Tag(TestTag.V1)
+    @Tag(TestTag.CORE)
     void nanDoubleUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.NaN, Double.NaN, Double.NaN);
     }

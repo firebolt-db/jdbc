@@ -1,6 +1,7 @@
 package integration.tests;
 
 import com.firebolt.jdbc.CheckedFunction;
+import com.firebolt.jdbc.testutils.TestTag;
 import integration.IntegrationTest;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -44,6 +45,8 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
         connection.close();
     }
 
+    @Tag(TestTag.V1)
+    @Tag(TestTag.V2)
     @Test
     void readOnly() throws SQLException {
         assertFalse(connection.isReadOnly());
@@ -51,25 +54,25 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
     }
 
     @Test
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void getSchemas() throws SQLException {
         String database = integration.ConnectionInfo.getInstance().getDatabase();
         assertEquals(List.of(List.of("information_schema", database)), getRows(DatabaseMetaData::getSchemas));
     }
 
-	@Test
-	@Tag("v2")
-	void getCatalogs() throws SQLException {
-		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+    @Test
+    @Tag(TestTag.V2)
+    void getCatalogs() throws SQLException {
+        try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
             String database = integration.ConnectionInfo.getInstance().getDatabase();
             try {
-				statement.executeUpdate(format("CREATE DATABASE %s_get_catalogs", database));
-				assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
-				assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
-			} finally {
-				statement.executeUpdate(format("DROP DATABASE IF EXISTS %s_get_catalogs", database));
-			}
-		}
+                statement.executeUpdate(format("CREATE DATABASE %s_get_catalogs", database));
+                assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
+                assertTrue(getRows(DatabaseMetaData::getCatalogs).contains(List.of(database)));
+            } finally {
+                statement.executeUpdate(format("DROP DATABASE IF EXISTS %s_get_catalogs", database));
+            }
+        }
     }
 
     @ParameterizedTest
@@ -88,7 +91,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
             "wrong_catalog,,",
             "wrong_catalog,%form%,",
     })
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void getSchemasInformationSchema(String catalog, String schemaPattern, String expectedSchemasStr) throws SQLException {
         String database = integration.ConnectionInfo.getInstance().getDatabase();
         String cat = catalog == null ? null :  catalog.replace("{database}", database);
@@ -139,7 +142,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
             ",,,TABLE,,",
             "wrong_catalog,%form%,%in%,VIEW,,engines",
     })
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void getTables(String catalog, String schemaPattern, String tableNamePattern, String types, String requiredTableName, String forbiddenTableName) throws SQLException {
         String database = integration.ConnectionInfo.getInstance().getDatabase();
         String requiredCatalog = catalog == null ? null : catalog.replace("{database}", database);
@@ -204,7 +207,7 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
             ",,,does-not-exist,,information_schema.columns.column_name",
             "wrong_catalog,%form%,%in%,type,,information_schema.engines.type",
     })
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void getColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern, String requiredColumn, String forbiddenColumn) throws SQLException {
         String database = integration.ConnectionInfo.getInstance().getDatabase();
         String requiredCatalog = catalog == null ? null : catalog.replace("{database}", database);

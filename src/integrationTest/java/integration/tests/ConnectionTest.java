@@ -37,7 +37,7 @@ class ConnectionTest extends IntegrationTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @Tag("v2")
+    @Tag(TestTag.V2)
     @EnumSource(EngineType.class)
     void connectToNotExistingDbV2(EngineType engineType) throws SQLException {
         String database = "wrong_db";
@@ -63,7 +63,7 @@ class ConnectionTest extends IntegrationTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @Tag("v1")
+    @Tag(TestTag.V1)
     @EnumSource(EngineType.class)
     void connectToNotExistingDbV1(EngineType engineType) throws SQLException {
         String database = "wrong_db";
@@ -88,7 +88,7 @@ class ConnectionTest extends IntegrationTest {
      * @throws SQLException if connection fails
      */
     @Test
-    @Tag("v2")
+    @Tag(TestTag.V2)
     @EnvironmentCondition(value = "2", comparison = EnvironmentCondition.Comparison.LT)
     void connectToWrongDbNotAttachedToEngine() throws SQLException {
         ConnectionInfo params = integration.ConnectionInfo.getInstance();
@@ -110,7 +110,7 @@ class ConnectionTest extends IntegrationTest {
             "true, false",
             "true, true"
     })
-    @Tag("v1")
+    @Tag(TestTag.V1)
     void successfulConnectV1(boolean useDatabase, boolean useEngine) throws SQLException {
         successfulConnect(useDatabase, useEngine);
     }
@@ -119,7 +119,7 @@ class ConnectionTest extends IntegrationTest {
     @CsvSource({
             "false, false",
     })
-    @Tag("v1")
+    @Tag(TestTag.V1)
     void unsuccessfulConnectV1(boolean useDatabase, boolean useEngine) throws SQLException {
         unsuccessfulConnect(useDatabase, useEngine);
     }
@@ -128,7 +128,7 @@ class ConnectionTest extends IntegrationTest {
     @CsvSource({
             "false, true", // can connect but cannot execute select
     })
-    @Tag("v1")
+    @Tag(TestTag.V1)
     void successfulConnectUnsuccessfulSelectV1(boolean useDatabase, boolean useEngine) throws SQLException {
         ConnectionInfo params = integration.ConnectionInfo.getInstance();
         String url = getJdbcUrl(params, useDatabase, useEngine);
@@ -146,7 +146,7 @@ class ConnectionTest extends IntegrationTest {
             "true, true"
 
     })
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void successfulConnect(boolean useDatabase, boolean useEngine) throws SQLException {
         ConnectionInfo params = integration.ConnectionInfo.getInstance();
         String url = getJdbcUrl(params, useDatabase, useEngine);
@@ -159,8 +159,8 @@ class ConnectionTest extends IntegrationTest {
     }
 
     @Test
-    @Tag("v2")
-    @Tag("slow")
+    @Tag(TestTag.V2)
+    @Tag(TestTag.SLOW)
     void successfulConnectWithoutStartingTheEngine() throws SQLException {
         String currentUTCTime = getCurrentUTCTime();
 
@@ -198,7 +198,7 @@ class ConnectionTest extends IntegrationTest {
     }
 
     @Test
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void validatesOnSystemEngineIfParameterProvided() throws SQLException {
         try (Connection systemConnection = createConnection(null)) {
             String engineName = integration.ConnectionInfo.getInstance().getEngine() + "_validate_test";
@@ -230,7 +230,7 @@ class ConnectionTest extends IntegrationTest {
     }
 
     @Test
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void preparedStatementBatchesWorkIfMergeParameterProvided() throws SQLException {
         String engineName = integration.ConnectionInfo.getInstance().getEngine();
         String queryLabel = "test_merge_batches_" + System.currentTimeMillis();
@@ -274,7 +274,7 @@ class ConnectionTest extends IntegrationTest {
     }
 
     @Test
-    @Tag("v2")
+    @Tag(TestTag.V2)
     void networkPolicyBlockedServiceAccountThrowsError() throws SQLException {
         try (Connection connection = createConnection();
              Statement statement = connection.createStatement()) {

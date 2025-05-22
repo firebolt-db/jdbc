@@ -1,6 +1,6 @@
 package integration.tests;
 
-import integration.IntegrationTest;
+import integration.CommonIntegrationTest;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class NullableValuesTest extends IntegrationTest {
+class NullableValuesTest extends CommonIntegrationTest {
     @BeforeEach
     void beforeEach() {
         executeStatementFromFile("/statements/nullable-types/ddl.sql");
