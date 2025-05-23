@@ -30,7 +30,7 @@ public class FireboltCoreQueryParameterProvider extends AbstractQueryParameterPr
         addQueryTimeoutIfNeeded(params, queryTimeout);
         addServerAsyncIfNeeded(params, isServerAsync);
 
-        // once this will be enabled by default on core we can remove it.
+        // once this will be enabled by default on core we can remove it. https://packboard.atlassian.net/browse/FIR-46389
         params.put(FireboltQueryParameterKey.ENABLE_JSON_ERROR_OUTPUT_FORMAT.getKey(), "1");
 
         return params;

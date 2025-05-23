@@ -9,7 +9,7 @@ import java.util.Map;
 import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.OUTPUT_FORMAT;
 
 /**
- * Query parameters that will be added when calling the firebolt cloud v2 APIs
+ * Query parameters that will be added when calling the firebolt cloud v1 APIs
  */
 public class FireboltCloudV1QueryParameterProvider extends AbstractQueryParameterProvider {
 
@@ -22,8 +22,6 @@ public class FireboltCloudV1QueryParameterProvider extends AbstractQueryParamete
         }
 
         addDatabaseIfNeeded(params, fireboltProperties.getDatabase());
-
-        // to check if the server async support is also for v1
 
         boolean systemEngine = fireboltProperties.isSystemEngine();
         if (systemEngine) {

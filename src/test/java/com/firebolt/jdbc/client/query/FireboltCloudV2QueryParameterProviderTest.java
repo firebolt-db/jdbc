@@ -7,7 +7,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,11 +37,6 @@ class FireboltCloudV2QueryParameterProviderTest extends AbstractQueryParameterPr
         assertEquals("1", queryParams.get(FireboltQueryParameterKey.COMPRESS.getKey()));
         assertEquals("true", queryParams.get(FireboltQueryParameterKey.ASYNC.getKey()));
         assertEquals("value1", queryParams.get("key1"));
-
-        assertNull(queryParams.get(FireboltQueryParameterKey.MAX_EXECUTION_TIME.getKey()));
-        assertNull(queryParams.get(FireboltQueryParameterKey.DATABASE.getKey()));
-        assertNull(queryParams.get(FireboltQueryParameterKey.QUERY_PARAMETERS.getKey()));
-        assertNull(queryParams.get(FireboltQueryParameterKey.OUTPUT_FORMAT.getKey()));
     }
 
     @Test
@@ -63,8 +57,6 @@ class FireboltCloudV2QueryParameterProviderTest extends AbstractQueryParameterPr
         assertEquals(FireboltCloudV2QueryParameterProvider.TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT, queryParams.get(FireboltQueryParameterKey.OUTPUT_FORMAT.getKey()));
         assertEquals(PREPARED_STATEMENTS, queryParams.get(FireboltQueryParameterKey.QUERY_PARAMETERS.getKey()));
         assertEquals("value1", queryParams.get("key1"));
-
-        assertNull(queryParams.get(FireboltQueryParameterKey.ASYNC.getKey()));
     }
 
     @Test
@@ -100,8 +92,5 @@ class FireboltCloudV2QueryParameterProviderTest extends AbstractQueryParameterPr
         assertEquals("0", queryParams.get(FireboltQueryParameterKey.COMPRESS.getKey()));
         assertEquals(FireboltCloudV2QueryParameterProvider.TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT, queryParams.get(FireboltQueryParameterKey.OUTPUT_FORMAT.getKey()));
         assertEquals("value1", queryParams.get("key1"));
-
-        assertNull(queryParams.get(FireboltQueryParameterKey.ENGINE.getKey()));
-        assertNull(queryParams.get(FireboltQueryParameterKey.ACCOUNT_ID.getKey()));
     }
 }

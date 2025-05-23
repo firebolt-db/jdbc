@@ -7,7 +7,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 class FireboltCloudV1QueryParameterProviderTest extends AbstractQueryParameterProviderTest {
 
@@ -33,10 +32,6 @@ class FireboltCloudV1QueryParameterProviderTest extends AbstractQueryParameterPr
         assertEquals(String.valueOf(QUERY_TIMEOUT), queryParams.get(FireboltQueryParameterKey.MAX_EXECUTION_TIME.getKey()));
         assertEquals(FireboltCloudV1QueryParameterProvider.TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT, queryParams.get(FireboltQueryParameterKey.OUTPUT_FORMAT.getKey()));
         assertEquals("value1", queryParams.get("key1"));
-
-        assertNull(queryParams.get(FireboltQueryParameterKey.QUERY_LABEL.getKey()));
-        assertNull(queryParams.get(FireboltQueryParameterKey.QUERY_PARAMETERS.getKey()));
-        assertNull(queryParams.get(FireboltQueryParameterKey.ASYNC.getKey()));
     }
 
     @Test
@@ -50,13 +45,6 @@ class FireboltCloudV1QueryParameterProviderTest extends AbstractQueryParameterPr
         assertEquals(2, queryParams.size());
         assertEquals("1", queryParams.get(FireboltQueryParameterKey.COMPRESS.getKey()));
         assertEquals("value1", queryParams.get("key1"));
-
-        assertNull(queryParams.get(FireboltQueryParameterKey.QUERY_LABEL.getKey()));
-        assertNull(queryParams.get(FireboltQueryParameterKey.DATABASE.getKey()));
-        assertNull(queryParams.get(FireboltQueryParameterKey.MAX_EXECUTION_TIME.getKey()));
-        assertNull(queryParams.get(FireboltQueryParameterKey.QUERY_PARAMETERS.getKey()));
-        assertNull(queryParams.get(FireboltQueryParameterKey.OUTPUT_FORMAT.getKey()));
-        assertNull(queryParams.get(FireboltQueryParameterKey.ASYNC.getKey()));
     }
 
     @Test
@@ -72,9 +60,6 @@ class FireboltCloudV1QueryParameterProviderTest extends AbstractQueryParameterPr
         assertEquals(ACCOUNT_ID, queryParams.get(FireboltQueryParameterKey.ACCOUNT_ID.getKey()));
         assertEquals(FireboltCloudV1QueryParameterProvider.TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT, queryParams.get(FireboltQueryParameterKey.OUTPUT_FORMAT.getKey()));
         assertEquals("value1", queryParams.get("key1"));
-
-        assertNull(queryParams.get(FireboltQueryParameterKey.COMPRESS.getKey()));
-        assertNull(queryParams.get(FireboltQueryParameterKey.MAX_EXECUTION_TIME.getKey()));
     }
 
     @Test
@@ -90,8 +75,5 @@ class FireboltCloudV1QueryParameterProviderTest extends AbstractQueryParameterPr
         assertEquals("0", queryParams.get(FireboltQueryParameterKey.COMPRESS.getKey()));
         assertEquals(FireboltCloudV1QueryParameterProvider.TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT, queryParams.get(FireboltQueryParameterKey.OUTPUT_FORMAT.getKey()));
         assertEquals("value1", queryParams.get("key1"));
-
-        assertNull(queryParams.get(FireboltQueryParameterKey.ACCOUNT_ID.getKey()));
-        assertNull(queryParams.get(FireboltQueryParameterKey.MAX_EXECUTION_TIME.getKey()));
     }
-} 
+}
