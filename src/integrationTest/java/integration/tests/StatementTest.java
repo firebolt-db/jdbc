@@ -50,6 +50,9 @@ class StatementTest extends IntegrationTest {
 
 	private static final long TEN_SECONDS_IN_MILLIS = TimeUnit.SECONDS.toMillis(10);
 
+	// simulate the system engine by passing the engine as null
+	private static final String NO_ENGINE = null;
+
 	@BeforeEach
 	void beforeEach() {
 		executeStatementFromFile("/statements/statement/ddl.sql");
@@ -308,24 +311,61 @@ class StatementTest extends IntegrationTest {
 		}
 	}
 
-	/**
-	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v2 and v2
-	 */
 	@Test
 	@Tag(TestTag.V1)
-	@Tag(TestTag.V2)
-	void setWrongParameter() throws SQLException {
-		setWrongParameter("SET foo=bar", Map.of(), "foo");
+	void setWrongParameterOnUserEngineForV1() throws SQLException {
+		String errorMessage = format("parameter %s is not allowed", "foo");
+		setWrongParameterOnUserEngine("SET foo=bar", Map.of(), errorMessage);
 	}
 
-	/**
-	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v2 and v2
-	 */
+	@Test
+	@Tag(TestTag.V2)
+	void setWrongParameterOnUserEngineForV2() throws SQLException {
+		String errorMessage = format("query param not allowed: %s", "foo");
+		setWrongParameterOnUserEngine("SET foo=bar", Map.of(), errorMessage);
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+			"set foo=bar,query param not allowed: foo,0",
+			"set foo=bar,Unknown setting foo,1"
+	})
+	@Tag(TestTag.V2)
+	void setWrongParameterOnSystemEngineForV2(String setStatement, String expectedErrorMessage, String advancedMode) throws SQLException {
+		try (Connection connection = createConnection(NO_ENGINE, Map.of("advanced_mode", advancedMode)); Statement statement = connection.createStatement()) {
+			String message = assertThrows(SQLException.class, () -> statement.execute(setStatement)).getMessage();
+			assertTrue(message.contains(expectedErrorMessage),
+					format("Unexpected error message: '%s'. Message should contain statement: '%s''", message, expectedErrorMessage));
+			assertEquals(Map.of("advanced_mode", advancedMode), ((FireboltConnection)connection).getSessionProperties().getAdditionalProperties());
+		}
+	}
+
+	@Test
+	@Tag(TestTag.CORE)
+	void setWrongParameterOnUserEngineForCore() throws SQLException {
+		String errorMessage = format("Unknown setting %s", "foo");
+		setWrongParameterOnUserEngine("SET foo=bar", Map.of(), errorMessage);
+	}
+
 	@Test
 	@Tag(TestTag.V1)
 	@Tag(TestTag.V2)
-	void setCorrectThenWrongParameter() throws SQLException {
-			setWrongParameter("SET time_zone = 'EST';SET bar=tar", Map.of("time_zone", "EST"), "bar");
+	void setCorrectThenWrongParameterOnUserEngine() throws SQLException {
+		setWrongParameterOnUserEngine("SET time_zone = 'EST';SET bar=tar", Map.of("time_zone", "EST"), "bar");
+	}
+
+	@Test
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	void setWrongParameterOnSystemEngineOnUserEngine() throws SQLException {
+		setWrongParameterOnUserEngine("SET foo=bar", Map.of(), "foo");
+	}
+
+	@Test
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	void setCorrectThenWrongParameterOnSystemEngine() throws SQLException {
+		setWrongParameterOnUserEngine("SET time_zone = 'EST';SET bar=tar", Map.of("time_zone", "EST"), "bar");
 	}
 
 	@Test
@@ -362,7 +402,7 @@ class StatementTest extends IntegrationTest {
 
 	@Test
 	@Tag(TestTag.V2)
-//	@Tag(TestTag.CORE) - this fails, against core. Will be fixed in next review
+	@Tag(TestTag.CORE)
 	@Tag(TestTag.SLOW)
 	void willUseRandomQueryLabelIfNoneExplicitlySet() throws SQLException {
 		try (Connection connection = createConnection()) {
@@ -413,7 +453,7 @@ class StatementTest extends IntegrationTest {
 	@Tag(TestTag.CORE)
 	@Test
 	void successfulSettingOfPropertyThatRequiresAdvancedModeConfiguredWhenConnectionIsCreated() throws SQLException {
-		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), Map.of("advanced_mode", "1"))) {
+		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), Map.of("advanced_mode", "true"))) {
 			setParam(connection, "force_pgdate_timestampntz", "1");
 		}
 	}
@@ -435,11 +475,10 @@ class StatementTest extends IntegrationTest {
 
 	/**
 	 * Try to set {@code force_pgdate_timestampntz} that requires advanced mode that was not set. This test will fail.
-	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v2 and v2
 	 */
 	@Test
 	@Tag(TestTag.V2)
-//	@Tag(TestTag.CORE) - this fails, against core. Will be fixed in next review
+	@Tag(TestTag.CORE)
 	void failedSettingPropertyThatRequiresAdvancedModeThatWasNotSet() throws SQLException {
 		try (Connection connection = createConnection()) {
 			assertFailingSet(connection, "force_pgdate_timestampntz");
@@ -449,11 +488,10 @@ class StatementTest extends IntegrationTest {
 	/**
 	 * Connect to DB using {@code advanced_mode} sent in JDBC URL. Then set {@code advanced_mode=0} and
 	 * try to set {@code force_pgdate_timestampntz} that requires advanced mode and therefore fails.
-	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v2 and v2
 	 */
 	@Test
 	@Tag(TestTag.V2)
-//	@Tag(TestTag.CORE) - this fails, against core. Will be fixed in next review
+	@Tag(TestTag.CORE)
 	void failedSettingPropertyThatRequiresAdvancedModeThatWasUnset() throws SQLException {
 		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), Map.of("advanced_mode", "1"))) {
 			setParam(connection, "advanced_mode", "0");
@@ -466,13 +504,20 @@ class StatementTest extends IntegrationTest {
 		assertTrue(e.getMessage().contains(paramName) && e.getMessage().contains("not allowed"), format("error message say that parameter %s is not allowed but was %s", paramName, e.getMessage()));
 	}
 
-	private void setWrongParameter(String set, Map<String, String> expectedAdditionalProperties, String expectedWrongPropertyName) throws SQLException {
+	private void setWrongParameterOnUserEngine(String set, Map<String, String> expectedAdditionalProperties, String expectedErrorMessage) throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			String message = assertThrows(SQLException.class, () -> statement.execute(set)).getMessage();
-			String expected1 = format("parameter %s is not allowed", expectedWrongPropertyName);
-			String expected2 = format("query param not allowed: %s", expectedWrongPropertyName);
-			assertTrue(message.contains(expected1) || message.contains(expected2),
-					format("Unexpected error message: '%s'. Message should contain statement: '%s' or '%s'", message, expected1, expected2));
+			assertTrue(message.contains(expectedErrorMessage),
+					format("Unexpected error message: '%s'. Message should contain statement: '%s''", message, expectedErrorMessage));
+			assertEquals(expectedAdditionalProperties, ((FireboltConnection)connection).getSessionProperties().getAdditionalProperties());
+		}
+	}
+
+	private void setWrongParameterOnSystemEngine(String set, Map<String, String> expectedAdditionalProperties, String expectedErrorMessage) throws SQLException {
+		try (Connection connection = createConnection(NO_ENGINE); Statement statement = connection.createStatement()) {
+			String message = assertThrows(SQLException.class, () -> statement.execute(set)).getMessage();
+			assertTrue(message.contains(expectedErrorMessage),
+					format("Unexpected error message: '%s'. Message should contain statement: '%s''", message, expectedErrorMessage));
 			assertEquals(expectedAdditionalProperties, ((FireboltConnection)connection).getSessionProperties().getAdditionalProperties());
 		}
 	}
@@ -650,4 +695,5 @@ class StatementTest extends IntegrationTest {
 		}
 		return values;
 	}
+
 }

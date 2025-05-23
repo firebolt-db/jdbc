@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.JdbcBase;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.annotation.NotImplemented;
@@ -16,10 +17,8 @@ import com.firebolt.jdbc.metadata.FireboltSystemEngineDatabaseMetadata;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
-import com.firebolt.jdbc.statement.preparedstatement.FireboltBackendPreparedStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatementProvider;
-import com.firebolt.jdbc.statement.preparedstatement.PreparedStatementParamStyle;
 import com.firebolt.jdbc.type.FireboltDataType;
 import com.firebolt.jdbc.type.ParserVersion;
 import com.firebolt.jdbc.type.array.FireboltArray;
@@ -178,6 +177,12 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	 * @return
 	 */
 	public abstract Optional<String> getConnectionUserAgentHeader();
+
+	/**
+	 * Returns the backend type that the connection is established to
+	 * @return
+	 */
+	public abstract FireboltBackendType getBackendType();
 
 	public void removeExpiredTokens() throws SQLException {
 		fireboltAuthenticationService.removeConnectionTokens(httpConnectionUrl, loginProperties);

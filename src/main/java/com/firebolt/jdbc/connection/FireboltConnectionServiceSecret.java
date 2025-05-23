@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.cache.CacheService;
 import com.firebolt.jdbc.cache.ConnectionCache;
@@ -201,6 +202,11 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
         }
 
         return Optional.of(additionalUserAgentHeaderValue.toString());
+    }
+
+    @Override
+    public FireboltBackendType getBackendType() {
+        return FireboltBackendType.CLOUD_2_0;
     }
 
     protected CacheKey getCacheKey() {

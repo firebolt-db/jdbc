@@ -16,6 +16,8 @@ public enum FireboltQueryParameterKey {
 	ACCOUNT_ID("account_id"),
 	ASYNC("async"),
 	QUERY_PARAMETERS("query_parameters"),
+	MAX_EXECUTION_TIME("max_execution_time"),
+	ENABLE_JSON_ERROR_OUTPUT_FORMAT("enable_json_error_output_format"),
 	;
 
 	private final String key;

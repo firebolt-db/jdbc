@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.cache.CacheService;
 import com.firebolt.jdbc.cache.key.CacheKey;
@@ -74,6 +75,11 @@ public class LocalhostFireboltConnection extends FireboltConnectionServiceSecret
     protected CacheKey getCacheKey() {
         // when we get to this point we know that the access token is present in the login properties
         return new LocalhostCacheKey(loginProperties.getAccessToken());
+    }
+
+    @Override
+    public FireboltBackendType getBackendType() {
+        return FireboltBackendType.DEV;
     }
 
 }
