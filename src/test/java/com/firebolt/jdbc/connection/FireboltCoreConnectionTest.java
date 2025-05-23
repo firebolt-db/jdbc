@@ -86,7 +86,7 @@ class FireboltCoreConnectionTest {
     }
 
     @Test
-    void canConnectToCoreWithoutSpecifyingADB() throws SQLException {
+    void canConnectToCoreWithoutSpecifyingADb() throws SQLException {
         StringBuilder jdbcUrlBuilder = new StringBuilder(VALID_URL_WITHOUT_DB);
         jdbcUrlBuilder.append("&url=").append("http://localhost:3473");
 
