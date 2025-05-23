@@ -1,18 +1,25 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FireboltCoreConnectionTest {
 
-    private static final String VALID_URL = "jdbc:firebolt:my_db?";
+    private static final String VALID_URL_WITH_DB = "jdbc:firebolt:my_db?";
+    private static final String VALID_URL_WITHOUT_DB = "jdbc:firebolt:?";
 
     @ParameterizedTest(name = "Valid URL: {0}")
     @ValueSource(strings = {
@@ -78,8 +85,54 @@ class FireboltCoreConnectionTest {
         assertTrue(exception.getMessage().contains("Url is required for firebolt core"));
     }
 
+    @Test
+    void canConnectToCoreWithoutSpecifyingADB() throws SQLException {
+        StringBuilder jdbcUrlBuilder = new StringBuilder(VALID_URL_WITHOUT_DB);
+        jdbcUrlBuilder.append("&url=").append("http://localhost:3473");
+
+        try (FireboltCoreConnection connection = new FireboltCoreConnection(jdbcUrlBuilder.toString(), new Properties())) {
+            FireboltProperties fireboltProperties = connection.getSessionProperties();
+            assertFalse(fireboltProperties.isSsl());
+            assertEquals("localhost", fireboltProperties.getHost());
+            assertEquals(3473, fireboltProperties.getPort());
+            assertTrue(StringUtils.isBlank(fireboltProperties.getDatabase()));
+        }
+
+    }
+
+    @Test
+    void canConnectOverHttp() throws SQLException {
+        Map<String, String> connectionParams = Map.of(
+                "url", "http://localhost:3473",
+                "database", "my_db"
+        );
+        try (FireboltCoreConnection connection = createConnectionWithParams(connectionParams)) {
+            FireboltProperties fireboltProperties = connection.getSessionProperties();
+            assertFalse(fireboltProperties.isSsl());
+            assertEquals("localhost", fireboltProperties.getHost());
+            assertEquals(3473, fireboltProperties.getPort());
+            assertEquals("my_db", fireboltProperties.getDatabase());
+        }
+    }
+
+    @Test
+    void canConnectOverHttps() throws SQLException {
+        Map<String, String> connectionParams = Map.of(
+                "url", "https://localhost:3473",
+                "database", "my_db"
+        );
+
+        try (FireboltCoreConnection connection = createConnectionWithParams(connectionParams)) {
+            FireboltProperties fireboltProperties = connection.getSessionProperties();
+            assertTrue(fireboltProperties.isSsl());
+            assertEquals("localhost", fireboltProperties.getHost());
+            assertEquals(3473, fireboltProperties.getPort());
+            assertEquals("my_db", fireboltProperties.getDatabase());
+        }
+    }
+
     private FireboltCoreConnection createConnection(String url) throws SQLException {
-        StringBuilder jdbcUrlBuilder = new StringBuilder(VALID_URL);
+        StringBuilder jdbcUrlBuilder = new StringBuilder(VALID_URL_WITH_DB);
 
         if (url != null) {
             jdbcUrlBuilder.append("&url=").append(url);
@@ -87,4 +140,16 @@ class FireboltCoreConnectionTest {
 
         return new FireboltCoreConnection(jdbcUrlBuilder.toString(), new Properties());
     }
-} 
+
+    private FireboltCoreConnection createConnectionWithParams(Map<String, String> parameters) throws SQLException {
+        StringBuilder jdbcUrlBuilder = new StringBuilder(VALID_URL_WITH_DB);
+
+        String params = parameters.entrySet().stream()
+                        .map(entry -> entry.getKey() + "=" + entry.getValue())
+                        .collect(Collectors.joining("&"));
+
+        jdbcUrlBuilder.append("&").append(params);
+
+        return new FireboltCoreConnection(jdbcUrlBuilder.toString(), new Properties());
+    }
+}

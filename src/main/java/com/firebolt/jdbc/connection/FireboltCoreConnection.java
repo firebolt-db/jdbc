@@ -43,7 +43,7 @@ public class FireboltCoreConnection extends FireboltConnection {
             sessionProperties = sessionProperties.toBuilder()
                     .host(uri.getHost())
                     .port(uri.getPort())
-                    .ssl(uri.getScheme().startsWith("https://"))
+                    .ssl(uri.getScheme().startsWith("https"))
                     .build();
 
             // the constructor sets the httpConnectionUrl, but it checks the host and port. For Core the httpConnectionUrl should be the url parameter.
