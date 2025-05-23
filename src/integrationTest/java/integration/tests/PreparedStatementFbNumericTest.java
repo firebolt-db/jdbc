@@ -325,9 +325,9 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 							.executeQuery("SELECT prepared_statement_test FROM prepared_statement_test")) {
 				rs.next();
 				assertEquals(FireboltDataType.STRUCT.name().toLowerCase()
-								+ "(make text, sales long, ts timestamp null, d date null, signature bytea null, url text null)",
+								+ "(make text, sales long, ts timestamp null, d date null, signature bytea null, url text null, tsz timestamptz null)",
 						rs.getMetaData().getColumnTypeName(1).toLowerCase());
-				String expectedJson = String.format("{\"make\":\"%s\",\"sales\":\"%d\",\"ts\":\"%s\",\"d\":\"%s\",\"signature\":null,\"url\":null}",
+				String expectedJson = String.format("{\"make\":\"%s\",\"sales\":\"%d\",\"ts\":\"%s\",\"d\":\"%s\",\"signature\":null,\"url\":null,\"tsz\":null}",
 						car1.getMake(), car1.getSales(), car1.getTs().toString(), car1.getD().toString());
 				assertEquals(expectedJson, rs.getString(1));
 			}
