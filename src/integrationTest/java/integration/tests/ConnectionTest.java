@@ -301,16 +301,31 @@ class ConnectionTest extends IntegrationTest {
     @ParameterizedTest
     @CsvSource(value = {
             "http://172.0.1.280,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You must specify the port.",
+            "https://172.0.1.280,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You must specify the port.",
             "http://172.0.0.1:,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You must specify the port.",
+            "https://172.0.0.1:,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You must specify the port.",
             "http://172.0.0.1:-2,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. Invalid port number :-2",
+            "https://172.0.0.1:-2,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. Invalid port number :-2",
             "http://172.0.0.1:70000,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. The port value should be a positive integer between 1 and 65535. You have the port as:70000",
+            "https://172.0.0.1:70000,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. The port value should be a positive integer between 1 and 65535. You have the port as:70000",
             "localhost:8080,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You did not pass in the protocol. It has to be either http or https.",
+            "http://mydomain.com,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You must specify the port.",
             "https://mydomain.com,Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You must specify the port."
     }, delimiter = ',')
     @Tag(TestTag.CORE)
     void cannotConnectToFireboltCoreWithInvalidUrl(String invalidUrl, String expectedErrorMessage) {
         SQLException exception = assertThrows(SQLException.class, () -> createConnectionWithOptions(ConnectionOptions.builder().url(invalidUrl).build()));
         assertEquals(expectedErrorMessage, exception.getMessage());
+    }
+
+    @Test
+    @Tag(TestTag.CORE)
+    void canConnectToFirebotlCoreOverHttps() throws SQLException {
+        try (Connection connection = createConnectionWithOptions(ConnectionOptions.builder().url("https://localhost:443").build()); Statement statement = connection.createStatement()) {
+            ResultSet resultSet = statement.executeQuery("SELECT 1");
+            assertTrue(resultSet.next());
+            assertEquals(1, resultSet.getInt(1));
+        }
     }
 
     private ConnectionInfo getConnectionInfoForNetworkPolicyTest(Statement statement) throws SQLException {
