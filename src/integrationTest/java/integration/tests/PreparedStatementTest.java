@@ -516,7 +516,6 @@ class PreparedStatementTest extends IntegrationTest {
 		}
 	}
 
-
 	@Test
 	@Tag(TestTag.V2)
 	@Tag(TestTag.CORE)

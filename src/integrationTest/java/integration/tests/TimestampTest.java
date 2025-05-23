@@ -1,7 +1,8 @@
 package integration.tests;
 
 import com.firebolt.jdbc.testutils.AssertionUtil;
-import integration.CommonIntegrationTest;
+import com.firebolt.jdbc.testutils.TestTag;
+import integration.IntegrationTest;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import java.io.IOException;
 import java.sql.Connection;
@@ -28,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import lombok.CustomLog;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.DefaultTimeZone;
 
@@ -38,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @CustomLog
 @DefaultTimeZone("UTC")
-class TimestampTest extends CommonIntegrationTest {
+class TimestampTest extends IntegrationTest {
 	private static final TimeZone UTC_TZ = TimeZone.getTimeZone("UTC");
 	private static final Calendar EST_CALENDAR = Calendar.getInstance(TimeZone.getTimeZone("EST"));
 	private static final Calendar ECT_CALENDAR = Calendar.getInstance(TimeZone.getTimeZone("ECT"));
@@ -55,6 +57,9 @@ class TimestampTest extends CommonIntegrationTest {
 		embeddedPostgres.close();
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldGetTimeObjectsInDefaultUTCTimezone() throws SQLException {
 		try (Connection connection = createConnection();
@@ -77,6 +82,9 @@ class TimestampTest extends CommonIntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldGetParsedTimeStampExtTimeObjects() throws SQLException {
 		try (Connection connection = createConnection();
@@ -102,6 +110,9 @@ class TimestampTest extends CommonIntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	@DefaultTimeZone("Asia/Kolkata")
 	void shouldRemoveOffsetDIffWhenTimestampOffsetHasChanged() throws SQLException {
@@ -125,6 +136,9 @@ class TimestampTest extends CommonIntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	@DefaultTimeZone("CET")
 	void shouldRemoveOffsetDIffWhenTimestampOffsetHasChangedCET() throws SQLException {
@@ -139,6 +153,9 @@ class TimestampTest extends CommonIntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldReturnTimestampFromTimestampntz() throws SQLException {
 		try (Connection connection = createConnection();
@@ -161,8 +178,49 @@ class TimestampTest extends CommonIntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldReturnTimestampFromTimestamptz() throws SQLException {
+		try (Connection connection = createConnection();
+				Statement statement = connection.createStatement();
+				Statement statementWithTzInQuery = connection.createStatement();
+				ResultSet resultSetWithTzInQuery = statementWithTzInQuery
+						.executeQuery("SELECT '1975-05-10 23:01:02.123 EST'::timestamptz;")) {
+			// Same as: SELECT '1975-05-10 23:01:02.123 Europe/Berlin'::timestamptz;
+			statement.execute("SET timezone = 'EST';");
+			ResultSet resultSetWithTzAsQueryParam = statement
+					.executeQuery("SELECT '1975-05-10 23:01:02.123'::timestamptz;");
+			resultSetWithTzInQuery.next();
+			resultSetWithTzAsQueryParam.next();
+			ZonedDateTime expectedZdt = ZonedDateTime.of(1975, 5, 11, 4, 1, 2, 0, UTC_TZ.toZoneId());
+			Date expectedDate = new Date(expectedZdt.truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli());
+			Time expectedTime = new Time(14462123); // milliseconds at 1970-01-01T04:01:02.123Z since January 1, 1970,
+													// 00:00:00 GMT
+
+			Timestamp expectedTimestamp = new Timestamp(expectedZdt.toInstant().toEpochMilli());
+			expectedTimestamp.setNanos(123000000);
+
+			assertEquals(expectedTimestamp, resultSetWithTzInQuery.getTimestamp(1));
+			assertEquals(expectedTimestamp, resultSetWithTzInQuery.getTimestamp(1, EST_CALENDAR));
+			assertEquals(expectedTimestamp, resultSetWithTzInQuery.getObject(1));
+			assertEquals(expectedTime, resultSetWithTzInQuery.getTime(1));
+			assertEquals(expectedDate, resultSetWithTzInQuery.getDate(1));
+			assertEquals(expectedTimestamp, resultSetWithTzInQuery.getTimestamp(1));
+			compareAllDateTimeResultSetValuesWithPostgres(resultSetWithTzInQuery,
+					"SELECT '1975-05-10 23:01:02.123 EST'::timestamptz;");
+
+			// verifies that setting the timezone as a query param or directly within the
+			// SELECT statement gives the same result
+			AssertionUtil.assertResultSetValuesEquality(resultSetWithTzAsQueryParam, resultSetWithTzInQuery);
+			resultSetWithTzAsQueryParam.close();
+		}
+	}
+
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Test
+	void shouldReturnTimestampFromTimestamptzWithTime_zoneSettings() throws SQLException {
 		try (Connection connection = createConnection();
 				Statement statement = connection.createStatement();
 				Statement statementWithTzInQuery = connection.createStatement();
@@ -198,8 +256,34 @@ class TimestampTest extends CommonIntegrationTest {
 		}
 	}
 
+	/**
+	 * As of 4.22 the time_zone settings is not supported for core.
+	 * timezone setting is supported for cloud (v2 only) and core
+	 * time_zone setting is supported for cloud only
+	 * @throws SQLException
+	 */
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldReturnTimestampFromTimestampTzWithTzWithHoursAndMinutes() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			statement.execute("SET timezone = 'Asia/Calcutta';"); // The server will return a tz in
+			// the format +05:30
+			ResultSet resultSet = statement.executeQuery("SELECT '1975-05-10 23:01:02.123'::timestamptz;");
+			resultSet.next();
+			compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '1975-05-10 23:01:02.123'::timestamptz;",
+					"Asia/Calcutta");
+		}
+	}
+
+	/**
+	 * time_zone is support for v1 and v2 cloud, but it is not supported core.
+	 * @throws SQLException
+	 */
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Test
+	void shouldReturnTimestampFromTimestampTzWithTzWithHoursAndMinutesWhenUsingTime_ZoneSettings() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			statement.execute("SET time_zone = 'Asia/Calcutta';"); // The server will return a tz in
 			// the format +05:30
@@ -210,8 +294,29 @@ class TimestampTest extends CommonIntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldReturnTimestampFromTimestampTzWithTzWithHoursAndMinutesAndSeconds() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			statement.execute("SET timezone = 'Asia/Calcutta';"); // The server will return a tz in
+			// the format +05:30
+			ResultSet resultSet = statement.executeQuery("SELECT '1111-01-05 17:04:42.123456'::timestamptz");
+			resultSet.next();
+			Timestamp expectedTimestamp = new Timestamp(
+					ZonedDateTime.of(1111, 1, 5, 11, 11, 14, 0, UTC_TZ.toZoneId()).toInstant().toEpochMilli()
+							+ 7 * ONE_DAY_MILLIS);
+			expectedTimestamp.setNanos(123456000);
+			assertEquals(expectedTimestamp, resultSet.getObject(1));
+			compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '1111-01-05 17:04:42.123456'::timestamptz",
+					"Asia/Calcutta");
+		}
+	}
+
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Test
+	void shouldReturnTimestampFromTimestampTzWithTzWithHoursAndMinutesAndSecondsWhenUsingTime_ZoneSetting() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			statement.execute("SET time_zone = 'Asia/Calcutta';"); // The server will return a tz in
 			// the format +05:30
@@ -227,8 +332,34 @@ class TimestampTest extends CommonIntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldReturnTimestampFromDate() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			statement.execute("SET timezone='Europe/Berlin';");
+			ResultSet resultSet = statement.executeQuery("SELECT '2022-05-10'::pgdate;");
+			resultSet.next();
+			ZonedDateTime expectedZdt = ZonedDateTime.of(2022, 5, 10, 0, 0, 0, 0, UTC_TZ.toZoneId());
+			Date expectedDate = new Date(expectedZdt.truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli());
+			Time expectedTime = new Time(0);
+
+			Timestamp expectedTimestamp = new Timestamp(expectedZdt.toInstant().toEpochMilli());
+
+			assertEquals(expectedDate, resultSet.getObject(1));
+			assertEquals(expectedTime, resultSet.getTime(1));
+			assertEquals(expectedDate, resultSet.getDate(1));
+			assertEquals(expectedTimestamp, resultSet.getTimestamp(1));
+
+			compareAllDateTimeResultSetValuesWithPostgres(resultSet, "SELECT '2022-05-10'::date;", "Europe/Berlin");
+
+		}
+	}
+
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Test
+	void shouldReturnTimestampFromDateWhenUsingTime_zoneSetting() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			statement.execute("SET time_zone='Europe/Berlin';");
 			ResultSet resultSet = statement.executeQuery("SELECT '2022-05-10'::pgdate;");
@@ -249,6 +380,9 @@ class TimestampTest extends CommonIntegrationTest {
 		}
 	}
 
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void shouldCompareAllTimeStampsWithMultipleThreads() throws SQLException, InterruptedException, ExecutionException {
 		try (Connection connection = createConnection();
