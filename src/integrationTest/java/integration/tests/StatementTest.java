@@ -309,7 +309,7 @@ class StatementTest extends IntegrationTest {
 	}
 
 	/**
-	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v2 and v2
+	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v1 and v2
 	 */
 	@Test
 	@Tag(TestTag.V1)
@@ -318,14 +318,35 @@ class StatementTest extends IntegrationTest {
 		setWrongParameter("SET foo=bar", Map.of(), "foo");
 	}
 
+	@Test
+	@Tag(TestTag.CORE)
+	void setWrongParameterForCore() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			// when this will be fixed for core, just add core annotation to the method setWrongParameter
+			statement.execute("SET foo=bar");
+		}
+	}
+
 	/**
-	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v2 and v2
+	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v1 and v2
 	 */
 	@Test
 	@Tag(TestTag.V1)
 	@Tag(TestTag.V2)
 	void setCorrectThenWrongParameter() throws SQLException {
-			setWrongParameter("SET time_zone = 'EST';SET bar=tar", Map.of("time_zone", "EST"), "bar");
+		setWrongParameter("SET time_zone = 'EST';SET bar=tar", Map.of("time_zone", "EST"), "bar");
+	}
+
+	/**
+	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v1 and v2
+	 */
+	@Test
+	@Tag(TestTag.CORE)
+	void setCorrectThenWrongParameterCore() throws SQLException {
+		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
+			// when this will be fixed for core, just add core annotation to the method setCorrectThenWrongParameter
+			statement.execute("SET time_zone = 'EST';SET bar=tar");
+		}
 	}
 
 	@Test
@@ -362,7 +383,7 @@ class StatementTest extends IntegrationTest {
 
 	@Test
 	@Tag(TestTag.V2)
-//	@Tag(TestTag.CORE) - this fails, against core. Will be fixed in next review
+	@Tag(TestTag.CORE)
 	@Tag(TestTag.SLOW)
 	void willUseRandomQueryLabelIfNoneExplicitlySet() throws SQLException {
 		try (Connection connection = createConnection()) {
@@ -435,11 +456,10 @@ class StatementTest extends IntegrationTest {
 
 	/**
 	 * Try to set {@code force_pgdate_timestampntz} that requires advanced mode that was not set. This test will fail.
-	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v2 and v2
+	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v1 and v2
 	 */
 	@Test
 	@Tag(TestTag.V2)
-//	@Tag(TestTag.CORE) - this fails, against core. Will be fixed in next review
 	void failedSettingPropertyThatRequiresAdvancedModeThatWasNotSet() throws SQLException {
 		try (Connection connection = createConnection()) {
 			assertFailingSet(connection, "force_pgdate_timestampntz");
@@ -447,17 +467,38 @@ class StatementTest extends IntegrationTest {
 	}
 
 	/**
+	 * Once fixed in core we should move it to the test above
+	 */
+	@Test
+	@Tag(TestTag.CORE)
+	void failedSettingPropertyThatRequiresAdvancedModeThatWasNotSetForCore() throws SQLException {
+		try (Connection connection = createConnection()) {
+			// once this is fix in core it should fail and we should just add the CORE annotation to the method failedSettingPropertyThatRequiresAdvancedModeThatWasNotSet
+			setParam(connection, "force_pgdate_timestampntz", "1");
+		}
+	}
+
+	/**
 	 * Connect to DB using {@code advanced_mode} sent in JDBC URL. Then set {@code advanced_mode=0} and
 	 * try to set {@code force_pgdate_timestampntz} that requires advanced mode and therefore fails.
-	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v2 and v2
+	 * Not yet implemented in Core (https://packboard.atlassian.net/browse/FIR-46022) so only run for v2
 	 */
 	@Test
 	@Tag(TestTag.V2)
-//	@Tag(TestTag.CORE) - this fails, against core. Will be fixed in next review
 	void failedSettingPropertyThatRequiresAdvancedModeThatWasUnset() throws SQLException {
 		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), Map.of("advanced_mode", "1"))) {
 			setParam(connection, "advanced_mode", "0");
 			assertFailingSet(connection, "force_pgdate_timestampntz");
+		}
+	}
+
+	@Test
+	@Tag(TestTag.CORE)
+	void failedSettingPropertyThatRequiresAdvancedModeThatWasUnsetForCore() throws SQLException {
+		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), Map.of("advanced_mode", "1"))) {
+			setParam(connection, "advanced_mode", "0");
+			// once this is fix in core it should fail and we should just add the CORE annotation to the method failedSettingPropertyThatRequiresAdvancedModeThatWasUnset
+			setParam(connection, "force_pgdate_timestampntz", "1");
 		}
 	}
 

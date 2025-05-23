@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.client.query;
 
+import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.client.FireboltClient;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
@@ -7,10 +8,8 @@ import com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
-import com.firebolt.jdbc.statement.StatementType;
 import com.firebolt.jdbc.statement.rawstatement.RawStatement;
 import com.firebolt.jdbc.util.CloseableUtil;
-import com.firebolt.jdbc.util.PropertyUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -18,10 +17,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiPredicate;
@@ -38,10 +35,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.internal.http2.StreamResetException;
-import org.apache.commons.lang3.StringUtils;
 
-import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.DEFAULT_FORMAT;
-import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.OUTPUT_FORMAT;
 import static com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey.QUERY_LABEL;
 import static com.firebolt.jdbc.exception.ExceptionType.INVALID_REQUEST;
 import static com.firebolt.jdbc.exception.ExceptionType.UNAUTHORIZED;
@@ -55,7 +49,6 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 	private static final boolean DO_NOT_VALIDATE_CONNECTION_FLAG = false;
 
-	private static final String TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT = "TabSeparatedWithNamesAndTypes";
 	private static final Map<Pattern, String> missConfigurationErrorMessages = Map.of(
 			Pattern.compile("HTTP status code: 401"), "Please associate user with your service account.",
 			Pattern.compile("Engine .+? does not exist or not authorized"), "Please grant at least one role to user associated your service account."
@@ -140,7 +133,8 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	public InputStream executeSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
 										   @NonNull FireboltProperties connectionProperties, boolean systemEngine, int queryTimeout, boolean isServerAsync) throws SQLException {
 		String formattedStatement = QueryIdFetcher.getQueryFetcher(connection.getInfraVersion()).formatStatement(statementInfoWrapper);
-		Map<String, String> params = getAllParameters(connectionProperties, statementInfoWrapper, systemEngine, queryTimeout, isServerAsync);
+		QueryParameterProvider queryParameterProvider = getQueryParameterProvider();
+		Map<String, String> params = queryParameterProvider.getQueryParams(connectionProperties, statementInfoWrapper, queryTimeout, isServerAsync);
 
 		// if available in the params, then use the query label from there. Default to the one from the statementInfoWrapper if not available in params
 		String label = params.getOrDefault(QUERY_LABEL.getKey(), statementInfoWrapper.getLabel());
@@ -157,6 +151,21 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		}
 	}
 
+	/**
+	 * In order to keep this commit small will create the query parameter here. It should be injected when we create the connection.
+	 * @return
+	 */
+	private QueryParameterProvider getQueryParameterProvider() {
+		FireboltBackendType fireboltBackendType = connection.getBackendType();
+
+		switch(fireboltBackendType) {
+			case CLOUD_1_0: return new FireboltCloudV1QueryParameterProvider();
+			case CLOUD_2_0: return new FireboltCloudV2QueryParameterProvider();
+			case FIREBOLT_CORE: return new FireboltCoreQueryParameterProvider();
+			case DEV: return new LocalhostQueryParameterProvider();
+			default: throw new IllegalStateException("Could not detect what backend is connecting to.");
+		}
+	}
 
 	private InputStream executeSqlStatementWithRetryOnUnauthorized(String label, @NonNull FireboltProperties connectionProperties, String formattedStatement, String uri)
 			throws SQLException, IOException {
@@ -301,57 +310,6 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		pathSegments.forEach(httpUrlBuilder::addPathSegment);
 		return httpUrlBuilder.build().uri();
 
-	}
-
-	private Map<String, String> getAllParameters(FireboltProperties fireboltProperties,
-			StatementInfoWrapper statementInfoWrapper, boolean systemEngine, int queryTimeout, boolean isServerAsync) {
-		boolean isLocalDb = PropertyUtil.isLocalDb(fireboltProperties);
-
-		Map<String, String> params = new HashMap<>(fireboltProperties.getAdditionalProperties());
-
-		getResponseFormatParameter(statementInfoWrapper.getType() == StatementType.QUERY, isLocalDb)
-				.ifPresent(format -> params.put(format.getKey(), format.getValue()));
-
-		if (StringUtils.isNotBlank(statementInfoWrapper.getPreparedStatementParameters())) {
-			params.put(FireboltQueryParameterKey.QUERY_PARAMETERS.getKey(), statementInfoWrapper.getPreparedStatementParameters());
-		}
-
-		String accountId = fireboltProperties.getAccountId();
-		if (systemEngine) {
-			if (accountId != null && connection.getInfraVersion() < 2) {
-				// if infra version >= 2 we should add account_id only if it was supplied by system URL returned from server.
-				// In this case it will be in additionalProperties anyway.
-				params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), accountId);
-			}
-		} else {
-			if (connection.getInfraVersion() >= 2) {
-				String engine = fireboltProperties.getEngine();
-				if (accountId != null) {
-					params.put(FireboltQueryParameterKey.ACCOUNT_ID.getKey(), accountId);
-				}
-				if (engine != null) {
-					params.put(FireboltQueryParameterKey.ENGINE.getKey(), engine);
-				}
-
-				params.put(FireboltQueryParameterKey.QUERY_LABEL.getKey(), QueryLabelResolver.getQueryLabel(fireboltProperties, statementInfoWrapper)); //QUERY_LABEL
-			}
-			params.put(FireboltQueryParameterKey.COMPRESS.getKey(), fireboltProperties.isCompress() ? "1" : "0");
-
-			if (queryTimeout > 0) {
-				params.put("max_execution_time", String.valueOf(queryTimeout));
-			}
-		}
-		params.put(FireboltQueryParameterKey.DATABASE.getKey(), fireboltProperties.getDatabase());
-		if (isServerAsync) {
-			params.put(FireboltQueryParameterKey.ASYNC.getKey(), "true");
-		}
-
-		return params;
-	}
-
-	private Optional<Entry<String, String>> getResponseFormatParameter(boolean isQuery, boolean isLocalDb) {
-		FireboltQueryParameterKey format = isLocalDb ? DEFAULT_FORMAT : OUTPUT_FORMAT;
-		return isQuery ? Optional.of(Map.entry(format.getKey(), TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT)) : Optional.empty();
 	}
 
 	private Map<String, String> getCancelParameters(String statementId) {
