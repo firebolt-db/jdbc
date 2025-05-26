@@ -1,26 +1,33 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FireboltCoreConnectionTest {
 
-    private static final String VALID_URL = "jdbc:firebolt:my_db?";
+    private static final String VALID_URL_WITH_DB = "jdbc:firebolt:my_db?";
+    private static final String VALID_URL_WITHOUT_DB = "jdbc:firebolt:?";
 
     @ParameterizedTest(name = "Valid URL: {0}")
     @ValueSource(strings = {
-        "http://localhost:8080",
-        "https://example.com:443",
-        "http://192.168.1.1:8080",
-        "https://[2001:db8::1]:8080",
-        "http://sub.example.com:8080"
+            "http://localhost:8080",
+            "https://example.com:443",
+            "http://192.168.1.1:8080",
+            "https://[2001:db8::1]:8080",
+            "http://sub.example.com:8080"
     })
     void testValidUrls(String url) {
         assertDoesNotThrow(() -> createConnection(url));
@@ -28,48 +35,48 @@ class FireboltCoreConnectionTest {
 
     @ParameterizedTest(name = "Invalid URL: {0}")
     @ValueSource(strings = {
-        "mydomain.com:8080",
-        "http://",
-        "https://",
-        "http://localhost",
-        "http://:8080",
-        "http://localhost:",
-        "http://localhost:0",
-        "http://localhost:70000",
-        "http://localhost:-1",
-        "invalid://localhost:8080",
-        "http://invalid..hostname:8080",
-        "http://.invalid.hostname:8080",
-        "http://invalid.hostname.:8080",
-        "http://invalid@hostname:8080",
-        "http://host_name:8080",
-        "http://-hostname:8080",
-        "http://hostname-:8080",
-        // Invalid IPv4 addresses
-        "http://256.256.256.256:8080",  // All octets > 255
-        "http://270.0.0.1:8080",        // First octet > 255
-        "http://0.270.0.1:8080",        // Second octet > 255
-        "http://0.0.270.1:8080",        // Third octet > 255
-        "http://0.0.0.270:8080",        // Fourth octet > 255
-        "http://127.0.1:8080",          // Missing octet
-        "http://127.0.0:8080",          // Missing octet
-        "http://127.0:8080",            // Missing two octets
-        "http://127:8080",              // Missing three octets
-        "http://127.0.0.1.1:8080",      // Extra octet
-        "http://127.0.0.0.0.1:8080",    // Too many octets
-        "http://127.0.0.:8080",         // Trailing dot
-        "http://127..0.1:8080",         // Double dot
-        "http://127.0.0.01:8080",       // Leading zero
-        "http://127.abc.0.1:8080",      // Letters in octet
-        "http://127.0.0.0x1:8080",      // Hex notation
-        "http://300.300.300.300:8080",  // All octets way above 255
-        "http://127.0.0.-1:8080",       // Negative number in octet
-        "http://127.0.0.+1:8080"        // Plus sign in octet
+            "mydomain.com:8080",
+            "http://",
+            "https://",
+            "http://localhost",
+            "http://:8080",
+            "http://localhost:",
+            "http://localhost:0",
+            "http://localhost:70000",
+            "http://localhost:-1",
+            "invalid://localhost:8080",
+            "http://invalid..hostname:8080",
+            "http://.invalid.hostname:8080",
+            "http://invalid.hostname.:8080",
+            "http://invalid@hostname:8080",
+            "http://host_name:8080",
+            "http://-hostname:8080",
+            "http://hostname-:8080",
+            // Invalid IPv4 addresses
+            "http://256.256.256.256:8080",  // All octets > 255
+            "http://270.0.0.1:8080",        // First octet > 255
+            "http://0.270.0.1:8080",        // Second octet > 255
+            "http://0.0.270.1:8080",        // Third octet > 255
+            "http://0.0.0.270:8080",        // Fourth octet > 255
+            "http://127.0.1:8080",          // Missing octet
+            "http://127.0.0:8080",          // Missing octet
+            "http://127.0:8080",            // Missing two octets
+            "http://127:8080",              // Missing three octets
+            "http://127.0.0.1.1:8080",      // Extra octet
+            "http://127.0.0.0.0.1:8080",    // Too many octets
+            "http://127.0.0.:8080",         // Trailing dot
+            "http://127..0.1:8080",         // Double dot
+            "http://127.0.0.01:8080",       // Leading zero
+            "http://127.abc.0.1:8080",      // Letters in octet
+            "http://127.0.0.0x1:8080",      // Hex notation
+            "http://300.300.300.300:8080",  // All octets way above 255
+            "http://127.0.0.-1:8080",       // Negative number in octet
+            "http://127.0.0.+1:8080"        // Plus sign in octet
     })
     void testInvalidUrls(String url) {
         SQLException exception = assertThrows(SQLException.class, () -> createConnection(url));
-        assertTrue(exception.getMessage().contains("Invalid URL format") || 
-                  exception.getMessage().contains("not valid"));
+        assertTrue(exception.getMessage().contains("Invalid URL format") ||
+                exception.getMessage().contains("not valid"));
     }
 
     @Test
@@ -78,8 +85,54 @@ class FireboltCoreConnectionTest {
         assertTrue(exception.getMessage().contains("Url is required for firebolt core"));
     }
 
+    @Test
+    void canConnectToCoreWithoutSpecifyingADb() throws SQLException {
+        StringBuilder jdbcUrlBuilder = new StringBuilder(VALID_URL_WITHOUT_DB);
+        jdbcUrlBuilder.append("&url=").append("http://localhost:3473");
+
+        try (FireboltCoreConnection connection = new FireboltCoreConnection(jdbcUrlBuilder.toString(), new Properties())) {
+            FireboltProperties fireboltProperties = connection.getSessionProperties();
+            assertFalse(fireboltProperties.isSsl());
+            assertEquals("localhost", fireboltProperties.getHost());
+            assertEquals(3473, fireboltProperties.getPort());
+            assertTrue(StringUtils.isBlank(fireboltProperties.getDatabase()));
+        }
+
+    }
+
+    @Test
+    void canConnectOverHttp() throws SQLException {
+        Map<String, String> connectionParams = Map.of(
+                "url", "http://localhost:3473",
+                "database", "my_db"
+        );
+        try (FireboltCoreConnection connection = createConnectionWithParams(connectionParams)) {
+            FireboltProperties fireboltProperties = connection.getSessionProperties();
+            assertFalse(fireboltProperties.isSsl());
+            assertEquals("localhost", fireboltProperties.getHost());
+            assertEquals(3473, fireboltProperties.getPort());
+            assertEquals("my_db", fireboltProperties.getDatabase());
+        }
+    }
+
+    @Test
+    void canConnectOverHttps() throws SQLException {
+        Map<String, String> connectionParams = Map.of(
+                "url", "https://localhost:3473",
+                "database", "my_db"
+        );
+
+        try (FireboltCoreConnection connection = createConnectionWithParams(connectionParams)) {
+            FireboltProperties fireboltProperties = connection.getSessionProperties();
+            assertTrue(fireboltProperties.isSsl());
+            assertEquals("localhost", fireboltProperties.getHost());
+            assertEquals(3473, fireboltProperties.getPort());
+            assertEquals("my_db", fireboltProperties.getDatabase());
+        }
+    }
+
     private FireboltCoreConnection createConnection(String url) throws SQLException {
-        StringBuilder jdbcUrlBuilder = new StringBuilder(VALID_URL);
+        StringBuilder jdbcUrlBuilder = new StringBuilder(VALID_URL_WITH_DB);
 
         if (url != null) {
             jdbcUrlBuilder.append("&url=").append(url);
@@ -87,4 +140,16 @@ class FireboltCoreConnectionTest {
 
         return new FireboltCoreConnection(jdbcUrlBuilder.toString(), new Properties());
     }
-} 
+
+    private FireboltCoreConnection createConnectionWithParams(Map<String, String> parameters) throws SQLException {
+        StringBuilder jdbcUrlBuilder = new StringBuilder(VALID_URL_WITH_DB);
+
+        String params = parameters.entrySet().stream()
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .collect(Collectors.joining("&"));
+
+        jdbcUrlBuilder.append("&").append(params);
+
+        return new FireboltCoreConnection(jdbcUrlBuilder.toString(), new Properties());
+    }
+}
