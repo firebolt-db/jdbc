@@ -67,6 +67,7 @@ public class SpecialValuesTest extends IntegrationTest {
     @ParameterizedTest
     @ValueSource(strings = {"select 'inf'::float", "select '+inf'::float"})
     @Tag(TestTag.V2)
+    @Tag(TestTag.CORE)
     void infFloatAsDoubleUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
     }
@@ -104,6 +105,7 @@ public class SpecialValuesTest extends IntegrationTest {
     @ParameterizedTest
     @ValueSource(strings = {"select '-inf'::float"})
     @Tag(TestTag.V2)
+    @Tag(TestTag.CORE)
     void minusInfFloatAsDoubleUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY);
     }
@@ -166,6 +168,7 @@ public class SpecialValuesTest extends IntegrationTest {
     @ParameterizedTest
     @ValueSource(strings = {"select 'nan'::float", "select '+nan'::float", "select '-nan'::float"})
     @Tag(TestTag.V2)
+    @Tag(TestTag.CORE)
     void nanFloatAsDoubleUserEngine(String query) throws SQLException {
         specialSelect(userConnection, query, Float.NaN, Double.NaN, Double.NaN);
     }
