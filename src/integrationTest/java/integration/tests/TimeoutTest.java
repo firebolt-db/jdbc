@@ -70,7 +70,6 @@ class TimeoutTest extends IntegrationTest {
 	@Timeout(value = 15, unit = TimeUnit.MINUTES)
 	@EnvironmentCondition(value = "3.33", attribute = databaseVersion, comparison = GE) // generate_series is supported starting from version 3.33 on v2
 	@Tag(TestTag.V2)
-//	@Tag(TestTag.CORE) - this fails, against core. Will be fixed in next review
 	@Tag(TestTag.SLOW)
 	void shouldExecuteRequestWithoutTimeoutV2() throws SQLException {
 		shouldExecuteRequestWithoutTimeout();

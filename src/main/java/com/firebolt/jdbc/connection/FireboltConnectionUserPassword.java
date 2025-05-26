@@ -1,5 +1,6 @@
 package com.firebolt.jdbc.connection;
 
+import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
 import com.firebolt.jdbc.client.account.FireboltAccountClient;
 import com.firebolt.jdbc.client.authentication.AuthenticationRequest;
@@ -99,6 +100,11 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
     @Override
     public Optional<String> getConnectionUserAgentHeader() {
         return Optional.empty();
+    }
+
+    @Override
+    public FireboltBackendType getBackendType() {
+        return FireboltBackendType.CLOUD_1_0;
     }
 
     @Override

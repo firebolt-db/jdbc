@@ -525,7 +525,7 @@ class PreparedStatementFbNumericTest extends IntegrationTest {
 
 	@Test
 	@Tag(TestTag.V2)
-//	@Tag(TestTag.CORE) - this fails, against core. Will be fixed in next review
+	@Tag(TestTag.CORE)
 	void shouldFailWhenParameterNotProvided() throws SQLException {
 		try (Connection connection = getConnectionWithFbNumericQueryParameters()) {
 			try (PreparedStatement statement = connection
