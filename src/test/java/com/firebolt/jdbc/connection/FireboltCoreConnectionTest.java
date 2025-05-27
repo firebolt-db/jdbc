@@ -2,24 +2,33 @@ package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class FireboltCoreConnectionTest {
 
     private static final String VALID_URL_WITH_DB = "jdbc:firebolt:my_db?";
     private static final String VALID_URL_WITHOUT_DB = "jdbc:firebolt:?";
+
+    @Mock
+    private Statement mockStatement;
 
     @ParameterizedTest(name = "Valid URL: {0}")
     @ValueSource(strings = {
@@ -29,7 +38,8 @@ class FireboltCoreConnectionTest {
             "https://[2001:db8::1]:8080",
             "http://sub.example.com:8080"
     })
-    void testValidUrls(String url) {
+    void testValidUrls(String url) throws SQLException {
+        when(mockStatement.executeUpdate("USE DATABASE \"my_db\"")).thenReturn(0);
         assertDoesNotThrow(() -> createConnection(url));
     }
 
@@ -117,6 +127,8 @@ class FireboltCoreConnectionTest {
 
     @Test
     void canConnectOverHttps() throws SQLException {
+        when(mockStatement.executeUpdate("USE DATABASE \"my_db\"")).thenReturn(0);
+
         Map<String, String> connectionParams = Map.of(
                 "url", "https://localhost:3473",
                 "database", "my_db"
@@ -138,7 +150,7 @@ class FireboltCoreConnectionTest {
             jdbcUrlBuilder.append("&url=").append(url);
         }
 
-        return new FireboltCoreConnection(jdbcUrlBuilder.toString(), new Properties());
+        return aFireboltCoreConnection(jdbcUrlBuilder.toString(), new Properties());
     }
 
     private FireboltCoreConnection createConnectionWithParams(Map<String, String> parameters) throws SQLException {
@@ -149,7 +161,15 @@ class FireboltCoreConnectionTest {
                 .collect(Collectors.joining("&"));
 
         jdbcUrlBuilder.append("&").append(params);
+        return aFireboltCoreConnection(jdbcUrlBuilder.toString(), new Properties());
+    }
 
-        return new FireboltCoreConnection(jdbcUrlBuilder.toString(), new Properties());
+    private FireboltCoreConnection aFireboltCoreConnection(String jdbcUrl, Properties properties) throws SQLException {
+        return new FireboltCoreConnection(jdbcUrl, properties){
+            @Override
+            public Statement createStatement() {
+                return mockStatement;
+            }
+        };
     }
 }

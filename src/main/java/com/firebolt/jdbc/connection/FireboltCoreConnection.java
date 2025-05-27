@@ -11,6 +11,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Optional;
 import java.util.Properties;
 import lombok.CustomLog;
@@ -48,6 +49,10 @@ public class FireboltCoreConnection extends FireboltConnection {
 
             // the constructor sets the httpConnectionUrl, but it checks the host and port. For Core the httpConnectionUrl should be the url parameter.
             this.httpConnectionUrl = sessionProperties.getUrl();
+
+            // need to validate if the database exists after we set the session properties since we need to make a call to the backend
+            validateDatabaseIfNeeded();
+
         } catch (URISyntaxException e) {
             // this should not happen as we had validate the url already validated
             throw new SQLException("Invalid url: " + sessionProperties.getUrl());
@@ -59,6 +64,19 @@ public class FireboltCoreConnection extends FireboltConnection {
         return new FireboltDatabaseMetadata(getEndpoint(), this);
     }
 
+    /**
+     * If database is passed in, then make sure that the database exists, by calling a use database
+     */
+    private void validateDatabaseIfNeeded() throws SQLException {
+        String database = loginProperties.getDatabase();
+        if (StringUtils.isNotBlank(database)) {
+            log.debug("Validating the database {} exists.", database);
+
+            try (Statement statement = this.createStatement()) {
+                statement.executeUpdate(String.format("USE DATABASE \"%s\"", database));
+            }
+        }
+    }
 
     /**
      * For firebolt core the required parameters are:
