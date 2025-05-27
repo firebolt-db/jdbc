@@ -79,17 +79,15 @@ class FireboltCloudV2QueryParameterProviderTest extends AbstractQueryParameterPr
     }
 
     @Test
-    void shouldNotAddEngineAndAccountIdForSystemEngine() {
+    void shouldNotAddEngineAndAccountIdCompressOrQueryTimeoutForSystemEngine() {
         mockSystemEngine();
-        mockIsCompressInProperties(false);
         mockDatabaseInProperties(null);
         mockPreparedStatements(null);
         mockStatementType(StatementType.QUERY);
 
-        Map<String, String> queryParams = fireboltCloudV2QueryParameterProvider.getQueryParams(mockFireboltProperties, mockStatementInfoWrapper, NO_QUERY_TIMEOUT, IS_NOT_SERVER_ASYNC);
+        Map<String, String> queryParams = fireboltCloudV2QueryParameterProvider.getQueryParams(mockFireboltProperties, mockStatementInfoWrapper, QUERY_TIMEOUT, IS_NOT_SERVER_ASYNC);
 
-        assertEquals(3, queryParams.size());
-        assertEquals("0", queryParams.get(FireboltQueryParameterKey.COMPRESS.getKey()));
+        assertEquals(2, queryParams.size());
         assertEquals(FireboltCloudV2QueryParameterProvider.TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT, queryParams.get(FireboltQueryParameterKey.OUTPUT_FORMAT.getKey()));
         assertEquals("value1", queryParams.get("key1"));
     }
