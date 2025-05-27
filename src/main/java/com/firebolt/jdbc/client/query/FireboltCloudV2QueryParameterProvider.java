@@ -22,8 +22,6 @@ public class FireboltCloudV2QueryParameterProvider extends AbstractQueryParamete
         }
 
         addQueryParameterIfNeeded(params, statementInfoWrapper.getPreparedStatementParameters());
-        addCompress(params, fireboltProperties.isCompress());
-        addQueryTimeoutIfNeeded(params, queryTimeout);
         addDatabaseIfNeeded(params, fireboltProperties.getDatabase());
         addServerAsyncIfNeeded(params, isServerAsync);
 
@@ -32,6 +30,8 @@ public class FireboltCloudV2QueryParameterProvider extends AbstractQueryParamete
             addAccountIdIfNeeded(params, fireboltProperties.getAccountId());
             addEngineIfNeeded(params, fireboltProperties.getEngine());
             addQueryLabel(params, fireboltProperties, statementInfoWrapper);
+            addCompress(params, fireboltProperties.isCompress());
+            addQueryTimeoutIfNeeded(params, queryTimeout);
         }
 
         return params;
