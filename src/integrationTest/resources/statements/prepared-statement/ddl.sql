@@ -6,6 +6,7 @@ FACT TABLE IF NOT EXISTS prepared_statement_test (
 	ts              timestamp NULL,
 	d               date NULL,
     signature       bytea null,
-    url             STRING null
+    url             STRING null,
+    tsz             timestamptz NULL
 )
 PRIMARY INDEX make;

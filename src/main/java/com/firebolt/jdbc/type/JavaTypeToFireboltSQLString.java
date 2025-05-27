@@ -6,7 +6,6 @@ import com.firebolt.jdbc.CheckedSupplier;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import com.firebolt.jdbc.type.date.SqlDateUtil;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Array;
@@ -19,6 +18,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -48,10 +48,10 @@ public enum JavaTypeToFireboltSQLString {
 	LOCAL_DATE(LocalDate.class, date -> SqlDateUtil.transformFromLocalDateToSQLStringFunction.apply((LocalDate) date)),
 	TIMESTAMP(Timestamp.class, time -> SqlDateUtil.transformFromTimestampToSQLStringFunction.apply((Timestamp) time), (ts, tz) -> SqlDateUtil.transformFromTimestampWithTimezoneToSQLStringFunction.apply((Timestamp) ts, toTimeZone(tz))),
 	LOCAL_DATE_TIME(LocalDateTime.class, time -> SqlDateUtil.transformFromLocalDateTimeToSQLStringFunction.apply((LocalDateTime) time)),
+	OFFSET_DATE_TIME(OffsetDateTime.class, offsetDateTime -> SqlDateUtil.transformFromOffsetDateTimeToSQLStringFunction.apply((OffsetDateTime) offsetDateTime)),
 	BIG_DECIMAL(BigDecimal.class, value -> value == null ? BaseType.NULL_VALUE : ((BigDecimal) value).toPlainString()),
 	ARRAY(Array.class, SqlArrayUtil::arrayToString),
-	BYTE_ARRAY(byte[].class, value -> ofNullable(byteArrayToHexString((byte[])value, true)).map(x  -> format("E'%s'::BYTEA", x)).orElse(null)),
-	;
+	BYTE_ARRAY(byte[].class, value -> ofNullable(byteArrayToHexString((byte[])value, true)).map(x  -> format("E'%s'::BYTEA", x)).orElse(null));
 
 	private static final List<Entry<String, String>> legacyCharacterToEscapedCharacterPairs = List.of(
 			Map.entry("\0", "\\0"), Map.entry("\\", "\\\\"), Map.entry("'", "''"));

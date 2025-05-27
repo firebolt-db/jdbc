@@ -27,6 +27,8 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -471,9 +473,9 @@ class PreparedStatementTest extends IntegrationTest {
 							.executeQuery("SELECT prepared_statement_test FROM prepared_statement_test")) {
 				rs.next();
 				assertEquals(FireboltDataType.STRUCT.name().toLowerCase()
-								+ "(make text, sales long, ts timestamp null, d date null, signature bytea null, url text null)",
+								+ "(make text, sales long, ts timestamp null, d date null, signature bytea null, url text null, tsz timestamptz null)",
 						rs.getMetaData().getColumnTypeName(1).toLowerCase());
-				String expectedJson = String.format("{\"make\":\"%s\",\"sales\":\"%d\",\"ts\":\"%s\",\"d\":\"%s\",\"signature\":null,\"url\":null}",
+				String expectedJson = String.format("{\"make\":\"%s\",\"sales\":\"%d\",\"ts\":\"%s\",\"d\":\"%s\",\"signature\":null,\"url\":null,\"tsz\":null}",
 						car1.getMake(), car1.getSales(), car1.getTs().toString(), car1.getD().toString());
 				assertEquals(expectedJson, rs.getString(1));
 			}
@@ -510,6 +512,42 @@ class PreparedStatementTest extends IntegrationTest {
 				rs.next();
 				assertEquals(expectedTimestamp, rs.getString(1));
 				assertEquals(expectedDate, rs.getString(2));
+			}
+		} finally {
+			executeStatementFromFile("/statements/prepared-statement/cleanup.sql");
+		}
+	}
+
+	@Test
+	@DefaultTimeZone("UTC")
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
+	void shouldFetchTimestampWithTimezone() throws SQLException {
+		String expectedUtcTimestamp = "2019-07-31 10:15:13.123456+00";
+
+		// will use this local date "2019-07-31 11:15:13" for Europe/Berlin timezone
+		// also firebolt only keeps microseconds and offset date time supports nanoseconds so in order to set: 123456 microseconds we need to use 123456000
+		OffsetDateTime timestampWithTimezone = OffsetDateTime.of(
+				2019, 7, 31,     // year, month, day
+				11, 15, 13, 123456000,    // hour, minute, second, nanosecond
+				ZoneOffset.of("+01:00")   // for Europe/Berlin
+		);
+
+		try (Connection connection = createConnection()) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO prepared_statement_test (ts, d, make, sales, tsz) VALUES (NULL,NULL, '', 0,?)")) {
+				statement.setObject(1, timestampWithTimezone);
+				statement.executeUpdate();
+			}
+
+			try (Statement statement = connection.createStatement();
+				 ResultSet rs = statement
+						 .executeQuery("SELECT tsz FROM prepared_statement_test")) {
+				rs.next();
+				OffsetDateTime offsetDateTime = rs.getObject(1, OffsetDateTime.class);
+				assertEquals(timestampWithTimezone.toInstant(), offsetDateTime.toInstant()); // they should represent the same instant in time
+
+				assertEquals(expectedUtcTimestamp, rs.getString(1)); // string value will be in UTC timezone
 			}
 		} finally {
 			executeStatementFromFile("/statements/prepared-statement/cleanup.sql");
