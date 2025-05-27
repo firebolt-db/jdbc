@@ -1,9 +1,6 @@
 package com.firebolt.jdbc.type.date;
 
 import com.firebolt.jdbc.CheckedBiFunction;
-import lombok.CustomLog;
-import lombok.experimental.UtilityClass;
-
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -17,6 +14,8 @@ import java.time.temporal.ChronoField;
 import java.util.TimeZone;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import lombok.CustomLog;
+import lombok.experimental.UtilityClass;
 
 @UtilityClass
 @CustomLog
@@ -31,6 +30,8 @@ public class SqlDateUtil {
 
 	public static final Function<LocalDateTime, String> transformFromLocalDateTimeToSQLStringFunction = value -> String
 			.format("'%s'", dateTimeFormatter.format(value));
+	public static final Function<OffsetDateTime, String> transformFromOffsetDateTimeToSQLStringFunction = offsetDateTime ->
+			String.format("'%s'", offsetDateTime.toString());
 	public static final Function<Timestamp, String> transformFromTimestampToSQLStringFunction = value ->
 			transformFromLocalDateTimeToSQLStringFunction.apply(value.toLocalDateTime());
 	public static final BiFunction<Timestamp, TimeZone, String> transformFromTimestampWithTimezoneToStringFunction =
