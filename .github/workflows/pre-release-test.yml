@@ -16,7 +16,7 @@ jobs:
   build:
     uses: ./.github/workflows/build.yml
 
-  run-integration-test:
+  run-cloud-integration-test:
     needs: build
     uses: ./.github/workflows/integration-test.yml
     secrets:
@@ -24,6 +24,10 @@ jobs:
       FIREBOLT_STG_PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
       FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+
+  run-core-integration-tests:
+    needs: build
+    uses: ./.github/workflows/core-integration-test.yml
 
   run-smoke-test:
     needs: build
