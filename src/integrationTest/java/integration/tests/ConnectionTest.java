@@ -231,6 +231,7 @@ class ConnectionTest extends IntegrationTest {
 
     @Test
     @Tag(TestTag.V2)
+    @Tag(TestTag.CORE)
     void preparedStatementBatchesWorkIfMergeParameterProvided() throws SQLException {
         String engineName = integration.ConnectionInfo.getInstance().getEngine();
         String queryLabel = "test_merge_batches_" + System.currentTimeMillis();

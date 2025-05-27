@@ -4,6 +4,7 @@ import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.testutils.TestTag;
 import integration.ConnectionInfo;
+import integration.ConnectionOptions;
 import integration.EnvironmentCondition;
 import integration.IntegrationTest;
 import java.sql.Connection;
@@ -688,6 +689,18 @@ class StatementTest extends IntegrationTest {
 			 Statement limitedStatement = connection.createStatement()) {
 			limitedStatement.setMaxFieldSize(maxFieldSize);
 			assertEquals(readValues(unlimitedStatement, query, 1), readValues(limitedStatement, query, 1));
+		}
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+			"USE ENGINE \"test_engine\",USE ENGINE is not supported in Firebolt Core"
+	})
+	@Tag(TestTag.CORE)
+	void doNotSupportStatements(String sqlStatement, String expectedErrorMessage) throws SQLException {
+		try (Connection connection = createConnectionWithOptions(ConnectionOptions.builder().url("http://localhost:3473").build()); Statement statement = connection.createStatement()) {
+			SQLException exception = assertThrows(SQLException.class, () -> statement.executeUpdate(sqlStatement));
+			assertTrue(exception.getMessage().contains(expectedErrorMessage));
 		}
 	}
 
