@@ -83,6 +83,25 @@ class ConnectionTest extends IntegrationTest {
         }
     }
 
+    @Test
+    @Tag(TestTag.CORE)
+    void connectToNotExistingDbInCore() throws SQLException {
+        // when backend will fix their code this test will start failing
+        String database = "wrong_db";
+        createConnectionWithOptions(ConnectionOptions.builder().database(database).build());
+    }
+
+    @Test
+    @Tag(TestTag.CORE)
+    void doNotHaveToSpecifyTheDatabaseWhenConnectingToCore() throws SQLException {
+        try (Connection fireboltConnection = createConnectionWithOptions(ConnectionOptions.builder().database(null).build()); Statement statement = fireboltConnection.createStatement()) {
+            ResultSet resultSet = statement.executeQuery("SELECT 1");
+            assertTrue(resultSet.next());
+            assertEquals("1", resultSet.getString(1));
+            assertFalse(resultSet.next());
+        }
+    }
+
     /**
      * Try to connect to existing DB and existing engine but the engine is attached to another DB.
      * @throws SQLException if connection fails
