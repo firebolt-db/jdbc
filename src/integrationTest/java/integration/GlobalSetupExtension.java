@@ -40,7 +40,7 @@ public class GlobalSetupExtension implements BeforeAllCallback {
 
                 // need to create the default database if it does not exist
                 log.info("Setting up the default database");
-                try (Connection connection = coreConnectionFactory.create(); Statement statement = connection.createStatement()) {
+                try (Connection connection = coreConnectionFactory.create(ConnectionOptions.builder().database(null).build()); Statement statement = connection.createStatement()) {
                     statement.execute("DROP DATABASE IF EXISTS " + coreConnectionFactory.getDefaultDatabase());
                     statement.execute("CREATE DATABASE IF NOT EXISTS " + coreConnectionFactory.getDefaultDatabase());
                 }
