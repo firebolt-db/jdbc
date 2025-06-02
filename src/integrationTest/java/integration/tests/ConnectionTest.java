@@ -85,10 +85,13 @@ class ConnectionTest extends IntegrationTest {
 
     @Test
     @Tag(TestTag.CORE)
-    void connectToNotExistingDbInCore() throws SQLException {
+    void connectToNotExistingDbInCore() {
         // when backend will fix their code this test will start failing
         String database = "wrong_db";
-        createConnectionWithOptions(ConnectionOptions.builder().database(database).build());
+        FireboltException e = assertThrows(FireboltException.class, () -> createConnectionWithOptions(ConnectionOptions.builder().database(database).build()));
+        assertEquals(ExceptionType.INVALID_REQUEST, e.getType());
+        String expectedMessage = format("Database '%s' does not exist or not authorized", database);
+        assertTrue(e.getMessage().contains(expectedMessage), format("Error message '%s' does not match '%s'", e.getMessage(), expectedMessage));
     }
 
     @Test
