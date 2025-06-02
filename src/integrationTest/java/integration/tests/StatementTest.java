@@ -705,20 +705,12 @@ class StatementTest extends IntegrationTest {
 	}
 
 	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	@Test
 	void cannotChangeToDatabaseThatDoesNotExist() throws SQLException {
 		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
 			SQLException exception = assertThrows(SQLException.class, () -> statement.executeUpdate("USE DATABASE \"a_db_that_does_not_exist\";"));
 			assertTrue(exception.getMessage().contains("Database 'a_db_that_does_not_exist' does not exist or not authorized."));
-		}
-	}
-
-	@Tag(TestTag.CORE)
-	@Test
-	void cannotChangeToDatabaseThatDoesNotExistForCore() throws SQLException {
-		try (Connection connection = createConnection(); Statement statement = connection.createStatement()) {
-			// this test will start failing when the backend will fix their issue, just add the Tag(TestTag.CORE) annotation to the method cannotChangeToDatabaseThatDoesNotExist
-			statement.executeUpdate("USE DATABASE \"a_db_that_does_not_exist\";");
 		}
 	}
 
