@@ -1,7 +1,6 @@
 package com.firebolt.jdbc.client.query;
 
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
-import com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementType;
 import java.util.HashMap;
@@ -29,9 +28,6 @@ public class FireboltCoreQueryParameterProvider extends AbstractQueryParameterPr
         addQueryParameterIfNeeded(params, statementInfoWrapper.getPreparedStatementParameters());
         addQueryTimeoutIfNeeded(params, queryTimeout);
         addServerAsyncIfNeeded(params, isServerAsync);
-
-        // once this will be enabled by default on core we can remove it. https://packboard.atlassian.net/browse/FIR-46389
-        params.put(FireboltQueryParameterKey.ENABLE_JSON_ERROR_OUTPUT_FORMAT.getKey(), "1");
 
         return params;
     }

@@ -31,11 +31,10 @@ class FireboltCoreQueryParameterProviderTest extends AbstractQueryParameterProvi
 
         Map<String, String> queryParams = fireboltCoreQueryParameterProvider.getQueryParams(mockFireboltProperties, mockStatementInfoWrapper, NO_QUERY_TIMEOUT, IS_SERVER_ASYNC);
 
-        assertEquals(5, queryParams.size());
+        assertEquals(4, queryParams.size());
 
         assertEquals(STATEMENT_WRAPPER_LABEL, queryParams.get(FireboltQueryParameterKey.QUERY_LABEL.getKey()));
         assertEquals("1", queryParams.get(FireboltQueryParameterKey.COMPRESS.getKey()));
-        assertEquals("1", queryParams.get(FireboltQueryParameterKey.ENABLE_JSON_ERROR_OUTPUT_FORMAT.getKey()));
         assertEquals("true", queryParams.get(FireboltQueryParameterKey.ASYNC.getKey()));
         assertEquals("value1", queryParams.get("key1"));
     }
@@ -51,10 +50,9 @@ class FireboltCoreQueryParameterProviderTest extends AbstractQueryParameterProvi
 
         Map<String, String> queryParams = fireboltCoreQueryParameterProvider.getQueryParams(mockFireboltProperties, mockStatementInfoWrapper, QUERY_TIMEOUT, IS_NOT_SERVER_ASYNC);
 
-        assertEquals(8, queryParams.size());
+        assertEquals(7, queryParams.size());
         assertEquals(STATEMENT_WRAPPER_LABEL, queryParams.get(FireboltQueryParameterKey.QUERY_LABEL.getKey()));
         assertEquals("0", queryParams.get(FireboltQueryParameterKey.COMPRESS.getKey()));
-        assertEquals("1", queryParams.get(FireboltQueryParameterKey.ENABLE_JSON_ERROR_OUTPUT_FORMAT.getKey()));
         assertEquals(DATABASE, queryParams.get(FireboltQueryParameterKey.DATABASE.getKey()));
         assertEquals(String.valueOf(QUERY_TIMEOUT), queryParams.get(FireboltQueryParameterKey.MAX_EXECUTION_TIME.getKey()));
         assertEquals(FireboltCoreQueryParameterProvider.TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT, queryParams.get(FireboltQueryParameterKey.OUTPUT_FORMAT.getKey()));
@@ -73,10 +71,9 @@ class FireboltCoreQueryParameterProviderTest extends AbstractQueryParameterProvi
 
         Map<String, String> queryParams = fireboltCoreQueryParameterProvider.getQueryParams(mockFireboltProperties, mockStatementInfoWrapper, NO_QUERY_TIMEOUT, IS_NOT_SERVER_ASYNC);
 
-        assertEquals(5, queryParams.size());
+        assertEquals(4, queryParams.size());
         assertEquals(SESSION_PROPERTY_QUERY_LABEL, queryParams.get(FireboltQueryParameterKey.QUERY_LABEL.getKey()));
         assertEquals("0", queryParams.get(FireboltQueryParameterKey.COMPRESS.getKey()));
-        assertEquals("1", queryParams.get(FireboltQueryParameterKey.ENABLE_JSON_ERROR_OUTPUT_FORMAT.getKey()));
         assertEquals(FireboltCoreQueryParameterProvider.TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT, queryParams.get(FireboltQueryParameterKey.OUTPUT_FORMAT.getKey()));
         assertEquals("value1", queryParams.get("key1"));
 
