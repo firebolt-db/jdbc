@@ -102,6 +102,8 @@ class ConnectionTest extends IntegrationTest {
             assertTrue(resultSet.next());
             assertEquals("1", resultSet.getString(1));
             assertFalse(resultSet.next());
+
+            assertTrue(fireboltConnection.isValid((int) TimeUnit.MILLISECONDS.toMillis(500)));
         }
     }
 
@@ -348,6 +350,8 @@ class ConnectionTest extends IntegrationTest {
             ResultSet resultSet = statement.executeQuery("SELECT 1");
             assertTrue(resultSet.next());
             assertEquals(1, resultSet.getInt(1));
+
+            assertTrue(connection.isValid((int)TimeUnit.MILLISECONDS.toMillis(500)));
         }
     }
 
