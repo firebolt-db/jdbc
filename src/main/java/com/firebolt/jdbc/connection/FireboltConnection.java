@@ -427,8 +427,9 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 			throws SQLException {
 		HashMap<String, String> runtimeProperties = new HashMap<>(fireboltProperties.getRuntimeAdditionalProperties());
 		if (isInternalRequest) {
-			runtimeProperties.put("auto_start_stop_control", "ignore");
+			prepareInternalRequestValidationConnection(runtimeProperties);
 		}
+
 		var propertiesBuilder = fireboltProperties.toBuilder().runtimeAdditionalProperties(runtimeProperties);
 		if (getSessionProperties().isValidateOnSystemEngine()) {
 			propertiesBuilder.compress(false).engine(null).systemEngine(true);
@@ -446,6 +447,10 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 				throw e;
 			}
 		}
+	}
+
+	protected void prepareInternalRequestValidationConnection(Map<String, String> runtimeProperties) {
+		runtimeProperties.put("auto_start_stop_control", "ignore");
 	}
 
 	private void validateConnectionIsNotClose() throws SQLException {
