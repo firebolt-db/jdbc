@@ -12,6 +12,7 @@ import java.net.URL;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import lombok.CustomLog;
@@ -130,6 +131,12 @@ public class FireboltCoreConnection extends FireboltConnection {
             throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. "+e.getMessage());
         }
     }
+
+    @Override
+    protected void prepareInternalRequestValidationConnection(Map<String, String> runtimeProperties) {
+        // do not add the auto_start_stop_control as for core this is not supported
+    }
+
 
     @Override
     protected FireboltAuthenticationClient createFireboltAuthenticationClient(OkHttpClient httpClient) {
