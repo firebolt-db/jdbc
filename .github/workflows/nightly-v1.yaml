@@ -21,6 +21,8 @@ jobs:
     with:
       os_name: ${{ matrix.os }}
       java_version: ${{ matrix.java }}
+      sendSlackNotifications: true
     secrets:
       FIREBOLT_STG_USERNAME: ${{ secrets.FIREBOLT_STG_USERNAME }}
       FIREBOLT_STG_PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

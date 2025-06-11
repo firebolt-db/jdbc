@@ -91,4 +91,5 @@ jobs:
       os_name: ubuntu-latest
       java_version: 11
       tag_version: ${{ matrix.image.tag }}
+      sendSlackNotifications: true
     secrets: inherit
