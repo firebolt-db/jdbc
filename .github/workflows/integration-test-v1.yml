@@ -20,6 +20,11 @@ on:
         required: false
         type: string
         default: 'ubuntu-latest'
+      sendSlackNotifications:
+        description: 'Send Slack notifications on failure'
+        required: false
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       database:
@@ -41,11 +46,18 @@ on:
         required: false
         type: string
         default: 'ubuntu-latest'
+      sendSlackNotifications:
+        description: 'Send Slack notifications on failure'
+        required: false
+        type: boolean
+        default: false
     secrets:
       FIREBOLT_STG_USERNAME:
         required: true
       FIREBOLT_STG_PASSWORD:
         required: true
+      SLACK_BOT_TOKEN:
+        required: false
 
 jobs:
   run-integration-tests:
@@ -116,3 +128,13 @@ jobs:
 
       - name: Run integration tests
         run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Dapi="api.staging.firebolt.io" -Dpassword="${{ secrets.FIREBOLT_STG_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_STG_USERNAME }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v1" -Dv1GenerateSeriesMaxSize="${{ vars.V1_GENERATE_SERIES_MAX_SIZE }}"
+
+      - name: Slack Notify of failure
+        if: failure() && inputs.sendSlackNotifications
+        uses: firebolt-db/action-slack-nightly-notify@v1
+        with:
+          os: ${{ inputs.os_name }}
+          programming-language: Java
+          language-version: ${{ inputs.java_version }}
+          notifications-channel: 'ecosystem-ci-notifications'
+          slack-api-key: ${{ secrets.SLACK_BOT_TOKEN }}

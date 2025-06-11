@@ -17,6 +17,11 @@ on:
         required: false
         type: string
         default: 'ubuntu-latest'
+      sendSlackNotifications:
+        description: 'Send Slack notifications on failure'
+        required: false
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       tag_version:
@@ -33,6 +38,14 @@ on:
         required: false
         type: string
         default: 'ubuntu-latest'
+      sendSlackNotifications:
+        description: 'Send Slack notifications on failure'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      SLACK_BOT_TOKEN:
+        required: false
 env:
   DEFAULT_IMAGE_TAG: ${{ vars.DEFAULT_CORE_IMAGE_TAG }}
 jobs:
@@ -141,3 +154,13 @@ jobs:
         if: always()
         run: |
           docker compose -f "$DOCKER_COMPOSE_FILE" down
+
+      - name: Slack Notify of failure
+        if: failure() && inputs.sendSlackNotifications
+        uses: firebolt-db/action-slack-nightly-notify@v1
+        with:
+          os: ${{ inputs.os_name }}
+          programming-language: Java
+          language-version: ${{ inputs.java_version }}
+          notifications-channel: 'ecosystem-ci-notifications'
+          slack-api-key: ${{ secrets.SLACK_BOT_TOKEN }}
