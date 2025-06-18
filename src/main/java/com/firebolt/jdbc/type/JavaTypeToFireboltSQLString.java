@@ -79,7 +79,7 @@ public enum JavaTypeToFireboltSQLString {
 			Map.entry(JDBCType.DATE, List.of(Date.class, LocalDate.class)),
 			Map.entry(JDBCType.TIME, List.of(Time.class)),
 			Map.entry(JDBCType.TIMESTAMP, List.of(Timestamp.class, LocalDateTime.class)),
-			Map.entry(JDBCType.TIMESTAMP_WITH_TIMEZONE, List.of(Timestamp.class)),
+			Map.entry(JDBCType.TIMESTAMP_WITH_TIMEZONE, List.of(Timestamp.class, OffsetDateTime.class)),
 			//DISTINCT        Object type of underlying type
 			Map.entry(JDBCType.CLOB, List.of(Clob.class)),
 			Map.entry(JDBCType.BLOB, List.of(Blob.class)),
