@@ -364,7 +364,7 @@ class FireboltDatabaseMetadataTest {
 
 	@Test
 	void shouldGetDriverVersion() throws SQLException {
-		assertTrue(fireboltDatabaseMetadata.getDriverVersion().matches("3\\.\\d+\\.\\d+"));
+		assertTrue(fireboltDatabaseMetadata.getDriverVersion().matches("3\\.\\d+\\.\\d+-tableau"));
 	}
 
 	@Test

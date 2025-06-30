@@ -20,7 +20,7 @@ class VersionUtilTest {
 
 	@Test
 	void shouldGetProjectVersion() {
-		assertTrue(VersionUtil.getDriverVersion().matches("3\\.\\d+\\.\\d+"));
+		assertTrue(VersionUtil.getDriverVersion().matches("3\\.\\d+\\.\\d+-tableau"));
 	}
 
 	@Test
