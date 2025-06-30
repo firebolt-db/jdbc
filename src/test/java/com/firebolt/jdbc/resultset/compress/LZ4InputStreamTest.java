@@ -29,11 +29,12 @@ class LZ4InputStreamTest {
 
 	@Test
 	void shouldReadyAllTextByteByByte() throws IOException {
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		LZ4OutputStream outputStream = new LZ4OutputStream(byteArrayOutputStream, 1);
-		outputStream.write(EXPECTED_TEXT.getBytes());
-		outputStream.flush();
-		byte[] result = byteArrayOutputStream.toByteArray();
+
+		byte[] b = convertInputStreamToBytes(getInputStreamWithDates());
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		baos.write(b);
+		baos.flush();
+		byte[] result = baos.toByteArray();
 		LZ4InputStream is = new LZ4InputStream(new ByteArrayInputStream(result));
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		int read = is.read();
@@ -42,7 +43,7 @@ class LZ4InputStreamTest {
 			read = is.read();
 		}
 		out.flush();
-		assertEquals(EXPECTED_TEXT, out.toString());
+		assertEquals(EXPECTED_TEXT + '\n', out.toString());
 	}
 
 	@Test
