@@ -67,7 +67,7 @@ dependencies {
     implementation "com.squareup.okhttp3:okhttp:${okHttpVersion}"
     implementation 'net.jodah:expiringmap:0.5.11'
     implementation 'org.apache.commons:commons-text:1.13.1'
-    implementation 'org.apache.lucene:lucene-core:10.2.2'
+    implementation 'org.apache.lucene:lucene-core:9.12.2'
     implementation 'commons-validator:commons-validator:1.9.0'
 
     implementation fileTree(dir: 'libs', includes: ['*.jar'])
