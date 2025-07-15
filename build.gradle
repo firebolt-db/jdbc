@@ -68,7 +68,7 @@ dependencies {
     implementation 'net.jodah:expiringmap:0.5.11'
     implementation 'org.apache.commons:commons-text:1.13.1'
     implementation 'org.lz4:lz4-java:1.8.0'
-    implementation 'commons-validator:commons-validator:1.9.0'
+    implementation 'commons-validator:commons-validator:1.10.0'
 
     implementation fileTree(dir: 'libs', includes: ['*.jar'])
 
