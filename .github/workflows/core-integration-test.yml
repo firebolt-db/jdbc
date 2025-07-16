@@ -124,7 +124,7 @@ jobs:
 
       - name: Start service container
         run: |
-          WHO="$(docker run --rm -ti --entrypoint whoami ghcr.io/firebolt-db/firebolt-core:${{ steps.set-tag.outputs.tag }})"
+          WHO="$(docker run --rm --entrypoint whoami ghcr.io/firebolt-db/firebolt-core:${{ steps.set-tag.outputs.tag }})"
           if [ "$WHO" = "firebolt-data" ]; then
             # make sure that a non-root-owned volume exists
             mkdir firebolt-core-data
