@@ -18,8 +18,6 @@ import java.util.Properties;
 import lombok.CustomLog;
 import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.validator.routines.DomainValidator;
-import org.apache.commons.validator.routines.InetAddressValidator;
 
 @CustomLog
 public class FireboltCoreConnection extends FireboltConnection {
@@ -103,6 +101,19 @@ public class FireboltCoreConnection extends FireboltConnection {
                 throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You did not pass in the protocol or the host");
             }
 
+            // Validate hostname length (RFC limit is 253 characters for FQDN)
+            if (host.length() > 253) {
+                throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. The hostname is too long (maximum 253 characters).");
+            }
+
+            // Validate each label (part between dots) is not longer than 63 characters
+            String[] labels = host.split("\\.");
+            for (String label : labels) {
+                if (label.length() > 63) {
+                    throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. Each part of the hostname between dots must be 63 characters or less.");
+                }
+            }
+
             // Validate port range
             if (port == -1) {
                 throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. You must specify the port.");
@@ -111,22 +122,6 @@ public class FireboltCoreConnection extends FireboltConnection {
                 throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. The port value should be a positive integer between 1 and 65535. You have the port as:" + port);
             }
 
-            // Validate hostname
-            if (!"localhost".equalsIgnoreCase(host)) {
-                // Remove IPv6 brackets if present
-                String hostToValidate = host;
-                boolean isIPv6 = host.startsWith("[") && host.endsWith("]");
-                if (isIPv6) {
-                    hostToValidate = host.substring(1, host.length() - 1);
-                }
-
-                InetAddressValidator inetAddressValidator = InetAddressValidator.getInstance();
-                DomainValidator domainValidator = DomainValidator.getInstance(false);
-
-                if (!inetAddressValidator.isValid(hostToValidate) && !domainValidator.isValid(hostToValidate)) {
-                    throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. The host is not valid. It must be a valid IPv4, IPv6 or domain name or even localhost");
-                }
-            }
         } catch (MalformedURLException e) {
             throw new SQLException("Invalid URL format. URL must be in the form: <protocol>://<host>:<port>. "+e.getMessage());
         }
