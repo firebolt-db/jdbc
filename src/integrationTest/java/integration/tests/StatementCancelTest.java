@@ -58,6 +58,7 @@ class StatementCancelTest extends IntegrationTest {
 			long now = System.currentTimeMillis();
 			fillStatement.execute("insert into ex_lineitem ( l_orderkey ) SELECT * FROM GENERATE_SERIES(1, 100000000)");
 			long insertTime = System.currentTimeMillis() - now;
+			log.info("Insert time took: {} millis", insertTime);
 
 			try (Statement insertStatement = connection.createStatement()) {
 
@@ -78,7 +79,9 @@ class StatementCancelTest extends IntegrationTest {
 				while (!((FireboltStatement)insertStatement).isStatementRunning()) {
 					Thread.sleep(100);
 				}
-				Thread.sleep(insertTime / 10); // wait 10% of time that was spent to fill data to give chance to the insert statement to copy data
+				Thread.sleep(insertTime / 5); // wait 20% of time that was spent to fill data to give chance to the insert statement to copy data
+
+				log.info("Cancelling the statement");
 				insertStatement.cancel(); // now cancel the statement
 			}
 			verifyThatNoMoreRecordsAreAdded(connection, "first_statement_cancel_test", insertTime);
