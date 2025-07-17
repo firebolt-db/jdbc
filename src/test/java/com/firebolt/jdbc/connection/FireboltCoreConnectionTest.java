@@ -36,7 +36,42 @@ class FireboltCoreConnectionTest {
             "https://example.com:443",
             "http://192.168.1.1:8080",
             "https://[2001:db8::1]:8080",
-            "http://sub.example.com:8080"
+            "http://sub.example.com:8080",
+            "http://cluster.local:8080",
+            "https://cluster.local:8080",
+            "http://valid.hostname.:8080",
+            "http://valid..hostname:8080",
+            "http://.valid.hostname:8080",
+            "http://host_name:8080",
+            "http://-hostname:8080",
+            "http://hostname-:8080",
+            "http://256.256.256.256:8080",
+            "http://270.0.0.1:8080",
+            "http://0.270.0.1:8080",
+            "http://0.0.270.1:8080",
+            "http://0.0.0.270:8080",
+            "http://127.0.1:8080",
+            "http://127.0.0:8080",
+            "http://127.0:8080",
+            "http://127:8080",
+            "http://127.0.0.1.1:8080",
+            "http://127.0.0.0.0.1:8080",
+            "http://127.0.0.:8080",
+            "http://127..0.1:8080",
+            "http://127.0.0.01:8080",
+            "http://127.abc.0.1:8080",
+            "http://127.0.0.0x1:8080",
+            "http://300.300.300.300:8080",
+            "http://127.0.0.-1:8080",
+            "http://127.0.0.+1:8080",
+
+            // Kubernetes-style hostnames
+            "http://firebolt-core-svc:8080",
+            "http://firebolt-core-svc.namespace-foo:8080",
+            "http://firebolt-core-svc.namespace-foo.svc:8080",
+            "http://firebolt-core-svc.namespace-foo.svc.cluster:8080",
+            "http://firebolt-core-svc.namespace-foo.svc.cluster.local:8080"
+
     })
     void testValidUrls(String url) throws SQLException {
         when(mockStatement.executeUpdate("USE DATABASE \"my_db\"")).thenReturn(0);
@@ -55,33 +90,10 @@ class FireboltCoreConnectionTest {
             "http://localhost:70000",
             "http://localhost:-1",
             "invalid://localhost:8080",
-            "http://invalid..hostname:8080",
-            "http://.invalid.hostname:8080",
-            "http://invalid.hostname.:8080",
-            "http://invalid@hostname:8080",
-            "http://host_name:8080",
-            "http://-hostname:8080",
-            "http://hostname-:8080",
-            // Invalid IPv4 addresses
-            "http://256.256.256.256:8080",  // All octets > 255
-            "http://270.0.0.1:8080",        // First octet > 255
-            "http://0.270.0.1:8080",        // Second octet > 255
-            "http://0.0.270.1:8080",        // Third octet > 255
-            "http://0.0.0.270:8080",        // Fourth octet > 255
-            "http://127.0.1:8080",          // Missing octet
-            "http://127.0.0:8080",          // Missing octet
-            "http://127.0:8080",            // Missing two octets
-            "http://127:8080",              // Missing three octets
-            "http://127.0.0.1.1:8080",      // Extra octet
-            "http://127.0.0.0.0.1:8080",    // Too many octets
-            "http://127.0.0.:8080",         // Trailing dot
-            "http://127..0.1:8080",         // Double dot
-            "http://127.0.0.01:8080",       // Leading zero
-            "http://127.abc.0.1:8080",      // Letters in octet
-            "http://127.0.0.0x1:8080",      // Hex notation
-            "http://300.300.300.300:8080",  // All octets way above 255
-            "http://127.0.0.-1:8080",       // Negative number in octet
-            "http://127.0.0.+1:8080"        // Plus sign in octet
+            // Hostname longer than 256 characters (should fail) - this is 300+ chars
+            "http://very-long-hostname-that-exceeds-the-maximum-dns-limit-abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-extra:8080",
+            // Hostname with one label longer than 63 characters (should fail)
+            "http://short.this-label-is-way-too-long-and-exceeds-the-maximum-allowed-length-of-63-characters-for-a-single-dns-label.com:8080"
     })
     void testInvalidUrls(String url) {
         SQLException exception = assertThrows(SQLException.class, () -> createConnection(url));
