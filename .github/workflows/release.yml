@@ -30,11 +30,11 @@ jobs:
         fetch-depth: 0
         token: ${{ secrets.RELEASE_PAT }}
 
-    - name: Bump version in gradle.properties
-      run: |
-        newVersion=$(echo $newVersion | sed 's/^v//')
-        sed -i.bak "s/^version=.*/version=$newVersion/" gradle.properties
-        rm gradle.properties.bak
+#    - name: Bump version in gradle.properties
+#      run: |
+#        newVersion=$(echo $newVersion | sed 's/^v//')
+#        sed -i.bak "s/^version=.*/version=$newVersion/" gradle.properties
+#        rm gradle.properties.bak
 
 #    - name: Setup git config
 #      run: |
