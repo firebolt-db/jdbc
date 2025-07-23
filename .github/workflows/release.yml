@@ -93,3 +93,9 @@ jobs:
         MAVEN_REPO_PASSWORD: ${{ secrets.MAVEN_REPO_PASSWORD }}
         GRADLE_SIGNING_KEY: ${{ secrets.GRADLE_SIGNING_KEY }}
         GRADLE_SIGNING_PASSWORD: ${{ secrets.GRADLE_SIGNING_PASSWORD }}
+
+    - name: Trigger manual package upload via API
+      run: ./gradlew manualUploadToMavenCentral
+      env:
+        MAVEN_REPO_USERNAME: ${{ secrets.MAVEN_REPO_USERNAME }}
+        MAVEN_REPO_PASSWORD: ${{ secrets.MAVEN_REPO_PASSWORD }}
