@@ -36,25 +36,25 @@ jobs:
         sed -i.bak "s/^version=.*/version=$newVersion/" gradle.properties
         rm gradle.properties.bak
 
-    - name: Setup git config
-      run: |
-        git config user.name "GitHub Actions Bot"
-        git config user.email "<>"
+#    - name: Setup git config
+#      run: |
+#        git config user.name "GitHub Actions Bot"
+#        git config user.email "<>"
 
-    - name: Commit version bump
-      run: |
-        git add gradle.properties
-        git commit -m "chore: Bump version to $newVersion"
+#    - name: Commit version bump
+#      run: |
+#        git add gradle.properties
+#        git commit -m "chore: Bump version to $newVersion"
 
-    - name: Tag version
-      run: |
-        git tag $newVersion
+#    - name: Tag version
+#      run: |
+#        git tag $newVersion
 
-    - name: Push changes
-      run: |
-        git push origin master
+#    - name: Push changes
+#      run: |
+#        git push origin master
         # Push tag
-        git push origin $newVersion
+#        git push origin $newVersion
 
   build:
     needs: bump-version
