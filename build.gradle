@@ -322,6 +322,41 @@ publishing {
     }
 }
 
+// https://central.sonatype.org/publish/publish-portal-ossrh-staging-api/#ensuring-deployment-visibility-in-the-central-publisher-portal
+task manualUploadToMavenCentral {
+    doLast {
+        def mavenUsername = System.getenv("MAVEN_REPO_USERNAME")
+        def mavenPassword = System.getenv("MAVEN_REPO_PASSWORD")
+        if (!mavenUsername || !mavenPassword) {
+            throw new GradleException("Missing Maven credentials")
+        }
+
+        def credentials = "${mavenUsername}:${mavenPassword}".bytes.encodeBase64().toString()
+
+        def mavenHost = "https://ossrh-staging-api.central.sonatype.com"
+        def namespace = "io.firebolt"
+        def apiUrl = "${mavenHost}/manual/upload/defaultRepository/${namespace}"
+
+        println "Calling API: $apiUrl"
+
+        def process = ["curl", "-X", "POST", apiUrl,
+                       "-H", "Authorization: Bearer ${credentials}",
+                       "-H", "Content-Type: application/json",
+                       "-d", "{}",
+                       "--fail-with-body"].execute()
+
+        def output = new StringBuffer()
+        def error = new StringBuffer()
+        process.waitForProcessOutput(output, error)
+
+        if (process.exitValue() != 0) {
+            throw new GradleException("API call failed: $output")
+        }
+
+        println "API call succeeded: $output"
+    }
+}
+
 jar {
     manifest {
         attributes(
