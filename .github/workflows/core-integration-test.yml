@@ -53,18 +53,19 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Setup Firebolt Core
-        id: setup-core
-        uses: firebolt-db/action-setup-core@fix-java-keystore
-        with:
-          tag_version: ${{ inputs.tag_version || vars.DEFAULT_CORE_IMAGE_TAG }}
-
       - name: Prepare java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: ${{ inputs.java_version }}
           cache: 'gradle'
+
+      - name: Setup Firebolt Core
+        id: setup-core
+        uses: firebolt-db/action-setup-core@fix-java-keystore
+        with:
+          tag_version: ${{ inputs.tag_version || vars.DEFAULT_CORE_IMAGE_TAG }}
+
       - name: Grant execute permission (Unix)
         if: runner.os != 'Windows'
         run: chmod +x gradlew
