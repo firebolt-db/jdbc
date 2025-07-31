@@ -104,9 +104,9 @@ public class UsageTrackerUtil {
 		}
 
 		String jdbcInfo = "JDBC/" + VersionUtil.getDriverVersion() + " (Java " + javaVersion + "; " + os + " "
-				+ systemVersion + ";";
+				+ systemVersion + "; ";
 		if (connectionInfo != null && !connectionInfo.trim().isEmpty()) {
-			jdbcInfo += "; " + connectionInfo;
+			jdbcInfo += connectionInfo;
 		}
 		jdbcInfo += ")";
 
