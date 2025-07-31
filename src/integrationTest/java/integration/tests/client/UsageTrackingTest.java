@@ -36,8 +36,7 @@ public class UsageTrackingTest extends MockWebServerAwareIntegrationTest {
 			// connection is not cached so there should be only connId set
 			assertTrue(userAgentHeader.contains("connId"));
 			assertFalse(userAgentHeader.contains("cachedConnId"));
-
-			firstConnectionId = userAgentHeader.split("connId:")[1];
+			firstConnectionId = userAgentHeader.split("connId:")[1].split("[;)]")[0];
 			assertEquals(12, firstConnectionId.length());
 		}
 
