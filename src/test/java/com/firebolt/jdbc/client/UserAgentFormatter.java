@@ -15,8 +15,10 @@ public class UserAgentFormatter {
 
     public static String userAgent(String format, String driverVersion, String javaVersion, String osName, String osVersion, Optional<String> connectionInfo) {
         // Mac OS is renamed to Darwin in the user agent string
-        String userAgentString =  String.format(format, driverVersion, javaVersion, osName, osVersion).replace("Mac OS X", "Darwin");
-        return connectionInfo.isEmpty() ? userAgentString : userAgentString + connectionInfo.get();
+        String connectionInfoStr = connectionInfo.map(info -> info.trim().isEmpty() ? "" : info).orElse("");
+        String userAgentString = String.format(format, driverVersion, javaVersion, osName, osVersion, connectionInfoStr)
+                .replace("Mac OS X", "Darwin");
+        return userAgentString;
     }
 
     public static String osName() {
