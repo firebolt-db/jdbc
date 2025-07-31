@@ -54,14 +54,16 @@ public abstract class FireboltClient implements CacheListener {
 	private static final String HEADER_PROTOCOL_VERSION = "Firebolt-Protocol-Version";
 	private static final Pattern plainErrorPattern = Pattern.compile("Line (\\d+), Column (\\d+): (.*)$", Pattern.MULTILINE);
 	private final OkHttpClient httpClient;
-	private final String headerUserAgentValue;
+	private String headerUserAgentValue;
 	protected final FireboltConnection connection;
+	private final String customDrivers;
+	private final String customClients;
 
 	protected FireboltClient(OkHttpClient httpClient, FireboltConnection connection, String customDrivers, String customClients) {
 		this.httpClient = httpClient;
 		this.connection = connection;
-		this.headerUserAgentValue = UsageTrackerUtil.getUserAgentString(customDrivers != null ? customDrivers : "",
-				customClients != null ? customClients : "", connection.getConnectionUserAgentHeader().orElse(null));
+		this.customDrivers = customDrivers;
+		this.customClients = customClients;
 		connection.register(this);
 	}
 
@@ -247,6 +249,10 @@ public abstract class FireboltClient implements CacheListener {
 
 	private List<Entry<String, String>> createHeaders(String accessToken) {
 		List<Entry<String, String>> headers = new ArrayList<>();
+		if (headerUserAgentValue == null) {
+			headerUserAgentValue = UsageTrackerUtil.getUserAgentString(customDrivers != null ? customDrivers : "",
+					customClients != null ? customClients : "", connection.getConnectionUserAgentHeader().orElse(null));
+		}
 		headers.add(Map.entry(HEADER_USER_AGENT, headerUserAgentValue));
 		ofNullable(connection.getProtocolVersion()).ifPresent(version -> headers.add(Map.entry(HEADER_PROTOCOL_VERSION, version)));
 		ofNullable(accessToken).ifPresent(token -> headers.add(Map.entry(HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken)));
