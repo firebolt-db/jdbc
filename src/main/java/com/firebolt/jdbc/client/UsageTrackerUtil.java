@@ -110,6 +110,7 @@ public class UsageTrackerUtil {
 		}
 		jdbcInfo += ")";
 
+		// [Clients/Versions] JDBC/<driverVersion> (Java [OSInfo] [<connectionInfo>]) [Drivers/Versions]
 		String result = mapToString(detectedClients) + " " + jdbcInfo + " " + mapToString(detectedDrivers);
 		return result.trim();
 	}
