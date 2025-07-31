@@ -55,12 +55,8 @@ public class UsageTrackingTest extends MockWebServerAwareIntegrationTest {
 			assertTrue(userAgentHeader.contains("connId"));
 			assertTrue(userAgentHeader.contains("cachedConnId:" + firstConnectionId));
 
-			// get the second connection id
-			// split the string based on cacheConnId and get the first part
-			String userAgentHeaderWithoutCachedConnectionId = userAgentHeader.split(";cachedConnId")[0];
-
 			// the split it based on connId: and get the second part
-			String secondConnectionId = userAgentHeaderWithoutCachedConnectionId.split("connId:")[1];
+			String secondConnectionId = userAgentHeader.split("connId:")[1].split("[;)]")[0];
 			assertEquals(12, secondConnectionId.length());
 
 			// each connection should get their own ids
