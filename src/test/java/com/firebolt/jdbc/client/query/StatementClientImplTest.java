@@ -120,7 +120,7 @@ class StatementClientImplTest {
 		String actualQuery = getActualRequestString(actualRequest);
 		Map<String, String> expectedHeaders = new LinkedHashMap<>();
 		expectedHeaders.put("Authorization", "Bearer token");
-		expectedHeaders.put("User-Agent", userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; %s) ConnA/1.0.9", Optional.of("connectionInfo"))); // connection info now appears within the brackets
+		expectedHeaders.put("User-Agent", userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; ) ConnA/1.0.9"));
 		assertEquals(expectedHeaders, extractHeadersMap(actualRequest));
 		assertSqlStatement("show databases;", actualQuery);
 		return Map.entry(statementInfoWrapper.getLabel(), actualRequest.url().toString());
