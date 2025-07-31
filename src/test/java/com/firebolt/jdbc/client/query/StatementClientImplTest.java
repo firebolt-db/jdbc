@@ -144,7 +144,8 @@ class StatementClientImplTest {
 		String actualQuery = getActualRequestString(actualRequest);
 		Map<String, String> expectedHeaders = new LinkedHashMap<>();
 		expectedHeaders.put("Authorization", "Bearer token");
-		expectedHeaders.put("User-Agent", userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; ) ConnA/1.0.9", Optional.of(";connectionInfo"))); // there is an additianal ; in front of the actual text from connection
+		expectedHeaders.put("User-Agent",
+				userAgent("ConnB/2.0.9 JDBC/%s (Java %s; %s %s; %s) ConnA/1.0.9", Optional.of("connectionInfo")));
 		assertEquals(expectedHeaders, extractHeadersMap(actualRequest));
 		assertSqlStatement("show databases;", actualQuery);
 	}

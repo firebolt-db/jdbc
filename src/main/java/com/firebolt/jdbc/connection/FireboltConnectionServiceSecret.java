@@ -198,7 +198,8 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
 
         // if the current connectionId is not the same with connection cache, it means that the connection was cached
         if (!connectionId.equals(connectionCache.getConnectionId())) {
-            additionalUserAgentHeaderValue.append(";cachedConnId:").append(connectionCache.getConnectionId()).append("-").append(connectionCache.getCacheSource());
+            additionalUserAgentHeaderValue.append("; cachedConnId:").append(connectionCache.getConnectionId())
+                    .append("-").append(connectionCache.getCacheSource());
         }
 
         return Optional.of(additionalUserAgentHeaderValue.toString());
