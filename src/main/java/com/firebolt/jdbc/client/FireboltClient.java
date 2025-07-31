@@ -250,13 +250,17 @@ public abstract class FireboltClient implements CacheListener {
 	private List<Entry<String, String>> createHeaders(String accessToken) {
 		List<Entry<String, String>> headers = new ArrayList<>();
 		if (headerUserAgentValue == null) {
-			headerUserAgentValue = UsageTrackerUtil.getUserAgentString(customDrivers != null ? customDrivers : "",
-					customClients != null ? customClients : "", connection.getConnectionUserAgentHeader().orElse(null));
+			initialiseUserAgentHeader();
 		}
 		headers.add(Map.entry(HEADER_USER_AGENT, headerUserAgentValue));
 		ofNullable(connection.getProtocolVersion()).ifPresent(version -> headers.add(Map.entry(HEADER_PROTOCOL_VERSION, version)));
 		ofNullable(accessToken).ifPresent(token -> headers.add(Map.entry(HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken)));
 		return headers;
+	}
+
+	private void initialiseUserAgentHeader() {
+		headerUserAgentValue = UsageTrackerUtil.getUserAgentString(customDrivers != null ? customDrivers : "",
+				customClients != null ? customClients : "", connection.getConnectionUserAgentHeader().orElse(null));
 	}
 
 	private String getInternalErrorWithHeadersText(Response response) {
