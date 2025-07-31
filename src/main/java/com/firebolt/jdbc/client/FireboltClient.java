@@ -61,7 +61,7 @@ public abstract class FireboltClient implements CacheListener {
 		this.httpClient = httpClient;
 		this.connection = connection;
 		this.headerUserAgentValue = UsageTrackerUtil.getUserAgentString(customDrivers != null ? customDrivers : "",
-				customClients != null ? customClients : "");
+				customClients != null ? customClients : "", connection.getConnectionUserAgentHeader().orElse(null));
 		connection.register(this);
 	}
 
@@ -247,16 +247,10 @@ public abstract class FireboltClient implements CacheListener {
 
 	private List<Entry<String, String>> createHeaders(String accessToken) {
 		List<Entry<String, String>> headers = new ArrayList<>();
-		headers.add(Map.entry(HEADER_USER_AGENT, createUserAgentHeader()));
+		headers.add(Map.entry(HEADER_USER_AGENT, headerUserAgentValue));
 		ofNullable(connection.getProtocolVersion()).ifPresent(version -> headers.add(Map.entry(HEADER_PROTOCOL_VERSION, version)));
 		ofNullable(accessToken).ifPresent(token -> headers.add(Map.entry(HEADER_AUTHORIZATION, HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE + accessToken)));
 		return headers;
-	}
-
-	private String createUserAgentHeader() {
-		// add the user agent information from the connection
-		Optional<String> connectionUserAgentInfo = connection.getConnectionUserAgentHeader();
-		return connectionUserAgentInfo.isEmpty() ? headerUserAgentValue : new StringBuilder(headerUserAgentValue).append(";").append(connectionUserAgentInfo.get()).toString();
 	}
 
 	private String getInternalErrorWithHeadersText(Response response) {

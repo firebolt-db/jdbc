@@ -76,6 +76,16 @@ public class UsageTrackerUtil {
 	}
 
 	public static String getUserAgentString(String userDrivers, String userClients) {
+		return getUserAgentString(userDrivers, userClients, null);
+	}
+
+	public static String getUserAgentString(String userDrivers, String userClients, String connectionInfo) {
+		// Format User agent string as:
+		// <detectedClients> JDBC/<driverVersion> (Java <javaVersion>; <osName>
+		// <osVersion>; [<connectionInfo>]) <detectedDrivers>
+		// Example:
+		// Tableau/1.0.0 JDBC/1.2.3 (Java 11; Darwin 20.3.0; connId:2212;
+		// cachedConnId:1234-MEMORY)
 		Map<String, String> detectedDrivers = getClients(Thread.currentThread().getStackTrace(), DRIVER_MAP);
 		Map<String, String> detectedClients = getClients(Thread.currentThread().getStackTrace(), CLIENT_MAP);
 		detectedDrivers.putAll(extractNameToVersion(userDrivers));
@@ -93,8 +103,14 @@ public class UsageTrackerUtil {
 			os = "Linux";
 		}
 
-		String result = mapToString(detectedClients) + " JDBC/" + VersionUtil.getDriverVersion() + " (Java "
-				+ javaVersion + "; " + os + " " + systemVersion + "; )" + " " + mapToString(detectedDrivers);
+		String jdbcInfo = "JDBC/" + VersionUtil.getDriverVersion() + " (Java " + javaVersion + "; " + os + " "
+				+ systemVersion + ";";
+		if (connectionInfo != null && !connectionInfo.trim().isEmpty()) {
+			jdbcInfo += "; " + connectionInfo;
+		}
+		jdbcInfo += ")";
+
+		String result = mapToString(detectedClients) + " " + jdbcInfo + " " + mapToString(detectedDrivers);
 		return result.trim();
 	}
 }
