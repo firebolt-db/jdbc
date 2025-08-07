@@ -14,13 +14,19 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltEngineVersion2Service;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.statement.FireboltStatement;
+
+import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+
+import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +39,11 @@ import org.mockito.Mockito;
 
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.HOST;
 import static java.lang.String.format;
+import static java.sql.Connection.TRANSACTION_NONE;
+import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
+import static java.sql.Connection.TRANSACTION_READ_UNCOMMITTED;
+import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
+import static java.sql.Connection.TRANSACTION_SERIALIZABLE;
 import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -46,6 +57,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -443,6 +455,22 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         }
     }
 
+    @Override
+    @Test
+    void shouldGetRepeatableReadTransactionIsolation() throws SQLException {
+        connectionProperties.put("database", "db");
+        try (Connection fireboltConnection = createConnection(url, connectionProperties)) {
+            assertEquals(TRANSACTION_REPEATABLE_READ, fireboltConnection.getTransactionIsolation());
+            fireboltConnection.setTransactionIsolation(TRANSACTION_REPEATABLE_READ); // should work
+            assertEquals(TRANSACTION_REPEATABLE_READ, fireboltConnection.getTransactionIsolation());
+            for (int transactionIsolation : new int [] {TRANSACTION_NONE, TRANSACTION_READ_UNCOMMITTED, TRANSACTION_READ_COMMITTED, TRANSACTION_SERIALIZABLE}) {
+                assertThrows(SQLFeatureNotSupportedException.class, () -> fireboltConnection.setTransactionIsolation(transactionIsolation));
+            }
+            // despite the failed attempts to change transaction isolation to unsupported value it remains TRANSACTION_NONE
+            assertEquals(TRANSACTION_REPEATABLE_READ, fireboltConnection.getTransactionIsolation());
+        }
+    }
+
     private void enableCacheConnection() {
         connectionProperties.put("cache_connection", "true");
     }
@@ -454,5 +482,143 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
         return new FireboltConnectionServiceSecret(Pair.of(url, props), fireboltAuthenticationService, fireboltGatewayUrlService,
                 fireboltStatementService, fireboltEngineVersion2Service, mockConnectionIdGenerator, mockCacheService);
+    }
+
+    @Test
+    void shouldStartTransactionAndCommitWhenSwitchingToAutoCommit() throws SQLException {
+        try (FireboltConnection connection = createConnection(url, connectionProperties)) {
+            when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
+            
+            connection.setAutoCommit(false);
+            assertFalse(connection.getAutoCommit());
+
+            connection.createStatement().execute("SELECT 1");
+            
+            connection.setAutoCommit(true);
+            assertTrue(connection.getAutoCommit());
+
+            ArgumentCaptor<StatementInfoWrapper> statementCaptor = ArgumentCaptor.forClass(StatementInfoWrapper.class);
+
+            verify(fireboltStatementService, times(3))
+                    .execute(statementCaptor.capture(), any(), any());
+
+            List<StatementInfoWrapper> statement = statementCaptor.getAllValues();
+            assertEquals("BEGIN TRANSACTION", statement.get(0).getSql());
+            assertEquals("SELECT 1", statement.get(1).getSql());
+            assertEquals("COMMIT", statement.get(2).getSql());
+        }
+    }
+
+    @Test
+    void shouldThrowExceptionWhenCommittingOrRollbackWithAutoCommitEnabled() throws SQLException {
+        try (FireboltConnection connection = createConnection(url, connectionProperties)) {
+            assertTrue(connection.getAutoCommit());
+            
+            FireboltException commitException = assertThrows(FireboltException.class, connection::commit);
+            assertEquals("Cannot commit when auto-commit is enabled", commitException.getMessage());
+            
+            FireboltException rollbackException = assertThrows(FireboltException.class, connection::rollback);
+            assertEquals("Cannot rollback when auto-commit is enabled", rollbackException.getMessage());
+        }
+    }
+
+    @Test
+    void shouldThrowExceptionWhenCommittingOrRollbackWithoutActiveTransaction() throws SQLException {
+        try (FireboltConnection connection = createConnection(url, connectionProperties)) {
+            connection.setAutoCommit(false);
+            
+            FireboltException commitException = assertThrows(FireboltException.class, connection::commit);
+            assertEquals("No transaction is currently active", commitException.getMessage());
+            
+            FireboltException rollbackException = assertThrows(FireboltException.class, connection::rollback);
+            assertEquals("No transaction is currently active", rollbackException.getMessage());
+        }
+    }
+
+    @Test
+    void shouldCommitRollbackAndBeginTransactionSuccessfully() throws SQLException {
+        try (FireboltConnection connection = createConnection(url, connectionProperties)) {
+            when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
+            
+            connection.setAutoCommit(false);
+            
+            Statement statement1 = connection.createStatement();
+            statement1.execute("SELECT 1");
+            connection.commit();
+            
+            Statement statement2 = connection.createStatement();
+            statement2.execute("SELECT 2");
+            connection.rollback();
+
+            ArgumentCaptor<StatementInfoWrapper> statementCaptor = ArgumentCaptor.forClass(StatementInfoWrapper.class);
+
+            verify(fireboltStatementService, times(6))
+                    .execute(statementCaptor.capture(), any(), any());
+
+            List<StatementInfoWrapper> statement = statementCaptor.getAllValues();
+            assertEquals("BEGIN TRANSACTION", statement.get(0).getSql());
+            assertEquals("SELECT 1", statement.get(1).getSql());
+            assertEquals("COMMIT", statement.get(2).getSql());
+            assertEquals("BEGIN TRANSACTION", statement.get(3).getSql());
+            assertEquals("SELECT 2", statement.get(4).getSql());
+            assertEquals("ROLLBACK", statement.get(5).getSql());
+        }
+    }
+
+    @Test
+    void shouldHandleTransactionErrorsGracefully() throws SQLException {
+        try (FireboltConnection connection = createConnection(url, connectionProperties)) {
+            connection.setAutoCommit(false);
+            
+            doThrow(new SQLException("")).when(fireboltStatementService).execute(any(), any(), any());
+            
+            FireboltException exception = assertThrows(FireboltException.class,
+                    connection::ensureTransactionForQueryExecution);
+            assertEquals("Could not start transaction for query execution", exception.getMessage());
+        }
+    }
+
+    @Test
+    void shouldHandleCommitErrorsGracefully() throws SQLException {
+        try (FireboltConnection connection = createConnection(url, connectionProperties)) {
+            connection.setAutoCommit(false);
+            
+            connection.ensureTransactionForQueryExecution();
+            
+            doThrow(new SQLException("Commit failed")).when(fireboltStatementService).execute(any(), any(), any());
+            
+            FireboltException exception = assertThrows(FireboltException.class, connection::commit);
+            assertEquals("Could not commit the transaction", exception.getMessage());
+        }
+    }
+
+    @Test
+    void shouldHandleRollbackErrorsGracefully() throws SQLException {
+        try (FireboltConnection connection = createConnection(url, connectionProperties)) {
+            connection.setAutoCommit(false);
+            
+            connection.ensureTransactionForQueryExecution();
+            
+            doThrow(new SQLException("Rollback failed")).when(fireboltStatementService).execute(any(), any(), any());
+            
+            FireboltException exception = assertThrows(FireboltException.class, connection::rollback);
+            assertEquals("Could not rollback the transaction", exception.getMessage());
+        }
+    }
+
+    @Test
+    void shouldNotStartTransactionTwice() throws SQLException {
+        try (FireboltConnection connection = createConnection(url, connectionProperties)) {
+            when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
+            
+            connection.setAutoCommit(false);
+            
+            // Call ensureTransactionForQueryExecution twice
+            connection.ensureTransactionForQueryExecution();
+            connection.ensureTransactionForQueryExecution();
+            
+            // Verify statement service was called only once (BEGIN TRANSACTION)
+            verify(fireboltStatementService, times(1)).execute(any(), any(), any());
+        }
     }
 }

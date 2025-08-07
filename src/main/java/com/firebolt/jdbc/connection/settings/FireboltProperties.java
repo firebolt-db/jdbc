@@ -246,6 +246,17 @@ public class FireboltProperties {
 		return additionalProperties;
 	}
 
+	public void removeProperty(@NonNull String key) {
+		switch (key) {
+			case "database": database = null; break;
+			case "engine":
+				engine = null;
+				systemEngine = true;
+				break;
+			default: runtimeAdditionalProperties.remove(key);
+		}
+	}
+
 	public void addProperty(@NonNull String key, String value) {
 		// This a bad patch but there is nothing to do right now. We will refactor this class and make solution more generic
 		switch (key) {

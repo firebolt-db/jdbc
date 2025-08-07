@@ -13,13 +13,16 @@ import com.firebolt.jdbc.client.authentication.ServiceAccountAuthenticationReque
 import com.firebolt.jdbc.client.gateway.GatewayUrlResponse;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineVersion2Service;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.type.ParserVersion;
 import java.net.URL;
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -33,9 +36,12 @@ import org.apache.commons.lang3.tuple.Pair;
 @CustomLog
 public class FireboltConnectionServiceSecret extends FireboltConnection {
 
-    private static final String PROTOCOL_VERSION = "2.3";
+    private static final String PROTOCOL_VERSION = "2.4";
     private final FireboltGatewayUrlService fireboltGatewayUrlService;
     private FireboltEngineVersion2Service fireboltEngineVersion2Service;
+    private boolean autoCommit = true;
+    private boolean inTransaction = false;
+    private boolean executingTransactionCommand = false;
 
     private final CacheService cacheService;
 
@@ -94,6 +100,104 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
 
         if (!loginProperties.isSystemEngine()) {
             sessionProperties = getSessionPropertiesForNonSystemEngine(loginProperties.getEngine());
+        }
+    }
+
+    @Override
+    public boolean getAutoCommit() throws SQLException {
+        validateConnectionIsNotClose();
+        return autoCommit;
+    }
+
+    @Override
+    public void setAutoCommit(boolean autoCommit) throws SQLException {
+        validateConnectionIsNotClose();
+
+        if (autoCommit && inTransaction) {
+            commit();
+        }
+        this.autoCommit = autoCommit;
+    }
+
+    @Override
+    public int getTransactionIsolation() throws SQLException {
+        validateConnectionIsNotClose();
+        return Connection.TRANSACTION_REPEATABLE_READ;
+    }
+
+    @Override
+    public void setTransactionIsolation(int level) throws SQLException {
+        validateConnectionIsNotClose();
+        if (level != Connection.TRANSACTION_REPEATABLE_READ) {
+            throw new FireboltSQLFeatureNotSupportedException("Only TRANSACTION_REPEATABLE_READ isolation level is supported");
+        }
+    }
+
+    @Override
+    public void commit() throws SQLException {
+        validateConnectionIsNotClose();
+        if (autoCommit) {
+            throw new FireboltException("Cannot commit when auto-commit is enabled");
+        }
+        if (!inTransaction) {
+            throw new FireboltException("No transaction is currently active");
+        }
+        try {
+            executeTransactionCommand("COMMIT");
+            inTransaction = false;
+        } catch (SQLException ex) {
+            throw new FireboltException("Could not commit the transaction", ex);
+        }
+    }
+
+    @Override
+    public void rollback() throws SQLException {
+        validateConnectionIsNotClose();
+        if (autoCommit) {
+            throw new FireboltException("Cannot rollback when auto-commit is enabled");
+        }
+        if (!inTransaction) {
+            throw new FireboltException("No transaction is currently active");
+        }
+        try {
+            executeTransactionCommand("ROLLBACK");
+            inTransaction = false;
+        } catch (SQLException ex) {
+            throw new FireboltException("Could not rollback the transaction", ex);
+        }
+    }
+
+    /**
+     * Ensures a transaction is started if auto-commit is disabled and no transaction is active.
+     * Called automatically before query execution.
+     *
+     * @throws SQLException if there's an error starting the transaction
+     */
+    @Override
+    public void ensureTransactionForQueryExecution() throws SQLException {
+        validateConnectionIsNotClose();
+
+        if (executingTransactionCommand || autoCommit) {
+            return;
+        }
+
+        if (!inTransaction) {
+            try {
+                executeTransactionCommand("BEGIN TRANSACTION");
+                inTransaction = true;
+                log.debug("Auto-started transaction for query execution");
+            } catch (SQLException ex) {
+                throw new FireboltException("Could not start transaction for query execution", ex);
+            }
+        }
+    }
+
+    private void executeTransactionCommand(String sql) throws SQLException {
+        executingTransactionCommand = true;
+        try (Statement statement = createStatement()) {
+            statement.execute(sql);
+        } finally {
+            executingTransactionCommand = false;
         }
     }
 

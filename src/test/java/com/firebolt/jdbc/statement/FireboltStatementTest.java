@@ -57,6 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -128,6 +129,7 @@ class FireboltStatementTest {
         ResultSet rs = mock(ResultSet.class);
         FireboltConnection connection = mock(FireboltConnection.class);
         when(connection.getSessionProperties()).thenReturn(fireboltProperties);
+        doNothing().when(connection).ensureTransactionForQueryExecution();
         FireboltStatement fireboltStatement = new FireboltStatement(fireboltStatementService, fireboltProperties, connection);
 
         when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
