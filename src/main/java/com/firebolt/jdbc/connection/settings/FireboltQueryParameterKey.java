@@ -16,7 +16,9 @@ public enum FireboltQueryParameterKey {
 	ACCOUNT_ID("account_id"),
 	ASYNC("async"),
 	QUERY_PARAMETERS("query_parameters"),
-	MAX_EXECUTION_TIME("max_execution_time")
+	MAX_EXECUTION_TIME("max_execution_time"),
+	TRANSACTION_ID("transaction_id"),
+	TRANSACTION_SEQUENCE_ID("transaction_sequence_id")
 	;
 
 	private final String key;

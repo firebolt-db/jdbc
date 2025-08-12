@@ -78,6 +78,8 @@ public class FireboltProperties {
 	private final boolean mergePreparedStatementBatches;
 	private final boolean connectionCachingEnabled;
 	private final String preparedStatementParamStyle;
+	private String transactionId;
+	private String transactionSequenceId;
 
 	// firebolt core url
 	private final String url;
@@ -248,10 +250,11 @@ public class FireboltProperties {
 
 	public void removeProperty(@NonNull String key) {
 		switch (key) {
-			case "database": database = null; break;
-			case "engine":
-				engine = null;
-				systemEngine = true;
+			case "transaction_id":
+				transactionId = null;
+				break;
+			case "transaction_sequence_id":
+				transactionSequenceId = null;
 				break;
 			default: runtimeAdditionalProperties.remove(key);
 		}
@@ -270,6 +273,12 @@ public class FireboltProperties {
 					throw new IllegalStateException("Failed to execute command. Account parameter mismatch. Contact support");
 				}
 				this.accountId = value;
+				break;
+			case "transaction_id":
+				this.transactionId = value;
+				break;
+			case "transaction_sequence_id":
+				this.transactionSequenceId = value;
 				break;
 			default: runtimeAdditionalProperties.put(key, value);
 		}

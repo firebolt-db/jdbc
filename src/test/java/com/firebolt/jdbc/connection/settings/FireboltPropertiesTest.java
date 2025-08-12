@@ -229,4 +229,77 @@ class FireboltPropertiesTest {
 		return properties;
 	}
 
+	@Test
+	void shouldRemoveTransactionIdProperty() {
+		FireboltProperties props = new FireboltProperties(new Properties());
+		props.addProperty("transaction_id", "tx123");
+		
+		assertEquals("tx123", props.getTransactionId());
+		props.removeProperty("transaction_id");
+		assertNull(props.getTransactionId());
+	}
+
+	@Test
+	void shouldRemoveTransactionSequenceIdProperty() {
+		FireboltProperties props = new FireboltProperties(new Properties());
+		props.addProperty("transaction_sequence_id", "seq456");
+		
+		assertEquals("seq456", props.getTransactionSequenceId());
+		props.removeProperty("transaction_sequence_id");
+		assertNull(props.getTransactionSequenceId());
+	}
+
+	@Test
+	void shouldRemoveCustomPropertyFromRuntimeAdditionalProperties() {
+		FireboltProperties props = new FireboltProperties(new Properties());
+		props.addProperty("custom_prop", "custom_value");
+		
+		assertEquals(Map.of("custom_prop", "custom_value"), props.getAdditionalProperties());
+		
+		props.removeProperty("custom_prop");
+		
+		assertTrue(props.getAdditionalProperties().isEmpty());
+	}
+
+	@Test
+	void shouldRemoveMultipleCustomProperties() {
+		FireboltProperties props = new FireboltProperties(new Properties());
+		props.addProperty("prop1", "value1");
+		props.addProperty("prop2", "value2");
+		props.addProperty("prop3", "value3");
+		
+		assertEquals(Map.of("prop1", "value1", "prop2", "value2", "prop3", "value3"), props.getAdditionalProperties());
+		
+		props.removeProperty("prop2");
+		assertEquals(Map.of("prop1", "value1", "prop3", "value3"), props.getAdditionalProperties());
+		
+		props.removeProperty("prop1");
+		assertEquals(Map.of("prop3", "value3"), props.getAdditionalProperties());
+		
+		props.removeProperty("prop3");
+		assertTrue(props.getAdditionalProperties().isEmpty());
+	}
+
+	@Test
+	void shouldHandleRemoveNonExistentProperty() {
+		FireboltProperties props = new FireboltProperties(new Properties());
+		
+		// Should not throw exception when removing non-existent property
+		props.removeProperty("non_existent_property");
+		
+		// Properties should remain unchanged
+		assertTrue(props.getAdditionalProperties().isEmpty());
+		assertNull(props.getDatabase());
+		assertNull(props.getEngine());
+		assertNull(props.getTransactionId());
+		assertNull(props.getTransactionSequenceId());
+	}
+
+	@Test
+	void shouldThrowExceptionWhenRemovePropertyWithNullKey() {
+		FireboltProperties props = new FireboltProperties(new Properties());
+		
+		assertThrows(NullPointerException.class, () -> props.removeProperty(null));
+	}
+
 }

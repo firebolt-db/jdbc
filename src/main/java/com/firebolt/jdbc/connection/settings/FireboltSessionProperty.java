@@ -81,6 +81,10 @@ public enum FireboltSessionProperty {
 
 	PREPARED_STATEMENT_PARAM_STYLE("prepared_statement_param_style", "native", String.class,
 			"Prepared statement parameter style. Supported values: native, fb_numeric. Default is native.", FireboltProperties::getPreparedStatementParamStyle),
+	TRANSACTION_ID("transaction_id", null, String.class,
+			"transaction id", FireboltProperties::getTransactionId),
+	TRANSACTION_SEQUENCE_ID("transaction_sequence_id", null, String.class,
+			"transaction sequence id", FireboltProperties::getTransactionSequenceId),
 	// We keep all the deprecated properties to ensure backward compatibility - but
 	// they do not have any effect.
 	@Deprecated

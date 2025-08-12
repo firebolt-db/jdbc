@@ -24,6 +24,8 @@ public class FireboltCloudV2QueryParameterProvider extends AbstractQueryParamete
         addQueryParameterIfNeeded(params, statementInfoWrapper.getPreparedStatementParameters());
         addDatabaseIfNeeded(params, fireboltProperties.getDatabase());
         addServerAsyncIfNeeded(params, isServerAsync);
+        addTransactionIdIfNeeded(params, fireboltProperties.getTransactionId());
+        addTransactionSequenceIdIfNeeded(params, fireboltProperties.getTransactionSequenceId());
 
         boolean systemEngine = fireboltProperties.isSystemEngine();
         if (!systemEngine) {
