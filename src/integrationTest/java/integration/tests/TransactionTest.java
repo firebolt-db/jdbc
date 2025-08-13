@@ -37,38 +37,20 @@ class TransactionTest extends IntegrationTest {
 	}
 
 	@Test
-	void shouldRemoveTransactionIdOnCommit() throws SQLException {
+	void shouldNotStartTransactionIfAutoCommitIsTrue() throws SQLException {
 		try (Connection connection = createConnection();
 			 Statement statement = connection.createStatement()) {
-			statement.execute("BEGIN TRANSACTION;");
-			statement.execute("INSERT INTO transaction_test VALUES (1, 'test')");
-
-			checkRecordCountByIdInAnotherTransaction(1, 0, "Data should not be visible before commit");
-
-			Properties fireboltProperties = connection.getClientInfo();
-			assertNotNull(fireboltProperties.get("transaction_id"));
-			statement.execute("COMMIT;");
-
-			checkRecordCountByIdInAnotherTransaction(1, 1, "Data should be visible after commit");
-
-			fireboltProperties = connection.getClientInfo();
-			assertNull(fireboltProperties.get("transaction_id"));
-		}
-	}
-
-	@Test
-	void shouldRemoveTransactionIdOnRollback() throws SQLException {
-		try (Connection connection = createConnection();
-			 Statement statement = connection.createStatement()) {
+			connection.setAutoCommit(true); //no-op, but ensures auto-commit is true
 			statement.execute("BEGIN TRANSACTION;");
 			statement.execute("INSERT INTO transaction_test VALUES (2, 'test')");
 
-			checkRecordCountByIdInAnotherTransaction(2, 0, "Data should not be visible before commit");
+			checkRecordCountByIdInAnotherTransaction(2, 1, "Data should be visible because auto-commit is true");
 			Properties fireboltProperties = connection.getClientInfo();
-			assertNotNull(fireboltProperties.get("transaction_id"));
-			statement.execute("ROLLBACK;");
+			assertNull(fireboltProperties.get("transaction_id"));
+			SQLException exception = assertThrows(SQLException.class, () -> statement.execute("ROLLBACK;"));
+			assertTrue(exception.getMessage().contains("Cannot ROLLBACK transaction: no transaction is in progress"));
 
-			checkRecordCountByIdInAnotherTransaction(2, 0, "Data should not be visible after rollback");
+			checkRecordCountByIdInAnotherTransaction(2, 1, "Data should still be visible after rollback attempt");
 
 			fireboltProperties = connection.getClientInfo();
 			assertNull(fireboltProperties.get("transaction_id"));
@@ -169,17 +151,26 @@ class TransactionTest extends IntegrationTest {
 	}
 
 	@Test
-	void shouldNotCommitTransactionWhenConnectionClosesOnAutoCommitTrue() throws SQLException {
+	void shouldNotCommitTransactionWhenCommitWasManuallyExecuted() throws SQLException {
 		try (Connection connection = createConnection();
 			 Statement statement = connection.createStatement()) {
-
-			statement.execute("BEGIN TRANSACTION;");
+			connection.setAutoCommit(false);
 
 			statement.execute("INSERT INTO transaction_test VALUES (8, 'test')");
-			checkRecordCountByIdInAnotherTransaction(8, 0, "Data should not be visible before commit");
+			try (ResultSet resultSet = statement.executeQuery("SELECT count(*) FROM transaction_test where id = 8")) {
+				resultSet.next();
+				assertEquals(1, resultSet.getInt(1), "Data should be visible inside the transaction");
+			}
+			statement.execute("COMMIT");
+			checkRecordCountByIdInAnotherTransaction(8, 1, "Data should be visible after commit");
+
+			SQLException exception = assertThrows(SQLException.class, connection::commit);
+			assertTrue(exception.getMessage().contains("Could not commit the transaction"));
+			assertNotNull(exception.getCause());
+			assertTrue(exception.getCause().getMessage().contains("cannot COMMIT transaction: no transaction is in progress"));
 		}
 
-		checkRecordCountByIdInAnotherTransaction(8, 0, "Data should not be visible before commit");
+		checkRecordCountByIdInAnotherTransaction(8, 1, "Data should be visible after commit");
 	}
 
 	@Test
@@ -201,13 +192,36 @@ class TransactionTest extends IntegrationTest {
 		try (Connection connection = createConnection();
 			 Statement statement = connection.createStatement()) {
 
-			statement.execute("BEGIN TRANSACTION;");
-			Properties properties = connection.getClientInfo();
-			assertNotNull(properties.get("transaction_id"));
+			connection.setAutoCommit(false);
 
+			Properties properties = connection.getClientInfo();
+			assertNull(properties.get("transaction_id"));
 			SQLException exception = assertThrows(SQLException.class, () -> statement.execute("BEGIN TRANSACTION;"));
 			assertTrue(exception.getMessage().contains("cannot BEGIN transaction: a transaction is already in progress"));
 		}
+	}
+
+	@Test
+	void shouldNotRollbackTransactionWhenRollbackWasManuallyExecuted() throws SQLException {
+		try (Connection connection = createConnection();
+			 Statement statement = connection.createStatement()) {
+			connection.setAutoCommit(false);
+
+			statement.execute("INSERT INTO transaction_test VALUES (10, 'test')");
+			try (ResultSet resultSet = statement.executeQuery("SELECT count(*) FROM transaction_test where id = 10")) {
+				resultSet.next();
+				assertEquals(1, resultSet.getInt(1), "Data should be visible inside the transaction");
+			}
+			statement.execute("ROLLBACK");
+			checkRecordCountByIdInAnotherTransaction(10, 0, "Data should be not visible after rollback");
+
+			SQLException exception = assertThrows(SQLException.class, connection::rollback);
+			assertTrue(exception.getMessage().contains("Could not rollback the transaction"));
+			assertNotNull(exception.getCause());
+			assertTrue(exception.getCause().getMessage().contains("Cannot ROLLBACK transaction: no transaction is in progress"));
+		}
+
+		checkRecordCountByIdInAnotherTransaction(10, 0, "Data should not be visible after rollback");
 	}
 
 	@Test
@@ -397,8 +411,8 @@ class TransactionTest extends IntegrationTest {
 	}
 
 	private void checkRecordCountByIdInAnotherTransaction(Integer id, int expected, String message) throws SQLException {
-		try (Connection connection2 = createConnection();
-			 Statement checkStatement = connection2.createStatement();
+		try (Connection connection = createConnection();
+			 Statement checkStatement = connection.createStatement();
 			 ResultSet rs = checkStatement.executeQuery("SELECT COUNT(*) FROM transaction_test WHERE id = " + id)) {
 
 			assertTrue(rs.next());

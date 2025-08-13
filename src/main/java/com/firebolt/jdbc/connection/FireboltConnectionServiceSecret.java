@@ -39,8 +39,11 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
     private static final String PROTOCOL_VERSION = "2.4";
     private final FireboltGatewayUrlService fireboltGatewayUrlService;
     private FireboltEngineVersion2Service fireboltEngineVersion2Service;
+    // Indicates if auto-commit is enabled
     private boolean autoCommit = true;
+    // Indicates if the connection is currently in a transaction
     private boolean inTransaction = false;
+    // Indicates if a transaction command (commit/rollback) is currently being executed
     private boolean executingTransactionCommand = false;
 
     private final CacheService cacheService;
@@ -152,6 +155,10 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
     @Override
     public void ensureTransactionForQueryExecution() throws SQLException {
         validateConnectionIsNotClose();
+        if (sessionProperties.getTransactionId() == null) {
+            inTransaction = false;
+        }
+
         if (executingTransactionCommand || autoCommit) {
             return;
         }

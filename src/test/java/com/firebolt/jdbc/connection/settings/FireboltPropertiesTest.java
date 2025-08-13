@@ -69,7 +69,7 @@ class FireboltPropertiesTest {
 		FireboltProperties props = new FireboltProperties(new Properties());
 		assertTrue(props.getAdditionalProperties().isEmpty());
 		props.addProperty(Map.entry("a", "1"));
-		props.addProperty("b", "2");
+		props.addProperty("b", "2", true);
 		assertEquals(Map.of("a", "1", "b", "2"), props.getAdditionalProperties());
 	}
 
@@ -86,11 +86,11 @@ class FireboltPropertiesTest {
 		assertEquals("a1", props.getAccountId());
 		assertEquals(Map.of("more", "less"), props.getAdditionalProperties());
 
-		props.addProperty("database", "db2");
-		props.addProperty("engine", "e2");
-		props.addProperty("account_id", "a1");
-		assertThrows(IllegalStateException.class, () -> props.addProperty("account_id", "a2"));
-		props.addProperty("more", "is more");
+		props.addProperty("database", "db2", true);
+		props.addProperty("engine", "e2", true);
+		props.addProperty("account_id", "a1", true);
+		assertThrows(IllegalStateException.class, () -> props.addProperty("account_id", "a2", true));
+		props.addProperty("more", "is more", true);
 
 		assertEquals("db2", props.getDatabase());
 		assertEquals("e2", props.getEngine());
@@ -232,7 +232,7 @@ class FireboltPropertiesTest {
 	@Test
 	void shouldRemoveTransactionIdProperty() {
 		FireboltProperties props = new FireboltProperties(new Properties());
-		props.addProperty("transaction_id", "tx123");
+		props.addProperty("transaction_id", "tx123", false);
 		
 		assertEquals("tx123", props.getTransactionId());
 		props.removeProperty("transaction_id");
@@ -242,7 +242,7 @@ class FireboltPropertiesTest {
 	@Test
 	void shouldRemoveTransactionSequenceIdProperty() {
 		FireboltProperties props = new FireboltProperties(new Properties());
-		props.addProperty("transaction_sequence_id", "seq456");
+		props.addProperty("transaction_sequence_id", "seq456", false);
 		
 		assertEquals("seq456", props.getTransactionSequenceId());
 		props.removeProperty("transaction_sequence_id");
@@ -252,7 +252,7 @@ class FireboltPropertiesTest {
 	@Test
 	void shouldRemoveCustomPropertyFromRuntimeAdditionalProperties() {
 		FireboltProperties props = new FireboltProperties(new Properties());
-		props.addProperty("custom_prop", "custom_value");
+		props.addProperty("custom_prop", "custom_value", true);
 		
 		assertEquals(Map.of("custom_prop", "custom_value"), props.getAdditionalProperties());
 		
@@ -264,9 +264,9 @@ class FireboltPropertiesTest {
 	@Test
 	void shouldRemoveMultipleCustomProperties() {
 		FireboltProperties props = new FireboltProperties(new Properties());
-		props.addProperty("prop1", "value1");
-		props.addProperty("prop2", "value2");
-		props.addProperty("prop3", "value3");
+		props.addProperty("prop1", "value1", true);
+		props.addProperty("prop2", "value2", true);
+		props.addProperty("prop3", "value3", true);
 		
 		assertEquals(Map.of("prop1", "value1", "prop2", "value2", "prop3", "value3"), props.getAdditionalProperties());
 		

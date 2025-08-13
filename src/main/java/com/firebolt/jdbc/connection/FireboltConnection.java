@@ -471,7 +471,8 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	}
 
 	public void addProperty(@NonNull String key, String value, boolean validateConnection) throws SQLException {
-		changeProperty(p -> p.addProperty(key, value), () -> format("Could not set property %s=%s", key, value), validateConnection);
+		boolean isAutoCommit = this.getAutoCommit();
+		changeProperty(p -> p.addProperty(key, value, isAutoCommit), () -> format("Could not set property %s=%s", key, value), validateConnection);
 	}
 
 	public void removeProperty(@NonNull String key) throws SQLException {
