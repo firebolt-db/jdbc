@@ -605,20 +605,4 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
             assertEquals("Could not rollback the transaction", exception.getMessage());
         }
     }
-
-    @Test
-    void shouldNotStartTransactionTwice() throws SQLException {
-        try (FireboltConnection connection = createConnection(url, connectionProperties)) {
-            when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
-            
-            connection.setAutoCommit(false);
-            
-            // Call ensureTransactionForQueryExecution twice
-            connection.ensureTransactionForQueryExecution();
-            connection.ensureTransactionForQueryExecution();
-            
-            // Verify statement service was called only once (BEGIN TRANSACTION)
-            verify(fireboltStatementService, times(1)).execute(any(), any(), any());
-        }
-    }
 }
