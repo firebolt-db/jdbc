@@ -259,7 +259,7 @@ class TransactionTest extends IntegrationTest {
 			
 			connection.setAutoCommit(false);
 			
-			String createTableSQL = String.format("CREATE TABLE %s (id INT, name STRING) PRIMARY INDEX id", tableName);
+			String createTableSQL = String.format("CREATE TABLE %s (id INT, name TEXT) PRIMARY INDEX id", tableName);
 			String insertSQL = String.format("INSERT INTO %s (id, name) VALUES (0, 'some_text')", tableName);
 			String checkTableSQL = String.format("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = '%s'", tableName);
 			String selectSQL = String.format("SELECT * FROM %s", tableName);
@@ -306,7 +306,7 @@ class TransactionTest extends IntegrationTest {
 
 			connection.setAutoCommit(false);
 
-			String createTableSQL = String.format("CREATE TABLE %s (id INT, name STRING) PRIMARY INDEX id", tableName);
+			String createTableSQL = String.format("CREATE TABLE %s (id INT, name TEXT) PRIMARY INDEX id", tableName);
 			String insertSQL = String.format("INSERT INTO %s (id, name) VALUES (0, 'some_text')", tableName);
 			String checkTableSQL = String.format("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = '%s'", tableName);
 
@@ -340,7 +340,7 @@ class TransactionTest extends IntegrationTest {
 	void shouldParallelTransactions() throws SQLException {
 		String tableName = "parallel_transactions_test";
 		String dropTableSQL = String.format("DROP TABLE IF EXISTS %s", tableName);
-		String createTableSQL = String.format("CREATE TABLE IF NOT EXISTS %s (id INT, name STRING) PRIMARY INDEX id", tableName);
+		String createTableSQL = String.format("CREATE TABLE IF NOT EXISTS %s (id INT, name TEXT) PRIMARY INDEX id", tableName);
 		String insertSQL = String.format("INSERT INTO %s (id, name) VALUES (?, ?)", tableName);
 		String selectSQL = String.format("SELECT * FROM %s ORDER BY id", tableName);
 
