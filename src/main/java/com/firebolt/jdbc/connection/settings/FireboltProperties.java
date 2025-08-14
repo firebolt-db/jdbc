@@ -289,7 +289,7 @@ public class FireboltProperties {
 	}
 
 	public void addProperty(Entry<String, String> property) {
-		addProperty(property.getKey(), property.getValue(), false);
+		addProperty(property.getKey(), property.getValue(), true);
 	}
 
 	public String getHttpConnectionUrl() {
@@ -307,7 +307,7 @@ public class FireboltProperties {
 		String engineHost = engineUrl[0].replaceFirst("^https?://", ""); // just in case remove URL scheme although right now server never returns it
 		String[] engineQuery = engineUrl.length > 1 ? engineUrl[1].split("&") : new String[0];
 		// get properties from query string and update values
-		Arrays.stream(engineQuery).map(prop -> prop.split("=")).filter(a -> a.length == 2).forEach(prop -> addProperty(prop[0], prop[1], false));
+		Arrays.stream(engineQuery).map(prop -> prop.split("=")).filter(a -> a.length == 2).forEach(prop -> addProperty(prop[0], prop[1], true));
 		return engineHost;
 	}
 }
