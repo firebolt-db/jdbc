@@ -200,7 +200,7 @@ class LocalhostFireboltConnectionTest {
 
         try (FireboltConnectionServiceSecret fireboltConnection = (FireboltConnectionServiceSecret) createConnection(LOCAL_URL, connectionProperties)) {
             String additionalUserAgentValue = fireboltConnection.getConnectionUserAgentHeader().get();
-            String expectedUserAgent = "connId:" + CONNECTION_ID + ";cachedConnId:" + CONNECTION_ID_2 +"-memory";
+            String expectedUserAgent = "connId:" + CONNECTION_ID + "; cachedConnId:" + CONNECTION_ID_2 + "-memory";
             assertEquals(expectedUserAgent, additionalUserAgentValue);
         }
     }

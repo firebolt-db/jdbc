@@ -159,7 +159,7 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         assertEquals(expectedHost, sessionProperties.getHost());
         assertEquals(expectedProps == null ? Map.of() : Arrays.stream(expectedProps.split(";")).map(kv -> kv.split("=")).collect(toMap(kv -> kv[0], kv -> kv[1])), sessionProperties.getAdditionalProperties());
     }
-    
+
     @Test
     void resettingTheConnectionWouldNotValidateTheConnection() throws SQLException {
         connectionProperties.put("initialRuntimeParam1", "initialParam1Value");
@@ -437,7 +437,8 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
 
         try (FireboltConnectionServiceSecret fireboltConnection = (FireboltConnectionServiceSecret) createConnection(SYSTEM_ENGINE_URL, connectionProperties)) {
             String additionalUserAgentValue = fireboltConnection.getConnectionUserAgentHeader().get();
-            String expectedUserAgent = "connId:" + A_CONNECTION_ID + ";cachedConnId:" + ANOTHER_CONNECTION_ID + "-memory";
+            String expectedUserAgent = "connId:" + A_CONNECTION_ID + "; cachedConnId:" + ANOTHER_CONNECTION_ID
+                    + "-memory";
             assertEquals(expectedUserAgent, additionalUserAgentValue);
         }
     }
