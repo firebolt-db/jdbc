@@ -147,6 +147,16 @@ jobs:
       - name: Run integration tests
         run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Denv="staging" -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ steps.set-account.outputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v2" -Dv2GenerateSeriesMaxSize="${{ vars.V2_GENERATE_SERIES_MAX_SIZE }}"
 
+      - name: Allure Report
+        uses: firebolt-db/action-allure-report@v1
+        if: always() # Needed in order to report failed tests
+        with:
+            github-key: ${{ secrets.GITHUB_TOKEN }}
+            test-type: integration_v2
+            allure-dir: build/allure-results
+            pages-branch: gh-pages
+            keep-files: true
+
       - name: Slack Notify of failure
         if: failure() && inputs.sendSlackNotifications
         uses: firebolt-db/action-slack-nightly-notify@v1
