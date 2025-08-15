@@ -76,13 +76,14 @@ jobs:
           GRADLE_OPTS: -Dorg.gradle.daemon=false
 
       - name: Allure Report
-        uses: firebolt-db/action-allure-report@main
+        uses: firebolt-db/action-allure-report@keep-files
         if: always() # Needed in order to report failed tests
         with:
             github-key: ${{ secrets.GITHUB_TOKEN }}
             test-type: core
             allure-dir: build/allure-results
             pages-branch: gh-pages
+            keep-files: true
 
       - name: Slack Notify of failure
         if: failure() && inputs.sendSlackNotifications
