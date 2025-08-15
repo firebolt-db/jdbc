@@ -7,6 +7,7 @@ plugins {
     id 'maven-publish'
     id 'com.github.johnrengelman.shadow' version '8.0.0'
     id 'signing'
+    id 'io.qameta.allure' version '2.11.2'
 }
 
 group 'io.firebolt'
@@ -103,6 +104,7 @@ dependencies {
     compileTestCommonJava.dependsOn processIntegrationTestResources
     compileIntegrationTestJava.dependsOn processIntegrationTestResources
     javadoc.options.addStringOption('Xdoclint:none', '-quiet')
+    testImplementation 'io.qameta.allure:allure-junit5:2.25.0'
 }
 
 test {
@@ -375,6 +377,13 @@ jar {
     }
 }
 
+allure {
+    version = '2.25.0'
+    autoconfigure = true
+    useJUnit5 {
+        version = '2.25.0'
+    }
+}
 
 task generateJavadoc(type: Javadoc) {
     failOnError false
