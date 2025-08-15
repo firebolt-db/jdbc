@@ -24,7 +24,7 @@ class NumericTypesTest extends CommonIntegrationTest {
 
     @Test
     void shouldHandleLargeDecimals() throws SQLException {
-        String sql = "SELECT 12345678901234567890123456789.123456789::decimal(38, 9);";
+        String sql = "SELECT 22345678901234567890123456789.123456789::decimal(38, 9);";
         try (Connection connection = createConnection(null);
              Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(sql)) {
