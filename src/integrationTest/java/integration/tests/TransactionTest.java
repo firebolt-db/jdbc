@@ -249,6 +249,31 @@ class TransactionTest extends IntegrationTest {
 	}
 
 	@Test
+	void shouldNotCommitOnSetStatement() throws SQLException {
+		try (Connection connection = createConnection();
+			 Statement statement = connection.createStatement()) {
+
+			connection.setAutoCommit(false);
+
+			statement.execute("INSERT INTO transaction_test VALUES (11, 'test')");
+			checkRecordCountByIdInAnotherTransaction(11, 0, "Data should not be visible before commit");
+
+			statement.execute("SET timezone='Europe/Berlin'");
+			checkRecordCountByIdInAnotherTransaction(11, 0, "Data should not be visible before commit");
+
+			Properties properties = connection.getClientInfo();
+			assertNotNull(properties.get("transaction_id"));
+
+			connection.commit();
+
+			checkRecordCountByIdInAnotherTransaction(11, 1, "Data should be visible after commit");
+
+			properties = connection.getClientInfo();
+			assertNull(properties.get("transaction_id"));
+		}
+	}
+
+	@Test
 	void shouldCommitTableCreationAndDataInsertion() throws SQLException {
 		String tableName = "transaction_commit_test";
 		
