@@ -68,7 +68,7 @@ class FireboltPropertiesTest {
 	void shouldAddAdditionalProperties() {
 		FireboltProperties props = new FireboltProperties(new Properties());
 		assertTrue(props.getAdditionalProperties().isEmpty());
-		props.addProperty(Map.entry("a", "1"));
+		props.addProperty(Map.entry("a", "1"), true);
 		props.addProperty("b", "2", true);
 		assertEquals(Map.of("a", "1", "b", "2"), props.getAdditionalProperties());
 	}

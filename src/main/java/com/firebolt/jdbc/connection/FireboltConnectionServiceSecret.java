@@ -351,7 +351,7 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
         URL systemEngineUrl = UrlUtil.createUrl(systemEngineEndpoint);
         Map<String, String> systemEngineUrlUrlParams = UrlUtil.getQueryParameters(systemEngineUrl);
         for (Entry<String, String> e : systemEngineUrlUrlParams.entrySet()) {
-            loginProperties.addProperty(e);
+            loginProperties.addProperty(e, getAutoCommit());
         }
         return loginProperties
                 .toBuilder()

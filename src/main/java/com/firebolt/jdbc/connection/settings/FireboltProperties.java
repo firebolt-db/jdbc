@@ -288,8 +288,8 @@ public class FireboltProperties {
 		}
 	}
 
-	public void addProperty(Entry<String, String> property) {
-		addProperty(property.getKey(), property.getValue(), true);
+	public void addProperty(Entry<String, String> property, boolean autoCommit) {
+		addProperty(property.getKey(), property.getValue(), autoCommit);
 	}
 
 	public String getHttpConnectionUrl() {
