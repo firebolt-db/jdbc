@@ -229,9 +229,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	@Override
 	@ExcludeFromJacocoGeneratedReport
 	@NotImplemented
-	public void setAutoCommit(boolean autoCommit) {
-		// No-op as Firebolt does not support transactions
-	}
+	public void setAutoCommit(boolean autoCommit) throws SQLException {}
 
 	@Override
 	public boolean isClosed() {
@@ -453,7 +451,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		runtimeProperties.put("auto_start_stop_control", "ignore");
 	}
 
-	private void validateConnectionIsNotClose() throws SQLException {
+	protected void validateConnectionIsNotClose() throws SQLException {
 		if (isClosed()) {
 			throw new FireboltException("Cannot proceed: connection closed");
 		}
@@ -473,7 +471,12 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	}
 
 	public void addProperty(@NonNull String key, String value, boolean validateConnection) throws SQLException {
-		changeProperty(p -> p.addProperty(key, value), () -> format("Could not set property %s=%s", key, value), validateConnection);
+		boolean isAutoCommit = this.getAutoCommit();
+		changeProperty(p -> p.addProperty(key, value, isAutoCommit), () -> format("Could not set property %s=%s", key, value), validateConnection);
+	}
+
+	public void removeProperty(@NonNull String key) throws SQLException {
+		changeProperty(p -> p.removeProperty(key), () -> format("Could not remove property %s", key), DO_NOT_VALIDATE_CONNECTION);
 	}
 
 	public void addProperty(Entry<String, String> property) throws SQLException {
@@ -481,7 +484,8 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	}
 
 	public void addProperty(Entry<String, String> property, boolean validateConnection) throws SQLException {
-		changeProperty(p -> p.addProperty(property), () -> format("Could not set property %s=%s", property.getKey(), property.getValue()), validateConnection);
+		boolean isAutoCommit = this.getAutoCommit();
+		changeProperty(p -> p.addProperty(property, isAutoCommit), () -> format("Could not set property %s=%s", property.getKey(), property.getValue()), validateConnection);
 	}
 
 	/**
@@ -521,9 +525,11 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		return httpConnectionUrl;
 	}
 
+	public void ensureTransactionForQueryExecution() throws SQLException {}
+
 	@Override
 	@NotImplemented
-	public void commit() {
+	public void commit() throws  SQLException {
 		// no-op as transactions are not supported
 	}
 

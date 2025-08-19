@@ -52,4 +52,16 @@ abstract class AbstractQueryParameterProvider implements QueryParameterProvider 
         }
     }
 
+    protected void addTransactionIdIfNeeded(Map<String,String> params, String transactionId) {
+        if (StringUtils.isNotBlank(transactionId)) {
+            params.put(FireboltQueryParameterKey.TRANSACTION_ID.getKey(), transactionId);
+        }
+    }
+
+    protected void addTransactionSequenceIdIfNeeded(Map<String,String> params, String transactionSequenceId) {
+        if (StringUtils.isNotBlank(transactionSequenceId)) {
+            params.put(FireboltQueryParameterKey.TRANSACTION_SEQUENCE_ID.getKey(), transactionSequenceId);
+        }
+    }
+
 }

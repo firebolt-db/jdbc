@@ -59,6 +59,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	static final String HEADER_UPDATE_PARAMETER = "Firebolt-Update-Parameters";
 	static final String HEADER_UPDATE_ENDPOINT = "Firebolt-Update-Endpoint";
 	static final String HEADER_RESET_SESSION = "Firebolt-Reset-Session";
+	static final String HEADER_REMOVE_PARAMETER = "Firebolt-Remove-Parameters";
 
 	private enum QueryIdFetcher {
 		/**
@@ -331,6 +332,9 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			for (String header : response.headers(HEADER_UPDATE_PARAMETER)) {
 				String[] keyValue = header.split("=");
 				connection.addProperty(keyValue[0].trim(), keyValue[1].trim(), DO_NOT_VALIDATE_CONNECTION_FLAG);
+			}
+			for (String parameterName : response.headers(HEADER_REMOVE_PARAMETER)) {
+				connection.removeProperty(parameterName.trim());
 			}
 		}
 	}

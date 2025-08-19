@@ -132,8 +132,8 @@ class FireboltEngineVersion2ServiceTest {
         doNothing().when(mockConnectionCache).setEngineOptions(eq(MY_ENGINE), any());
 
         // as a side effect of executing the "USE DATABASE xxx" the session properties will have the database name populated
-        sessionProperties.addProperty("database", MY_DATABASE);
-        sessionProperties.addProperty("engine", MY_ENGINE);
+        sessionProperties.addProperty("database", MY_DATABASE, true);
+        sessionProperties.addProperty("engine", MY_ENGINE, true);
         when(mockFireboltConnection.getEndpoint()).thenReturn(MY_ENGINE_ENDPOINT);
 
         when(mockFireboltConnection.createStatement()).thenReturn(mockFireboltStatement);
@@ -179,8 +179,8 @@ class FireboltEngineVersion2ServiceTest {
 
         doNothing().when(mockFireboltConnection).addProperty(anyString(), anyString(), eq(false));
 
-        sessionProperties.addProperty("database", MY_DATABASE);
-        sessionProperties.addProperty("engine", MY_ENGINE);
+        sessionProperties.addProperty("database", MY_DATABASE, true);
+        sessionProperties.addProperty("engine", MY_ENGINE, true);
         when(mockFireboltConnection.getEndpoint()).thenReturn(MY_ENGINE_ENDPOINT);
 
         FireboltEngineVersion2Service service = new FireboltEngineVersion2Service(mockFireboltConnection);
@@ -216,8 +216,8 @@ class FireboltEngineVersion2ServiceTest {
 
         doNothing().when(mockFireboltConnection).addProperty(anyString(), anyString(), eq(false));
 
-        sessionProperties.addProperty("database", MY_DATABASE);
-        sessionProperties.addProperty("engine", MY_ENGINE);
+        sessionProperties.addProperty("database", MY_DATABASE, true);
+        sessionProperties.addProperty("engine", MY_ENGINE, true);
         when(mockFireboltConnection.getEndpoint()).thenReturn(MY_ENGINE_ENDPOINT);
 
         FireboltEngineVersion2Service service = new FireboltEngineVersion2Service(mockFireboltConnection);
@@ -260,8 +260,8 @@ class FireboltEngineVersion2ServiceTest {
 
         doNothing().when(mockFireboltConnection).addProperty(anyString(), anyString(), eq(false));
 
-        sessionProperties.addProperty("database", MY_DATABASE);
-        sessionProperties.addProperty("engine", MY_ENGINE);
+        sessionProperties.addProperty("database", MY_DATABASE, true);
+        sessionProperties.addProperty("engine", MY_ENGINE, true);
         when(mockFireboltConnection.getEndpoint()).thenReturn(MY_ENGINE_ENDPOINT);
 
         FireboltEngineVersion2Service service = new FireboltEngineVersion2Service(mockFireboltConnection);

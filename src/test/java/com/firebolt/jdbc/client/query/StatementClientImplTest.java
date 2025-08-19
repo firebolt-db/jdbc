@@ -52,6 +52,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 import static com.firebolt.jdbc.client.UserAgentFormatter.userAgent;
+import static com.firebolt.jdbc.client.query.StatementClientImpl.HEADER_REMOVE_PARAMETER;
 import static com.firebolt.jdbc.client.query.StatementClientImpl.HEADER_RESET_SESSION;
 import static com.firebolt.jdbc.client.query.StatementClientImpl.HEADER_UPDATE_ENDPOINT;
 import static com.firebolt.jdbc.client.query.StatementClientImpl.HEADER_UPDATE_PARAMETER;
@@ -59,6 +60,7 @@ import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -346,6 +348,24 @@ class StatementClientImplTest {
 			Map<String, String> additionalProperties = fbProps.getAdditionalProperties();
 			assertEquals("something else", additionalProperties.get("addition"));
 			assertEquals("bar", additionalProperties.get("foo"));
+		}
+	}
+
+	@Test
+	void useRemoveParameters() throws SQLException, IOException {
+		Properties props = new Properties();
+		props.setProperty("database", "db1");
+		props.setProperty("engine", "e1");
+		props.setProperty("account_id", "a1");
+		props.setProperty("transaction_id", "a1");
+		try (FireboltConnection conn = use(1, props, "does not matter", Map.of(
+				HEADER_REMOVE_PARAMETER, List.of("transaction_id", "non_existent_param")))) {
+			FireboltProperties fbProps = conn.getSessionProperties();
+			assertEquals("db1", fbProps.getDatabase());
+			assertEquals("e1", fbProps.getEngine());
+			assertEquals("a1", fbProps.getAccountId());
+			Map<String, String> additionalProperties = fbProps.getAdditionalProperties();
+            assertNull(additionalProperties.get("transaction_id"));
 		}
 	}
 

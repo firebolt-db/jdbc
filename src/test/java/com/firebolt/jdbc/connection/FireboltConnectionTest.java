@@ -52,6 +52,7 @@ import java.util.stream.Stream;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.ACCESS_TOKEN;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.CLIENT_ID;
 import static com.firebolt.jdbc.connection.settings.FireboltSessionProperty.CLIENT_SECRET;
+import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
 import static java.sql.Connection.TRANSACTION_READ_UNCOMMITTED;
 import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
@@ -600,17 +601,17 @@ abstract class FireboltConnectionTest {
 	}
 
 	@Test
-	void shouldGetNoneTransactionIsolation() throws SQLException {
+	void shouldGetRepeatableReadTransactionIsolation() throws SQLException {
 		connectionProperties.put("database", "db");
 		try (Connection fireboltConnection = createConnection(url, connectionProperties)) {
-			assertEquals(Connection.TRANSACTION_NONE, fireboltConnection.getTransactionIsolation());
-			fireboltConnection.setTransactionIsolation(Connection.TRANSACTION_NONE); // should work
-			assertEquals(Connection.TRANSACTION_NONE, fireboltConnection.getTransactionIsolation());
+			assertEquals(TRANSACTION_NONE, fireboltConnection.getTransactionIsolation());
+			fireboltConnection.setTransactionIsolation(TRANSACTION_NONE); // should work
+			assertEquals(TRANSACTION_NONE, fireboltConnection.getTransactionIsolation());
 			for (int transactionIsolation : new int [] {TRANSACTION_READ_UNCOMMITTED, TRANSACTION_READ_COMMITTED, TRANSACTION_REPEATABLE_READ, TRANSACTION_SERIALIZABLE}) {
 				assertThrows(SQLFeatureNotSupportedException.class, () -> fireboltConnection.setTransactionIsolation(transactionIsolation));
 			}
 			// despite the failed attempts to change transaction isolation to unsupported value it remains TRANSACTION_NONE
-			assertEquals(Connection.TRANSACTION_NONE, fireboltConnection.getTransactionIsolation());
+			assertEquals(TRANSACTION_NONE, fireboltConnection.getTransactionIsolation());
 		}
 	}
 
