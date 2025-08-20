@@ -43,7 +43,7 @@ public class FileService {
     private static ThreadFactory createDaemonThreadFactory() {
         final AtomicInteger threadNumber = new AtomicInteger(1);
         return runnable -> {
-            Thread thread = new Thread(runnable, "firebolt-jdbc-cache-" + threadNumber.getAndIncrement());
+            Thread thread = new Thread(runnable, "firebolt-jdbc-cache-" + threadNumber.getAndIncrement() + "d");
             thread.setDaemon(true);
             return thread;
         };
