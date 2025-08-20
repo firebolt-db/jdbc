@@ -17,6 +17,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.CustomLog;
 import org.json.JSONObject;
 
@@ -34,10 +36,23 @@ public class FileService {
 
     private Path fireboltJdbcDirectory;
 
+    /**
+     * Creates a ThreadFactory that produces daemon threads with descriptive names
+     * for the FileService cache operations.
+     */
+    private static ThreadFactory createDaemonThreadFactory() {
+        final AtomicInteger threadNumber = new AtomicInteger(1);
+        return runnable -> {
+            Thread thread = new Thread(runnable, "firebolt-jdbc-cache-" + threadNumber.getAndIncrement());
+            thread.setDaemon(true);
+            return thread;
+        };
+    }
+
     @ExcludeFromJacocoGeneratedReport
     public static FileService getInstance() {
         if (instance == null) {
-            instance = new FileService(new DirectoryPathResolver(), new FilenameGenerator(), new EncryptionService(), Executors.newFixedThreadPool(2));
+            instance = new FileService(new DirectoryPathResolver(), new FilenameGenerator(), new EncryptionService(), Executors.newFixedThreadPool(2, createDaemonThreadFactory()));
         }
         return instance;
     }
