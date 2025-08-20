@@ -104,7 +104,7 @@ dependencies {
     compileTestCommonJava.dependsOn processIntegrationTestResources
     compileIntegrationTestJava.dependsOn processIntegrationTestResources
     javadoc.options.addStringOption('Xdoclint:none', '-quiet')
-    testImplementation 'io.qameta.allure:allure-junit5:2.25.0'
+    testImplementation 'io.qameta.allure:allure-junit5:2.29.1'
 }
 
 test {
