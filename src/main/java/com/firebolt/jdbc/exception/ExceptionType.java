@@ -4,7 +4,8 @@ package com.firebolt.jdbc.exception;
  * This class represents the types of exceptions that may be thrown
  */
 public enum ExceptionType {
-	ERROR, UNAUTHORIZED,
+	ERROR,
+	UNAUTHORIZED,
 	TYPE_NOT_SUPPORTED,
 	TYPE_TRANSFORMATION_ERROR,
 	RESOURCE_NOT_FOUND,
