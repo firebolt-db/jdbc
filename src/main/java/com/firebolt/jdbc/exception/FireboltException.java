@@ -1,15 +1,23 @@
 package com.firebolt.jdbc.exception;
 
-import static com.firebolt.jdbc.exception.ExceptionType.*;
-import static java.net.HttpURLConnection.*;
-
 import java.sql.SQLException;
-
 import lombok.Getter;
+
+import static com.firebolt.jdbc.exception.ExceptionType.ERROR;
+import static com.firebolt.jdbc.exception.ExceptionType.INVALID_REQUEST;
+import static com.firebolt.jdbc.exception.ExceptionType.REQUEST_BODY_TOO_LARGE;
+import static com.firebolt.jdbc.exception.ExceptionType.RESOURCE_NOT_FOUND;
+import static com.firebolt.jdbc.exception.ExceptionType.TOO_MANY_REQUESTS;
+import static com.firebolt.jdbc.exception.ExceptionType.UNAUTHORIZED;
+import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+import static java.net.HttpURLConnection.HTTP_ENTITY_TOO_LARGE;
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 
 public class FireboltException extends SQLException {
 
 	private static final int HTTP_TOO_MANY_REQUESTS = 429;
+
 	@Getter
 	private final ExceptionType type;
 	@Getter
@@ -85,17 +93,21 @@ public class FireboltException extends SQLException {
 		if (httpStatusCode == null) {
 			return ERROR;
 		}
+
+		// have them ordered based on the status code
 		switch (httpStatusCode) {
-		case HTTP_NOT_FOUND:
-			return RESOURCE_NOT_FOUND;
-		case HTTP_BAD_REQUEST:
-			return INVALID_REQUEST;
-		case HTTP_UNAUTHORIZED:
-			return UNAUTHORIZED;
-		case HTTP_TOO_MANY_REQUESTS:
-			return TOO_MANY_REQUESTS;
-		default:
-			return ERROR;
+			case HTTP_BAD_REQUEST:              // 400
+				return INVALID_REQUEST;
+			case HTTP_UNAUTHORIZED:             // 401
+				return UNAUTHORIZED;
+			case HTTP_NOT_FOUND:                // 404
+				return RESOURCE_NOT_FOUND;
+			case HTTP_ENTITY_TOO_LARGE:         // 413
+				return REQUEST_BODY_TOO_LARGE;
+			case HTTP_TOO_MANY_REQUESTS:        // 429
+				return TOO_MANY_REQUESTS;
+			default:
+				return ERROR;
 		}
 	}
 }
