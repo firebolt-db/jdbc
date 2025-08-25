@@ -127,6 +127,15 @@ tasks.register('integrationTest', Test) {
         includeTags(System.getProperty("includeTags", "v2").split(","))
         excludeTags(System.getProperty("excludeTags", "nothing").split(","))
     }
+    // Increase heap to avoid OOM when building very large merged SQL batches in tests
+    maxHeapSize = System.getProperty("integrationTestMaxHeap", "2g")
+    // Helpful JVM flags and opens for tests
+    jvmArgs(
+        "--add-opens=java.base/java.lang=ALL-UNNAMED",
+        "--add-opens=java.base/java.util=ALL-UNNAMED",
+        "-XX:+HeapDumpOnOutOfMemoryError",
+        "-XX:HeapDumpPath=${buildDir}/heapdumps"
+    )
     reports {
         junitXml {
             outputPerTestCase = true // defaults to false
@@ -153,6 +162,12 @@ tasks.register('integrationTest', Test) {
             println "\nTest result: ${result.resultType}"
             println "Tests run: ${result.testCount}, Passed: ${result.successfulTestCount}, Failed: ${result.failedTestCount}, Skipped: ${result.skippedTestCount}"
         }
+    }
+
+    // Ensure heap dump directory exists if OOM happens
+    doFirst {
+        file("${buildDir}/heapdumps").mkdirs()
+        println "integrationTest JVM maxHeapSize=${maxHeapSize}"
     }
 }
 
