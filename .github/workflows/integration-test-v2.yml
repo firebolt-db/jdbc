@@ -145,7 +145,39 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Denv="staging" -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ steps.set-account.outputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v2" -Dv2GenerateSeriesMaxSize="${{ vars.V2_GENERATE_SERIES_MAX_SIZE }}"
+        run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Denv="staging" -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ steps.set-account.outputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v2" -Dv2GenerateSeriesMaxSize="${{ vars.V2_GENERATE_SERIES_MAX_SIZE }}" -DintegrationTestMaxHeap=3g
+
+      - name: Upload integration test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrationTest-reports-${{ inputs.os_name }}-java${{ inputs.java_version }}
+          path: |
+            build/reports/tests/integrationTest
+            build/test-results/integrationTest
+            build/reports/problems
+            build/reports/tests/test
+            build/test-results/test
+          if-no-files-found: warn
+          retention-days: 4
+
+      # Collect logs into workspace (Linux/macOS)
+      - name: Collect Gradle logs (unix)
+        if: always() && runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p build/ci-logs/gradle
+          cp ~/.gradle/daemon/*/*.log build/ci-logs/gradle 2>/dev/null || true
+          find . -type f \( -name 'hs_err_pid*.log' -o -name 'replay_pid*.log' \) -exec cp {} build/ci-logs \; 2>/dev/null || true
+
+      # Collect logs into workspace (Windows)
+      - name: Collect Gradle logs (windows)
+        if: always() && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path build\ci-logs\gradle | Out-Null
+          Get-ChildItem -Path $env:USERPROFILE\.gradle\daemon\*\*.log -ErrorAction SilentlyContinue | Copy-Item -Destination build\ci-logs\gradle -ErrorAction SilentlyContinue
+          Get-ChildItem -Path . -Recurse -Include hs_err_pid*.log,replay_pid*.log -ErrorAction SilentlyContinue | Copy-Item -Destination build\ci-logs -ErrorAction SilentlyContinue
 
       - name: Allure Report
         uses: firebolt-db/action-allure-report@v1
