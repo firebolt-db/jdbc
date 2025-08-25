@@ -145,7 +145,33 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Denv="staging" -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ steps.set-account.outputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v2" -Dv2GenerateSeriesMaxSize="${{ vars.V2_GENERATE_SERIES_MAX_SIZE }}"
+        run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Denv="staging" -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ steps.set-account.outputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v2" -Dv2GenerateSeriesMaxSize="${{ vars.V2_GENERATE_SERIES_MAX_SIZE }}" -DintegrationTestMaxHeap=3g
+
+      - name: Upload integration test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrationTest-reports-${{ inputs.os_name }}-java${{ inputs.java_version }}
+          path: |
+            build/reports/tests/integrationTest
+            build/test-results/integrationTest
+            build/reports/problems
+            build/reports/tests/test
+            build/test-results/test
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload Gradle daemon and crash logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-logs-${{ inputs.os_name }}-java${{ inputs.java_version }}
+          path: |
+            ~/.gradle/daemon/*/*.log
+            **/hs_err_pid*.log
+            **/replay_pid*.log
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Allure Report
         uses: firebolt-db/action-allure-report@v1
