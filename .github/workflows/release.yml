@@ -105,3 +105,38 @@ jobs:
       env:
         MAVEN_REPO_USERNAME: ${{ secrets.MAVEN_REPO_USERNAME }}
         MAVEN_REPO_PASSWORD: ${{ secrets.MAVEN_REPO_PASSWORD }}
+
+    - name: Generate and update GitHub release notes
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const tag = `${{ github.event.inputs.tag_name }}`;
+          const { owner, repo } = context.repo;
+          // Fetch existing release by tag (created earlier by upload step)
+          const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+          // Generate notes based on PRs/commits between last release and this tag
+          const notes = await github.rest.repos.generateReleaseNotes({ owner, repo, tag_name: tag });
+          // Sanitize internal JIRA links: [FIR-1234](...) -> `FIR-1234`, and wrap bare FIR-1234 in backticks
+          let body = notes.data.body || '';
+          body = body.replace(/\[(FIR-\d+)\]\([^)]*\)/g, '`$1`');
+          body = body.replace(/(?<!`)\bFIR-\d+\b(?!`)/g, (m) => `\`${m}\``);
+          // Update the release body with sanitized notes
+          await github.rest.repos.updateRelease({ owner, repo, release_id: release.data.id, body });
+
+    - name: Derive release version
+      id: release_version
+      run: |
+        ver=$(echo "${{ github.event.inputs.tag_name }}" | sed 's/^v//')
+        echo "value=$ver" >> $GITHUB_OUTPUT
+
+    - name: Notify Slack of JDBC release
+      uses: slackapi/slack-github-action@v1
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      with:
+        payload: |
+          {
+            "channel": "ecosystem-team",
+            "text": "Firebolt JDBC driver ${{ steps.release_version.outputs.value }} has been released: <https://github.com/${{ github.repository }}/releases/tag/${{ github.event.inputs.tag_name }}|Release notes>"
+          }
