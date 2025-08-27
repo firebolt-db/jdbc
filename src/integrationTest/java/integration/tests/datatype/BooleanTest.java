@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(TestTag.CORE)
 @Tag(TestTag.V2)
@@ -43,17 +44,17 @@ public class BooleanTest extends IntegrationTest {
         try (Connection connection = createConnection();
              PreparedStatement preparedStatement = connection.prepareStatement("INSERT into boolean_table(id, value) values(?,?);");
              Statement verificationStatement = connection.createStatement()) {
-            // int value 1 is considered true
+            // string value 1 is considered true
             preparedStatement.setInt(1, 1);
             preparedStatement.setString(2, "1");
             preparedStatement.addBatch();
 
-            // any positive integer is also considered true
+            // any positive integer as string is also considered true
             preparedStatement.setInt(1, 2);
             preparedStatement.setString(2, "456");
             preparedStatement.addBatch();
 
-            // even using set object with any positive integer is considered true
+            // even using set object with any positive integer as string is considered true
             preparedStatement.setInt(1, 3);
             preparedStatement.setObject(2, "789");
             preparedStatement.addBatch();
@@ -82,7 +83,7 @@ public class BooleanTest extends IntegrationTest {
             preparedStatement.setString(2, "T");
             preparedStatement.addBatch();
 
-            // even a double would still be considered as true
+            // even a double value as a string would still be considered as true
             preparedStatement.setInt(1, 9);
             preparedStatement.setString(2, "0.1123");
             preparedStatement.addBatch();
@@ -97,11 +98,10 @@ public class BooleanTest extends IntegrationTest {
             int actualCount = 0;
             while (resultSet.next()) {
                 actualCount++;
-                assertEquals(true, resultSet.getBoolean(2));
+                assertTrue(resultSet.getBoolean(2));
             }
 
             assertEquals(10, actualCount);
-
         }
     }
 
@@ -159,11 +159,10 @@ public class BooleanTest extends IntegrationTest {
             int actualCount = 0;
             while (resultSet.next()) {
                 actualCount++;
-                assertEquals(false, resultSet.getBoolean(2));
+                assertFalse(resultSet.getBoolean(2));
             }
 
             assertEquals(9, actualCount);
-
         }
     }
 
@@ -176,35 +175,35 @@ public class BooleanTest extends IntegrationTest {
             // int value is of 0 or 1 cannot be converted to boolean
             preparedStatement.setInt(1, 1);
             preparedStatement.setInt(2, 0);
-            assertThrows(FireboltException.class, () -> preparedStatement.execute());
+            assertThrows(FireboltException.class, preparedStatement::execute);
             preparedStatement.clearParameters();
 
             preparedStatement.setInt(1, 1);
             preparedStatement.setInt(2, 1);
-            assertThrows(FireboltException.class, () -> preparedStatement.execute());
+            assertThrows(FireboltException.class, preparedStatement::execute);
             preparedStatement.clearParameters();
 
             // int value is of 0 or 1 cannot be converted to boolean
             preparedStatement.setInt(1, 1);
             preparedStatement.setDouble(2, 0.0d);
-            assertThrows(FireboltException.class, () -> preparedStatement.execute());
+            assertThrows(FireboltException.class, preparedStatement::execute);
             preparedStatement.clearParameters();
 
             preparedStatement.setInt(1, 1);
             preparedStatement.setDouble(2, 1.0d);
-            assertThrows(FireboltException.class, () -> preparedStatement.execute());
+            assertThrows(FireboltException.class, preparedStatement::execute);
             preparedStatement.clearParameters();
 
 
             // any string other than true or false is not allowed
             preparedStatement.setInt(1, 1);
             preparedStatement.setString(2, "not_true_not_false");
-            assertThrows(FireboltException.class, () -> preparedStatement.execute());
+            assertThrows(FireboltException.class, preparedStatement::execute);
             preparedStatement.clearParameters();
 
             preparedStatement.setInt(1, 1);
             preparedStatement.setObject(2, "not_true_not_false");
-            assertThrows(FireboltException.class, () -> preparedStatement.execute());
+            assertThrows(FireboltException.class, preparedStatement::execute);
             preparedStatement.clearParameters();
 
             // no records should have been inserted
