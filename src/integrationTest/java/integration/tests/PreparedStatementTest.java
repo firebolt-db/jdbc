@@ -3,6 +3,7 @@ package integration.tests;
 import com.firebolt.jdbc.CheckedBiFunction;
 import com.firebolt.jdbc.CheckedVoidTriFunction;
 import com.firebolt.jdbc.QueryResult;
+import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.testutils.AssertionUtil;
 import com.firebolt.jdbc.testutils.TestTag;
@@ -34,6 +35,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -56,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
@@ -743,6 +746,36 @@ class PreparedStatementTest extends IntegrationTest {
 				assertTrue(rs.next());
 				assertTrue(rs.getBoolean(1));
 				assertFalse(rs.getBoolean(2));
+			}
+		}
+	}
+
+	@Tag(TestTag.CORE)
+	@Tag(TestTag.V2)
+	@Test
+	public void shouldFailAllPreparedStatementsFromBatchIfOneFails() throws SQLException {
+		Map<String, String> connectionParams = Map.of("merge_prepared_statement_batches", "true");
+		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), connectionParams)) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make) VALUES (?,?)")) {
+				statement.setObject(1, "123");
+				statement.setObject(2, "successful car1");
+				statement.addBatch();
+				statement.setObject(1, "not a big int");
+				statement.setObject(2, "unsuccessful car");
+				statement.addBatch();
+				statement.setObject(1, "456");
+				statement.setObject(2, "successful car2");
+				FireboltException exception = assertThrows(FireboltException.class, () -> statement.executeBatch());
+				assertEquals(exception.getErrorMessageFromServer(), "Unable to cast text 'not a big int' to bigint");
+			}
+
+			// verify that the successful rows were not inserted
+			try (Statement statement = connection.createStatement()) {
+				ResultSet resultSet = statement.executeQuery("SELECT * from prepared_statement_test where sales=123 and make='successful car1'");
+				assertFalse(resultSet.next());
+				resultSet = statement.executeQuery("SELECT * from prepared_statement_test where sales=456 and make='successful car2'");
+				assertFalse(resultSet.next());
 			}
 		}
 	}
