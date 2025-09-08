@@ -132,6 +132,7 @@ jobs:
       - name: Allure Report
         uses: firebolt-db/action-allure-report@v1
         if: always() && runner.os == 'Linux' # Needed in order to report failed tests
+        continue-on-error: true # FIR-48984
         with:
             github-key: ${{ secrets.GITHUB_TOKEN }}
             test-type: integration_v1
