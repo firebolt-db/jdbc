@@ -10,7 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Formatting conventions
-        uses: firebolt-db/action-pr-checks@main
+        # Sonarqube fails unless we use fully qualified git sha version
+        uses: firebolt-db/action-pr-checks@519d59493b028e944971deaeca570933c378f09e
         with:
           github-key: ${{ secrets.GITHUB_TOKEN }}
 
