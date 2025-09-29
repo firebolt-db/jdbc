@@ -1,0 +1,17 @@
+name: PR title lint
+
+on:
+  pull_request:
+    types: [ opened, edited, reopened, synchronize ]
+    branches: [ master ]
+
+jobs:
+  pr-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Formatting conventions
+        uses: firebolt-db/action-pr-checks@main
+        with:
+          github-key: ${{ secrets.GITHUB_TOKEN }}
+
+
