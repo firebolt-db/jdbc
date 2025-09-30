@@ -1,0 +1,18 @@
+name: PR title lint
+
+on:
+  pull_request:
+    types: [ opened, edited, reopened, synchronize ]
+    branches: [ master ]
+
+jobs:
+  pr-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Formatting conventions
+        # Sonarqube fails unless we use fully qualified git sha version
+        uses: firebolt-db/action-pr-checks@519d59493b028e944971deaeca570933c378f09e
+        with:
+          github-key: ${{ secrets.GITHUB_TOKEN }}
+
+
