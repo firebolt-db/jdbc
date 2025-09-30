@@ -261,7 +261,13 @@ public class SystemEngineTest extends IntegrationTest {
 
 				((CacheListener)connection).cleanup();
 				SQLException e = assertThrows(SQLException.class, () -> DriverManager.getConnection(jdbcUrl, clientId, clientSecret));
-				assertTrue(e.getMessage().matches(format("Account '%s' does not exist in this organization or is not authorized.+RBAC.+", current.getAccount())), "Unexpected exception message: " + e.getMessage());
+
+				// There could be 2 error messages that are being thrown by this call. There has been caching introduced in the backend for the engine URL (FIR-49039)
+				// in case the engine url is not in the cache then the connection establishment fails with error1.
+				// in case the engine url is in cache, then the fetching of the engine url is fine but fails when trying to use the database (thus error2)
+				String errorMessage1 = format("Account '%s' does not exist in this organization or is not authorized.+RBAC.+", current.getAccount());
+				String errorMessage2 = format("Database '%s' does not exist or not authorized.", current.getDatabase());
+				assertTrue(e.getMessage().matches(errorMessage1) || e.getMessage().contains(errorMessage2), "Unexpected exception message: " + e.getMessage());
 			} finally {
 				connection.createStatement().executeUpdate(format("DROP SERVICE ACCOUNT \"%s\"", serviceAccountName));
 			}
