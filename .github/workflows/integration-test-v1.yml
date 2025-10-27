@@ -75,10 +75,15 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Prepare java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: ${{ inputs.java_version }}
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
 
       # for ubuntu-latest , java 11 it will create u11. For windows-latest java 17 it will create w17
       - name: Reduce db suffix name
