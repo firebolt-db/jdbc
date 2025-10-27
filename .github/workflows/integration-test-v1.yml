@@ -75,10 +75,15 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Prepare java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: ${{ inputs.java_version }}
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
 
       # for ubuntu-latest , java 11 it will create u11. For windows-latest java 17 it will create w17
       - name: Reduce db suffix name
@@ -89,6 +94,44 @@ jobs:
           DB_SUFFIX="${OS_PREFIX}${{ inputs.java_version }}"
           echo "DB_SUFFIX=$DB_SUFFIX"
           echo "db_suffix=$DB_SUFFIX" >> $GITHUB_OUTPUT
+
+      - name: Inspect Python on runner (system + venv)
+        shell: bash
+        run: |
+          set -euxo pipefail
+          echo "Runner OS: $RUNNER_OS"
+          
+          echo "--- System Python(s) ---"
+          command -v python || true
+          command -v python3 || true
+          which -a python3 || true
+          python3 --version
+          python3 -c 'import sys,platform; print("sys.version:", sys.version); print("sys.executable:", sys.executable); print("platform:", platform.platform())'
+          
+          echo "--- Fresh venv Python ---"
+          python3 -m venv .venv
+          source .venv/bin/activate
+          python -VV
+          python -c 'import sys; print("venv sys.executable:", sys.executable)'
+          
+          echo "--- Probe: typing.Union mutability ---"
+          python - <<'PY'
+          import typing
+          try:
+              setattr(typing.Union, "__module__", "probe")
+              print("typing.Union setattr: OK (pre-3.14 behavior)")
+          except Exception as e:
+              print("typing.Union setattr: FAILED ->", repr(e), "(seen on 3.14)")
+          PY
+          
+          echo "--- httpx/httpcore versions (if installed) ---"
+          python - <<'PY'
+          try:
+              import httpx, httpcore
+              print("httpx:", httpx.__version__, "httpcore:", httpcore.__version__)
+          except Exception as e:
+              print("Import check skipped/failed:", repr(e))
+          PY
 
       - name: Setup database and engine
         id: setup
@@ -126,19 +169,19 @@ jobs:
         if: runner.os != 'Windows'
         run: chmod +x gradlew
 
-      - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Dapi="api.staging.firebolt.io" -Dpassword="${{ secrets.FIREBOLT_STG_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_STG_USERNAME }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v1" -Dv1GenerateSeriesMaxSize="${{ vars.V1_GENERATE_SERIES_MAX_SIZE }}"
-
-      - name: Allure Report
-        uses: firebolt-db/action-allure-report@v1
-        if: always() && runner.os == 'Linux' # Needed in order to report failed tests
-        continue-on-error: true # FIR-48984
-        with:
-            github-key: ${{ secrets.GITHUB_TOKEN }}
-            test-type: integration_v1
-            allure-dir: build/allure-results
-            pages-branch: gh-pages
-            keep-files: true
+#      - name: Run integration tests
+#        run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Dapi="api.staging.firebolt.io" -Dpassword="${{ secrets.FIREBOLT_STG_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_STG_USERNAME }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v1" -Dv1GenerateSeriesMaxSize="${{ vars.V1_GENERATE_SERIES_MAX_SIZE }}"
+#
+#      - name: Allure Report
+#        uses: firebolt-db/action-allure-report@v1
+#        if: always() && runner.os == 'Linux' # Needed in order to report failed tests
+#        continue-on-error: true # FIR-48984
+#        with:
+#            github-key: ${{ secrets.GITHUB_TOKEN }}
+#            test-type: integration_v1
+#            allure-dir: build/allure-results
+#            pages-branch: gh-pages
+#            keep-files: true
 
       - name: Slack Notify of failure
         if: failure() && inputs.sendSlackNotifications

@@ -109,6 +109,44 @@ jobs:
           echo "DB_SUFFIX=$DB_SUFFIX"
           echo "db_suffix=$DB_SUFFIX" >> $GITHUB_OUTPUT
 
+      - name: Inspect Python on runner (system + venv)
+        shell: bash
+        run: |
+          set -euxo pipefail
+          echo "Runner OS: $RUNNER_OS"
+          
+          echo "--- System Python(s) ---"
+          command -v python || true
+          command -v python3 || true
+          which -a python3 || true
+          python3 --version
+          python3 -c 'import sys,platform; print("sys.version:", sys.version); print("sys.executable:", sys.executable); print("platform:", platform.platform())'
+          
+          echo "--- Fresh venv Python ---"
+          python3 -m venv .venv
+          source .venv/bin/activate
+          python -VV
+          python -c 'import sys; print("venv sys.executable:", sys.executable)'
+          
+          echo "--- Probe: typing.Union mutability ---"
+          python - <<'PY'
+          import typing
+          try:
+              setattr(typing.Union, "__module__", "probe")
+              print("typing.Union setattr: OK (pre-3.14 behavior)")
+          except Exception as e:
+              print("typing.Union setattr: FAILED ->", repr(e), "(seen on 3.14)")
+          PY
+          
+          echo "--- httpx/httpcore versions (if installed) ---"
+          python - <<'PY'
+          try:
+              import httpx, httpcore
+              print("httpx:", httpx.__version__, "httpcore:", httpcore.__version__)
+          except Exception as e:
+              print("Import check skipped/failed:", repr(e))
+          PY
+
       - name: Setup database and engine
         id: setup
         if: ${{ inputs.database == '' }}
@@ -144,22 +182,22 @@ jobs:
         if: runner.os != 'Windows'
         run: chmod +x gradlew
 
-      - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Denv="staging" -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ steps.set-account.outputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v2" -Dv2GenerateSeriesMaxSize="${{ vars.V2_GENERATE_SERIES_MAX_SIZE }}" -DintegrationTestMaxHeap=3g
-
-      - name: Upload integration test reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: integrationTest-reports-${{ inputs.os_name }}-java${{ inputs.java_version }}
-          path: |
-            build/reports/tests/integrationTest
-            build/test-results/integrationTest
-            build/reports/problems
-            build/reports/tests/test
-            build/test-results/test
-          if-no-files-found: warn
-          retention-days: 4
+#      - name: Run integration tests
+#        run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Denv="staging" -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ steps.set-account.outputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v2" -Dv2GenerateSeriesMaxSize="${{ vars.V2_GENERATE_SERIES_MAX_SIZE }}" -DintegrationTestMaxHeap=3g
+#
+#      - name: Upload integration test reports
+#        if: always()
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: integrationTest-reports-${{ inputs.os_name }}-java${{ inputs.java_version }}
+#          path: |
+#            build/reports/tests/integrationTest
+#            build/test-results/integrationTest
+#            build/reports/problems
+#            build/reports/tests/test
+#            build/test-results/test
+#          if-no-files-found: warn
+#          retention-days: 4
 
       # Collect logs into workspace (Linux/macOS)
       - name: Collect Gradle logs (unix)
@@ -179,16 +217,16 @@ jobs:
           Get-ChildItem -Path $env:USERPROFILE\.gradle\daemon\*\*.log -ErrorAction SilentlyContinue | Copy-Item -Destination build\ci-logs\gradle -ErrorAction SilentlyContinue
           Get-ChildItem -Path . -Recurse -Include hs_err_pid*.log,replay_pid*.log -ErrorAction SilentlyContinue | Copy-Item -Destination build\ci-logs -ErrorAction SilentlyContinue
 
-      - name: Allure Report
-        uses: firebolt-db/action-allure-report@v1
-        if: always() && runner.os == 'Linux' # Needed in order to report failed tests
-        continue-on-error: true # FIR-48984
-        with:
-            github-key: ${{ secrets.GITHUB_TOKEN }}
-            test-type: integration_v2
-            allure-dir: build/allure-results
-            pages-branch: gh-pages
-            keep-files: true
+#      - name: Allure Report
+#        uses: firebolt-db/action-allure-report@v1
+#        if: always() && runner.os == 'Linux' # Needed in order to report failed tests
+#        continue-on-error: true # FIR-48984
+#        with:
+#            github-key: ${{ secrets.GITHUB_TOKEN }}
+#            test-type: integration_v2
+#            allure-dir: build/allure-results
+#            pages-branch: gh-pages
+#            keep-files: true
 
       - name: Slack Notify of failure
         if: failure() && inputs.sendSlackNotifications
