@@ -2,18 +2,22 @@ package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.annotation.ExcludeFromJacocoGeneratedReport;
+import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.client.account.FireboltAccountClient;
 import com.firebolt.jdbc.client.authentication.AuthenticationRequest;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.client.authentication.UsernamePasswordAuthenticationRequest;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineApiService;
 import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
 import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.type.ParserVersion;
+
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.Properties;
@@ -97,6 +101,53 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
         return false;
     }
 
+    @Override
+    public boolean getAutoCommit() throws SQLException {
+        validateConnectionIsNotClose();
+        return true;
+    }
+
+    @Override
+    @ExcludeFromJacocoGeneratedReport
+    @NotImplemented
+    public void setAutoCommit(boolean autoCommit) throws SQLException {}
+
+    @Override
+    public int getTransactionIsolation() throws SQLException {
+        validateConnectionIsNotClose();
+        return Connection.TRANSACTION_NONE;
+    }
+
+    @Override
+    public void setTransactionIsolation(int level) throws SQLException {
+        if (level != Connection.TRANSACTION_NONE) {
+            throw new FireboltSQLFeatureNotSupportedException();
+        }
+    }
+
+    @Override
+    @NotImplemented
+    public void commit() throws  SQLException {
+        // no-op as transactions are not supported
+    }
+
+    @Override
+    @NotImplemented
+    public void rollback() throws SQLException {
+        // no-op as transactions are not supported
+    }
+
+    /**
+     * Ensures a transaction is started if auto-commit is disabled and no transaction is active.
+     * Called automatically before query execution.
+     *
+     *
+     * @throws SQLException if there's an error starting the transaction
+     */
+    @Override
+    public void ensureTransactionForQueryExecution() throws SQLException {
+        /* Since v1 does not support transactions this will be no-op */
+    }
     @Override
     public Optional<String> getConnectionUserAgentHeader() {
         return Optional.empty();

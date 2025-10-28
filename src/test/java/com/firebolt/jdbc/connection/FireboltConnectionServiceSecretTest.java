@@ -60,6 +60,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -477,6 +478,55 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
 
     private void disableCacheConnection() {
         connectionProperties.put("cache_connection", "none");
+    }
+
+    @Test
+    void shouldRollbackTransactionWhenClosingConnectionWithActiveTransaction() throws SQLException {
+        try (FireboltConnection connection = createConnection(url, connectionProperties)) {
+            when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
+
+            // Start a transaction
+            connection.setAutoCommit(false);
+            connection.ensureTransactionForQueryExecution();
+
+            // Verify we're in a transaction
+            assertFalse(connection.getAutoCommit());
+
+            // Close the connection - this should trigger a rollback
+            connection.close();
+
+            // Verify rollback was called
+            ArgumentCaptor<StatementInfoWrapper> statementCaptor = ArgumentCaptor.forClass(StatementInfoWrapper.class);
+            verify(fireboltStatementService, times(2))
+                    .execute(statementCaptor.capture(), any(), any());
+
+            List<StatementInfoWrapper> statements = statementCaptor.getAllValues();
+            assertEquals("BEGIN TRANSACTION", statements.get(0).getSql());
+            assertEquals("ROLLBACK", statements.get(1).getSql());
+            // The third call might be from connection cleanup
+        }
+    }
+
+    @Test
+    void shouldNotRollbackWhenClosingConnectionWithoutActiveTransaction() throws SQLException {
+        try (FireboltConnection connection = createConnection(url, connectionProperties)) {
+            // Don't start a transaction - keep auto-commit enabled
+            assertTrue(connection.getAutoCommit());
+
+            // Close the connection - this should NOT trigger a rollback
+            connection.close();
+
+            // Verify no rollback was called (only connection setup calls)
+            ArgumentCaptor<StatementInfoWrapper> statementCaptor = ArgumentCaptor.forClass(StatementInfoWrapper.class);
+            verify(fireboltStatementService, atLeast(0))
+                    .execute(statementCaptor.capture(), any(), any());
+
+            // Check that no ROLLBACK statement was executed
+            List<StatementInfoWrapper> statements = statementCaptor.getAllValues();
+            boolean hasRollback = statements.stream()
+                    .anyMatch(stmt -> "ROLLBACK".equals(stmt.getSql()));
+            assertFalse(hasRollback, "No ROLLBACK statement should be executed when closing without active transaction");
+        }
     }
 
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
