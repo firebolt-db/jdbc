@@ -503,7 +503,6 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
             List<StatementInfoWrapper> statements = statementCaptor.getAllValues();
             assertEquals("BEGIN TRANSACTION", statements.get(0).getSql());
             assertEquals("ROLLBACK", statements.get(1).getSql());
-            // The third call might be from connection cleanup
         }
     }
 

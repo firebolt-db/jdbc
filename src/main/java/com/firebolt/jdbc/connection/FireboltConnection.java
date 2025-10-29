@@ -383,17 +383,17 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	@Override
 	public void close() {
 		log.debug("Closing connection");
-        if (inTransaction) {
-            try {
-                rollback();
-            } catch (SQLException e) {
-                log.error("Exception encountered while rolling back transaction on close");
-            }
-        }
 		synchronized (this) {
 			if (isClosed()) {
 				return;
 			} else {
+                if (inTransaction) {
+                    try {
+                        rollback();
+                    } catch (SQLException e) {
+                        log.error("Exception encountered while rolling back transaction on close");
+                    }
+                }
 				closed = true;
 			}
 		}

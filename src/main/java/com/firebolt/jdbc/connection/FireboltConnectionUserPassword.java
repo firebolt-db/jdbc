@@ -110,7 +110,9 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
     @Override
     @ExcludeFromJacocoGeneratedReport
     @NotImplemented
-    public void setAutoCommit(boolean autoCommit) throws SQLException {}
+    public void setAutoCommit(boolean autoCommit) throws SQLException {
+        // no-op as transactions are not supported
+    }
 
     @Override
     public int getTransactionIsolation() throws SQLException {
