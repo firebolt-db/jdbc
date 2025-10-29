@@ -65,6 +65,7 @@ class UsageTrackerUtilTest {
 	@CsvSource(value = {
 			"'',''",
 			"AwesomeClient:2.0.1,'AwesomeClient/2.0.1 '",
+			"AwesomeClient:2.0,'AwesomeClient/2.0 '",
 	}, delimiter = ',')
 	void shouldGetUserAgentCustomConnectors(String userClients, String expectedPrefix) {
 		System.setProperty("os.name", "MacosX");

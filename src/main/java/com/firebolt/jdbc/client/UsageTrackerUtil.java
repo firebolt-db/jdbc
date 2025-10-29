@@ -52,7 +52,7 @@ public class UsageTrackerUtil {
 	private static Map<String, String> extractNameToVersion(String namesAndVersions) {
 		// Example: connectors=ConnA:1.0.2,ConnB:2.9.3
 		Map<String, String> nameToVersion = new HashMap<>();
-		if (namesAndVersions.matches("(\\w+:\\d+?\\.\\d+?\\.\\d+?,?){1,100}")) {
+		if (namesAndVersions.matches("(\\w+:[\\d.]+?,?){1,100}")) {
 			for (String connector : namesAndVersions.split(",")) {
 				String[] connectorInfo = connector.split(":");
 				// Name, Version
