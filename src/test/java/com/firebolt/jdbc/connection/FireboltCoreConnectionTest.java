@@ -1,16 +1,23 @@
 package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.service.FireboltStatementService;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
+
+import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -19,6 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,6 +40,9 @@ class FireboltCoreConnectionTest {
 
     @Mock
     private Statement mockStatement;
+
+    @Mock
+    private FireboltStatementService fireboltStatementService;
 
     @ParameterizedTest(name = "Valid URL: {0}")
     @ValueSource(strings = {
@@ -155,6 +169,222 @@ class FireboltCoreConnectionTest {
         }
     }
 
+    @Test
+    void shouldStartTransactionAndCommitWhenSwitchingToAutoCommit() throws SQLException {
+        Map<String, String> connectionParams = Map.of(
+                "url", "https://localhost:3473",
+                "database", "my_db"
+        );
+
+        try (FireboltCoreConnection connection = createConnectionWithParamsAndMockStatementService(connectionParams)) {
+            when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
+
+            connection.setAutoCommit(false);
+            assertFalse(connection.getAutoCommit());
+
+            connection.createStatement().execute("SELECT 1");
+
+            connection.setAutoCommit(true);
+            assertTrue(connection.getAutoCommit());
+
+            ArgumentCaptor<StatementInfoWrapper> statementCaptor = ArgumentCaptor.forClass(StatementInfoWrapper.class);
+
+            verify(fireboltStatementService, times(4))
+                    .execute(statementCaptor.capture(), any(), any());
+
+            List<StatementInfoWrapper> statement = statementCaptor.getAllValues();
+            assertEquals("USE DATABASE \"my_db\"", statement.get(0).getSql());
+            assertEquals("BEGIN TRANSACTION", statement.get(1).getSql());
+            assertEquals("SELECT 1", statement.get(2).getSql());
+            assertEquals("COMMIT", statement.get(3).getSql());
+        }
+    }
+
+    @Test
+    void shouldThrowExceptionWhenCommittingOrRollbackWithAutoCommitEnabled() throws SQLException {
+        Map<String, String> connectionParams = Map.of(
+                "url", "https://localhost:3473",
+                "database", "my_db"
+        );
+
+        try (FireboltCoreConnection connection = createConnectionWithParams(connectionParams)) {
+            assertTrue(connection.getAutoCommit());
+
+            FireboltException commitException = assertThrows(FireboltException.class, connection::commit);
+            assertEquals("Cannot commit when auto-commit is enabled", commitException.getMessage());
+
+            FireboltException rollbackException = assertThrows(FireboltException.class, connection::rollback);
+            assertEquals("Cannot rollback when auto-commit is enabled", rollbackException.getMessage());
+        }
+    }
+
+    @Test
+    void shouldThrowExceptionWhenCommittingOrRollbackWithoutActiveTransaction() throws SQLException {
+        Map<String, String> connectionParams = Map.of(
+                "url", "https://localhost:3473",
+                "database", "my_db"
+        );
+
+        try (FireboltCoreConnection connection = createConnectionWithParams(connectionParams)) {
+            connection.setAutoCommit(false);
+
+            FireboltException commitException = assertThrows(FireboltException.class, connection::commit);
+            assertEquals("No transaction is currently active", commitException.getMessage());
+
+            FireboltException rollbackException = assertThrows(FireboltException.class, connection::rollback);
+            assertEquals("No transaction is currently active", rollbackException.getMessage());
+        }
+    }
+
+    @Test
+    void shouldCommitRollbackAndBeginTransactionSuccessfully() throws SQLException {
+        Map<String, String> connectionParams = Map.of(
+                "url", "https://localhost:3473",
+                "database", "my_db"
+        );
+
+        try (FireboltCoreConnection connection = createConnectionWithParamsAndMockStatementService(connectionParams)) {
+            when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
+
+            connection.setAutoCommit(false);
+
+            Statement statement1 = connection.createStatement();
+            statement1.execute("SELECT 1");
+            connection.commit();
+
+            Statement statement2 = connection.createStatement();
+            statement2.execute("SELECT 2");
+            connection.rollback();
+
+            ArgumentCaptor<StatementInfoWrapper> statementCaptor = ArgumentCaptor.forClass(StatementInfoWrapper.class);
+
+            verify(fireboltStatementService, times(7))
+                    .execute(statementCaptor.capture(), any(), any());
+
+            List<StatementInfoWrapper> statement = statementCaptor.getAllValues();
+            assertEquals("USE DATABASE \"my_db\"", statement.get(0).getSql());
+            assertEquals("BEGIN TRANSACTION", statement.get(1).getSql());
+            assertEquals("SELECT 1", statement.get(2).getSql());
+            assertEquals("COMMIT", statement.get(3).getSql());
+            assertEquals("BEGIN TRANSACTION", statement.get(4).getSql());
+            assertEquals("SELECT 2", statement.get(5).getSql());
+            assertEquals("ROLLBACK", statement.get(6).getSql());
+        }
+    }
+
+    @Test
+    void shouldHandleTransactionErrorsGracefully() throws SQLException {
+        Map<String, String> connectionParams = Map.of(
+                "url", "https://localhost:3473",
+                "database", "my_db"
+        );
+
+        try (FireboltCoreConnection connection = createConnectionWithParamsAndMockStatementService(connectionParams)) {
+            connection.setAutoCommit(false);
+
+            doThrow(new SQLException("")).when(fireboltStatementService).execute(any(), any(), any());
+
+            FireboltException exception = assertThrows(FireboltException.class,
+                    connection::ensureTransactionForQueryExecution);
+            assertEquals("Could not start transaction for query execution", exception.getMessage());
+        }
+    }
+
+    @Test
+    void shouldHandleCommitErrorsGracefully() throws SQLException {
+        Map<String, String> connectionParams = Map.of(
+                "url", "https://localhost:3473",
+                "database", "my_db"
+        );
+
+        try (FireboltCoreConnection connection = createConnectionWithParamsAndMockStatementService(connectionParams)) {
+            connection.setAutoCommit(false);
+
+            connection.ensureTransactionForQueryExecution();
+
+            doThrow(new SQLException("Commit failed")).when(fireboltStatementService).execute(any(), any(), any());
+
+            FireboltException exception = assertThrows(FireboltException.class, connection::commit);
+            assertEquals("Could not commit the transaction", exception.getMessage());
+        }
+    }
+
+    @Test
+    void shouldHandleRollbackErrorsGracefully() throws SQLException {
+        Map<String, String> connectionParams = Map.of(
+                "url", "https://localhost:3473",
+                "database", "my_db"
+        );
+
+        try (FireboltCoreConnection connection = createConnectionWithParamsAndMockStatementService(connectionParams)) {
+            connection.setAutoCommit(false);
+
+            connection.ensureTransactionForQueryExecution();
+
+            doThrow(new SQLException("Rollback failed")).when(fireboltStatementService).execute(any(), any(), any());
+
+            FireboltException exception = assertThrows(FireboltException.class, connection::rollback);
+            assertEquals("Could not rollback the transaction", exception.getMessage());
+        }
+    }
+
+    @Test
+    void shouldRollbackTransactionWhenClosingConnectionWithActiveTransaction() throws SQLException {
+        Map<String, String> connectionParams = Map.of(
+                "url", "https://localhost:3473",
+                "database", "my_db"
+        );
+
+        try (FireboltCoreConnection connection = createConnectionWithParamsAndMockStatementService(connectionParams)) {
+            when(fireboltStatementService.execute(any(), any(), any())).thenReturn(Optional.empty());
+
+            // Start a transaction
+            connection.setAutoCommit(false);
+            connection.ensureTransactionForQueryExecution();
+
+            // Verify we're in a transaction
+            assertFalse(connection.getAutoCommit());
+
+            // Close the connection - this should trigger a rollback
+            connection.close();
+
+            // Verify rollback was called
+            ArgumentCaptor<StatementInfoWrapper> statementCaptor = ArgumentCaptor.forClass(StatementInfoWrapper.class);
+            verify(fireboltStatementService, times(3))
+                    .execute(statementCaptor.capture(), any(), any());
+
+            List<StatementInfoWrapper> statements = statementCaptor.getAllValues();
+            //needs to validate db
+            assertEquals("USE DATABASE \"my_db\"", statements.get(0).getSql());
+            assertEquals("BEGIN TRANSACTION", statements.get(1).getSql());
+            assertEquals("ROLLBACK", statements.get(2).getSql());
+        }
+    }
+
+    @Test
+    void shouldNotRollbackWhenClosingConnectionWithoutActiveTransaction() throws SQLException {
+        Map<String, String> connectionParams = Map.of(
+                "url", "https://localhost:3473",
+                "database", "my_db"
+        );
+
+        try (FireboltCoreConnection connection = createConnectionWithParamsAndMockStatementService(connectionParams)) {
+            // Don't start a transaction - keep auto-commit enabled
+            assertTrue(connection.getAutoCommit());
+
+            // Close the connection - this should NOT trigger a rollback
+            connection.close();
+
+            // Verify only the USE DATABASE call was made, no ROLLBACK
+            ArgumentCaptor<StatementInfoWrapper> statementCaptor = ArgumentCaptor.forClass(StatementInfoWrapper.class);
+            verify(fireboltStatementService, times(1))
+                    .execute(statementCaptor.capture(), any(), any());
+
+            List<StatementInfoWrapper> statements = statementCaptor.getAllValues();
+            assertEquals("USE DATABASE \"my_db\"", statements.get(0).getSql());
+        }
+    }
+
     private FireboltCoreConnection createConnection(String url) throws SQLException {
         StringBuilder jdbcUrlBuilder = new StringBuilder(VALID_URL_WITH_DB);
 
@@ -176,12 +406,27 @@ class FireboltCoreConnectionTest {
         return aFireboltCoreConnection(jdbcUrlBuilder.toString(), new Properties());
     }
 
+    private FireboltCoreConnection createConnectionWithParamsAndMockStatementService(Map<String, String> parameters) throws SQLException {
+        StringBuilder jdbcUrlBuilder = new StringBuilder(VALID_URL_WITH_DB);
+
+        String params = parameters.entrySet().stream()
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .collect(Collectors.joining("&"));
+
+        jdbcUrlBuilder.append("&").append(params);
+        return aFireboltCoreConnectionAndMockStatementService(jdbcUrlBuilder.toString(), new Properties());
+    }
+
     private FireboltCoreConnection aFireboltCoreConnection(String jdbcUrl, Properties properties) throws SQLException {
-        return new FireboltCoreConnection(jdbcUrl, properties){
+        return new FireboltCoreConnection(jdbcUrl, properties, null, fireboltStatementService){
             @Override
             public Statement createStatement() {
                 return mockStatement;
             }
         };
+    }
+
+    private FireboltCoreConnection aFireboltCoreConnectionAndMockStatementService(String jdbcUrl, Properties properties) throws SQLException {
+        return new FireboltCoreConnection(jdbcUrl, properties, null, fireboltStatementService);
     }
 }

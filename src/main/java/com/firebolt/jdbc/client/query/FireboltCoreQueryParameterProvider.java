@@ -28,6 +28,8 @@ public class FireboltCoreQueryParameterProvider extends AbstractQueryParameterPr
         addQueryParameterIfNeeded(params, statementInfoWrapper.getPreparedStatementParameters());
         addQueryTimeoutIfNeeded(params, queryTimeout);
         addServerAsyncIfNeeded(params, isServerAsync);
+        addTransactionIdIfNeeded(params, fireboltProperties.getTransactionId());
+        addTransactionSequenceIdIfNeeded(params, fireboltProperties.getTransactionSequenceId());
 
         return params;
     }

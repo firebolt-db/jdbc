@@ -4,6 +4,8 @@ import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.client.authentication.AuthenticationRequest;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
+import com.firebolt.jdbc.service.FireboltAuthenticationService;
+import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.type.ParserVersion;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -18,14 +20,31 @@ import java.util.Properties;
 import lombok.CustomLog;
 import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.TestOnly;
 
 @CustomLog
 public class FireboltCoreConnection extends FireboltConnection {
 
-    private static final String PROTOCOL_VERSION = "2.3";
+    private static final String PROTOCOL_VERSION = "2.4";
 
     public FireboltCoreConnection(String url, Properties connectionSettings) throws SQLException {
         super(url, connectionSettings, PROTOCOL_VERSION, ParserVersion.CURRENT);
+        connect();
+    }
+
+    /**
+     * Test-only constructor that allows injection of FireboltStatementService for mocking
+     * @param url the connection URL
+     * @param connectionSettings connection properties
+     * @param fireboltAuthenticationService authentication service (can be null for core)
+     * @param fireboltStatementService statement service to inject
+     * @throws SQLException if connection fails
+     */
+    @TestOnly
+    protected FireboltCoreConnection(String url, Properties connectionSettings,
+                                   FireboltAuthenticationService fireboltAuthenticationService,
+                                   FireboltStatementService fireboltStatementService) throws SQLException {
+        super(url, connectionSettings, fireboltAuthenticationService, fireboltStatementService, PROTOCOL_VERSION, ParserVersion.CURRENT);
         connect();
     }
 

@@ -7,6 +7,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -24,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
 @Tag(TestTag.V2)
+@Execution(ExecutionMode.SAME_THREAD)
 class TransactionTest extends IntegrationTest {
 
 	@BeforeAll
@@ -41,6 +44,7 @@ class TransactionTest extends IntegrationTest {
 		try (Connection connection = createConnection();
 			 Statement statement = connection.createStatement()) {
 			connection.setAutoCommit(true); //no-op, but ensures auto-commit is true
+            // In core this breaks Firebolt Core since a transaction is orphaned and Core cannot manage more than 1 transaction
 			statement.execute("BEGIN TRANSACTION;");
 			statement.execute("INSERT INTO transaction_test VALUES (2, 'test')");
 
@@ -58,6 +62,7 @@ class TransactionTest extends IntegrationTest {
 	}
 
 	@Test
+    @Tag(TestTag.CORE)
 	void shouldCommitTransactionWhenSwitchingToAutoCommit() throws SQLException {
 		try (Connection connection = createConnection();
 			 Statement statement = connection.createStatement()) {
@@ -81,6 +86,7 @@ class TransactionTest extends IntegrationTest {
 	}
 
 	@Test
+    @Tag(TestTag.CORE)
 	void shouldHandleSequentialTransactions() throws SQLException {
 		try (Connection connection = createConnection();
 			 Statement statement = connection.createStatement()) {
@@ -109,6 +115,7 @@ class TransactionTest extends IntegrationTest {
 	}
 
 	@Test
+    @Tag(TestTag.CORE)
 	void shouldRollbackTransactionSuccessfully() throws SQLException {
 		try (Connection connection = createConnection();
 			 Statement statement = connection.createStatement()) {
@@ -134,6 +141,7 @@ class TransactionTest extends IntegrationTest {
 	}
 
 	@Test
+    @Tag(TestTag.CORE)
 	void shouldWorkWithPreparedStatements() throws SQLException {
 		try (Connection connection = createConnection();
 			 PreparedStatement ps = connection.prepareStatement("INSERT INTO transaction_test VALUES (?, 'test')")) {
@@ -151,6 +159,7 @@ class TransactionTest extends IntegrationTest {
 	}
 
 	@Test
+    @Tag(TestTag.CORE)
 	void shouldNotCommitTransactionWhenCommitWasManuallyExecuted() throws SQLException {
 		try (Connection connection = createConnection();
 			 Statement statement = connection.createStatement()) {
@@ -174,7 +183,8 @@ class TransactionTest extends IntegrationTest {
 	}
 
 	@Test
-	void shouldNotCommitTransactionWhenConnectionClosesOnAutoCommitFalse() throws SQLException {
+    @Tag(TestTag.CORE)
+	void shouldRollbackTransactionWhenConnectionClosesOnAutoCommitFalse() throws SQLException {
 		try (Connection connection = createConnection();
 			 Statement statement = connection.createStatement()) {
 
@@ -188,6 +198,7 @@ class TransactionTest extends IntegrationTest {
 	}
 
 	@Test
+    @Tag(TestTag.CORE)
 	void shouldThrowExceptionWhenStartingTransactionDuringTransaction() throws SQLException {
 		try (Connection connection = createConnection();
 			 Statement statement = connection.createStatement()) {
@@ -202,6 +213,7 @@ class TransactionTest extends IntegrationTest {
 	}
 
 	@Test
+    @Tag(TestTag.CORE)
 	void shouldNotRollbackTransactionWhenRollbackWasManuallyExecuted() throws SQLException {
 		try (Connection connection = createConnection();
 			 Statement statement = connection.createStatement()) {
@@ -225,6 +237,7 @@ class TransactionTest extends IntegrationTest {
 	}
 
 	@Test
+    @Tag(TestTag.CORE)
 	void shouldThrowExceptionWhenCommitingWithNoTransaction() throws SQLException {
 		try (Connection connection = createConnection();
 			 Statement statement = connection.createStatement()) {
@@ -237,6 +250,7 @@ class TransactionTest extends IntegrationTest {
 	}
 
 	@Test
+    @Tag(TestTag.CORE)
 	void shouldThrowExceptionWhenRollbackWithNoTransaction() throws SQLException {
 		try (Connection connection = createConnection();
 			 Statement statement = connection.createStatement()) {
@@ -249,6 +263,7 @@ class TransactionTest extends IntegrationTest {
 	}
 
 	@Test
+    @Tag(TestTag.CORE)
 	void shouldNotCommitOnSetStatement() throws SQLException {
 		try (Connection connection = createConnection();
 			 Statement statement = connection.createStatement()) {
