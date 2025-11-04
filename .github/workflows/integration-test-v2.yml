@@ -180,7 +180,7 @@ jobs:
           Get-ChildItem -Path . -Recurse -Include hs_err_pid*.log,replay_pid*.log -ErrorAction SilentlyContinue | Copy-Item -Destination build\ci-logs -ErrorAction SilentlyContinue
 
       - name: Allure Report
-        uses: firebolt-db/action-allure-report@v1
+        uses: firebolt-db/action-allure-report@bump-allure-version
         if: always() && runner.os == 'Linux' # Needed in order to report failed tests
         continue-on-error: true # FIR-48984
         with:
