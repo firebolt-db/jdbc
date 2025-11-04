@@ -2,18 +2,19 @@ package integration.tests;
 
 import com.firebolt.jdbc.testutils.TestTag;
 import integration.IntegrationTest;
-import lombok.CustomLog;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
+import lombok.CustomLog;
+import org.junit.Assert;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -362,6 +363,162 @@ class TransactionTest extends IntegrationTest {
 	}
 
 	@Test
+	void whenCommitFailsTheNextRunOnTheSameTransactionWillFailIfRollbackIsNotExecuted() throws SQLException {
+		String tableName = "failed_commit_without_rollback";
+		String dropTableSQL = String.format("DROP TABLE IF EXISTS %s", tableName);
+		String createTableSQL = String.format("CREATE TABLE IF NOT EXISTS %s (id INT, name TEXT) PRIMARY INDEX id", tableName);
+		String insertSQL = String.format("INSERT INTO %s (id, name) VALUES (?, ?)", tableName);
+		String updateSQL = String.format("UPDATE %s SET name = ? where id = ?", tableName);
+		String selectSQL = String.format("SELECT * FROM %s ORDER BY id", tableName);
+
+		try (Connection conn = createConnection(); PreparedStatement preparedStatement=conn.prepareStatement(insertSQL); Statement statement = conn.createStatement()) {
+			// create initial table
+			statement.execute(dropTableSQL);
+			statement.execute(createTableSQL);
+
+			// insert one row
+			preparedStatement.setInt(1, 1);
+			preparedStatement.setString(2, "initial name");
+			preparedStatement.execute();
+
+			ResultSet resultSet = statement.executeQuery(selectSQL);
+			assertTrue(resultSet.next());
+			assertEquals(1, resultSet.getInt("id"));
+			assertEquals("initial name", resultSet.getString("name"));
+			assertTrue(!resultSet.next());
+		}
+
+		try (Connection tx1 = createConnection();
+			 Connection tx2 = createConnection()) {
+
+			tx1.setAutoCommit(false);
+			tx2.setAutoCommit(false);
+
+			try (PreparedStatement ps1 = tx1.prepareStatement(updateSQL)) {
+				ps1.setString(1, "first transaction");
+				ps1.setInt(2, 1);
+				ps1.executeUpdate();
+			}
+
+			try (PreparedStatement ps2 = tx2.prepareStatement(updateSQL)) {
+				ps2.setString(1, "second transaction");
+				ps2.setInt(2, 1);
+				ps2.executeUpdate();
+			}
+
+			// this should succeed
+			tx1.commit();
+
+			// this should fail
+			try {
+				tx2.commit();
+				Assert.fail("should not be able to commit the second transaction");
+			} catch (SQLException e) {
+				assertTrue(e.getCause().getMessage().contains("Failed to commit transaction, error: 'detected 1 conflicts with 1 transactions on transaction commit'"));
+				// try to execute another insert on a failed transaction
+				try (PreparedStatement preparedStatement = tx2.prepareStatement(insertSQL)) {
+					preparedStatement.setInt(1, 2);
+					preparedStatement.setString(2, "new record");
+
+					try {
+						preparedStatement.execute();
+						Assertions.fail("Should not be able to execute another statement on a failed transaction");
+					} catch (SQLException exception) {
+						assertTrue(exception.getMessage().contains("current transaction is aborted, commands will be ignored until execution of ROLLBACK or COMMIT"));
+					}
+				}
+			}
+
+		}
+
+		// should only have one row with the values from the first transaction
+		try (Connection connection = createConnection();
+			 Statement statement = connection.createStatement();
+			 ResultSet rs = statement.executeQuery(selectSQL)) {
+
+			assertTrue(rs.next());
+			assertEquals(1, rs.getInt("id"), "id is not equal after commit");
+			assertEquals("first transaction", rs.getString("name"), "name is not equal after commit");
+
+			assertFalse(rs.next());
+		}
+	}
+
+	@Test
+	void canExecuteRollbackOnAFailedTransaction() throws SQLException {
+		String tableName = "execute_rollback_on_failed_transaction";
+		String dropTableSQL = String.format("DROP TABLE IF EXISTS %s", tableName);
+		String createTableSQL = String.format("CREATE TABLE IF NOT EXISTS %s (id INT, name TEXT) PRIMARY INDEX id", tableName);
+		String insertSQL = String.format("INSERT INTO %s (id, name) VALUES (?, ?)", tableName);
+		String updateSQL = String.format("UPDATE %s SET name = ? where id = ?", tableName);
+		String selectSQL = String.format("SELECT * FROM %s ORDER BY id", tableName);
+
+		try (Connection conn = createConnection(); PreparedStatement preparedStatement=conn.prepareStatement(insertSQL); Statement statement = conn.createStatement()) {
+			// create initial table
+			statement.execute(dropTableSQL);
+			statement.execute(createTableSQL);
+
+			// insert one row
+			preparedStatement.setInt(1, 1);
+			preparedStatement.setString(2, "initial name");
+			preparedStatement.execute();
+
+			ResultSet resultSet = statement.executeQuery(selectSQL);
+			assertTrue(resultSet.next());
+			assertEquals(1, resultSet.getInt("id"));
+			assertEquals("initial name", resultSet.getString("name"));
+			assertTrue(!resultSet.next());
+		}
+
+		try (Connection tx1 = createConnection();
+			 Connection tx2 = createConnection()) {
+
+			tx1.setAutoCommit(false);
+			tx2.setAutoCommit(false);
+
+			try (PreparedStatement ps1 = tx1.prepareStatement(updateSQL)) {
+				ps1.setString(1, "first transaction");
+				ps1.setInt(2, 1);
+				ps1.executeUpdate();
+			}
+
+			try (PreparedStatement ps2 = tx2.prepareStatement(updateSQL)) {
+				ps2.setString(1, "second transaction");
+				ps2.setInt(2, 1);
+				ps2.executeUpdate();
+			}
+
+			// this should succeed
+			tx1.commit();
+
+			// this should fail
+			try {
+				tx2.commit();
+				Assert.fail("should not be able to commit the second transaction");
+			} catch (SQLException e) {
+				assertTrue(e.getCause().getMessage().contains("Failed to commit transaction, error: 'detected 1 conflicts with 1 transactions on transaction commit'"));
+
+				// should be able to execute rollback
+				tx2.rollback();
+			}
+
+		}
+
+		// should only have one row with the values from the first transaction
+		try (Connection connection = createConnection();
+			 Statement statement = connection.createStatement();
+			 ResultSet rs = statement.executeQuery(selectSQL)) {
+
+			assertTrue(rs.next());
+			assertEquals(1, rs.getInt("id"), "id is not equal after commit");
+			assertEquals("first transaction", rs.getString("name"), "name is not equal after commit");
+
+			assertFalse(rs.next());
+		}
+	}
+
+
+	@Test
 	void shouldParallelTransactions() throws SQLException {
 		String tableName = "parallel_transactions_test";
 		String dropTableSQL = String.format("DROP TABLE IF EXISTS %s", tableName);
@@ -401,7 +558,7 @@ class TransactionTest extends IntegrationTest {
 			tx1.commit();
 			tx2.commit();
 		}
-			
+
 		try (Connection connection = createConnection();
 			 Statement statement = connection.createStatement();
 			 ResultSet rs = statement.executeQuery(selectSQL)) {
@@ -421,7 +578,7 @@ class TransactionTest extends IntegrationTest {
 			assertFalse(rs.next(), "Next() returned true when it shouldn't after commit");
 		}
 	}
-	
+
 	private void validateSingleResult(Connection connection, String selectSQL, int expectedId, String expectedName) throws SQLException {
 		try (Statement statement = connection.createStatement();
 			 ResultSet rs = statement.executeQuery(selectSQL)) {
