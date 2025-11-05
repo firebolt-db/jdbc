@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static com.firebolt.jdbc.exception.ExceptionType.CANCELED;
+import static com.firebolt.jdbc.exception.ExceptionType.CONFLICT;
 import static com.firebolt.jdbc.exception.ExceptionType.ERROR;
 import static com.firebolt.jdbc.exception.ExceptionType.INVALID_REQUEST;
 import static com.firebolt.jdbc.exception.ExceptionType.REQUEST_BODY_TOO_LARGE;
@@ -16,6 +17,7 @@ import static com.firebolt.jdbc.exception.ExceptionType.TOO_MANY_REQUESTS;
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_NOT_SUPPORTED;
 import static com.firebolt.jdbc.exception.ExceptionType.UNAUTHORIZED;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_ENTITY_TOO_LARGE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
@@ -119,6 +121,18 @@ class FireboltExceptionTest {
         FireboltException exception = new FireboltException(message, HTTP_ENTITY_TOO_LARGE, cause);
         
         assertEquals(REQUEST_BODY_TOO_LARGE, exception.getType());
+        assertNull(exception.getErrorMessageFromServer());
+        assertEquals(message, exception.getMessage());
+        assertEquals(cause, exception.getCause());
+    }
+
+    @Test
+    void shouldCreateExceptionWhenHttpStatusIsConflict() {
+        String message = "Test error message";
+        Exception cause = new RuntimeException("Cause exception");
+        FireboltException exception = new FireboltException(message, HTTP_CONFLICT, cause);
+
+        assertEquals(CONFLICT, exception.getType());
         assertNull(exception.getErrorMessageFromServer());
         assertEquals(message, exception.getMessage());
         assertEquals(cause, exception.getCause());

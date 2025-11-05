@@ -10,11 +10,12 @@ import com.firebolt.jdbc.cache.key.ClientSecretCacheKey;
 import com.firebolt.jdbc.client.account.FireboltAccountRetriever;
 import com.firebolt.jdbc.client.gateway.GatewayUrlResponse;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltEngineVersion2Service;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.statement.FireboltStatement;
-
+import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
@@ -25,8 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-
-import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -603,6 +602,39 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
             
             FireboltException exception = assertThrows(FireboltException.class, connection::rollback);
             assertEquals("Could not rollback the transaction", exception.getMessage());
+        }
+    }
+
+    @Test
+    void shouldPreserveTypeWhenBeginTransactionThrowsFireboltException() throws SQLException {
+        try (FireboltConnection connection = createConnection(url, connectionProperties)) {
+            connection.setAutoCommit(false);
+
+            doThrow(new FireboltException("begin failed", ExceptionType.CONFLICT))
+                    .when(fireboltStatementService).execute(any(), any(), any());
+
+            FireboltException ex = assertThrows(FireboltException.class, connection::ensureTransactionForQueryExecution);
+            assertEquals(ExceptionType.CONFLICT, ex.getType());
+            assertEquals("Could not start transaction for query execution", ex.getMessage());
+        }
+    }
+
+    @Test
+    void shouldPreserveTypeWhenCommitThrowsFireboltException() throws SQLException {
+        try (FireboltConnection connection = createConnection(url, connectionProperties)) {
+            connection.setAutoCommit(false);
+
+            // BEGIN succeeds, COMMIT fails with FireboltException of specific type
+            when(fireboltStatementService.execute(any(), any(), any()))
+                    .thenReturn(Optional.empty())
+                    .thenThrow(new FireboltException("commit failed", ExceptionType.CONFLICT));
+
+            // start transaction
+            connection.ensureTransactionForQueryExecution();
+
+            FireboltException ex = assertThrows(FireboltException.class, connection::commit);
+            assertEquals(ExceptionType.CONFLICT, ex.getType());
+            assertEquals("Could not commit the transaction", ex.getMessage());
         }
     }
 }
