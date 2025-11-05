@@ -168,7 +168,10 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
             try (Statement statement = createStatement()) {
                 statement.execute("BEGIN TRANSACTION");
                 inTransaction = true;
-            } catch (SQLException ex) {
+            } catch (FireboltException e) {
+                throw new FireboltException("Could not %s the transaction", e, ((FireboltException) e).getType());
+            }
+             catch (SQLException ex) {
                 throw new FireboltException("Could not start transaction for query execution", ex);
             } finally {
                 executingTransactionCommand = false;
@@ -188,6 +191,8 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
         try (Statement statement = createStatement()) {
             statement.execute(sql);
             inTransaction = false;
+        } catch (FireboltException e) {
+            throw new FireboltException(String.format("Could not %s the transaction", sql.toLowerCase()), e,((FireboltException) e).getType());
         } catch (SQLException ex) {
             throw new FireboltException(String.format("Could not %s the transaction", sql.toLowerCase()), ex);
         } finally {

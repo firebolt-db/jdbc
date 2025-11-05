@@ -3,6 +3,7 @@ package com.firebolt.jdbc.exception;
 import java.sql.SQLException;
 import lombok.Getter;
 
+import static com.firebolt.jdbc.exception.ExceptionType.CONFLICT;
 import static com.firebolt.jdbc.exception.ExceptionType.ERROR;
 import static com.firebolt.jdbc.exception.ExceptionType.INVALID_REQUEST;
 import static com.firebolt.jdbc.exception.ExceptionType.REQUEST_BODY_TOO_LARGE;
@@ -10,6 +11,7 @@ import static com.firebolt.jdbc.exception.ExceptionType.RESOURCE_NOT_FOUND;
 import static com.firebolt.jdbc.exception.ExceptionType.TOO_MANY_REQUESTS;
 import static com.firebolt.jdbc.exception.ExceptionType.UNAUTHORIZED;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_ENTITY_TOO_LARGE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
@@ -102,6 +104,8 @@ public class FireboltException extends SQLException {
 				return UNAUTHORIZED;
 			case HTTP_NOT_FOUND:                // 404
 				return RESOURCE_NOT_FOUND;
+			case HTTP_CONFLICT:                 // 409
+				return CONFLICT;
 			case HTTP_ENTITY_TOO_LARGE:         // 413
 				return REQUEST_BODY_TOO_LARGE;
 			case HTTP_TOO_MANY_REQUESTS:        // 429

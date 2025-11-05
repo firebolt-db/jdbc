@@ -1,5 +1,7 @@
 package integration.tests;
 
+import com.firebolt.jdbc.exception.ExceptionType;
+import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.testutils.TestTag;
 import integration.IntegrationTest;
 import java.sql.Connection;
@@ -414,6 +416,9 @@ class TransactionTest extends IntegrationTest {
 				tx2.commit();
 				Assert.fail("should not be able to commit the second transaction");
 			} catch (SQLException e) {
+				FireboltException fireboltException = (FireboltException) e;
+				assertEquals(ExceptionType.CONFLICT, fireboltException.getType());
+
 				assertTrue(e.getCause().getMessage().contains("Failed to commit transaction, error: 'detected 1 conflicts with 1 transactions on transaction commit'"));
 				// try to execute another insert on a failed transaction
 				try (PreparedStatement preparedStatement = tx2.prepareStatement(insertSQL)) {
@@ -496,6 +501,8 @@ class TransactionTest extends IntegrationTest {
 				tx2.commit();
 				Assert.fail("should not be able to commit the second transaction");
 			} catch (SQLException e) {
+				FireboltException fireboltException = (FireboltException) e;
+				assertEquals(ExceptionType.CONFLICT, fireboltException.getType());
 				assertTrue(e.getCause().getMessage().contains("Failed to commit transaction, error: 'detected 1 conflicts with 1 transactions on transaction commit'"));
 
 				// should be able to execute rollback
