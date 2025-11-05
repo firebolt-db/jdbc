@@ -87,7 +87,7 @@ jobs:
         draft: false
         tag_name: ${{ github.event.inputs.tag_name }}
     - name: Deploy to Maven Central repository
-      run: ./gradlew publish
+      run: ./gradlew publishToSonatype
       env:
         MAVEN_REPO_USERNAME: ${{ secrets.MAVEN_REPO_USERNAME }}
         MAVEN_REPO_PASSWORD: ${{ secrets.MAVEN_REPO_PASSWORD }}
