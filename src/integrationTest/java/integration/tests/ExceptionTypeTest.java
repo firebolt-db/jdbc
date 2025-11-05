@@ -47,8 +47,11 @@ public class ExceptionTypeTest extends IntegrationTest {
         // so create multiple statements.
         String largeValue = "Ā".repeat(2100000);
 
-        // force the merge prepared statement so all will be executed in one go
-        Map<String, String> connectionParams = Map.of("merge_prepared_statement_batches", "true");
+        // force the merge prepared statement so all will be executed in one go, but do not compress
+        Map<String, String> connectionParams = Map.of(
+                "merge_prepared_statement_batches", "true",
+                "compress_request_payload", "false"
+        );
         try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), connectionParams)) {
             String preparedStatementSql = "INSERT INTO large_data_test_table (id, value) VALUES (?, ?)";
             PreparedStatement preparedStatement = connection.prepareStatement(preparedStatementSql);
