@@ -60,6 +60,7 @@ public class FireboltProperties {
 	private final String sslCertificatePath;
 	private final String sslMode;
 	private final boolean compress;
+	private final boolean compressRequestPayload;
 	private final String principal;
 	private final String secret;
 	private String engine; // updatable using use statement
@@ -104,6 +105,7 @@ public class FireboltProperties {
 		engine = getEngine(properties);
 		systemEngine = isSystemEngine(engine);
 		compress = ((Boolean) getSetting(properties, FireboltSessionProperty.COMPRESS)) && !systemEngine;
+		compressRequestPayload = ((Boolean) getSetting(properties, FireboltSessionProperty.COMPRESS_REQUEST_PAYLOAD)) && !systemEngine;
 		account = getSetting(properties, FireboltSessionProperty.ACCOUNT);
 		accountId = getSetting(properties, FireboltSessionProperty.ACCOUNT_ID);
 		keepAliveTimeoutMillis = getSetting(properties, FireboltSessionProperty.KEEP_ALIVE_TIMEOUT_MILLIS);

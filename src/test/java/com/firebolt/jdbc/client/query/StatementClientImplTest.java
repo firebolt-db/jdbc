@@ -16,6 +16,7 @@ import com.firebolt.jdbc.statement.StatementUtil;
 import com.firebolt.jdbc.type.ParserVersion;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -28,6 +29,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
 import lombok.NonNull;
 import okhttp3.Call;
 import okhttp3.Dispatcher;
@@ -104,6 +106,56 @@ class StatementClientImplTest {
 	})
 	void shouldPostSqlQueryWithExpectedUrl(boolean systemEngine, String expectedUrl) throws SQLException, IOException {
 		assertEquals(expectedUrl, shouldPostSqlQuery(systemEngine).getValue());
+	}
+
+	@Test
+	void shouldGzipRequestBodyWhenCompressionEnabled() throws Exception {
+		FireboltProperties fireboltProperties = FireboltProperties.builder()
+				.database("db2").host("firebolt2").port(555)
+				.compress(true)
+				.compressRequestPayload(true)
+				.build();
+		when(cloudV2connection.getAccessToken()).thenReturn(Optional.of("token"));
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, cloudV2connection, "ConnA:1.0.9", "ConnB:2.0.9");
+		injectMockedResponse(okHttpClient, 200, "");
+		Call call = getMockedCallWithResponse(200, "");
+		when(okHttpClient.newCall(any())).thenReturn(call);
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
+
+		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, fireboltProperties.isSystemEngine(), 15, false);
+
+		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
+		Request actualRequest = requestArgumentCaptor.getValue();
+		// header should signal gzip
+		assertEquals("gzip", actualRequest.header("Content-Encoding"));
+		// body should be gzipped and decode back to the SQL with label
+		String decoded = getGzipDecodedRequestString(actualRequest);
+		assertSqlStatement("show databases;", decoded);
+	}
+
+	@Test
+	void shouldNotGzipRequestBodyWhenCompressionDisabled() throws Exception {
+		FireboltProperties fireboltProperties = FireboltProperties.builder()
+				.database("db2").host("firebolt2").port(555)
+				.compress(true)
+				.compressRequestPayload(false)
+				.build();
+		when(cloudV2connection.getAccessToken()).thenReturn(Optional.of("token"));
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, cloudV2connection, "ConnA:1.0.9", "ConnB:2.0.9");
+		injectMockedResponse(okHttpClient, 200, "");
+		Call call = getMockedCallWithResponse(200, "");
+		when(okHttpClient.newCall(any())).thenReturn(call);
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("show databases").get(0);
+
+		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, fireboltProperties.isSystemEngine(), 15, false);
+
+		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
+		Request actualRequest = requestArgumentCaptor.getValue();
+		// header should not be present
+		assertNull(actualRequest.header("Content-Encoding"));
+		// body should be plain text
+		String actualQuery = getActualRequestString(actualRequest);
+		assertSqlStatement("show databases;", actualQuery);
 	}
 
 	private Entry<String, String> shouldPostSqlQuery(boolean systemEngine) throws SQLException, IOException {
@@ -590,6 +642,23 @@ class StatementClientImplTest {
 		Buffer buffer = new Buffer();
 		actualRequest.body().writeTo(buffer);
 		return buffer.readUtf8();
+	}
+
+	@NonNull
+	private String getGzipDecodedRequestString(Request actualRequest) throws IOException {
+		Buffer buffer = new Buffer();
+		actualRequest.body().writeTo(buffer);
+		byte[] gz = buffer.readByteArray();
+		try (GZIPInputStream gzin = new GZIPInputStream(new ByteArrayInputStream(gz));
+			 InputStreamReader reader = new InputStreamReader(gzin)) {
+			StringBuilder sb = new StringBuilder();
+			char[] tmp = new char[1024];
+			int n;
+			while ((n = reader.read(tmp)) > 0) {
+				sb.append(tmp, 0, n);
+			}
+			return sb.toString();
+		}
 	}
 
 	private void assertSqlStatement(String expected, String actual) {

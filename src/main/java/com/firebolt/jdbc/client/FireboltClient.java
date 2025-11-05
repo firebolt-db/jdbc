@@ -36,6 +36,9 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okio.BufferedSink;
+import okio.GzipSink;
+import okio.Okio;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -52,6 +55,7 @@ public abstract class FireboltClient implements CacheListener {
 	private static final String HEADER_AUTHORIZATION_BEARER_PREFIX_VALUE = "Bearer ";
 	private static final String HEADER_USER_AGENT = "User-Agent";
 	private static final String HEADER_PROTOCOL_VERSION = "Firebolt-Protocol-Version";
+	private static final String HEADER_CONTENT_ENCODING = "Content-Encoding";
 	private static final Pattern plainErrorPattern = Pattern.compile("Line (\\d+), Column (\\d+): (.*)$", Pattern.MULTILINE);
 	private final OkHttpClient httpClient;
 	private String headerUserAgentValue;
@@ -128,20 +132,56 @@ public abstract class FireboltClient implements CacheListener {
 	}
 
 	protected Request createPostRequest(String uri, String label, RequestBody body, String accessToken) {
+		// old behavior was without compression type
+		return createPostRequest(uri, label, body, accessToken, CompressionType.NONE);
+	}
+
+	protected Request createPostRequest(String uri, String label, RequestBody body, String accessToken, CompressionType compressionType) {
 		Request.Builder requestBuilder = new Request.Builder().url(uri).tag(label);
 		createHeaders(accessToken).forEach(header -> requestBuilder.addHeader(header.getKey(), header.getValue()));
 		if (body != null) {
-			requestBuilder.post(body);
+			RequestBody requestBody = body;
+			if (compressionType == CompressionType.GZIP) {
+				log.debug("Compressing the payload using gzip");
+				requestBody = gzip(requestBody);
+				requestBuilder.addHeader(HEADER_CONTENT_ENCODING, "gzip");
+			}
+			requestBuilder.post(requestBody);
 		}
 		return requestBuilder.build();
 	}
 
-	protected Request createPostRequest(String uri, String label, String json, String accessToken) {
+	protected Request createPostRequest(String uri, String label, String json, String accessToken, CompressionType compressionType) {
 		RequestBody requestBody = null;
 		if (json != null) {
 			requestBody = RequestBody.create(json, MediaType.parse("application/json"));
 		}
-		return createPostRequest(uri, label, requestBody, accessToken);
+		return createPostRequest(uri, label, requestBody, accessToken, compressionType);
+	}
+
+	private RequestBody gzip(RequestBody body) {
+		return new RequestBody() {
+			@Override
+			public MediaType contentType() {
+				return body.contentType();
+			}
+
+			@Override
+			public long contentLength() {
+				return -1; // We don't know the compressed length in advance
+			}
+
+			@Override
+			public void writeTo(BufferedSink sink) throws IOException {
+				GzipSink gzipSink = new GzipSink(sink);
+				BufferedSink bufferedGzipSink = Okio.buffer(gzipSink);
+				try {
+					body.writeTo(bufferedGzipSink);
+				} finally {
+					bufferedGzipSink.close();
+				}
+			}
+		};
 	}
 
 	protected void validateResponse(String host, Response response, Boolean isCompress) throws SQLException {
@@ -195,10 +235,9 @@ public abstract class FireboltClient implements CacheListener {
 			return null;
 		}
 		if (isCompress) {
-			try {
-				InputStream is = new LZ4InputStream(new ByteArrayInputStream(entityBytes));
-				return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8)).lines()
-						.collect(Collectors.joining("\n")) + "\n";
+			try (InputStream is = new LZ4InputStream(new ByteArrayInputStream(entityBytes));
+				 BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+				return br.lines().collect(Collectors.joining("\n")) + "\n";
 			} catch (Exception e) {
 				log.warn("Could not decompress error from server");
 			}
