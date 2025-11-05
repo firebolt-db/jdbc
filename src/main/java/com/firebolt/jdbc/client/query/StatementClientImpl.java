@@ -1,6 +1,7 @@
 package com.firebolt.jdbc.client.query;
 
 import com.firebolt.jdbc.FireboltBackendType;
+import com.firebolt.jdbc.client.CompressionType;
 import com.firebolt.jdbc.client.FireboltClient;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
@@ -185,7 +186,8 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 	private InputStream postSqlStatement(@NonNull FireboltProperties connectionProperties, String formattedStatement, String uri, String label)
 			throws SQLException, IOException {
-		Request post = createPostRequest(uri, label, formattedStatement, getConnection().getAccessToken().orElse(null));
+		CompressionType compressionType = getRequestBodyCompressionType(connectionProperties);
+		Request post = createPostRequest(uri, label, formattedStatement, getConnection().getAccessToken().orElse(null), compressionType);
 		Response response = execute(post, connectionProperties.getHost(), connectionProperties.isCompress());
 		InputStream is = ofNullable(response.body()).map(ResponseBody::byteStream).orElse(null);
 		if (is == null) {
@@ -193,6 +195,12 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		}
 		return is;
 	}
+
+	private CompressionType getRequestBodyCompressionType(@NonNull FireboltProperties connectionProperties) {
+		// for now if the compression is on, use the default gzip. We might expose the compression algorithm to the clients in the future, but now default to gzip
+		return connectionProperties.isCompressRequestPayload() ? CompressionType.GZIP : CompressionType.NONE;
+	}
+
 
 	public void abortStatement(@NonNull String statementLabel, @NonNull FireboltProperties properties) throws SQLException {
 		boolean aborted = abortRunningHttpRequest(statementLabel);
