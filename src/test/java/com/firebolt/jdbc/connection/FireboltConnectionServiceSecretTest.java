@@ -610,12 +610,12 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
         try (FireboltConnection connection = createConnection(url, connectionProperties)) {
             connection.setAutoCommit(false);
 
-            doThrow(new FireboltException("begin failed", ExceptionType.INVALID_REQUEST))
+            doThrow(new FireboltException("begin failed", ExceptionType.CONFLICT))
                     .when(fireboltStatementService).execute(any(), any(), any());
 
             FireboltException ex = assertThrows(FireboltException.class, connection::ensureTransactionForQueryExecution);
-            assertEquals(ExceptionType.INVALID_REQUEST, ex.getType());
-            assertEquals("Could not %s the transaction", ex.getMessage());
+            assertEquals(ExceptionType.CONFLICT, ex.getType());
+            assertEquals("Could not start transaction for query execution", ex.getMessage());
         }
     }
 
