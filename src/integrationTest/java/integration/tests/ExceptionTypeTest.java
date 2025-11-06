@@ -47,10 +47,9 @@ public class ExceptionTypeTest extends IntegrationTest {
         // so create multiple statements.
         String largeValue = "Ā".repeat(2100000);
 
-        // force the merge prepared statement so all will be executed in one go, but do not compress
+        // force the merge prepared statement so all will be executed in one go
         Map<String, String> connectionParams = Map.of(
-                "merge_prepared_statement_batches", "true",
-                "compress_request_payload", "false"
+                "merge_prepared_statement_batches", "true"
         );
         try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), connectionParams)) {
             String preparedStatementSql = "INSERT INTO large_data_test_table (id, value) VALUES (?, ?)";
@@ -70,6 +69,36 @@ public class ExceptionTypeTest extends IntegrationTest {
 
             // Assert that the exception type is REQUEST_BODY_TOO_LARGE (HTTP 413)
             assertEquals(ExceptionType.REQUEST_BODY_TOO_LARGE, exception.getType());
+        }
+    }
+
+    @Test
+    @Tag(TestTag.V2)
+    void shouldNotThrowRequestBodyTooLargeExceptionForLargeDataWhenCompressionIsUsed() throws SQLException {
+        // Create a very large string that should trigger a 413 Request Body Too Large error
+        // "Ā" is a unicode represented on 2 bytes. So it will be a 4MB value. But some accounts (automation) has an upper limit of 40MB
+        // so create multiple statements.
+        String largeValue = "Ā".repeat(2100000);
+
+        // force the merge prepared statement so all will be executed in one go, but not compress
+        Map<String, String> connectionParams = Map.of(
+                "merge_prepared_statement_batches", "true",
+                "compress_request_payload", "true"
+        );
+        try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), connectionParams)) {
+            String preparedStatementSql = "INSERT INTO large_data_test_table (id, value) VALUES (?, ?)";
+            PreparedStatement preparedStatement = connection.prepareStatement(preparedStatementSql);
+
+            // Add multiple large batches to ensure we exceed the request body size limit
+            for (int i = 0; i < 10; i++) {
+                preparedStatement.setInt(1, i);
+                preparedStatement.setString(2, largeValue);
+                preparedStatement.addBatch();
+            }
+
+            // can execute request
+            int[] result = preparedStatement.executeBatch();
+            assertEquals(10, result.length);
         }
     }
 }
