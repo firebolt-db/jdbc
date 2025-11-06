@@ -1,102 +1,31 @@
-name: Run performance tests
+name: Publish current version to Sonatype
 
 on:
   workflow_dispatch:
-    inputs:
-      database:
-        description: 'Database (staging) - a new one will be created if not provided'
-        required: false
-        default: ''
-      threads:
-        description: 'Number of threads/users'
-        required: false
-        default: '5'
-      loops:
-        description: 'Number of iterations for every thread'
-        required: false
-        default: '50'
 
 jobs:
-  build:
-    uses: ./.github/workflows/build.yml
-  run-performance-test:
+  publish-to-sonatype:
     runs-on: ubuntu-latest
-    needs: build
     steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-      - name: Create dependency folder for JMX
-        run: |
-          mkdir dependencies
-      - name: Download uber-jar
-        id: download-jar
-        uses: actions/download-artifact@v4.1.7
+      - name: Check out master
+        uses: actions/checkout@v4
         with:
-          name: ${{ needs.build.outputs.uber-jar }}
-          path: dependencies
-      - name: Setup database and engine
-        id: setup
-        if: ${{ inputs.database == '' }}
-        uses: firebolt-db/integration-testing-setup@v1
-        with:
-          firebolt-username: ${{ secrets.FIREBOLT_STG_USERNAME }}
-          firebolt-password: ${{ secrets.FIREBOLT_STG_PASSWORD }}
-          api-endpoint: "api.staging.firebolt.io"
-          region: "us-east-1"
-          instance-type: "C2"
-          engine-scale: 2
+          ref: master
+          fetch-depth: 0
 
-      - name: Determine database name
-        id: find-database-name
-        run: |
-          if ! [[ -z "${{ inputs.database }}" ]]; then
-             echo "database_name=${{ inputs.database }}" >> $GITHUB_OUTPUT
-          else
-             echo "database_name=${{ steps.setup.outputs.database_name }}" >> $GITHUB_OUTPUT
-          fi
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
 
-      - name: Run JMeter Tests
-        uses: rbhadti94/apache-jmeter-action@v0.5.0
-        with:
-          testFilePath: JDBC.jmx
-          dependencyFolder: dependencies
-          outputReportsFolder: reports/
-          args: -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jpassword=${{ secrets.SERVICE_ACCOUNT_SECRET_STAGING }} -Jusername=${{ secrets.SERVICE_ACCOUNT_ID_STAGING }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ inputs.threads }} -Jloops=${{ inputs.loops }}
-      - name: Upload JMeter report
-        uses: actions/upload-artifact@v4
-        with:
-          name: performance_test_report
-          path: reports
-      - name: Upload JMeter logs
-        uses: actions/upload-artifact@v4
-        with:
-          name: jmeter_log.log
-          path: jmeter_log.log
-      - name: Get short commit SHA
-        id: short-sha
-        run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-      - name: Extract test summary
-        id: summary
-        run: |
-          result="$(date +"%d-%m-%y %T %Z"),${{ inputs.threads }},$(jq -r '.Total.sampleCount, .Total.errorCount, .Total.errorPct, .Total.meanResTime, .Total.medianResTime, .Total.minResTime, .Total.maxResTime, .Total.pct1ResTime, .Total.pct2ResTime, .Total.pct3ResTime, .Total.throughput | round' reports/statistics.json| tr '\n' '|' | sed 's/|$/\n/'),${{ steps.short-sha.outputs.short_sha }},$GITHUB_REF"
-          echo "SUMMARY=$(echo "$result" | tr '|' ',')" >> $GITHUB_OUTPUT
-          sudo rm -rf "/home/runner/work/jdbc/jdbc/reports"
-      - name: Checkout history branch
-        uses: actions/checkout@v3
-        with:
-          ref: performance-tests-history
-      - name: Append history with test summary
-        run: |
-          echo "${{ steps.summary.outputs.summary }}" >> results.csv
-      - name: push
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: Push history
-          branch: performance-tests-history
-      - name: Publish results
-        run: |
-          chmod u+x export_performance_tests_results.sh
-          echo "### :rocket: Tests Results :rocket:" >> $GITHUB_STEP_SUMMARY
-          echo "| Date  | Thread count  | Sample count  | Error count | Error % | Mean response time |Median response time | Min response time | Max response time | 1st percentile response time | 2nd percentile response time | 3nd percentile response time | Throughput | Commit | Branch" >> $GITHUB_STEP_SUMMARY
-          echo "| -------------  | -------------  | -------------  | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |" >> $GITHUB_STEP_SUMMARY
-          ./export_performance_tests_results.sh
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Publish and release to Sonatype
+        run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
+        env:
+          MAVEN_REPO_USERNAME: ${{ secrets.MAVEN_REPO_USERNAME }}
+          MAVEN_REPO_PASSWORD: ${{ secrets.MAVEN_REPO_PASSWORD }}
+          GRADLE_SIGNING_KEY: ${{ secrets.GRADLE_SIGNING_KEY }}
+          GRADLE_SIGNING_PASSWORD: ${{ secrets.GRADLE_SIGNING_PASSWORD }}

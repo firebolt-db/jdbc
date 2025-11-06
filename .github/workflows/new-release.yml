@@ -1,0 +1,31 @@
+name: Publish current version to Sonatype
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish-to-sonatype:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out master
+      uses: actions/checkout@v4
+      with:
+        ref: master
+        fetch-depth: 0
+
+    - name: Set up Java 11
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+
+    - name: Set up Gradle
+      uses: gradle/actions/setup-gradle@v4
+
+    - name: Publish and release to Sonatype
+      run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
+      env:
+        MAVEN_REPO_USERNAME: ${{ secrets.MAVEN_REPO_USERNAME }}
+        MAVEN_REPO_PASSWORD: ${{ secrets.MAVEN_REPO_PASSWORD }}
+        GRADLE_SIGNING_KEY: ${{ secrets.GRADLE_SIGNING_KEY }}
+        GRADLE_SIGNING_PASSWORD: ${{ secrets.GRADLE_SIGNING_PASSWORD }}
