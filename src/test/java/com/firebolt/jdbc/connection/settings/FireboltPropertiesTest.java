@@ -25,7 +25,7 @@ class FireboltPropertiesTest {
 				.keepAliveTimeoutMillis(300000).maxConnectionsTotal(300).maxRetries(3)
 				.socketTimeoutMillis(0).connectionTimeoutMillis(60000).tcpKeepInterval(30).environment("app").tcpKeepIdle(60)
 				.tcpKeepCount(10).connectionCachingEnabled(true).preparedStatementParamStyle("native")
-				.compressRequestPayload(true)
+				.compressRequestPayload(false)
 				.build();
 
 		Properties properties = new Properties();
@@ -63,7 +63,7 @@ class FireboltPropertiesTest {
 				.maxConnectionsTotal(300).maxRetries(3).socketTimeoutMillis(20).connectionTimeoutMillis(60000)
 				.tcpKeepInterval(30).tcpKeepIdle(60).tcpKeepCount(10).environment("app").validateOnSystemEngine(true)
 				.mergePreparedStatementBatches(true).connectionCachingEnabled(true).preparedStatementParamStyle("fb_numeric")
-				.compressRequestPayload(true)
+				.compressRequestPayload(false)
 				.build();
 		assertEquals(expectedDefaultProperties, new FireboltProperties(properties));
 	}
