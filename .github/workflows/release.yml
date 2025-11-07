@@ -121,11 +121,11 @@ jobs:
 
     - name: Notify Slack of JDBC release
       uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       with:
+        method: chat.postMessage
+        token: ${{ secrets.SLACK_BOT_TOKEN }}
         payload: |
-            {
-              "channel": "ecosystem-team",
-              "text": "Firebolt JDBC driver ${{ steps.release_version.outputs.value }} has been released: <https://github.com/${{ github.repository }}/releases/tag/${{ github.event.inputs.tag_name }}|Release notes>"
-            }
+          {
+            "channel": "ecosystem-team",
+            "text": "Firebolt JDBC driver ${{ steps.release_version.outputs.value }} has been released: <https://github.com/${{ github.repository }}/releases/tag/${{ github.event.inputs.tag_name }}|Release notes>"
+          }
