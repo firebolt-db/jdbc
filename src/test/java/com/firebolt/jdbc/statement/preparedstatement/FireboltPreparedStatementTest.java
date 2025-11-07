@@ -683,4 +683,135 @@ class FireboltPreparedStatementTest {
 						new Date(1564527600000L))
 		);
 	}
+
+	@Test
+	void shouldMergeBatchWithValuesV2() throws SQLException {
+		when(properties.isMergePreparedStatementBatchesV2()).thenReturn(true);
+		statement = createStatementWithSql("INSERT INTO cars (sales, make) VALUES (?,?)");
+
+		statement.setObject(1, 150);
+		statement.setObject(2, "Ford");
+		statement.addBatch();
+		statement.setObject(1, 300);
+		statement.setObject(2, "Tesla");
+		statement.addBatch();
+		statement.executeBatch();
+
+		verify(fireboltStatementService, times(1)).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
+		assertEquals("INSERT INTO cars (sales, make) VALUES (150,'Ford'), (300,'Tesla')",
+				queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
+
+	@Test
+	void shouldMergeBatchWithValuesV2MultipleBatches() throws SQLException {
+		when(properties.isMergePreparedStatementBatchesV2()).thenReturn(true);
+		statement = createStatementWithSql("INSERT INTO cars (sales, make) VALUES (?,?)");
+
+		statement.setObject(1, 150);
+		statement.setObject(2, "Ford");
+		statement.addBatch();
+		statement.setObject(1, 300);
+		statement.setObject(2, "Tesla");
+		statement.addBatch();
+		statement.setObject(1, 200);
+		statement.setObject(2, "BMW");
+		statement.addBatch();
+		statement.executeBatch();
+
+		verify(fireboltStatementService, times(1)).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
+		assertEquals("INSERT INTO cars (sales, make) VALUES (150,'Ford'), (300,'Tesla'), (200,'BMW')",
+				queryInfoWrapperArgumentCaptor.getValue().getSql());
+	}
+
+	@Test
+	void shouldNotUseMergeV2WhenPropertyDisabled() throws SQLException {
+		when(properties.isMergePreparedStatementBatchesV2()).thenReturn(false);
+		statement = createStatementWithSql("INSERT INTO cars (sales, make) VALUES (?,?)");
+
+		statement.setObject(1, 150);
+		statement.setObject(2, "Ford");
+		statement.addBatch();
+		statement.setObject(1, 300);
+		statement.setObject(2, "Tesla");
+		statement.addBatch();
+		statement.executeBatch();
+
+		// Should execute separately (2 times)
+		verify(fireboltStatementService, times(2)).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
+		assertEquals("INSERT INTO cars (sales, make) VALUES (150,'Ford')",
+				queryInfoWrapperArgumentCaptor.getAllValues().get(0).getSql());
+		assertEquals("INSERT INTO cars (sales, make) VALUES (300,'Tesla')",
+				queryInfoWrapperArgumentCaptor.getAllValues().get(1).getSql());
+	}
+
+	@Test
+	void shouldHandleSemicolonsInMergeV2() throws SQLException {
+		when(properties.isMergePreparedStatementBatchesV2()).thenReturn(true);
+		statement = createStatementWithSql("INSERT INTO cars (sales, make) VALUES (?,?);");
+
+		statement.setObject(1, 150);
+		statement.setObject(2, "Ford");
+		statement.addBatch();
+		statement.setObject(1, 300);
+		statement.setObject(2, "Tesla");
+		statement.addBatch();
+		statement.executeBatch();
+
+		verify(fireboltStatementService, times(1)).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
+		String result = queryInfoWrapperArgumentCaptor.getValue().getSql();
+		// Should not have semicolons in the middle
+		assertEquals("INSERT INTO cars (sales, make) VALUES (150,'Ford'), (300,'Tesla')", result);
+	}
+
+	@Test
+	void shouldThrowExceptionWhenNotInsertStatement() throws SQLException {
+		when(properties.isMergePreparedStatementBatchesV2()).thenReturn(true);
+		statement = createStatementWithSql("SELECT * FROM cars WHERE make = ?");
+
+		statement.setObject(1, "Ford");
+		statement.addBatch();
+		statement.setObject(1, "Tesla");
+		statement.addBatch();
+
+		assertThrows(SQLException.class, () -> statement.executeBatch());
+	}
+
+	@Test
+	void shouldThrowExceptionWhenNoValuesKeyword() throws SQLException {
+		when(properties.isMergePreparedStatementBatchesV2()).thenReturn(true);
+		// This would be an invalid INSERT, but testing the validation
+		statement = createStatementWithSql("INSERT INTO cars (sales, make) SELECT ?,?");
+
+		statement.setObject(1, 150);
+		statement.setObject(2, "Ford");
+		statement.addBatch();
+
+		assertThrows(SQLException.class, () -> statement.executeBatch());
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = {
+			"'INSERT INTO cars (sales, make) VALUES (?,?)   ', 'INSERT INTO cars (sales, make) VALUES (150,''Ford''), (300,''Tesla'')'",
+			"'INSERT INTO cars (sales, make)\nVALUES (?,?)\n', 'INSERT INTO cars (sales, make)\nVALUES (150,''Ford''), (300,''Tesla'')'",
+			"'INSERT INTO cars (sales, make)    VALUES    (?,?)', 'INSERT INTO cars (sales, make)    VALUES    (150,''Ford''), (300,''Tesla'')'",
+			"'INSERT INTO cars (sales, make)\tVALUES\t(?,?)\t ', 'INSERT INTO cars (sales, make)\tVALUES\t(150,''Ford''), (300,''Tesla'')'",
+			"'INSERT INTO cars (sales, make) VALUES (?,?)   ;    ', 'INSERT INTO cars (sales, make) VALUES (150,''Ford''), (300,''Tesla'')'",
+			"'INSERT INTO cars (sales, make)\nVALUES (?,?)\n   ;', 'INSERT INTO cars (sales, make)\nVALUES (150,''Ford''), (300,''Tesla'')'"
+	})
+	void shouldMergeBatchWithVariousWhitespaces(String sql, String expectedResult) throws SQLException {
+		when(properties.isMergePreparedStatementBatchesV2()).thenReturn(true);
+		statement = createStatementWithSql(sql);
+
+		statement.setObject(1, 150);
+		statement.setObject(2, "Ford");
+		statement.addBatch();
+		statement.setObject(1, 300);
+		statement.setObject(2, "Tesla");
+		statement.addBatch();
+		statement.executeBatch();
+
+		verify(fireboltStatementService, times(1)).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
+		String result = queryInfoWrapperArgumentCaptor.getValue().getSql();
+		assertEquals(expectedResult, result.trim());
+	}
 }

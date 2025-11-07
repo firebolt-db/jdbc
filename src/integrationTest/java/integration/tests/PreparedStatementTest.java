@@ -37,6 +37,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Builder;
@@ -776,6 +777,303 @@ class PreparedStatementTest extends IntegrationTest {
 				assertFalse(resultSet.next());
 				resultSet = statement.executeQuery("SELECT * from prepared_statement_test where sales=456 and make='successful car2'");
 				assertFalse(resultSet.next());
+			}
+		}
+	}
+
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
+	@Test
+	void shouldInsertRecordsInBatchWithMergeV2() throws SQLException {
+		Car car1 = Car.builder().make("BMW").sales(200).build();
+		Car car2 = Car.builder().make("Ford").sales(150).build();
+		Car car3 = Car.builder().make("Tesla").sales(300).build();
+		Map<String, String> connectionParams = Map.of("merge_prepared_statement_batches_v2", "true");
+		String currentUTCTime = getCurrentUTCTime();
+		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), connectionParams)) {
+
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make) VALUES (?,?)")) {
+				statement.setObject(1, car1.getSales());
+				statement.setObject(2, car1.getMake());
+				statement.addBatch();
+				statement.setObject(1, car2.getSales());
+				statement.setObject(2, car2.getMake());
+				statement.addBatch();
+				statement.setObject(1, car3.getSales());
+				statement.setObject(2, car3.getMake());
+				statement.addBatch();
+				int[] result = statement.executeBatch();
+				assertArrayEquals(new int[] { SUCCESS_NO_INFO, SUCCESS_NO_INFO, SUCCESS_NO_INFO }, result);
+			}
+
+			// Verify only 1 query was sent with merged VALUES
+			verifySingleMergedQuery(connection, currentUTCTime, "VALUES (200,'BMW'), (150,'Ford'), (300,'Tesla')");
+
+			List<List<?>> expectedRows = new ArrayList<>();
+			expectedRows.add(Arrays.asList(car1.getSales(), car1.getMake()));
+			expectedRows.add(Arrays.asList(car2.getSales(), car2.getMake()));
+			expectedRows.add(Arrays.asList(car3.getSales(), car3.getMake()));
+
+			QueryResult queryResult = createExpectedResult(expectedRows);
+
+			try (Statement statement = connection.createStatement();
+				 ResultSet rs = statement
+						 .executeQuery("SELECT sales, make FROM prepared_statement_test ORDER BY make");
+				 ResultSet expectedRs = FireboltResultSet.of(queryResult)) {
+				AssertionUtil.assertResultSetEquality(expectedRs, rs);
+			}
+		}
+	}
+
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
+	@Test
+	void shouldThrowExceptionWhenNotInsertWithMergeV2() throws SQLException {
+		Map<String, String> connectionParams = Map.of("merge_prepared_statement_batches_v2", "true");
+		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), connectionParams)) {
+			try (PreparedStatement statement = connection
+					.prepareStatement("SELECT * FROM prepared_statement_test WHERE make = ?")) {
+				statement.setObject(1, "Ford");
+				statement.addBatch();
+				statement.setObject(1, "Tesla");
+				statement.addBatch();
+				assertThrows(SQLException.class, () -> statement.executeBatch());
+			}
+		}
+	}
+
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
+	@Test
+	void shouldInsertRecordsInBatchWithMergeV2AndTrailingWhitespaces() throws SQLException {
+		Car car1 = Car.builder().make("Ford").sales(150).build();
+		Car car2 = Car.builder().make("Tesla").sales(300).build();
+		Map<String, String> connectionParams = Map.of("merge_prepared_statement_batches_v2", "true");
+		String currentUTCTime = getCurrentUTCTime();
+		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), connectionParams)) {
+
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make) VALUES (?,?)   ")) {
+				statement.setObject(1, car1.getSales());
+				statement.setObject(2, car1.getMake());
+				statement.addBatch();
+				statement.setObject(1, car2.getSales());
+				statement.setObject(2, car2.getMake());
+				statement.addBatch();
+				int[] result = statement.executeBatch();
+				assertArrayEquals(new int[] { SUCCESS_NO_INFO, SUCCESS_NO_INFO }, result);
+			}
+
+			// Verify only 1 query was sent with merged VALUES
+			verifySingleMergedQuery(connection, currentUTCTime, "VALUES (150,'Ford'), (300,'Tesla')");
+
+			List<List<?>> expectedRows = new ArrayList<>();
+			expectedRows.add(Arrays.asList(car1.getSales(), car1.getMake()));
+			expectedRows.add(Arrays.asList(car2.getSales(), car2.getMake()));
+
+			QueryResult queryResult = createExpectedResult(expectedRows);
+
+			try (Statement statement = connection.createStatement();
+				 ResultSet rs = statement
+						 .executeQuery("SELECT sales, make FROM prepared_statement_test WHERE make IN ('Ford', 'Tesla') ORDER BY make");
+				 ResultSet expectedRs = FireboltResultSet.of(queryResult)) {
+				AssertionUtil.assertResultSetEquality(expectedRs, rs);
+			}
+		}
+	}
+
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
+	@Test
+	void shouldInsertRecordsInBatchWithMergeV2AndNewlines() throws SQLException {
+		Car car1 = Car.builder().make("Audi").sales(250).build();
+		Car car2 = Car.builder().make("BMW").sales(200).build();
+		Map<String, String> connectionParams = Map.of("merge_prepared_statement_batches_v2", "true");
+		String currentUTCTime = getCurrentUTCTime();
+		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), connectionParams)) {
+
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make)\nVALUES (?,?)\n")) {
+				statement.setObject(1, car1.getSales());
+				statement.setObject(2, car1.getMake());
+				statement.addBatch();
+				statement.setObject(1, car2.getSales());
+				statement.setObject(2, car2.getMake());
+				statement.addBatch();
+				int[] result = statement.executeBatch();
+				assertArrayEquals(new int[] { SUCCESS_NO_INFO, SUCCESS_NO_INFO }, result);
+			}
+
+			// Verify only 1 query was sent with merged VALUES
+			verifySingleMergedQuery(connection, currentUTCTime, "VALUES (250,'Audi'), (200,'BMW')");
+
+			List<List<?>> expectedRows = new ArrayList<>();
+			expectedRows.add(Arrays.asList(car1.getSales(), car1.getMake()));
+			expectedRows.add(Arrays.asList(car2.getSales(), car2.getMake()));
+
+			QueryResult queryResult = createExpectedResult(expectedRows);
+
+			try (Statement statement = connection.createStatement();
+				 ResultSet rs = statement
+						 .executeQuery("SELECT sales, make FROM prepared_statement_test WHERE make IN ('BMW', 'Audi') ORDER BY make");
+				 ResultSet expectedRs = FireboltResultSet.of(queryResult)) {
+				AssertionUtil.assertResultSetEquality(expectedRs, rs);
+			}
+		}
+	}
+
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
+	@Test
+	void shouldInsertRecordsInBatchWithMergeV2AndMultipleWhitespaces() throws SQLException {
+		Car car1 = Car.builder().make("Mercedes").sales(350).build();
+		Car car2 = Car.builder().make("Porsche").sales(400).build();
+		Map<String, String> connectionParams = Map.of("merge_prepared_statement_batches_v2", "true");
+		String currentUTCTime = getCurrentUTCTime();
+		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), connectionParams)) {
+
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make)    VALUES    (?,?)")) {
+				statement.setObject(1, car1.getSales());
+				statement.setObject(2, car1.getMake());
+				statement.addBatch();
+				statement.setObject(1, car2.getSales());
+				statement.setObject(2, car2.getMake());
+				statement.addBatch();
+				int[] result = statement.executeBatch();
+				assertArrayEquals(new int[] { SUCCESS_NO_INFO, SUCCESS_NO_INFO }, result);
+			}
+
+			// Verify only 1 query was sent with merged VALUES
+			verifySingleMergedQuery(connection, currentUTCTime, "VALUES    (350,'Mercedes'), (400,'Porsche')");
+
+			List<List<?>> expectedRows = new ArrayList<>();
+			expectedRows.add(Arrays.asList(car1.getSales(), car1.getMake()));
+			expectedRows.add(Arrays.asList(car2.getSales(), car2.getMake()));
+
+			QueryResult queryResult = createExpectedResult(expectedRows);
+
+			try (Statement statement = connection.createStatement();
+				 ResultSet rs = statement
+						 .executeQuery("SELECT sales, make FROM prepared_statement_test WHERE make IN ('Mercedes', 'Porsche') ORDER BY make");
+				 ResultSet expectedRs = FireboltResultSet.of(queryResult)) {
+				AssertionUtil.assertResultSetEquality(expectedRs, rs);
+			}
+		}
+	}
+
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
+	@Test
+	void shouldInsertRecordsInBatchWithMergeV2TrailingWhitespacesAndSemicolon() throws SQLException {
+		Car car1 = Car.builder().make("Jaguar").sales(180).build();
+		Car car2 = Car.builder().make("Volvo").sales(320).build();
+		Map<String, String> connectionParams = Map.of("merge_prepared_statement_batches_v2", "true");
+		String currentUTCTime = getCurrentUTCTime();
+		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), connectionParams)) {
+
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make) VALUES (?,?)   ;")) {
+				statement.setObject(1, car1.getSales());
+				statement.setObject(2, car1.getMake());
+				statement.addBatch();
+				statement.setObject(1, car2.getSales());
+				statement.setObject(2, car2.getMake());
+				statement.addBatch();
+				int[] result = statement.executeBatch();
+				assertArrayEquals(new int[] { SUCCESS_NO_INFO, SUCCESS_NO_INFO }, result);
+			}
+
+			// Verify only 1 query was sent with merged VALUES
+			verifySingleMergedQuery(connection, currentUTCTime, "VALUES (180,'Jaguar'), (320,'Volvo')");
+
+			List<List<?>> expectedRows = new ArrayList<>();
+			expectedRows.add(Arrays.asList(car1.getSales(), car1.getMake()));
+			expectedRows.add(Arrays.asList(car2.getSales(), car2.getMake()));
+
+			QueryResult queryResult = createExpectedResult(expectedRows);
+
+			try (Statement statement = connection.createStatement();
+				 ResultSet rs = statement
+						 .executeQuery("SELECT sales, make FROM prepared_statement_test WHERE make IN ('Volvo', 'Jaguar') ORDER BY make");
+				 ResultSet expectedRs = FireboltResultSet.of(queryResult)) {
+				AssertionUtil.assertResultSetEquality(expectedRs, rs);
+			}
+		}
+	}
+
+	@Tag(TestTag.V1)
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
+	@Test
+	void shouldInsertRecordsInBatchWithMergeV2NewlinesWhitespacesAndSemicolon() throws SQLException {
+		Car car1 = Car.builder().make("Infiniti").sales(280).build();
+		Car car2 = Car.builder().make("Lexus").sales(270).build();
+		Map<String, String> connectionParams = Map.of("merge_prepared_statement_batches_v2", "true");
+		String currentUTCTime = getCurrentUTCTime();
+		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), connectionParams)) {
+
+			try (PreparedStatement statement = connection
+					.prepareStatement("INSERT INTO prepared_statement_test (sales, make)\nVALUES (?,?)  ;     ")) {
+				statement.setObject(1, car1.getSales());
+				statement.setObject(2, car1.getMake());
+				statement.addBatch();
+				statement.setObject(1, car2.getSales());
+				statement.setObject(2, car2.getMake());
+				statement.addBatch();
+				int[] result = statement.executeBatch();
+				assertArrayEquals(new int[] { SUCCESS_NO_INFO, SUCCESS_NO_INFO }, result);
+			}
+
+			// Verify only 1 query was sent with merged VALUES
+			verifySingleMergedQuery(connection, currentUTCTime, "VALUES (280,'Infiniti'), (270,'Lexus')");
+
+			List<List<?>> expectedRows = new ArrayList<>();
+			expectedRows.add(Arrays.asList(car1.getSales(), car1.getMake()));
+			expectedRows.add(Arrays.asList(car2.getSales(), car2.getMake()));
+
+			QueryResult queryResult = createExpectedResult(expectedRows);
+
+			try (Statement statement = connection.createStatement();
+				 ResultSet rs = statement
+						 .executeQuery("SELECT sales, make FROM prepared_statement_test WHERE make IN ('Infiniti', 'Lexus') ORDER BY make");
+				 ResultSet expectedRs = FireboltResultSet.of(queryResult)) {
+				AssertionUtil.assertResultSetEquality(expectedRs, rs);
+			}
+		}
+	}
+
+	/**
+	 * Verifies that only one INSERT query was sent to the server and it contains the expected merged VALUES.
+	 *
+	 * @param connection The database connection
+	 * @param currentUTCTime The UTC time before the batch was executed
+	 * @param expectedValuesContent The expected VALUES content (e.g., "VALUES (150,'Ford'), (300,'Tesla')")
+	 * @throws SQLException if the verification fails
+	 */
+	private void verifySingleMergedQuery(Connection connection, String currentUTCTime, String expectedValuesContent) throws SQLException {
+		sleepForMillis(TimeUnit.SECONDS.toMillis(8)); // Wait for query history to propagate
+		try (Statement statement = connection.createStatement()) {
+			String queryHistoryQuery = String.format(
+					"SELECT query_text FROM information_schema.engine_query_history " +
+					"WHERE submitted_time > '%s' AND query_text LIKE 'INSERT INTO prepared_statement_test%%' " +
+					"AND status = 'STARTED_EXECUTION' ORDER BY submitted_time DESC",
+					currentUTCTime);
+			try (ResultSet rs = statement.executeQuery(queryHistoryQuery)) {
+				assertTrue(rs.next(), "Should have at least one INSERT query");
+				String queryText = rs.getString(1);
+				// Verify it's the merged query with expected VALUES
+				assertTrue(queryText.contains(expectedValuesContent),
+						"Query should contain merged VALUES: " + queryText);
+				// Verify only one INSERT query was executed
+				assertFalse(rs.next(), "Should have only one INSERT query, but found more");
 			}
 		}
 	}
