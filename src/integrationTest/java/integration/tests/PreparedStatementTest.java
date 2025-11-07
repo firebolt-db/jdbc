@@ -831,8 +831,9 @@ class PreparedStatementTest extends IntegrationTest {
 	@Tag(TestTag.V2)
 	@Tag(TestTag.CORE)
 	@Test
-	void shouldThrowExceptionWhenNotInsertWithMergeV2() throws SQLException {
+	void shouldFallbackToNormalBatchWhenNotInsertWithMergeV2() throws SQLException {
 		Map<String, String> connectionParams = Map.of("merge_prepared_statement_batches_v2", "true");
+		String currentUTCTime = getCurrentUTCTime();
 		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), connectionParams)) {
 			try (PreparedStatement statement = connection
 					.prepareStatement("SELECT * FROM prepared_statement_test WHERE make = ?")) {
@@ -840,7 +841,37 @@ class PreparedStatementTest extends IntegrationTest {
 				statement.addBatch();
 				statement.setObject(1, "Tesla");
 				statement.addBatch();
-				assertThrows(SQLException.class, () -> statement.executeBatch());
+				int[] result = statement.executeBatch();
+				assertArrayEquals(new int[] { SUCCESS_NO_INFO, SUCCESS_NO_INFO }, result);
+			}
+
+			// Verify 2 SELECT queries were sent to the server
+			sleepForMillis(TimeUnit.SECONDS.toMillis(8)); // Wait for query history to propagate
+			try (Statement statement = connection.createStatement()) {
+				String queryHistoryQuery = String.format(
+						"SELECT query_text FROM information_schema.engine_query_history " +
+						"WHERE submitted_time > '%s' AND query_text LIKE 'SELECT * FROM prepared_statement_test WHERE make = %%' " +
+						"AND status = 'STARTED_EXECUTION' ORDER BY submitted_time DESC",
+						currentUTCTime);
+				try (ResultSet rs = statement.executeQuery(queryHistoryQuery)) {
+					assertTrue(rs.next(), "Should have at least one SELECT query");
+					String firstQuery = rs.getString(1);
+					assertTrue(firstQuery.contains("make = 'Ford'") || firstQuery.contains("make = 'Tesla'"),
+							"First query should contain 'Ford' or 'Tesla': " + firstQuery);
+					
+					assertTrue(rs.next(), "Should have a second SELECT query");
+					String secondQuery = rs.getString(1);
+					assertTrue(secondQuery.contains("make = 'Ford'") || secondQuery.contains("make = 'Tesla'"),
+							"Second query should contain 'Ford' or 'Tesla': " + secondQuery);
+					
+					// Verify both queries have different parameter values
+					assertTrue((firstQuery.contains("'Ford'") && secondQuery.contains("'Tesla'")) ||
+							(firstQuery.contains("'Tesla'") && secondQuery.contains("'Ford'")),
+							"Queries should have different parameter values. First: " + firstQuery + ", Second: " + secondQuery);
+					
+					// Verify only 2 SELECT queries were executed
+					assertFalse(rs.next(), "Should have only 2 SELECT queries, but found more");
+				}
 			}
 		}
 	}

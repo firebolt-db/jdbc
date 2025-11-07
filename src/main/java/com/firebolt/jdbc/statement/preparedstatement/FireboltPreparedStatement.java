@@ -276,8 +276,9 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		}
 
         if (sessionProperties.isMergePreparedStatementBatchesV2() && !rows.isEmpty()) {
-            StatementInfoWrapper mergedStatement = executeBatchWithValuesMerging(statements);
-            if (mergedStatement != null) {
+            int firstParenAfterValuesIndex = validateStatementForMergeV2AndGetFirstParenIndex(statements);
+            if (firstParenAfterValuesIndex != -1) {
+                StatementInfoWrapper mergedStatement = mergeInsertStatementWithValues(statements, firstParenAfterValuesIndex);
                 execute(List.of(mergedStatement));
                 for (int i = 0; i < rows.size(); i++) {
                     result[i] = SUCCESS_NO_INFO;
@@ -303,29 +304,33 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	 * Validates that the statement is an INSERT statement and throws an error if not.
 	 *
 	 * @return A merged StatementInfoWrapper with multiple VALUES clauses, or null if merging fails or first parameter is before VALUES
-	 * @throws SQLException if the statement is not an INSERT statement
-	 */
-	protected StatementInfoWrapper executeBatchWithValuesMerging(List<StatementInfoWrapper> statements) throws SQLException {
+     */
+	protected int validateStatementForMergeV2AndGetFirstParenIndex(List<StatementInfoWrapper> statements) {
+        if (statements.isEmpty()) {
+            return -1;
+        }
+
 		if (rawStatement.getSubStatements().size() != 1) {
-			throw new SQLException(
-					format("merge_prepared_statement_batches_v2 can only be used with single INSERT statements. Found %d statements.",
-							rawStatement.getSubStatements().size()));
+			log.warn(format("merge_prepared_statement_batches_v2 can only be used with single INSERT statements. Found %d statements.",
+                    rawStatement.getSubStatements().size()));
+            return -1;
 		}
 
 		var subStatement = rawStatement.getSubStatements().get(0);
 		String cleanSql = subStatement.getCleanSql().trim();
-		if (!cleanSql.toUpperCase().startsWith("INSERT")) {
-			throw new SQLException(
-					format("merge_prepared_statement_batches_v2 can only be used with INSERT statements. Found: %s",
-							cleanSql.length() > 50 ? cleanSql.substring(0, 50) + "..." : cleanSql));
+        String logQuery = cleanSql.length() > 50 ? cleanSql.substring(0, 50) + "..." : cleanSql;
+        if (!cleanSql.toUpperCase().startsWith("INSERT")) {
+			log.warn(format("merge_prepared_statement_batches_v2 can only be used with INSERT statements. Found: %s",
+                    logQuery));
+            return -1;
 		}
 
 		// Validate that the statement contains VALUES keyword
         int valuesClauseIndex = findValuesClauseIndex(cleanSql);
         if (valuesClauseIndex == -1) {
-			throw new SQLException(
-					format("merge_prepared_statement_batches_v2 can only be used with INSERT statements containing VALUES keyword. Found: %s",
-							cleanSql.length() > 50 ? cleanSql.substring(0, 50) + "..." : cleanSql));
+			log.warn(format("merge_prepared_statement_batches_v2 can only be used with INSERT statements containing VALUES keyword. Found: %s",
+                    logQuery));
+            return -1;
 		}
         int firstParenAfterValuesIndex = findFirstParenAfterValues(cleanSql, valuesClauseIndex);
 
@@ -333,11 +338,10 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		List<ParamMarker> paramMarkers = subStatement.getParamMarkers();
 		if (paramMarkers.isEmpty() || paramMarkers.get(0).getPosition() <= firstParenAfterValuesIndex) {
 			// First parameter is before or at VALUES, exit merge logic
-			return null;
+            return -1;
 		}
 
-		// First parameter is after VALUES, continue with merge logic
-		return mergeInsertStatementWithValues(statements, firstParenAfterValuesIndex);
+		return firstParenAfterValuesIndex;
 	}
 
 	protected StatementInfoWrapper asSingleStatement(List<StatementInfoWrapper> queries) {
@@ -359,10 +363,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
      * @return A merged StatementInfoWrapper with multiple VALUES clauses, or null if parsing fails
      */
 	protected StatementInfoWrapper mergeInsertStatementWithValues(List<StatementInfoWrapper> statements, int firstParenAfterValuesIndex) {
-		if (statements.isEmpty()) {
-			return null;
-		}
-
 		var subStatement = rawStatement.getSubStatements().get(0);
 
 		// Use the first statement as-is (it already has the full INSERT INTO ... VALUES part)

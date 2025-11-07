@@ -764,7 +764,7 @@ class FireboltPreparedStatementTest {
 	}
 
 	@Test
-	void shouldThrowExceptionWhenNotInsertStatement() throws SQLException {
+	void shouldFallbackToNormalBatchWhenNotInsertStatement() throws SQLException {
 		when(properties.isMergePreparedStatementBatchesV2()).thenReturn(true);
 		statement = createStatementWithSql("SELECT * FROM cars WHERE make = ?");
 
@@ -773,11 +773,13 @@ class FireboltPreparedStatementTest {
 		statement.setObject(1, "Tesla");
 		statement.addBatch();
 
-		assertThrows(SQLException.class, () -> statement.executeBatch());
+		statement.executeBatch();
+		// Should fall back to normal batch execution (not merged)
+		verify(fireboltStatementService, times(2)).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 	}
 
 	@Test
-	void shouldThrowExceptionWhenNoValuesKeyword() throws SQLException {
+	void shouldFallbackToNormalBatchWhenNoValuesKeyword() throws SQLException {
 		when(properties.isMergePreparedStatementBatchesV2()).thenReturn(true);
 		// This would be an invalid INSERT, but testing the validation
 		statement = createStatementWithSql("INSERT INTO cars (sales, make) SELECT ?,?");
@@ -786,7 +788,13 @@ class FireboltPreparedStatementTest {
 		statement.setObject(2, "Ford");
 		statement.addBatch();
 
-		assertThrows(SQLException.class, () -> statement.executeBatch());
+        statement.setObject(1, 250);
+        statement.setObject(2, "Tesla");
+        statement.addBatch();
+
+		statement.executeBatch();
+		// Should fall back to normal batch execution (not merged)
+		verify(fireboltStatementService, times(2)).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 	}
 
 	@ParameterizedTest
