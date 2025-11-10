@@ -797,6 +797,29 @@ class FireboltPreparedStatementTest {
 		verify(fireboltStatementService, times(2)).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
 	}
 
+	@Test
+	void shouldExecuteQueryEvenThoughItIsInvalid() throws SQLException {
+		when(properties.isMergePreparedStatementBatchesV2()).thenReturn(true);
+		// This query matches the regex pattern (INSERT INTO ... VALUES (...)) but is invalid SQL
+		// because it has a column/value count mismatch: 3 columns but only 2 values
+		statement = createStatementWithSql("INSERT INTO cars ((sales, make, model) VALUES (y,x)) VALUES (?,?)");
+
+		statement.setObject(1, 150);
+		statement.setObject(2, "Ford");
+		statement.addBatch();
+
+		statement.setObject(1, 300);
+		statement.setObject(2, "Tesla");
+		statement.addBatch();
+
+		statement.executeBatch();
+		// Should fall back to normal batch execution (not merged) because the query is invalid
+		// The merge logic should detect this and fall back, or it will fail during execution
+		verify(fireboltStatementService, times(1)).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
+        assertEquals(queryInfoWrapperArgumentCaptor.getValue().getSql(),
+                "INSERT INTO cars ((sales, make, model) VALUES (y,x)) VALUES (150,'Ford'), (y,x)) VALUES (300,'Tesla')");
+	}
+
 	@ParameterizedTest
 	@CsvSource(value = {
 			"'INSERT INTO cars (sales, make) VALUES (?,?)   ', 'INSERT INTO cars (sales, make) VALUES (150,''Ford''), (300,''Tesla'')'",
