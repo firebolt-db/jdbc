@@ -393,6 +393,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 	}
 
 	private int findValuesClauseIndex(String sql) {
+        @SuppressWarnings("java:S5852")
         Pattern pattern = Pattern.compile(
                 // i = case-insensitive, s = dot matches newline, x = free-spacing/comments
                 "(?isx)" +

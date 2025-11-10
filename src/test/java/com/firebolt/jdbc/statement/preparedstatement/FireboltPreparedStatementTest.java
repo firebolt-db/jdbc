@@ -816,8 +816,8 @@ class FireboltPreparedStatementTest {
 		// Should fall back to normal batch execution (not merged) because the query is invalid
 		// The merge logic should detect this and fall back, or it will fail during execution
 		verify(fireboltStatementService, times(1)).execute(queryInfoWrapperArgumentCaptor.capture(), eq(properties), any());
-        assertEquals(queryInfoWrapperArgumentCaptor.getValue().getSql(),
-                "INSERT INTO cars ((sales, make, model) VALUES (y,x)) VALUES (150,'Ford'), (y,x)) VALUES (300,'Tesla')");
+        assertEquals("INSERT INTO cars ((sales, make, model) VALUES (y,x)) VALUES (150,'Ford'), (y,x)) VALUES (300,'Tesla')",
+                queryInfoWrapperArgumentCaptor.getValue().getSql());
 	}
 
 	@ParameterizedTest
