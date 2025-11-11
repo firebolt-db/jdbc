@@ -947,7 +947,7 @@ class PreparedStatementTest extends IntegrationTest {
 	 * @throws SQLException if the verification fails
 	 */
 	private void verifySingleMergedQuery(Connection connection, String currentUTCTime, String expectedValuesContent) throws SQLException {
-		sleepForMillis(TimeUnit.SECONDS.toMillis(8)); // Wait for query history to propagate
+		sleepForMillis(TimeUnit.SECONDS.toMillis(10)); // Wait for query history to propagate
 		try (Statement statement = connection.createStatement()) {
 			String queryHistoryQuery = String.format(
 					"SELECT query_text FROM information_schema.engine_query_history " +

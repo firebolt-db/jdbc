@@ -31,7 +31,7 @@ public abstract class IntegrationTest {
 	private static ZoneId UTC_ZONE_ID = ZoneId.of("UTC"); // Change this to your desired timezone
 
 	// Get the current time in the specified timezone
-	private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss";
+	private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSSSS";
 	private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(TIMESTAMP_FORMAT);
 
 	private static ConnectionFactory connectionFactory;
