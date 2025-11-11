@@ -74,7 +74,7 @@ public enum FireboltSessionProperty {
 	MERGE_PREPARED_STATEMENT_BATCHES("merge_prepared_statement_batches", false, Boolean.class,
 			"Whether to send prepared statement batches as a single statement. By default, they are sent one by one.", FireboltProperties::isMergePreparedStatementBatches),
 	MERGE_PREPARED_STATEMENT_BATCHES_V2("merge_prepared_statement_batches_v2", false, Boolean.class,
-			"Whether to merge prepared statement batches by replicating VALUES clause for INSERT statements. By default, false.", FireboltProperties::isMergePreparedStatementBatchesV2),
+			"Whether to merge prepared statement batches by replicating VALUES clause for INSERT statements. By default, false. Note: this is experimental and can be removed without notice", FireboltProperties::isMergePreparedStatementBatchesV2),
 	/**
 	 * When the connection is cached the subsequent request to same url will reuse the same jwt token, system engine url and will not validate if engine and database exist if these were
 	 * validate already by the connection that was cached.
