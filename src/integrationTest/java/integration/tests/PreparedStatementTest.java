@@ -49,6 +49,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -783,12 +784,20 @@ class PreparedStatementTest extends IntegrationTest {
 
 	@Tag(TestTag.V2)
 	@Tag(TestTag.CORE)
-	@ParameterizedTest()
+	@ParameterizedTest(name = "{0}")
 	@MethodSource("insertRecordsInBatchWithMergeV2TestCases")
-	void shouldInsertRecordsInBatchWithMergeV2(String sql, List<Car> cars, String expectedValuesContent, String whereClause) throws SQLException {
+	void shouldInsertRecordsInBatchWithMergeV2(String testName, String sql, List<Car> cars, String expectedValuesContent, String whereClause) throws SQLException {
+		String queryLabel = testName + "_" + RandomStringUtils.randomNumeric(4);
+
 		Map<String, String> connectionParams = Map.of("merge_prepared_statement_batches_v2", "true");
+
 		String currentUTCTime = getCurrentUTCTime();
+
 		try (Connection connection = createConnection(ConnectionInfo.getInstance().getEngine(), connectionParams)) {
+
+			try (Statement statement = connection.createStatement()) {
+				statement.execute(String.format("SET query_label = '%s'", queryLabel));
+			}
 
 			try (PreparedStatement statement = connection.prepareStatement(sql)) {
 				for (Car car : cars) {
@@ -803,7 +812,7 @@ class PreparedStatementTest extends IntegrationTest {
 			}
 
 			// Verify only 1 query was sent with merged VALUES
-			verifySingleMergedQuery(connection, currentUTCTime, expectedValuesContent);
+			verifySingleMergedQuery(connection, currentUTCTime, expectedValuesContent, queryLabel);
 
 			List<List<?>> expectedRows = new ArrayList<>();
 			for (Car car : cars) {
@@ -823,6 +832,7 @@ class PreparedStatementTest extends IntegrationTest {
 	private static Stream<Arguments> insertRecordsInBatchWithMergeV2TestCases() {
 		return Stream.of(
 				Arguments.of(
+						"Basic merge",
 						"INSERT INTO prepared_statement_test (sales, make) VALUES (?,?)",
 						Arrays.asList(
 								Car.builder().make("BMW").sales(200).build(),
@@ -833,6 +843,7 @@ class PreparedStatementTest extends IntegrationTest {
 						"ORDER BY make"
 				),
 				Arguments.of(
+						"Trailing whitespaces",
 						"INSERT INTO prepared_statement_test (sales, make) VALUES (?,?)   ",
 						Arrays.asList(
 								Car.builder().make("Ford").sales(150).build(),
@@ -842,6 +853,7 @@ class PreparedStatementTest extends IntegrationTest {
 						"WHERE make IN ('Ford', 'Tesla') ORDER BY make"
 				),
 				Arguments.of(
+						"Newlines",
 						"INSERT INTO prepared_statement_test (sales, make)\nVALUES (?,?)\n",
 						Arrays.asList(
 								Car.builder().make("Audi").sales(250).build(),
@@ -851,6 +863,7 @@ class PreparedStatementTest extends IntegrationTest {
 						"WHERE make IN ('BMW', 'Audi') ORDER BY make"
 				),
 				Arguments.of(
+						"Multiple whitespaces",
 						"INSERT INTO prepared_statement_test (sales, make)    VALUES    (?,?)",
 						Arrays.asList(
 								Car.builder().make("Mercedes").sales(350).build(),
@@ -860,6 +873,7 @@ class PreparedStatementTest extends IntegrationTest {
 						"WHERE make IN ('Mercedes', 'Porsche') ORDER BY make"
 				),
 				Arguments.of(
+						"Trailing whitespaces and semicolon",
 						"INSERT INTO prepared_statement_test (sales, make) VALUES (?,?)   ;",
 						Arrays.asList(
 								Car.builder().make("Jaguar").sales(180).build(),
@@ -869,6 +883,7 @@ class PreparedStatementTest extends IntegrationTest {
 						"WHERE make IN ('Volvo', 'Jaguar') ORDER BY make"
 				),
 				Arguments.of(
+						"Newlines, whitespaces and semicolon",
 						"INSERT INTO prepared_statement_test (sales, make)\nVALUES (?,?)  ;     ",
 						Arrays.asList(
 								Car.builder().make("Infiniti").sales(280).build(),
@@ -878,6 +893,7 @@ class PreparedStatementTest extends IntegrationTest {
 						"WHERE make IN ('Infiniti', 'Lexus') ORDER BY make"
 				),
 				Arguments.of(
+						"With literal values",
 						"INSERT INTO prepared_statement_test (sales, url, make) VALUES(?, 'cluj', ?)",
 						Arrays.asList(
 								Car.builder().make("Honda").sales(220).build(),
@@ -885,6 +901,16 @@ class PreparedStatementTest extends IntegrationTest {
 						),
 						"VALUES(220, 'cluj', 'Honda'), (190, 'cluj', 'Toyota')",
 						"WHERE make IN ('Honda', 'Toyota') ORDER BY make"
+				),
+				Arguments.of(
+						"With special UNICODE characters",
+						"INSERT INTO prepared_statement_test (sales, url, make) VALUES(?, 'cluj', ?)",
+						Arrays.asList(
+								Car.builder().make("ĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀ").sales(220).build(),
+								Car.builder().make("ĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀ").sales(190).build()
+						),
+						"VALUES(220, 'cluj', 'ĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀ'), (190, 'cluj', 'ĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀ')",
+						"WHERE make IN ('ĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀ', 'ĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀĀ') ORDER BY make"
 				)
 		);
 	}
@@ -944,16 +970,17 @@ class PreparedStatementTest extends IntegrationTest {
 	 * @param connection The database connection
 	 * @param currentUTCTime The UTC time before the batch was executed
 	 * @param expectedValuesContent The expected VALUES content (e.g., "VALUES (150,'Ford'), (300,'Tesla')")
+	 * @param queryLabel The query label to filter by
 	 * @throws SQLException if the verification fails
 	 */
-	private void verifySingleMergedQuery(Connection connection, String currentUTCTime, String expectedValuesContent) throws SQLException {
-		sleepForMillis(TimeUnit.SECONDS.toMillis(10)); // Wait for query history to propagate
+	private void verifySingleMergedQuery(Connection connection, String currentUTCTime, String expectedValuesContent, String queryLabel) throws SQLException {
+		sleepForMillis(TimeUnit.SECONDS.toMillis(15)); // Wait for query history to propagate
 		try (Statement statement = connection.createStatement()) {
 			String queryHistoryQuery = String.format(
 					"SELECT query_text FROM information_schema.engine_query_history " +
 					"WHERE submitted_time > '%s' AND query_text LIKE 'INSERT INTO prepared_statement_test%%' " +
-					"AND status = 'STARTED_EXECUTION' ORDER BY submitted_time DESC",
-					currentUTCTime);
+					"AND status = 'STARTED_EXECUTION' AND query_label = '%s' ORDER BY submitted_time DESC",
+					currentUTCTime, queryLabel);
 			try (ResultSet rs = statement.executeQuery(queryHistoryQuery)) {
 				assertTrue(rs.next(), "Should have at least one INSERT query");
 				String queryText = rs.getString(1);
