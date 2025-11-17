@@ -32,6 +32,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import okhttp3.Call;
 import okhttp3.MediaType;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -85,15 +86,15 @@ public abstract class FireboltClient implements CacheListener {
 
 	@SuppressWarnings("java:S3011") // setAccessible() is required here :(
 	protected <T> T jsonToObject(String json, Class<T> valueType) throws IOException {
-        try {
+		try {
 			Constructor<T> constructor = valueType.getDeclaredConstructor(JSONObject.class);
 			constructor.setAccessible(true);
-            return json == null ? null : constructor.newInstance(new JSONObject(json));
-        } catch (ReflectiveOperationException | RuntimeException e) {
+			return json == null ? null : constructor.newInstance(new JSONObject(json));
+		} catch (ReflectiveOperationException | RuntimeException e) {
 			Throwable cause = Optional.ofNullable(e.getCause()).orElse(e);
 			throw new IOException(cause.getMessage(), cause);
-        }
-    }
+		}
+	}
 
 	private Request createGetRequest(String uri, String accessToken) {
 		Request.Builder requestBuilder = new Request.Builder().url(uri);
@@ -157,6 +158,29 @@ public abstract class FireboltClient implements CacheListener {
 			requestBody = RequestBody.create(json, MediaType.parse("application/json"));
 		}
 		return createPostRequest(uri, label, requestBody, accessToken, compressionType);
+	}
+
+	protected Response postMultipartFormData(String uri, String host, String label, String sql, Map<String, byte[]> files, String accessToken)
+			throws IOException, SQLException {
+		MultipartBody.Builder multipartBuilder = new MultipartBody.Builder()
+				.setType(MultipartBody.FORM);
+
+		MediaType sqlMediaType = MediaType.parse("text/plain; charset=utf-8");
+		RequestBody sqlBody = RequestBody.create(sql, sqlMediaType);
+		multipartBuilder.addFormDataPart("sql", null, sqlBody);
+
+		if (files != null) {
+			for (Map.Entry<String, byte[]> entry : files.entrySet()) {
+				String identifier = entry.getKey();
+				byte[] fileContent = entry.getValue();
+				RequestBody fileBody = RequestBody.create(fileContent, MediaType.parse("application/octet-stream"));
+				multipartBuilder.addFormDataPart(identifier, identifier, fileBody);
+			}
+		}
+
+		RequestBody multipartBody = multipartBuilder.build();
+		Request request = createPostRequest(uri, label, multipartBody, accessToken);
+		return execute(request, host);
 	}
 
 	private RequestBody gzip(RequestBody body) {
