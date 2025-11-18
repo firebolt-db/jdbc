@@ -47,8 +47,7 @@ public class FireboltStatementService {
 									   FireboltProperties properties, FireboltStatement statement)
 			throws SQLException {
 		int queryTimeout = statement.getQueryTimeout();
-		boolean systemEngine = properties.isSystemEngine();
-		InputStream is = statementClient.executeSqlStatement(statementInfoWrapper, properties, systemEngine, queryTimeout, false);
+		InputStream is = statementClient.executeSqlStatement(statementInfoWrapper, properties, queryTimeout, false);
 		if (statementInfoWrapper.getType() == StatementType.QUERY) {
 			return Optional.of(createResultSet(is, (QueryRawStatement) statementInfoWrapper.getInitialStatement(), properties, statement));
 		} else {
@@ -68,7 +67,7 @@ public class FireboltStatementService {
 		if (systemEngine) {
 			throw new FireboltException("Cannot execute async statement on system engine");
 		}
-        try (InputStream is = statementClient.executeSqlStatement(statementInfoWrapper, properties, false, queryTimeout, true)) {
+        try (InputStream is = statementClient.executeSqlStatement(statementInfoWrapper, properties, queryTimeout, true)) {
 			InputStreamReader inputStreamReader;
 			if (properties.isCompress()) {
 				inputStreamReader = new InputStreamReader(new LZ4InputStream(is), UTF_8);

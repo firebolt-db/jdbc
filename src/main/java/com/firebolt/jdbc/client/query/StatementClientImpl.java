@@ -121,29 +121,71 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		super(httpClient, connection, customDrivers, customClients);
 	}
 
+	// ==================== Public Interface Methods ====================
+
 	/**
 	 * Sends SQL statement to Firebolt Retries to send the statement if the first
 	 * execution is unauthorized
 	 *
 	 * @param statementInfoWrapper the statement wrapper
 	 * @param connectionProperties the connection properties
-	 * @param systemEngine         indicates if system engine is used
 	 * @param queryTimeout         query timeout
 	 * @return the server response
 	 */
 	@Override
 	public InputStream executeSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
-										   @NonNull FireboltProperties connectionProperties, boolean systemEngine, int queryTimeout, boolean isServerAsync) throws SQLException {
+										   @NonNull FireboltProperties connectionProperties, int queryTimeout, boolean isServerAsync) throws SQLException {
+		return executeSqlStatementInternal(statementInfoWrapper, connectionProperties, queryTimeout, isServerAsync,
+				(label, formattedStatement, uri) -> executeSqlStatementWithRetryOnUnauthorized(label, connectionProperties, formattedStatement, uri));
+	}
+
+	public InputStream executeSqlStatementWithFiles(@NonNull StatementInfoWrapper statementInfoWrapper,
+                                                    @NonNull FireboltProperties connectionProperties, int queryTimeout, boolean isServerAsync,
+                                                    @NonNull Map<String, byte[]> files) throws SQLException {
+		if (files == null || files.isEmpty()) {
+			throw new FireboltException("Files map cannot be null or empty when executing statement with files", INVALID_REQUEST);
+		}
+		return executeSqlStatementInternal(statementInfoWrapper, connectionProperties, queryTimeout, isServerAsync,
+				(label, formattedStatement, uri) -> executeSqlStatementWithFilesRetryOnUnauthorized(label, connectionProperties, formattedStatement, uri, files));
+	}
+
+	@Override
+	public void abortStatement(@NonNull String statementLabel, @NonNull FireboltProperties properties) throws SQLException {
+		boolean aborted = abortRunningHttpRequest(statementLabel);
+		if (properties.isSystemEngine()) {
+			throw new FireboltException("Cannot cancel a statement using a system engine", INVALID_REQUEST);
+		} else {
+			abortRunningDbStatement(statementLabel, properties, aborted ? 10_000 : 1);
+		}
+	}
+
+	@Override
+	public boolean isStatementRunning(String statementId) {
+		return getQueuedCallWithLabel(statementId).isPresent() || getRunningCallWithLabel(statementId).isPresent();
+	}
+
+	@FunctionalInterface
+	private interface StatementExecutor {
+		InputStream execute(String label, String formattedStatement, String uri) throws SQLException, IOException;
+	}
+
+	@FunctionalInterface
+	private interface StatementRetryExecutor {
+		InputStream execute() throws SQLException, IOException;
+	}
+
+	private InputStream executeSqlStatementInternal(@NonNull StatementInfoWrapper statementInfoWrapper,
+													@NonNull FireboltProperties connectionProperties, int queryTimeout, boolean isServerAsync,
+													@NonNull StatementExecutor executor) throws SQLException {
 		String formattedStatement = QueryIdFetcher.getQueryFetcher(connection.getInfraVersion()).formatStatement(statementInfoWrapper);
 		QueryParameterProvider queryParameterProvider = getQueryParameterProvider();
 		Map<String, String> params = queryParameterProvider.getQueryParams(connectionProperties, statementInfoWrapper, queryTimeout, isServerAsync);
 
-		// if available in the params, then use the query label from there. Default to the one from the statementInfoWrapper if not available in params
 		String label = params.getOrDefault(QUERY_LABEL.getKey(), statementInfoWrapper.getLabel());
 		String errorMessage = format("Error executing statement with label %s: %s", label, formattedStatement);
 		try {
 			String uri = buildQueryUri(connectionProperties, params).toString();
-			return executeSqlStatementWithRetryOnUnauthorized(label, connectionProperties, formattedStatement, uri);
+			return executor.execute(label, formattedStatement, uri);
 		} catch (FireboltException e) {
 			throw e;
 		} catch (StreamResetException e) {
@@ -153,31 +195,29 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		}
 	}
 
-	/**
-	 * In order to keep this commit small will create the query parameter here. It should be injected when we create the connection.
-	 * @return
-	 */
-	private QueryParameterProvider getQueryParameterProvider() {
-		FireboltBackendType fireboltBackendType = connection.getBackendType();
-
-		switch(fireboltBackendType) {
-			case CLOUD_1_0: return new FireboltCloudV1QueryParameterProvider();
-			case CLOUD_2_0: return new FireboltCloudV2QueryParameterProvider();
-			case FIREBOLT_CORE: return new FireboltCoreQueryParameterProvider();
-			case DEV: return new LocalhostQueryParameterProvider();
-			default: throw new IllegalStateException("Could not detect what backend is connecting to.");
-		}
-	}
+	// ==================== Retry Logic ====================
 
 	private InputStream executeSqlStatementWithRetryOnUnauthorized(String label, @NonNull FireboltProperties connectionProperties, String formattedStatement, String uri)
 			throws SQLException, IOException {
+		return executeWithRetryOnUnauthorized(label, uri, "statement",
+				() -> postSqlStatement(connectionProperties, formattedStatement, uri, label));
+	}
+
+	private InputStream executeSqlStatementWithFilesRetryOnUnauthorized(String label, @NonNull FireboltProperties connectionProperties, String formattedStatement, String uri, Map<String, byte[]> files)
+			throws SQLException, IOException {
+		return executeWithRetryOnUnauthorized(label, uri, "statement with files",
+				() -> postSqlStatementWithFiles(connectionProperties, formattedStatement, uri, label, files));
+	}
+
+	private InputStream executeWithRetryOnUnauthorized(String label, String uri, String statementType, StatementRetryExecutor executor)
+			throws SQLException, IOException {
 		try {
-			log.debug("Posting statement with label {} to URI: {}", label, uri);
-			return postSqlStatement(connectionProperties, formattedStatement, uri, label);
+			log.debug("Posting {} with label {} to URI: {}", statementType, label, uri);
+			return executor.execute();
 		} catch (FireboltException exception) {
 			if (exception.getType() == UNAUTHORIZED) {
-				log.debug("Retrying to post statement with label {} following a 401 status code to URI: {}",label, uri);
-				return postSqlStatement(connectionProperties, formattedStatement, uri, label);
+				log.debug("Retrying to post {} with label {} following a 401 status code to URI: {}", statementType, label, uri);
+				return executor.execute();
 			} else {
 				throw exception;
 			}
@@ -196,27 +236,55 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		return is;
 	}
 
+	private InputStream postSqlStatementWithFiles(@NonNull FireboltProperties connectionProperties, String formattedStatement, String uri, String label, Map<String, byte[]> files)
+			throws SQLException, IOException {
+		okhttp3.MultipartBody.Builder multipartBuilder = new okhttp3.MultipartBody.Builder()
+				.setType(okhttp3.MultipartBody.FORM);
+
+		okhttp3.MediaType sqlMediaType = okhttp3.MediaType.parse("text/plain; charset=utf-8");
+		okhttp3.RequestBody sqlBody = okhttp3.RequestBody.create(formattedStatement, sqlMediaType);
+		multipartBuilder.addFormDataPart("sql", null, sqlBody);
+
+		if (files != null) {
+			for (Map.Entry<String, byte[]> entry : files.entrySet()) {
+				String identifier = entry.getKey();
+				byte[] fileContent = entry.getValue();
+				okhttp3.RequestBody fileBody = okhttp3.RequestBody.create(fileContent, okhttp3.MediaType.parse("application/octet-stream"));
+				multipartBuilder.addFormDataPart(identifier, identifier, fileBody);
+			}
+		}
+
+		okhttp3.RequestBody multipartBody = multipartBuilder.build();
+		Request request = createPostRequest(uri, label, multipartBody, getConnection().getAccessToken().orElse(null));
+		Response response = execute(request, connectionProperties.getHost(), connectionProperties.isCompress());
+		InputStream is = ofNullable(response.body()).map(ResponseBody::byteStream).orElse(null);
+		if (is == null) {
+			CloseableUtil.close(response);
+		}
+		return is;
+	}
+
+	/**
+	 * In order to keep this commit small will create the query parameter here. It should be injected when we create the connection.
+	 * @return
+	 */
+	private QueryParameterProvider getQueryParameterProvider() {
+		FireboltBackendType fireboltBackendType = connection.getBackendType();
+
+		switch(fireboltBackendType) {
+			case CLOUD_1_0: return new FireboltCloudV1QueryParameterProvider();
+			case CLOUD_2_0: return new FireboltCloudV2QueryParameterProvider();
+			case FIREBOLT_CORE: return new FireboltCoreQueryParameterProvider();
+			case DEV: return new LocalhostQueryParameterProvider();
+			default: throw new IllegalStateException("Could not detect what backend is connecting to.");
+		}
+	}
+
 	private CompressionType getRequestBodyCompressionType(@NonNull FireboltProperties connectionProperties) {
 		// for now if the compression is on, use the default gzip. We might expose the compression algorithm to the clients in the future, but now default to gzip
 		return connectionProperties.isCompressRequestPayload() ? CompressionType.GZIP : CompressionType.NONE;
 	}
 
-
-	public void abortStatement(@NonNull String statementLabel, @NonNull FireboltProperties properties) throws SQLException {
-		boolean aborted = abortRunningHttpRequest(statementLabel);
-		if (properties.isSystemEngine()) {
-			throw new FireboltException("Cannot cancel a statement using a system engine", INVALID_REQUEST);
-		} else {
-			abortRunningDbStatement(statementLabel, properties, aborted ? 10_000 : 1);
-		}
-	}
-
-	/**
-	 * Aborts the statement being sent to the server
-	 *
-	 * @param label				 label of the statement
-	 * @param fireboltProperties the properties
-	 */
 	private void abortRunningDbStatement(String label, FireboltProperties fireboltProperties, int getIdTimeout) throws SQLException {
 		try {
 			String id;
@@ -262,11 +330,6 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		}
 	}
 
-	/**
-	 * Abort HttpRequest if it is currently being sent
-	 *
-	 * @param label id of the statement
-	 */
 	private boolean abortRunningHttpRequest(@NonNull String label) {
 		boolean quedAborted = abortCall(getQueuedCallWithLabel(label));
 		boolean runningAborted = abortCall(getRunningCallWithLabel(label));
@@ -290,11 +353,6 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 	private Optional<Call> getSelectedCallWithLabel(String label, Function<Dispatcher, List<Call>> callsGetter) {
 		return callsGetter.apply(getHttpClient().dispatcher()).stream().filter(call -> isCallWithLabel.test(call, label)).findAny();
-	}
-
-	@Override
-	public boolean isStatementRunning(String statementId) {
-		return getQueuedCallWithLabel(statementId).isPresent() || getRunningCallWithLabel(statementId).isPresent();
 	}
 
 	private URI buildQueryUri(FireboltProperties fireboltProperties, Map<String, String> parameters) {
