@@ -141,7 +141,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 	public InputStream executeSqlStatementWithFiles(@NonNull StatementInfoWrapper statementInfoWrapper,
                                                     @NonNull FireboltProperties connectionProperties, int queryTimeout, boolean isServerAsync,
-                                                    @NonNull Map<String, byte[]> files) throws SQLException {
+                                                    Map<String, byte[]> files) throws SQLException {
 		if (files == null || files.isEmpty()) {
 			throw new FireboltException("Files map cannot be null or empty when executing statement with files", INVALID_REQUEST);
 		}
