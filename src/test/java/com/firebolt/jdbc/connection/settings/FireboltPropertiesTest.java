@@ -25,7 +25,7 @@ class FireboltPropertiesTest {
 				.keepAliveTimeoutMillis(300000).maxConnectionsTotal(300).maxRetries(3)
 				.socketTimeoutMillis(0).connectionTimeoutMillis(60000).tcpKeepInterval(30).environment("app").tcpKeepIdle(60)
 				.tcpKeepCount(10).connectionCachingEnabled(true).preparedStatementParamStyle("native")
-                .mergePreparedStatementBatchesV2(false).compressRequestPayload(false)
+				.compressRequestPayload(false)
 				.build();
 
 		Properties properties = new Properties();
@@ -51,7 +51,6 @@ class FireboltPropertiesTest {
 		properties.put("compress", "1");
 		properties.put("validate_on_system_engine", "true");
 		properties.put("merge_prepared_statement_batches", "true");
-		properties.put("merge_prepared_statement_batches_v2", "true");
 		properties.put("prepared_statement_param_style", "fb_numeric");
 
 		Map<String, String> customProperties = new HashMap<>();
@@ -64,7 +63,7 @@ class FireboltPropertiesTest {
 				.maxConnectionsTotal(300).maxRetries(3).socketTimeoutMillis(20).connectionTimeoutMillis(60000)
 				.tcpKeepInterval(30).tcpKeepIdle(60).tcpKeepCount(10).environment("app").validateOnSystemEngine(true)
 				.mergePreparedStatementBatches(true).connectionCachingEnabled(true).preparedStatementParamStyle("fb_numeric")
-                .mergePreparedStatementBatchesV2(true).compressRequestPayload(false)
+				.compressRequestPayload(false)
 				.build();
 		assertEquals(expectedDefaultProperties, new FireboltProperties(properties));
 	}

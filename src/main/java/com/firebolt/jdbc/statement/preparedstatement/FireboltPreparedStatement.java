@@ -9,7 +9,6 @@ import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.exception.FireboltUnsupportedOperationException;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
-import com.firebolt.jdbc.statement.ParamMarker;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementUtil;
 import com.firebolt.jdbc.statement.rawstatement.RawStatementWrapper;
@@ -45,8 +44,6 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.firebolt.jdbc.statement.StatementUtil.replaceParameterMarksWithValues;
 import static com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory.createValidator;
@@ -274,18 +271,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		for (Map<Integer, Object> row : rows) {
 			statements.addAll(prepareSQL(row));
 		}
-
-        if (sessionProperties.isMergePreparedStatementBatchesV2() && !rows.isEmpty()) {
-            int firstParenAfterValuesIndex = validateStatementForMergeV2AndGetFirstParenIndex(statements);
-            if (firstParenAfterValuesIndex != -1) {
-                StatementInfoWrapper mergedStatement = mergeInsertStatementWithValues(statements, firstParenAfterValuesIndex);
-                execute(List.of(mergedStatement));
-                for (int i = 0; i < rows.size(); i++) {
-                    result[i] = SUCCESS_NO_INFO;
-                }
-                return result;
-            }
-        }
 		if (sessionProperties.isMergePreparedStatementBatches()) {
 			if (!statements.isEmpty()) {
 				execute(List.of(asSingleStatement(statements)));
@@ -299,51 +284,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		return result;
 	}
 
-	/**
-	 * Executes batch with VALUES merging for INSERT statements.
-	 * Validates that the statement is an INSERT statement and throws an error if not.
-	 *
-	 * @return A merged StatementInfoWrapper with multiple VALUES clauses, or null if merging fails or first parameter is before VALUES
-     */
-	protected int validateStatementForMergeV2AndGetFirstParenIndex(List<StatementInfoWrapper> statements) {
-        if (statements.isEmpty()) {
-            return -1;
-        }
-
-		if (rawStatement.getSubStatements().size() != 1) {
-			log.warn(format("merge_prepared_statement_batches_v2 can only be used with single INSERT statements. Found %d statements.",
-                    rawStatement.getSubStatements().size()));
-            return -1;
-		}
-
-		var subStatement = rawStatement.getSubStatements().get(0);
-		String sql = subStatement.getSql().trim();
-        String logQuery = sql.length() > 50 ? sql.substring(0, 50) + "..." : sql;
-        if (!sql.toUpperCase().startsWith("INSERT")) {
-			log.warn(format("merge_prepared_statement_batches_v2 can only be used with INSERT statements. Found: %s",
-                    logQuery));
-            return -1;
-		}
-
-		// Validate that the statement contains VALUES keyword
-        int valuesClauseIndex = findValuesClauseIndex(sql);
-        if (valuesClauseIndex == -1) {
-			log.warn(format("merge_prepared_statement_batches_v2 can only be used with INSERT statements containing VALUES keyword. Found: %s",
-                    logQuery));
-            return -1;
-		}
-        int firstParenAfterValuesIndex = findFirstParenAfterValues(sql, valuesClauseIndex);
-
-        // Verify first parameter position vs VALUES index
-		List<ParamMarker> paramMarkers = subStatement.getParamMarkers();
-		if (paramMarkers.isEmpty() || paramMarkers.get(0).getPosition() <= firstParenAfterValuesIndex) {
-			// First parameter is before or at VALUES, exit merge logic
-            return -1;
-		}
-
-		return firstParenAfterValuesIndex;
-	}
-
 	protected StatementInfoWrapper asSingleStatement(List<StatementInfoWrapper> queries) {
 		// merge all queries into a single query, separated by semicolons
 		StringBuilder sb = new StringBuilder();
@@ -352,85 +292,6 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 			sb.append(query.getSql()).append(";");
 		}
 		return new StatementInfoWrapper(sb.toString(), first.getInitialStatement().getStatementType(), first.getParam(), first.getInitialStatement());
-	}
-
-	/**
-     * Merges multiple INSERT statement batches by joining the first statement with the VALUES parts
-     * from all other statements.
-     *
-     * @param statements                    List of prepared StatementInfoWrapper objects with parameters already replaced
-     * @param firstParenAfterValuesIndex    Index of first '(' after VALUES clause in the clean SQL
-     * @return A merged StatementInfoWrapper with multiple VALUES clauses, or null if parsing fails
-     */
-	protected StatementInfoWrapper mergeInsertStatementWithValues(List<StatementInfoWrapper> statements, int firstParenAfterValuesIndex) {
-		var subStatement = rawStatement.getSubStatements().get(0);
-
-		// Use the first statement as-is (it already has the full INSERT INTO ... VALUES part)
-		String firstPreparedSql = statements.get(0).getSql().trim();
-		// Remove trailing semicolon if present
-		if (firstPreparedSql.endsWith(";")) {
-			firstPreparedSql = firstPreparedSql.substring(0, firstPreparedSql.length() - 1).trim();
-		}
-
-		// Build the merged statement starting with the first statement
-		StringBuilder mergedSql = new StringBuilder();
-		mergedSql.append(firstPreparedSql);
-
-		// For all other statements, extract only the VALUES part and append with comma
-		for (int i = 1; i < statements.size(); i++) {
-			String preparedSql = statements.get(i).getSql();
-
-			String valuesPart = preparedSql.substring(firstParenAfterValuesIndex).trim();
-			// Remove trailing semicolon if present
-			if (valuesPart.endsWith(";")) {
-				valuesPart = valuesPart.substring(0, valuesPart.length() - 1).trim();
-			}
-
-			mergedSql.append(", ").append(valuesPart);
-		}
-
-		return new StatementInfoWrapper(mergedSql.toString(), subStatement.getStatementType(), null, subStatement);
-	}
-
-	private int findValuesClauseIndex(String sql) {
-        @SuppressWarnings("java:S5852")
-        Pattern pattern = Pattern.compile(
-                // i = case-insensitive, s = dot matches newline, x = free-spacing/comments
-                "(?isx)" +
-                "\\bINSERT\\s++INTO\\s++" + // INSERT INTO
-                ".+?\\s*+" + // table name: ANY chars, lazily
-                "(?:" + // optional column list (...)
-                    "\\(" +
-                        "(?>" + // atomic: don't backtrack inside
-                            "(?:(?!\\)\\s*+VALUES).)*+" + // any char, as long as not ')' followed by 'VALUES'
-                        ")" +
-                    "\\)\\s*+" +
-                ")?" +
-                "\\s*+(VALUES)\\s*+" + // <-- Group 1 = VALUES
-                "\\(" + // values list (...)
-                    "(?>" +
-                        "(?:(?!\\)\\s*(?:,|;|$)).)*+" + // any char, as long as not ')' before comma/semicolon/EOS
-                    ")" +
-                "\\)"
-        );
-		
-		Matcher matcher = pattern.matcher(sql);
-		if (matcher.find()) {
-			// Group 1 contains "VALUES", get its start position
-			return matcher.end(1);
-		}
-		
-		return -1;
-	}
-
-	private int findFirstParenAfterValues(String sql, int valuesIndex) {
-		// Search for the first '(' after VALUES
-		for (int i = valuesIndex; i < sql.length(); i++) {
-			if (sql.charAt(i) == '(') {
-				return i;
-			}
-		}
-		return -1;
 	}
 
 	@Override
