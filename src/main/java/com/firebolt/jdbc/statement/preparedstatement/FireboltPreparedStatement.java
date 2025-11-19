@@ -317,22 +317,22 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		}
 
 		var subStatement = rawStatement.getSubStatements().get(0);
-		String sql = subStatement.getSql().trim();
-        String logQuery = sql.length() > 50 ? sql.substring(0, 50) + "..." : sql;
-        if (!sql.toUpperCase().startsWith("INSERT")) {
+		String cleanSql = subStatement.getCleanSql().trim();
+        String logQuery = cleanSql.length() > 50 ? cleanSql.substring(0, 50) + "..." : cleanSql;
+        if (!cleanSql.toUpperCase().startsWith("INSERT")) {
 			log.warn(format("merge_prepared_statement_batches_v2 can only be used with INSERT statements. Found: %s",
                     logQuery));
             return -1;
 		}
 
 		// Validate that the statement contains VALUES keyword
-        int valuesClauseIndex = findValuesClauseIndex(sql);
+        int valuesClauseIndex = findValuesClauseIndex(cleanSql);
         if (valuesClauseIndex == -1) {
 			log.warn(format("merge_prepared_statement_batches_v2 can only be used with INSERT statements containing VALUES keyword. Found: %s",
                     logQuery));
             return -1;
 		}
-        int firstParenAfterValuesIndex = findFirstParenAfterValues(sql, valuesClauseIndex);
+        int firstParenAfterValuesIndex = findFirstParenAfterValues(cleanSql, valuesClauseIndex);
 
         // Verify first parameter position vs VALUES index
 		List<ParamMarker> paramMarkers = subStatement.getParamMarkers();
@@ -417,7 +417,7 @@ public class FireboltPreparedStatement extends FireboltStatement implements Prep
 		Matcher matcher = pattern.matcher(sql);
 		if (matcher.find()) {
 			// Group 1 contains "VALUES", get its start position
-			return matcher.end(1);
+			return matcher.start(1);
 		}
 		
 		return -1;
