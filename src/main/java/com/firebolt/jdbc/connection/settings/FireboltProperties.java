@@ -77,7 +77,6 @@ public class FireboltProperties {
 	private final String accessToken;
 	private final boolean validateOnSystemEngine;
 	private final boolean mergePreparedStatementBatches;
-	private final boolean mergePreparedStatementBatchesV2;
 	private final boolean connectionCachingEnabled;
 	private final String preparedStatementParamStyle;
 	private String transactionId;
@@ -124,7 +123,6 @@ public class FireboltProperties {
 		userClients = getSetting(properties, FireboltSessionProperty.USER_CLIENTS);
 		validateOnSystemEngine = getSetting(properties, FireboltSessionProperty.VALIDATE_ON_SYSTEM_ENGINE);
 		mergePreparedStatementBatches = getSetting(properties, FireboltSessionProperty.MERGE_PREPARED_STATEMENT_BATCHES);
-		mergePreparedStatementBatchesV2 = getSetting(properties, FireboltSessionProperty.MERGE_PREPARED_STATEMENT_BATCHES_V2);
 		connectionCachingEnabled = getSetting(properties, FireboltSessionProperty.CACHE_CONNECTION);
         preparedStatementParamStyle = getSetting(properties, FireboltSessionProperty.PREPARED_STATEMENT_PARAM_STYLE);
 
