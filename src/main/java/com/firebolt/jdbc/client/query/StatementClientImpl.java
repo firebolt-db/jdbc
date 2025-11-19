@@ -121,8 +121,6 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		super(httpClient, connection, customDrivers, customClients);
 	}
 
-	// ==================== Public Interface Methods ====================
-
 	/**
 	 * Sends SQL statement to Firebolt Retries to send the statement if the first
 	 * execution is unauthorized
@@ -194,8 +192,6 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 			throw new FireboltException(errorMessage, e);
 		}
 	}
-
-	// ==================== Retry Logic ====================
 
 	private InputStream executeSqlStatementWithRetryOnUnauthorized(String label, @NonNull FireboltProperties connectionProperties, String formattedStatement, String uri)
 			throws SQLException, IOException {

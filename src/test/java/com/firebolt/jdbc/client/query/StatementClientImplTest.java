@@ -16,6 +16,7 @@ import com.firebolt.jdbc.statement.StatementUtil;
 import com.firebolt.jdbc.type.ParserVersion;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.sql.PreparedStatement;
@@ -733,6 +734,68 @@ class StatementClientImplTest {
 		assertThrows(SQLException.class, () -> ((StatementClientImpl) statementClient).executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT, false, files));
 	}
 
+	@Test
+	void shouldHandleNullResponseBodyInExecuteSqlStatement() throws IOException, SQLException {
+		when(cloudV2connection.getAccessToken()).thenReturn(Optional.of("token"));
+		Call call = mock(Call.class);
+		Response response = mock(Response.class);
+		when(response.code()).thenReturn(200);
+		when(response.body()).thenReturn(null);
+		when(call.execute()).thenReturn(response);
+		when(okHttpClient.newCall(any())).thenReturn(call);
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, cloudV2connection, "", "");
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("select 1").get(0);
+
+		InputStream result = statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, 5, false);
+		assertNull(result);
+	}
+
+	@Test
+	void shouldHandleNullResponseBodyInExecuteSqlStatementWithFiles() throws IOException, SQLException {
+		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).build();
+		when(cloudV2connection.getAccessToken()).thenReturn(Optional.of("token"));
+		when(cloudV2connection.getInfraVersion()).thenReturn(2);
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, cloudV2connection, "ConnA:1.0.9", "ConnB:2.0.9");
+		Call call = mock(Call.class);
+		Response response = mock(Response.class);
+		when(response.code()).thenReturn(200);
+		when(response.body()).thenReturn(null);
+		when(call.execute()).thenReturn(response);
+		when(okHttpClient.newCall(any())).thenReturn(call);
+		when(okHttpClient.connectTimeoutMillis()).thenReturn(1000);
+		when(okHttpClient.readTimeoutMillis()).thenReturn(1000);
+		when(cloudV2connection.getConnectionTimeout()).thenReturn(1000);
+		when(cloudV2connection.getNetworkTimeout()).thenReturn(1000);
+
+		Map<String, byte[]> files = new HashMap<>();
+		files.put("file1", "content".getBytes());
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT * FROM table").get(0);
+
+		InputStream result = ((StatementClientImpl) statementClient).executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT, false, files);
+		assertNull(result);
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+			"CLOUD_1_0",
+			"CLOUD_2_0",
+			"FIREBOLT_CORE",
+			"DEV"
+	})
+	void shouldUseCorrectQueryParameterProviderForBackendTypeInExecuteSqlStatement(FireboltBackendType backendType) throws SQLException, IOException {
+		when(connection.getBackendType()).thenReturn(backendType);
+		when(connection.getAccessToken()).thenReturn(Optional.of("token"));
+		when(connection.getInfraVersion()).thenReturn(2);
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, connection, "", "");
+		injectMockedResponse(okHttpClient, 200, "");
+		Call call = getMockedCallWithResponse(200, "");
+		when(okHttpClient.newCall(any())).thenReturn(call);
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("select 1").get(0);
+
+		statementClient.executeSqlStatement(statementInfoWrapper, FIREBOLT_PROPERTIES, 15, false);
+
+		verify(okHttpClient).newCall(any());
+	}
 
 	private Call getMockedCallWithResponse(int statusCode, String content) throws IOException {
 		return getMockedCallWithResponse(statusCode, content, Map.of());
