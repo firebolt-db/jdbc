@@ -160,7 +160,7 @@ public abstract class FireboltClient implements CacheListener {
 		return createPostRequest(uri, label, requestBody, accessToken, compressionType);
 	}
 
-	protected Response postMultipartFormData(String uri, String host, String label, String sql, Map<String, byte[]> files, String accessToken)
+	protected Response postMultipartFormDataForParquetFiles(String uri, String host, String label, String sql, Map<String, byte[]> files, String accessToken)
 			throws IOException, SQLException {
 		MultipartBody.Builder multipartBuilder = new MultipartBody.Builder()
 				.setType(MultipartBody.FORM);

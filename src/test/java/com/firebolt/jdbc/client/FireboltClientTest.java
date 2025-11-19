@@ -86,13 +86,13 @@ class FireboltClientTest {
 	}
 
 	@Test
-	void shouldPostMultipartFormDataWithSqlOnly() throws IOException, SQLException {
+	void shouldPostMultipartFormDataForParquetFilesWithSqlOnly() throws IOException, SQLException {
 		Response response = mockResponse(HTTP_OK);
 		Call call = mock(Call.class);
 		when(call.execute()).thenReturn(response);
 		when(httpClient.newCall(any())).thenReturn(call);
 
-		Response result = fireboltClient.postMultipartFormData(URI, HOST, LABEL, SQL, null, ACCESS_TOKEN);
+		Response result = fireboltClient.postMultipartFormDataForParquetFiles(URI, HOST, LABEL, SQL, null, ACCESS_TOKEN);
 
 		assertNotNull(result);
 		verify(httpClient).newCall(requestCaptor.capture());
@@ -122,7 +122,7 @@ class FireboltClientTest {
 	}
 
 	@Test
-	void shouldPostMultipartFormDataWithSqlAndFiles() throws IOException, SQLException {
+	void shouldPostMultipartFormDataForParquetFilesWithSqlAndFiles() throws IOException, SQLException {
 		Map<String, byte[]> files = new HashMap<>();
 		files.put("file1", "content1".getBytes(StandardCharsets.UTF_8));
 		files.put("file2", "content2".getBytes(StandardCharsets.UTF_8));
@@ -132,7 +132,7 @@ class FireboltClientTest {
 		when(call.execute()).thenReturn(response);
 		when(httpClient.newCall(any())).thenReturn(call);
 
-		Response result = fireboltClient.postMultipartFormData(URI, HOST, LABEL, SQL, files, ACCESS_TOKEN);
+		Response result = fireboltClient.postMultipartFormDataForParquetFiles(URI, HOST, LABEL, SQL, files, ACCESS_TOKEN);
 
 		assertNotNull(result);
 		verify(httpClient).newCall(requestCaptor.capture());
@@ -181,7 +181,7 @@ class FireboltClientTest {
 	}
 
 	@Test
-	void shouldPostMultipartFormDataWithEmptyFilesMap() throws IOException, SQLException {
+	void shouldPostMultipartFormDataForParquetFilesWithEmptyFilesMap() throws IOException, SQLException {
 		Map<String, byte[]> files = new HashMap<>();
 
 		Response response = mockResponse(HTTP_OK);
@@ -189,7 +189,7 @@ class FireboltClientTest {
 		when(call.execute()).thenReturn(response);
 		when(httpClient.newCall(any())).thenReturn(call);
 
-		Response result = fireboltClient.postMultipartFormData(URI, HOST, LABEL, SQL, files, ACCESS_TOKEN);
+		Response result = fireboltClient.postMultipartFormDataForParquetFiles(URI, HOST, LABEL, SQL, files, ACCESS_TOKEN);
 
 		assertNotNull(result);
 		verify(httpClient).newCall(requestCaptor.capture());
@@ -209,7 +209,7 @@ class FireboltClientTest {
 		when(call.execute()).thenReturn(response);
 		when(httpClient.newCall(any())).thenReturn(call);
 
-		fireboltClient.postMultipartFormData(URI, HOST, LABEL, SQL, null, ACCESS_TOKEN);
+		fireboltClient.postMultipartFormDataForParquetFiles(URI, HOST, LABEL, SQL, null, ACCESS_TOKEN);
 
 		verify(httpClient).newCall(requestCaptor.capture());
 		Request request = requestCaptor.getValue();
@@ -223,7 +223,7 @@ class FireboltClientTest {
 		when(call.execute()).thenReturn(response);
 		when(httpClient.newCall(any())).thenReturn(call);
 
-		Response result = fireboltClient.postMultipartFormData(URI, HOST, LABEL, SQL, null, null);
+		Response result = fireboltClient.postMultipartFormDataForParquetFiles(URI, HOST, LABEL, SQL, null, null);
 
 		assertNotNull(result);
 		verify(httpClient).newCall(requestCaptor.capture());
@@ -238,7 +238,7 @@ class FireboltClientTest {
 		when(httpClient.newCall(any())).thenReturn(call);
 
 		assertThrows(IOException.class, () ->
-				fireboltClient.postMultipartFormData(URI, HOST, LABEL, SQL, null, ACCESS_TOKEN));
+				fireboltClient.postMultipartFormDataForParquetFiles(URI, HOST, LABEL, SQL, null, ACCESS_TOKEN));
 	}
 
 	@Test
@@ -254,7 +254,7 @@ class FireboltClientTest {
 		when(httpClient.newCall(any())).thenReturn(call);
 
 		assertThrows(SQLException.class, () ->
-				fireboltClient.postMultipartFormData(URI, HOST, LABEL, SQL, null, ACCESS_TOKEN));
+				fireboltClient.postMultipartFormDataForParquetFiles(URI, HOST, LABEL, SQL, null, ACCESS_TOKEN));
 	}
 
 	@Test
