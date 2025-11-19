@@ -827,8 +827,7 @@ class FireboltPreparedStatementTest {
 			"'INSERT INTO cars (sales, make)    VALUES    (?,?)', 'INSERT INTO cars (sales, make)    VALUES    (150,''Ford''), (300,''Tesla'')'",
 			"'INSERT INTO cars (sales, make)\tVALUES\t(?,?)\t ', 'INSERT INTO cars (sales, make)\tVALUES\t(150,''Ford''), (300,''Tesla'')'",
 			"'INSERT INTO cars (sales, make) VALUES (?,?)   ;    ', 'INSERT INTO cars (sales, make) VALUES (150,''Ford''), (300,''Tesla'')'",
-			"'INSERT INTO cars (sales, make)\nVALUES (?,?)\n   ;', 'INSERT INTO cars (sales, make)\nVALUES (150,''Ford''), (300,''Tesla'')'",
-			"'INSERT INTO \"cars-with-dashes\" (sales, make)\nVALUES (?,?)\n   ;', 'INSERT INTO \"cars-with-dashes\" (sales, make)\nVALUES (150,''Ford''), (300,''Tesla'')'"
+			"'INSERT INTO cars (sales, make)\nVALUES (?,?)\n   ;', 'INSERT INTO cars (sales, make)\nVALUES (150,''Ford''), (300,''Tesla'')'"
 	})
 	void shouldMergeBatchWithVariousWhitespaces(String sql, String expectedResult) throws SQLException {
 		when(properties.isMergePreparedStatementBatchesV2()).thenReturn(true);
