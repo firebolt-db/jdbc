@@ -137,6 +137,17 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 				(label, formattedStatement, uri) -> executeSqlStatementWithRetryOnUnauthorized(label, connectionProperties, formattedStatement, uri));
 	}
 
+    /**
+     * Sends SQL statement with parquet files to Firebolt Retries to send the statement if the first
+     * execution is unauthorized
+     *
+     * @param statementInfoWrapper the statement wrapper
+     * @param connectionProperties the connection properties
+     * @param queryTimeout         query timeout
+     * @param isServerAsync        makes query run async (not implemented yet)
+     * @param files                a map of file names to their content
+     * @return the server response
+     */
 	public InputStream executeSqlStatementWithFiles(@NonNull StatementInfoWrapper statementInfoWrapper,
                                                     @NonNull FireboltProperties connectionProperties, int queryTimeout, boolean isServerAsync,
                                                     Map<String, byte[]> files) throws SQLException {
@@ -162,13 +173,43 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		return getQueuedCallWithLabel(statementId).isPresent() || getRunningCallWithLabel(statementId).isPresent();
 	}
 
+	/**
+	 * Functional interface for executing a SQL statement.
+	 * <p>
+	 * This interface abstracts the execution of a SQL statement, allowing different implementations
+	 * for various execution strategies (e.g., with or without file attachments). The executor is
+	 * responsible for sending the statement to the Firebolt server and returning the response stream.
+	 */
 	@FunctionalInterface
 	private interface StatementExecutor {
+        /**
+         *
+         * @param label the unique label identifying the statement
+         * @param formattedStatement the formatted SQL statement to execute, remnants of v1-v2 implementation seems like
+         * @param uri the target URI for the statement execution request
+         * @return an InputStream containing the server response
+         * @throws SQLException if a database access error occurs
+         * @throws IOException if an I/O error occurs during the HTTP request
+         */
 		InputStream execute(String label, String formattedStatement, String uri) throws SQLException, IOException;
 	}
 
+	/**
+	 * Functional interface for executing a SQL statement with retry capability.
+	 * <p>
+	 * This interface is used for retry logic when a statement execution fails with an unauthorized
+	 * (401) error. The executor encapsulates the statement execution logic without requiring
+	 * parameters, allowing it to be invoked multiple times during retry attempts. This is typically
+	 * used in conjunction with {@link #executeWithRetryOnUnauthorized(String, String, String, StatementRetryExecutor)}
+	 * to automatically retry failed requests.
+	 */
 	@FunctionalInterface
 	private interface StatementRetryExecutor {
+        /**
+         * @return an InputStream containing the server response
+         * @throws SQLException if a database access error occurs
+         * @throws IOException if an I/O error occurs during the HTTP request
+         */
 		InputStream execute() throws SQLException, IOException;
 	}
 
@@ -234,25 +275,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 	private InputStream postSqlStatementWithFiles(@NonNull FireboltProperties connectionProperties, String formattedStatement, String uri, String label, Map<String, byte[]> files)
 			throws SQLException, IOException {
-		okhttp3.MultipartBody.Builder multipartBuilder = new okhttp3.MultipartBody.Builder()
-				.setType(okhttp3.MultipartBody.FORM);
-
-		okhttp3.MediaType sqlMediaType = okhttp3.MediaType.parse("text/plain; charset=utf-8");
-		okhttp3.RequestBody sqlBody = okhttp3.RequestBody.create(formattedStatement, sqlMediaType);
-		multipartBuilder.addFormDataPart("sql", null, sqlBody);
-
-		if (files != null) {
-			for (Map.Entry<String, byte[]> entry : files.entrySet()) {
-				String identifier = entry.getKey();
-				byte[] fileContent = entry.getValue();
-				okhttp3.RequestBody fileBody = okhttp3.RequestBody.create(fileContent, okhttp3.MediaType.parse("application/octet-stream"));
-				multipartBuilder.addFormDataPart(identifier, identifier, fileBody);
-			}
-		}
-
-		okhttp3.RequestBody multipartBody = multipartBuilder.build();
-		Request request = createPostRequest(uri, label, multipartBody, getConnection().getAccessToken().orElse(null));
-		Response response = execute(request, connectionProperties.getHost(), connectionProperties.isCompress());
+		Response response = postMultipartFormDataForParquetFiles(uri, connectionProperties.getHost(), label, formattedStatement, files, getConnection().getAccessToken().orElse(null));
 		InputStream is = ofNullable(response.body()).map(ResponseBody::byteStream).orElse(null);
 		if (is == null) {
 			CloseableUtil.close(response);
@@ -260,10 +283,6 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		return is;
 	}
 
-	/**
-	 * In order to keep this commit small will create the query parameter here. It should be injected when we create the connection.
-	 * @return
-	 */
 	private QueryParameterProvider getQueryParameterProvider() {
 		FireboltBackendType fireboltBackendType = connection.getBackendType();
 
