@@ -1,5 +1,6 @@
 package integration;
 
+import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.client.HttpClientConfig;
 import java.io.InputStream;
 import java.lang.reflect.Field;
@@ -35,9 +36,17 @@ public abstract class IntegrationTest {
 	private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(TIMESTAMP_FORMAT);
 
 	private static ConnectionFactory connectionFactory;
+	private static FireboltBackendType backendType;
 
 	public static void setConnectionFactory(ConnectionFactory factory) {
 		connectionFactory = factory;
+	}
+	public static void setBackendType(FireboltBackendType type) {
+		backendType = type;
+	}
+
+	protected static FireboltBackendType getBackendType() {
+		return backendType;
 	}
 
 	protected Connection createConnection() throws SQLException {

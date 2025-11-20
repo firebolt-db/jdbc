@@ -32,6 +32,7 @@ public class GlobalSetupExtension implements BeforeAllCallback {
             log.info("Setting up the connection factory");
 
             FireboltBackendType fireboltBackend = detectFireboltBackend();
+            IntegrationTest.setBackendType(fireboltBackend);
 
             if (FireboltBackendType.FIREBOLT_CORE == fireboltBackend) {
                 log.info("Using the Firebolt core as the backend");
