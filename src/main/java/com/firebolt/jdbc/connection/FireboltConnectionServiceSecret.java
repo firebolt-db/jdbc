@@ -18,6 +18,7 @@ import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineVersion2Service;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.service.FireboltStatementService;
+import com.firebolt.jdbc.statement.preparedstatement.FireboltParquetStatement;
 import com.firebolt.jdbc.type.ParserVersion;
 import java.net.URL;
 import java.sql.Connection;
@@ -416,4 +417,13 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
 	public int getInfraVersion() {
 		return 2;
 	}
+
+	@Override
+	public FireboltParquetStatement createParquetStatement() throws SQLException {
+		validateConnectionIsNotClose();
+		FireboltParquetStatement statement = new FireboltParquetStatement(fireboltStatementService, this);
+		addStatement(statement);
+		return statement;
+	}
+
 }
