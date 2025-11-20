@@ -1,6 +1,7 @@
 package com.firebolt.jdbc.connection;
 
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.statement.preparedstatement.FireboltParquetStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
@@ -17,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
@@ -152,6 +154,19 @@ class FireboltCoreConnectionTest {
             assertEquals("localhost", fireboltProperties.getHost());
             assertEquals(3473, fireboltProperties.getPort());
             assertEquals("my_db", fireboltProperties.getDatabase());
+        }
+    }
+
+    @Test
+    void createParquetStatement() throws SQLException {
+        Map<String, String> connectionParams = Map.of(
+                "url", "http://localhost:3473",
+                "database", "my_db"
+        );
+        try (FireboltCoreConnection connection = createConnectionWithParams(connectionParams)) {
+            FireboltParquetStatement parquetStatement = connection.createParquetStatement();
+            assertNotNull(parquetStatement);
+            assertFalse(parquetStatement.isClosed());
         }
     }
 

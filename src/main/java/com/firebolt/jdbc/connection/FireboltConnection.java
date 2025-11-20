@@ -403,7 +403,9 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 
 	public FireboltParquetStatement createParquetStatement() throws SQLException {
 		validateConnectionIsNotClose();
-		throw new FireboltSQLFeatureNotSupportedException("Parquet statements are not supported for this connection type");
+		FireboltParquetStatement statement = new FireboltParquetStatement(fireboltStatementService, this);
+		addStatement(statement);
+		return statement;
 	}
 
 	@Override

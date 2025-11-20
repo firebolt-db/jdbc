@@ -4,7 +4,6 @@ import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.client.authentication.AuthenticationRequest;
 import com.firebolt.jdbc.client.authentication.FireboltAuthenticationClient;
 import com.firebolt.jdbc.metadata.FireboltDatabaseMetadata;
-import com.firebolt.jdbc.statement.preparedstatement.FireboltParquetStatement;
 import com.firebolt.jdbc.type.ParserVersion;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -172,13 +171,5 @@ public class FireboltCoreConnection extends FireboltConnection {
 	@Override
 	public int getInfraVersion() {
 		return 2;
-	}
-
-	@Override
-	public FireboltParquetStatement createParquetStatement() throws SQLException {
-		validateConnectionIsNotClose();
-		FireboltParquetStatement statement = new FireboltParquetStatement(fireboltStatementService, this);
-		addStatement(statement);
-		return statement;
 	}
 }
