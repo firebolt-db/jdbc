@@ -44,6 +44,7 @@ import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static java.util.Optional.ofNullable;
+import static okhttp3.RequestBody.create;
 
 @CustomLog
 public class StatementClientImpl extends FireboltClient implements StatementClient {
@@ -275,7 +276,25 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 	private InputStream postSqlStatementWithFiles(@NonNull FireboltProperties connectionProperties, String formattedStatement, String uri, String label, Map<String, byte[]> files)
 			throws SQLException, IOException {
-		Response response = postMultipartFormDataForParquetFiles(uri, connectionProperties.getHost(), label, formattedStatement, files, getConnection().getAccessToken().orElse(null));
+        okhttp3.MultipartBody.Builder multipartBuilder = new okhttp3.MultipartBody.Builder()
+                .setType(okhttp3.MultipartBody.FORM);
+
+        okhttp3.MediaType sqlMediaType = okhttp3.MediaType.parse("text/plain; charset=utf-8");
+        okhttp3.RequestBody sqlBody = create(formattedStatement, sqlMediaType);
+        multipartBuilder.addFormDataPart("sql", null, sqlBody);
+
+        if (files != null) {
+            for (Map.Entry<String, byte[]> entry : files.entrySet()) {
+                String identifier = entry.getKey();
+                byte[] fileContent = entry.getValue();
+                okhttp3.RequestBody fileBody = create(fileContent, okhttp3.MediaType.parse("application/octet-stream"));
+                multipartBuilder.addFormDataPart(identifier, identifier, fileBody);
+            }
+        }
+
+        okhttp3.RequestBody multipartBody = multipartBuilder.build();
+        Request request = createPostRequest(uri, label, multipartBody, getConnection().getAccessToken().orElse(null));
+        Response response = execute(request, connectionProperties.getHost(), connectionProperties.isCompress());
 		InputStream is = ofNullable(response.body()).map(ResponseBody::byteStream).orElse(null);
 		if (is == null) {
 			CloseableUtil.close(response);

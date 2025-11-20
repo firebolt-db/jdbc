@@ -661,6 +661,7 @@ class StatementClientImplTest {
 		assertTrue(sqlPartFound, "SQL part should be present");
 		assertTrue(file1Found, "file1 part should be present");
 		assertTrue(file2Found, "file2 part should be present");
+		assertEquals("Bearer token", actualRequest.header("Authorization"));
 	}
 
 	@Test
@@ -690,6 +691,79 @@ class StatementClientImplTest {
 		assertTrue(exception.getMessage().contains("Files map cannot be null or empty"));
 	}
 
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
+	void shouldHandleAccessTokenWhenExecutingWithFiles(boolean hasToken) throws SQLException, IOException {
+		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).build();
+		when(cloudV2connection.getAccessToken()).thenReturn(hasToken ? Optional.of("token") : Optional.empty());
+		when(cloudV2connection.getInfraVersion()).thenReturn(2);
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, cloudV2connection, "ConnA:1.0.9", "ConnB:2.0.9");
+		injectMockedResponse(okHttpClient, 200, "response");
+		Call call = getMockedCallWithResponse(200, "response");
+		when(okHttpClient.newCall(any())).thenReturn(call);
+		when(okHttpClient.connectTimeoutMillis()).thenReturn(1000);
+		when(okHttpClient.readTimeoutMillis()).thenReturn(1000);
+		when(cloudV2connection.getConnectionTimeout()).thenReturn(1000);
+		when(cloudV2connection.getNetworkTimeout()).thenReturn(1000);
+
+		Map<String, byte[]> files = new HashMap<>();
+		files.put("file1", "content1".getBytes());
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT * FROM table").get(0);
+
+		java.io.InputStream result = ((StatementClientImpl) statementClient).executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT, false, files);
+
+		assertNotNull(result);
+		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
+		Request actualRequest = requestArgumentCaptor.getValue();
+		if (hasToken) {
+			assertEquals("Bearer token", actualRequest.header("Authorization"));
+		} else {
+			assertNull(actualRequest.header("Authorization"));
+		}
+	}
+
+	@Test
+	void shouldThrowSQLExceptionWhenExecutingWithFilesFails() throws IOException, SQLException {
+		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).build();
+		when(cloudV2connection.getAccessToken()).thenReturn(Optional.of("token"));
+		when(cloudV2connection.getInfraVersion()).thenReturn(2);
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, cloudV2connection, "ConnA:1.0.9", "ConnB:2.0.9");
+		Call call = getMockedCallWithResponse(500, "{\"errors\":[{\"message\":\"Server error\"}]}");
+		when(okHttpClient.newCall(any())).thenReturn(call);
+		when(okHttpClient.connectTimeoutMillis()).thenReturn(1000);
+		when(okHttpClient.readTimeoutMillis()).thenReturn(1000);
+		when(cloudV2connection.getConnectionTimeout()).thenReturn(1000);
+		when(cloudV2connection.getNetworkTimeout()).thenReturn(1000);
+
+		Map<String, byte[]> files = new HashMap<>();
+		files.put("file1", "content".getBytes());
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT * FROM table").get(0);
+
+		assertThrows(SQLException.class, () -> ((StatementClientImpl) statementClient).executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT, false, files));
+	}
+
+	@Test
+	void shouldThrowFireboltExceptionOnIOExceptionWhenExecutingWithFiles() throws IOException, SQLException {
+		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).build();
+		when(cloudV2connection.getAccessToken()).thenReturn(Optional.of("token"));
+		when(cloudV2connection.getInfraVersion()).thenReturn(2);
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, cloudV2connection, "ConnA:1.0.9", "ConnB:2.0.9");
+		Call call = mock(Call.class);
+		when(call.execute()).thenThrow(new IOException("Network error"));
+		when(okHttpClient.newCall(any())).thenReturn(call);
+		when(okHttpClient.connectTimeoutMillis()).thenReturn(1000);
+		when(okHttpClient.readTimeoutMillis()).thenReturn(1000);
+		when(cloudV2connection.getConnectionTimeout()).thenReturn(1000);
+		when(cloudV2connection.getNetworkTimeout()).thenReturn(1000);
+
+		Map<String, byte[]> files = new HashMap<>();
+		files.put("file1", "content1".getBytes());
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT * FROM table").get(0);
+
+		assertThrows(FireboltException.class, () ->
+				((StatementClientImpl) statementClient).executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT, false, files));
+	}
+
 	@Test
 	void shouldRetryOnUnauthorizedWhenExecutingWithFiles() throws SQLException, IOException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).build();
@@ -714,25 +788,6 @@ class StatementClientImplTest {
 		verify(okHttpClient, times(2)).newCall(any());
 	}
 
-	@Test
-	void shouldThrowExceptionWhenExecutingWithFilesFails() throws IOException, SQLException {
-		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).build();
-		when(cloudV2connection.getAccessToken()).thenReturn(Optional.of("token"));
-		when(cloudV2connection.getInfraVersion()).thenReturn(2);
-		StatementClient statementClient = new StatementClientImpl(okHttpClient, cloudV2connection, "ConnA:1.0.9", "ConnB:2.0.9");
-		Call call = getMockedCallWithResponse(500, "{\"errors\":[{\"message\":\"Server error\"}]}");
-		when(okHttpClient.newCall(any())).thenReturn(call);
-		when(okHttpClient.connectTimeoutMillis()).thenReturn(1000);
-		when(okHttpClient.readTimeoutMillis()).thenReturn(1000);
-		when(cloudV2connection.getConnectionTimeout()).thenReturn(1000);
-		when(cloudV2connection.getNetworkTimeout()).thenReturn(1000);
-
-		Map<String, byte[]> files = new HashMap<>();
-		files.put("file1", "content".getBytes());
-		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT * FROM table").get(0);
-
-		assertThrows(SQLException.class, () -> ((StatementClientImpl) statementClient).executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT, false, files));
-	}
 
 	@Test
 	void shouldHandleNullResponseBodyInExecuteSqlStatement() throws IOException, SQLException {
