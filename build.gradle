@@ -282,34 +282,14 @@ publishing {
                 }
                 developers {
                     developer {
-                        id = "JonyBoyko"
-                        name = "Ivan Boyko"
-                        email = "107884978+yingli017@users.noreply.github.com"
+                        id = "goprean"
+                        name = "George Oprean"
+                        email = "george.oprean@firebolt.io"
                     }
                     developer {
-                        id = "ptiurin"
-                        name = "Petro Tiurin"
-                        email = "petro.tiurin@firebolt.io"
-                    }
-                    developer {
-                        id = "kevin"
-                        name = "Kevin Marr"
-                        email = "kevin@firebolt.io"
-                    }
-                    developer {
-                        id = "aymeric"
-                        name = "Aymeric Dispa"
-                        email = "aymeric@firebolt.io"
-                    }
-                    developer {
-                        id = "alexradzin"
-                        name = "Alexander Radzin"
-                        email = "alexander.radzin@firebolt.io"
-                    }
-                    developer {
-                        id = "reelsen"
-                        name = "Alexander Reelsen"
-                        email = "alexander@reelsen.net"
+                        id = "bogdan.truta"
+                        name = "Bogdan Truta"
+                        email = "bogdan.truta@firebolt.io"
                     }
                 }
                 scm {
