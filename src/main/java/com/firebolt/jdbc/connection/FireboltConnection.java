@@ -17,6 +17,7 @@ import com.firebolt.jdbc.metadata.FireboltSystemEngineDatabaseMetadata;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.FireboltStatement;
+import com.firebolt.jdbc.statement.preparedstatement.FireboltParquetStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatement;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltPreparedStatementProvider;
 import com.firebolt.jdbc.type.FireboltDataType;
@@ -76,7 +77,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 	private static final boolean DO_NOT_VALIDATE_CONNECTION = false;
 
 	private final FireboltAuthenticationService fireboltAuthenticationService;
-	private final FireboltStatementService fireboltStatementService;
+	protected final FireboltStatementService fireboltStatementService;
 	protected String httpConnectionUrl;
 	private final List<FireboltStatement> statements;
 	private final int connectionTimeout;
@@ -213,7 +214,7 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 		return fireboltStatement;
 	}
 
-	private void addStatement(FireboltStatement statement) throws SQLException {
+	protected void addStatement(FireboltStatement statement) throws SQLException {
 		synchronized (statements) {
 			validateConnectionIsNotClose();
 			statements.add(statement);
@@ -398,6 +399,11 @@ public abstract class FireboltConnection extends JdbcBase implements Connection,
 				sql);
 		addStatement(statement);
 		return statement;
+	}
+
+	public FireboltParquetStatement createParquetStatement() throws SQLException {
+		validateConnectionIsNotClose();
+		throw new FireboltSQLFeatureNotSupportedException("Parquet statements are not supported for this connection type");
 	}
 
 	@Override
