@@ -11,7 +11,7 @@ public interface StatementClient {
 	 * Post SQL statement
 	 */
 	InputStream executeSqlStatement(StatementInfoWrapper statementInfoWrapper, FireboltProperties connectionProperties,
-									boolean systemEngine, int queryTimeout, boolean isServerAsync) throws SQLException;
+									int queryTimeout, boolean isServerAsync) throws SQLException;
 
 	/**
 	 * Call endpoint to abort a running SQL statement

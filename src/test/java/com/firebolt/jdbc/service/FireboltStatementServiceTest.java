@@ -49,7 +49,7 @@ class FireboltStatementServiceTest {
 			FireboltStatement statement = mock(FireboltStatement.class);
 			when(statement.getQueryTimeout()).thenReturn(10);
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statement);
-			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, false);
+			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, 10, false);
 			assertEquals(1, mocked.constructed().size());
 		}
 	}
@@ -64,7 +64,7 @@ class FireboltStatementServiceTest {
 			when(statement.getQueryTimeout()).thenReturn(-1);
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statement);
 			assertEquals(1, mocked.constructed().size());
-			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, -1, false);
+			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, -1, false);
 		}
 	}
 
@@ -95,7 +95,7 @@ class FireboltStatementServiceTest {
 			when(statement.getQueryTimeout()).thenReturn(10);
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statement);
 			assertEquals(1, mocked.constructed().size());
-			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, true, 10, false);
+			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, 10, false);
 		}
 	}
 
@@ -109,7 +109,7 @@ class FireboltStatementServiceTest {
 		FireboltStatement statement = mock(FireboltStatement.class);
 		when(statement.getQueryTimeout()).thenReturn(-1);
 		assertEquals(empty(), fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statement));
-		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, -1, false);
+		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, -1, false);
 	}
 
 	@Test
@@ -122,10 +122,10 @@ class FireboltStatementServiceTest {
 		FireboltStatement statement = mock(FireboltStatement.class);
 		when(statement.getQueryTimeout()).thenReturn(10);
 		String jsonResult = "{\"token\":\"123\"}";
-		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true)).thenReturn(getMockInputStream(jsonResult));
+		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, 10, true)).thenReturn(getMockInputStream(jsonResult));
 		String asyncToken = fireboltStatementService.executeAsyncStatement(statementInfoWrapper, fireboltProperties, statement);
 		assertEquals("123", asyncToken);
-		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true);
+		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, 10, true);
 	}
 
 	@Test
@@ -137,10 +137,10 @@ class FireboltStatementServiceTest {
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 		FireboltStatement statement = mock(FireboltStatement.class);
 		when(statement.getQueryTimeout()).thenReturn(10);
-		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true)).thenReturn(getMockInputStream(""));
+		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, 10, true)).thenReturn(getMockInputStream(""));
 		FireboltException exception = assertThrows(FireboltException.class, () -> fireboltStatementService.executeAsyncStatement(statementInfoWrapper, fireboltProperties, statement));
 		assertTrue(exception.getMessage().contains("Cannot read response from DB"));
-		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true);
+		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, 10, true);
 	}
 
 	@Test
@@ -154,12 +154,12 @@ class FireboltStatementServiceTest {
 		when(statement.getQueryTimeout()).thenReturn(10);
 
 		//InputStream should never be null
-		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true)).thenReturn(null);
+		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, 10, true)).thenReturn(null);
 		FireboltException exception = assertThrows(FireboltException.class, () -> fireboltStatementService.executeAsyncStatement(statementInfoWrapper, fireboltProperties, statement));
 
 		//Exception message when unexpected exception happens: InputStream is null
 		assertTrue(exception.getMessage().contains("Error while reading query response"));
-		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, false, 10, true);
+		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, 10, true);
 	}
 
 	@Test
