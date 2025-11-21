@@ -517,7 +517,7 @@ class FireboltStatementTest {
         when(connection.getSessionProperties()).thenReturn(fireboltProperties);
         StatementClient statementClient = mock(StatementClient.class);
         String content = format("1\t2\ntext\tbytea\n%s\t%s", inputText == null ? "\\N" : inputText, inputText == null ? "\\N" : SqlArrayUtil.byteArrayToHexString(inputText.getBytes(), false));
-        when(statementClient.executeSqlStatement(any(), any(), eq(false), anyInt(), eq(false))).thenReturn(new ByteArrayInputStream(content.getBytes()));
+        when(statementClient.executeSqlStatement(any(), any(), anyInt(), eq(false))).thenReturn(new ByteArrayInputStream(content.getBytes()));
         FireboltStatementService statementService = new FireboltStatementService(statementClient);
         FireboltStatement fireboltStatement = new FireboltStatement(statementService, fireboltProperties, connection);
         when(connection.createStatement()).thenReturn(fireboltStatement);

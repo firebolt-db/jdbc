@@ -160,28 +160,51 @@ public abstract class FireboltClient implements CacheListener {
 		return createPostRequest(uri, label, requestBody, accessToken, compressionType);
 	}
 
-	protected Response postMultipartFormData(String uri, String host, String label, String sql, Map<String, byte[]> files, String accessToken)
+	/**
+	 * Executes a multipart form POST request.
+	 * <p>
+	 * This method builds a multipart/form-data request from the provided parts,
+	 * creates a POST request, and executes it. It handles response validation
+	 * and error handling similar to the standard {@link #execute(Request, String, boolean)} method.
+	 *
+	 * @param uri the target URI for the request
+	 * @param host the host name for error reporting
+	 * @param label the label to tag the request with (for cancellation)
+	 * @param parts the list of multipart parts to include in the request body
+	 * @param accessToken the access token for authorization (can be null)
+	 * @param isCompress whether to compress the response
+	 * @return the Response from the server
+	 * @throws IOException if an I/O error occurs during the HTTP request
+	 * @throws SQLException if a database access error occurs
+	 */
+	protected Response executeMultipart(@NonNull String uri, @NonNull String host, String label,
+			@NonNull List<MultipartBody.Part> parts, String accessToken, boolean isCompress)
 			throws IOException, SQLException {
+		RequestBody multipartBody = createMultipartRequestBody(parts);
+		Request request = createPostRequest(uri, label, multipartBody, accessToken);
+		return execute(request, host, isCompress);
+	}
+
+	/**
+	 * Creates a multipart form request body from a list of parts.
+	 * <p>
+	 * This method builds a multipart/form-data request body using the provided parts.
+	 * Each part represents a form field or file in the multipart request.
+	 *
+	 * @param parts the list of multipart parts to include in the request body
+	 * @return a RequestBody containing the multipart form data
+	 */
+	private RequestBody createMultipartRequestBody(List<MultipartBody.Part> parts) {
 		MultipartBody.Builder multipartBuilder = new MultipartBody.Builder()
 				.setType(MultipartBody.FORM);
-
-		MediaType sqlMediaType = MediaType.parse("text/plain; charset=utf-8");
-		RequestBody sqlBody = RequestBody.create(sql, sqlMediaType);
-		multipartBuilder.addFormDataPart("sql", null, sqlBody);
-
-		if (files != null) {
-			for (Map.Entry<String, byte[]> entry : files.entrySet()) {
-				String identifier = entry.getKey();
-				byte[] fileContent = entry.getValue();
-				RequestBody fileBody = RequestBody.create(fileContent, MediaType.parse("application/octet-stream"));
-				multipartBuilder.addFormDataPart(identifier, identifier, fileBody);
+		if (parts != null) {
+			for (MultipartBody.Part part : parts) {
+				multipartBuilder.addPart(part);
 			}
 		}
-
-		RequestBody multipartBody = multipartBuilder.build();
-		Request request = createPostRequest(uri, label, multipartBody, accessToken);
-		return execute(request, host);
+		return multipartBuilder.build();
 	}
+
 
 	private RequestBody gzip(RequestBody body) {
 		return new RequestBody() {

@@ -65,7 +65,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -223,7 +222,7 @@ class FireboltPreparedStatementTest {
 	})
 	void getMetadata(String query, boolean expectedResultSet) throws SQLException {
 		StatementClient statementClient = mock(StatementClient.class);
-		when(statementClient.executeSqlStatement(any(), any(), anyBoolean(), anyInt(), eq(false))).thenReturn(new ByteArrayInputStream(new byte[0]));
+		when(statementClient.executeSqlStatement(any(), any(), anyInt(), eq(false))).thenReturn(new ByteArrayInputStream(new byte[0]));
 		statement = new FireboltPreparedStatement(new FireboltStatementService(statementClient), connection, query);
 		assertNull(statement.getMetaData());
 		statement.setObject(1, null);
