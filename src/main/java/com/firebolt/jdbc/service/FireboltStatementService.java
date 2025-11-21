@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.Optional;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -84,6 +85,32 @@ public class FireboltStatementService {
 			throw new FireboltException("Error while reading query response", e);
 		}
     }
+
+	/**
+	 * Executes statement with files
+	 *
+	 * @param statementInfoWrapper the statement info
+	 * @param properties the connection properties
+	 * @param statement the statement
+	 * @param files map of file identifiers to file contents
+	 * @return an Optional ResultSet if the statement returns results
+	 */
+	public Optional<ResultSet> executeWithFiles(StatementInfoWrapper statementInfoWrapper,
+												 FireboltProperties properties, FireboltStatement statement,
+												 Map<String, byte[]> files)
+			throws SQLException {
+		int queryTimeout = statement.getQueryTimeout();
+		InputStream is = statementClient.executeSqlStatementWithFiles(statementInfoWrapper, properties, queryTimeout, false, files);
+		if (statementInfoWrapper.getType() == StatementType.QUERY) {
+			return Optional.of(createResultSet(is, (QueryRawStatement) statementInfoWrapper.getInitialStatement(), properties, statement));
+		} else {
+			// If the statement is not a query, read all bytes from the input stream and close it.
+			// This is needed otherwise the stream with the server will be closed after having received the first chunk of data (resulting in incomplete inserts).
+			InputStreamUtil.readAllBytes(is);
+			CloseableUtil.close(is);
+		}
+		return Optional.empty();
+	}
 
 	public void abortStatement(@NonNull String statementLabel, @NonNull FireboltProperties properties) throws SQLException {
 		statementClient.abortStatement(statementLabel, properties);

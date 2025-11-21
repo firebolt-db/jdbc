@@ -21,7 +21,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Map;
+import java.util.Optional;
 
 import static java.util.Optional.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -175,6 +178,57 @@ class FireboltStatementServiceTest {
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 		when(statementClient.isStatementRunning("id")).thenReturn(running);
 		assertEquals(running, fireboltStatementService.isStatementRunning("id"));
+	}
+
+	@Test
+	void shouldExecuteQueryWithFilesAndCreateResultSet() throws SQLException {
+		try (MockedConstruction<FireboltResultSet> mocked = Mockito.mockConstruction(FireboltResultSet.class)) {
+			StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1 FROM read_parquet('upload://file1')").get(0);
+			FireboltProperties fireboltProperties = fireboltProperties("firebolt1", false);
+			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
+			FireboltStatement statement = mock(FireboltStatement.class);
+			when(statement.getQueryTimeout()).thenReturn(10);
+			Map<String, byte[]> files = Map.of("file1", "test content".getBytes());
+			when(statementClient.executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, 10, false, files))
+					.thenReturn(getMockInputStream("result"));
+			Optional<ResultSet> result = fireboltStatementService.executeWithFiles(statementInfoWrapper, fireboltProperties, statement, files);
+			assertTrue(result.isPresent());
+			verify(statementClient).executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, 10, false, files);
+			assertEquals(1, mocked.constructed().size());
+		}
+	}
+
+	@Test
+	void shouldExecuteNonQueryWithFilesAndReturnEmpty() throws SQLException {
+		StatementInfoWrapper statementInfoWrapper = StatementUtil
+				.parseToStatementInfoWrappers("INSERT INTO ltv SELECT * FROM read_parquet('upload://file1')").get(0);
+		FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
+		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
+		FireboltStatement statement = mock(FireboltStatement.class);
+		when(statement.getQueryTimeout()).thenReturn(-1);
+		Map<String, byte[]> files = Map.of("file1", "test content".getBytes());
+		when(statementClient.executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, -1, false, files))
+				.thenReturn(getMockInputStream("result"));
+		assertEquals(empty(), fireboltStatementService.executeWithFiles(statementInfoWrapper, fireboltProperties, statement, files));
+		verify(statementClient).executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, -1, false, files);
+	}
+
+	@Test
+	void shouldExecuteQueryWithFilesForSystemEngine() throws SQLException {
+		try (MockedConstruction<FireboltResultSet> mocked = Mockito.mockConstruction(FireboltResultSet.class)) {
+			StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1 FROM read_parquet('upload://file1')").get(0);
+			FireboltProperties fireboltProperties = fireboltProperties("firebolt1", true);
+			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
+			FireboltStatement statement = mock(FireboltStatement.class);
+			when(statement.getQueryTimeout()).thenReturn(10);
+			Map<String, byte[]> files = Map.of("file1", "test content".getBytes());
+			when(statementClient.executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, 10, false, files))
+					.thenReturn(getMockInputStream("result"));
+			Optional<ResultSet> result = fireboltStatementService.executeWithFiles(statementInfoWrapper, fireboltProperties, statement, files);
+			assertTrue(result.isPresent());
+			verify(statementClient).executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, 10, false, files);
+			assertEquals(1, mocked.constructed().size());
+		}
 	}
 
 	private FireboltProperties fireboltProperties(String host, boolean systemEngine) {

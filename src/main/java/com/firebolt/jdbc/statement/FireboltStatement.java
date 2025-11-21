@@ -26,16 +26,16 @@ public class FireboltStatement extends JdbcBase implements Statement {
 	private final FireboltStatementService statementService;
 	protected final FireboltProperties sessionProperties;
 	private final FireboltConnection connection;
-	private final Collection<String> statementsToExecuteLabels = new HashSet<>();
+	protected final Collection<String> statementsToExecuteLabels = new HashSet<>();
 	private boolean closeOnCompletion = false;
-	private int currentUpdateCount = -1;
+	protected int currentUpdateCount = -1;
 	private int maxRows;
 	private int maxFieldSize;
 	private volatile boolean isClosed = false;
-	private StatementResultWrapper currentStatementResult;
-	private StatementResultWrapper firstUnclosedStatementResult;
+	protected StatementResultWrapper currentStatementResult;
+	protected StatementResultWrapper firstUnclosedStatementResult;
 	private int queryTimeout = 0; // zero means that there is no limit
-	private String runningStatementLabel;
+	protected String runningStatementLabel;
 	private final List<String> batchStatements = new LinkedList<>();
 	@Getter
 	private String asyncToken;
@@ -66,7 +66,27 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		return execute(StatementUtil.parseToStatementInfoWrappers(sql)).isPresent();
 	}
 
+	/**
+	 * Functional interface for executing a single statement
+	 */
+	@FunctionalInterface
+	protected interface SingleStatementExecutor {
+		Optional<ResultSet> execute(StatementInfoWrapper statement) throws SQLException;
+	}
+
 	protected Optional<ResultSet> execute(List<StatementInfoWrapper> statements) throws SQLException {
+		return executeStatements(statements, this::execute);
+	}
+
+	/**
+	 * Common logic for executing multiple statements
+	 *
+	 * @param statements list of statements to execute
+	 * @param singleStatementExecutor function to execute a single statement
+	 * @return Optional ResultSet from the first statement
+	 */
+	protected Optional<ResultSet> executeStatements(List<StatementInfoWrapper> statements,
+													 SingleStatementExecutor singleStatementExecutor) throws SQLException {
 		Optional<ResultSet> resultSet = Optional.empty();
 		closeAllResults();
 		Set<String> queryLabels = statements.stream().map(StatementInfoWrapper::getLabel).collect(toCollection(HashSet::new));
@@ -76,9 +96,9 @@ public class FireboltStatement extends JdbcBase implements Statement {
 			}
 			for (int i = 0; i < statements.size(); i++) {
 				if (i == 0) {
-					resultSet = execute(statements.get(i));
+					resultSet = singleStatementExecutor.execute(statements.get(i));
 				} else {
-					execute(statements.get(i));
+					singleStatementExecutor.execute(statements.get(i));
 				}
 			}
 		} finally {
@@ -89,8 +109,29 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		return resultSet;
 	}
 
-	@SuppressWarnings("java:S2139") // TODO: Exceptions should be either logged or rethrown but not both
+	/**
+	 * Functional interface for executing statements that may throw SQLException
+	 */
+	@FunctionalInterface
+	protected interface StatementExecutor {
+		Optional<ResultSet> execute() throws SQLException;
+	}
+
 	private Optional<ResultSet> execute(StatementInfoWrapper statementInfoWrapper) throws SQLException {
+		return executeStatement(statementInfoWrapper, () -> statementService.execute(statementInfoWrapper, sessionProperties, this), "statement");
+	}
+
+	/**
+	 * Common execution logic for statements
+	 *
+	 * @param statementInfoWrapper the statement to execute
+	 * @param statementExecutor function that executes the statement and returns Optional<ResultSet>
+	 * @param logContext context string for logging (e.g., "statement" or "statement with files")
+	 * @return Optional ResultSet if the statement returned results
+	 */
+	protected Optional<ResultSet> executeStatement(StatementInfoWrapper statementInfoWrapper,
+													StatementExecutor statementExecutor,
+													String logContext) throws SQLException {
 		createValidator(statementInfoWrapper.getInitialStatement(), connection).validate(statementInfoWrapper.getInitialStatement());
 		ResultSet resultSet = null;
 		if (isStatementNotCancelled(statementInfoWrapper)) {
@@ -99,14 +140,14 @@ public class FireboltStatement extends JdbcBase implements Statement {
 				validateStatementIsNotClosed();
 			}
 			try {
-				log.debug("Executing the statement with label {} : {}", statementInfoWrapper.getLabel(),
+				log.debug("Executing the {} with label {} : {}", logContext, statementInfoWrapper.getLabel(),
 						sanitizeSql(statementInfoWrapper.getSql()));
 				if (statementInfoWrapper.getType() == StatementType.PARAM_SETTING) {
 					connection.addProperty(statementInfoWrapper.getParam());
 					log.debug("The property from the query {} was stored", runningStatementLabel);
 				} else {
 					connection.ensureTransactionForQueryExecution();
-					Optional<ResultSet> currentRs = statementService.execute(statementInfoWrapper, sessionProperties, this);
+					Optional<ResultSet> currentRs = statementExecutor.execute();
 					if (currentRs.isPresent()) {
 						resultSet = currentRs.get();
 						currentUpdateCount = -1; // Always -1 when returning a ResultSet
@@ -116,8 +157,8 @@ public class FireboltStatement extends JdbcBase implements Statement {
 					log.info("The query with the label {} was executed with success", runningStatementLabel);
 				}
 			} catch (Exception ex) {
-				log.error(String.format("An error happened while executing the statement with the id %s",
-						runningStatementLabel), ex);
+				log.error(String.format("An error happened while executing the %s with the id %s",
+						logContext, runningStatementLabel), ex);
 				throw ex;
 			} finally {
 				runningStatementLabel = null;
@@ -131,7 +172,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		return Optional.ofNullable(resultSet);
 	}
 
-	private void setOrAppendFirstUnclosedStatementResult(StatementInfoWrapper statementInfoWrapper, ResultSet resultSet) {
+	protected void setOrAppendFirstUnclosedStatementResult(StatementInfoWrapper statementInfoWrapper, ResultSet resultSet) {
 		if (firstUnclosedStatementResult == null) {
 			firstUnclosedStatementResult = currentStatementResult = new StatementResultWrapper(resultSet, statementInfoWrapper);
 		} else {
@@ -139,7 +180,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		}
 	}
 
-	private String determineQueryLabel(StatementInfoWrapper statementInfoWrapper) {
+	protected String determineQueryLabel(StatementInfoWrapper statementInfoWrapper) {
 		return QueryLabelResolver.getQueryLabel(connection.getSessionProperties(), statementInfoWrapper);
 	}
 
@@ -149,7 +190,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		}
 	}
 
-	private void closeAllResults() {
+	protected void closeAllResults() {
 		synchronized (this) {
 			if (firstUnclosedStatementResult != null) {
 				firstUnclosedStatementResult.close();
@@ -190,6 +231,16 @@ public class FireboltStatement extends JdbcBase implements Statement {
 
 	protected int executeUpdate(List<StatementInfoWrapper> sql) throws SQLException {
 		execute(sql);
+		return validateAndCloseUpdateResults();
+	}
+
+	/**
+	 * Validates that no ResultSet was returned from an update operation and closes all results
+	 *
+	 * @return always 0 (update count)
+	 * @throws SQLException if a ResultSet was returned when none was expected
+	 */
+	protected int validateAndCloseUpdateResults() throws SQLException {
 		StatementResultWrapper response;
 		synchronized (this) {
 			response = firstUnclosedStatementResult;
@@ -197,8 +248,8 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		try {
 			while (response != null && response.getResultSet() != null) {
 				response = response.getNext();
-				if (response.getResultSet() != null) {
-					throw new FireboltException("A ResulSet was returned although none was expected");
+				if (response != null && response.getResultSet() != null) {
+					throw new FireboltException("A ResultSet was returned although none was expected");
 				}
 			}
 		} finally {

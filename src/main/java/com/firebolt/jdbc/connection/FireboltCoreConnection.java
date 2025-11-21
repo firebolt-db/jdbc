@@ -168,8 +168,8 @@ public class FireboltCoreConnection extends FireboltConnection {
         return false;
     }
 
-    @Override
-    public int getInfraVersion() {
-        return 2;
-    }
+	@Override
+	public int getInfraVersion() {
+		return 2;
+	}
 }

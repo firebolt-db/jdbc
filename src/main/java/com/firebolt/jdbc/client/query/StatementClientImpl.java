@@ -151,6 +151,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
      * @param files                a map of file names to their content
      * @return the server response
      */
+	@Override
 	public InputStream executeSqlStatementWithFiles(@NonNull StatementInfoWrapper statementInfoWrapper,
                                                     @NonNull FireboltProperties connectionProperties, int queryTimeout, boolean isServerAsync,
                                                     Map<String, byte[]> files) throws SQLException {

@@ -116,6 +116,14 @@ class FireboltConnectionUserPasswordTest extends FireboltConnectionTest {
         }
     }
 
+    @Test
+    void shouldThrowExceptionWhenCreatingParquetStatement() throws SQLException {
+        try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
+            SQLException exception = assertThrows(SQLException.class, fireboltConnection::createParquetStatement);
+            assertThat(exception.getMessage(), containsString("Parquet statements are not supported for this connection type"));
+        }
+    }
+
     protected FireboltConnection createConnection(String url, Properties props) throws SQLException {
         return new FireboltConnectionUserPassword(url, props, fireboltAuthenticationService, fireboltStatementService,
                 fireboltEngineService, ParserVersion.LEGACY);
