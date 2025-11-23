@@ -28,6 +28,7 @@ import java.util.Optional;
 
 import static java.util.Optional.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -37,6 +38,9 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class FireboltStatementServiceTest {
+	private static final int QUERY_TIMEOUT_SECONDS = 10;
+	private static final boolean IS_ASYNC = true;
+	private static final boolean IS_SYNC = false;
 	private final FireboltProperties emptyFireboltProperties = FireboltProperties.builder().build();
 
 	@Mock
@@ -50,9 +54,9 @@ class FireboltStatementServiceTest {
 			FireboltProperties fireboltProperties = fireboltProperties("firebolt1", false);
 			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 			FireboltStatement statement = mock(FireboltStatement.class);
-			when(statement.getQueryTimeout()).thenReturn(10);
+			when(statement.getQueryTimeout()).thenReturn(QUERY_TIMEOUT_SECONDS);
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statement);
-			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, 10, false);
+			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT_SECONDS, IS_SYNC);
 			assertEquals(1, mocked.constructed().size());
 		}
 	}
@@ -67,7 +71,7 @@ class FireboltStatementServiceTest {
 			when(statement.getQueryTimeout()).thenReturn(-1);
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statement);
 			assertEquals(1, mocked.constructed().size());
-			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, -1, false);
+			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, -1, IS_SYNC);
 		}
 	}
 
@@ -95,10 +99,10 @@ class FireboltStatementServiceTest {
 			FireboltProperties fireboltProperties = fireboltProperties("firebolt1", true);
 			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 			FireboltStatement statement = mock(FireboltStatement.class);
-			when(statement.getQueryTimeout()).thenReturn(10);
+			when(statement.getQueryTimeout()).thenReturn(QUERY_TIMEOUT_SECONDS);
 			fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statement);
 			assertEquals(1, mocked.constructed().size());
-			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, 10, false);
+			verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT_SECONDS, IS_SYNC);
 		}
 	}
 
@@ -112,7 +116,7 @@ class FireboltStatementServiceTest {
 		FireboltStatement statement = mock(FireboltStatement.class);
 		when(statement.getQueryTimeout()).thenReturn(-1);
 		assertEquals(empty(), fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statement));
-		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, -1, false);
+		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, -1, IS_SYNC);
 	}
 
 	@Test
@@ -123,12 +127,12 @@ class FireboltStatementServiceTest {
 
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 		FireboltStatement statement = mock(FireboltStatement.class);
-		when(statement.getQueryTimeout()).thenReturn(10);
+		when(statement.getQueryTimeout()).thenReturn(QUERY_TIMEOUT_SECONDS);
 		String jsonResult = "{\"token\":\"123\"}";
-		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, 10, true)).thenReturn(getMockInputStream(jsonResult));
+		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT_SECONDS, IS_ASYNC)).thenReturn(getMockInputStream(jsonResult));
 		String asyncToken = fireboltStatementService.executeAsyncStatement(statementInfoWrapper, fireboltProperties, statement);
 		assertEquals("123", asyncToken);
-		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, 10, true);
+		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT_SECONDS, IS_ASYNC);
 	}
 
 	@Test
@@ -139,11 +143,11 @@ class FireboltStatementServiceTest {
 
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 		FireboltStatement statement = mock(FireboltStatement.class);
-		when(statement.getQueryTimeout()).thenReturn(10);
-		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, 10, true)).thenReturn(getMockInputStream(""));
+		when(statement.getQueryTimeout()).thenReturn(QUERY_TIMEOUT_SECONDS);
+		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT_SECONDS, IS_ASYNC)).thenReturn(getMockInputStream(""));
 		FireboltException exception = assertThrows(FireboltException.class, () -> fireboltStatementService.executeAsyncStatement(statementInfoWrapper, fireboltProperties, statement));
 		assertTrue(exception.getMessage().contains("Cannot read response from DB"));
-		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, 10, true);
+		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT_SECONDS, IS_ASYNC);
 	}
 
 	@Test
@@ -154,15 +158,15 @@ class FireboltStatementServiceTest {
 
 		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 		FireboltStatement statement = mock(FireboltStatement.class);
-		when(statement.getQueryTimeout()).thenReturn(10);
+		when(statement.getQueryTimeout()).thenReturn(QUERY_TIMEOUT_SECONDS);
 
 		//InputStream should never be null
-		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, 10, true)).thenReturn(null);
+		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT_SECONDS, IS_ASYNC)).thenReturn(null);
 		FireboltException exception = assertThrows(FireboltException.class, () -> fireboltStatementService.executeAsyncStatement(statementInfoWrapper, fireboltProperties, statement));
 
 		//Exception message when unexpected exception happens: InputStream is null
 		assertTrue(exception.getMessage().contains("Error while reading query response"));
-		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, 10, true);
+		verify(statementClient).executeSqlStatement(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT_SECONDS, IS_ASYNC);
 	}
 
 	@Test
@@ -182,20 +186,18 @@ class FireboltStatementServiceTest {
 
 	@Test
 	void shouldExecuteQueryWithFilesAndCreateResultSet() throws SQLException {
-		try (MockedConstruction<FireboltResultSet> mocked = Mockito.mockConstruction(FireboltResultSet.class)) {
-			StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1 FROM read_parquet('upload://file1')").get(0);
-			FireboltProperties fireboltProperties = fireboltProperties("firebolt1", false);
-			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
-			FireboltStatement statement = mock(FireboltStatement.class);
-			when(statement.getQueryTimeout()).thenReturn(10);
-			Map<String, byte[]> files = Map.of("file1", "test content".getBytes());
-			when(statementClient.executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, 10, false, files))
-					.thenReturn(getMockInputStream("result"));
-			Optional<ResultSet> result = fireboltStatementService.executeWithFiles(statementInfoWrapper, fireboltProperties, statement, files);
-			assertTrue(result.isPresent());
-			verify(statementClient).executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, 10, false, files);
-			assertEquals(1, mocked.constructed().size());
-		}
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1 FROM read_parquet('upload://file1')").get(0);
+		FireboltProperties fireboltProperties = fireboltProperties("firebolt1", false);
+		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
+		FireboltStatement statement = mock(FireboltStatement.class);
+		when(statement.getQueryTimeout()).thenReturn(QUERY_TIMEOUT_SECONDS);
+		Map<String, byte[]> files = Map.of("file1", "test content".getBytes());
+		when(statementClient.executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT_SECONDS, IS_SYNC, files))
+				.thenReturn(getMockInputStream("result"));
+		Optional<ResultSet> result = fireboltStatementService.executeWithFiles(statementInfoWrapper, fireboltProperties, statement, files);
+		assertTrue(result.isPresent());
+        assertInstanceOf(FireboltResultSet.class, result.get());
+		verify(statementClient).executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT_SECONDS, IS_SYNC, files);
 	}
 
 	@Test
@@ -207,10 +209,10 @@ class FireboltStatementServiceTest {
 		FireboltStatement statement = mock(FireboltStatement.class);
 		when(statement.getQueryTimeout()).thenReturn(-1);
 		Map<String, byte[]> files = Map.of("file1", "test content".getBytes());
-		when(statementClient.executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, -1, false, files))
+		when(statementClient.executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, -1, IS_SYNC, files))
 				.thenReturn(getMockInputStream("result"));
 		assertEquals(empty(), fireboltStatementService.executeWithFiles(statementInfoWrapper, fireboltProperties, statement, files));
-		verify(statementClient).executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, -1, false, files);
+		verify(statementClient).executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, -1, IS_SYNC, files);
 	}
 
 	@Test
@@ -220,13 +222,13 @@ class FireboltStatementServiceTest {
 			FireboltProperties fireboltProperties = fireboltProperties("firebolt1", true);
 			FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
 			FireboltStatement statement = mock(FireboltStatement.class);
-			when(statement.getQueryTimeout()).thenReturn(10);
+			when(statement.getQueryTimeout()).thenReturn(QUERY_TIMEOUT_SECONDS);
 			Map<String, byte[]> files = Map.of("file1", "test content".getBytes());
-			when(statementClient.executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, 10, false, files))
+			when(statementClient.executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT_SECONDS, IS_SYNC, files))
 					.thenReturn(getMockInputStream("result"));
 			Optional<ResultSet> result = fireboltStatementService.executeWithFiles(statementInfoWrapper, fireboltProperties, statement, files);
 			assertTrue(result.isPresent());
-			verify(statementClient).executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, 10, false, files);
+			verify(statementClient).executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT_SECONDS, IS_SYNC, files);
 			assertEquals(1, mocked.constructed().size());
 		}
 	}
