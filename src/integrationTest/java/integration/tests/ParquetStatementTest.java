@@ -267,23 +267,7 @@ class ParquetStatementTest extends IntegrationTest {
 	private void validateParquetFileData(FireboltConnection connection) throws SQLException {
 		try (var statement = connection.createStatement();
 			 ResultSet rs = statement.executeQuery(String.format("SELECT id, name FROM %s ORDER BY id", tableName))) {
-			// Verify first row: id=1, name=Alice
-			assertTrue(rs.next(), "Expected first row");
-			assertEquals(1L, rs.getLong("id"));
-			assertEquals("Alice", rs.getString("name"));
-			
-			// Verify second row: id=2, name=Bob
-			assertTrue(rs.next(), "Expected second row");
-			assertEquals(2L, rs.getLong("id"));
-			assertEquals("Bob", rs.getString("name"));
-			
-			// Verify third row: id=3, name=Charlie
-			assertTrue(rs.next(), "Expected third row");
-			assertEquals(3L, rs.getLong("id"));
-			assertEquals("Charlie", rs.getString("name"));
-			
-			// Verify no more rows
-			assertFalse(rs.next(), "Expected exactly 3 rows");
+			validateParquetFileResultSet(rs);
 		}
 	}
 
