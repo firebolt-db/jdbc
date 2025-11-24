@@ -155,7 +155,7 @@ public abstract class FireboltClient implements CacheListener {
 	protected Request createPostRequest(String uri, String label, String json, String accessToken, CompressionType compressionType) {
 		RequestBody requestBody = null;
 		if (json != null) {
-			requestBody = RequestBody.create(json, MediaType.parse("application/json"));
+			requestBody = RequestBody.create(json, MediaType.parse("text/plain"));
 		}
 		return createPostRequest(uri, label, requestBody, accessToken, compressionType);
 	}
