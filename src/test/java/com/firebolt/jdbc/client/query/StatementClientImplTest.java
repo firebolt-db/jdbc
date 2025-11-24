@@ -160,6 +160,31 @@ class StatementClientImplTest {
 		assertSqlStatement("show databases;", actualQuery);
 	}
 
+	@Test
+	void shouldUseTextPlainContentTypeForQueries() throws SQLException, IOException {
+		FireboltProperties fireboltProperties = FireboltProperties.builder()
+				.database("db1").host("firebolt1").port(555)
+				.compress(true)
+				.compressRequestPayload(false)
+				.build();
+		when(cloudV2connection.getAccessToken()).thenReturn(Optional.of("token"));
+		StatementClient statementClient = new StatementClientImpl(okHttpClient, cloudV2connection, "ConnA:1.0.9", "ConnB:2.0.9");
+		injectMockedResponse(okHttpClient, 200, "");
+		Call call = getMockedCallWithResponse(200, "");
+		when(okHttpClient.newCall(any())).thenReturn(call);
+		StatementInfoWrapper statementInfoWrapper = StatementUtil.parseToStatementInfoWrappers("SELECT 1").get(0);
+
+		statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, 15, false);
+
+		verify(okHttpClient).newCall(requestArgumentCaptor.capture());
+		Request actualRequest = requestArgumentCaptor.getValue();
+		okhttp3.RequestBody body = actualRequest.body();
+		assertNotNull(body, "Request body should not be null");
+		okhttp3.MediaType contentType = body.contentType();
+		assertNotNull(contentType, "Content type should not be null");
+		assertTrue(contentType.toString().contains("text/plain"), "Content type should be text/plain");
+	}
+
 	private Entry<String, String> shouldPostSqlQuery(boolean systemEngine) throws SQLException, IOException {
 		FireboltProperties fireboltProperties = FireboltProperties.builder().database("db1").compress(true).host("firebolt1").port(555).accountId("12345").systemEngine(systemEngine).build();
 		when(cloudV1connection.getAccessToken())
