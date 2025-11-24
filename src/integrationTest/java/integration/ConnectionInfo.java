@@ -97,6 +97,17 @@ public class ConnectionInfo {
 		return api;
 	}
 
+	/**
+	 * Gets the engine name for ParquetStatementTest from system property.
+	 * Falls back to the default engine if the property is not set or is empty.
+	 *
+	 * @return the parquet test engine name, or the default engine if not specified
+	 */
+	public String getParquetStatementTestEngine() {
+		String parquetTestEngine = getProperty("parquet_statement_test_engine");
+		return (StringUtils.isNotBlank(parquetTestEngine)) ? parquetTestEngine : engine;
+	}
+
 	public String toJdbcUrl() {
 		return jdbcUrlSupplier.get();
 	}

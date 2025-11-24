@@ -145,7 +145,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Denv="staging" -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ steps.set-account.outputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v2" -Dv2GenerateSeriesMaxSize="${{ vars.V2_GENERATE_SERIES_MAX_SIZE }}" -DintegrationTestMaxHeap=3g
+        run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Denv="staging" -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ steps.set-account.outputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v2" -Dv2GenerateSeriesMaxSize="${{ vars.V2_GENERATE_SERIES_MAX_SIZE }}" -Dparquet_statement_test_engine="${{ vars.PARQUET_STATEMENT_TEST_ENGINE }}" -DintegrationTestMaxHeap=3g
 
       - name: Upload integration test reports
         if: always()

@@ -113,7 +113,6 @@ class FireboltParquetStatementTest {
 		}
 	}
 
-
 	@Test
 	void shouldExecuteWithNoResultSet() throws SQLException {
 		String sql = "INSERT INTO test VALUES (1)";

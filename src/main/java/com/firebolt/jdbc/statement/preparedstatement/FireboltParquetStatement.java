@@ -48,7 +48,7 @@ public class FireboltParquetStatement extends FireboltStatement {
 		throw new FireboltException("Cannot call execute(List<StatementInfoWrapper>) directly. Use execute(String, Map<String, byte[]>) instead.");
 	}
 
-    @Override
+	@Override
 	public int executeUpdate(String sql) throws SQLException {
 		throw new FireboltException("Cannot call executeUpdate(String sql) on a FireboltParquetStatement. Use executeUpdate(String, Map<String, byte[]>) instead.");
 	}
@@ -66,7 +66,7 @@ public class FireboltParquetStatement extends FireboltStatement {
 		throw new FireboltException("Cannot call executeUpdate(List<StatementInfoWrapper>) directly. Use executeUpdate(String, Map<String, byte[]>) instead.");
 	}
 
-    /**
+	/**
 	 * Executes statements with files
 	 */
 	private Optional<ResultSet> executeWithFiles(List<StatementInfoWrapper> statements, Map<String, byte[]> files) throws SQLException {
