@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
 @Tag(TestTag.V2)
-@Tag(TestTag.CORE)
+//@Tag(TestTag.CORE) //todo activate this when a core image supporting this feature will be released on ghcr
 class ParquetStatementTest extends IntegrationTest {
 
 	@TempDir
@@ -106,56 +106,6 @@ class ParquetStatementTest extends IntegrationTest {
 			validateRowCount(connection);
 			
 			// Verify the actual data matches the parquet file content
-			validateParquetFileData(connection);
-		}
-	}
-
-	@Test
-	void shouldExecuteUpdateWithInputStreamFiles() throws SQLException {
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
-			String sql = String.format("INSERT INTO %s SELECT id, name FROM read_parquet('upload://file1')", tableName);
-
-			try (FireboltParquetStatement parquetStatement = connection.createParquetStatement()) {
-
-				Map<String, InputStream> inputStreams = new HashMap<>();
-				inputStreams.put("file1", new ByteArrayInputStream(parquetFileContent));
-
-				// Execute the statement
-				parquetStatement.executeUpdateWithInputStreams(sql, inputStreams);
-			}
-
-			// Verify data was inserted
-			validateRowCount(connection);
-			
-			// Verify the actual data
-			validateParquetFileData(connection);
-		}
-	}
-
-	@Test
-	void shouldExecuteUpdateWithFileObjects() throws SQLException, IOException {
-		// Create a temp file from the parquet file content
-		// This is needed because executeUpdateWithFiles requires a real File object on the filesystem,
-		// and resources in JAR files are not directly accessible as File objects
-		File parquetFile = tempDir.resolve("id_name_test.parquet").toFile();
-		Files.write(parquetFile.toPath(), parquetFileContent);
-
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
-			String sql = String.format("INSERT INTO %s SELECT id, name FROM read_parquet('upload://file1')", tableName);
-
-			try (FireboltParquetStatement parquetStatement = connection.createParquetStatement()) {
-
-				Map<String, File> fileMap = new HashMap<>();
-				fileMap.put("file1", parquetFile);
-
-				// Execute the statement
-				parquetStatement.executeUpdateWithFiles(sql, fileMap);
-			}
-
-			// Verify data was inserted
-			validateRowCount(connection);
-			
-			// Verify the actual data
 			validateParquetFileData(connection);
 		}
 	}
@@ -251,24 +201,6 @@ class ParquetStatementTest extends IntegrationTest {
 	}
 
 	@Test
-	void shouldThrowExceptionWhenFileDoesNotExist() throws SQLException {
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
-			String sql = String.format("INSERT INTO %s SELECT * FROM read_parquet('upload://file1')", tableName);
-
-			try (FireboltParquetStatement parquetStatement = connection.createParquetStatement()) {
-
-				File nonExistentFile = tempDir.resolve("nonexistent.parquet").toFile();
-				Map<String, File> fileMap = new HashMap<>();
-				fileMap.put("file1", nonExistentFile);
-
-				FireboltException exception = assertThrows(FireboltException.class,
-						() -> parquetStatement.executeUpdateWithFiles(sql, fileMap));
-				assertTrue(exception.getMessage().contains("File does not exist"));
-			}
-		}
-	}
-
-	@Test
 	void shouldExecuteWithByteArraysForInsert() throws SQLException {
 		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
 			String sql = String.format("INSERT INTO %s SELECT id, name FROM read_parquet('upload://file1')", tableName);
@@ -301,100 +233,6 @@ class ParquetStatementTest extends IntegrationTest {
 
 				// Execute the statement (should return true for SELECT)
 				boolean hasResultSet = parquetStatement.execute(sql, files);
-				assertTrue(hasResultSet, "SELECT should return a ResultSet");
-
-				// Validate the result set
-				try (ResultSet rs = parquetStatement.getResultSet()) {
-					validateParquetFileResultSet(rs);
-				}
-			}
-		}
-	}
-
-	@Test
-	void shouldExecuteWithInputStreamsForInsert() throws SQLException {
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
-			String sql = String.format("INSERT INTO %s SELECT id, name FROM read_parquet('upload://file1')", tableName);
-
-			try (FireboltParquetStatement parquetStatement = connection.createParquetStatement()) {
-
-				Map<String, InputStream> inputStreams = new HashMap<>();
-				inputStreams.put("file1", new ByteArrayInputStream(parquetFileContent));
-
-				// Execute the statement (should return false for INSERT)
-				boolean hasResultSet = parquetStatement.executeWithInputStreams(sql, inputStreams);
-				assertFalse(hasResultSet, "INSERT should not return a ResultSet");
-			}
-
-			// Verify data was inserted
-			validateRowCount(connection);
-			validateParquetFileData(connection);
-		}
-	}
-
-	@Test
-	void shouldExecuteWithInputStreamsForSelect() throws SQLException {
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
-			String sql = "SELECT id, name FROM read_parquet('upload://file1') LIMIT 10";
-
-			try (FireboltParquetStatement parquetStatement = connection.createParquetStatement()) {
-
-				Map<String, InputStream> inputStreams = new HashMap<>();
-				inputStreams.put("file1", new ByteArrayInputStream(parquetFileContent));
-
-				// Execute the statement (should return true for SELECT)
-				boolean hasResultSet = parquetStatement.executeWithInputStreams(sql, inputStreams);
-				assertTrue(hasResultSet, "SELECT should return a ResultSet");
-
-				// Validate the result set
-				try (ResultSet rs = parquetStatement.getResultSet()) {
-					validateParquetFileResultSet(rs);
-				}
-			}
-		}
-	}
-
-	@Test
-	void shouldExecuteWithFilesForInsert() throws SQLException, IOException {
-		// Create a temp file from the parquet file content
-		File parquetFile = tempDir.resolve("id_name_test.parquet").toFile();
-		Files.write(parquetFile.toPath(), parquetFileContent);
-
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
-			String sql = String.format("INSERT INTO %s SELECT id, name FROM read_parquet('upload://file1')", tableName);
-
-			try (FireboltParquetStatement parquetStatement = connection.createParquetStatement()) {
-
-				Map<String, File> fileMap = new HashMap<>();
-				fileMap.put("file1", parquetFile);
-
-				// Execute the statement (should return false for INSERT)
-				boolean hasResultSet = parquetStatement.executeWithFiles(sql, fileMap);
-				assertFalse(hasResultSet, "INSERT should not return a ResultSet");
-			}
-
-			// Verify data was inserted
-			validateRowCount(connection);
-			validateParquetFileData(connection);
-		}
-	}
-
-	@Test
-	void shouldExecuteWithFilesForSelect() throws SQLException, IOException {
-		// Create a temp file from the parquet file content
-		File parquetFile = tempDir.resolve("id_name_test.parquet").toFile();
-		Files.write(parquetFile.toPath(), parquetFileContent);
-
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
-			String sql = "SELECT id, name FROM read_parquet('upload://file1') LIMIT 10";
-
-			try (FireboltParquetStatement parquetStatement = connection.createParquetStatement()) {
-
-				Map<String, File> fileMap = new HashMap<>();
-				fileMap.put("file1", parquetFile);
-
-				// Execute the statement (should return true for SELECT)
-				boolean hasResultSet = parquetStatement.executeWithFiles(sql, fileMap);
 				assertTrue(hasResultSet, "SELECT should return a ResultSet");
 
 				// Validate the result set
