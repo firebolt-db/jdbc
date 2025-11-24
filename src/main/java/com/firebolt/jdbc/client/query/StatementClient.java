@@ -4,6 +4,7 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import java.io.InputStream;
 import java.sql.SQLException;
+import java.util.Map;
 
 public interface StatementClient {
 
@@ -12,6 +13,12 @@ public interface StatementClient {
 	 */
 	InputStream executeSqlStatement(StatementInfoWrapper statementInfoWrapper, FireboltProperties connectionProperties,
 									int queryTimeout, boolean isServerAsync) throws SQLException;
+
+	/**
+	 * Post SQL statement with files
+	 */
+	InputStream executeSqlStatementWithFiles(StatementInfoWrapper statementInfoWrapper, FireboltProperties connectionProperties,
+											int queryTimeout, boolean isServerAsync, Map<String, byte[]> files) throws SQLException;
 
 	/**
 	 * Call endpoint to abort a running SQL statement

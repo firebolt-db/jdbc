@@ -10,9 +10,11 @@ import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.service.FireboltAuthenticationService;
 import com.firebolt.jdbc.service.FireboltEngineApiService;
+import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
 import com.firebolt.jdbc.service.FireboltEngineInformationSchemaService;
 import com.firebolt.jdbc.service.FireboltEngineService;
 import com.firebolt.jdbc.service.FireboltStatementService;
+import com.firebolt.jdbc.statement.preparedstatement.FireboltParquetStatement;
 import com.firebolt.jdbc.type.ParserVersion;
 import java.sql.SQLException;
 import java.util.Optional;
@@ -128,5 +130,11 @@ public class FireboltConnectionUserPassword extends FireboltConnection {
     @Override
     public int getInfraVersion() {
         return 1;
+    }
+
+    @Override
+    public FireboltParquetStatement createParquetStatement() throws SQLException {
+        validateConnectionIsNotClose();
+        throw new FireboltSQLFeatureNotSupportedException("Parquet statements are not supported for this connection type");
     }
 }

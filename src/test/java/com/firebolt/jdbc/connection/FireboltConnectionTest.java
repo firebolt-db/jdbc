@@ -207,7 +207,17 @@ abstract class FireboltConnectionTest {
 	@Test
 	void createStatement() throws SQLException {
 		try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
-			assertNotNull(fireboltConnection.createStatement());
+			Statement statement = fireboltConnection.createStatement();
+			assertNotNull(statement);
+			assertFalse(statement.isClosed());
+		}
+	}
+
+	@Test
+	void shouldThrowExceptionWhenCreatingParquetStatementOnClosedConnection() throws SQLException {
+		try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
+			fireboltConnection.close();
+			assertThrows(FireboltException.class, fireboltConnection::createParquetStatement);
 		}
 	}
 

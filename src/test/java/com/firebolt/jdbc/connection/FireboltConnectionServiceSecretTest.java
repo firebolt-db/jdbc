@@ -16,6 +16,7 @@ import com.firebolt.jdbc.service.FireboltEngineVersion2Service;
 import com.firebolt.jdbc.service.FireboltGatewayUrlService;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
+import com.firebolt.jdbc.statement.preparedstatement.FireboltParquetStatement;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
@@ -48,6 +49,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -228,6 +230,15 @@ class FireboltConnectionServiceSecretTest extends FireboltConnectionTest {
 
             // initial additional property should still be there
             assertEquals("new value", connection.getSessionProperties().getAdditionalProperties().get("newProperty"));
+        }
+    }
+
+    @Test
+    void createParquetStatement() throws SQLException {
+        try (FireboltConnection fireboltConnection = createConnection(url, connectionProperties)) {
+            FireboltParquetStatement parquetStatement = fireboltConnection.createParquetStatement();
+            assertNotNull(parquetStatement);
+            assertFalse(parquetStatement.isClosed());
         }
     }
 

@@ -412,9 +412,8 @@ public class FireboltConnectionServiceSecret extends FireboltConnection {
         };
     }
 
-    @Override
-    public int getInfraVersion() {
-        return 2;
-    }
-
+	@Override
+	public int getInfraVersion() {
+		return 2;
+	}
 }
