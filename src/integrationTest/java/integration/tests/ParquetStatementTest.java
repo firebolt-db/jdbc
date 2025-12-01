@@ -6,18 +6,17 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltParquetStatement;
 import com.firebolt.jdbc.testutils.TestTag;
 import integration.IntegrationTest;
-import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import lombok.CustomLog;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -299,6 +298,20 @@ class ParquetStatementTest extends IntegrationTest {
 	}
 
 	/**
+	 * Validates that the parquet file data exists in the table (allows for additional rows).
+	 * This is used for async tests where GENERATE_SERIES may add extra rows.
+	 *
+	 * @param connection the database connection
+	 * @throws SQLException if there's an error querying the database
+	 */
+	private void validateParquetFileDataExists(FireboltConnection connection) throws SQLException {
+		try (var statement = connection.createStatement();
+			 ResultSet rs = statement.executeQuery(String.format("SELECT id, name FROM %s WHERE id IN (1, 2, 3) ORDER BY id", tableName))) {
+			validateParquetFileResultSet(rs);
+		}
+	}
+
+	/**
 	 * Loads the parquet file from test resources.
 	 *
 	 * @return the parquet file content as byte array
@@ -308,6 +321,90 @@ class ParquetStatementTest extends IntegrationTest {
 		try (InputStream is = getClass().getResourceAsStream("/parquet/id_name_test.parquet")) {
 			assertNotNull(is, "Parquet file not found in resources: /parquet/id_name_test.parquet");
 			return is.readAllBytes();
+		}
+	}
+
+	// Async execution tests
+	@Test
+	@Tag(TestTag.V2)
+	void shouldExecuteAsyncWithFilesAndCheckRunningStatus() throws SQLException {
+		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
+			// Use GENERATE_SERIES to make the query take around 5 seconds
+			// UNION ALL with compatible structure: checksum(*) as id, 'generated' as name
+			String sql = String.format(
+					"INSERT INTO %s SELECT id, name FROM read_parquet('upload://file1') UNION ALL SELECT checksum(*)::LONG as id, 'generated'::TEXT as name FROM GENERATE_SERIES(1, 2500000000)",
+					tableName);
+
+			try (FireboltParquetStatement parquetStatement = connection.createParquetStatement()) {
+				Map<String, byte[]> files = new HashMap<>();
+				files.put("file1", parquetFileContent);
+
+				// Execute the statement asynchronously
+				parquetStatement.executeAsync(sql, files);
+				String token = parquetStatement.getAsyncToken();
+
+				// Verify async token is set
+				assertNotNull(token, "Async token should be set");
+				assertTrue(StringUtils.isNotEmpty(token), "Async token should not be empty");
+				assertEquals(0, parquetStatement.getUpdateCount(), "Update count should be 0 for async execution");
+
+				// Verify query is running
+				assertTrue(connection.isAsyncQueryRunning(token), "Query should be running");
+
+				// Wait for the query to complete
+				sleepForMillis(TimeUnit.SECONDS.toMillis(5));
+
+				// Verify query completed successfully
+				assertFalse(connection.isAsyncQueryRunning(token), "Query should have completed");
+				// These assertions verify that the token can be used multiple times
+				assertFalse(connection.isAsyncQueryRunning(token), "Query should still be completed");
+				assertTrue(connection.isAsyncQuerySuccessful(token), "Query should have completed successfully");
+				assertTrue(connection.isAsyncQuerySuccessful(token), "Query should still be successful");
+
+				// Verify parquet file data was inserted (may have additional rows from GENERATE_SERIES)
+				validateParquetFileDataExists(connection);
+			}
+		}
+	}
+
+	@Test
+	@Tag(TestTag.V2)
+	void shouldCancelAsyncQueryWithFiles() throws SQLException {
+		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
+			// Use GENERATE_SERIES to make the query take around 5 seconds
+			String sql = String.format(
+					"INSERT INTO %s SELECT id, name FROM read_parquet('upload://file1') UNION ALL SELECT checksum(*)::LONG as id, 'generated'::TEXT as name FROM GENERATE_SERIES(1, 2500000000)",
+					tableName);
+
+			try (FireboltParquetStatement parquetStatement = connection.createParquetStatement()) {
+				Map<String, byte[]> files = new HashMap<>();
+				files.put("file1", parquetFileContent);
+
+				// Execute the statement asynchronously
+				parquetStatement.executeAsync(sql, files);
+				String token = parquetStatement.getAsyncToken();
+
+				assertNotNull(token, "Async token should be set");
+				assertTrue(StringUtils.isNotEmpty(token), "Async token should not be empty");
+
+				// Wait a bit to ensure query has started
+				sleepForMillis(TimeUnit.SECONDS.toMillis(1));
+
+				// Verify query is running
+				assertTrue(connection.isAsyncQueryRunning(token), "Query should be running");
+
+				// Cancel the query
+				assertTrue(connection.cancelAsyncQuery(token), "Query should be cancelled");
+				assertFalse(connection.isAsyncQueryRunning(token), "Query should no longer be running");
+
+				// Verify no data was inserted (query was cancelled)
+				try (var statement = connection.createStatement();
+					 ResultSet rs = statement.executeQuery(String.format("SELECT COUNT(*) FROM %s", tableName))) {
+					assertTrue(rs.next());
+					int count = rs.getInt(1);
+					assertEquals(0, count, "Expected 0 rows since query was cancelled");
+				}
+			}
 		}
 	}
 }

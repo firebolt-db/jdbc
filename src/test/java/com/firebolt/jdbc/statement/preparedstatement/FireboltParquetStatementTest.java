@@ -7,6 +7,7 @@ import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.service.FireboltStatementService;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.rawstatement.StatementValidator;
+import com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +25,9 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory.createValidator;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -82,7 +85,7 @@ class FireboltParquetStatementTest {
 		when(mockStatementService.executeWithFiles(any(StatementInfoWrapper.class), eq(mockSessionProperties), eq(parquetStatement), anyMap()))
 				.thenReturn(Optional.of(mockResultSet));
 
-		try (MockedStatic<com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory> validatorFactory = mockStatic(com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory.class)) {
+		try (MockedStatic<StatementValidatorFactory> validatorFactory = mockStatic(StatementValidatorFactory.class)) {
 			validatorFactory.when(() -> createValidator(any(), eq(mockConnection))).thenReturn(mockStatementValidator);
 			doNothing().when(mockStatementValidator).validate(any());
 
@@ -103,7 +106,7 @@ class FireboltParquetStatementTest {
 		when(mockStatementService.executeWithFiles(any(StatementInfoWrapper.class), eq(mockSessionProperties), eq(parquetStatement), anyMap()))
 				.thenReturn(Optional.empty());
 
-		try (MockedStatic<com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory> validatorFactory = mockStatic(com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory.class)) {
+		try (MockedStatic<StatementValidatorFactory> validatorFactory = mockStatic(StatementValidatorFactory.class)) {
 			validatorFactory.when(() -> createValidator(any(), eq(mockConnection))).thenReturn(mockStatementValidator);
 			doNothing().when(mockStatementValidator).validate(any());
 
@@ -122,7 +125,7 @@ class FireboltParquetStatementTest {
 		when(mockStatementService.executeWithFiles(any(StatementInfoWrapper.class), eq(mockSessionProperties), eq(parquetStatement), anyMap()))
 				.thenReturn(Optional.empty());
 
-		try (MockedStatic<com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory> validatorFactory = mockStatic(com.firebolt.jdbc.statement.rawstatement.StatementValidatorFactory.class)) {
+		try (MockedStatic<StatementValidatorFactory> validatorFactory = mockStatic(StatementValidatorFactory.class)) {
 			validatorFactory.when(() -> createValidator(any(), eq(mockConnection))).thenReturn(mockStatementValidator);
 			doNothing().when(mockStatementValidator).validate(any());
 
@@ -197,6 +200,116 @@ class FireboltParquetStatementTest {
 		files.put("file1", testFileContent);
 		FireboltException exception = assertThrows(FireboltException.class,
 				() -> parquetStatement.execute("SELECT 1", files));
+		assertTrue(exception.getMessage().contains("closed"));
+	}
+
+	// Async execution tests
+	@Test
+	void shouldExecuteAsyncWithFilesSuccessfullyAndSetAsyncToken() throws SQLException {
+		String sql = "INSERT INTO test SELECT id, name FROM read_parquet('upload://file1')";
+		Map<String, byte[]> files = new HashMap<>();
+		files.put("file1", testFileContent);
+		String asyncToken = "token";
+
+		when(mockStatementService.executeAsyncStatementWithFiles(any(), any(), any(), anyMap()))
+				.thenReturn(asyncToken);
+
+		try (MockedStatic<StatementValidatorFactory> validatorFactory = mockStatic(StatementValidatorFactory.class)) {
+			validatorFactory.when(() -> createValidator(any(), eq(mockConnection))).thenReturn(mockStatementValidator);
+			doNothing().when(mockStatementValidator).validate(any());
+
+			parquetStatement.executeAsync(sql, files);
+
+			assertEquals(asyncToken, parquetStatement.getAsyncToken());
+			assertEquals(0, parquetStatement.getUpdateCount());
+			assertFalse(parquetStatement.getMoreResults());
+			assertNull(parquetStatement.getResultSet());
+		}
+	}
+
+	@Test
+	void shouldThrowFireboltExceptionWhenStatementServiceThrowsException() throws SQLException {
+		String sql = "INSERT INTO test SELECT id, name FROM read_parquet('upload://file1')";
+		Map<String, byte[]> files = new HashMap<>();
+		files.put("file1", testFileContent);
+
+		when(mockStatementService.executeAsyncStatementWithFiles(any(), any(), any(), anyMap()))
+				.thenThrow(new FireboltException("Cannot read response from DB"));
+
+		try (MockedStatic<StatementValidatorFactory> validatorFactory = mockStatic(StatementValidatorFactory.class)) {
+			validatorFactory.when(() -> createValidator(any(), eq(mockConnection))).thenReturn(mockStatementValidator);
+			doNothing().when(mockStatementValidator).validate(any());
+
+			assertThrows(FireboltException.class, () -> parquetStatement.executeAsync(sql, files));
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"SELECT * FROM read_parquet('upload://file1')", "SET param=value"})
+	void shouldThrowExceptionWhenQueryTypeIsNotSupportedForAsync(String sql) {
+		Map<String, byte[]> files = new HashMap<>();
+		files.put("file1", testFileContent);
+
+		try (MockedStatic<StatementValidatorFactory> validatorFactory = mockStatic(StatementValidatorFactory.class)) {
+			validatorFactory.when(() -> createValidator(any(), eq(mockConnection))).thenReturn(mockStatementValidator);
+			doNothing().when(mockStatementValidator).validate(any());
+
+			assertThrows(FireboltException.class, () -> parquetStatement.executeAsync(sql, files));
+		}
+	}
+
+	@ParameterizedTest
+	@CsvSource({"null", "empty"})
+	void shouldThrowExceptionWhenExecuteAsyncWithInvalidFiles(String type) {
+		String sql = "INSERT INTO test VALUES (1)";
+		Map<String, byte[]> files = "null".equals(type) ? null : new HashMap<>();
+
+		FireboltException exception = assertThrows(FireboltException.class,
+				() -> parquetStatement.executeAsync(sql, files));
+		assertTrue(exception.getMessage().contains("Files map cannot be null or empty"));
+	}
+
+
+	@Test
+	void shouldThrowExceptionWhenExecuteAsyncWithNullFileIdentifier() {
+		String sql = "INSERT INTO test VALUES (1)";
+		Map<String, byte[]> files = new HashMap<>();
+		files.put(null, testFileContent);
+
+		FireboltException exception = assertThrows(FireboltException.class,
+				() -> parquetStatement.executeAsync(sql, files));
+		assertTrue(exception.getMessage().contains("File identifier cannot be null"));
+	}
+
+	@Test
+	void shouldThrowExceptionWhenExecuteAsyncWithNullFileContent() {
+		String sql = "INSERT INTO test VALUES (1)";
+		Map<String, byte[]> files = new HashMap<>();
+		files.put("file1", null);
+
+		FireboltException exception = assertThrows(FireboltException.class,
+				() -> parquetStatement.executeAsync(sql, files));
+		assertTrue(exception.getMessage().contains("File content for identifier 'file1' cannot be null"));
+	}
+
+	@Test
+	void shouldThrowExceptionWhenExecuteAsyncWithInvalidSql() {
+		String sql = null;
+		Map<String, byte[]> files = new HashMap<>();
+		files.put("file1", testFileContent);
+
+		FireboltException exception = assertThrows(FireboltException.class,
+				() -> parquetStatement.executeAsync(sql, files));
+		assertTrue(exception.getMessage().contains("SQL cannot be null or blank"));
+	}
+
+	@Test
+	void shouldThrowExceptionWhenExecuteAsyncStatementIsClosed() throws SQLException {
+		parquetStatement.close();
+		Map<String, byte[]> files = new HashMap<>();
+		files.put("file1", testFileContent);
+		FireboltException exception = assertThrows(FireboltException.class,
+				() -> parquetStatement.executeAsync("INSERT INTO test VALUES (1)", files));
 		assertTrue(exception.getMessage().contains("closed"));
 	}
 

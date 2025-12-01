@@ -260,39 +260,61 @@ public class FireboltStatement extends JdbcBase implements Statement {
 
 	public void executeAsync(String sql) throws SQLException {
 		StatementInfoWrapper query = StatementUtil.parseToStatementInfoWrappers(sql).get(0);
-		createValidator(query.getInitialStatement(), connection).validate(query.getInitialStatement());
+		executeAsyncStatement(query, () -> statementService.executeAsyncStatement(query, sessionProperties, this), "statement");
+	}
+
+	/**
+	 * Functional interface for executing async statements that return an async token
+	 */
+	@FunctionalInterface
+	protected interface AsyncStatementExecutor {
+		String execute() throws SQLException;
+	}
+
+	/**
+	 * Common async execution logic for statements
+	 *
+	 * @param statementInfoWrapper the statement to execute
+	 * @param asyncStatementExecutor function that executes the statement and returns the async token
+	 * @param logContext context string for logging (e.g., "statement" or "statement with files")
+	 * @throws SQLException if execution fails
+	 */
+	protected void executeAsyncStatement(StatementInfoWrapper statementInfoWrapper,
+										 AsyncStatementExecutor asyncStatementExecutor,
+										 String logContext) throws SQLException {
+		createValidator(statementInfoWrapper.getInitialStatement(), connection).validate(statementInfoWrapper.getInitialStatement());
 		synchronized (statementsToExecuteLabels) {
-			statementsToExecuteLabels.add(query.getLabel());
+			statementsToExecuteLabels.add(statementInfoWrapper.getLabel());
 		}
-		if (isStatementNotCancelled(query)) {
-			runningStatementLabel = determineQueryLabel(query);
+		if (isStatementNotCancelled(statementInfoWrapper)) {
+			runningStatementLabel = determineQueryLabel(statementInfoWrapper);
 			synchronized (this) {
 				validateStatementIsNotClosed();
 			}
 			try {
-				log.debug("Executing the statement with label {} : {}", query.getLabel(),
-						sanitizeSql(query.getSql()));
-				if (query.getType() != StatementType.NON_QUERY) {
+				log.debug("Executing the {} with label {} : {}", logContext, statementInfoWrapper.getLabel(),
+						sanitizeSql(statementInfoWrapper.getSql()));
+				if (statementInfoWrapper.getType() != StatementType.NON_QUERY) {
 					throw new FireboltException("SELECT and SET queries are not supported for async statements");
 				}
-				asyncToken = statementService.executeAsyncStatement(query, sessionProperties, this);
+				asyncToken = asyncStatementExecutor.execute();
 				currentUpdateCount = 0;
 				log.info("The query with the label {} was executed with success", runningStatementLabel);
 			} catch (Exception ex) {
-				log.error(String.format("An error happened while executing the statement with the id %s",
-						runningStatementLabel), ex);
+				log.error(String.format("An error happened while executing the %s with the id %s",
+						logContext, runningStatementLabel), ex);
 				throw ex;
 			} finally {
 				runningStatementLabel = null;
 				synchronized (statementsToExecuteLabels) {
-					statementsToExecuteLabels.remove(query.getLabel());
+					statementsToExecuteLabels.remove(statementInfoWrapper.getLabel());
 				}
 			}
 			synchronized (this) {
-				setOrAppendFirstUnclosedStatementResult(query, null);
+				setOrAppendFirstUnclosedStatementResult(statementInfoWrapper, null);
 			}
 		} else {
-			log.warn("Aborted query with id {}", determineQueryLabel(query));
+			log.warn("Aborted query with id {}", determineQueryLabel(statementInfoWrapper));
 		}
 	}
 
@@ -607,7 +629,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		return currentStatementResult.getNext() != null;
 	}
 
-	private String sanitizeSql(String sql) {
+	protected String sanitizeSql(String sql) {
 		// Replace any occurrence of secrets with ***
 		 return sql.replaceAll("AWS_KEY_ID\\s*=\\s*[\\S]*", "AWS_KEY_ID=***")
 		 .replaceAll("AWS_SECRET_KEY\\s*=\\s*[\\S]*",
