@@ -293,7 +293,7 @@ class FireboltParquetStatementTest {
 	}
 
 	@Test
-	void shouldThrowExceptionWhenExecuteAsyncWithInvalidSql() {
+	void shouldThrowExceptionWhenExecuteAsyncWithNullSql() {
 		String sql = null;
 		Map<String, byte[]> files = new HashMap<>();
 		files.put("file1", testFileContent);

@@ -629,7 +629,7 @@ public class FireboltStatement extends JdbcBase implements Statement {
 		return currentStatementResult.getNext() != null;
 	}
 
-	protected String sanitizeSql(String sql) {
+	private String sanitizeSql(String sql) {
 		// Replace any occurrence of secrets with ***
 		 return sql.replaceAll("AWS_KEY_ID\\s*=\\s*[\\S]*", "AWS_KEY_ID=***")
 		 .replaceAll("AWS_SECRET_KEY\\s*=\\s*[\\S]*",
