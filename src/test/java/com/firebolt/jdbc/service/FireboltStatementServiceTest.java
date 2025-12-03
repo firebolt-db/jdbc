@@ -233,6 +233,23 @@ class FireboltStatementServiceTest {
 		}
 	}
 
+	@Test
+	void shouldExecuteAsyncStatementWithFiles() throws SQLException {
+		StatementInfoWrapper statementInfoWrapper = StatementUtil
+				.parseToStatementInfoWrappers("INSERT INTO ltv SELECT * FROM read_parquet('upload://file1')").get(0);
+		FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
+		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
+		FireboltStatement statement = mock(FireboltStatement.class);
+		when(statement.getQueryTimeout()).thenReturn(QUERY_TIMEOUT_SECONDS);
+		Map<String, byte[]> files = Map.of("file1", "test content".getBytes());
+		String jsonResult = "{\"token\":\"async-token-123\"}";
+		when(statementClient.executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT_SECONDS, IS_ASYNC, files))
+				.thenReturn(getMockInputStream(jsonResult));
+		String asyncToken = fireboltStatementService.executeAsyncStatementWithFiles(statementInfoWrapper, fireboltProperties, statement, files);
+		assertEquals("async-token-123", asyncToken);
+		verify(statementClient).executeSqlStatementWithFiles(statementInfoWrapper, fireboltProperties, QUERY_TIMEOUT_SECONDS, IS_ASYNC, files);
+	}
+
 	private FireboltProperties fireboltProperties(String host, boolean systemEngine) {
 		return FireboltProperties.builder().database("db").host(host).ssl(true).compress(false).bufferSize(65536).systemEngine(systemEngine).build();
 	}

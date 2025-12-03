@@ -120,7 +120,19 @@ public class FireboltParquetStatement extends FireboltStatement {
 		}
 	}
 
-
-
-
+	/**
+	 * Executes a statement asynchronously with files
+	 *
+	 * @param sql the SQL statement to execute
+	 * @param files map of file identifiers to file contents
+	 * @throws SQLException if the SQL is invalid, the statement is closed, or execution fails
+	 */
+	public void executeAsync(String sql, Map<String, byte[]> files) throws SQLException {
+		validateFiles(files);
+        setSql(sql);
+		StatementInfoWrapper query = parsedStatements.get(0);
+		executeAsyncStatement(query,
+				() -> statementService.executeAsyncStatementWithFiles(query, sessionProperties, this, files),
+				"statement with files");
+	}
 }
