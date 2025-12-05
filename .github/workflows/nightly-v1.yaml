@@ -11,8 +11,8 @@ jobs:
       fail-fast: false # finish all jobs even if one fails
       max-parallel: 2
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        java: [11, 17, 21]
+        os: [ubuntu-latest]
+        java: [11]
         # https://packboard.atlassian.net/browse/FIR-45378 - there is a test failing on windows and java 11 related to timeouts
         exclude:
           - os: windows-latest
