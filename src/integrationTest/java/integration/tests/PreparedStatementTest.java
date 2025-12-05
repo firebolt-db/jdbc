@@ -399,7 +399,9 @@ class PreparedStatementTest extends IntegrationTest {
 	@Tag(TestTag.CORE)
 	@Test
 	void shouldInsertAndSelectDateTime() throws SQLException {
-		Car car1 = Car.builder().make("Ford").sales(12345).ts(new Timestamp(2)).d(new Date(3)).build();
+
+		// NOTE v1 staging does return .002 (the millis when setting the value as 2) whereas production does not (it returns .0)
+		Car car1 = Car.builder().make("Ford").sales(12345).ts(new Timestamp(2000)).d(new Date(3)).build();
 		try (Connection connection = createConnection()) {
 
 			try (PreparedStatement statement = connection

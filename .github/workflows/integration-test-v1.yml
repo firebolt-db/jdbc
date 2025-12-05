@@ -52,9 +52,9 @@ on:
         type: boolean
         default: false
     secrets:
-      FIREBOLT_STG_USERNAME:
+      FIREBOLT_PROD_USERNAME:
         required: true
-      FIREBOLT_STG_PASSWORD:
+      FIREBOLT_PROD_PASSWORD:
         required: true
       SLACK_BOT_TOKEN:
         required: false
@@ -100,9 +100,9 @@ jobs:
         if: ${{ inputs.database == '' }}
         uses: firebolt-db/integration-testing-setup@v1
         with:
-          firebolt-username: ${{ secrets.FIREBOLT_STG_USERNAME }}
-          firebolt-password: ${{ secrets.FIREBOLT_STG_PASSWORD }}
-          api-endpoint: "api.staging.firebolt.io"
+          firebolt-username: ${{ secrets.FIREBOLT_PROD_USERNAME }}
+          firebolt-password: ${{ secrets.FIREBOLT_PROD_PASSWORD }}
+          api-endpoint: "api.app.firebolt.io"
           region: "us-east-1"
           instance-type: "B2"
           db_suffix: ${{ steps.dbsuffix.outputs.db_suffix }}
@@ -132,7 +132,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Dapi="api.staging.firebolt.io" -Dpassword="${{ secrets.FIREBOLT_STG_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_STG_USERNAME }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v1" -Dv1GenerateSeriesMaxSize="${{ vars.V1_GENERATE_SERIES_MAX_SIZE }}"
+        run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Dapi="api.app.firebolt.io" -Dpassword="${{ secrets.FIREBOLT_PROD_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_PROD_USERNAME }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v1" -Dv1GenerateSeriesMaxSize="${{ vars.V1_GENERATE_SERIES_MAX_SIZE }}"
 
       - name: Allure Report
         uses: firebolt-db/action-allure-report@v1
