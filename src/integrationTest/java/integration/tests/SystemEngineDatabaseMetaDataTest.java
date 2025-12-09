@@ -45,7 +45,6 @@ public class SystemEngineDatabaseMetaDataTest extends IntegrationTest {
         connection.close();
     }
 
-    @Tag(TestTag.V1)
     @Tag(TestTag.V2)
     @Test
     void readOnly() throws SQLException {
