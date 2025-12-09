@@ -18,3 +18,13 @@ updates:
         # Pioneer 2 requires java 11+
       - dependency-name: "junit-pioneer"
         versions: [ "2.x.x" ]
+
+  # Keep GitHub Actions up to date
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
