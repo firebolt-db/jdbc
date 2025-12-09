@@ -37,7 +37,7 @@ jobs:
       - name: Setup database and engine
         id: setup
         if: ${{ inputs.database == '' }}
-        uses: firebolt-db/integration-testing-setup@v1
+        uses: firebolt-db/integration-testing-setup@v2
         with:
           firebolt-username: ${{ secrets.FIREBOLT_STG_USERNAME }}
           firebolt-password: ${{ secrets.FIREBOLT_STG_PASSWORD }}
