@@ -18,6 +18,8 @@ updates:
         # Pioneer 2 requires java 11+
       - dependency-name: "junit-pioneer"
         versions: [ "2.x.x" ]
+    commit-message:
+      prefix: "build(NoTicket)"
 
   # Keep GitHub Actions up to date
   - package-ecosystem: "github-actions"
@@ -28,3 +30,5 @@ updates:
       time: "03:00"
       timezone: "UTC"
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build(NoTicket)"
