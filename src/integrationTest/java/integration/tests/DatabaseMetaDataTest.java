@@ -55,6 +55,7 @@ import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -100,10 +101,9 @@ class DatabaseMetaDataTest extends CommonIntegrationTest {
 				}
 			}
 		}
-		// NOTE: for some engines on prod v1 we also have the catalog schema so do the contains all instead of containsInAnyOrder
-		assertTrue(schemas.containsAll(List.of("public", "information_schema")));
+		assertThat(schemas, containsInAnyOrder("public", "information_schema"));
 		String dbName = getDefaultDatabase();
-		assertTrue(catalogs.containsAll(List.of(dbName, dbName)));
+		assertThat(catalogs, contains(dbName, dbName));
 	}
 
 	@Test

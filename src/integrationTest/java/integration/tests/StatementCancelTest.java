@@ -36,7 +36,7 @@ class StatementCancelTest extends IntegrationTest {
 	}
 
 	@Test
-	@Timeout(value = 3, unit = TimeUnit.MINUTES)
+	@Timeout(value = 2, unit = TimeUnit.MINUTES)
 	@Tag(TestTag.V1) // generate_series is supported on all available engine of v2
 	@Tag(TestTag.SLOW)
 	void shouldCancelQueryV1() throws SQLException, InterruptedException {
@@ -96,9 +96,9 @@ class StatementCancelTest extends IntegrationTest {
 		long waitForResultTime = insertTime / 2;
 		long waitForResultDelay = waitForResultTime / 10;
 		log.info("verifyThatNoMoreRecordsAreAdded insertTime={}, waitForResultTime={}", insertTime, waitForResultTime);
-
-		for (int i=0; i < 10; i++) {
-			int count0 = count(connection, tableName);
+		int count0;
+		int i = 0;
+		for (count0 = count(connection, tableName); i < 10; count0 = count(connection, tableName), i++) {
 			log.info("verifyThatNoMoreRecordsAreAdded count0={}", count0);
 			if (count0 > 0) {
 				break;
@@ -108,7 +108,6 @@ class StatementCancelTest extends IntegrationTest {
 
 		// Wait for more time that we spent to fill the table.
 		// We want to wait enough to give a chance to the query to fill more data.
-		log.info("Sleeping for the duration of insert time {}", insertTime);
 		Thread.sleep(insertTime); // waiting to see if more records are being added
 		int count1 = count(connection, tableName);
 		Thread.sleep(insertTime); // waiting to see if more records are being added
