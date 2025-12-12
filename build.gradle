@@ -7,7 +7,7 @@ plugins {
     id 'maven-publish'
     id 'com.github.johnrengelman.shadow' version '8.0.0'
     id 'signing'
-    id 'io.qameta.allure' version '3.0.1'
+    id 'io.qameta.allure' version '3.0.1' apply false
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
 }
 
@@ -385,11 +385,15 @@ jar {
     }
 }
 
-allure {
-    version = '2.25.0'
-    autoconfigure = true
-    useJUnit5 {
+// Apply and configure Allure plugin only on Java 17+ to avoid class version errors on JDK 11
+if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {
+    apply plugin: 'io.qameta.allure'
+    allure {
         version = '2.25.0'
+        autoconfigure = true
+        useJUnit5 {
+            version = '2.25.0'
+        }
     }
 }
 
