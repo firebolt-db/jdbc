@@ -63,12 +63,12 @@ jobs:
           outputReportsFolder: reports/
           args: -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jpassword=${{ secrets.SERVICE_ACCOUNT_SECRET_STAGING }} -Jusername=${{ secrets.SERVICE_ACCOUNT_ID_STAGING }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ inputs.threads }} -Jloops=${{ inputs.loops }}
       - name: Upload JMeter report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: performance_test_report
           path: reports
       - name: Upload JMeter logs
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: jmeter_log.log
           path: jmeter_log.log
