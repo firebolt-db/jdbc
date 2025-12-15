@@ -37,7 +37,7 @@ jobs:
 
       # check out only the SmokeTests class
       - name: Download smoke test file
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           sparse-checkout: |
             src/integrationTest/resources/SmokeTest.java

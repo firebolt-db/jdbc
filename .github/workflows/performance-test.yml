@@ -24,7 +24,7 @@ jobs:
     needs: build
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
       - name: Create dependency folder for JMX
         run: |
           mkdir dependencies
@@ -82,7 +82,7 @@ jobs:
           echo "SUMMARY=$(echo "$result" | tr '|' ',')" >> $GITHUB_OUTPUT
           sudo rm -rf "/home/runner/work/jdbc/jdbc/reports"
       - name: Checkout history branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           ref: performance-tests-history
       - name: Append history with test summary
