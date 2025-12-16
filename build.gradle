@@ -68,7 +68,7 @@ dependencies {
     implementation 'org.json:json:20250517'
     implementation "com.squareup.okhttp3:okhttp:${okHttpVersion}"
     implementation 'net.jodah:expiringmap:0.5.11'
-    implementation 'org.apache.commons:commons-text:1.14.0'
+    implementation 'org.apache.commons:commons-text:1.15.0'
     implementation 'org.lz4:lz4-java:1.8.0'
     implementation 'commons-validator:commons-validator:1.10.1'
 
