@@ -1,6 +1,5 @@
 package integration.tests;
 
-import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.statement.preparedstatement.FireboltParquetStatement;
@@ -40,28 +39,6 @@ class ParquetStatementTest extends IntegrationTest {
 	private String tableName;
 	private byte[] parquetFileContent;
 
-	/**
-	 * Creates a connection based on the backend type.
-	 * <p>
-	 * If the backend type is V2 (CLOUD_2_0), uses the parquet_statement_test_engine
-	 * system property if present, otherwise falls back to the default engine.
-	 * If the backend type is Core (FIREBOLT_CORE), creates a normal connection with the default engine.
-	 *
-	 * @return a connection configured based on the backend type
-	 * @throws SQLException if the connection cannot be established
-	 */
-	private Connection createParquetTestConnection() throws SQLException {
-		FireboltBackendType backendType = getBackendType();
-		if (backendType == FireboltBackendType.CLOUD_2_0) {
-			// For V2, use parquet_statement_test_engine if present, otherwise default engine
-			String parquetTestEngine = integration.ConnectionInfo.getInstance().getParquetStatementTestEngine();
-			return createConnection(parquetTestEngine);
-		} else {
-			// For Core, use normal connection with default engine
-			return createConnection();
-		}
-	}
-
 	@BeforeEach
 	void beforeEach() throws SQLException, IOException {
 		// Load the parquet file content once for all tests
@@ -69,7 +46,7 @@ class ParquetStatementTest extends IntegrationTest {
 		
 		// Create a test table matching the parquet file schema: id (int64), name (string)
 		tableName = "parquet_test_" + System.currentTimeMillis();
-		try (Connection connection = createParquetTestConnection();
+		try (Connection connection = createConnection();
 			 var statement = connection.createStatement()) {
 			statement.execute(String.format(
 					"CREATE FACT TABLE IF NOT EXISTS %s (id LONG, name TEXT) PRIMARY INDEX id",
@@ -79,7 +56,7 @@ class ParquetStatementTest extends IntegrationTest {
 
 	@AfterEach
 	void afterEach() throws SQLException {
-		try (Connection connection = createParquetTestConnection();
+		try (Connection connection = createConnection();
 			 var statement = connection.createStatement()) {
 			statement.execute(String.format("DROP TABLE IF EXISTS %s", tableName));
 		} catch (Exception e) {
@@ -89,7 +66,7 @@ class ParquetStatementTest extends IntegrationTest {
 
 	@Test
 	void shouldExecuteUpdateWithByteArrayFiles() throws SQLException {
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
+		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			String sql = String.format("INSERT INTO %s SELECT id, name FROM read_parquet('upload://file1')", tableName);
 
 			try (FireboltParquetStatement parquetStatement = connection.createParquetStatement()) {
@@ -111,7 +88,7 @@ class ParquetStatementTest extends IntegrationTest {
 
 	@Test
 	void shouldExecuteQueryWithMultipleFiles() throws SQLException {
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
+		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			String sql = String.format(
 					"INSERT INTO %s SELECT id, name FROM read_parquet('upload://file1') UNION ALL SELECT id, name FROM read_parquet('upload://file2')",
 					tableName);
@@ -138,7 +115,7 @@ class ParquetStatementTest extends IntegrationTest {
 
 	@Test
 	void shouldThrowExceptionWhenFilesMapIsNull() throws SQLException {
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
+		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			String sql = String.format("INSERT INTO %s SELECT * FROM read_parquet('upload://file1')", tableName);
 
 			try (FireboltParquetStatement parquetStatement = connection.createParquetStatement()) {
@@ -152,7 +129,7 @@ class ParquetStatementTest extends IntegrationTest {
 
 	@Test
 	void shouldThrowExceptionWhenFilesMapIsEmpty() throws SQLException {
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
+		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			String sql = String.format("INSERT INTO %s SELECT * FROM read_parquet('upload://file1')", tableName);
 
 			try (FireboltParquetStatement parquetStatement = connection.createParquetStatement()) {
@@ -167,7 +144,7 @@ class ParquetStatementTest extends IntegrationTest {
 
 	@Test
 	void shouldThrowExceptionWhenFileIdentifierIsNull() throws SQLException {
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
+		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			String sql = String.format("INSERT INTO %s SELECT * FROM read_parquet('upload://file1')", tableName);
 
 			try (FireboltParquetStatement parquetStatement = connection.createParquetStatement()) {
@@ -184,7 +161,7 @@ class ParquetStatementTest extends IntegrationTest {
 
 	@Test
 	void shouldThrowExceptionWhenFileContentIsNull() throws SQLException {
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
+		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			String sql = String.format("INSERT INTO %s SELECT * FROM read_parquet('upload://file1')", tableName);
 
 			try (FireboltParquetStatement parquetStatement = connection.createParquetStatement()) {
@@ -201,7 +178,7 @@ class ParquetStatementTest extends IntegrationTest {
 
 	@Test
 	void shouldExecuteWithByteArraysForInsert() throws SQLException {
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
+		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			String sql = String.format("INSERT INTO %s SELECT id, name FROM read_parquet('upload://file1')", tableName);
 
 			try (FireboltParquetStatement parquetStatement = connection.createParquetStatement()) {
@@ -222,7 +199,7 @@ class ParquetStatementTest extends IntegrationTest {
 
 	@Test
 	void shouldExecuteWithByteArraysForSelect() throws SQLException {
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
+		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			String sql = "SELECT id, name FROM read_parquet('upload://file1') LIMIT 10";
 
 			try (FireboltParquetStatement parquetStatement = connection.createParquetStatement()) {
@@ -328,7 +305,7 @@ class ParquetStatementTest extends IntegrationTest {
 	@Test
 	@Tag(TestTag.V2)
 	void shouldExecuteAsyncWithFilesAndCheckRunningStatus() throws SQLException {
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
+		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			// Use GENERATE_SERIES to make the query take around 5 seconds
 			// UNION ALL with compatible structure: checksum(*) as id, 'generated' as name
 			String sql = String.format(
@@ -370,7 +347,7 @@ class ParquetStatementTest extends IntegrationTest {
 	@Test
 	@Tag(TestTag.V2)
 	void shouldCancelAsyncQueryWithFiles() throws SQLException {
-		try (FireboltConnection connection = createParquetTestConnection().unwrap(FireboltConnection.class)) {
+		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			// Use GENERATE_SERIES to make the query take around 5 seconds
 			String sql = String.format(
 					"INSERT INTO %s SELECT id, name FROM read_parquet('upload://file1') UNION ALL SELECT checksum(*)::LONG as id, 'generated'::TEXT as name FROM GENERATE_SERIES(1, 2500000000)",
