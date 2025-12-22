@@ -33,11 +33,11 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
       - name: Gradle version
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
         with:
           arguments: --version
       - name: Build and test
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
         with:
           arguments: build --scan
       - name: Get project version
