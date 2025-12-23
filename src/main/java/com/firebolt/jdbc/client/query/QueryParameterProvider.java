@@ -11,6 +11,7 @@ import java.util.Map;
 public interface QueryParameterProvider {
 
     String TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT = "TabSeparatedWithNamesAndTypes";
+    String S3_TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT = "S3_TabSeparatedWithNamesAndTypes";
 
     /**
      * Returns a map of parameters that will be added to the url and sent to the firebolt backend
