@@ -91,4 +91,25 @@ class FireboltCloudV2QueryParameterProviderTest extends AbstractQueryParameterPr
         assertEquals(FireboltCloudV2QueryParameterProvider.TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT, queryParams.get(FireboltQueryParameterKey.OUTPUT_FORMAT.getKey()));
         assertEquals("value1", queryParams.get("key1"));
     }
+
+    @Test
+    void shouldAddS3QueryResultLocationIfNeeded() {
+        when(mockFireboltProperties.getQueryResultLocation()).thenReturn("location_set_in_firebolt");
+        mockIsCompressInProperties(false);
+        mockDatabaseInProperties(null);
+        mockPreparedStatements(null);
+        mockStatementType(StatementType.QUERY);
+        mockStatementWrapperLabel(STATEMENT_WRAPPER_LABEL);
+
+        Map<String, String> queryParams = fireboltCloudV2QueryParameterProvider.getQueryParams(mockFireboltProperties, mockStatementInfoWrapper, NO_QUERY_TIMEOUT, IS_NOT_SERVER_ASYNC);
+        
+        assertEquals(6, queryParams.size());
+        assertEquals("location_set_in_firebolt", queryParams.get(FireboltQueryParameterKey.QUERY_RESULT_UPLOAD_LOCATION.getKey()));
+        // advanced mode is needed for the query result location
+        assertEquals("true", queryParams.get(FireboltQueryParameterKey.ADVANCED_MODE.getKey()));
+        assertEquals(STATEMENT_WRAPPER_LABEL, queryParams.get(FireboltQueryParameterKey.QUERY_LABEL.getKey()));
+        assertEquals("0", queryParams.get(FireboltQueryParameterKey.COMPRESS.getKey()));
+        assertEquals(FireboltCloudV2QueryParameterProvider.S3_TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT, queryParams.get(FireboltQueryParameterKey.OUTPUT_FORMAT.getKey()));
+        assertEquals("value1", queryParams.get("key1"));
+    }
 }

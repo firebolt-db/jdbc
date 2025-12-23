@@ -11,12 +11,6 @@ import com.firebolt.jdbc.statement.StatementType;
 import com.firebolt.jdbc.statement.rawstatement.QueryRawStatement;
 import com.firebolt.jdbc.util.CloseableUtil;
 import com.firebolt.jdbc.util.InputStreamUtil;
-import lombok.CustomLog;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +19,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Optional;
+import lombok.CustomLog;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Optional.ofNullable;
@@ -165,10 +165,14 @@ public class FireboltStatementService {
 
 	private FireboltResultSet createResultSet(InputStream inputStream, QueryRawStatement initialQuery, FireboltProperties properties, FireboltStatement statement)
 			throws SQLException {
+
+		// in case the query location compression is used, then the decompression will happen upstream, so pass it as false
+		boolean isCompressed = StringUtils.isEmpty(properties.getQueryResultLocation()) ? properties.isCompress() : false;
+
 		return new FireboltResultSet(inputStream,
 				ofNullable(initialQuery.getTable()).orElse(UNKNOWN_TABLE_NAME),
 				ofNullable(initialQuery.getDatabase()).orElse(properties.getDatabase()),
-				properties.getBufferSize(), properties.isCompress(),
+				properties.getBufferSize(), isCompressed,
 				statement, properties.isLogResultSet());
 	}
 }

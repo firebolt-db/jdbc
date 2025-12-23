@@ -3,6 +3,8 @@ package com.firebolt.jdbc.client.query;
 import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.client.CompressionType;
 import com.firebolt.jdbc.client.FireboltClient;
+import com.firebolt.jdbc.client.query.response.ResponseReader;
+import com.firebolt.jdbc.client.query.response.ResponseReaderProvider;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey;
@@ -45,7 +47,7 @@ import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static java.util.Optional.ofNullable;
-import static okhttp3.MultipartBody.*;
+import static okhttp3.MultipartBody.Part;
 import static okhttp3.RequestBody.create;
 
 @CustomLog
@@ -120,8 +122,15 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 
 	}
 
+	private ResponseReaderProvider responseReaderProvider;
+
 	public StatementClientImpl(OkHttpClient httpClient, FireboltConnection connection, String customDrivers, String customClients) {
+		this(httpClient, connection, customDrivers, customClients, ResponseReaderProvider.getInstance());
+	}
+
+	public StatementClientImpl(OkHttpClient httpClient, FireboltConnection connection, String customDrivers, String customClients, ResponseReaderProvider responseReaderProvider) {
 		super(httpClient, connection, customDrivers, customClients);
+		this.responseReaderProvider = responseReaderProvider;
 	}
 
 	/**
@@ -136,8 +145,9 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 	@Override
 	public InputStream executeSqlStatement(@NonNull StatementInfoWrapper statementInfoWrapper,
 										   @NonNull FireboltProperties connectionProperties, int queryTimeout, boolean isServerAsync) throws SQLException {
-		return executeSqlStatementInternal(statementInfoWrapper, connectionProperties, queryTimeout, isServerAsync,
-				(label, formattedStatement, uri) -> executeSqlStatementWithRetryOnUnauthorized(label, connectionProperties, formattedStatement, uri));
+		ResponseReader responseReader = responseReaderProvider.getResponseReader(connectionProperties, statementInfoWrapper.getType());
+		StatementExecutor statementExecutor = (label, formattedStatement, uri) -> executeSqlStatementWithRetryOnUnauthorized(label, connectionProperties, formattedStatement, uri, responseReader);
+		return executeSqlStatementInternal(statementInfoWrapper, connectionProperties, queryTimeout, isServerAsync, statementExecutor);
 	}
 
     /**
@@ -238,10 +248,10 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		}
 	}
 
-	private InputStream executeSqlStatementWithRetryOnUnauthorized(String label, @NonNull FireboltProperties connectionProperties, String formattedStatement, String uri)
+	private InputStream executeSqlStatementWithRetryOnUnauthorized(String label, @NonNull FireboltProperties connectionProperties, String formattedStatement, String uri, ResponseReader responseReader)
 			throws SQLException, IOException {
 		return executeWithRetryOnUnauthorized(label, uri, "statement",
-				() -> postSqlStatement(connectionProperties, formattedStatement, uri, label));
+				() -> postSqlStatement(connectionProperties, formattedStatement, uri, label, responseReader));
 	}
 
 	private InputStream executeSqlStatementWithFilesRetryOnUnauthorized(String label, @NonNull FireboltProperties connectionProperties, String formattedStatement, String uri, Map<String, byte[]> files)
@@ -265,12 +275,12 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		}
 	}
 
-	private InputStream postSqlStatement(@NonNull FireboltProperties connectionProperties, String formattedStatement, String uri, String label)
+	private InputStream postSqlStatement(@NonNull FireboltProperties connectionProperties, String formattedStatement, String uri, String label, ResponseReader responseReader)
 			throws SQLException, IOException {
 		CompressionType compressionType = getRequestBodyCompressionType(connectionProperties);
 		Request post = createPostRequest(uri, label, formattedStatement, getConnection().getAccessToken().orElse(null), compressionType);
 		Response response = execute(post, connectionProperties.getHost(), connectionProperties.isCompress());
-		InputStream is = ofNullable(response.body()).map(ResponseBody::byteStream).orElse(null);
+		InputStream is = responseReader.read(response);
 		if (is == null) {
 			CloseableUtil.close(response);
 		}
