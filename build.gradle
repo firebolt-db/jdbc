@@ -65,7 +65,7 @@ sourceSets {
 }
 dependencies {
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
-    implementation 'org.json:json:20250517'
+    implementation 'org.json:json:20251224'
     implementation "com.squareup.okhttp3:okhttp:${okHttpVersion}"
     implementation 'net.jodah:expiringmap:0.5.11'
     implementation 'org.apache.commons:commons-text:1.15.0'
