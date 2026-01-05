@@ -99,6 +99,12 @@ jobs:
           distribution: 'zulu'
           java-version: ${{ inputs.java_version }}
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2
+        with:
+          # only allow the master branch to write to the cache
+          cache-read-only: ${{ github.ref != 'master' }}
+
       # for ubuntu-latest , java 11 it will create u11. For windows-latest java 17 it will create w17
       - name: Reduce db suffix name
         id: dbsuffix
