@@ -9,7 +9,7 @@ jobs:
   nightly-integration-runs-v1:
     strategy:
       fail-fast: false # finish all jobs even if one fails
-      max-parallel: 2
+      max-parallel: 1
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         java: [11, 17, 21]
