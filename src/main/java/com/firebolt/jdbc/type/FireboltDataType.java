@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-
 import lombok.Getter;
 
 /** Supported data types. */
@@ -43,7 +42,8 @@ public enum FireboltDataType {
 	BYTEA(Types.BINARY, FireboltDataTypeDisplayNames.BYTEA, BaseType.BYTEA, false, true, 0, 0, 0, false, "ByteA"),
 	GEOGRAPHY(Types.VARCHAR, FireboltDataTypeDisplayNames.GEOGRAPHY, BaseType.TEXT, false, false, 0, 0, 0, false,
 			"Geography"),
-	STRUCT(Types.VARCHAR, FireboltDataTypeDisplayNames.STRUCT, BaseType.TEXT, false, false, 0, 0, 0, false, "Struct");
+	STRUCT(Types.VARCHAR, FireboltDataTypeDisplayNames.STRUCT, BaseType.TEXT, false, false, 0, 0, 0, false, "Struct"),
+	JSON(Types.OTHER, FireboltDataTypeDisplayNames.JSON, BaseType.TEXT, false, false, 0, 0, 0, false, "Json");
 
 	private static final Map<String, FireboltDataType> typeNameOrAliasToType;
 
