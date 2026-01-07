@@ -1,13 +1,6 @@
 package com.firebolt.jdbc.resultset.column;
 
 import com.firebolt.jdbc.type.FireboltDataType;
-import lombok.Builder;
-import lombok.CustomLog;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Value;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -19,6 +12,12 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import lombok.Builder;
+import lombok.CustomLog;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Value;
 
 import static com.firebolt.jdbc.type.FireboltDataType.ARRAY;
 import static com.firebolt.jdbc.type.FireboltDataType.STRUCT;

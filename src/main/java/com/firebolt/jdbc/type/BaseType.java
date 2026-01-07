@@ -5,12 +5,6 @@ import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.resultset.column.Column;
 import com.firebolt.jdbc.type.array.SqlArrayUtil;
 import com.firebolt.jdbc.type.date.SqlDateUtil;
-import lombok.Builder;
-import lombok.CustomLog;
-import lombok.Value;
-import org.apache.commons.text.StringEscapeUtils;
-
-import javax.annotation.Nonnull;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Array;
@@ -22,6 +16,11 @@ import java.util.Arrays;
 import java.util.TimeZone;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
+import lombok.Builder;
+import lombok.CustomLog;
+import lombok.Value;
+import org.apache.commons.text.StringEscapeUtils;
 
 import static com.firebolt.jdbc.exception.ExceptionType.TYPE_TRANSFORMATION_ERROR;
 import static com.firebolt.jdbc.type.array.SqlArrayUtil.hexStringToByteArray;
@@ -70,7 +69,8 @@ public enum BaseType {
 					conversion.getTimeZone())),
 	TIME(Time.class,
 			conversion -> SqlDateUtil.transformToTimeFunction.apply(conversion.getValue(), conversion.getTimeZone())),
-	NULL(Object.class, conversion -> null), OTHER(String.class, conversion -> "Unknown"),
+	NULL(Object.class, conversion -> null),
+	OTHER(String.class, conversion -> "Unknown"),
 	OBJECT(Object.class, StringToColumnTypeConversion::getValue),
 	NUMERIC(BigDecimal.class, conversion -> new BigDecimal(conversion.getValue())),
 	BOOLEAN(Boolean.class, conversion -> {
@@ -81,7 +81,8 @@ public enum BaseType {
 			return true;
 		}
 		throw new FireboltException(String.format("Cannot cast %s to type boolean", conversion.getValue()));
-	}), ARRAY(Array.class,
+	}),
+	ARRAY(Array.class,
 			conversion -> SqlArrayUtil.transformToSqlArray(conversion.getValue(), conversion.getColumn().getType())),
 	BYTEA(byte[].class, conversion -> {
 		String s = conversion.getValue();

@@ -503,4 +503,33 @@ class ColumnDataTypeParserTest {
         assertEquals(isNullable, columnType.isNullable());
     }
 
+    protected static Stream<Arguments> jsonDataType() {
+        return Stream.of(
+                Arguments.of("json null", ALLOWS_NULLABLE, "JSON NULL"),
+                Arguments.of("json", DOES_NOT_ALLOW_NULLABLE, "JSON")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("jsonDataType")
+    void canParseJsonDataType(String columnTypes, boolean isNullable, String dataTypeName) {
+        List<Column> columns = columnDataTypeParser.getColumns(SINGLE_COLUMN_NAME, columnTypes);
+        assertEquals(1, columns.size());
+
+        Column column = columns.get(0);
+        assertEquals("col1", column.getColumnName());
+        assertEquals(FireboltDataType.JSON, column.getType().getDataType());
+
+        ColumnType columnType = column.getType();
+        assertEquals(dataTypeName, columnType.getName());
+        assertEquals("json", columnType.getCompactTypeName());
+        assertEquals(FireboltDataType.JSON, columnType.getDataType());
+        assertEquals(0, columnType.getPrecision());
+        assertEquals(0, columnType.getScale());
+        assertNull(columnType.getTimeZone());
+        assertEquals(Collections.emptyList(), columnType.getInnerTypes());
+        assertNull(columnType.getArrayBaseColumnType());
+        assertEquals(isNullable, columnType.isNullable());
+    }
+
 }
