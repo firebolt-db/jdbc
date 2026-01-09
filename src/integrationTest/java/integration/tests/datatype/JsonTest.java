@@ -40,9 +40,6 @@ public class JsonTest extends IntegrationTest {
 
             statement.execute("DROP TABLE IF EXISTS json_table");
 
-            // this is needed until the feature is available on staging
-            statement.execute("SET enable_json=true;");
-
             statement.execute("CREATE TABLE IF NOT EXISTS json_table (id INT, value JSON)");
         }
     }
@@ -59,9 +56,6 @@ public class JsonTest extends IntegrationTest {
     void canReadMetadataForJsonColumn() throws SQLException {
         try (Connection connection = createConnection();
              Statement statement = connection.createStatement()) {
-
-            // until this feature is enabled on cloud and core for staging this property is needed
-            statement.execute("SET enable_json=true");
 
             ResultSet resultSet = statement.executeQuery("select * from json_table");
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
@@ -91,9 +85,6 @@ public class JsonTest extends IntegrationTest {
         try (Connection connection = createConnection();
              Statement statement = connection.createStatement()) {
 
-            // until this feature is enabled on cloud and core for staging this property is needed
-            statement.execute("SET enable_json=true");
-
             PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO json_table(id, value) VALUES(?,?)");
 
             preparedStatement.setInt(1, 1);
@@ -115,9 +106,6 @@ public class JsonTest extends IntegrationTest {
     void cannotInsertIntIntoJsonColumn() throws SQLException {
         try (Connection connection = createConnection();
              Statement statement = connection.createStatement()) {
-
-            // until this feature is enabled on cloud and core for staging this property is needed
-            statement.execute("SET enable_json=true");
 
             PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO json_table(id, value) VALUES(?,?)");
 
@@ -160,9 +148,6 @@ public class JsonTest extends IntegrationTest {
 
         try (Connection connection = createConnection();
              Statement statement = connection.createStatement()) {
-
-            // until this feature is enabled on cloud and core for staging this property is needed
-            statement.execute("SET enable_json=true");
 
             PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO json_table(id, value) VALUES(?,?)");
 
