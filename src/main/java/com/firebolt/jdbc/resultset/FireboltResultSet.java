@@ -53,12 +53,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.text.StringEscapeUtils;
 
 import static com.firebolt.jdbc.type.BaseType.isNull;
 import static com.firebolt.jdbc.util.StringUtil.splitAll;
@@ -92,6 +89,12 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 
 	public FireboltResultSet(InputStream is, String tableName, String dbName, int bufferSize, boolean isCompressed,
 							 FireboltStatement statement, boolean logResultSet) throws SQLException {
+		this(is, tableName, dbName, bufferSize, isCompressed, statement, logResultSet, new ColumnDataTypeParser());
+	}
+
+	@SuppressWarnings("java:S107") // more than 8 params on the method
+	FireboltResultSet(InputStream is, String tableName, String dbName, int bufferSize, boolean isCompressed,
+							 FireboltStatement statement, boolean logResultSet, ColumnDataTypeParser columnDataTypeParser) throws SQLException {
 		log.debug("Creating resultSet...");
 		this.statement = statement;
 		if (logResultSet) {
@@ -112,7 +115,7 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 			next();
 			String[] fields = toStringArray(currentLine);
 			this.columnNameToColumnNumber = getColumnNamesToIndexes(fields);
-			columns = next() ? getColumns(fields, currentLine) : new ArrayList<>();
+			columns = next() ? columnDataTypeParser.getColumns(fields, currentLine) : new ArrayList<>();
 			resultSetMetaData = new FireboltResultSetMetaData(dbName, tableName, columns);
 		} catch (Exception e) {
 			log.error("Could not create ResultSet: {}", e.getMessage(), e);
@@ -499,13 +502,6 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 			lastSplitRow = currentRow;
 		}
 		return arr;
-	}
-
-	private List<Column> getColumns(String[] columnNames, String columnTypes) {
-		String[] types = toStringArray(columnTypes);
-		return IntStream.range(0, types.length)
-				.mapToObj(i -> Column.of(types[i], StringEscapeUtils.unescapeJava(columnNames[i])))
-				.collect(Collectors.toList());
 	}
 
 	private String getValueAtColumn(int columnIndex) throws SQLException {
