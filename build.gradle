@@ -5,7 +5,7 @@ plugins {
     id 'jacoco'
     id "org.sonarqube" version "7.2.2.6593"
     id 'maven-publish'
-    id 'com.github.johnrengelman.shadow' version '8.0.0'
+    id 'com.gradleup.shadow' version '8.3.9'
     id 'signing'
     id 'io.qameta.allure' version '3.0.1' apply false
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
@@ -25,6 +25,8 @@ project.ext {
     lombokVersion = '1.18.42'
     okHttpVersion = '4.12.0'
     slf4jVersion = '2.0.17'
+    jacksonVersion = '2.19.2'
+    awsSdkVersion = '2.29.47'
 }
 
 java {
@@ -71,6 +73,11 @@ dependencies {
     implementation 'org.apache.commons:commons-text:1.15.0'
     implementation 'org.lz4:lz4-java:1.8.0'
     implementation 'commons-validator:commons-validator:1.10.1'
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+    implementation platform("software.amazon.awssdk:bom:${awsSdkVersion}")
+    implementation 'software.amazon.awssdk:s3'
 
     implementation fileTree(dir: 'libs', includes: ['*.jar'])
 
