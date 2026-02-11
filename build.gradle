@@ -7,7 +7,7 @@ plugins {
     id 'maven-publish'
     id 'com.github.johnrengelman.shadow' version '8.0.0'
     id 'signing'
-    id 'io.qameta.allure' version '3.0.1' apply false
+    id 'io.qameta.allure' version '3.0.2' apply false
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
 }
 
