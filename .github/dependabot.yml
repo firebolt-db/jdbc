@@ -20,6 +20,10 @@ updates:
         versions: [ "2.x.x" ]
     commit-message:
       prefix: "build(NoTicket)"
+    cooldown:
+      semver-major-days: 90
+      semver-minor-days: 45
+      semver-patch-days: 14
 
   # Keep GitHub Actions up to date
   - package-ecosystem: "github-actions"
@@ -32,3 +36,7 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "build(NoTicket)"
+    cooldown:
+      semver-major-days: 90
+      semver-minor-days: 45
+      semver-patch-days: 14
