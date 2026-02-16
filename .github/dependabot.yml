@@ -37,6 +37,4 @@ updates:
     commit-message:
       prefix: "build(NoTicket)"
     cooldown:
-      semver-major-days: 90
-      semver-minor-days: 45
-      semver-patch-days: 14
+      default-days: 21

@@ -29,8 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @CustomLog
-@Tag(TestTag.V2)
-//@Tag(TestTag.CORE) //todo activate this when a core image supporting this feature will be released on ghcr
 class ParquetStatementTest extends IntegrationTest {
 
 	@TempDir
@@ -65,6 +63,8 @@ class ParquetStatementTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldExecuteUpdateWithByteArrayFiles() throws SQLException {
 		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			String sql = String.format("INSERT INTO %s SELECT id, name FROM read_parquet('upload://file1')", tableName);
@@ -87,6 +87,8 @@ class ParquetStatementTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldExecuteQueryWithMultipleFiles() throws SQLException {
 		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			String sql = String.format(
@@ -114,6 +116,8 @@ class ParquetStatementTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldThrowExceptionWhenFilesMapIsNull() throws SQLException {
 		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			String sql = String.format("INSERT INTO %s SELECT * FROM read_parquet('upload://file1')", tableName);
@@ -128,6 +132,8 @@ class ParquetStatementTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldThrowExceptionWhenFilesMapIsEmpty() throws SQLException {
 		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			String sql = String.format("INSERT INTO %s SELECT * FROM read_parquet('upload://file1')", tableName);
@@ -143,6 +149,8 @@ class ParquetStatementTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldThrowExceptionWhenFileIdentifierIsNull() throws SQLException {
 		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			String sql = String.format("INSERT INTO %s SELECT * FROM read_parquet('upload://file1')", tableName);
@@ -160,6 +168,8 @@ class ParquetStatementTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldThrowExceptionWhenFileContentIsNull() throws SQLException {
 		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			String sql = String.format("INSERT INTO %s SELECT * FROM read_parquet('upload://file1')", tableName);
@@ -177,6 +187,8 @@ class ParquetStatementTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldExecuteWithByteArraysForInsert() throws SQLException {
 		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			String sql = String.format("INSERT INTO %s SELECT id, name FROM read_parquet('upload://file1')", tableName);
@@ -198,6 +210,8 @@ class ParquetStatementTest extends IntegrationTest {
 	}
 
 	@Test
+	@Tag(TestTag.V2)
+	@Tag(TestTag.CORE)
 	void shouldExecuteWithByteArraysForSelect() throws SQLException {
 		try (FireboltConnection connection = createConnection().unwrap(FireboltConnection.class)) {
 			String sql = "SELECT id, name FROM read_parquet('upload://file1') LIMIT 10";
