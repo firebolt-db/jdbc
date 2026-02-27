@@ -82,6 +82,13 @@ public class FireboltProperties {
 	private String transactionId;
 	private String transactionSequenceId;
 
+	private String queryResultLocation;
+	private String awsRegion;
+	private String awsAccessKeyId;
+	private String awsSecretAccessKey;
+	private String awsSessionToken;
+	private String fileDownloaderType;
+
 	// firebolt core url
 	private final String url;
 
@@ -125,6 +132,13 @@ public class FireboltProperties {
 		mergePreparedStatementBatches = getSetting(properties, FireboltSessionProperty.MERGE_PREPARED_STATEMENT_BATCHES);
 		connectionCachingEnabled = getSetting(properties, FireboltSessionProperty.CACHE_CONNECTION);
         preparedStatementParamStyle = getSetting(properties, FireboltSessionProperty.PREPARED_STATEMENT_PARAM_STYLE);
+
+		queryResultLocation = getSetting(properties, FireboltSessionProperty.QUERY_RESULT_LOCATION);
+		fileDownloaderType = getSetting(properties, FireboltSessionProperty.RESULT_FILE_DOWNLOADER_TYPE);
+		awsRegion = getSetting(properties, FireboltSessionProperty.AWS_REGION);
+		awsAccessKeyId = getSetting(properties, FireboltSessionProperty.AWS_ACCESS_KEY_ID);
+		awsSecretAccessKey = getSetting(properties, FireboltSessionProperty.AWS_SECRET_ACCESS_KEY);
+		awsSessionToken = getSetting(properties, FireboltSessionProperty.AWS_SESSION_TOKEN);
 
 		environment = getEnvironment(configuredEnvironment, properties);
 		host = getHost(configuredEnvironment, properties);

@@ -78,7 +78,6 @@ public enum FireboltSessionProperty {
 	 * validate already by the connection that was cached.
 	 */
 	CACHE_CONNECTION("cache_connection", true, Boolean.class, "Available only for Firebolt 2.0 connections. If true, the connection will be cached for 1 hour.", FireboltProperties::isConnectionCachingEnabled),
-
 	URL("url", null, String.class, "Firebolt Core deployment url. It needs to include protocol: http or https, host or IP address and port number. E.g: http://localhost:3473", FireboltProperties::getUrl),
 
 	PREPARED_STATEMENT_PARAM_STYLE("prepared_statement_param_style", "native", String.class,
@@ -87,6 +86,16 @@ public enum FireboltSessionProperty {
 			"transaction id", FireboltProperties::getTransactionId),
 	TRANSACTION_SEQUENCE_ID("transaction_sequence_id", null, String.class,
 			"transaction sequence id", FireboltProperties::getTransactionSequenceId),
+	/**
+	 * Location from where to read the results from s3
+	 */
+	QUERY_RESULT_LOCATION("query_result_location", null, String.class, "The location to read the query results from. This should be define first in firebolt. ", FireboltProperties::getQueryResultLocation),
+	RESULT_FILE_DOWNLOADER_TYPE("result_file_downloader_type", "one_ahead", String.class, "The type of downloader to be used to download the results from location ", FireboltProperties::getFileDownloaderType),
+	AWS_REGION("aws_region", null, String.class, "The aws region, in case the query result location is using an s3 bucket.", FireboltProperties::getAwsRegion),
+	AWS_ACCESS_KEY_ID("aws_access_key_id", null, String.class, "The aws key id that has read access to the s3 location", FireboltProperties::getAwsAccessKeyId),
+	AWS_SECRET_ACCESS_KEY("aws_secret_access_key", null, String.class, "The aws secret that will be used in combination with aws key id", FireboltProperties::getAwsSecretAccessKey),
+	AWS_SESSION_TOKEN("aws_session_token", null, String.class, "The aws session token that will be used in combination with aws key id/key secret", FireboltProperties::getAwsSessionToken),
+
 	// We keep all the deprecated properties to ensure backward compatibility - but
 	// they do not have any effect.
 	@Deprecated
