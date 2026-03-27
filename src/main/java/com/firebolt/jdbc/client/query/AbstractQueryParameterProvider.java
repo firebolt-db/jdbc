@@ -3,6 +3,7 @@ package com.firebolt.jdbc.client.query;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.connection.settings.FireboltQueryParameterKey;
 import com.firebolt.jdbc.statement.StatementInfoWrapper;
+import com.firebolt.jdbc.statement.StatementType;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
@@ -61,6 +62,16 @@ abstract class AbstractQueryParameterProvider implements QueryParameterProvider 
     protected void addTransactionSequenceIdIfNeeded(Map<String,String> params, String transactionSequenceId) {
         if (StringUtils.isNotBlank(transactionSequenceId)) {
             params.put(FireboltQueryParameterKey.TRANSACTION_SEQUENCE_ID.getKey(), transactionSequenceId);
+        }
+    }
+
+    /**
+     * When s3 query location is used, by default we enable the advanced mode as well
+     */
+    protected void addS3QueryResultLocationIfNeeded(Map<String,String> params, String s3queryResultLocation, StatementType statementType) {
+        if (StringUtils.isNotBlank(s3queryResultLocation) && statementType == StatementType.QUERY) {
+            params.put(FireboltQueryParameterKey.QUERY_RESULT_UPLOAD_LOCATION.getKey(), s3queryResultLocation);
+            params.put(FireboltQueryParameterKey.ADVANCED_MODE.getKey(), "true");
         }
     }
 
