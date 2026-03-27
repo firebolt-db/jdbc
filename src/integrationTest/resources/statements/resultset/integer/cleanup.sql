@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS "integer_type_test" CASCADE;
