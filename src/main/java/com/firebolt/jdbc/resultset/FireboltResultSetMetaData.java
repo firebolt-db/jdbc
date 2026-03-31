@@ -79,6 +79,10 @@ public class FireboltResultSetMetaData implements ResultSetMetaData, GenericWrap
 		return getColumn(column).getType().getCompactTypeName();
 	}
 
+    public String getFullyQualifiedColumnTypeName(int column) throws SQLException {
+		return getColumn(column).getType().getName();
+	}
+
 	@Override
 	public String getColumnClassName(int column) throws SQLException {
 		return getColumn(column).getType().getDataType().getBaseType().getType().getName();

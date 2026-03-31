@@ -35,6 +35,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.Callable;
@@ -1388,6 +1389,148 @@ class FireboltResultSetTest {
 	}
 
 	@Test
+	void shouldReturnExpectedFullyQualifiedColumnType() throws SQLException {
+		inputStream = getInputStreamWithAllTypes();
+		resultSet = createResultSet(inputStream);
+		resultSet.next();
+		FireboltResultSetMetaData metaData = resultSet.getMetaData().unwrap(FireboltResultSetMetaData.class);
+		
+		// Expected column metadata: column index -> (expectedType, expectedTypeName)
+		// Type names are in uppercase as returned by getFullyQualifiedColumnTypeName
+		Map<Integer, ColumnTypeAssertion> expectedColumns = new HashMap<>();
+		// int columns
+		expectedColumns.put(1, new ColumnTypeAssertion(Types.INTEGER, "INT"));
+		expectedColumns.put(2, new ColumnTypeAssertion(Types.INTEGER, "INT NULL"));
+		expectedColumns.put(3, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(INT)"));
+		expectedColumns.put(4, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(INT NULL)"));
+		expectedColumns.put(5, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(INT) NULL"));
+		expectedColumns.put(6, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(INT))"));
+		expectedColumns.put(7, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(INT NULL) NULL)"));
+		expectedColumns.put(8, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(INT)) NULL"));
+		// long columns
+		expectedColumns.put(9, new ColumnTypeAssertion(Types.BIGINT, "LONG"));
+		expectedColumns.put(10, new ColumnTypeAssertion(Types.BIGINT, "LONG NULL"));
+		expectedColumns.put(11, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(LONG)"));
+		expectedColumns.put(12, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(LONG NULL)"));
+		expectedColumns.put(13, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(LONG) NULL"));
+		expectedColumns.put(14, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(LONG))"));
+		expectedColumns.put(15, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(LONG NULL) NULL)"));
+		expectedColumns.put(16, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(LONG)) NULL"));
+		// float columns
+		expectedColumns.put(17, new ColumnTypeAssertion(Types.REAL, "FLOAT"));
+		expectedColumns.put(18, new ColumnTypeAssertion(Types.REAL, "FLOAT NULL"));
+		expectedColumns.put(19, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(FLOAT)"));
+		expectedColumns.put(20, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(FLOAT NULL)"));
+		expectedColumns.put(21, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(FLOAT) NULL"));
+		expectedColumns.put(22, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(FLOAT))"));
+		expectedColumns.put(23, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(FLOAT NULL) NULL)"));
+		expectedColumns.put(24, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(FLOAT)) NULL"));
+		// double columns
+		expectedColumns.put(25, new ColumnTypeAssertion(Types.DOUBLE, "DOUBLE"));
+		expectedColumns.put(26, new ColumnTypeAssertion(Types.DOUBLE, "DOUBLE NULL"));
+		expectedColumns.put(27, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(DOUBLE)"));
+		expectedColumns.put(28, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(DOUBLE NULL)"));
+		expectedColumns.put(29, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(DOUBLE) NULL"));
+		expectedColumns.put(30, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(DOUBLE))"));
+		expectedColumns.put(31, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(DOUBLE NULL) NULL)"));
+		expectedColumns.put(32, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(DOUBLE)) NULL"));
+		// text columns
+		expectedColumns.put(33, new ColumnTypeAssertion(Types.VARCHAR, "TEXT"));
+		expectedColumns.put(34, new ColumnTypeAssertion(Types.VARCHAR, "TEXT NULL"));
+		expectedColumns.put(35, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(TEXT)"));
+		expectedColumns.put(36, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(TEXT NULL)"));
+		expectedColumns.put(37, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(TEXT) NULL"));
+		expectedColumns.put(38, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(TEXT))"));
+		expectedColumns.put(39, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(TEXT NULL) NULL)"));
+		expectedColumns.put(40, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(TEXT)) NULL"));
+		// date columns
+		expectedColumns.put(41, new ColumnTypeAssertion(Types.DATE, "DATE"));
+		expectedColumns.put(42, new ColumnTypeAssertion(Types.DATE, "DATE NULL"));
+		expectedColumns.put(43, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(DATE)"));
+		expectedColumns.put(44, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(DATE NULL)"));
+		expectedColumns.put(45, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(DATE) NULL"));
+		expectedColumns.put(46, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(DATE) NULL)"));
+		expectedColumns.put(47, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(DATE))"));
+		expectedColumns.put(48, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(DATE NULL) NULL)"));
+		expectedColumns.put(49, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(DATE)) NULL"));
+		// timestamp columns
+		expectedColumns.put(50, new ColumnTypeAssertion(Types.TIMESTAMP, "TIMESTAMP"));
+		expectedColumns.put(51, new ColumnTypeAssertion(Types.TIMESTAMP, "TIMESTAMP NULL"));
+		expectedColumns.put(52, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(TIMESTAMP)"));
+		expectedColumns.put(53, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(TIMESTAMP NULL)"));
+		expectedColumns.put(54, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(TIMESTAMP) NULL"));
+		expectedColumns.put(55, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(TIMESTAMP) NULL)"));
+		expectedColumns.put(56, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(TIMESTAMP))"));
+		expectedColumns.put(57, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(TIMESTAMP NULL) NULL)"));
+		expectedColumns.put(58, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(TIMESTAMP)) NULL"));
+		// timestamptz columns
+		expectedColumns.put(59, new ColumnTypeAssertion(Types.TIMESTAMP_WITH_TIMEZONE, "TIMESTAMPTZ"));
+		expectedColumns.put(60, new ColumnTypeAssertion(Types.TIMESTAMP_WITH_TIMEZONE, "TIMESTAMPTZ NULL"));
+		expectedColumns.put(61, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(TIMESTAMPTZ)"));
+		expectedColumns.put(62, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(TIMESTAMPTZ NULL)"));
+		expectedColumns.put(63, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(TIMESTAMPTZ) NULL"));
+		expectedColumns.put(64, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(TIMESTAMPTZ) NULL)"));
+		expectedColumns.put(65, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(TIMESTAMPTZ))"));
+		expectedColumns.put(66, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(TIMESTAMPTZ NULL) NULL)"));
+		expectedColumns.put(67, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(TIMESTAMPTZ)) NULL"));
+		// boolean columns
+		expectedColumns.put(68, new ColumnTypeAssertion(Types.BOOLEAN, "BOOLEAN"));
+		expectedColumns.put(69, new ColumnTypeAssertion(Types.BOOLEAN, "BOOLEAN NULL"));
+		expectedColumns.put(70, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(BOOLEAN)"));
+		expectedColumns.put(71, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(BOOLEAN NULL)"));
+		expectedColumns.put(72, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(BOOLEAN) NULL"));
+		expectedColumns.put(73, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(BOOLEAN))"));
+		expectedColumns.put(74, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(BOOLEAN NULL) NULL)"));
+		expectedColumns.put(75, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(BOOLEAN)) NULL"));
+		// decimal columns
+		expectedColumns.put(76, new ColumnTypeAssertion(Types.NUMERIC, "DECIMAL(38, 30)"));
+		expectedColumns.put(77, new ColumnTypeAssertion(Types.NUMERIC, "DECIMAL(38, 30) NULL"));
+		expectedColumns.put(78, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(DECIMAL(38, 30))"));
+		expectedColumns.put(79, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(DECIMAL(38, 30) NULL)"));
+		expectedColumns.put(80, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(DECIMAL(38, 30)) NULL"));
+		expectedColumns.put(81, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(DECIMAL(38, 30)) NULL)"));
+		expectedColumns.put(82, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(DECIMAL(38, 30)))"));
+		expectedColumns.put(83, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(DECIMAL(38, 30) NULL) NULL)"));
+		expectedColumns.put(84, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(DECIMAL(38, 30))) NULL"));
+		// bytea columns
+		expectedColumns.put(85, new ColumnTypeAssertion(Types.BINARY, "BYTEA"));
+		expectedColumns.put(86, new ColumnTypeAssertion(Types.BINARY, "BYTEA NULL"));
+		// geography columns
+		expectedColumns.put(87, new ColumnTypeAssertion(Types.VARCHAR, "GEOGRAPHY"));
+		expectedColumns.put(88, new ColumnTypeAssertion(Types.VARCHAR, "GEOGRAPHY NULL"));
+		expectedColumns.put(89, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(GEOGRAPHY)"));
+		expectedColumns.put(90, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(GEOGRAPHY NULL)"));
+		expectedColumns.put(91, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(GEOGRAPHY) NULL"));
+		expectedColumns.put(92, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(GEOGRAPHY))"));
+		expectedColumns.put(93, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(GEOGRAPHY NULL) NULL)"));
+		expectedColumns.put(94, new ColumnTypeAssertion(Types.ARRAY, "ARRAY(ARRAY(GEOGRAPHY)) NULL"));
+		
+		// Verify all expected columns
+		assertEquals(expectedColumns.size(), metaData.getColumnCount(), "Should have expected number of columns");
+		
+		for (Map.Entry<Integer, ColumnTypeAssertion> entry : expectedColumns.entrySet()) {
+			int columnIndex = entry.getKey();
+			ColumnTypeAssertion expected = entry.getValue();
+			
+			assertEquals(expected.columnType, metaData.getColumnType(columnIndex),
+					format("Column type should match for column %d", columnIndex));
+			assertEquals(expected.typeName, metaData.getFullyQualifiedColumnTypeName(columnIndex),
+					format("Column type name should match for column %d. Expected: %s, Actual: %s",
+							columnIndex, expected.typeName, metaData.getFullyQualifiedColumnTypeName(columnIndex)));
+		}
+	}
+	
+	private static class ColumnTypeAssertion {
+		final int columnType;
+		final String typeName;
+		
+		ColumnTypeAssertion(int columnType, String typeName) {
+			this.columnType = columnType;
+			this.typeName = typeName;
+		}
+	}
+
+	@Test
 	void shouldThrowExceptionWhenConvertingIncompatibleTypes() throws SQLException {
 		inputStream = getInputStreamWithCommonResponseExample();
 		resultSet = createResultSet(inputStream);
@@ -1625,6 +1768,10 @@ class FireboltResultSetTest {
 
 	private InputStream getInputStreamWithNewTypes() {
 		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-new-types");
+	}
+
+	private InputStream getInputStreamWithAllTypes() {
+		return FireboltResultSetTest.class.getResourceAsStream("/responses/firebolt-response-with-all-types");
 	}
 
 	private InputStream getInputStreamWithNumericTypes() {
