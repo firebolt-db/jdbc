@@ -2,6 +2,8 @@ package com.firebolt.jdbc.resultset;
 
 import com.firebolt.jdbc.GenericWrapper;
 import com.firebolt.jdbc.resultset.column.Column;
+import com.firebolt.jdbc.resultset.column.ColumnType;
+import com.firebolt.jdbc.type.TypeDisplaySize;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -114,8 +116,8 @@ public class FireboltResultSetMetaData implements ResultSetMetaData, GenericWrap
 
 	@Override
 	public int getColumnDisplaySize(int column) throws SQLException {
-		checkColumnNumber(column);
-		return 80; // Default value for backward compatibility
+		ColumnType type = getColumn(column).getType();
+		return TypeDisplaySize.getDisplaySize(type.getDataType(), type.getPrecision(), type.getScale());
 	}
 	@Override
 	public String getSchemaName(int column) throws SQLException {

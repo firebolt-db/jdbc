@@ -110,10 +110,30 @@ class FireboltResultSetMetaDataTest {
 		assertFalse(md.isAutoIncrement(1));
 		assertTrue(md.isSearchable(1));
 		assertFalse(md.isCurrency(1));
-		assertEquals(80, md.getColumnDisplaySize(1));
 		assertEquals("", md.getSchemaName(1));
 		assertFalse(md.isWritable(1));
 		assertFalse(md.isDefinitelyWritable(1));
+	}
+
+	@Test
+	void getColumnDisplaySize_textColumn_returnsMaxValue() throws SQLException {
+		// TEXT column without precision should return Integer.MAX_VALUE
+		ResultSetMetaData md = getMetaData();
+		assertEquals(Integer.MAX_VALUE, md.getColumnDisplaySize(1)); // String/TEXT column
+	}
+
+	@Test
+	void getColumnDisplaySize_integerColumn_returns11() throws SQLException {
+		// INTEGER column should return 11 (PostgreSQL convention)
+		ResultSetMetaData md = getMetaData();
+		assertEquals(11, md.getColumnDisplaySize(2)); // Integer column
+	}
+
+	@Test
+	void getColumnDisplaySize_numericColumn_returnsPrecisionPlusSignAndDecimal() throws SQLException {
+		// NUMERIC(1,2) should return 1 + 1 + 1 = 3 (sign + precision + decimal point)
+		ResultSetMetaData md = getMetaData();
+		assertEquals(3, md.getColumnDisplaySize(3)); // Decimal(1,2) column
 	}
 
 	@ParameterizedTest
