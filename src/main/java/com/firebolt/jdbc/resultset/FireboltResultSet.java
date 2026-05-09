@@ -140,6 +140,15 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 		return new BufferedReader(inputStreamReader, bufferSize);
 	}
 
+	// Server can append an error trailer to a 200 OK streaming response when a per-row
+	// evaluation (e.g. CAST(text AS BOOLEAN) on uncastable text) fails partway through. The
+	// trailer starts with a line of the form "Line N, Column N: <reason>" followed by an echo
+	// of the query and a caret. If we just keep readLine()-ing we surface those trailer lines
+	// as if they were data rows, producing silent wrong results. Detect the trailer prefix and
+	// throw, so callers see the same SQLException they would for a non-streaming error.
+	private static final java.util.regex.Pattern STREAMED_ERROR_TRAILER =
+			java.util.regex.Pattern.compile("^Line \\d+, Column \\d+: .+$");
+
 	@Override
 	public boolean next() throws SQLException {
 		checkStreamNotClosed();
@@ -156,6 +165,23 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 			currentRow++;
 		} catch (IOException e) {
 			throw new SQLException("Error reading result from stream", e);
+		}
+
+		if (currentLine != null && STREAMED_ERROR_TRAILER.matcher(currentLine).matches()) {
+			// Drain the rest of the stream into the message so the caller can read it once,
+			// then propagate as an exception. Drop the streamed-error pattern from the line
+			// before throwing so callers see the same shape of SQLException as for non-streaming
+			// per-query errors.
+			StringBuilder rest = new StringBuilder(currentLine);
+			try {
+				while (nextLine != null) {
+					rest.append('\n').append(nextLine);
+					nextLine = reader.readLine();
+				}
+			} catch (IOException ignored) {
+				// already capturing what we have; the SQLException is the primary signal
+			}
+			throw new SQLException(rest.toString());
 		}
 
 		return currentLine != null;

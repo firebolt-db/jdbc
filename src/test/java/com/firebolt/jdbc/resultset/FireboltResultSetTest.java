@@ -85,6 +85,34 @@ class FireboltResultSetTest {
 	}
 
 	@Test
+	void shouldThrowOnStreamedErrorTrailer() throws SQLException {
+		// Firebolt Core can return HTTP 200 with a per-row evaluation error appended inline to a
+		// TabSeparatedWithNamesAndTypes stream, e.g. when CAST(text AS BOOLEAN) fails partway
+		// through. Without trailer detection, those error lines were surfaced as if they were
+		// data rows, producing silent wrong results. next() must throw a SQLException as soon as
+		// it sees the "Line N, Column N: <reason>" prefix instead.
+		String body = String.join("\n",
+				"c", // header (column name)
+				"text null", // header (column type)
+				"TRUE", // real data row
+				"1", // real data row
+				"Line 1, Column 23: Invalid input syntax for type BOOLEAN: abc",
+				"SELECT c FROM t WHERE CAST(c AS BOOLEAN)",
+				"                      ^") + "\n";
+		inputStream = new ByteArrayInputStream(body.getBytes());
+		resultSet = createResultSet(inputStream);
+
+		assertTrue(resultSet.next());
+		assertEquals("TRUE", resultSet.getString(1));
+		assertTrue(resultSet.next());
+		assertEquals("1", resultSet.getString(1));
+		SQLException ex = assertThrows(SQLException.class, () -> resultSet.next(),
+				"streamed error trailer must surface as a SQLException, not as another data row");
+		assertTrue(ex.getMessage().startsWith("Line 1, Column 23:"),
+				"exception should carry the server-side error text; got: " + ex.getMessage());
+	}
+
+	@Test
 	void shouldReturnMetadata() throws SQLException {
 		// This only tests that Metadata is available with the resultSet.
 		inputStream = getInputStreamWithCommonResponseExample();
