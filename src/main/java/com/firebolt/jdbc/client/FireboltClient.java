@@ -57,6 +57,8 @@ public abstract class FireboltClient implements CacheListener {
 	private static final String HEADER_USER_AGENT = "User-Agent";
 	private static final String HEADER_PROTOCOL_VERSION = "Firebolt-Protocol-Version";
 	private static final String HEADER_CONTENT_ENCODING = "Content-Encoding";
+	private static final String HEADER_ACCEPT_ENCODING = "Accept-Encoding";
+
 	private static final Pattern plainErrorPattern = Pattern.compile("Line (\\d+), Column (\\d+): (.*)$", Pattern.MULTILINE);
 	private final OkHttpClient httpClient;
 	private String headerUserAgentValue;
