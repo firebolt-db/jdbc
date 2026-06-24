@@ -44,6 +44,8 @@ public class FireboltConnectionProvider {
                 return fireboltConnectionProviderWrapper.createFireboltConnectionUsernamePassword(url, connectionSettings, ParserVersion.LEGACY);
             case CLOUD_2_0:
                 return fireboltConnectionProviderWrapper.createFireboltConnectionServiceSecret(url, connectionSettings);
+            case DISCOVERY:
+                return fireboltConnectionProviderWrapper.createFireboltDiscoveryConnection(url, connectionSettings);
             case DEV:
                 return fireboltConnectionProviderWrapper.createLocalhostFireboltConnectionServiceSecret(url, connectionSettings);
             case FIREBOLT_CORE:
@@ -60,6 +62,9 @@ public class FireboltConnectionProvider {
      * @return
      */
     private FireboltBackendType getFireboltBackend(String jdbcUri, Properties connectionProperties) {
+        if (isDiscoveryUrl(jdbcUri)) {
+            return FireboltBackendType.DISCOVERY;
+        }
         int urlVersion = getUrlVersion(jdbcUri, connectionProperties);
         if (urlVersion == 1) {
             return FireboltBackendType.CLOUD_1_0;
@@ -94,6 +99,11 @@ public class FireboltConnectionProvider {
         return 2;
     }
 
+    private boolean isDiscoveryUrl(String url) {
+        Pattern legacyCloudUrl = Pattern.compile("jdbc:firebolt://api\\.\\w+\\.firebolt\\.io");
+        return url != null && url.startsWith("jdbc:firebolt://") && !legacyCloudUrl.matcher(url).find();
+    }
+
     /**
      * This is just a wrapper classes for the connection instance creation so we can test them without requiring an actual firebolt 1.0 or firebolt 2.0 backend.
      */
@@ -107,6 +117,10 @@ public class FireboltConnectionProvider {
         public FireboltConnectionServiceSecret createFireboltConnectionServiceSecret(String url, Properties connectionSettings) throws SQLException {
             CacheServiceProvider cacheServiceProvider = CacheServiceProvider.getInstance();
             return new FireboltConnectionServiceSecret(url, connectionSettings, ConnectionIdGenerator.getInstance(), cacheServiceProvider.getCacheService(CacheType.DISK));
+        }
+
+        public FireboltDiscoveryConnection createFireboltDiscoveryConnection(String url, Properties connectionSettings) throws SQLException {
+            return new FireboltDiscoveryConnection(url, connectionSettings);
         }
 
         public LocalhostFireboltConnection createLocalhostFireboltConnectionServiceSecret(String url, Properties connectionSettings) throws SQLException {

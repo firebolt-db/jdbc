@@ -37,6 +37,7 @@ public class FireboltProperties {
 	private static final Pattern DB_PATH_PATTERN = Pattern.compile("/?([a-zA-Z0-9_*\\-]+)");
 	private static final int FIREBOLT_SSL_PROXY_PORT = 443;
 	private static final int FIREBOLT_NO_SSL_PROXY_PORT = 9090;
+	private static final String SSL_MODE_DISABLE = "disable";
 
 	private static final Set<String> sessionPropertyKeys = Arrays.stream(FireboltSessionProperty.values())
 			.map(property -> {
@@ -95,9 +96,9 @@ public class FireboltProperties {
 	}
 
 	public FireboltProperties(Properties properties) {
-		ssl = getSetting(properties, FireboltSessionProperty.SSL);
 		sslCertificatePath = getSetting(properties, FireboltSessionProperty.SSL_CERTIFICATE_PATH);
 		sslMode = getSetting(properties, FireboltSessionProperty.SSL_MODE);
+		ssl = getSsl(properties, sslMode);
 		principal = getSetting(properties, FireboltSessionProperty.CLIENT_ID);
 		secret = getSetting(properties, FireboltSessionProperty.CLIENT_SECRET);
 		path = getSetting(properties, FireboltSessionProperty.PATH);
@@ -137,6 +138,14 @@ public class FireboltProperties {
 
 	private static String getEngine(Properties mergedProperties) {
 		return getSetting(mergedProperties, FireboltSessionProperty.ENGINE);
+	}
+
+	private static boolean getSsl(Properties properties, String sslMode) {
+		String ssl = properties.getProperty(FireboltSessionProperty.SSL.getKey());
+		if (ssl != null) {
+			return ssl.chars().allMatch(Character::isDigit) ? Integer.parseInt(ssl) > 0 : Boolean.parseBoolean(ssl);
+		}
+		return !SSL_MODE_DISABLE.equalsIgnoreCase(sslMode);
 	}
 
 	private static String getHost(String environment, Properties properties ) {

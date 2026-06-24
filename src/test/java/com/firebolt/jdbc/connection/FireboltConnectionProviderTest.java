@@ -40,6 +40,9 @@ class FireboltConnectionProviderTest {
     @Mock
     private FireboltCoreConnection mockFireboltCoreConnection;
 
+    @Mock
+    private FireboltDiscoveryConnection mockFireboltDiscoveryConnection;
+
     private FireboltConnectionProvider fireboltConnectionProvider;
 
     @BeforeEach
@@ -129,6 +132,28 @@ class FireboltConnectionProviderTest {
 
         when(mockFireboltConnectionProviderWrapper.createLocalhostFireboltConnectionServiceSecret(validJdbc2LocalhostUrl, validV2LocalhostProperties)).thenThrow(SQLException.class);
         assertThrows(SQLException.class, () -> fireboltConnectionProvider.create(validJdbc2LocalhostUrl, validV2LocalhostProperties));
+    }
+
+    static Stream<Arguments> discoveryJdbcConnection() {
+        return Stream.of(
+                Arguments.of("jdbc:firebolt://localhost:3473?ssl_mode=disable&database=my_db", new Properties()),
+                Arguments.of("jdbc:firebolt://firebolt.internal?database=my_db&engine=my_engine", new Properties())
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("discoveryJdbcConnection")
+    void canDetectDiscoveryConnection(String url, Properties connectionProperties) throws SQLException {
+        when(mockFireboltConnectionProviderWrapper.createFireboltDiscoveryConnection(url, connectionProperties))
+                .thenReturn(mockFireboltDiscoveryConnection);
+
+        FireboltConnection fireboltConnection = fireboltConnectionProvider.create(url, connectionProperties);
+        assertSame(mockFireboltDiscoveryConnection, fireboltConnection);
+
+        verify(mockFireboltConnectionProviderWrapper, never()).createFireboltConnectionServiceSecret(anyString(), any(Properties.class));
+        verify(mockFireboltConnectionProviderWrapper, never()).createFireboltConnectionUsernamePassword(anyString(), any(Properties.class), any(ParserVersion.class));
+        verify(mockFireboltConnectionProviderWrapper, never()).createLocalhostFireboltConnectionServiceSecret(anyString(), any(Properties.class));
+        verify(mockFireboltConnectionProviderWrapper, never()).createFireboltCoreConnection(anyString(), any(Properties.class));
     }
 
     static Stream<Arguments> coreJdbcConnection() {

@@ -49,6 +49,7 @@ class FireboltDriverTest {
 			"FireboltConnectionServiceSecret, jdbc:firebolt://api.dev.firebolt.io/db_name?client_id=not-email&client_secret=any,", // clientId and client_secret as URL parameters - v2
 			"FireboltConnectionUserPassword, jdbc:firebolt://api.dev.firebolt.io/db_name?access_token=aaabbbccc,", // old URL, no credentials but with access token
 			"FireboltConnectionServiceSecret,jdbc:firebolt:db_name,", // new URL, no credentials but with access token
+			"FireboltDiscoveryConnection,jdbc:firebolt://localhost:3473?ssl_mode=disable&database=db_name,",
 	})
 	void validateConnectionWhenUrlIsValid(String expectedConnectionTypeName, String jdbcUrl, String propsString) throws SQLException, IOException, ClassNotFoundException {
 		Properties properties = null;

@@ -60,7 +60,12 @@ jobs:
           java-version: ${{ inputs.java_version }}
           cache: 'gradle'
 
+      - name: Install Firebolt
+        if: runner.os == 'Linux'
+        run: bash <(curl -s https://get.firebolt.io/)
+
       - name: Setup Firebolt Core
+        if: runner.os != 'Linux'
         id: setup-core
         uses: firebolt-db/action-setup-core@main
         with:

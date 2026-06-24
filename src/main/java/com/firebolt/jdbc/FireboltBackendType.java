@@ -26,7 +26,12 @@ public enum FireboltBackendType {
     /**
      * Connecting to firebolt core
      */
-    FIREBOLT_CORE("core");
+    FIREBOLT_CORE("core"),
+
+    /**
+     * Discovery-based Firebolt endpoint.
+     */
+    DISCOVERY("discovery");
 
     /**
      * This would be the value that would be present on the connection string

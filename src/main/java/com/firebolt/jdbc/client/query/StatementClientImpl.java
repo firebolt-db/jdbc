@@ -309,6 +309,7 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		switch(fireboltBackendType) {
 			case CLOUD_1_0: return new FireboltCloudV1QueryParameterProvider();
 			case CLOUD_2_0: return new FireboltCloudV2QueryParameterProvider();
+			case DISCOVERY: return new FireboltCloudV2QueryParameterProvider();
 			case FIREBOLT_CORE: return new FireboltCoreQueryParameterProvider();
 			case DEV: return new LocalhostQueryParameterProvider();
 			default: throw new IllegalStateException("Could not detect what backend is connecting to.");

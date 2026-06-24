@@ -41,6 +41,10 @@ public class OkHttpClientCreator {
 
 	private static final String SSL_STRICT_MODE = "strict";
 	private static final String SSL_NONE_MODE = "none";
+	private static final String SSL_DISABLE_MODE = "disable";
+	private static final String SSL_REQUIRE_MODE = "require";
+	private static final String SSL_VERIFY_CA_MODE = "verify-ca";
+	private static final String SSL_VERIFY_FULL_MODE = "verify-full";
 	private static final String TLS_PROTOCOL = "TLS";
 	private static final String JKS_KEYSTORE_TYPE = "JKS";
 	private static final String CERTIFICATE_TYPE_X_509 = "X.509";
@@ -86,8 +90,8 @@ public class OkHttpClientCreator {
 	}
 
 	private static Optional<HostnameVerifier> getHostnameVerifier(FireboltProperties properties) {
-		if (properties.isSsl() && SSL_NONE_MODE.equals(properties.getSslMode())) {
-			// No verification when SSL mode is NONE
+		if (properties.isSsl() && isTrustAllMode(properties.getSslMode())) {
+			// No verification when SSL mode explicitly allows unverified TLS.
 			return Optional.of((hostname, session) -> true);
 		} else {
 			return Optional.empty();
@@ -102,11 +106,11 @@ public class OkHttpClientCreator {
 		TrustManager[] trustManagers;
 		KeyManager[] keyManagers;
 		SecureRandom secureRandom;
-		if (SSL_NONE_MODE.equals(fireboltProperties.getSslMode())) {
+		if (isTrustAllMode(fireboltProperties.getSslMode())) {
 			trustManagers = trustAllCerts;
 			keyManagers = new KeyManager[] {};
 			secureRandom = new SecureRandom();
-		} else if (SSL_STRICT_MODE.equals(fireboltProperties.getSslMode())) {
+		} else if (isVerifyMode(fireboltProperties.getSslMode())) {
 			TrustManagerFactory trustManagerFactory = TrustManagerFactory
 					.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 			// When null, it uses the default trusted KeyStore
@@ -124,6 +128,17 @@ public class OkHttpClientCreator {
 		return Optional.of(SSLConfig.builder().keyManagers(keyManagers).trustManagers(trustManagers)
 				.secureRandom(secureRandom).build());
 
+	}
+
+	private static boolean isTrustAllMode(String sslMode) {
+		return SSL_NONE_MODE.equalsIgnoreCase(sslMode) || SSL_REQUIRE_MODE.equalsIgnoreCase(sslMode);
+	}
+
+	private static boolean isVerifyMode(String sslMode) {
+		return SSL_STRICT_MODE.equalsIgnoreCase(sslMode)
+				|| SSL_VERIFY_CA_MODE.equalsIgnoreCase(sslMode)
+				|| SSL_VERIFY_FULL_MODE.equalsIgnoreCase(sslMode)
+				|| SSL_DISABLE_MODE.equalsIgnoreCase(sslMode);
 	}
 
 	private static Optional<KeyStore> getKeyStore(FireboltProperties fireboltProperties)

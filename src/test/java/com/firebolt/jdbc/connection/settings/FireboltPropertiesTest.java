@@ -155,6 +155,29 @@ class FireboltPropertiesTest {
 		assertFalse(new FireboltProperties(properties).isCompress());
 	}
 
+	@ParameterizedTest
+	@CsvSource(value = {
+			"disable,false",
+			"require,true",
+			"verify-full,true",
+			"strict,true"
+	}, delimiter = ',')
+	void shouldDeriveSslFromSslModeWhenSslIsNotProvided(String sslMode, boolean expectedSsl) {
+		Properties properties = new Properties();
+		properties.put("ssl_mode", sslMode);
+
+		assertEquals(expectedSsl, new FireboltProperties(properties).isSsl());
+	}
+
+	@Test
+	void explicitSslPropertyOverridesSslMode() {
+		Properties properties = new Properties();
+		properties.put("ssl", "true");
+		properties.put("ssl_mode", "disable");
+
+		assertTrue(new FireboltProperties(properties).isSsl());
+	}
+
 	@Test
 	void shouldUseCustomPortWhenProvided() {
 		Properties properties = new Properties();
