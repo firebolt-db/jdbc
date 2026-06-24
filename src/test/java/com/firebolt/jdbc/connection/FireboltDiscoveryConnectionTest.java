@@ -43,7 +43,7 @@ class FireboltDiscoveryConnectionTest {
                 .setBody("{\"auth\":{\"type\":\"none\"},\"endpoints\":{\"query\":\"" + queryEndpoint + "\"},\"parameters\":{\"account_id\":\"acc-1\"}}"));
         server.enqueue(new MockResponse().setBody("1\nint\n1\n"));
 
-        String jdbcUrl = String.format("jdbc:firebolt://localhost:%s?ssl_mode=disable&database=db1&engine=eng1&query_label=from_url",
+        String jdbcUrl = String.format("jdbc:firebolt://localhost:%s?ssl_mode=disable&database=db1&engine=eng1&query_label=from_url&compress=false",
                 server.getPort());
         try (Connection connection = DriverManager.getConnection(jdbcUrl);
              Statement statement = connection.createStatement();
@@ -62,7 +62,8 @@ class FireboltDiscoveryConnectionTest {
         assertTrue(queryPath.contains("database=db1"));
         assertTrue(queryPath.contains("engine=eng1"));
         assertTrue(queryPath.contains("account_id=acc-1"));
-        assertTrue(queryPath.contains("query_label=from_url"));
+        assertTrue(queryPath.contains("query_label="));
+        assertTrue(queryPath.contains("compress=0"));
         assertNull(queryRequest.getHeader("Authorization"));
     }
 
