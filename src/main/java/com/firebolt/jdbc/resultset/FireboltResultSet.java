@@ -7,6 +7,7 @@ import com.firebolt.jdbc.annotation.NotImplemented;
 import com.firebolt.jdbc.exception.ExceptionType;
 import com.firebolt.jdbc.exception.FireboltException;
 import com.firebolt.jdbc.exception.FireboltSQLFeatureNotSupportedException;
+import com.firebolt.jdbc.exception.ServerError;
 import com.firebolt.jdbc.resultset.column.Column;
 import com.firebolt.jdbc.resultset.column.ColumnType;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
@@ -56,6 +57,7 @@ import java.util.TreeMap;
 import java.util.stream.Stream;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONObject;
 
 import static com.firebolt.jdbc.type.BaseType.isNull;
 import static com.firebolt.jdbc.util.StringUtil.splitAll;
@@ -141,13 +143,21 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 	}
 
 	// Server can append an error trailer to a 200 OK streaming response when a per-row
-	// evaluation (e.g. CAST(text AS BOOLEAN) on uncastable text) fails partway through. The
-	// trailer starts with a line of the form "Line N, Column N: <reason>" followed by an echo
-	// of the query and a caret. If we just keep readLine()-ing we surface those trailer lines
-	// as if they were data rows, producing silent wrong results. Detect the trailer prefix and
-	// throw, so callers see the same SQLException they would for a non-streaming error.
+	// evaluation (e.g. CAST(text AS BOOLEAN) on uncastable text) fails partway through. If we
+	// just keep readLine()-ing we surface those trailer lines as if they were data rows,
+	// producing silent wrong results. Detect the trailer and throw, so callers see the same
+	// SQLException they would for a non-streaming error.
+	//
+	// Two trailer shapes occur: a plain-text line "Line N, Column N: <reason>" (followed by an
+	// echo of the query and a caret), and a JSON error envelope
+	// ({ "errors": [ { "description": "Line N, Column M: ..." } ], ... }) that the firebolt
+	// server appends. In the JSON form the "Line N, Column" text is indented inside
+	// "description", so STREAMED_ERROR_TRAILER (anchored at start-of-line) does not match it —
+	// detect the envelope's "errors": [ marker instead.
 	private static final java.util.regex.Pattern STREAMED_ERROR_TRAILER =
 			java.util.regex.Pattern.compile("^Line \\d+, Column \\d+: .+$");
+	private static final java.util.regex.Pattern STREAMED_JSON_ERROR =
+			java.util.regex.Pattern.compile("^\\s*\\{?\\s*\"errors\"\\s*:\\s*\\[");
 
 	@Override
 	public boolean next() throws SQLException {
@@ -167,24 +177,45 @@ public class FireboltResultSet extends JdbcBase implements ResultSet {
 			throw new SQLException("Error reading result from stream", e);
 		}
 
-		if (currentLine != null && STREAMED_ERROR_TRAILER.matcher(currentLine).matches()) {
-			// Drain the rest of the stream into the message so the caller can read it once,
-			// then propagate as an exception. Drop the streamed-error pattern from the line
-			// before throwing so callers see the same shape of SQLException as for non-streaming
-			// per-query errors.
-			StringBuilder rest = new StringBuilder(currentLine);
-			try {
-				while (nextLine != null) {
-					rest.append('\n').append(nextLine);
-					nextLine = reader.readLine();
+		if (currentLine != null) {
+			boolean plainTrailer = STREAMED_ERROR_TRAILER.matcher(currentLine).matches();
+			// JSON envelope: match its "errors": [ marker on this line (compact form), or on the
+			// next line right after a lone "{" (pretty-printed) so the "{" isn't first surfaced as
+			// a data row.
+			boolean jsonTrailer = STREAMED_JSON_ERROR.matcher(currentLine).find()
+					|| ("{".equals(currentLine.strip()) && nextLine != null
+							&& STREAMED_JSON_ERROR.matcher(nextLine).find());
+			if (plainTrailer || jsonTrailer) {
+				// Drain the rest of the stream into the message so the caller can read it once,
+				// then propagate as an exception with the same shape callers see for a
+				// non-streaming per-query error.
+				StringBuilder rest = new StringBuilder(currentLine);
+				try {
+					while (nextLine != null) {
+						rest.append('\n').append(nextLine);
+						nextLine = reader.readLine();
+					}
+				} catch (IOException ignored) {
+					// already capturing what we have; the SQLException is the primary signal
 				}
-			} catch (IOException ignored) {
-				// already capturing what we have; the SQLException is the primary signal
+				throw new SQLException(jsonTrailer ? parseStreamedJsonError(rest.toString()) : rest.toString());
 			}
-			throw new SQLException(rest.toString());
 		}
 
 		return currentLine != null;
+	}
+
+	// Extract a human-readable message from a streamed JSON error envelope, mirroring the
+	// non-streaming error parsing in FireboltClient so callers (and error-substring matchers) see
+	// a consistent message shape. Falls back to the raw drained text if it doesn't parse as JSON.
+	private static String parseStreamedJsonError(String raw) {
+		try {
+			String json = raw.substring(raw.indexOf('{'));
+			String message = new ServerError(new JSONObject(json)).getErrorMessage();
+			return (message == null || message.isBlank()) ? raw : message;
+		} catch (RuntimeException e) {
+			return raw;
+		}
 	}
 
 	@Override
