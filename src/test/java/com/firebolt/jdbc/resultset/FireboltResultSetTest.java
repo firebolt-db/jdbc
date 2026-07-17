@@ -113,6 +113,40 @@ class FireboltResultSetTest {
 	}
 
 	@Test
+	void shouldThrowOnStreamedJsonErrorTrailer() throws SQLException {
+		// The firebolt server frames a mid-stream error (after HTTP 200 + rows were flushed) as a
+		// JSON envelope appended to the TabSeparated stream. The "Line N, Column" text is indented
+		// inside "description", so the plain-text trailer regex misses it; without JSON detection
+		// the envelope lines are surfaced as data rows (silent wrong results). next() must throw a
+		// SQLException carrying the parsed description instead — and must not first surface the
+		// leading "{" as a data row.
+		String body = String.join("\n",
+				"c", // header (column name)
+				"text null", // header (column type)
+				"TRUE", // real data row
+				"1", // real data row
+				"{",
+				"  \"errors\": [",
+				"    {",
+				"      \"description\": \"Line 1, Column 23: Invalid input syntax for type BOOLEAN: abc\"",
+				"    }",
+				"  ],",
+				"  \"statistics\": { \"elapsed\": 0.0012 }",
+				"}") + "\n";
+		inputStream = new ByteArrayInputStream(body.getBytes());
+		resultSet = createResultSet(inputStream);
+
+		assertTrue(resultSet.next());
+		assertEquals("TRUE", resultSet.getString(1));
+		assertTrue(resultSet.next());
+		assertEquals("1", resultSet.getString(1));
+		SQLException ex = assertThrows(SQLException.class, () -> resultSet.next(),
+				"streamed JSON error trailer must surface as a SQLException, not as data rows");
+		assertTrue(ex.getMessage().contains("Line 1, Column 23: Invalid input syntax for type BOOLEAN: abc"),
+				"exception should carry the parsed server-side description; got: " + ex.getMessage());
+	}
+
+	@Test
 	void shouldReturnMetadata() throws SQLException {
 		// This only tests that Metadata is available with the resultSet.
 		inputStream = getInputStreamWithCommonResponseExample();
