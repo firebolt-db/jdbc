@@ -1,0 +1,23 @@
+name: Check Central status
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query OSSRH staging API for io.firebolt repositories/deployments
+        env:
+          U: ${{ secrets.MAVEN_REPO_USERNAME }}
+          P: ${{ secrets.MAVEN_REPO_PASSWORD }}
+        run: |
+          TOKEN=$(printf '%s:%s' "$U" "$P" | base64 -w0)
+          echo "::add-mask::$TOKEN"
+          base="https://ossrh-staging-api.central.sonatype.com"
+          echo "=== search repositories (profile_id=io.firebolt) ==="
+          curl -s -H "Authorization: Bearer $TOKEN" \
+            "$base/manual/search/repositories?profile_id=io.firebolt" | tee /tmp/a.json; echo
+          echo "=== search repositories (all) ==="
+          curl -s -H "Authorization: Bearer $TOKEN" \
+            "$base/manual/search/repositories" | tee /tmp/b.json; echo
