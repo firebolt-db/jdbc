@@ -6,9 +6,14 @@ on:
       tag_name:
         description: 'Tag name to publish'
         required: true
+      skip_pre_release_tests:
+        description: 'Skip the pre-release integration test gate. Use only when the gate is red for infra reasons unrelated to this release (e.g. staging/Core provisioning down) and the release carries unit-tested changes only.'
+        type: boolean
+        default: false
 
 jobs:
   pre-release-testing:
+    if: ${{ !inputs.skip_pre_release_tests }}
     uses: ./.github/workflows/pre-release-test.yml
     secrets:
       FIREBOLT_STG_USERNAME: ${{ secrets.FIREBOLT_STG_USERNAME }}
@@ -20,6 +25,9 @@ jobs:
 
   bump-version:
     needs: pre-release-testing
+    # Proceed when the gate passed, or when it was intentionally skipped via
+    # skip_pre_release_tests. A real failure/cancellation still halts the release.
+    if: ${{ always() && (needs.pre-release-testing.result == 'success' || needs.pre-release-testing.result == 'skipped') }}
     runs-on: ubuntu-latest
     env:
       newVersion: ${{ github.event.inputs.tag_name }}
