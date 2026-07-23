@@ -52,20 +52,27 @@ jobs:
     - name: Commit version bump
       run: |
         git add gradle.properties
-        git commit -m "chore: Bump version to $newVersion"
+        if git diff --cached --quiet; then
+          echo "gradle.properties already at $newVersion; nothing to commit"
+        else
+          git commit -m "chore: Bump version to $newVersion"
+        fi
 
     - name: Tag version
       run: |
-        git tag $newVersion
+        git tag $newVersion || echo "tag $newVersion already exists"
 
     - name: Push changes
       run: |
         git push origin master
-        # Push tag
-        git push origin $newVersion
+        # Push tag (already-present tag is a no-op)
+        git push origin $newVersion || echo "tag $newVersion already pushed"
 
   build:
     needs: bump-version
+    # bump-version runs under an always() gate; make the success dependency
+    # explicit so a skipped pre-release-testing upstream doesn't skip build.
+    if: ${{ always() && needs.bump-version.result == 'success' }}
     uses: ./.github/workflows/build.yml
     with:
       branch: ${{ github.event.inputs.tag_name }}
@@ -73,6 +80,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     needs: build
+    if: ${{ always() && needs.build.result == 'success' }}
     steps:
     - name: Check out code
       uses: actions/checkout@v6
