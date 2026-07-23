@@ -282,14 +282,9 @@ publishing {
                 }
                 developers {
                     developer {
-                        id = "goprean"
-                        name = "George Oprean"
-                        email = "george.oprean@firebolt.io"
-                    }
-                    developer {
-                        id = "bogdan.truta"
-                        name = "Bogdan Truta"
-                        email = "bogdan.truta@firebolt.io"
+                        id = "moshap"
+                        name = "Mosha Pasumansky"
+                        email = "moshap@firebolt.io"
                     }
                 }
                 scm {
