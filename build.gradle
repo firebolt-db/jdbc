@@ -340,7 +340,9 @@ task manualUploadToMavenCentral {
 
         def mavenHost = "https://ossrh-staging-api.central.sonatype.com"
         def namespace = "io.firebolt"
-        def apiUrl = "${mavenHost}/manual/upload/defaultRepository/${namespace}"
+        // publishing_type defaults to user_managed (deployment waits for a manual Publish in
+        // the Central Portal UI); automatic validates and releases to Central without that step.
+        def apiUrl = "${mavenHost}/manual/upload/defaultRepository/${namespace}?publishing_type=automatic"
 
         println "Calling API: $apiUrl"
 
