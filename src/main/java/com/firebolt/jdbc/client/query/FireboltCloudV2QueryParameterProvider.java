@@ -18,7 +18,8 @@ public class FireboltCloudV2QueryParameterProvider extends AbstractQueryParamete
         Map<String, String> params = new HashMap<>(fireboltProperties.getAdditionalProperties());
 
         if (statementInfoWrapper.getType() == StatementType.QUERY) {
-            params.put(OUTPUT_FORMAT.getKey(), TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT);
+            String outputFormat = fireboltProperties.getQueryResultLocation() == null ? TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT : QueryParameterProvider.S3_TAB_SEPARATED_WITH_NAMES_AND_TYPES_FORMAT;
+            params.put(OUTPUT_FORMAT.getKey(), outputFormat);
         }
 
         addQueryParameterIfNeeded(params, statementInfoWrapper.getPreparedStatementParameters());
@@ -34,6 +35,7 @@ public class FireboltCloudV2QueryParameterProvider extends AbstractQueryParamete
             addQueryLabel(params, fireboltProperties, statementInfoWrapper);
             addCompress(params, fireboltProperties.isCompress());
             addQueryTimeoutIfNeeded(params, queryTimeout);
+            addS3QueryResultLocationIfNeeded(params, fireboltProperties.getQueryResultLocation(), statementInfoWrapper.getType());
         }
 
         return params;

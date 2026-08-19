@@ -26,6 +26,7 @@ class FireboltPropertiesTest {
 				.socketTimeoutMillis(0).connectionTimeoutMillis(60000).tcpKeepInterval(30).environment("app").tcpKeepIdle(60)
 				.tcpKeepCount(10).connectionCachingEnabled(true).preparedStatementParamStyle("native")
 				.compressRequestPayload(false)
+				.fileDownloaderType("one_ahead")
 				.build();
 
 		Properties properties = new Properties();
@@ -64,6 +65,7 @@ class FireboltPropertiesTest {
 				.tcpKeepInterval(30).tcpKeepIdle(60).tcpKeepCount(10).environment("app").validateOnSystemEngine(true)
 				.mergePreparedStatementBatches(true).connectionCachingEnabled(true).preparedStatementParamStyle("fb_numeric")
 				.compressRequestPayload(false)
+				.fileDownloaderType("one_ahead")
 				.build();
 		assertEquals(expectedDefaultProperties, new FireboltProperties(properties));
 	}
