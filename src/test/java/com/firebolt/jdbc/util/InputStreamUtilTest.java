@@ -26,6 +26,23 @@ class InputStreamUtilTest {
         assertDoesNotThrow(() -> InputStreamUtil.readAllBytes(null));
     }
 
+    @Test
+    void shouldPropagateIoExceptionInsteadOfLooping() {
+        InputStream failing = new InputStream() {
+            @Override
+            public int read() throws IOException {
+                throw new IOException("stream was reset: CANCEL");
+            }
+
+            @Override
+            public int read(byte[] b, int off, int len) throws IOException {
+                throw new IOException("stream was reset: CANCEL");
+            }
+        };
+        IOException thrown = assertThrows(IOException.class, () -> InputStreamUtil.readAllBytes(failing));
+        assertTrue(thrown.getMessage().contains("CANCEL"));
+    }
+
     @ParameterizedTest
     @CsvSource(value = {
             "hello,5,hello",

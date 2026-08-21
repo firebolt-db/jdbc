@@ -116,8 +116,16 @@ public class FireboltStatementService {
 		} else {
 			// If the statement is not a query, read all bytes from the input stream and close it.
 			// This is needed otherwise the stream with the server will be closed after having received the first chunk of data (resulting in incomplete inserts).
-			InputStreamUtil.readAllBytes(is);
-			CloseableUtil.close(is);
+			try {
+				InputStreamUtil.readAllBytes(is);
+			} catch (IOException e) {
+				throw new FireboltException(
+						"Response stream was interrupted while draining a non-query statement; "
+								+ "the statement may or may not have been applied",
+						e);
+			} finally {
+				CloseableUtil.close(is);
+			}
 		}
 		return Optional.empty();
 	}
