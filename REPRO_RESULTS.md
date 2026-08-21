@@ -134,3 +134,12 @@ export REPRO_HTTP2_HANG=true
 ```
 
 On this fixed branch those captures correctly report that the hang is gone.
+
+## Review follow-ups: SQLState 08007 + pool eviction
+
+Engineering asked for two additions on top of the wrap-and-rethrow fix (no behavioral change to the drain itself):
+
+1. **SQLState `08007` (transaction resolution unknown)** on the in-doubt drain failure. `FireboltStatementService.executeStatementInternal` now throws `new FireboltException(message, cause, SQLState.TRANSACTION_RESOLUTION_UNKNOWN)` so callers can machine-detect ambiguous statement outcome via `SQLException.getSQLState()`.
+2. **Connection pool eviction** on drain failure: `StatementClient.evictConnectionPool()` → `OkHttpClient.connectionPool().evictAll()` via `StatementClientImpl`, invoked before the exception is thrown. Prevents the next statement from reusing a stale HTTP/2 connection after `RST_STREAM` / similar.
+
+**Recovery test** (`Http2StreamResetExecuteUpdateHangTest.secondStatementSucceedsOnFreshConnectionAfterDrainFailure`): first INSERT gets partial body + CANCEL → `SQLException` with `SQLState=08007` and `evictConnectionPool()` verified; second INSERT on the same `FireboltStatement` succeeds. OkHttp `EventListener.connectionAcquired` shows two distinct `Connection` instances (second request does not reuse the reset connection). Unit coverage also in `FireboltStatementServiceTest.shouldSurfaceSqlState08007AndEvictPoolWhenNonQueryDrainFails`.

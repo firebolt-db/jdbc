@@ -3,6 +3,7 @@ package com.firebolt.jdbc.service;
 import com.firebolt.jdbc.client.query.StatementClient;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.exception.SQLState;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import com.firebolt.jdbc.statement.FireboltStatement;
@@ -119,10 +120,13 @@ public class FireboltStatementService {
 			try {
 				InputStreamUtil.readAllBytes(is);
 			} catch (IOException e) {
+				// Drop pooled connections that may be half-closed after an HTTP/2 stream reset.
+				statementClient.evictConnectionPool();
 				throw new FireboltException(
 						"Response stream was interrupted while draining a non-query statement; "
 								+ "the statement may or may not have been applied",
-						e);
+						e,
+						SQLState.TRANSACTION_RESOLUTION_UNKNOWN);
 			} finally {
 				CloseableUtil.close(is);
 			}

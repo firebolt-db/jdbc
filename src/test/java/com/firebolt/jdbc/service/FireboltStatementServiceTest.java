@@ -120,6 +120,34 @@ class FireboltStatementServiceTest {
 	}
 
 	@Test
+	void shouldSurfaceSqlState08007AndEvictPoolWhenNonQueryDrainFails() throws SQLException {
+		StatementInfoWrapper statementInfoWrapper = StatementUtil
+				.parseToStatementInfoWrappers("INSERT INTO ltv SELECT * FROM ltv_external").get(0);
+		FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
+		FireboltStatementService fireboltStatementService = new FireboltStatementService(statementClient);
+		FireboltStatement statement = mock(FireboltStatement.class);
+		when(statement.getQueryTimeout()).thenReturn(-1);
+		when(statementClient.executeSqlStatement(statementInfoWrapper, fireboltProperties, -1, IS_SYNC))
+				.thenReturn(new InputStream() {
+					@Override
+					public int read() throws java.io.IOException {
+						throw new java.io.IOException("stream was reset: CANCEL");
+					}
+
+					@Override
+					public int read(byte[] b, int off, int len) throws java.io.IOException {
+						throw new java.io.IOException("stream was reset: CANCEL");
+					}
+				});
+
+		FireboltException thrown = assertThrows(FireboltException.class,
+				() -> fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statement));
+		assertTrue(thrown.getMessage().contains("may or may not have been applied"));
+		assertEquals(com.firebolt.jdbc.exception.SQLState.TRANSACTION_RESOLUTION_UNKNOWN.getCode(), thrown.getSQLState());
+		verify(statementClient).evictConnectionPool();
+	}
+
+	@Test
 	void shouldExecuteQueryAsync() throws SQLException {
 		StatementInfoWrapper statementInfoWrapper = StatementUtil
 				.parseToStatementInfoWrappers("INSERT INTO ltv SELECT * FROM ltv_external").get(0);

@@ -8,8 +8,12 @@ import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.client.query.StatementClientImpl;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
+import com.firebolt.jdbc.exception.SQLState;
 import com.firebolt.jdbc.statement.FireboltStatement;
 import com.firebolt.jdbc.util.InputStreamUtil;
+import okhttp3.Call;
+import okhttp3.Connection;
+import okhttp3.EventListener;
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
 import okhttp3.internal.http2.ErrorCode;
@@ -24,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -36,12 +41,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.Arrays;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -103,7 +112,49 @@ class Http2StreamResetExecuteUpdateHangTest {
                         || thrown.getMessage().toLowerCase().contains("stream")
                         || thrown.getCause() instanceof IOException,
                 "unexpected message: " + thrown.getMessage());
-        System.out.println("Stage 2 (fixed): executeUpdate failed in " + elapsedMs + "ms: " + thrown);
+        assertEquals(SQLState.TRANSACTION_RESOLUTION_UNKNOWN.getCode(), thrown.getSQLState());
+        System.out.println("Stage 2 (fixed): executeUpdate failed in " + elapsedMs + "ms: " + thrown
+                + " sqlState=" + thrown.getSQLState());
+    }
+
+    /**
+     * After a drain failure, the connection pool is evicted and a subsequent statement on the same
+     * JDBC statement/service must succeed on a fresh HTTP connection (not the reset one).
+     */
+    @Test
+    @Timeout(value = 15, unit = TimeUnit.SECONDS)
+    void secondStatementSucceedsOnFreshConnectionAfterDrainFailure() throws Exception {
+        List<Connection> acquiredConnections = Collections.synchronizedList(new ArrayList<>());
+        EventListener connectionTracker = new EventListener() {
+            @Override
+            public void connectionAcquired(Call call, Connection connection) {
+                acquiredConnections.add(connection);
+            }
+        };
+
+        enqueueCancelAfterPartialBody();
+        // Successful empty body for the recovery INSERT.
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(""));
+
+        StatementFixture fixture = createStatementAgainstMock(connectionTracker);
+        FireboltStatement statement = fixture.statement;
+
+        SQLException first = assertThrows(SQLException.class,
+                () -> statement.executeUpdate("INSERT INTO jdbc_repro_drop_me VALUES (1)"));
+        assertEquals(SQLState.TRANSACTION_RESOLUTION_UNKNOWN.getCode(), first.getSQLState());
+        verify(fixture.statementClient).evictConnectionPool();
+
+        // Same JDBC statement object; pool was evicted so OkHttp should open a new connection.
+        statement.executeUpdate("INSERT INTO jdbc_repro_drop_me VALUES (2)");
+
+        assertTrue(acquiredConnections.size() >= 2,
+                "expected at least two connection acquisitions, got " + acquiredConnections.size());
+        assertNotSame(acquiredConnections.get(0), acquiredConnections.get(1),
+                "second request must not reuse the first (reset) HTTP connection");
+        assertEquals(2, mockWebServer.getRequestCount());
+        System.out.println("Recovery: first sqlState=" + first.getSQLState()
+                + ", connectionsAcquired=" + acquiredConnections.size()
+                + ", distinct=" + (acquiredConnections.get(0) != acquiredConnections.get(1)));
     }
 
     /**
@@ -208,8 +259,13 @@ class Http2StreamResetExecuteUpdateHangTest {
     }
 
     private FireboltStatement createStatementAgainstMock() throws SQLException {
+        return createStatementAgainstMock(EventListener.NONE).statement;
+    }
+
+    private StatementFixture createStatementAgainstMock(EventListener eventListener) throws SQLException {
         OkHttpClient client = new OkHttpClient.Builder()
                 .protocols(Collections.singletonList(Protocol.H2_PRIOR_KNOWLEDGE))
+                .eventListener(eventListener)
                 .build();
 
         FireboltConnection connection = mock(FireboltConnection.class);
@@ -229,8 +285,19 @@ class Http2StreamResetExecuteUpdateHangTest {
         when(connection.getSessionProperties()).thenReturn(properties);
         lenient().doNothing().when(connection).ensureTransactionForQueryExecution();
 
-        StatementClientImpl statementClient = new StatementClientImpl(client, connection, "", "");
+        StatementClientImpl statementClient = spy(new StatementClientImpl(client, connection, "", ""));
         FireboltStatementService service = new FireboltStatementService(statementClient);
-        return new FireboltStatement(service, properties, connection);
+        FireboltStatement statement = new FireboltStatement(service, properties, connection);
+        return new StatementFixture(statement, statementClient);
+    }
+
+    private static final class StatementFixture {
+        final FireboltStatement statement;
+        final StatementClientImpl statementClient;
+
+        StatementFixture(FireboltStatement statement, StatementClientImpl statementClient) {
+            this.statement = statement;
+            this.statementClient = statementClient;
+        }
     }
 }

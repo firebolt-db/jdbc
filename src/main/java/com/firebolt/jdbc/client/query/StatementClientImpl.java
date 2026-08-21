@@ -177,6 +177,11 @@ public class StatementClientImpl extends FireboltClient implements StatementClie
 		return getQueuedCallWithLabel(statementId).isPresent() || getRunningCallWithLabel(statementId).isPresent();
 	}
 
+	@Override
+	public void evictConnectionPool() {
+		getHttpClient().connectionPool().evictAll();
+	}
+
 	/**
 	 * Functional interface for executing a SQL statement.
 	 * <p>

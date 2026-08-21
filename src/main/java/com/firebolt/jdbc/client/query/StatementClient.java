@@ -26,4 +26,12 @@ public interface StatementClient {
 	void abortStatement(String label, FireboltProperties fireboltProperties) throws SQLException;
 
 	boolean isStatementRunning(String statementLabel);
+
+	/**
+	 * Evict all idle connections from the underlying HTTP client's connection pool.
+	 * <p>
+	 * Used after a failed response-body drain so the next statement does not reuse a
+	 * stale (e.g. HTTP/2 reset) pooled connection.
+	 */
+	void evictConnectionPool();
 }
