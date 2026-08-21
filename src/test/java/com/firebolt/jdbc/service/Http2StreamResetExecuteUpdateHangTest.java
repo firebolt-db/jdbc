@@ -1,16 +1,11 @@
 package com.firebolt.jdbc.service;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import com.firebolt.jdbc.FireboltBackendType;
 import com.firebolt.jdbc.client.query.StatementClientImpl;
 import com.firebolt.jdbc.connection.FireboltConnection;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.SQLState;
 import com.firebolt.jdbc.statement.FireboltStatement;
-import com.firebolt.jdbc.util.InputStreamUtil;
 import okhttp3.Call;
 import okhttp3.Connection;
 import okhttp3.EventListener;
@@ -24,7 +19,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -32,21 +26,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -54,41 +40,25 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Deterministic HTTP/2 repro: MockWebServer (H2 prior knowledge) accepts a DML POST, begins the
- * response body, then resets the stream with {@link ErrorCode#CANCEL}. On buggy
- * {@link InputStreamUtil#readAllBytes}, {@link FireboltStatement#executeUpdate(String)} hangs and
- * WARN-spams; after the fix it returns a {@link SQLException} promptly.
+ * HTTP/2 regression coverage for non-query response drain failures.
  *
- * <p>Uses {@link Protocol#H2_PRIOR_KNOWLEDGE} so HTTP/2 duplex / RST_STREAM works without relying on
- * TLS ALPN (which can fall back to HTTP/1.1 on some JDKs).
+ * <p>MockWebServer with {@link Protocol#H2_PRIOR_KNOWLEDGE} accepts a DML POST, begins the response
+ * body, then resets the stream with {@link ErrorCode#CANCEL}. {@code executeUpdate} must fail fast
+ * with SQLState {@code 08007}, and a subsequent statement must succeed on a fresh connection.
  */
 class Http2StreamResetExecuteUpdateHangTest {
 
     private MockWebServer mockWebServer;
-    private ListAppender<ILoggingEvent> logAppender;
-    private Logger inputStreamUtilLogger;
 
     @BeforeEach
     void setUp() throws IOException {
         mockWebServer = new MockWebServer();
         mockWebServer.setProtocols(Collections.singletonList(Protocol.H2_PRIOR_KNOWLEDGE));
         mockWebServer.start();
-
-        inputStreamUtilLogger = (Logger) LoggerFactory.getLogger(InputStreamUtil.class);
-        // Avoid flooding RollingFileAppender during the infinite-loop repro (can crash the test JVM).
-        inputStreamUtilLogger.detachAndStopAllAppenders();
-        logAppender = new ListAppender<>();
-        logAppender.start();
-        inputStreamUtilLogger.addAppender(logAppender);
-        inputStreamUtilLogger.setLevel(Level.WARN);
-        inputStreamUtilLogger.setAdditive(false);
     }
 
     @AfterEach
     void tearDown() throws IOException {
-        if (inputStreamUtilLogger != null && logAppender != null) {
-            inputStreamUtilLogger.detachAppender(logAppender);
-        }
         if (mockWebServer != null) {
             mockWebServer.close();
         }
@@ -113,8 +83,6 @@ class Http2StreamResetExecuteUpdateHangTest {
                         || thrown.getCause() instanceof IOException,
                 "unexpected message: " + thrown.getMessage());
         assertEquals(SQLState.TRANSACTION_RESOLUTION_UNKNOWN.getCode(), thrown.getSQLState());
-        System.out.println("Stage 2 (fixed): executeUpdate failed in " + elapsedMs + "ms: " + thrown
-                + " sqlState=" + thrown.getSQLState());
     }
 
     /**
@@ -133,7 +101,6 @@ class Http2StreamResetExecuteUpdateHangTest {
         };
 
         enqueueCancelAfterPartialBody();
-        // Successful empty body for the recovery INSERT.
         mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(""));
 
         StatementFixture fixture = createStatementAgainstMock(connectionTracker);
@@ -144,7 +111,6 @@ class Http2StreamResetExecuteUpdateHangTest {
         assertEquals(SQLState.TRANSACTION_RESOLUTION_UNKNOWN.getCode(), first.getSQLState());
         verify(fixture.statementClient).evictConnectionPool();
 
-        // Same JDBC statement object; pool was evicted so OkHttp should open a new connection.
         statement.executeUpdate("INSERT INTO jdbc_repro_drop_me VALUES (2)");
 
         assertTrue(acquiredConnections.size() >= 2,
@@ -152,108 +118,15 @@ class Http2StreamResetExecuteUpdateHangTest {
         assertNotSame(acquiredConnections.get(0), acquiredConnections.get(1),
                 "second request must not reuse the first (reset) HTTP connection");
         assertEquals(2, mockWebServer.getRequestCount());
-        System.out.println("Recovery: first sqlState=" + first.getSQLState()
-                + ", connectionsAcquired=" + acquiredConnections.size()
-                + ", distinct=" + (acquiredConnections.get(0) != acquiredConnections.get(1)));
-    }
-
-    /**
-     * Hang / WARN-spam evidence for the buggy drain loop. Enable with env
-     * {@code REPRO_HTTP2_HANG=true} (or {@code -Drepro.http2.hang=true} on the test JVM).
-     */
-    @Test
-    void captureHangAndWarnSpamWhenReproFlagSet() throws Exception {
-        boolean captureHang = Boolean.parseBoolean(System.getenv().getOrDefault("REPRO_HTTP2_HANG", "false"))
-                || Boolean.getBoolean("repro.http2.hang");
-        if (!captureHang) {
-            return;
-        }
-
-        enqueueCancelAfterPartialBody();
-        FireboltStatement statement = createStatementAgainstMock();
-
-        AtomicReference<StackTraceElement[]> stackDuringHang = new AtomicReference<>();
-        CountDownLatch started = new CountDownLatch(1);
-        ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
-            Thread t = new Thread(r, "executeUpdate-http2-hang-repro");
-            t.setDaemon(true);
-            return t;
-        });
-
-        int warnBefore = countWarnEvents();
-        Future<?> future = executor.submit(() -> {
-            started.countDown();
-            statement.executeUpdate("INSERT INTO jdbc_repro_drop_me VALUES (1)");
-            return null;
-        });
-
-        assertTrue(started.await(5, TimeUnit.SECONDS));
-        Thread.sleep(500);
-        if (future.isDone()) {
-            try {
-                future.get();
-                System.out.println("=== Stage 2 DEBUG: executeUpdate returned normally ===");
-            } catch (Exception e) {
-                System.out.println("=== Stage 2 DEBUG: executeUpdate completed with error ===");
-                e.printStackTrace(System.out);
-            }
-        }
-        assertTrue(!future.isDone(), "expected executeUpdate to still be hanging on buggy code");
-
-        for (Thread t : Thread.getAllStackTraces().keySet()) {
-            if ("executeUpdate-http2-hang-repro".equals(t.getName())) {
-                stackDuringHang.set(t.getStackTrace());
-                break;
-            }
-        }
-        assertNotNull(stackDuringHang.get(), "could not find watchdog thread");
-        String stack = Arrays.stream(stackDuringHang.get())
-                .map(StackTraceElement::toString)
-                .collect(Collectors.joining("\n"));
-        System.out.println("=== Stage 2 hang stack ===\n" + stack);
-        assertTrue(stack.contains("InputStreamUtil.readAllBytes")
-                        || stack.contains("readAllBytes"),
-                "expected stack in readAllBytes, got:\n" + stack);
-
-        int warnAtStart = countWarnEvents();
-        Thread.sleep(200);
-        int warnAtEnd = countWarnEvents();
-        int warnDelta = warnAtEnd - warnAtStart;
-        double warnsPerSecond = warnDelta / 0.2;
-        System.out.println("=== Stage 2 WARN spam === warns in 200ms window=" + warnDelta
-                + " (~" + String.format("%.0f", warnsPerSecond) + "/s), totalCaptured=" + warnAtEnd
-                + " (baseline before call=" + warnBefore + ")");
-        assertTrue(warnDelta > 10, "expected high-frequency WARN spam, got " + warnDelta);
-
-        // Stop further log allocation from the still-looping daemon thread.
-        inputStreamUtilLogger.setLevel(Level.OFF);
-        executor.shutdownNow();
-        fail("HTTP/2 hang repro completed — intentional failure so evidence is printed");
-    }
-
-    private int countWarnEvents() {
-        // Snapshot under lock: the hung drain thread keeps appending concurrently.
-        List<ILoggingEvent> snapshot;
-        synchronized (logAppender.list) {
-            snapshot = new java.util.ArrayList<>(logAppender.list);
-        }
-        return (int) snapshot.stream()
-                .filter(e -> e.getLevel() == Level.WARN)
-                .filter(e -> e.getFormattedMessage() != null
-                        && e.getFormattedMessage().contains("Could not read entire input stream"))
-                .count();
     }
 
     private void enqueueCancelAfterPartialBody() {
-        // Custom duplex: write a partial body (no END_STREAM), then RST_STREAM CANCEL so the
-        // client's ResponseBody InputStream throws StreamResetException on further reads.
         mockWebServer.enqueue(new MockResponse()
                 .clearHeaders()
                 .setBody((DuplexResponseBody) (request, stream) -> {
                     okio.BufferedSink sink = okio.Okio.buffer(stream.getSink());
                     sink.writeUtf8("partial-response-body");
                     sink.flush();
-                    // Do not close the sink with END_STREAM — reset instead.
                     stream.close(ErrorCode.CANCEL, null);
                 }));
     }
@@ -269,7 +142,6 @@ class Http2StreamResetExecuteUpdateHangTest {
                 .build();
 
         FireboltConnection connection = mock(FireboltConnection.class);
-        // ssl=false → http:// scheme matching cleartext H2 prior knowledge
         FireboltProperties properties = FireboltProperties.builder()
                 .host(mockWebServer.getHostName())
                 .port(mockWebServer.getPort())

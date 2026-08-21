@@ -119,21 +119,12 @@ try {
 - `./gradlew test` — **BUILD SUCCESSFUL** (no regressions observed; PR #216 drain-to-completion still works on healthy streams via the buffered read-until-EOF loop).
 - New tests:
   - `InputStreamUtilTest.shouldPropagateIoExceptionInsteadOfLooping`
-  - `InputStreamUtilInfiniteLoopReproTest` (fixed assert + optional hang capture)
-  - `Http2StreamResetExecuteUpdateHangTest` (fixed assert + optional hang/WARN capture)
-  - `InputStreamDrainLiveReproTest` (env-gated Stage 3)
+  - `InputStreamUtilInfiniteLoopReproTest` (fixed-behavior assert)
+  - `Http2StreamResetExecuteUpdateHangTest` (fail-fast + recovery)
 
-## How to re-run hang captures (pre-fix tree only)
-
-```bash
-export REPRO_INPUTSTREAM_HANG=true
-./gradlew test --tests com.firebolt.jdbc.util.InputStreamUtilInfiniteLoopReproTest.captureHangStackWhenReproFlagSet
-
-export REPRO_HTTP2_HANG=true
-./gradlew test --tests com.firebolt.jdbc.service.Http2StreamResetExecuteUpdateHangTest.captureHangAndWarnSpamWhenReproFlagSet
-```
-
-On this fixed branch those captures correctly report that the hang is gone.
+Hang-capture scaffolding (`REPRO_*` env-gated paths) and the env-gated live smoke test
+(`InputStreamDrainLiveReproTest`) were removed before merge; recorded Stage 1–3 results above remain
+visible in earlier PR commits.
 
 ## Review follow-ups: SQLState 08007 + pool eviction
 
