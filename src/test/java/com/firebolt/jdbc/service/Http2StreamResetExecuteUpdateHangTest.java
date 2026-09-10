@@ -29,14 +29,11 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -47,6 +44,10 @@ import static org.mockito.Mockito.when;
  * with SQLState {@code 08007}, and a subsequent statement must succeed on a fresh connection.
  */
 class Http2StreamResetExecuteUpdateHangTest {
+
+    private static final String DRAIN_INTERRUPTED_MESSAGE =
+            "Response stream was interrupted while draining a non-query statement; "
+                    + "the statement may or may not have been applied";
 
     private MockWebServer mockWebServer;
 
@@ -65,32 +66,24 @@ class Http2StreamResetExecuteUpdateHangTest {
     }
 
     @Test
-    @Timeout(value = 15, unit = TimeUnit.SECONDS)
+    @Timeout(value = 15, unit = TimeUnit.SECONDS, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     void executeUpdateFailsFastWhenHttp2StreamResetMidBody() throws Exception {
         enqueueCancelAfterPartialBody();
 
         FireboltStatement statement = createStatementAgainstMock();
-        long started = System.nanoTime();
         SQLException thrown = assertThrows(SQLException.class,
                 () -> statement.executeUpdate("INSERT INTO jdbc_repro_drop_me VALUES (1)"));
-        long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
 
-        assertTrue(elapsedMs < 5_000,
-                "expected SQLException within milliseconds/seconds after fix, took " + elapsedMs + "ms");
-        assertNotNull(thrown.getMessage());
-        assertTrue(thrown.getMessage().toLowerCase().contains("interrupted")
-                        || thrown.getMessage().toLowerCase().contains("stream")
-                        || thrown.getCause() instanceof IOException,
-                "unexpected message: " + thrown.getMessage());
+        assertEquals(DRAIN_INTERRUPTED_MESSAGE, thrown.getMessage());
         assertEquals(SQLState.TRANSACTION_RESOLUTION_UNKNOWN.getCode(), thrown.getSQLState());
     }
 
     /**
-     * After a drain failure, the connection pool is evicted and a subsequent statement on the same
-     * JDBC statement/service must succeed on a fresh HTTP connection (not the reset one).
+     * After a drain failure, a subsequent statement on the same JDBC statement/service must succeed
+     * on a fresh HTTP connection (not the reset one). OkHttp retires the reset connection itself.
      */
     @Test
-    @Timeout(value = 15, unit = TimeUnit.SECONDS)
+    @Timeout(value = 15, unit = TimeUnit.SECONDS, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     void secondStatementSucceedsOnFreshConnectionAfterDrainFailure() throws Exception {
         List<Connection> acquiredConnections = Collections.synchronizedList(new ArrayList<>());
         EventListener connectionTracker = new EventListener() {
@@ -103,13 +96,11 @@ class Http2StreamResetExecuteUpdateHangTest {
         enqueueCancelAfterPartialBody();
         mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(""));
 
-        StatementFixture fixture = createStatementAgainstMock(connectionTracker);
-        FireboltStatement statement = fixture.statement;
+        FireboltStatement statement = createStatementAgainstMock(connectionTracker);
 
         SQLException first = assertThrows(SQLException.class,
                 () -> statement.executeUpdate("INSERT INTO jdbc_repro_drop_me VALUES (1)"));
         assertEquals(SQLState.TRANSACTION_RESOLUTION_UNKNOWN.getCode(), first.getSQLState());
-        verify(fixture.statementClient).evictConnectionPool();
 
         statement.executeUpdate("INSERT INTO jdbc_repro_drop_me VALUES (2)");
 
@@ -132,10 +123,10 @@ class Http2StreamResetExecuteUpdateHangTest {
     }
 
     private FireboltStatement createStatementAgainstMock() throws SQLException {
-        return createStatementAgainstMock(EventListener.NONE).statement;
+        return createStatementAgainstMock(EventListener.NONE);
     }
 
-    private StatementFixture createStatementAgainstMock(EventListener eventListener) throws SQLException {
+    private FireboltStatement createStatementAgainstMock(EventListener eventListener) throws SQLException {
         OkHttpClient client = new OkHttpClient.Builder()
                 .protocols(Collections.singletonList(Protocol.H2_PRIOR_KNOWLEDGE))
                 .eventListener(eventListener)
@@ -157,19 +148,8 @@ class Http2StreamResetExecuteUpdateHangTest {
         when(connection.getSessionProperties()).thenReturn(properties);
         lenient().doNothing().when(connection).ensureTransactionForQueryExecution();
 
-        StatementClientImpl statementClient = spy(new StatementClientImpl(client, connection, "", ""));
+        StatementClientImpl statementClient = new StatementClientImpl(client, connection, "", "");
         FireboltStatementService service = new FireboltStatementService(statementClient);
-        FireboltStatement statement = new FireboltStatement(service, properties, connection);
-        return new StatementFixture(statement, statementClient);
-    }
-
-    private static final class StatementFixture {
-        final FireboltStatement statement;
-        final StatementClientImpl statementClient;
-
-        StatementFixture(FireboltStatement statement, StatementClientImpl statementClient) {
-            this.statement = statement;
-            this.statementClient = statementClient;
-        }
+        return new FireboltStatement(service, properties, connection);
     }
 }

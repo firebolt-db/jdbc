@@ -11,6 +11,7 @@ import com.firebolt.jdbc.statement.StatementInfoWrapper;
 import com.firebolt.jdbc.statement.StatementUtil;
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -25,6 +26,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static java.util.Optional.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -120,7 +122,8 @@ class FireboltStatementServiceTest {
 	}
 
 	@Test
-	void shouldSurfaceSqlState08007AndEvictPoolWhenNonQueryDrainFails() throws SQLException {
+	@Timeout(value = 5, unit = TimeUnit.SECONDS, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+	void shouldSurfaceSqlState08007WhenNonQueryDrainFails() throws SQLException {
 		StatementInfoWrapper statementInfoWrapper = StatementUtil
 				.parseToStatementInfoWrappers("INSERT INTO ltv SELECT * FROM ltv_external").get(0);
 		FireboltProperties fireboltProperties = fireboltProperties("localhost", false);
@@ -144,7 +147,6 @@ class FireboltStatementServiceTest {
 				() -> fireboltStatementService.execute(statementInfoWrapper, fireboltProperties, statement));
 		assertTrue(thrown.getMessage().contains("may or may not have been applied"));
 		assertEquals(com.firebolt.jdbc.exception.SQLState.TRANSACTION_RESOLUTION_UNKNOWN.getCode(), thrown.getSQLState());
-		verify(statementClient).evictConnectionPool();
 	}
 
 	@Test

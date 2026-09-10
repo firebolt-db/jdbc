@@ -120,8 +120,6 @@ public class FireboltStatementService {
 			try {
 				InputStreamUtil.readAllBytes(is);
 			} catch (IOException e) {
-				// Drop pooled connections that may be half-closed after an HTTP/2 stream reset.
-				statementClient.evictConnectionPool();
 				throw new FireboltException(
 						"Response stream was interrupted while draining a non-query statement; "
 								+ "the statement may or may not have been applied",

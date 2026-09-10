@@ -14,10 +14,6 @@ public class InputStreamUtil {
 
     /**
      * Read all bytes from the input stream if the stream is not null.
-     * <p>
-     * Previously this method caught {@link IOException} inside an infinite loop and only logged,
-     * which hung forever when every {@code read()} failed (e.g. HTTP/2 {@code StreamResetException:
-     * stream was reset: CANCEL}). Failures are now propagated to the caller.
      *
      * @param is input stream
      * @throws IOException if reading the stream fails before EOF
