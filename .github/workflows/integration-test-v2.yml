@@ -64,6 +64,14 @@ on:
         required: true
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
         required: true
+      ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_ID_STG:
+        required: true
+      ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_SECRET_STG:
+        required: true
+      ECOSYSTEM_FIREBOLT_SA_NETWORK_POLICY_CLIENT_ID_STG:
+        required: true
+      ECOSYSTEM_FIREBOLT_SA_NETWORK_POLICY_CLIENT_SECRET_STG:
+        required: true
       SLACK_BOT_TOKEN:
         required: false
 
@@ -151,6 +159,11 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run integration tests
+        env:
+          FIREBOLT_SA_NO_USER_CLIENT_ID: ${{ secrets.ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_ID_STG }}
+          FIREBOLT_SA_NO_USER_CLIENT_SECRET: ${{ secrets.ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_SECRET_STG }}
+          FIREBOLT_SA_NETWORK_POLICY_CLIENT_ID: ${{ secrets.ECOSYSTEM_FIREBOLT_SA_NETWORK_POLICY_CLIENT_ID_STG }}
+          FIREBOLT_SA_NETWORK_POLICY_CLIENT_SECRET: ${{ secrets.ECOSYSTEM_FIREBOLT_SA_NETWORK_POLICY_CLIENT_SECRET_STG }}
         run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Denv="staging" -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ steps.set-account.outputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v2" -Dv2GenerateSeriesMaxSize="${{ vars.V2_GENERATE_SERIES_MAX_SIZE }}" -DintegrationTestMaxHeap=3g
 
       - name: Upload integration test reports

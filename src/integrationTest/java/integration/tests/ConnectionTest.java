@@ -304,7 +304,7 @@ class ConnectionTest extends IntegrationTest {
         try (Connection connection = createConnection();
              Statement statement = connection.createStatement()) {
             //this is done as to not clutter the environment variables for one test
-            ConnectionInfo connectionInfo = getConnectionInfoForNetworkPolicyTest(statement);
+            ConnectionInfo connectionInfo = getConnectionInfoForNetworkPolicyTest();
             String jdbcUrl = connectionInfo.toJdbcUrl();
 
             //this should fail when executing setting the database
@@ -355,14 +355,13 @@ class ConnectionTest extends IntegrationTest {
         }
     }
 
-    private ConnectionInfo getConnectionInfoForNetworkPolicyTest(Statement statement) throws SQLException {
-        ResultSet resultSet = statement
-                .executeQuery("CALL fb_GENERATESERVICEACCOUNTKEY('network_policy_test_sa')");
-        if (!resultSet.next()) {
-            throw new FireboltException("Network Policy Test could not generate service account secret and id");
-        }
-        return new ConnectionInfo(resultSet.getString("service_account_id"),
-                resultSet.getString("secret"), ConnectionInfo.getInstance().getEnv(),
+    private ConnectionInfo getConnectionInfoForNetworkPolicyTest() {
+        // Pre-provisioned network_policy_test_sa, blocked by a network policy
+        String clientId = System.getenv("FIREBOLT_SA_NETWORK_POLICY_CLIENT_ID");
+        String clientSecret = System.getenv("FIREBOLT_SA_NETWORK_POLICY_CLIENT_SECRET");
+        assertNotNull(clientId, "FIREBOLT_SA_NETWORK_POLICY_CLIENT_ID is not set");
+        assertNotNull(clientSecret, "FIREBOLT_SA_NETWORK_POLICY_CLIENT_SECRET is not set");
+        return new ConnectionInfo(clientId, clientSecret, ConnectionInfo.getInstance().getEnv(),
                 ConnectionInfo.getInstance().getDatabase(),
                 ConnectionInfo.getInstance().getAccount(),
                 ConnectionInfo.getInstance().getEngine(),
