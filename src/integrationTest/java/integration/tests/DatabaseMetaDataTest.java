@@ -234,13 +234,13 @@ class DatabaseMetaDataTest extends CommonIntegrationTest {
 		}
 
 		Map<Integer, Map<String, Object>> expected = new TreeMap<>(Map.of(
-				1, new TreeMap<>(Map.of("type", Types.BIGINT, "typeName", "bigint", "className", Long.class.getName(), "label", "id", "name", "id",  "displaySize", 80)),
-				2, new TreeMap<>(Map.of("type", Types.TIMESTAMP, "typeName", "timestamp", "className", Timestamp.class.getName(), "label", "ts", "name", "ts",  "displaySize", 80)),
-				3, new TreeMap<>(Map.of("type", Types.TIMESTAMP_WITH_TIMEZONE, "typeName", "timestamptz", "className", Timestamp.class.getName(), "label", "tstz", "name", "tstz",  "displaySize", 80)),
-				4, new TreeMap<>(Map.of("type", Types.TIMESTAMP, "typeName", "timestamp", "className", Timestamp.class.getName(), "label", "tsntz", "name", "tsntz",  "displaySize", 80)),
-				5, new TreeMap<>(Map.of("type", Types.VARCHAR, "typeName", "text", "className", String.class.getName(), "label", "content", "name", "content",  "displaySize", 80)),
-				6, new TreeMap<>(Map.of("type", Types.BOOLEAN, "typeName", "boolean", "className", Boolean.class.getName(), "label", "success", "name", "success",  "displaySize", 80)),
-				7, new TreeMap<>(Map.of("type", Types.INTEGER, "typeName", "integer", "className", Integer.class.getName(), "label", "year", "name", "year",  "displaySize", 80))
+				1, new TreeMap<>(Map.of("type", Types.BIGINT, "typeName", "bigint", "className", Long.class.getName(), "label", "id", "name", "id",  "displaySize", 20)),
+				2, new TreeMap<>(Map.of("type", Types.TIMESTAMP, "typeName", "timestamp", "className", Timestamp.class.getName(), "label", "ts", "name", "ts",  "displaySize", 26)),
+				3, new TreeMap<>(Map.of("type", Types.TIMESTAMP_WITH_TIMEZONE, "typeName", "timestamptz", "className", Timestamp.class.getName(), "label", "tstz", "name", "tstz",  "displaySize", 32)),
+				4, new TreeMap<>(Map.of("type", Types.TIMESTAMP, "typeName", "timestamp", "className", Timestamp.class.getName(), "label", "tsntz", "name", "tsntz",  "displaySize", 26)),
+				5, new TreeMap<>(Map.of("type", Types.VARCHAR, "typeName", "text", "className", String.class.getName(), "label", "content", "name", "content",  "displaySize", Integer.MAX_VALUE)),
+				6, new TreeMap<>(Map.of("type", Types.BOOLEAN, "typeName", "boolean", "className", Boolean.class.getName(), "label", "success", "name", "success",  "displaySize", 1)),
+				7, new TreeMap<>(Map.of("type", Types.INTEGER, "typeName", "integer", "className", Integer.class.getName(), "label", "year", "name", "year",  "displaySize", 11))
 		));
 
 		assertEquals(expected, result);
