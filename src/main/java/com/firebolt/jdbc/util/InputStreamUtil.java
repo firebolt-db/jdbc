@@ -1,6 +1,5 @@
 package com.firebolt.jdbc.util;
 
-import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
 
 import javax.annotation.Nullable;
@@ -9,24 +8,22 @@ import java.io.InputStream;
 import java.io.Reader;
 
 @UtilityClass
-@CustomLog
 public class InputStreamUtil {
     private static final int K_BYTE = 1024;
     private static final int BUFFER_SIZE = 8 * K_BYTE;
 
     /**
-     * Read all bytes from the input stream if the stream is not null
+     * Read all bytes from the input stream if the stream is not null.
      *
      * @param is input stream
+     * @throws IOException if reading the stream fails before EOF
      */
-    public void readAllBytes(@Nullable InputStream is) {
+    public void readAllBytes(@Nullable InputStream is) throws IOException {
         if (is != null) {
-            while (true) {
-                try {
-                    if (is.read() == -1) break;
-                } catch (IOException e) {
-                    log.warn("Could not read entire input stream for non query statement", e);
-                }
+            // Drain until EOF. Use a buffer to avoid per-byte syscalls on healthy streams.
+            byte[] buffer = new byte[BUFFER_SIZE];
+            while (is.read(buffer) != -1) {
+                // discard
             }
         }
     }

@@ -3,6 +3,7 @@ package com.firebolt.jdbc.service;
 import com.firebolt.jdbc.client.query.StatementClient;
 import com.firebolt.jdbc.connection.settings.FireboltProperties;
 import com.firebolt.jdbc.exception.FireboltException;
+import com.firebolt.jdbc.exception.SQLState;
 import com.firebolt.jdbc.resultset.FireboltResultSet;
 import com.firebolt.jdbc.resultset.compress.LZ4InputStream;
 import com.firebolt.jdbc.statement.FireboltStatement;
@@ -116,8 +117,17 @@ public class FireboltStatementService {
 		} else {
 			// If the statement is not a query, read all bytes from the input stream and close it.
 			// This is needed otherwise the stream with the server will be closed after having received the first chunk of data (resulting in incomplete inserts).
-			InputStreamUtil.readAllBytes(is);
-			CloseableUtil.close(is);
+			try {
+				InputStreamUtil.readAllBytes(is);
+			} catch (IOException e) {
+				throw new FireboltException(
+						"Response stream was interrupted while draining a non-query statement; "
+								+ "the statement may or may not have been applied",
+						e,
+						SQLState.TRANSACTION_RESOLUTION_UNKNOWN);
+			} finally {
+				CloseableUtil.close(is);
+			}
 		}
 		return Optional.empty();
 	}
