@@ -12,6 +12,14 @@ on:
         required: true
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
         required: true
+      ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_ID_STG:
+        required: true
+      ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_SECRET_STG:
+        required: true
+      ECOSYSTEM_FIREBOLT_SA_NETWORK_POLICY_CLIENT_ID_STG:
+        required: true
+      ECOSYSTEM_FIREBOLT_SA_NETWORK_POLICY_CLIENT_SECRET_STG:
+        required: true
       FIREBOLT_CORE_DEV_CERT_PRIVATE_KEY:
         required: true
       FIREBOLT_CORE_DEV_CERT:

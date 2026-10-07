@@ -36,6 +36,7 @@ import static java.util.Map.entry;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -246,31 +247,23 @@ public class SystemEngineTest extends IntegrationTest {
 	@Test
 	void connectToAccountWithoutUser() throws SQLException {
 		ConnectionInfo current = integration.ConnectionInfo.getInstance();
-		String database = current.getDatabase();
-		String serviceAccountName = format("%s_%d_sa_no_user", database, System.currentTimeMillis());
+		// Pre-provisioned service account that has no user attached
+		String clientId = System.getenv("FIREBOLT_SA_NO_USER_CLIENT_ID");
+		String clientSecret = System.getenv("FIREBOLT_SA_NO_USER_CLIENT_SECRET");
+		assertNotNull(clientId, "FIREBOLT_SA_NO_USER_CLIENT_ID is not set");
+		assertNotNull(clientSecret, "FIREBOLT_SA_NO_USER_CLIENT_SECRET is not set");
 		try (Connection connection = createConnection(getSystemEngineName())) {
-			try {
-				connection.createStatement().executeUpdate(format("CREATE SERVICE ACCOUNT \"%s\" WITH DESCRIPTION = 'Ecosytem test with no user'", serviceAccountName));
-				// This what I want to do here
-				ResultSet genKeyRs = connection.createStatement().executeQuery(format("CALL fb_GENERATESERVICEACCOUNTKEY('%s')", serviceAccountName));
-				assertTrue(genKeyRs.next());
-				String clientId = genKeyRs.getString(2);
-				String clientSecret = genKeyRs.getString(3);
+			String jdbcUrl = format("jdbc:firebolt:%s?env=%s&account=%s&engine=%s", current.getDatabase(), current.getEnv(), current.getAccount(), current.getEngine());
 
-				String jdbcUrl = format("jdbc:firebolt:%s?env=%s&account=%s&engine=%s", database, current.getEnv(), current.getAccount(), current.getEngine());
+			((CacheListener)connection).cleanup();
+			SQLException e = assertThrows(SQLException.class, () -> DriverManager.getConnection(jdbcUrl, clientId, clientSecret));
 
-				((CacheListener)connection).cleanup();
-				SQLException e = assertThrows(SQLException.class, () -> DriverManager.getConnection(jdbcUrl, clientId, clientSecret));
-
-				// There could be 2 error messages that are being thrown by this call. There has been caching introduced in the backend for the engine URL (FIR-49039)
-				// in case the engine url is not in the cache then the connection establishment fails with error1.
-				// in case the engine url is in cache, then the fetching of the engine url is fine but fails when trying to use the database (thus error2)
-				String errorMessage1 = format("Account '%s' does not exist in this organization or is not authorized.+RBAC.+", current.getAccount());
-				String errorMessage2 = format("Database '%s' does not exist or not authorized.", current.getDatabase());
-				assertTrue(e.getMessage().matches(errorMessage1) || e.getMessage().contains(errorMessage2), "Unexpected exception message: " + e.getMessage());
-			} finally {
-				connection.createStatement().executeUpdate(format("DROP SERVICE ACCOUNT \"%s\"", serviceAccountName));
-			}
+			// There could be 2 error messages that are being thrown by this call. There has been caching introduced in the backend for the engine URL (FIR-49039)
+			// in case the engine url is not in the cache then the connection establishment fails with error1.
+			// in case the engine url is in cache, then the fetching of the engine url is fine but fails when trying to use the database (thus error2)
+			String errorMessage1 = format("Account '%s' does not exist in this organization or is not authorized.+RBAC.+", current.getAccount());
+			String errorMessage2 = format("Database '%s' does not exist or not authorized.", current.getDatabase());
+			assertTrue(e.getMessage().matches(errorMessage1) || e.getMessage().contains(errorMessage2), "Unexpected exception message: " + e.getMessage());
 		}
 	}
 
