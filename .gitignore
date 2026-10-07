@@ -47,3 +47,6 @@ gradle-app.setting
 *.zip
 *.tar.gz
 *.rar
+
+# AspectJ weaver crash dumps
+ajcore.*.txt
