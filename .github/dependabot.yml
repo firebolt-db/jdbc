@@ -1,9 +1,35 @@
+---
 version: 2
 updates:
-  - package-ecosystem: "gradle"
+
+  - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "daily"
+      time: "08:17"
+      timezone: "Etc/UTC"
+    commit-message:
+      prefix: "build(NoTicket)"
+    open-pull-requests-limit: 20
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:30"
+      timezone: "Etc/UTC"
+    commit-message:
+      prefix: "build(NoTicket)"
+    open-pull-requests-limit: 10
+    cooldown:
+      default-days: 7
     ignore:
       - dependency-name: "logback-classic"
         # logback-classic 1.4 requires java 11+
@@ -17,24 +43,8 @@ updates:
         versions: ["5.x.x"]
         # Pioneer 2 requires java 11+
       - dependency-name: "junit-pioneer"
-        versions: [ "2.x.x" ]
-    commit-message:
-      prefix: "build(NoTicket)"
-    cooldown:
-      semver-major-days: 90
-      semver-minor-days: 45
-      semver-patch-days: 14
-
-  # Keep GitHub Actions up to date
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "03:00"
-      timezone: "UTC"
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: "build(NoTicket)"
-    cooldown:
-      default-days: 21
+        versions: ["2.x.x"]
+    groups:
+      gradle:
+        patterns:
+          - "*"
