@@ -37,7 +37,7 @@ jobs:
       newVersion: ${{ github.event.inputs.tag_name }}
     steps:
     - name: Check out code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         fetch-depth: 0
         token: ${{ secrets.RELEASE_PAT }}
@@ -87,7 +87,7 @@ jobs:
     if: ${{ always() && needs.build.result == 'success' }}
     steps:
     - name: Check out code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         ref: ${{ github.event.inputs.tag_name}}
     - name: Download uber-jar
@@ -121,7 +121,7 @@ jobs:
         GRADLE_SIGNING_PASSWORD: ${{ secrets.GRADLE_SIGNING_PASSWORD }}
 
     - name: Generate and update GitHub release notes
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -145,7 +145,7 @@ jobs:
           echo "value=$ver" >> $GITHUB_OUTPUT
 
     - name: Notify Slack of JDBC release
-      uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a
+      uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d
       with:
         method: chat.postMessage
         token: ${{ secrets.SLACK_BOT_TOKEN }}
