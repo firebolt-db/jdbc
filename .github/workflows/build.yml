@@ -24,11 +24,11 @@ jobs:
       sources-jar: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}-sources.jar
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.branch }}
       - name: Prepare java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: 'zulu'
           java-version: '17'

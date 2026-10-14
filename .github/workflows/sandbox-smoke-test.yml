@@ -30,21 +30,21 @@ jobs:
 
     steps:
       - name: Install java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: 'zulu'
           java-version: '11'
 
       # check out only the SmokeTests class
       - name: Download smoke test file
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           sparse-checkout: |
             src/integrationTest/resources/SmokeTest.java
           sparse-checkout-cone-mode: false
 
       - name: Download artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.jdbcJar }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
