@@ -1,6 +1,7 @@
 package com.firebolt.jdbc.util;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -8,6 +9,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,6 +26,24 @@ class InputStreamUtilTest {
     @Test
     void shouldNotThrowExceptionIfStreamIsNull() {
         assertDoesNotThrow(() -> InputStreamUtil.readAllBytes(null));
+    }
+
+    @Test
+    @Timeout(value = 5, unit = TimeUnit.SECONDS, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    void shouldPropagateIoExceptionInsteadOfLooping() {
+        InputStream failing = new InputStream() {
+            @Override
+            public int read() throws IOException {
+                throw new IOException("stream was reset: CANCEL");
+            }
+
+            @Override
+            public int read(byte[] b, int off, int len) throws IOException {
+                throw new IOException("stream was reset: CANCEL");
+            }
+        };
+        IOException thrown = assertThrows(IOException.class, () -> InputStreamUtil.readAllBytes(failing));
+        assertTrue(thrown.getMessage().contains("CANCEL"));
     }
 
     @ParameterizedTest
