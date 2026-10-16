@@ -46,15 +46,25 @@ on:
     secrets:
       SLACK_BOT_TOKEN:
         required: false
+
+permissions: {}
+
 jobs:
   run-core-integration-tests:
     runs-on: ${{ inputs.os_name }}
+    permissions:
+      contents: write # Allure report is pushed to gh-pages.
+      pages: read # Allure report looks up the Pages URL.
+      statuses: write # Allure report posts a commit status.
+      packages: read # Firebolt Core image is pulled from ghcr.io.
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Prepare java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'zulu'
           java-version: ${{ inputs.java_version }}
@@ -62,7 +72,7 @@ jobs:
 
       - name: Setup Firebolt Core
         id: setup-core
-        uses: firebolt-db/action-setup-core@main
+        uses: firebolt-db/action-setup-core@d89662ec72f2cedccef9a6e4b84d45bf1c429dd4 # main
         with:
           tag_version: ${{ inputs.tag_version || vars.DEFAULT_CORE_IMAGE_TAG }}
 
@@ -76,7 +86,7 @@ jobs:
           GRADLE_OPTS: -Dorg.gradle.daemon=false
 
       - name: Allure Report
-        uses: firebolt-db/action-allure-report@v1
+        uses: firebolt-db/action-allure-report@781b4529b67b4f393c63d7dc1e098cb558e1ab16 # v1.4.1
         if: always() && runner.os == 'Linux' # Needed in order to report failed tests
         with:
             github-key: ${{ secrets.GITHUB_TOKEN }}
@@ -87,7 +97,7 @@ jobs:
 
       - name: Slack Notify of failure
         if: failure() && inputs.sendSlackNotifications
-        uses: firebolt-db/action-slack-nightly-notify@v1
+        uses: firebolt-db/action-slack-nightly-notify@1bdd915837fbe0986aeacd2ee63a648ae2dcc6db # v1.0.0
         with:
           os: ${{ inputs.os_name }}
           programming-language: Java

@@ -5,12 +5,20 @@ on:
     - cron: '30 0 * * *'        # Daily at 03:00 UTC
   workflow_dispatch:             # Allow manual trigger
 
+permissions: {}
+
 jobs:
   nightly-integration-runs-core:
+    permissions:
+      contents: write # Allure report is pushed to gh-pages.
+      pages: read # Allure report looks up the Pages URL.
+      statuses: write # Allure report posts a commit status.
+      packages: read # Firebolt Core image is pulled from ghcr.io.
     uses: ./.github/workflows/core-integration-test.yml
     with:
       os_name: ubuntu-latest
       java_version: 11
       tag_version: ${{ vars.CORE_NIGHTLY_IMAGE_TAG }}
       sendSlackNotifications: true
-    secrets: inherit
+    secrets:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

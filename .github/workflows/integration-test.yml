@@ -43,8 +43,14 @@ on:
       ECOSYSTEM_FIREBOLT_SA_NETWORK_POLICY_CLIENT_SECRET_STG:
         required: true
 
+permissions: {}
+
 jobs:
   run-integration-tests1:
+    permissions:
+      contents: write # Allure report is pushed to gh-pages.
+      pages: read # Allure report looks up the Pages URL.
+      statuses: write # Allure report posts a commit status.
     uses: ./.github/workflows/integration-test-v1.yml
     with:
       java_version: ${{ inputs.java_version }}
@@ -54,6 +60,10 @@ jobs:
       FIREBOLT_STG_PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
 
   run-integration-tests-engine2:
+    permissions:
+      contents: write # Allure report is pushed to gh-pages.
+      pages: read # Allure report looks up the Pages URL.
+      statuses: write # Allure report posts a commit status.
     uses: ./.github/workflows/integration-test-v2.yml
     with:
       java_version: ${{ inputs.java_version }}

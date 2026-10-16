@@ -15,42 +15,49 @@ on:
         description: Jar that contains only the source code
         value: ${{ jobs.build.outputs.sources-jar }}
   push:
+
+permissions: {}
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       version: ${{ steps.project-version.outputs.PROJECT_VERSION }}
       uber-jar: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
       sources-jar: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}-sources.jar
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.branch }}
+          persist-credentials: false
       - name: Prepare java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'zulu'
           java-version: '17'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
+        with:
+          # Release builds (called with a tag to build) don't use the Gradle cache.
+          cache-disabled: ${{ inputs.branch != '' }}
       - name: Gradle version
-        uses: gradle/gradle-build-action@v3
-        with:
-          arguments: --version
+        run: ./gradlew --version
       - name: Build and test
-        uses: gradle/gradle-build-action@v3
-        with:
-          arguments: build --scan
+        run: ./gradlew build --scan
       - name: Get project version
         id: project-version
         run: |
-          echo "PROJECT_VERSION=$(./gradlew printVersion |grep 'PROJECT_VERSION=' | cut -d= -f2)" >> $GITHUB_OUTPUT
+          echo "PROJECT_VERSION=$(./gradlew printVersion |grep 'PROJECT_VERSION=' | cut -d= -f2)" >> "$GITHUB_OUTPUT"
       - name: Upload uber-jar
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
           path: build/libs/firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}.jar
       - name: Upload sources-jar
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}-sources.jar
           path: build/libs/firebolt-jdbc-${{ steps.project-version.outputs.PROJECT_VERSION }}-sources.jar
