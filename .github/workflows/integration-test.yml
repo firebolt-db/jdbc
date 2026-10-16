@@ -13,6 +13,11 @@ on:
         required: false
         type: string
         default: 'ubuntu-latest'
+      use-cache:
+        description: 'Use the Gradle cache (the release path passes false)'
+        required: false
+        type: boolean
+        default: true
   workflow_call:
     inputs:
       java_version:
@@ -25,6 +30,11 @@ on:
         required: false
         type: string
         default: 'ubuntu-latest'
+      use-cache:
+        description: 'Use the Gradle cache (the release path passes false)'
+        required: false
+        type: boolean
+        default: true
     secrets:
       FIREBOLT_STG_USERNAME:
         required: true
@@ -68,6 +78,7 @@ jobs:
     with:
       java_version: ${{ inputs.java_version }}
       os_name: ${{ inputs.os_name }}
+      use-cache: ${{ inputs.use-cache }}
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}

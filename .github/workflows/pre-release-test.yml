@@ -20,10 +20,6 @@ on:
         required: true
       ECOSYSTEM_FIREBOLT_SA_NETWORK_POLICY_CLIENT_SECRET_STG:
         required: true
-      FIREBOLT_CORE_DEV_CERT_PRIVATE_KEY:
-        required: true
-      FIREBOLT_CORE_DEV_CERT:
-        required: true
 
 permissions: {}
 
@@ -32,6 +28,8 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/build.yml
+    with:
+      use-cache: false # no cache restore/save in the release path
 
   run-cloud-integration-test:
     needs: build
@@ -40,6 +38,8 @@ jobs:
       pages: read # Allure report looks up the Pages URL.
       statuses: write # Allure report posts a commit status.
     uses: ./.github/workflows/integration-test.yml
+    with:
+      use-cache: false # no cache restore/save in the release path
     secrets:
       FIREBOLT_STG_USERNAME: ${{ secrets.FIREBOLT_STG_USERNAME }}
       FIREBOLT_STG_PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
@@ -58,6 +58,8 @@ jobs:
       statuses: write # Allure report posts a commit status.
       packages: read # Firebolt Core image is pulled from ghcr.io.
     uses: ./.github/workflows/core-integration-test.yml
+    with:
+      use-cache: false # no cache restore/save in the release path
 
   run-smoke-test:
     needs: build

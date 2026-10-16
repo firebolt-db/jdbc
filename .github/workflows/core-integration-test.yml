@@ -22,6 +22,11 @@ on:
         required: false
         type: boolean
         default: false
+      use-cache:
+        description: 'Use the Gradle cache (the release path passes false)'
+        required: false
+        type: boolean
+        default: true
   workflow_call:
     inputs:
       tag_version:
@@ -43,6 +48,11 @@ on:
         required: false
         type: boolean
         default: false
+      use-cache:
+        description: 'Use the Gradle cache (the release path passes false)'
+        required: false
+        type: boolean
+        default: true
     secrets:
       SLACK_BOT_TOKEN:
         required: false
@@ -68,7 +78,7 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: ${{ inputs.java_version }}
-          cache: 'gradle'
+          cache: ${{ inputs.use-cache && 'gradle' || '' }}
 
       - name: Setup Firebolt Core
         id: setup-core

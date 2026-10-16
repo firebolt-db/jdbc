@@ -29,6 +29,11 @@ on:
         required: false
         type: boolean
         default: false
+      use-cache:
+        description: 'Use the Gradle cache (the release path passes false)'
+        required: false
+        type: boolean
+        default: true
   workflow_call:
     inputs:
       database:
@@ -59,6 +64,11 @@ on:
         required: false
         type: boolean
         default: false
+      use-cache:
+        description: 'Use the Gradle cache (the release path passes false)'
+        required: false
+        type: boolean
+        default: true
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN:
         required: true
@@ -119,8 +129,10 @@ jobs:
           java-version: ${{ inputs.java_version }}
 
       - name: Setup Gradle
+        # Stay on v5: v6 changed the caching licence; see .github/dependabot.yml before bumping.
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
         with:
+          cache-disabled: ${{ !inputs.use-cache }}
           # only allow the master branch to write to the cache
           cache-read-only: ${{ github.ref != 'refs/heads/master' }}
 
