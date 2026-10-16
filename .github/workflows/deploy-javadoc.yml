@@ -4,23 +4,29 @@ on:
   workflow_dispatch:
   release:
     types: [ published ]
+
+permissions: {}
+
 jobs:
   publish:
     if: ${{ !contains(github.event.release.name, 'SNAPSHOT') }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Javadoc is pushed to gh-pages.
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Prepare java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'zulu'
           java-version: '17'
       - name: Generate Javadoc
         run: ./gradlew generateJavadoc
       - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@v4
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4.9.0
         with:
           folder: build/docs/javadoc
           target-folder: javadoc
