@@ -150,7 +150,7 @@ tasks.register('integrationTest', Test) {
     // them on the command line. A -D system property of the same name takes precedence.
     [
         user         : 'FIREBOLT_USER',
-        password     : 'FIREBOLT_PASSWORD',
+        password     : 'FIREBOLT_PASSWORD', // env var name, not a secret. legit:ignore-secrets
         client_id    : 'FIREBOLT_CLIENT_ID',
         client_secret: 'FIREBOLT_CLIENT_SECRET'
     ].each { property, envVar ->
