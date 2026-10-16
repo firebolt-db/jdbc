@@ -160,7 +160,7 @@ jobs:
         run: ./gradlew integrationTest -Ddb="$DATABASE_NAME" -Dapi="api.staging.firebolt.io" -Dengine="$ENGINE_NAME" -DincludeTags="v1" -Dv1GenerateSeriesMaxSize="$V1_GENERATE_SERIES_MAX_SIZE"
 
       - name: Allure Report
-        uses: firebolt-db/action-allure-report@781b4529b67b4f393c63d7dc1e098cb558e1ab16 # v1.4.1
+        uses: firebolt-db/action-allure-report@8cdc116f65f6eca845a992e347e72b75ca8ccf5f # v2.1.1
         if: always() && runner.os == 'Linux' && inputs.java_version != '11' # Skip Allure on Java 11
         continue-on-error: true # FIR-48984
         with:
