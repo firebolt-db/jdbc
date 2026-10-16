@@ -5,3 +5,8 @@ ignore_actions:
   # must never move it. Dependabot (with its semver-major ignore) keeps it up to date.
   - name: firebolt-db/integration-testing-setup
     ref: .*
+  # v6 moved caching into the proprietary `gradle-actions-caching` component under Gradle's
+  # commercial Terms of Use. Stay on v5 until that licence change has been reviewed
+  # (see .github/dependabot.yml).
+  - name: gradle/actions/setup-gradle
+    ref: .*
