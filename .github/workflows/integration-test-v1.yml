@@ -149,7 +149,15 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run integration tests
-        run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Dapi="api.staging.firebolt.io" -Dpassword="${{ secrets.FIREBOLT_STG_PASSWORD }}" -Duser="${{ secrets.FIREBOLT_STG_USERNAME }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v1" -Dv1GenerateSeriesMaxSize="${{ vars.V1_GENERATE_SERIES_MAX_SIZE }}"
+        shell: bash  # use bash across all OSs
+        env:
+          # build.gradle passes these to the tests as the user/password system properties.
+          FIREBOLT_USER: ${{ secrets.FIREBOLT_STG_USERNAME }}
+          FIREBOLT_PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
+          DATABASE_NAME: ${{ steps.find-database-name.outputs.database_name }}
+          ENGINE_NAME: ${{ steps.find-engine-name.outputs.engine_name }}
+          V1_GENERATE_SERIES_MAX_SIZE: ${{ vars.V1_GENERATE_SERIES_MAX_SIZE }}
+        run: ./gradlew integrationTest -Ddb="$DATABASE_NAME" -Dapi="api.staging.firebolt.io" -Dengine="$ENGINE_NAME" -DincludeTags="v1" -Dv1GenerateSeriesMaxSize="$V1_GENERATE_SERIES_MAX_SIZE"
 
       - name: Allure Report
         uses: firebolt-db/action-allure-report@781b4529b67b4f393c63d7dc1e098cb558e1ab16 # v1.4.1

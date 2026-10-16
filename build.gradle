@@ -146,6 +146,19 @@ tasks.register('integrationTest', Test) {
     options {
         systemProperties(System.getProperties())
     }
+    // Credentials can also come from environment variables, so CI does not have to put
+    // them on the command line. A -D system property of the same name takes precedence.
+    [
+        user         : 'FIREBOLT_USER',
+        password     : 'FIREBOLT_PASSWORD',
+        client_id    : 'FIREBOLT_CLIENT_ID',
+        client_secret: 'FIREBOLT_CLIENT_SECRET'
+    ].each { property, envVar ->
+        def value = System.getenv(envVar)
+        if (value && System.getProperty(property) == null) {
+            systemProperty property, value
+        }
+    }
     testLogging.showStandardStreams = true
     testLogging.exceptionFormat = 'full'
     testClassesDirs = sourceSets.integrationTest.output.classesDirs

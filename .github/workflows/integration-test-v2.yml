@@ -122,7 +122,7 @@ jobs:
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
         with:
           # only allow the master branch to write to the cache
-          cache-read-only: ${{ github.ref != 'master' }}
+          cache-read-only: ${{ github.ref != 'refs/heads/master' }}
 
       # for ubuntu-latest , java 11 it will create u11. For windows-latest java 17 it will create w17
       - name: Reduce db suffix name
@@ -179,12 +179,20 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run integration tests
+        shell: bash  # use bash across all OSs
         env:
           FIREBOLT_SA_NO_USER_CLIENT_ID: ${{ secrets.ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_ID_STG }}
           FIREBOLT_SA_NO_USER_CLIENT_SECRET: ${{ secrets.ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_SECRET_STG }}
           FIREBOLT_SA_NETWORK_POLICY_CLIENT_ID: ${{ secrets.ECOSYSTEM_FIREBOLT_SA_NETWORK_POLICY_CLIENT_ID_STG }}
           FIREBOLT_SA_NETWORK_POLICY_CLIENT_SECRET: ${{ secrets.ECOSYSTEM_FIREBOLT_SA_NETWORK_POLICY_CLIENT_SECRET_STG }}
-        run: ./gradlew integrationTest -Ddb="${{ steps.find-database-name.outputs.database_name }}" -Denv="staging" -Dclient_secret="${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" -Dclient_id="${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" -Daccount="${{ steps.set-account.outputs.account }}" -Dengine="${{ steps.find-engine-name.outputs.engine_name }}" -DincludeTags="v2" -Dv2GenerateSeriesMaxSize="${{ vars.V2_GENERATE_SERIES_MAX_SIZE }}" -DintegrationTestMaxHeap=3g
+          # build.gradle passes these to the tests as the client_id/client_secret system properties.
+          FIREBOLT_CLIENT_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
+          FIREBOLT_CLIENT_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+          DATABASE_NAME: ${{ steps.find-database-name.outputs.database_name }}
+          ENGINE_NAME: ${{ steps.find-engine-name.outputs.engine_name }}
+          ACCOUNT_NAME: ${{ steps.set-account.outputs.account }}
+          V2_GENERATE_SERIES_MAX_SIZE: ${{ vars.V2_GENERATE_SERIES_MAX_SIZE }}
+        run: ./gradlew integrationTest -Ddb="$DATABASE_NAME" -Denv="staging" -Daccount="$ACCOUNT_NAME" -Dengine="$ENGINE_NAME" -DincludeTags="v2" -Dv2GenerateSeriesMaxSize="$V2_GENERATE_SERIES_MAX_SIZE" -DintegrationTestMaxHeap=3g
 
       - name: Upload integration test reports
         if: always()
