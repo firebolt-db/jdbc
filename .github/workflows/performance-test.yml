@@ -66,13 +66,29 @@ jobs:
              echo "database_name=$SETUP_DATABASE" >> "$GITHUB_OUTPUT"
           fi
 
+      # The credentials go into a JMeter properties file (loaded with -q) instead of
+      # the action's args, which end up on the command line and in the log.
+      - name: Write JMeter credentials file
+        env:
+          JMETER_USERNAME: ${{ secrets.SERVICE_ACCOUNT_ID_STAGING }}
+          JMETER_PASSWORD: ${{ secrets.SERVICE_ACCOUNT_SECRET_STAGING }}
+        run: |
+          umask 077
+          # Escape backslashes, which are special in Java properties files.
+          {
+            echo "username=${JMETER_USERNAME//\\/\\\\}"
+            echo "password=${JMETER_PASSWORD//\\/\\\\}"
+          } > jmeter-credentials.properties
       - name: Run JMeter Tests
         uses: rbhadti94/apache-jmeter-action@f7da1bc9fee0b7c85b421761fa30a6f3e2b95647 # v0.7.0
         with:
           testFilePath: JDBC.jmx
           dependencyFolder: dependencies
           outputReportsFolder: reports/
-          args: -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jpassword=${{ secrets.SERVICE_ACCOUNT_SECRET_STAGING }} -Jusername=${{ secrets.SERVICE_ACCOUNT_ID_STAGING }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ inputs.threads }} -Jloops=${{ inputs.loops }}
+          args: -q jmeter-credentials.properties -Jdatabase=${{ steps.find-database-name.outputs.database_name }} -Jdriver=${{ needs.build.outputs.uber-jar }} -Jenvironment=staging -Jthreads=${{ inputs.threads }} -Jloops=${{ inputs.loops }}
+      - name: Delete JMeter credentials file
+        if: always()
+        run: rm -f jmeter-credentials.properties
       - name: Upload JMeter report
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
