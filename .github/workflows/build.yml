@@ -39,10 +39,14 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
       - name: Setup Gradle
+        if: ${{ !inputs.branch }}
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
+      - name: Setup Gradle (no cache)
+        # Builds of a given ref (release builds) don't use the Gradle cache.
+        if: ${{ inputs.branch }}
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
         with:
-          # Release builds (called with a tag to build) don't use the Gradle cache.
-          cache-disabled: ${{ inputs.branch != '' }}
+          cache-disabled: true
       - name: Gradle version
         run: ./gradlew --version
       - name: Build and test
