@@ -88,8 +88,14 @@ jobs:
     # release dispatched from another branch, or a pre-existing tag that points elsewhere.
     - name: Verify the release tag is on master
       run: |
-        if ! git merge-base --is-ancestor origin/master HEAD; then
-          echo "::error::The release must be dispatched from master (HEAD does not build on origin/master)."
+        # GITHUB_REF is the ref the run was dispatched on; the dispatcher can't change it.
+        if [ "$GITHUB_REF" != "refs/heads/master" ]; then
+          echo "::error::The release must be dispatched from master, not $GITHUB_REF."
+          exit 1
+        fi
+        # HEAD must be origin/master plus at most the version-bump commit made above.
+        if ! git merge-base --is-ancestor origin/master HEAD || [ "$(git rev-list --count origin/master..HEAD)" -gt 1 ]; then
+          echo "::error::HEAD is not master plus the version bump."
           exit 1
         fi
         tag_commit=$(git rev-parse "refs/tags/$newVersion^{commit}")
