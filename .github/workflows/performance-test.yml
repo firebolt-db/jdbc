@@ -24,13 +24,13 @@ jobs:
     needs: build
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Create dependency folder for JMX
         run: |
           mkdir dependencies
       - name: Download uber-jar
         id: download-jar
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ needs.build.outputs.uber-jar }}
           path: dependencies
@@ -82,7 +82,7 @@ jobs:
           echo "SUMMARY=$(echo "$result" | tr '|' ',')" >> $GITHUB_OUTPUT
           sudo rm -rf "/home/runner/work/jdbc/jdbc/reports"
       - name: Checkout history branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: performance-tests-history
       - name: Append history with test summary

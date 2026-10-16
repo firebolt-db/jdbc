@@ -51,7 +51,7 @@ jobs:
     runs-on: ${{ inputs.os_name }}
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Prepare java
         uses: actions/setup-java@v5
@@ -76,7 +76,7 @@ jobs:
           GRADLE_OPTS: -Dorg.gradle.daemon=false
 
       - name: Allure Report
-        uses: firebolt-db/action-allure-report@v1
+        uses: firebolt-db/action-allure-report@v2
         if: always() && runner.os == 'Linux' # Needed in order to report failed tests
         with:
             github-key: ${{ secrets.GITHUB_TOKEN }}

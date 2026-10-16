@@ -37,14 +37,14 @@ jobs:
 
       # check out only the SmokeTests class
       - name: Download smoke test file
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           sparse-checkout: |
             src/integrationTest/resources/SmokeTest.java
           sparse-checkout-cone-mode: false
 
       - name: Download artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.jdbcJar }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
