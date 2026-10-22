@@ -83,7 +83,7 @@ jobs:
           persist-credentials: false
 
       - name: Prepare java
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: 'zulu'
           java-version: ${{ inputs.java_version }}
@@ -109,7 +109,7 @@ jobs:
       - name: Setup database and engine
         id: setup
         if: ${{ inputs.database == '' }}
-        uses: firebolt-db/integration-testing-setup@eb35b7719247c93392cb3a8aa4f554a4c11a770b # v1.0.3
+        uses: firebolt-db/integration-testing-setup@1feb289e8da573c5f1f74d8ff3cd69bcb5b5891a # v1.0.4
         with:
           firebolt-username: ${{ secrets.FIREBOLT_STG_USERNAME }}
           firebolt-password: ${{ secrets.FIREBOLT_STG_PASSWORD }}
