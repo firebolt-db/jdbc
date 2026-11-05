@@ -11,7 +11,7 @@ on:
         description: 'JRE version'
         required: false
         type: string
-        default: '11'
+        default: '17'
       os_name:
         description: 'The operating system'
         required: false
@@ -37,7 +37,7 @@ on:
         description: 'Java'
         required: false
         type: string
-        default: '11'
+        default: '17'
       os_name:
         description: 'Operating system'
         required: false
